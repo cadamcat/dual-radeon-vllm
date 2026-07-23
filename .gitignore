@@ -1,0 +1,25 @@
+# Build products — never commit the library, it goes to Releases with a checksum
+*.so
+*.so.*
+!*.so.example
+build/rccl-*/
+build/_build/
+*.o
+*.tar.gz
+
+# Compiled probes
+diagnose/hipgate
+diagnose/hipgate2
+diagnose/hipgate3
+diagnose/*.out
+
+# Full logs (only the trimmed excerpt is tracked)
+diagnose/logs/*-full.txt
+*.log
+!diagnose/logs/amdlog-crash-excerpt.txt
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/

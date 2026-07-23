@@ -1,0 +1,10 @@
+import os, torch, torch.distributed as dist
+r = int(os.environ["RANK"]); dist.init_process_group("nccl")
+torch.cuda.set_device(r)
+print(f"[rank{r}] pg ready, dev={torch.cuda.current_device()}", flush=True)
+x = torch.ones(1024, device=f"cuda:{r}")
+print(f"[rank{r}] tensor on card, calling all_reduce...", flush=True)
+dist.all_reduce(x)
+torch.cuda.synchronize()
+print(f"[rank{r}] all_reduce OK sum={x[0].item()}", flush=True)
+dist.destroy_process_group()
