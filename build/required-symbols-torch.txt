@@ -1,0 +1,54 @@
+# nccl* symbols that PyTorch requires from librccl.
+#
+# Extracted from libtorch_hip.so (undefined symbols) in
+#   rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0
+# i.e. torch 2.11 / ROCm 7.14. A rebuilt RCCL that does not export all of these
+# will fail to load, usually as an opaque import error at `import torch`.
+#
+# Check a build with:  ./build/check-symbols.sh /path/to/librccl.so.1.0
+#
+# Note: ncclCommDump appears in torch as a C++-mangled symbol taking an
+# unordered_map, so match on the base name rather than an exact string.
+#
+# All of these are declared in RCCL develop (2.28.3) src/nccl.h.in — verified
+# 2026-07-23 — including the newest four (Window*, Shrink, Scalable,
+# SimulateEnd), which is what makes a develop-based build viable.
+
+ncclAllGather
+ncclAllReduce
+ncclAllToAll
+ncclAllToAllv
+ncclBcast
+ncclBroadcast
+ncclCommAbort
+ncclCommCount
+ncclCommDeregister
+ncclCommDestroy
+ncclCommDump
+ncclCommFinalize
+ncclCommGetAsyncError
+ncclCommInitAll
+ncclCommInitRank
+ncclCommInitRankConfig
+ncclCommInitRankScalable
+ncclCommRegister
+ncclCommShrink
+ncclCommSplit
+ncclCommUserRank
+ncclCommWindowDeregister
+ncclCommWindowRegister
+ncclGetErrorString
+ncclGetLastError
+ncclGetUniqueId
+ncclGetVersion
+ncclGroupEnd
+ncclGroupSimulateEnd
+ncclGroupStart
+ncclMemAlloc
+ncclMemFree
+ncclRecv
+ncclRedOpCreatePreMulSum
+ncclRedOpDestroy
+ncclReduce
+ncclReduceScatter
+ncclSend

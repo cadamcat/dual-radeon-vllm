@@ -13,29 +13,42 @@ the missing piece of a good upstream bug report.
 `hidden_hostcall_buffer` count **0**; from ROCm 7.2 onwards every `Generic`
 kernel has it. Same source project, same architecture.
 
-**What we do not know:** *why*. Candidate explanations, none confirmed:
+**What we do not know:** *why*. Two hypotheses have now been **eliminated** by
+comparing the public release branches
+`release/rocm-rel-7.1.1.1` (ships hostcall 0) and `release/rocm-rel-7.2`
+(ships hostcall N):
 
-- A change in AMD's release build invocation (a flag that used to supply
-  `NDEBUG` to the device pass and no longer does).
-- A change in RCCL's CMake such that `NDEBUG` stopped reaching device
-  compilation. Note the current `CMakeLists.txt` does
-  `set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "Release flags" FORCE)`,
-  which drops the `-DNDEBUG` that CMake's default Release flags would carry —
-  **but this alone cannot be the mechanism**, because RCCL's device compilation
-  uses its own `-O3` target flags that bypass `CMAKE_CXX_FLAGS_RELEASE` anyway.
-  It may be contributory, coincidental, or a red herring.
-- New device-side `assert()` / `ENABLE_COLLTRACE` code introduced in b43 that
-  was not present in b38.
-- `CMAKE_BUILD_TYPE` not being defaulted by RCCL's CMake at all, combined with a
-  packaging change.
+- ❌ **Not a CMake change.** Both branches' `CMakeLists.txt` are equivalent in
+  every relevant respect: neither sets `CMAKE_CXX_FLAGS_RELEASE`, neither
+  mentions `NDEBUG`, and both carry the same `option(COLLTRACE ... ON)` with the
+  same `if(COLLTRACE) target_compile_definitions(rccl PRIVATE ENABLE_COLLTRACE)`.
+  (The `set(CMAKE_CXX_FLAGS_RELEASE "-O3" ... FORCE)` line does exist — but only
+  on `develop`, i.e. it was added *after* 7.2, so it cannot explain this
+  regression. Do not cite it as the cause.)
+- ❌ **Not obviously new device asserts.** Sampling the device headers
+  (`all_gather.h`, `reduce_scatter.h`, `common_kernel.h`, `primitives.h`,
+  `prims_simple.h`, `all_reduce.h`, `broadcast.h`, `reduce.h`) gives the **same
+  `assert(` count in both branches**, and `common.h` has the same number of
+  `ENABLE_COLLTRACE` sites. This is a sample, not an exhaustive diff, so treat it
+  as strong evidence rather than proof.
 
-**Why we cannot settle it:** it requires either AMD's build pipeline invocation,
-or a bisect of RCCL between the b38 and b43 tags with a device-image inspection
-at each step. We have not run that bisect.
+**Therefore the leading hypothesis is now:** the RCCL *source* did not
+meaningfully change between 7.1.1 and 7.2 — **AMD's release build invocation
+did**. Something that used to deliver `NDEBUG` to the device compilation pass
+stopped doing so. That is not visible from the repository, because it lives in
+AMD's packaging/CI, not in `CMakeLists.txt`.
 
-**How to close it:** build the same source at both tags, in an identical
-environment, and count hostcall in the device image at each. The counting
-one-liner is in [`build/verify-nohostcall.sh`](../build/verify-nohostcall.sh).
+**Why this matters for the upstream report:** the ask is not "please support
+platforms without atomics" and not "please change your CMake". It is
+**"your source is unchanged; your shipped 7.1.1 binary has hostcall 0 and your
+7.2 binary does not — please check what your build pipeline stopped passing."**
+That is a one-line fix in AMD's own build configuration.
+
+**How to close it definitively:** build `release/rocm-rel-7.1.1.1` and
+`release/rocm-rel-7.2` in an identical environment with identical flags and count
+hostcall in each device image. If both come out the same, the difference is
+conclusively in AMD's pipeline, not the source. The counting one-liner is in
+[`build/verify-nohostcall.sh`](../build/verify-nohostcall.sh).
 
 ---
 
