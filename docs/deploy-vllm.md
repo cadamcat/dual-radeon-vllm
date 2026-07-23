@@ -1,5 +1,44 @@
 # Deploying into a ROCm / vLLM container
 
+## First: build for *your* GPU
+
+Device code in AMDGPU binaries is architecture-specific. A library built for
+`gfx1100` **will not load** on `gfx1101`, `gfx942`, or anything else. Set the
+target at configure time:
+
+```bash
+cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+  -DGPU_TARGETS=gfx1100 -DAMDGPU_TARGETS=gfx1100     # <-- your architecture
+```
+
+Find yours with `rocminfo | grep gfx`.
+
+**Covering a whole family at once.** ROCm supports *generic* targets, which
+produce a single code object that runs across a hardware family:
+
+| Target | Covers |
+|---|---|
+| `gfx11-generic` | all RDNA3 consumer: gfx1100 (7900 XTX/XT/GRE), gfx1101 (7800 XT / 7700 XT), gfx1102 (7600) |
+| `gfx12-generic` | RDNA4 consumer |
+| `gfx10-3-generic` | RDNA2 consumer |
+
+`gfx11-generic` is accepted by the ROCm 7.14 toolchain (verified). The trade-off,
+per AMD's documentation, is that a generic code object is the lowest common
+denominator of the family, so architecture-specific features are unavailable and
+performance *may* differ. For RCCL — largely data movement and reductions — this
+is expected to be negligible, **but we have not measured it**.
+
+You can also list several targets: `-DGPU_TARGETS="gfx1100;gfx1101"`. Each target
+adds roughly one more device LTO link to the build time.
+
+> **Note on prebuilt binaries.** Any binary is tied to *both* an architecture and
+> a ROCm version (ABI and expected exports such as `ncclCommDump`). ROCm ships
+> roughly every six weeks. Building from source for your own combination is the
+> reliable path; published binaries are a convenience for one exact pairing.
+
+---
+
+
 Removing the hostcall requirement is necessary but **not sufficient**. Two
 further traps sit between a correct `librccl.so` and a working vLLM, and both
 present as something completely unrelated. This page exists so you do not lose a
