@@ -1,5 +1,74 @@
 # Open questions — what we have *not* proven
 
+---
+
+## 0. ⚠️ RCCL 2.30.4: `NDEBUG` is necessary but **no longer sufficient**
+
+**Tested on real hardware, 2026-07-23.** We built RCCL **2.30.4** (from
+`ROCm/rocm-systems`, `projects/rccl` — the monorepo RCCL migrated to; the old
+`ROCm/rccl` repo is now `develop_deprecated`) with the same
+`add_compile_definitions(NDEBUG)` patch that fixes 2.27.7, for seven
+architectures. Result on 2× RX 7900 XT in a VFIO guest:
+
+```
+device_count: 2                     ← library loads, both hacks removed OK
+torchrun all_reduce  →  HIP failure 'the operation cannot be performed in the
+                        present state' at .../rccl/build/hipify/src/enqueue.cc:2118
+```
+
+Static inspection of that build:
+
+| Check | Result |
+|---|---|
+| `__assert_fail` in device image | **0** — NDEBUG worked |
+| `__ockl_fprintf` in device image | **0** — no device printf (COLLTRACE is gone from 2.30.4 entirely) |
+| `__ockl_*` symbols of any kind | **0** — there is *no hostcall-calling code at all* |
+| `hidden_hostcall_buffer` in metadata | **3** — one per `ncclDevKernel_Generic_{1,2,4}` |
+
+**So the metadata declaration alone is enough for ROCr to refuse dispatch.**
+Removing the *code* that would use hostcall does not help if the kernel still
+*declares* the implicit argument.
+
+**Where the declaration comes from — narrowed by bisection:**
+
+```
+device_build/common.o      (before device link)  hostcall = 0
+device_build/gfx1100/device.elf (after link)     hostcall = 3
+        …and the linked image contains 0 __ockl symbols
+```
+
+**The device-linking step introduces it.** RCCL 2.30.4 replaced the ordinary HIP
+fat-binary path with its own device linker (`tools/rccl-device-compile --link`,
+which also hand-patches SGPR/VGPR fields in the kernel descriptor). That tool
+contains no `hostcall` or `hidden_` strings itself, so the declaration is being
+emitted by the compiler during the dispatcher link, conservatively, for kernels
+that demonstrably never call hostcall.
+
+Ruled out as causes (trivial-kernel probes, all give `hostcall = 0`):
+plain whole-program compile · `-fgpu-rdc` · `-mcode-object-version=4` ·
+`-fgpu-rdc` + COv4. So it is **not** RDC per se and **not** the code-object
+version.
+
+**Consequences:**
+
+- **2.27.7 remains the only verified working route** (see the main README).
+- The upstream report gets much sharper: *"your device-linking step declares
+  `hidden_hostcall_buffer` on all three `ncclDevKernel_Generic_*` kernels while
+  the linked image contains zero `__ockl_*` symbols; on any platform without
+  PCIe AtomicOps this makes every collective fail, and `NDEBUG` cannot fix it."*
+- A plausible workaround not yet attempted: **strip the implicit-argument entry
+  from the kernel metadata after linking.** RCCL's own tool already rewrites that
+  metadata block (`_patch_amdgpu_metadata`), so there is a natural place to do it.
+  Untested, and metadata surgery may break kernarg offsets.
+
+**Not yet confirmed:** we infer the hostcall declaration is what ROCr rejects
+because the crash signature is identical to the documented one. Re-running the
+failing build under `AMD_LOG_LEVEL=4` and looking for
+`Pcie atomics not enabled, hostcall not supported` would make it airtight; we
+rolled production back before doing that.
+
+---
+
 Keeping this list honest is the point. Everything in
 [root-cause.md](root-cause.md) has a test behind it; everything here does not.
 If you can close one of these, it is a genuinely useful contribution — and #1 is
