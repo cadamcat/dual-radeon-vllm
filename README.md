@@ -91,6 +91,28 @@ The shipped RCCL from **ROCm 7.1.1** has `hidden_hostcall_buffer` count **0**; f
 
 ## The fix
 
+> ### ⚠️ Build **RCCL 2.27.7**, not the newest source
+>
+> This matters more than anything else on this page. `NDEBUG` fixes 2.27.7. It is
+> **not sufficient for RCCL 2.30.4**, which we built and tested on hardware.
+>
+> | RCCL source | `NDEBUG` patch result | Status |
+> |---|---|---|
+> | **2.27.7** — `ROCm/rccl`, branch `release/rocm-rel-7.1.1.1` | hostcall → **0** | ✅ **Verified working.** Use this |
+> | 2.28.3 — `ROCm/rccl`, `develop_deprecated` | untested | ❓ |
+> | **2.30.4** — `ROCm/rocm-systems`, `projects/rccl` | `__assert_fail`=0, `__ockl_*`=0, but **hostcall still 3** | ❌ **Verified failing** |
+>
+> On 2.30.4, `NDEBUG` does remove the device asserts — the linked image contains
+> *zero* `__ockl_*` symbols, i.e. no hostcall-calling code at all — yet its device
+> linker still **declares** `hidden_hostcall_buffer` on all three
+> `ncclDevKernel_Generic_*`, and ROCr refuses the dispatch on the declaration
+> alone. Confirmed under `AMD_LOG_LEVEL=4`. Details and the attempted metadata
+> workaround: [docs/open-questions.md §0](docs/open-questions.md).
+>
+> Note also that RCCL **moved**: `ROCm/rccl` is now `develop_deprecated`, and
+> active development lives in the `ROCm/rocm-systems` monorepo under
+> `projects/rccl`. The version you want is on the old repo's release branch.
+
 Three pieces, **all required** — the second and third are non-obvious and cost days to discover independently:
 
 | # | Piece | Why |
@@ -115,9 +137,10 @@ Be precise about this — it decides whether a bug report against us is useful.
 
 | Environment | Status |
 |---|---|
-| VFIO/QEMU guest · 2× RX 7900 XT (gfx1100) · ROCm 7.14 · vLLM 0.23 · torch 2.11 | ✅ **Verified end to end.** vLLM TP=2 runs; gemma-4-31B-w4a16 at 42 tok/s, both GPUs 264 W synchronised |
+| VFIO/QEMU guest · 2× RX 7900 XT (gfx1100) · ROCm 7.14 · vLLM 0.23 · torch 2.11 · **RCCL 2.27.7 + NDEBUG** | ✅ **Verified end to end.** vLLM TP=2 runs; gemma-4-31B-w4a16 at 42 tok/s, both GPUs 264 W synchronised |
 | VFIO/QEMU guest · same hardware · ROCm 7.0 (RCCL 2.26.6) | ✅ **Verified working without any fix** — old kernels carry no hostcall |
 | VFIO/QEMU guest · same hardware · ROCm 7.13 / 7.14 stock | ✅ **Verified failing** with the signature above |
+| VFIO/QEMU guest · same hardware · **RCCL 2.30.4 + NDEBUG** | ❌ **Verified failing.** Loads fine, `device_count`=2, hacks 2+3 provably unnecessary — but collectives still rejected. See the warning box above |
 | Bare metal · 2× RX 7900 XTX · consumer chipset | ⚠️ **Inferred.** Mechanism matches the public reports, but we have no such machine. **Reports welcome** — see below |
 | Virtualized Instinct (MI2xx/MI3xx) via passthrough | ⚠️ **Inferred.** Same QEMU root-port limitation should apply |
 | Bare metal with a root complex that *does* route AtomicOps | ➖ Should be unaffected; nothing to fix |

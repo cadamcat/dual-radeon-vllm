@@ -22,11 +22,27 @@ produce a single code object that runs across a hardware family:
 | `gfx12-generic` | RDNA4 consumer |
 | `gfx10-3-generic` | RDNA2 consumer |
 
-`gfx11-generic` is accepted by the ROCm 7.14 toolchain (verified). The trade-off,
-per AMD's documentation, is that a generic code object is the lowest common
-denominator of the family, so architecture-specific features are unavailable and
-performance *may* differ. For RCCL — largely data movement and reductions — this
-is expected to be negligible, **but we have not measured it**.
+**⚠️ Generic targets do not work with RCCL 2.30.4.** `hipcc` itself accepts
+`gfx11-generic` (we verified that separately), but RCCL 2.30.4 ships its own
+device linker, `tools/rccl-device-compile`, which derives the register budget by
+parsing the *architecture name*:
+
+```python
+_MAX_NUMBERED_SGPR = {9: 102, 10: 106, 11: 106, 12: 106}
+gen = _gfx_generation(gpu_target)     # gfx1100 → 11 ✓ ;  gfx11-generic → 1 ✗
+```
+
+so the link aborts with `RuntimeError: Unknown SGPR limit for generation gfx1xx
+(target 'gfx11-generic')`. Concrete targets in the same build linked fine. **Use
+explicit architectures.**
+
+RCCL **2.27.7** — the version you actually want (see the README) — has no such
+device linker and uses the ordinary HIP fat-binary path, so generic targets may
+work there. We did not test that; we built it with explicit architectures.
+
+The general trade-off, per AMD's documentation, is that a generic code object is
+the lowest common denominator of its family, so architecture-specific features
+are unavailable and performance *may* differ.
 
 You can also list several targets: `-DGPU_TARGETS="gfx1100;gfx1101"`. Each target
 adds roughly one more device LTO link to the build time.

@@ -1,4 +1,34 @@
 #!/bin/bash
+#
+# ===========================================================================
+# NOTE FOR READERS
+#
+# This is the ACTUAL script that produced our working library, kept verbatim
+# (original comments included, some in Chinese) rather than tidied up, so you
+# can see exactly what was done. Paths are specific to our container — adapt:
+#
+#   SRC=...     RCCL source tree. Get the verified version with:
+#                 git clone --depth 1 -b release/rocm-rel-7.1.1.1 \
+#                   https://github.com/ROCm/rccl.git
+#               That is 2.27.7. Do NOT use 2.30.4 from the rocm-systems
+#               monorepo — NDEBUG is not sufficient there, and we have tested
+#               that on hardware. See ../docs/open-questions.md section 0.
+#
+#   PATH=...    points at a pip-installed ROCm SDK. On a conventional ROCm
+#               install use $ROCM_PATH/bin and $ROCM_PATH/lib/llvm/bin.
+#
+#   /work       our bind-mount. Anywhere writable works.
+#
+# To target GPUs other than gfx1100, add to the cmake/configure step:
+#   -DGPU_TARGETS="gfx1100;gfx1101;gfx1102" -DAMDGPU_TARGETS="<same>"
+# Use explicit architecture names (RCCL's newer device linker rejects
+# generic targets such as gfx11-generic; see ../docs/deploy-vllm.md).
+#
+# Verify the result before deploying:
+#   ./verify-nohostcall.sh <lib>     hostcall must be 0
+#   ./check-symbols.sh    <lib>      all torch symbols must be present
+# ===========================================================================
+#
 # build-rccl-nohostcall.sh — rebuild RCCL 2.27.7 (b38 血统) with device asserts
 # compiled OUT (-DNDEBUG) so its kernels carry NO hidden_hostcall_buffer and thus
 # dispatch fine on the VFIO guest that lacks PCIe atomics. Produces librccl-final.so.
