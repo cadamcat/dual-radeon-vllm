@@ -1,193 +1,265 @@
-# rccl-nohostcall
+<!-- Cover image goes here once finalised:
+     ![dual-radeon-vllm](docs/assets/cover.jpg) -->
 
-**RCCL multi-GPU collectives crash on any platform without PCIe AtomicOps routing — here's why, how to prove it in 60 seconds, and how to fix it.**
+# dual-radeon-vllm
 
-Affects dual/multi-GPU RCCL on consumer Radeon (gfx1100 / RX 7900 XT / XTX) and **any VFIO / QEMU passthrough guest**, including virtualized Instinct. Verified on ROCm 7.2 → 7.14.
+**Running vLLM with tensor parallelism on two consumer Radeon cards — verified end to end, including the RCCL bug that stops most people before they start.**
 
----
+`gemma-4-31B` (w4a16) at **42 tok/s** decode on 2× RX 7900 XT, both GPUs at 264 W *synchronised*, inside a VFIO virtual machine with **no P2P, no PCIe atomics, cross-die PCIe 3.0** — deliberately the least favourable topology.
 
-## Does this affect you?
-
-You are in the right place if you see any of these:
-
-```
-RuntimeError: NCCL error: unhandled cuda error
-NCCL WARN HIP failure 'the operation cannot be performed in the present state'
-  at .../src/enqueue.cc:2061   (or :1750 on older RCCL)
-NCCL WARN cuMem support requires VMM RDMA support
-```
-
-and, with `AMD_LOG_LEVEL=4`, the real cause one line above the failure:
-
-```
-rocvirtual.cpp:4151  ShaderName : ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<4096ul>)
-rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
-rocvirtual.cpp:4636  AQL dispatch failed!
-hip_module.cpp:605   hipModuleLaunchKernel: Returned hipErrorIllegalState
-```
-
-Typical trigger: `vllm serve --tensor-parallel-size 2`, `torchrun` with `all_reduce`, or anything that runs its **first cross-GPU collective**. Single-GPU work is always fine — that is the tell.
-
-Related upstream reports (all still open, none with a root cause):
-[ROCm#6074](https://github.com/ROCm/ROCm/issues/6074) ·
-[ROCm#2429](https://github.com/ROCm/ROCm/issues/2429) ·
-[vllm#38587](https://github.com/vllm-project/vllm/issues/38587) ·
-[rocm-systems#2779](https://github.com/ROCm/rocm-systems/issues/2779)
+<table>
+<tr>
+<td><b>42 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
+<td><b>1.80×</b><br><sub>TP=2 speed-up, 90% efficiency</sub></td>
+<td><b>51%</b><br><sub>memory-bandwidth utilisation at decode</sub></td>
+<td><b>264 W × 2</b><br><sub>synchronised = real tensor parallel</sub></td>
+</tr>
+</table>
 
 ---
 
-## 60-second triage
+## Who this is for
 
-Two commands tell you whether this is your bug.
+You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actually work. You are probably here because of one of these:
+
+- 🔴 **It crashes immediately**: `NCCL error: unhandled cuda error`, or
+  `HIP failure 'the operation cannot be performed in the present state'`.
+  → **[Jump to the 60-second triage](#am-i-hit-by-the-rccl-bug)**. This is the single biggest blocker on consumer Radeon, it has been open upstream for months with no published root cause, and this repository explains and fixes it.
+- 🟡 **It runs, but you do not know what to expect** → [What performance to expect](#what-performance-to-expect)
+- 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
+
+**Not a vLLM fork.** Nothing here patches vLLM. The fix lives in RCCL — one library, one rebuild — so there is no upstream to keep rebasing against.
+
+---
+
+## Verified configuration
+
+Everything below was measured on this machine. Nothing is extrapolated.
+
+| | |
+|---|---|
+| **GPUs** | 2× Radeon RX 7900 XT (gfx1100, RDNA3), 20 GB each = 40 GB |
+| **Interconnect** | Cross-die, PCIe 3.0, **no P2P**, `NCCL_P2P_DISABLE=1` |
+| **Host** | Threadripper 1950X (Zen 1), X399 |
+| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough** (no PCIe atomics — see below) |
+| **Stack** | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · **RCCL 2.27.7 rebuilt** |
+
+> The topology is intentionally hostile. If it works here, a bare-metal box with
+> P2P should do at least as well.
+
+---
+
+## Am I hit by the RCCL bug?
+
+Two commands. The second is decisive and needs no RCCL, no PyTorch, no vLLM.
 
 ```bash
-# 1. Does your platform route PCIe atomics to root?
-./diagnose/check-platform.sh
+./diagnose/check-platform.sh          # dmesg + AtomicOpsCap + hostcall count
 ```
 
 ```bash
-# 2. The decisive probe: a trivial kernel vs. one that needs a hostcall.
 hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-If `plain` passes and `hostcall` fails with *"the operation cannot be performed in the present state"* — **that is this bug, confirmed end to end**, with no RCCL, no PyTorch and no vLLM in the picture.
+**You are affected if a trivial kernel passes and a hostcall-needing kernel fails:**
 
 ```
---- dev0 ---
 [plain    ] launch:no error   sync:no error
 [hostcall ] launch:no error   sync:the operation cannot be performed in the present state
 ```
 
----
-
-## What is actually wrong
+<details>
+<summary><b>What is actually wrong</b> (click to expand)</summary>
 
 ```
-Platform root complex does not advertise AtomicOp routing
-        │   consumer desktop chipsets, and QEMU's emulated pcie-root-port
+Root complex does not route PCIe AtomicOps
+   (consumer chipsets, and every QEMU emulated pcie-root-port)
         ▼
-amdgpu disables PCIe atomics       →  dmesg: "PCIE atomic ops is not supported"
+amdgpu disables PCIe atomics    →  dmesg: "PCIE atomic ops is not supported"
         ▼
-ROCr cannot establish a hostcall buffer (its ring signalling needs atomics)
+ROCr cannot establish a hostcall buffer (its signalling needs atomics)
         ▼
-Any kernel carrying `hidden_hostcall_buffer` is REFUSED AT DISPATCH
+Any kernel that *declares* hidden_hostcall_buffer is refused at dispatch
         ▼
-RCCL ≥ 2.27.7-b43 device kernels carry that flag, because device-side
-`assert()` (and ENABLE_COLLTRACE's device printf) link in __assert_fail /
-__ockl_fprintf — both pure debug facilities, never hit on the happy path
+RCCL ≥ 2.27.7-b43 device kernels declare it — because of device-side assert(),
+a debug facility that never runs on the happy path
         ▼
-First cross-GPU collective dies with hipErrorIllegalState = "present state"
+The first cross-GPU collective dies with hipErrorIllegalState
 ```
 
-**The fix is therefore not a workaround — it is removing a debug facility that should never have shipped enabled.** Rebuild RCCL so its device kernels carry no hostcall, and the dispatch succeeds on exactly the same hardware.
+Confirmed at the driver level with `AMD_LOG_LEVEL=4`:
 
-Full evidence chain, including the experiments that ruled out RCCL version, kernel version, `iommu=pt`, memory, and 12 environment-variable combinations: **[docs/root-cause.md](docs/root-cause.md)**.
+```
+rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
+rocvirtual.cpp:4636  AQL dispatch failed!
+```
 
-### Why "it works on some machines" is consistent with this
+**This is not a Radeon-only problem.** The trigger is the root complex, so it
+also hits **any VFIO/QEMU passthrough guest — including virtualised Instinct.**
 
-The shipped RCCL from **ROCm 7.1.1** has `hidden_hostcall_buffer` count **0**; from 7.2+ every `Generic` kernel has it. That is why "downgrade librccl to the 7.1.1 build" is reported to fix it — the working library simply carries no hostcall requirement. The platform never changed. See [docs/root-cause.md#why-downgrading-appears-to-work](docs/root-cause.md).
+Full evidence chain, and the 13 hypotheses we eliminated:
+**[docs/root-cause.md](docs/root-cause.md)**
 
----
+</details>
 
-## The fix
+**→ Fix it: [docs/deploy-vllm.md](docs/deploy-vllm.md)** · **→ Not sure yet: [docs/diagnosis.md](docs/diagnosis.md)**
 
-> ### ⚠️ Build **RCCL 2.27.7**, not the newest source
+> ### ⚠️ Build RCCL **2.27.7**, not the newest source
 >
-> This matters more than anything else on this page. `NDEBUG` fixes 2.27.7. It is
-> **not sufficient for RCCL 2.30.4**, which we built and tested on hardware.
->
-> | RCCL source | `NDEBUG` patch result | Status |
+> | RCCL source | `NDEBUG` patch | Status |
 > |---|---|---|
-> | **2.27.7** — `ROCm/rccl`, branch `release/rocm-rel-7.1.1.1` | hostcall → **0** | ✅ **Verified working.** Use this |
-> | 2.28.3 — `ROCm/rccl`, `develop_deprecated` | untested | ❓ |
-> | **2.30.4** — `ROCm/rocm-systems`, `projects/rccl` | `__assert_fail`=0, `__ockl_*`=0, but **hostcall still 3** | ❌ **Verified failing** |
+> | **2.27.7** — `ROCm/rccl`, `release/rocm-rel-7.1.1.1` | hostcall → **0** | ✅ **Verified working** |
+> | 2.30.4 — `ROCm/rocm-systems`, `projects/rccl` | hostcall still **3** | ❌ **Verified failing** |
 >
-> On 2.30.4, `NDEBUG` does remove the device asserts — the linked image contains
-> *zero* `__ockl_*` symbols, i.e. no hostcall-calling code at all — yet its device
-> linker still **declares** `hidden_hostcall_buffer` on all three
-> `ncclDevKernel_Generic_*`, and ROCr refuses the dispatch on the declaration
-> alone. Confirmed under `AMD_LOG_LEVEL=4`. Details and the attempted metadata
-> workaround: [docs/open-questions.md §0](docs/open-questions.md).
->
-> Note also that RCCL **moved**: `ROCm/rccl` is now `develop_deprecated`, and
-> active development lives in the `ROCm/rocm-systems` monorepo under
-> `projects/rccl`. The version you want is on the old repo's release branch.
-
-Three pieces, **all required** — the second and third are non-obvious and cost days to discover independently:
-
-| # | Piece | Why |
-|---|---|---|
-| 1 | **RCCL rebuilt with `NDEBUG` reaching the device pass** | Kills device `assert()` → no `__assert_fail` → no `hidden_hostcall_buffer` |
-| 2 | **`rsmi` stub + `patchelf`** | RCCL's `librocm_smi64` dependency makes ROCm-PyTorch's `amdsmi` enumeration return **0 devices**. Removing it leaves 9 undefined symbols. A stub satisfies them; RCCL falls back to `alt_rsmi` (sysfs). |
-| 3 | **`sitecustomize.py`** | The stub's global `rsmi_*` symbols shadow the real ones inside `amdsmi`, so `amdsmi` reports `NOT_INIT` and vLLM fails platform detection. Pre-binding the real rsmi before torch loads fixes it. **Do not call `amdsmi_shut_down()`.** |
-
-```bash
-./build/build-rccl-nohostcall.sh     # rebuild (device LTO link is the slow part)
-./build/verify-nohostcall.sh <lib>   # acceptance test: hostcall count MUST be 0
-./deploy/deploy-tp2.sh               # inject into a ROCm/vLLM container
-```
-
-Step-by-step, including every "false failure" symptom: **[docs/deploy-vllm.md](docs/deploy-vllm.md)**.
+> On 2.30.4 the device linker declares the hostcall buffer even though the linked
+> image contains *zero* `__ockl_*` symbols. `NDEBUG` cannot fix that.
+> [Details](docs/open-questions.md). Note RCCL **moved**: `ROCm/rccl` is now
+> `develop_deprecated`; development continues in the `rocm-systems` monorepo.
 
 ---
 
-## Verified vs. inferred
+## What performance to expect
 
-Be precise about this — it decides whether a bug report against us is useful.
+Measured on the configuration above. Prompt is a fixed reasoning task; every run
+uses a random prefix to defeat prefix caching. Decode figures are steady-state
+over 1536-token outputs.
 
-| Environment | Status |
+### vLLM, tensor parallel
+
+| Model | Precision | Decode | Notes |
+|---|---|---|---|
+| **gemma-4-31B-it** | w4a16 QAT | **42.2 tok/s** | 🟢 the sweet spot. 264 W × 2 synchronised |
+| Qwen3-8B | BF16 | **55.4 tok/s** | 🟢 TP=1 → TP=2 is 30.8 → 55.4 = **1.80×** |
+| Qwen3.6-27B | AWQ int4 | 11.8 tok/s | 🔴 hybrid-SSM architecture, see below |
+| gemma-4-26B-A4B | int4 | ~15 tok/s | 🟡 128-expert MoE, eager only, see below |
+
+### llama.cpp, for comparison
+
+| Model | Mode | Decode |
+|---|---|---|
+| gemma-4-12B | single card, Vulkan | **64.9 tok/s** |
+| gemma-4-31B | dual card, Vulkan layer split | 27.0 tok/s |
+| Qwen3.6-27B | dual card, Vulkan layer split | 27.7 tok/s |
+| **Qwen3.6-27B** | **+ MTP speculative decoding** | **34.5 tok/s** 🟢 |
+
+### How to read this
+
+- **Dense models are the sweet spot.** vLLM TP=2 beats llama.cpp by ~55% on
+  gemma-4-31B (42.2 vs 27.0).
+- **For Qwen3.5/3.6, llama.cpp currently wins by ~3×** (34.5 vs 11.8). Those are
+  hybrid SSM / gated-delta-net models, and vLLM's ROCm path for them is a
+  NVIDIA-tuned Triton kernel that falls onto a degraded tile size on gfx1100.
+- **Small models: pin to one card.** Layer-splitting a 12B across two cards is
+  *slower* than one card (45.7 vs 64.9) — it serialises.
+- Utilisation at decode: **~51% of theoretical memory bandwidth**, ~1.2% of FP16
+  compute. Decode is bandwidth-bound; this is expected, not a defect.
+- Prefill saturates at **~37% of FP16 peak** (~77 of 206 TFLOP/s).
+
+More benchmarks are planned across models and context lengths.
+
+---
+
+## What does *not* work
+
+Stating this plainly is the point of the repository.
+
+| | Status |
 |---|---|
-| VFIO/QEMU guest · 2× RX 7900 XT (gfx1100) · ROCm 7.14 · vLLM 0.23 · torch 2.11 · **RCCL 2.27.7 + NDEBUG** | ✅ **Verified end to end.** vLLM TP=2 runs; gemma-4-31B-w4a16 at 42 tok/s, both GPUs 264 W synchronised |
-| VFIO/QEMU guest · same hardware · ROCm 7.0 (RCCL 2.26.6) | ✅ **Verified working without any fix** — old kernels carry no hostcall |
-| VFIO/QEMU guest · same hardware · ROCm 7.13 / 7.14 stock | ✅ **Verified failing** with the signature above |
-| VFIO/QEMU guest · same hardware · **RCCL 2.30.4 + NDEBUG** | ❌ **Verified failing.** Loads fine, `device_count`=2, hacks 2+3 provably unnecessary — but collectives still rejected. See the warning box above |
-| Bare metal · 2× RX 7900 XTX · consumer chipset | ⚠️ **Inferred.** Mechanism matches the public reports, but we have no such machine. **Reports welcome** — see below |
-| Virtualized Instinct (MI2xx/MI3xx) via passthrough | ⚠️ **Inferred.** Same QEMU root-port limitation should apply |
-| Bare metal with a root complex that *does* route AtomicOps | ➖ Should be unaffected; nothing to fix |
+| **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
+| **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
+| **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
+| **Hybrid SSM (Qwen3.5/3.6)** | 🔴 ~3× slower than llama.cpp. Use llama.cpp + MTP instead |
+| **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1`; a 128-expert graph took 20+ min on a slow CPU. Patch it or use `--enforce-eager` |
+| **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
+| **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
+| RCCL 2.30.4 | 🔴 See the warning above |
 
-**If you run `diagnose/hipgate3.cpp` on any machine, please open an issue with the output and your platform.** That is the single most useful contribution — it turns the inferred rows into verified ones.
+Background on the SSM and MoE findings, with source-level evidence:
+**[docs/architecture-notes.md](docs/architecture-notes.md)**
+
+---
+
+## Hardware notes
+
+**Why does a VM lack PCIe atomics?** PCIe atomic operations must be *completed*
+by the root complex and *routed* by every bridge in between. QEMU's emulated
+`pcie-root-port` does not implement AtomicOp routing at all, so the guest sees
+`AtomicOpsCap: Routing-` and amdgpu switches atomics off. Many consumer desktop
+root complexes do not advertise it either — which is why bare-metal users hit
+the same bug.
+
+**Do I need atomics for inference?** No. They are a precondition for *hostcall*,
+which is a debug facility (device `printf`/`assert`). Removing that dependency
+costs nothing at runtime — AMD's own ROCm 7.1.1 build shipped with zero hostcall.
+
+**Two identical cards?** Strongly preferred. Mixed cards are limited by the
+smaller/slower one, and layer-splitting makes the older card the thermal hotspot.
+
+**Thermals — do not skip this.** Two cards in adjacent slots: the upper one
+inhales the lower one's exhaust. We measured **junction 99–100 °C** on the upper
+card at sustained load. One 120 mm fan aimed at the gap between the cards
+dropped it to **90 °C** and *inverted* which card runs hotter — while its own
+fan spun **slower**. Cheapest fix in the entire build.
+
+**Slow host CPU?** It shows up at startup, not at decode: `torch.compile` is
+CPU-bound and vLLM pins it to one thread. Weight loading is also
+single-threaded.
+
+**RAM ceiling.** vLLM `mmap`s the whole checkpoint. A 21.67 GiB file will not
+map into a 21.43 GiB guest even with plenty free — the limit is `MemTotal`, not
+available memory. Add swap or raise the VM's RAM.
 
 ---
 
 ## Repository map
 
 ```
-diagnose/   Minimal, dependency-free probes. Start here.
-  hipgate3.cpp  ★ plain kernel vs hostcall kernel — the decisive test
-  hipgate.cpp     hipExtLaunchKernel + completion event (rules out submission itself)
-  hipgate2.cpp    dynamic shared memory 0–64KB (rules out LDS size)
-  ar.py           30-second torchrun all_reduce reproducer
-  ar_p2p.py       point-to-point send/recv — shows pipeline parallel cannot dodge it
-  sweep.sh        12 environment-variable combinations, all ineffective
-  check-platform.sh  one-shot: dmesg + AtomicOpsCap + hostcall count
-  logs/           AMD_LOG_LEVEL=4 excerpt at the moment of failure
+diagnose/     Start here. Dependency-free probes
+  hipgate3.cpp     ★ plain kernel vs hostcall kernel — decisive, ~30 lines
+  check-platform.sh  one-shot triage: dmesg + AtomicOpsCap + hostcall count
+  ar.py            30-second torchrun all_reduce reproducer
+  sweep.sh         12 env-var combinations that do NOT help
+  logs/            AMD_LOG_LEVEL=4 capture at the moment of failure
 
-build/      Rebuild RCCL without hostcall, and verify it
-deploy/     Inject into a ROCm/vLLM container (the 3 pieces above)
-docs/       root-cause · diagnosis · deploy-vllm · open-questions
+build/        Rebuild RCCL without hostcall, and verify it
+  verify-nohostcall.sh   hostcall / assert / fprintf must all be 0
+  check-symbols.sh       all 38 nccl symbols PyTorch needs
+
+deploy/       Inject into a ROCm/vLLM container (3 pieces, all required)
+docs/         root-cause · diagnosis · deploy-vllm · architecture-notes · open-questions
 ```
 
 ---
 
 ## Status and support policy
 
-This is **a documented workaround with reproducible evidence, not a supported product.**
+**A reproducible engineering record, not a supported product.**
 
-- It exists because the upstream issues have been open for months with no root cause published.
-- The correct long-term fix belongs in ROCm's RCCL build. **When upstream ships RCCL with no hostcall in device kernels, this repository becomes obsolete and will be archived.**
-- ROCm moves on a ~6-week release cadence, so version drift is expected. Each new ROCm may need a fresh rebuild.
-- Issues about *this* mechanism, and platform reports from `hipgate3`, are very welcome. General ROCm/vLLM support questions are out of scope.
+- The RCCL fix exists because upstream has been silent for months. **When ROCm
+  ships an RCCL whose device kernels declare no hostcall, that part becomes
+  obsolete** and will be marked as such.
+- ROCm releases roughly every 6 weeks; expect version drift. Binaries are tied to
+  **both** an architecture and a ROCm version.
+- Verified on **gfx1100 only**. Prebuilt binaries cover more architectures
+  because they cost nothing extra to compile — they are **not verified**.
+- Welcome: `hipgate3` output from any machine, benchmark numbers, corrections.
+  Out of scope: general ROCm/vLLM support.
 
-**[docs/open-questions.md](docs/open-questions.md)** lists what we deliberately have *not* proven — most importantly *which* upstream change flipped shipped binaries from 0 hostcall (7.1.1) to N (7.2+). If you know, that is the missing piece of the upstream report.
+[**docs/open-questions.md**](docs/open-questions.md) lists what we deliberately
+have *not* proven — including which upstream change flipped shipped binaries
+from zero hostcall to three.
 
 ---
 
 ## Credits and licence
 
-Original investigation on a Threadripper 1950X / PVE / dual RX 7900 XT home server.
-Everything here — probes, build scripts, deployment glue, documentation — is original work, released under the **MIT Licence** ([LICENSE](LICENSE)).
+Original investigation on a home Proxmox server with dual RX 7900 XT.
+Probes, build scripts, deployment glue and documentation are original work,
+released under the **MIT Licence** ([LICENSE](LICENSE)).
 
-**This repository contains no RCCL source code.** It contains a build recipe and diagnostics. If you distribute a *compiled* RCCL produced by these scripts, that binary is a derivative work of RCCL and carries its BSD-3-Clause obligations — see [NOTICE.md](NOTICE.md).
+**This repository contains no RCCL source code** — only a build recipe and
+diagnostics. A *compiled* RCCL produced by these scripts is a derivative work of
+RCCL and carries its BSD-3-Clause obligations; see [NOTICE.md](NOTICE.md).
 
-RCCL is © Advanced Micro Devices, Inc., with portions © NVIDIA CORPORATION, under BSD-3-Clause.
-This project is not affiliated with, endorsed by, or supported by AMD.
+RCCL is © Advanced Micro Devices, Inc., portions © NVIDIA CORPORATION, BSD-3-Clause.
+Not affiliated with, endorsed by, or supported by AMD.
