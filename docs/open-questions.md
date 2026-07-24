@@ -61,11 +61,59 @@ version.
   metadata block (`_patch_amdgpu_metadata`), so there is a natural place to do it.
   Untested, and metadata surgery may break kernarg offsets.
 
-**Not yet confirmed:** we infer the hostcall declaration is what ROCr rejects
-because the crash signature is identical to the documented one. Re-running the
-failing build under `AMD_LOG_LEVEL=4` and looking for
-`Pcie atomics not enabled, hostcall not supported` would make it airtight; we
-rolled production back before doing that.
+**Confirmed at the driver level.** We reinstalled the failing 2.30.4 build and
+re-ran under `AMD_LOG_LEVEL=4`. The rejection is verbatim the documented one,
+on both ranks:
+
+```
+rocvirtual.cpp:4151  ShaderName : ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<4096ul>)
+rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
+rocvirtual.cpp:4636  AQL dispatch failed!
+hip_module.cpp:605   hipModuleLaunchKernel: Returned hipErrorIllegalState
+```
+
+So this is now a hard fact rather than an inference: **a kernel that contains no
+hostcall-calling code whatsoever (zero `__ockl_*` symbols) is still refused at
+dispatch purely because its metadata declares `hidden_hostcall_buffer`.**
+
+### Metadata surgery: works on the device image, blocked at repacking
+
+We tested the obvious workaround — rewrite the implicit-argument entry after the
+fact. Exploiting the fact that `hidden_hostcall_buffer` and
+`hidden_global_offset_x` are both exactly 22 bytes, the substitution keeps every
+msgpack length and every kernarg `.offset` byte-identical.
+
+**On the unpacked device image this works perfectly:**
+
+| | before | after |
+|---|---|---|
+| `hidden_hostcall_buffer` declarations | 3 | **0** |
+| image size | 160,432,296 | **identical** |
+| metadata still parses | — | **yes, 180 fields, no errors** |
+
+**But it cannot be put back into the library.** The `.hip_fatbin` section is a
+*compressed* offload bundle (magic `CCOB`), which is why the string is not
+visible in the `.so` at all. Round-tripping it needs
+`clang-offload-bundler`, and that fails on this bundle:
+
+```
+clang-offload-bundler --type=o --input=fat.bin --list
+error: Failed to decompress input: Could not decompress embedded file contents: Src size is incorrect
+```
+
+We stopped here rather than reverse-engineering the container format. **Anyone
+wanting to finish this needs to handle the compressed-bundle round-trip** —
+either by making the bundler accept it, by rebuilding with compression disabled
+(look for an offload-compression flag) so the string stays patchable in place,
+or by patching inside RCCL's own `_patch_amdgpu_metadata`, which already rewrites
+this metadata block *before* bundling and is therefore the natural place to do
+it.
+
+**Practical takeaway:** the fix is understood and demonstrably correct at the
+image level, but there is no quick post-hoc patch for a shipped `.so`. For now,
+**2.27.7 remains the only verified working route**, and chasing 2.30.4 would
+trade three well-understood hacks for a fragile build-time metadata patch — not
+a good trade for production.
 
 ---
 
