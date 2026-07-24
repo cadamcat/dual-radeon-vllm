@@ -237,3 +237,50 @@ Verified on ROCm 7.13 and 7.14 (technology-preview stream) and against RCCL
 2.27.7 / 2.30.4. ROCm ships roughly every six weeks. We do not know when this
 will break, nor when upstream will make it unnecessary. Treat the version table
 in the README as a snapshot, not a guarantee.
+
+---
+
+## 8. Why is weight loading 20–50× slower than the disk?
+
+**Measured on the verified configuration (2026-07-24):**
+
+| | value | effective rate |
+|---|---|---|
+| Disk, raw sequential read (`dd iflag=direct`) | 1.5 GB/s | — |
+| Qwen3-8B, 15.6 GiB, **BF16, no quantisation** | 206 s | **77 MB/s** |
+| gemma-4-12B, 9.56 GiB, **w4a16** | 328 s | **29 MB/s** |
+
+A 9.56 GiB file at disk speed would take ~6.4 s. It takes 328 s.
+
+**Disproven:**
+
+- ❌ **Disk throughput** — 1.5 GB/s measured directly on the same file.
+- ❌ **The disabled auto-prefetch.** vLLM logs
+  `Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized
+  network FS (NFS/Lustre)` and suggests `--safetensors-load-strategy=prefetch`.
+  We set it, confirmed it took effect (`safetensors_load_strategy: 'prefetch'`
+  in the startup args), and the load time was **328 s vs 326 s — unchanged**.
+  That log line is a red herring for this bottleneck.
+- ❌ **Serving the weights over NFS** to satisfy the filesystem check — pointless
+  given the above, and it would add network overhead to a local disk.
+- ❌ **Swapping / memory pressure** — swap usage was 0 throughout.
+
+**One confirmed contributing factor:** quantised weights are repacked at load
+time. The log shows `Using RDNA3W4A16LinearKernel for CompressedTensorsWNA16`,
+and the effect is visible: the 12B w4a16 checkpoint is **40% smaller** than the
+8B BF16 one yet takes **60% longer** to load. This is additive, not the root
+cause — it does not explain the BF16 case at 77 MB/s.
+
+**Still unexplained:** the ~20× gap that remains even without quantisation.
+Candidates, none tested: per-tensor synchronous host→device copies with no
+pipelining; TP=2 weight-sharding overhead; Python-side safetensors
+deserialisation cost.
+
+**How to close it:** attach `py-spy dump` / `py-spy record` to a worker during
+the load phase and see where the time actually goes. That is the obvious next
+step and has not been done.
+
+**Note on RAM.** Adding host RAM is a *separate* fix for a *different* problem:
+vLLM `mmap`s the whole checkpoint, so a 21.67 GiB file cannot map into a
+21.43 GiB guest regardless of free memory (the limit is `MemTotal`). That
+ceiling is real, but raising it is not expected to fix the throughput gap above.

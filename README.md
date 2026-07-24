@@ -202,8 +202,19 @@ dropped it to **90 °C** and *inverted* which card runs hotter — while its own
 fan spun **slower**. Cheapest fix in the entire build.
 
 **Slow host CPU?** It shows up at startup, not at decode: `torch.compile` is
-CPU-bound and vLLM pins it to one thread. Weight loading is also
-single-threaded.
+CPU-bound and vLLM pins it to one thread.
+
+**Weight loading is far slower than your disk — cause not yet identified.**
+Measured here: the disk sustains **1.5 GB/s** (`dd`, direct I/O), yet vLLM loads
+a 15.6 GiB BF16 checkpoint at **77 MB/s** and a 9.56 GiB w4a16 one at
+**29 MB/s** — 20× to 50× below the hardware. Two hypotheses are already
+**disproven**: it is not the disk, and it is not the disabled auto-prefetch
+(`--safetensors-load-strategy=prefetch` changes nothing: 328 s vs 326 s, despite
+the log line advertising it). One contributing factor *is* confirmed —
+quantised weights are repacked at load time by `RDNA3W4A16LinearKernel`, which
+is why the *smaller* 4-bit model loads *slower* than the larger BF16 one — but
+that does not explain the BF16 case. Budget several minutes per start; it is a
+fixed cost and does not affect inference throughput.
 
 **RAM ceiling.** vLLM `mmap`s the whole checkpoint. A 21.67 GiB file will not
 map into a 21.43 GiB guest even with plenty free — the limit is `MemTotal`, not
