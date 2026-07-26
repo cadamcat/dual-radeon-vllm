@@ -83,15 +83,45 @@ kernels no longer carry `hidden_hostcall_buffer`. Verified: `gemma-4-31B` w4a16 
 ## The decisive experiment
 
 30 lines of HIP, no RCCL, no PyTorch, no vLLM. Two kernels, identical launch shape;
-the only difference is that the second one needs a hostcall (it calls `printf`):
+the only difference is that the second one needs a hostcall (it calls `printf`).
+Re-run today on ROCm 7.14:
 
 ```
-[plain    ] launch:no error   sync:no error
-[hostcall ] launch:no error   sync:the operation cannot be performed in the present state
+devices=2
+--- dev0 ---
+[plain    ] launch:no error               sync:no error
+[hostcall ] launch:the operation cannot be performed in the present state sync:the operation cannot be performed in the present state
+--- dev1 ---
+[plain    ] launch:no error               sync:no error
+[hostcall ] launch:the operation cannot be performed in the present state sync:the operation cannot be performed in the present state
 ```
 
-That is the whole bug. Full source: `diagnose/hipgate3.cpp` in
+That is the whole bug, on both cards, with no collective and no second process
+involved. Full source: `diagnose/hipgate3.cpp` in
 https://github.com/2462381442/dual-radeon-vllm
+
+### Why this has been hard to reproduce at AMD
+
+`darren-amd` reported being unable to reproduce on the nightly container, and the
+thread has since spent months on PCIe slot layout, kernel versions, container images
+and Resizable BAR. Those are all downstream of the one variable that decides it:
+**whether the root port routes AtomicOps**. A machine whose root complex routes them
+will never show this, whichever RCCL build it runs, and that is exactly what "cannot
+reproduce" looks like from the other side.
+
+One command separates the two worlds, and it needs no ROCm at all:
+
+```bash
+dmesg | grep "PCIE atomic"
+# affected:     amdgpu 0000:01:00.0: PCIE atomic ops is not supported
+# not affected: no output
+```
+
+(Grep for the exact phrase; a bare `grep -i atomic` also matches unrelated
+`DMA: preallocated ... pool for atomic allocations` lines from early boot.)
+
+The PCIe slot discussion in this thread is close to the answer but aimed at the wrong
+property. It is not bandwidth (x16 versus x4), it is AtomicOp routing.
 
 Driver-level confirmation with `AMD_LOG_LEVEL=4`, at the moment RCCL fails:
 
@@ -132,9 +162,21 @@ The trigger is the **root complex**, so this hits:
 Check your own machine:
 
 ```bash
-dmesg | grep -i "atomic"                 # "PCIE atomic ops is not supported" = affected
+dmesg | grep "PCIE atomic"     # any output at all = affected
 lspci -vvv -s <root port> | grep AtomicOpsCap
 ```
+
+On this machine, re-checked today:
+
+```
+[    9.044936] amdgpu 0000:01:00.0: PCIE atomic ops is not supported
+[    9.568264] amdgpu 0000:02:00.0: PCIE atomic ops is not supported
+
+0000:00:1c.0: AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+```
+
+`Routing-` on the root port is the upstream cause of the amdgpu line; every QEMU
+`pcie-root-port` reports it that way regardless of the host CPU.
 
 ## What we are asking for
 
