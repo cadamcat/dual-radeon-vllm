@@ -59,7 +59,13 @@ ninja
 
 # 4. verify device kernels carry NO hostcall + KEEP ncclCommDump
 llvm-objdump --offloading librccl.so.1.0 >/dev/null 2>&1
-DEV=$(ls librccl.so.1.0.*gfx1100 | head -1)
+ARCH="${ARCH:-gfx1100}"
+DEV=$(ls librccl.so.1.0.*${ARCH} 2>/dev/null | head -1)
+if [ -z "$DEV" ]; then
+  echo "ERROR: no device image for ${ARCH}. Nothing was verified." >&2
+  echo "       If you built for another target, re-run with ARCH=<gfx target>." >&2
+  exit 3
+fi
 echo "hidden_hostcall_buffer (want 0): $(llvm-readelf --notes "$DEV" | grep -ic hidden_hostcall_buffer)"
 echo "ncclCommDump export (want 1):   $(llvm-objdump -T librccl.so.1.0 | grep -c ncclCommDump)"
 rm -f librccl.so.1.0.*gfx1100 librccl.so.1.0.*host* 2>/dev/null || true

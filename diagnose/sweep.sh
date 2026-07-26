@@ -1,7 +1,7 @@
 #!/bin/bash
 # env-var sweep against the 30s all_reduce repro. Each row: label + extra env.
 # Baseline always: NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0 (the crashing config).
-cd /tmp
+cd "$(dirname "$0")"   # ar.py lives next to this script
 PORT=29600
 run() {
   local label="$1"; shift
