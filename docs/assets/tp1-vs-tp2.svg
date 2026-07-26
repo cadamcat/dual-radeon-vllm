@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 368" width="780" height="368" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<text x="62" y="26" font-size="16" font-weight="700" fill="#8a8a8a">Single card vs dual card (TP=1 dashed, TP=2 solid)</text>
+<text x="62" y="45" font-size="11.5" fill="#8a8a8a" opacity=".85">BF16 scales 1.70x; w4a16 only 1.19x - see 'why' in benchmarks.md</text>
+<line x1="62" y1="268.0" x2="762" y2="268.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="272.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
+<line x1="62" y1="222.2" x2="762" y2="222.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="226.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">20</text>
+<line x1="62" y1="176.4" x2="762" y2="176.4" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="180.4" font-size="10.5" fill="#8a8a8a" text-anchor="end">40</text>
+<line x1="62" y1="130.7" x2="762" y2="130.7" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="134.7" font-size="10.5" fill="#8a8a8a" text-anchor="end">60</text>
+<line x1="62" y1="84.9" x2="762" y2="84.9" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="88.9" font-size="10.5" fill="#8a8a8a" text-anchor="end">80</text>
+<line x1="79.1" y1="268" x2="79.1" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="79.1" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">500</text>
+<line x1="191.2" y1="268" x2="191.2" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="191.2" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="303.4" y1="268" x2="303.4" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="303.4" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="415.6" y1="268" x2="415.6" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="415.6" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="527.8" y1="268" x2="527.8" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="527.8" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="640.0" y1="268" x2="640.0" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="640.0" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="752.2" y1="268" x2="752.2" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="752.2" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">32K</text>
+<text x="18" y="165" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 18 165)">decode tok/s</text>
+<text x="412" y="305" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
+<polyline points="79.1,85.8 191.2,88.3 303.4,91.4 415.6,94.7 481.2,97.2 527.8,100.2 593.4,105.1 640.0,110.5 676.1,114.9 705.6,119.4 752.2,127.4" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="85.8" r="3" fill="#3f8fd4"/>
+<circle cx="191.2" cy="88.3" r="3" fill="#3f8fd4"/>
+<circle cx="303.4" cy="91.4" r="3" fill="#3f8fd4"/>
+<circle cx="415.6" cy="94.7" r="3" fill="#3f8fd4"/>
+<circle cx="481.2" cy="97.2" r="3" fill="#3f8fd4"/>
+<circle cx="527.8" cy="100.2" r="3" fill="#3f8fd4"/>
+<circle cx="593.4" cy="105.1" r="3" fill="#3f8fd4"/>
+<circle cx="640.0" cy="110.5" r="3" fill="#3f8fd4"/>
+<circle cx="676.1" cy="114.9" r="3" fill="#3f8fd4"/>
+<circle cx="705.6" cy="119.4" r="3" fill="#3f8fd4"/>
+<circle cx="752.2" cy="127.4" r="3" fill="#3f8fd4"/>
+<polyline points="79.1,161.1 191.2,161.7 303.4,163.1 415.6,165.0 481.2,167.0" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<circle cx="79.1" cy="161.1" r="3" fill="#3f8fd4"/>
+<circle cx="191.2" cy="161.7" r="3" fill="#3f8fd4"/>
+<circle cx="303.4" cy="163.1" r="3" fill="#3f8fd4"/>
+<circle cx="415.6" cy="165.0" r="3" fill="#3f8fd4"/>
+<circle cx="481.2" cy="167.0" r="3" fill="#3f8fd4"/>
+<polyline points="79.1,130.9 191.2,134.2 303.4,138.6 415.6,140.1 481.2,142.7 527.8,149.0 593.4,154.8 640.0,161.6 676.1,166.1 705.6,168.5 752.2,172.1" fill="none" stroke="#2ea36a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="130.9" r="3" fill="#2ea36a"/>
+<circle cx="191.2" cy="134.2" r="3" fill="#2ea36a"/>
+<circle cx="303.4" cy="138.6" r="3" fill="#2ea36a"/>
+<circle cx="415.6" cy="140.1" r="3" fill="#2ea36a"/>
+<circle cx="481.2" cy="142.7" r="3" fill="#2ea36a"/>
+<circle cx="527.8" cy="149.0" r="3" fill="#2ea36a"/>
+<circle cx="593.4" cy="154.8" r="3" fill="#2ea36a"/>
+<circle cx="640.0" cy="161.6" r="3" fill="#2ea36a"/>
+<circle cx="676.1" cy="166.1" r="3" fill="#2ea36a"/>
+<circle cx="705.6" cy="168.5" r="3" fill="#2ea36a"/>
+<circle cx="752.2" cy="172.1" r="3" fill="#2ea36a"/>
+<polyline points="79.1,152.8 191.2,154.4 303.4,156.5 415.6,159.9 481.2,162.6 527.8,167.7 593.4,171.9 640.0,173.6 676.1,180.1 705.6,182.3 752.2,183.8" fill="none" stroke="#2ea36a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<circle cx="79.1" cy="152.8" r="3" fill="#2ea36a"/>
+<circle cx="191.2" cy="154.4" r="3" fill="#2ea36a"/>
+<circle cx="303.4" cy="156.5" r="3" fill="#2ea36a"/>
+<circle cx="415.6" cy="159.9" r="3" fill="#2ea36a"/>
+<circle cx="481.2" cy="162.6" r="3" fill="#2ea36a"/>
+<circle cx="527.8" cy="167.7" r="3" fill="#2ea36a"/>
+<circle cx="593.4" cy="171.9" r="3" fill="#2ea36a"/>
+<circle cx="640.0" cy="173.6" r="3" fill="#2ea36a"/>
+<circle cx="676.1" cy="180.1" r="3" fill="#2ea36a"/>
+<circle cx="705.6" cy="182.3" r="3" fill="#2ea36a"/>
+<circle cx="752.2" cy="183.8" r="3" fill="#2ea36a"/>
+<line x1="62.0" y1="322" x2="84.0" y2="322" stroke="#3f8fd4" stroke-width="3"/>
+<text x="91.0" y="326" font-size="11.5" fill="#8a8a8a">Qwen3-8B · BF16 · TP2</text>
+<line x1="412.0" y1="322" x2="434.0" y2="322" stroke="#3f8fd4" stroke-width="3" stroke-dasharray="7 4"/>
+<text x="441.0" y="326" font-size="11.5" fill="#8a8a8a">Qwen3-8B · BF16 · TP1 (single card)</text>
+<line x1="62.0" y1="341" x2="84.0" y2="341" stroke="#2ea36a" stroke-width="3"/>
+<text x="91.0" y="345" font-size="11.5" fill="#8a8a8a">gemma-4-12B · w4a16 · TP2</text>
+<line x1="412.0" y1="341" x2="434.0" y2="341" stroke="#2ea36a" stroke-width="3" stroke-dasharray="7 4"/>
+<text x="441.0" y="345" font-size="11.5" fill="#8a8a8a">gemma-4-12B · w4a16 · TP1 (single card)</text>
+</svg>

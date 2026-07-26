@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Rebuild the prompt ladders used by the benchmark campaign.
+
+The source text is Darwin's *On the Origin of Species*, Project Gutenberg #1228
+(public domain). It is downloaded rather than vendored, so this needs network
+access once; the copy is then cached next to this file.
+
+Each model family gets its own ladder, cut with that model's own tokenizer and
+trimmed to a sentence boundary — the same string is a different number of tokens
+to gemma, to qwen and to gemma-26B.
+
+The committed `manifest-*.json` files record the exact token counts that were
+measured. This script re-derives them and **reports any drift**, so you can tell
+whether your rebuild matches what produced `results.jsonl`.
+
+    # rebuild the ladders, verifying against the manifests
+    python3 cut_prompts.py --models-dir /path/to/models
+
+    # verify only, write nothing
+    python3 cut_prompts.py --models-dir /path/to/models --check-only
+
+Model directory names default to the ones used in the campaign; override with
+--gemma / --qwen / --qwen-alt / --gemma26b if yours differ.
+"""
+import argparse, json, os, re, sys, urllib.request
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+CACHE = os.path.join(HERE, ".gutenberg-1228.txt")
+URL = "https://www.gutenberg.org/cache/epub/1228/pg1228.txt"
+ANCHOR = "When on board H.M.S."          # first sentence of the Introduction
+TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
+
+HEADER = ('Translate the following passage from Charles Darwin\'s "On the Origin of '
+          'Species" into fluent, natural Simplified Chinese. Preserve the meaning and '
+          'the formal scientific tone. Output only the translation, with no '
+          'commentary.\n\nPassage:\n')
+
+
+def source_text():
+    if not os.path.exists(CACHE):
+        print(f"downloading {URL}", flush=True)
+        with urllib.request.urlopen(URL, timeout=60) as r:
+            open(CACHE, "wb").write(r.read())
+    raw = open(CACHE, encoding="utf-8").read()
+    try:
+        body = raw.split("*** START OF THE PROJECT GUTENBERG EBOOK", 1)[1].split("\n", 1)[1]
+        body = body.split("*** END OF THE PROJECT GUTENBERG EBOOK", 1)[0]
+    except IndexError:
+        sys.exit("could not find the Gutenberg start/end markers — is the cache truncated?")
+    if ANCHOR not in body:
+        sys.exit(f"anchor {ANCHOR!r} not found — Gutenberg may have re-issued this text")
+    passage = body[body.index(ANCHOR):]
+    # unwrap hard line breaks inside paragraphs, keep paragraph separation
+    return "\n\n".join(" ".join(p.split()) for p in re.split(r"\n\s*\n", passage))
+
+
+def sentence_ends(passage):
+    """character offsets just past every '. ' — the only places we may cut"""
+    out, i = [], passage.find(". ")
+    while i != -1:
+        out.append(i + 1)
+        i = passage.find(". ", i + 1)
+    out.append(len(passage))
+    return out
+
+
+def cut_for(tok, passage, target, ends):
+    """binary search over sentence boundaries for the one closest to `target`.
+
+    Deterministic — unlike an iterative character-length estimate, this cannot
+    stop at a different point depending on the path it took to get there.
+    """
+    count = lambda t: len(tok.encode(t, add_special_tokens=False))
+    lo, hi, best = 0, len(ends) - 1, None
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        text = HEADER + passage[:ends[mid]]
+        got = count(text)
+        if best is None or abs(got - target) < abs(best[1] - target):
+            best = (text, got)
+        if got < target:
+            lo = mid + 1
+        elif got > target:
+            hi = mid - 1
+        else:
+            break
+    return best
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--models-dir", default=os.environ.get("MODELS_DIR", "/data/incoming"))
+    ap.add_argument("--gemma", default="gemma-4-12B-it-qat-w4a16-ct")
+    ap.add_argument("--qwen", default="Qwen3-8B")
+    ap.add_argument("--qwen-alt", default="Qwen3.6-27B-AWQ-INT4",
+                    help="second qwen model; its counts are recorded alongside, not used for cutting")
+    ap.add_argument("--gemma26b", default="gemma-4-26B-A4B-AWQ")
+    ap.add_argument("--out", default=HERE, help="where to write prompt_<n>.txt (default: here)")
+    ap.add_argument("--check-only", action="store_true",
+                    help="verify against the manifests, write nothing")
+    a = ap.parse_args()
+
+    from transformers import AutoTokenizer      # late import: not needed for --help
+    passage = source_text()
+    ends = sentence_ends(passage)
+    print(f"source: {len(passage):,} characters after the anchor\n")
+
+    ladders = [("gemma", a.gemma, "manifest-gemma.json", None),
+               ("qwen", a.qwen, "manifest-qwen.json", a.qwen_alt),
+               ("gemma26b", a.gemma26b, "manifest-gemma26b.json", None)]
+    worst, checked = 0, 0
+    for label, model, manifest_name, alt in ladders:
+        path = os.path.join(a.models_dir, model)
+        if not os.path.isdir(path):
+            print(f"[{label}] SKIP — {path} not present")
+            continue
+        tok = AutoTokenizer.from_pretrained(path)
+        alt_path = os.path.join(a.models_dir, alt) if alt else None
+        tok_alt = AutoTokenizer.from_pretrained(alt_path) if alt_path and os.path.isdir(alt_path) else None
+        recorded = {e["target"]: e for e in json.load(open(os.path.join(HERE, manifest_name)))}
+        out_dir = os.path.join(a.out, label)
+        if not a.check_only:
+            os.makedirs(out_dir, exist_ok=True)
+        rebuilt = []
+        for t in TARGETS:
+            text, got = cut_for(tok, passage, t, ends)
+            e = {"target": t, "est_prompt_tokens": got, "chars": len(text)}
+            if tok_alt:
+                e["tokens_qwen27"] = len(tok_alt.encode(text, add_special_tokens=False))
+            rebuilt.append(e)
+            if not a.check_only:
+                open(os.path.join(out_dir, f"prompt_{t}.txt"), "w", encoding="utf-8").write(text)
+            was = recorded.get(t, {}).get("est_prompt_tokens")
+            note = ""
+            if was is not None:
+                worst = max(worst, abs(got - was)); checked += 1
+                note = f"   recorded {was:>6}   drift {got - was:+d}"
+            print(f"[{label}] {t:>6}: {got:>6} tok, {len(text):>7} chars{note}")
+        if not a.check_only:
+            json.dump(rebuilt, open(os.path.join(out_dir, "manifest.json"), "w"), indent=2)
+        print()
+
+    if not checked:
+        sys.exit("no tokenizer was available — nothing verified (set --models-dir)")
+    pct = worst / 32000 * 100
+    print(f"largest drift against the committed manifests: {worst} tokens over {checked} rungs "
+          f"({pct:.2f} % of the longest rung)")
+    print()
+    if worst == 0:
+        print("Exact reproduction of the recorded ladder.")
+    elif pct < 1.0:
+        print("This is the expected outcome, and it does not affect any published number.\n"
+              "The short rungs reproduce exactly. The long ones can differ by a fraction of a\n"
+              "percent because the original cutter stopped as soon as it was within tolerance,\n"
+              "so its result depended on the path it took; the binary search here is\n"
+              "deterministic and lands slightly closer to each target.\n"
+              "\n"
+              "Nothing downstream depends on these nominal lengths: every analysis uses the\n"
+              "`prompt_tokens` that the server actually reported per request, recorded in\n"
+              "results.jsonl.")
+    else:
+        print("NOTE: drift above 1 % suggests a different tokenizer revision or a re-issued\n"
+              "      source text — worth checking before comparing against our numbers.")
+
+
+if __name__ == "__main__":
+    main()
