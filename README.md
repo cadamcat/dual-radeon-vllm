@@ -378,9 +378,13 @@ docs/
   diagnosis.md         is this your bug?
   assets/              the four charts, as standalone SVG
 
-upstream/     Three issue drafts, none submitted yet, with a duplicate check and
-              a note on how strong each claim is
 ```
+
+**Reported upstream:** the RCCL root cause is
+[ROCm/ROCm#6520](https://github.com/ROCm/ROCm/issues/6520), with a pointer on
+[#6074](https://github.com/ROCm/ROCm/issues/6074). The mmap finding and the SSM
+behaviour are written up in `docs/` but not yet filed; see
+[open-questions.md](docs/open-questions.md) for what is claimed and how strongly.
 
 **If you only open one file:** [`docs/benchmarks.md`](docs/benchmarks.md) if you came
 for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.

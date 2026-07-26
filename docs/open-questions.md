@@ -386,10 +386,11 @@ in the README as a snapshot, not a guarantee.
 >   CPU during model loading on bare-metal RDNA3, which is suggestive but is a crash
 >   report, not this.
 >
-> A report is drafted at
-> [`upstream/rocm-issue-draft.md`](../upstream/rocm-issue-draft.md) but **not yet
-> filed** — our first attempt at a root cause for this section was disproved by our
-> own reproducer, so the bar for the second one is that a stranger can run it.
+> **Not yet reported upstream.** Our first attempt at a root cause for this section
+> was disproved by our own minimal reproducer, so the bar for the second one is that
+> a stranger can run it and see the same thing. The reproducer is
+> [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py); if you can
+> account for the remaining gap between it and a real load, that is the missing piece.
 >
 > The workaround is what made the [five-model benchmark campaign](benchmarks.md)
 > practical: model swap cost fell from 5–10 minutes to 2.5–52 seconds.
@@ -446,3 +447,30 @@ step and has not been done.
 vLLM `mmap`s the whole checkpoint, so a 21.67 GiB file cannot map into a
 21.43 GiB guest regardless of free memory (the limit is `MemTotal`). That
 ceiling is real, but raising it is not expected to fix the throughput gap above.
+
+
+---
+
+## What we looked for before reporting any of this
+
+Checked 2026-07-26, so that nobody repeats the search:
+
+| candidate | verdict |
+|---|---|
+| [safetensors#183](https://github.com/huggingface/safetensors/issues/183) and [diffusers#2507](https://github.com/huggingface/diffusers/issues/2507), "loading directly to GPU is slower than to CPU then moving" | Not the same. Both are NVIDIA V100 / CUDA 11.6 from 2023, and the gap is 1.2x. Our mechanism is in `kfd_ioctl_svm`/`hmm_range_fault`, which does not exist on NVIDIA, and our gap is 4x to 4400x. The same shape of symptom, an unrelated cause. |
+| [ROCm#2433](https://github.com/ROCm/ROCm/issues/2433), an SVM change in ROCm 5.6 that slowed `hipHostRegister`, fixed by `HSA_USE_SVM=0` | Not the same, and tested: `HSA_USE_SVM=0` leaves the pathological case untouched (16 036 ms against 16 020 ms) and makes the read-only fast path *worse* (8 905 → 844 MiB/s). |
+| [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952), SVM mapping failure during sequential model loads on RDNA3 | Possibly the same subsystem. Theirs crashes, ours crawls, but both are `svm_range_*` in amdgpu during weight loading on RDNA3, and their log says "VRAM loading crawls extremely slowly". Notably bare metal. |
+
+No existing report of the writable-mapping performance cliff was found.
+
+### Two things we decided *not* to report, and why
+
+- **PyTorch, about `UntypedStorage.from_file(shared=False)` mapping writable.** That
+  is what exposes every PyTorch user to the mmap problem, but mapping a mutable
+  storage writable is a defensible contract. If ROCm answers that applications should
+  avoid the pattern, that is the moment to open a PyTorch conversation, with their
+  answer as the reason.
+- **safetensors.** Investigated and cleared: it maps read-only
+  (`map_copy_read_only`, verified in the v0.8.0 source and observable by opening the
+  same checkpoint with `framework="np"`, which yields `r--p`). The writable mapping
+  comes from the PyTorch path it delegates to.
