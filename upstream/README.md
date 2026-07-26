@@ -1,13 +1,13 @@
 # Upstream reports — drafts
 
 Three findings from this repository that belong upstream rather than only here.
-**All three are drafts; none has been submitted.** They are kept in the repo so the
+**One is filed; two remain drafts.** They are kept in the repo so the
 evidence and the wording can be reviewed in one place, and so that anyone who wants
 to file one first can see exactly what is claimed.
 
 | draft | target | status of the claim |
 |---|---|---|
-| [`rccl-hostcall-issue-draft.md`](rccl-hostcall-issue-draft.md) | comment on [ROCm/ROCm#6074](https://github.com/ROCm/ROCm/issues/6074), cross-post to [vllm#38587](https://github.com/vllm-project/vllm/issues/38587) | **Mechanism established.** 30-line reproducer, driver-level trace, working fix, 13 hypotheses eliminated |
+| [`rccl-hostcall-issue-draft.md`](rccl-hostcall-issue-draft.md) + [`rccl-6074-comment.md`](rccl-6074-comment.md) | **filed as [ROCm/ROCm#6520](https://github.com/ROCm/ROCm/issues/6520)**, with a pointer comment on [#6074](https://github.com/ROCm/ROCm/issues/6074) | **Mechanism established.** Note that AMD had already identified the atomics dependency on 21 July; what this adds is that the declaration survives `NDEBUG` on 2.30.4, so removing the `assert()` is not sufficient |
 | [`rocm-issue-draft.md`](rocm-issue-draft.md) | `ROCm/ROCm` or `ROCm/clr` | **Mechanism established, one variable untested.** Dependency-free reproducer; cannot rule out that VFIO/IOMMU is required |
 | [`vllm-ssm-issue-draft.md`](vllm-ssm-issue-draft.md) | `vllm-project/vllm` | **Behaviour characterised, cause not identified.** Framed as a report + questions, not a diagnosis |
 
@@ -41,3 +41,14 @@ No existing report of the writable-mapping performance cliff was found.
 - **A safetensors issue.** Investigated and cleared: safetensors maps read-only
   (`map_copy_read_only`), verified in the v0.8.0 source and observable with
   `framework="np"`. The writable mapping comes from the PyTorch path it delegates to.
+
+## Lesson recorded, 2026-07-26
+
+The first version of the RCCL report announced the atomics dependency as a new root
+cause. It was not: @harkgill-amd had said so in #6074 five days earlier. The
+pre-submission check that was supposed to catch this used a summarising fetch of the
+comment thread, which returned comments from April and none from July, and the
+summary was taken at face value.
+
+For any future filing: read the last comments as raw JSON, not as a summary. The same
+mistake would have been caught by `curl .../comments | python3 -m json.tool | tail`.
