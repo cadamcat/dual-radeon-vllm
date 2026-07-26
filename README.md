@@ -314,7 +314,12 @@ Bare metal fails for a different reason. Root ports on consumer boards normally
 do advertise completer support — this project's own X399 host reports
 `Routing- 32bit+ 64bit+` on all eight, and that passes, since a root port's
 `Routing` bit refers to peer-to-peer between root ports and is not part of the
-check. What breaks those machines is the chipset: a chipset downstream port that
+check. That `Routing-` is consistent with this machine having no GPU P2P at all,
+which is a separate capability from atomics to system memory; the kernel function
+says as much in a comment ("no peer-to-peer"). Confirmed on the hardware: before
+these cards were handed to `vfio-pci`, `amdgpu` bound them on the host across five
+boots and never reported atomics missing, while in the guest it reports it for
+both GPUs every time. What breaks those machines is the chipset: a chipset downstream port that
 reports `Routing-` cuts off every slot behind it, while a CPU-attached slot on
 the same board is fine. @adderek's B550 in
 [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520) has one GPU of each kind

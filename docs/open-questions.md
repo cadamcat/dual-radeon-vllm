@@ -245,11 +245,26 @@ is never read here. All eight root ports on this X399 host report
 `Routing- 32bit+ 64bit+`, and the only bridges between a card and its root port
 are the Navi switch on the card itself (`Routing+`, `EgressBlck-`).
 
-So on bare metal this host would very likely enable atomics, and a QEMU root
-port that advertised completer support might well have fixed the whole thing for
-*us*, not merely for someone on newer hardware. We have not tested either claim:
-amdgpu has never been bound on the host, and we have not patched QEMU. What
-changed is only that the reason for dismissing this avenue does not hold.
+**The host half is no longer an inference.** `amdgpu` did bind these cards on the
+host, before they were handed to `vfio-pci`, across five boots in July 2026
+(`0000:0b:00.0` on four of them, `0000:44:00.0` on the fifth). In none of those
+boots did it print `PCIE atomic ops is not supported`, which the driver emits
+exactly when `have_atomics_support` is false, and none of the short-circuit
+branches around that assignment apply to a discrete gfx1100 card. Every later
+init stage in those logs succeeded, so the check certainly ran. In the guest, the
+same driver generation prints the message for both GPUs at every boot.
+
+Same cards, same silicon, opposite answer. The Threadripper 1950X is not what
+takes atomics away here; the passthrough layer is.
+
+That makes a QEMU-side fix a real avenue for *us*, not merely for someone on
+newer hardware, and it is worth being precise about why it is plausible: the
+physical GPU is still wired to a physical root port that completes AtomicOps, so
+a guest driver that believed the capability existed would be issuing requests
+onto a path that can carry them. Whether QEMU can advertise completer support on
+an emulated root port, and whether the request survives the VFIO/IOMMU path
+unchanged, we have not tested. Patching QEMU remains out of scope for this
+repository, but the reason we gave for dismissing it was wrong.
 
 ---
 
