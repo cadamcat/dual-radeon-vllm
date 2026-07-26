@@ -7,7 +7,7 @@ This is the default path for every safetensors checkpoint loaded into PyTorch:
 safetensors' PyTorch path calls torch.UntypedStorage.from_file(shared=False), and
 PyTorch maps that file writable (visible as `rw-p` in /proc/<pid>/maps).
 
-See docs/open-questions.md section 8 and upstream/rocm-issue-draft.md.
+See docs/open-questions.md section 8 for every hypothesis tested and discarded.
 
 The test file must live on a REAL filesystem — tmpfs/overlayfs will not show it:
 

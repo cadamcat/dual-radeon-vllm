@@ -142,6 +142,7 @@ many NVIDIA GPUs and **none for any AMD GPU**. Missing config is not fatal — t
 default is correct, just suboptimal. You can generate your own:
 
 ```bash
+# from a vLLM checkout, not this repository
 python benchmarks/kernels/benchmark_moe.py --model <path> --tp-size 2 --tune
 ```
 
