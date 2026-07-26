@@ -23,3 +23,9 @@ diagnose/logs/*-full.txt
 *.swp
 .vscode/
 .idea/
+
+# cached public-domain source for the prompt cutter
+benchmarks/prompts/.gutenberg-1228.txt
+benchmarks/prompts/gemma/
+benchmarks/prompts/qwen/
+benchmarks/prompts/gemma26b/
