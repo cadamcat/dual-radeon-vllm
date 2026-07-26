@@ -131,12 +131,20 @@ Two commands. The second is decisive and needs no RCCL, no PyTorch, no vLLM.
 hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-**You are affected if a trivial kernel passes and a hostcall-needing kernel fails:**
+**You are affected if the plain kernel passes and the hostcall kernel is refused,
+or if its device marker never prints:**
 
 ```
-[plain    ] launch:no error   sync:no error
-[hostcall ] launch:no error   sync:the operation cannot be performed in the present state
+--- device 0 (gfx1100) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+  hostcall  REFUSED   launch:the operation cannot be performed in the present state | ...
 ```
+
+The probe reads `hipGetLastError()` and the device `printf` as well as the return
+codes, because on some machines launch and sync both report success while the
+dispatch was refused and the `printf` silently never arrives. It also runs per
+device: a machine can have one affected GPU behind the chipset and one healthy one
+on CPU-direct lanes.
 
 <details>
 <summary><b>What is actually wrong</b> (click to expand)</summary>
