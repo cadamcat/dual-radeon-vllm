@@ -44,6 +44,12 @@ RCCL; we build it for seven targets:
 (`hidden_hostcall_buffer` = 0) but **we own only 7900 XTs and have run nothing else**.
 If you try one, a one-line report either way is genuinely useful.
 
+The failure is **not** limited to virtual machines: @adderek independently reproduced
+it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
+board) in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520). Their machine is also
+a useful shape to know about — one GPU affected because it sits behind the chipset,
+one healthy because it is CPU-direct.
+
 > **The built library is not in this repository.** A 97 MB binary does not belong in
 > git. Two ways to get one:
 >

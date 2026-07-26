@@ -188,16 +188,32 @@ single highest-value contribution to this repository.
 
 ---
 
-## 3. Is `COLLTRACE=OFF` alone sufficient?
+## 3. Is `COLLTRACE=OFF` alone sufficient? — **ANSWERED: no**
 
-We applied `NDEBUG` globally, which removes **both** hostcall sources at once
-(device `assert()` and, indirectly, the trace path). We never tested
-`-DCOLLTRACE=OFF` on its own.
+We applied `NDEBUG` globally, which removes both hostcall sources at once (device
+`assert()` and, indirectly, the trace path), and never tested `-DCOLLTRACE=OFF` on its
+own. @adderek did, on RCCL 2.27.7 at tag `rocm-7.2.4`, and posted the counts in
+[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520):
 
-If device `assert()` alone is enough to pull in `__assert_fail`, then
-`COLLTRACE=OFF` by itself will **not** fix it — but this is untested. Worth
-knowing, because `COLLTRACE=OFF` is a supported upstream option whereas
-`add_compile_definitions(NDEBUG)` is a patch.
+| build | `__assert_fail` | `__ockl_fprintf` | `hidden_hostcall_buffer` | collectives |
+|---|---|---|---|---|
+| distro package as shipped (a Release build) | 5 | 3 | 6 | fail |
+| `-DCOLLTRACE=OFF` | 4 | 3 | **3** | fail |
+| `-DCOLLTRACE=OFF -DCMAKE_CXX_FLAGS=-DNDEBUG` | 0 | 0 | **0** | **pass** |
+
+`COLLTRACE=OFF` halves the declarations and does not remove them, because HIP's device
+`assert()` is itself a hostcall user: it routes through `__ockl_fprintf` to print
+before aborting. The asserts, not the trace path, are load-bearing.
+
+**The corollary is the part worth acting on.** That distro package is a
+`CMAKE_BUILD_TYPE=Release` build and still ships 5 `__assert_fail` and 6 declarations,
+so **Release does not imply `NDEBUG` for RCCL's device compile**. If that holds for
+other distro and vendor packages, every 2.27.7-era RCCL binary is affected out of the
+box on any machine without atomics, and adding `NDEBUG` to the device compile would
+fix that whole class at the source.
+
+(Neither we nor @adderek have tested `NDEBUG` *alone*; we used it globally, they used
+it with `COLLTRACE=OFF`. The counts above explain why the global patch works.)
 
 ---
 
