@@ -25,10 +25,10 @@ Three things, each usable on its own:
 
 ### Which GPUs this applies to
 
-The bug is triggered by the **root complex**, not by the GPU, so it hits any AMD GPU
-behind a root port that does not route PCIe AtomicOps: consumer chipsets, and **every
-QEMU/VFIO passthrough guest**, including virtualised Instinct. The fix is a rebuild of
-RCCL; we build it for seven targets:
+The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU that
+cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
+and **every QEMU/VFIO passthrough guest**, including virtualised Instinct. The fix is a
+rebuild of RCCL; we build it for seven targets:
 
 | Target | Cards | Status |
 |---|---|---|
@@ -124,7 +124,7 @@ Everything below was measured on this machine. Nothing is extrapolated.
 Two commands. The second is decisive and needs no RCCL, no PyTorch, no vLLM.
 
 ```bash
-./diagnose/check-platform.sh          # dmesg + AtomicOpsCap + hostcall count
+./diagnose/check-platform.sh          # dmesg + PCIe bridge chain + hostcall count
 ```
 
 ```bash
@@ -150,8 +150,9 @@ on CPU-direct lanes.
 <summary><b>What is actually wrong</b> (click to expand)</summary>
 
 ```
-Root complex does not route PCIe AtomicOps
-   (consumer chipsets, and every QEMU emulated pcie-root-port)
+PCIe AtomicOps cannot reach the GPU
+   (QEMU's emulated pcie-root-port completes none; consumer
+    chipset switches do not route them to slots behind them)
         ▼
 amdgpu disables PCIe atomics    →  dmesg: "PCIE atomic ops is not supported"
         ▼
@@ -172,8 +173,8 @@ rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
 rocvirtual.cpp:4636  AQL dispatch failed!
 ```
 
-**This is not a Radeon-only problem.** The trigger is the root complex, so it
-also hits **any VFIO/QEMU passthrough guest — including virtualised Instinct.**
+**This is not a Radeon-only problem.** The trigger is the PCIe path, not the card,
+so it also hits **any VFIO/QEMU passthrough guest — including virtualised Instinct.**
 
 Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
 **[docs/root-cause.md](docs/root-cause.md)**
@@ -302,12 +303,22 @@ Background on the SSM and MoE findings, with source-level evidence:
 
 ## Hardware notes
 
-**Why does a VM lack PCIe atomics?** PCIe atomic operations must be *completed*
-by the root complex and *routed* by every bridge in between. QEMU's emulated
-`pcie-root-port` does not implement AtomicOp routing at all, so the guest sees
-`AtomicOpsCap: Routing-` and amdgpu switches atomics off. Many consumer desktop
-root complexes do not advertise it either — which is why bare-metal users hit
-the same bug.
+**Why does a VM lack PCIe atomics?** A PCIe atomic operation must be *completed*
+by the root complex and *routed* by every switch in between, and `amdgpu` checks
+exactly that through `pci_enable_atomic_ops_to_root()`: 32- and 64-bit completer
+support on the root port, AtomicOp routing on each switch port below it. QEMU's
+emulated `pcie-root-port` advertises no completer support at all
+(`32bit- 64bit-`), so the guest loses atomics no matter what the host can do.
+
+Bare metal fails for a different reason. Root ports on consumer boards normally
+do advertise completer support — this project's own X399 host reports
+`Routing- 32bit+ 64bit+` on all eight, and that passes, since a root port's
+`Routing` bit refers to peer-to-peer between root ports and is not part of the
+check. What breaks those machines is the chipset: a chipset downstream port that
+reports `Routing-` cuts off every slot behind it, while a CPU-attached slot on
+the same board is fine. @adderek's B550 in
+[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520) has one GPU of each kind
+and only the chipset-attached one is affected.
 
 **Do I need atomics for inference?** No. They are a precondition for *hostcall*,
 which is a debug facility (device `printf`/`assert`). Removing that dependency
@@ -348,7 +359,7 @@ available memory. Add swap or raise the VM's RAM.
 ```
 diagnose/     Start here. Dependency-free probes
   hipgate3.cpp     ★ plain kernel vs hostcall kernel — decisive, ~30 lines
-  check-platform.sh  one-shot triage: dmesg + AtomicOpsCap + hostcall count
+  check-platform.sh  one-shot triage: dmesg + bridge chain + hostcall count
   ar.py            30-second torchrun all_reduce reproducer
   sweep.sh         12 env-var combinations that do NOT help
   logs/            AMD_LOG_LEVEL=4 capture at the moment of failure

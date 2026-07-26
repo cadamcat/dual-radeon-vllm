@@ -220,21 +220,36 @@ it with `COLLTRACE=OFF`. The counts above explain why the global patch works.)
 ## 4. Does virtualized Instinct hit this?
 
 The mechanism depends on the *root port*, not the GPU. A QEMU `pcie-root-port`
-advertises `AtomicOpsCap: Routing-` regardless of what is behind it, so
-passthrough Instinct should be affected too. We have no Instinct hardware to
-confirm. If true, this materially raises the severity of the upstream issue,
+advertises no AtomicOp completer support (`32bit- 64bit-`) regardless of what is
+behind it, so passthrough Instinct should be affected too. We have no Instinct
+hardware to confirm. If true, this materially raises the severity of the upstream issue,
 since it would mean RCCL collectives are broken in virtualized datacentre
 deployments and not merely on consumer desktops.
 
 ---
 
-## 5. Can the guest be given PCIe atomics instead?
+## 5. Can the guest be given PCIe atomics instead? — **one reason we ruled it out was wrong**
 
-We concluded no, without exhausting it: QEMU 11.0.2's `pcie-root-port` device
-model does not implement AtomicOp completion/routing, and there is no PVE-level
-switch. Patching QEMU was out of scope. Additionally our host's own Zen 1 root
-port reports `Routing-`, so even a fixed QEMU would not have helped *us* — but it
-might help someone on a newer host platform. Untested.
+QEMU 11.0.2's `pcie-root-port` advertises no AtomicOp completer support
+(`32bit- 64bit-`) and there is no PVE-level switch, so the guest cannot have
+atomics as things stand. Patching QEMU was out of scope and remains so.
+
+The second half of the original answer was a mistake we should record. It read:
+*"our host's own Zen 1 root port reports `Routing-`, so even a fixed QEMU would
+not have helped us."* That conflates two different capability bits.
+`pci_enable_atomic_ops_to_root()` in `drivers/pci/pci.c` checks the **completer**
+bits at the root port (`COMP32|COMP64`, which is what amdgpu asks for) and the
+**routing** bit only on switch ports strictly between the device and that root
+port; a root port's own routing bit concerns peer-to-peer between root ports and
+is never read here. All eight root ports on this X399 host report
+`Routing- 32bit+ 64bit+`, and the only bridges between a card and its root port
+are the Navi switch on the card itself (`Routing+`, `EgressBlck-`).
+
+So on bare metal this host would very likely enable atomics, and a QEMU root
+port that advertised completer support might well have fixed the whole thing for
+*us*, not merely for someone on newer hardware. We have not tested either claim:
+amdgpu has never been bound on the host, and we have not patched QEMU. What
+changed is only that the reason for dismissing this avenue does not hold.
 
 ---
 
