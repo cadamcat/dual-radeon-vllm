@@ -240,7 +240,153 @@ in the README as a snapshot, not a guarantee.
 
 ---
 
-## 8. Why is weight loading 20–50× slower than the disk?
+## 8. Why is weight loading 20–50× slower than the disk? — **effect characterised and worked around; mechanism NOT established**
+
+> **Read this section as: we have a reliable reproduction, a measured shape, and a
+> working fix — but we cannot yet say why it happens, and an earlier version of this
+> section claimed a root cause that we have since disproved ourselves.**
+>
+> ### What is solid
+>
+> **The workaround.** Materialising each tensor into anonymous memory before the
+> host→device copy — one `.clone()` per tensor, transient cost of one tensor —
+> removes essentially all of the loss:
+>
+> | | before | after |
+> |---|---|---|
+> | Qwen3-8B, 15.26 GiB BF16 | 206 s | **18.7 s** (11×) |
+> | gemma-4-12B, 9.56 GiB w4a16 | 328 s | **10.5 s** (31×) |
+> | gemma-4-31B, 21.67 GiB w4a16 | 569 s | **25.1 s** (23×) |
+>
+> **The shape of the cost.** Timing each tensor of one real checkpoint shard
+> (Qwen3-8B, 81 tensors, `safe_open` → `.to("cuda")`):
+>
+> | tensor size | time per copy | effective rate |
+> |---|---:|---:|
+> | < 4 MiB (28 tensors) | **0.3 ms** | fine |
+> | 8 MiB | **1005 ms** | 8 MiB/s |
+> | 96 MiB | **1042 ms** | 92 MiB/s |
+> | 1187 MiB | **1522 ms** | 780 MiB/s |
+>
+> So this is **not a bandwidth problem**: it is a roughly **fixed ~1 s penalty per
+> copy above a threshold somewhere between 4 and 8 MiB**. 22 large tensors × ~1 s
+> accounts for the whole 17.7 s shard. It also explains two things that looked odd:
+> a 128-expert MoE checkpoint with 35 743 *tiny* tensors is barely affected, and the
+> 12B is slower than the 8B because of **how many tensors clear the threshold**, not
+> because of quantisation repack (repack is nearly free — the 12B now loads in 10.5 s
+> *including* it).
+>
+> **Where the time goes.** `perf` on a loading worker: **98.7 % in
+> `kfd_ioctl_svm → svm_range_validate_and_map → hmm_range_fault`**; `strace`: **54
+> ioctls in a 12-second window, ~189 ms each**. Reproduces on **both ROCm 7.0 and
+> 7.14**, so it is long-standing behaviour rather than a regression.
+>
+> ### What we got wrong
+>
+> This section previously stated the cause as *"the source is a file-backed mmap page,
+> and ROCm does not take the pinned-staging path for those."* **That is disproved.**
+> A dependency-free reproducer — plain `mmap` of a warm file, `.to("cuda")` — runs at
+> full speed, and every variable we could think of fails to trigger it:
+>
+> | hypothesis | result |
+> |---|---|
+> | file-backed mmap vs anonymous memory | both ~13 GiB/s ❌ |
+> | pages not yet faulted into the process | 7–12 GiB/s ❌ |
+> | a fresh source range per copy (no reuse) | 11.6 GiB/s ❌ |
+> | overlayfs vs ext4 backing | both fast ❌ |
+> | a new device allocation per copy vs one reused buffer | **both slow** — not this either ❌ |
+> | size sweep 1–256 MiB on a plain ext4 mapping | no threshold, 12 GiB/s throughout ❌ |
+> | page-unaligned range start (safetensors starts at +1144) | no effect ❌ |
+> | bf16 view vs uint8 | no effect ❌ |
+>
+> ### One factor that *is* confirmed: the mapping is writable
+>
+> `/proc/self/maps` while safetensors holds a checkpoint open, next to our own
+> mapping of the same file:
+>
+> ```
+> 75d757200000-75d845520000 rw-p ... model-00001-of-00005.safetensors   <- safetensors
+> 75d468a00000-75d556d20000 r--p ... model-00001-of-00005.safetensors   <- ours
+> ```
+>
+> **safetensors maps a read-only checkpoint `rw-p`** (MAP_PRIVATE, writable).
+> Isolating that one variable — same file, same bytes, plain `mmap` +
+> `torch.frombuffer`, no safetensors and no vLLM — is a **dependency-free
+> reproducer**:
+>
+> | mapping | 64 MiB copy | rate |
+> |---|---:|---:|
+> | `MAP_PRIVATE \| PROT_READ` | 6.5 ms | **9 874 MiB/s** |
+> | `MAP_PRIVATE \| PROT_READ\|PROT_WRITE` | 28.8 ms | **2 223 MiB/s** |
+>
+> A **4.3× penalty**, stable from 4 MiB to 512 MiB, independent of alignment and
+> dtype — and that turned out to be only the mild half of it.
+>
+> ### The second variable: whether the pages are already resident
+>
+> Adding one more dimension — does the CPU touch the mapping before the copy? —
+> produces a third regime, and this is the one real loads fall into:
+>
+> | source mapping | pages resident first | 32 MiB copy | rate |
+> |---|---|---:|---:|
+> | `r--p` | yes | 3.7 ms | **8 573 MiB/s** |
+> | `rw-p` | no | 14.4 ms | 2 229 MiB/s |
+> | **`rw-p`** | **yes** | **16 021 ms** | **2.0 MiB/s** |
+>
+> Roughly **4 400×**. Reproduced back to back (16 020.5 / 16 020.1 ms) and at 256 MiB
+> (128 s, also 2.0 MiB/s), so the cost tracks the number of resident pages rather
+> than being a fixed penalty. Reproducer:
+> [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py).
+>
+> This is what the real load sits in — 211 MiB/s is between the two writable
+> regimes, which is what you would expect when only part of the mapping has been
+> faulted in by the time each tensor is copied. It also matches the per-tensor shape
+> above: ~1 s for anything past the threshold, near-free below it.
+>
+> Breaking copy-on-write page by page when the range is mapped for DMA is the
+> obvious reading — but that is our inference, not a verified explanation.
+>
+> ### Where the writable mapping comes from — not safetensors
+>
+> safetensors maps read-only (`map_copy_read_only`, confirmed in the v0.8.0 source
+> and observable with `framework="np"`, which yields `r--p`). Its **PyTorch** path
+> does not use that mapping at all; it calls
+> `torch.UntypedStorage.from_file(filename, shared=False, nbytes=size)`, and PyTorch
+> maps the file **writable** because a torch storage must be mutable. So every tensor
+> any framework loads from a safetensors checkpoint on the PyTorch path is backed by
+> `rw-p`.
+>
+> ### Still open
+>
+> - **`HSA_USE_SVM=0` is not the lever.** Suggested by
+>   [ROCm#2433](https://github.com/ROCm/ROCm/issues/2433); measured here it leaves the
+>   pathological case unchanged (16 036 vs 16 020 ms) and makes the read-only fast
+>   path *worse* (8 905 → 844 MiB/s).
+> - **A 17× asymmetry between the two TP ranks** in a single load (~190 ms vs ~11 ms
+>   per ioctl), which we could not reproduce with concurrent processes, memory
+>   pressure, or torchrun + RCCL.
+> - **Whether a passthrough guest is required.** We have no bare-metal machine.
+>   [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) reports `svm_range_*` hogging
+>   CPU during model loading on bare-metal RDNA3, which is suggestive but is a crash
+>   report, not this.
+>
+> A report is drafted at
+> [`upstream/rocm-issue-draft.md`](../upstream/rocm-issue-draft.md) but **not yet
+> filed** — our first attempt at a root cause for this section was disproved by our
+> own reproducer, so the bar for the second one is that a stranger can run it.
+>
+> The workaround is what made the [five-model benchmark campaign](benchmarks.md)
+> practical: model swap cost fell from 5–10 minutes to 2.5–52 seconds.
+> The original investigation notes are kept below for the record.
+
+### Historical record — superseded, kept for the trail
+
+*Everything below this line is the original 2026-07-24 investigation, before the
+per-tensor shape and the writable-mapping finding above. It contradicts the
+current conclusions in places (it still calls the 20× gap unexplained, lists
+candidates that have since been tested, and proposes a `py-spy` step that was
+since done with `perf`). It is kept because the record of getting it wrong is
+part of what this section is for — not because it is current.*
 
 **Measured on the verified configuration (2026-07-24):**
 

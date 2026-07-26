@@ -71,7 +71,7 @@ the next person from re-running them.
 |---|---|---|
 | Guest RAM too small | ❌ | Raised 16 G → 22 G, identical signature; no OOM in dmesg, headroom at crash |
 | NUMA asymmetry | ❌ | Two public bare-metal reports are single-NUMA desktops (7800X3D, 13900K) and reproduce |
-| VFIO/virtualization itself | ❌ **not necessary** | ROCm#6074 reproduces on bare metal |
+| VFIO/virtualization itself | ❌ *inferred, not tested by us* | two public bare-metal reports show the same signature and the same fix; we never saw their `AMD_LOG_LEVEL=4` output — see [open-questions.md §2](open-questions.md) |
 | vLLM version | ❌ | 0.19.1 and 0.23 fail, 0.11.2 passes — it is only the caller |
 | RCCL version regression (b38 ↔ b81) | ❌ *as the primary cause* | Our own **b38 built from source** still failed — because our build did not get `NDEBUG` to the device pass either. The variable is hostcall, not version |
 | Guest kernel too old (6.8) | ❌ | Upgraded to HWE 7.0.0-28, identical signature |
@@ -152,7 +152,7 @@ hostcall:
 - vLLM `--tensor-parallel-size 2` initialises, profiles, **captures 86 CUDA
   graphs through the exact code path that used to crash** (`enqueue.cc:2061`),
   allocates KV cache, serves.
-- gemma-4-31B (w4a16) at **42 tok/s** decode, both GPUs at 264 W *synchronised* —
+- gemma-4-31B (w4a16) at **43.2 tok/s** decode, both GPUs at 265 W *synchronised* —
   i.e. genuine tensor parallelism, not one card waiting on the other.
 - Achieved on a deliberately hostile topology: cross-die, PCIe 3.0, no P2P,
   `NCCL_P2P_DISABLE=1`, inside a VM, with no PCIe atomics at all.

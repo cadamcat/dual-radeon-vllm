@@ -1,20 +1,59 @@
-<!-- Cover image goes here once finalised:
-     ![dual-radeon-vllm](docs/assets/cover.jpg) -->
-
 # dual-radeon-vllm
 
-**Running vLLM with tensor parallelism on two consumer Radeon cards — verified end to end, including the RCCL bug that stops most people before they start.**
+**Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL bug that stops most people before they start.**
 
-`gemma-4-31B` (w4a16) at **42 tok/s** decode on 2× RX 7900 XT, both GPUs at 264 W *synchronised*, inside a VFIO virtual machine with **no P2P, no PCIe atomics, cross-die PCIe 3.0** — deliberately the least favourable topology.
+`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT, and a 26B MoE at **108 tok/s**, with both GPUs at 265 W *synchronised*. The machine is a VFIO virtual machine with **no P2P, no PCIe atomics and cross-die PCIe 3.0**: deliberately the least favourable topology.
 
 <table>
 <tr>
-<td><b>42 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
-<td><b>1.80×</b><br><sub>TP=2 speed-up, 90% efficiency</sub></td>
-<td><b>51%</b><br><sub>memory-bandwidth utilisation at decode</sub></td>
-<td><b>264 W × 2</b><br><sub>synchronised = real tensor parallel</sub></td>
+<td><b>43 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
+<td><b>108 tok/s</b><br><sub>gemma-4-26B-A4B MoE, TP=2</sub></td>
+<td><b>1.70×</b><br><sub>TP=2 speed-up on BF16, 85% efficiency</sub></td>
+<td><b>265 W × 2</b><br><sub>synchronised = real tensor parallel</sub></td>
 </tr>
 </table>
+
+### What is in here
+
+Three things, each usable on its own:
+
+| | |
+|---|---|
+| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer, a rebuild recipe and a deployment script. [Start here](#am-i-hit-by-the-rccl-bug) |
+| 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
+| 🔬 **An open problem** | Host→device copies run **~4400× slower** from a writable file mapping whose pages are resident, which is how every PyTorch process loads a safetensors checkpoint. Reproducer included; cause not established. [open-questions.md §8](docs/open-questions.md) |
+
+### Which GPUs this applies to
+
+The bug is triggered by the **root complex**, not by the GPU, so it hits any AMD GPU
+behind a root port that does not route PCIe AtomicOps: consumer chipsets, and **every
+QEMU/VFIO passthrough guest**, including virtualised Instinct. The fix is a rebuild of
+RCCL; we build it for seven targets:
+
+| Target | Cards | Status |
+|---|---|---|
+| **gfx1100** | RX 7900 XTX / XT | ✅ **verified end to end**: every number in this repository |
+| gfx1030 | RX 6800 / 6800 XT / 6900 XT | ⚪ builds clean, hostcall = 0, never run |
+| gfx1101 | RX 7800 XT / 7700 XT | ⚪ same |
+| gfx1102 | RX 7600 / 7600 XT | ⚪ same |
+| gfx1200 | RX 9060 | ⚪ same |
+| gfx1201 | RX 9070 / 9070 XT | ⚪ same |
+| gfx908 | MI100 | ⚪ same |
+
+⚪ means the device image passes the static check that matters
+(`hidden_hostcall_buffer` = 0) but **we own only 7900 XTs and have run nothing else**.
+If you try one, a one-line report either way is genuinely useful.
+
+> **The built library is not in this repository.** A 97 MB binary does not belong in
+> git. Two ways to get one:
+>
+> - **[Releases](../../releases)** — `librccl-nohostcall-2.27.7-gfx1100.so` (19 MB,
+>   what every number here was measured on) or the 97 MB multi-arch build, both with
+>   SHA256 sums.
+> - **Build it yourself** with [`build/build-rccl-nohostcall.sh`](build/build-rccl-nohostcall.sh):
+>   about 85 minutes for one target on a slow host, and
+>   [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) checks the result
+>   independently of who compiled it.
 
 ---
 
@@ -28,7 +67,32 @@ You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actual
 - 🟡 **It runs, but you do not know what to expect** → [What performance to expect](#what-performance-to-expect)
 - 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
 
-**Not a vLLM fork.** Nothing here patches vLLM. The fix lives in RCCL — one library, one rebuild — so there is no upstream to keep rebasing against.
+**Not a vLLM fork.** Nothing here patches vLLM. The fix lives in RCCL: one library, one rebuild, so there is no upstream to keep rebasing against.
+
+<details>
+<summary><b>Did you get here from a search engine?</b> These are the exact messages this repository explains</summary>
+
+```
+RuntimeError: NCCL error: unhandled cuda error
+HIP failure 'the operation cannot be performed in the present state' at .../rccl/src/enqueue.cc:2061
+hipModuleLaunchKernel: Returned hipErrorIllegalState
+NCCL WARN cuMem support requires VMM RDMA support
+rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
+rocvirtual.cpp:4636  AQL dispatch failed!
+amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
+```
+
+If any of those look familiar, and you are running **two or more AMD GPUs** under
+**vLLM, PyTorch DDP/FSDP, or anything else that calls RCCL**, on a consumer chipset
+or inside a **VFIO/QEMU passthrough VM**, then this repository has the root cause, a
+30-line reproducer and a working fix.
+
+It applies to **RX 7900 XTX / XT / GRE, RX 7800 XT, RX 7600, RX 6800 / 6900 XT,
+RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe root
+complex rather than the GPU. Verified end to end on gfx1100; the table above says
+what is and is not tested for the rest.
+
+</details>
 
 ---
 
@@ -97,7 +161,7 @@ rocvirtual.cpp:4636  AQL dispatch failed!
 **This is not a Radeon-only problem.** The trigger is the root complex, so it
 also hits **any VFIO/QEMU passthrough guest — including virtualised Instinct.**
 
-Full evidence chain, and the 13 hypotheses we eliminated:
+Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
 **[docs/root-cause.md](docs/root-cause.md)**
 
 </details>
@@ -120,18 +184,22 @@ Full evidence chain, and the 13 hypotheses we eliminated:
 
 ## What performance to expect
 
-Measured on the configuration above. Prompt is a fixed reasoning task; every run
-uses a random prefix to defeat prefix caching. Decode figures are steady-state
-over 1536-token outputs.
+Five models × eleven context lengths, 292 measurements, zero errors. Full
+write-up in **[docs/benchmarks.md](docs/benchmarks.md)**; raw data and the runner
+in [`benchmarks/`](benchmarks/). Every run uses a random prefix to defeat prefix
+caching; decode is measured first-token-to-last, so TTFT is excluded.
 
-### vLLM, tensor parallel
+![decode throughput vs context length](docs/assets/decode-vs-context.svg)
 
-| Model | Precision | Decode | Notes |
-|---|---|---|---|
-| **gemma-4-31B-it** | w4a16 QAT | **42.2 tok/s** | 🟢 the sweet spot. 264 W × 2 synchronised |
-| Qwen3-8B | BF16 | **55.4 tok/s** | 🟢 TP=1 → TP=2 is 30.8 → 55.4 = **1.80×** |
-| Qwen3.6-27B | AWQ int4 | 11.8 tok/s | 🔴 hybrid-SSM architecture, see below |
-| gemma-4-26B-A4B | int4 | ~15 tok/s | 🟡 128-expert MoE, eager only, see below |
+### vLLM, tensor parallel — decode tok/s
+
+| Model | Precision | 500 tok | 8 K | 32 K | |
+|---|---|---:|---:|---:|---|
+| **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.8** | 92.6 | **72.8** | 🟢 fastest of the five — *needs one 26-min compile, then cached* |
+| Qwen3-8B | BF16 dense | 79.6 | 73.3 | 61.4 | 🟢 TP=1 → TP=2 is **1.70×** |
+| gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.9 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
+| **gemma-4-31B-it** | w4a16 QAT dense | 43.2 | 36.9 | 29.5 | 🟢 the workhorse. 265 W × 2 synchronised |
+| Qwen3.6-27B | AWQ int4, **hybrid SSM** | 12.1 | 8.5 | **4.2** | 🔴 degrades *linearly* with context |
 
 ### llama.cpp, for comparison
 
@@ -142,20 +210,59 @@ over 1536-token outputs.
 | Qwen3.6-27B | dual card, Vulkan layer split | 27.7 tok/s |
 | **Qwen3.6-27B** | **+ MTP speculative decoding** | **34.5 tok/s** 🟢 |
 
+### Two charts worth the scroll
+
+**What the second GPU actually buys.** Dashed is one card, solid is two. The blue pair
+(BF16) separates; the green pair (4-bit) barely does. Same machine, same interconnect,
+same RCCL, and a threefold difference in what the second card is worth:
+
+![single card vs dual card](docs/assets/tp1-vs-tp2.svg)
+
+**Why one architecture is unusable at long context.** Cost per generated token against
+context length. Four models sit flat along the bottom; the hybrid-SSM climbs a straight
+line: O(1) was promised, O(S) was measured.
+
+![cost of one context token at decode time](docs/assets/decode-ms-per-token.svg)
+
+The fourth chart, prefill against context with the peak position for each model,
+is in [docs/benchmarks.md](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits),
+along with the derivation of where that peak sits (`S* = √(a/c)`, fitted to every
+measured point).
+
+### Want the raw numbers?
+
+```bash
+cd benchmarks/analyze
+python3 summarize.py       # every configuration, exactly as measured
+python3 decode_slope.py    # cost of one context token, per model
+python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
+```
+
+No GPU, no dependencies beyond the standard library. They read
+[`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records, one per request,
+each with its prompt length, TTFT, decode rate, per-card power and VRAM. Every number
+in this README and in `docs/benchmarks.md` comes out of those three scripts.
+
 ### How to read this
 
-- **Dense models are the sweet spot.** vLLM TP=2 beats llama.cpp by ~55% on
-  gemma-4-31B (42.2 vs 27.0).
-- **For Qwen3.5/3.6, llama.cpp currently wins by ~3×** (34.5 vs 11.8). Those are
-  hybrid SSM / gated-delta-net models, and vLLM's ROCm path for them is a
-  NVIDIA-tuned Triton kernel that falls onto a degraded tile size on gfx1100.
-- **Small models: pin to one card.** Layer-splitting a 12B across two cards is
-  *slower* than one card (45.7 vs 64.9) — it serialises.
-- Utilisation at decode: **~51% of theoretical memory bandwidth**, ~1.2% of FP16
-  compute. Decode is bandwidth-bound; this is expected, not a defect.
-- Prefill saturates at **~37% of FP16 peak** (~77 of 206 TFLOP/s).
-
-More benchmarks are planned across models and context lengths.
+- **Architecture beats parameter count.** The fastest model here is the 26B MoE;
+  the slowest is a 27B, beaten 3.6× by a *larger* 31B dense.
+- **Never benchmark with `--enforce-eager`.** It costs **3.8–7.2×** on this stack and
+  invents artefacts (asymmetric power, context-independence). Two wrong conclusions
+  in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
+  which was really 107.8.
+- **What the second card buys depends on the model.** BF16 scales 1.70×; w4a16 only
+  1.19×, because the quantised model was never bandwidth-bound in the first place.
+  For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
+  151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
+- **Below ~1 K prompt tokens, one card prefills faster than two** (3460 vs 2270 tok/s
+  at 512): TP adds a ~76 ms per-request communication floor, 72 all-reduces at
+  ~1.05 ms each over host shared memory.
+- **Long context: avoid hybrid-SSM.** The 27B costs 4.84 µs of decode time per token
+  of context, **41× the dense 8B**; dense and MoE lose only 23–32 % out to 32 K.
+- **For Qwen3.5/3.6, llama.cpp still wins by ~3×** (34.5 vs 12.1).
+- Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
+  (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
 
 ---
 
@@ -237,8 +344,32 @@ build/        Rebuild RCCL without hostcall, and verify it
   check-symbols.sh       all 38 nccl symbols PyTorch needs
 
 deploy/       Inject into a ROCm/vLLM container (3 pieces, all required)
-docs/         root-cause · diagnosis · deploy-vllm · architecture-notes · open-questions
+
+benchmarks/   The measurement data and everything that produced it
+  results.jsonl        ★ 292 measurements, one record per request; the source of
+                         every number in this repository
+  analyze/             turn that into the tables and charts; no GPU needed
+  bench_runner.py      the campaign runner: serial, checkpointed, VRAM-safe
+  prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
+                       them against the counts that were actually measured
+  repro-mmap-prot.py   the ~4400× host→device reproducer (PyTorch only)
+
+docs/
+  benchmarks.md        ★ the five-model study, with all four charts
+  root-cause.md        the RCCL bug: evidence chain and 13 tested hypotheses
+  open-questions.md    what we have NOT proven — including one root cause we
+                       published, disproved ourselves, and rewrote
+  architecture-notes.md  why MoE, dense and hybrid-SSM behave so differently here
+  deploy-vllm.md       step-by-step deployment
+  diagnosis.md         is this your bug?
+  assets/              the four charts, as standalone SVG
+
+upstream/     Three issue drafts, none submitted yet, with a duplicate check and
+              a note on how strong each claim is
 ```
+
+**If you only open one file:** [`docs/benchmarks.md`](docs/benchmarks.md) if you came
+for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
 
 ---
 
