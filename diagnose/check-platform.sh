@@ -3,8 +3,14 @@
 #
 # Answers three questions without compiling anything:
 #   1. Does the kernel say PCIe atomics are unavailable to the GPUs?
-#   2. Do the upstream root ports advertise AtomicOp routing?
+#   2. Can AtomicOps reach each GPU, and if not, which port stops them?
 #   3. Does the RCCL you are about to use require a hostcall?
+#
+# Question 2 walks the whole bridge chain rather than one hop, because *where*
+# it breaks decides whether reslotting the card can help. Thanks to @adderek in
+# ROCm/ROCm#6520 for the case that shows why: 00:01.2 Routing+ above 03:00.0
+# Routing- means every chipset-fed slot is equally dead, and only CPU-direct
+# lanes are worth trying.
 #
 # Exit code: 0 = you are probably NOT affected, 1 = you probably ARE affected,
 #            2 = inconclusive (missing tools / could not locate a library).
@@ -38,7 +44,21 @@ else
 fi
 hr
 
-say "== 2. PCIe view: do the GPUs' upstream ports route AtomicOps? =="
+say "== 2. PCIe view: can AtomicOps reach each GPU? =="
+# This mirrors pci_enable_atomic_ops_to_root() in drivers/pci/pci.c, which is
+# what amdgpu calls with COMP32|COMP64 to set have_atomics_support. Two
+# different bits are involved and they are easy to confuse:
+#
+#   root port          must advertise 32-bit and 64-bit AtomicOp COMPLETER
+#                      support. Its own Routing bit is about peer-to-peer
+#                      between root ports and is NOT consulted here.
+#   switch ports       every upstream/downstream port between the GPU and the
+#   in between         root port must advertise AtomicOp ROUTING, and upstream
+#                      ports must not have egress blocking enabled.
+#
+# Checking Routing on the root port, as an earlier version of this script did,
+# reports healthy machines as broken: consumer root complexes commonly show
+# "Routing- 32bit+ 64bit+", which passes.
 if command -v lspci >/dev/null 2>&1; then
   gpus=$(lspci -D 2>/dev/null | grep -iE 'VGA|Display|3D controller' | grep -i 'AMD/ATI' | awk '{print $1}')
   if [ -z "$gpus" ]; then
@@ -46,24 +66,78 @@ if command -v lspci >/dev/null 2>&1; then
   else
     for g in $gpus; do
       say "   GPU $g"
-      # walk one hop up the sysfs device tree to the upstream port
-      up=$(basename "$(dirname "$(readlink -f "/sys/bus/pci/devices/$g" 2>/dev/null)")" 2>/dev/null)
-      if [ -n "${up:-}" ] && [ -e "/sys/bus/pci/devices/$up" ]; then
-        cap=$(lspci -vvs "$up" 2>/dev/null | grep -i "AtomicOpsCap" || true)
-        ctl=$(lspci -vvs "$up" 2>/dev/null | grep -i "AtomicOpsCtl" || true)
-        say "     upstream port $up"
-        [ -n "$cap" ] && say "       ${cap#"${cap%%[![:space:]]*}"}" || say "       (AtomicOpsCap not reported — try running as root)"
-        [ -n "$ctl" ] && say "       ${ctl#"${ctl%%[![:space:]]*}"}"
-        case "$cap" in
-          *Routing-*) say "     >> Routing- : this port does NOT route AtomicOps." ;;
-          *Routing+*) say "     >> Routing+ : this port routes AtomicOps." ;;
+      # walk the sysfs device tree up to the host bridge, collecting every PCI
+      # bridge on the way. prepending puts the chain in CPU-first order.
+      chain=""
+      p=$(readlink -f "/sys/bus/pci/devices/$g" 2>/dev/null)
+      while [ -n "${p:-}" ] && [ "$p" != "/" ]; do
+        p=$(dirname "$p")
+        b=$(basename "$p")
+        case "$b" in
+          *:*:*.*) [ -e "/sys/bus/pci/devices/$b" ] || break; chain="$b $chain" ;;
+          *) break ;;
         esac
+      done
+      if [ -z "$chain" ]; then
+        say "     (could not resolve the bridge chain)"
+        continue
+      fi
+      root_fail=""; switch_break=""; unknown=0
+      for b in $chain; do
+        # lspci honours only the LAST -s, so query one device per invocation
+        info=$(lspci -vvs "$b" 2>/dev/null)
+        typ=$(printf '%s\n' "$info" | grep -oE 'Express \(v[0-9]\) [A-Za-z]+ Port' | head -1)
+        typ=${typ##*) }
+        cap=$(printf '%s\n' "$info" | grep -i "AtomicOpsCap" | head -1)
+        cap=${cap#"${cap%%[![:space:]]*}"}
+        ctl=$(printf '%s\n' "$info" | grep -i "AtomicOpsCtl" | head -1)
+        if [ -z "$cap" ]; then
+          unknown=$((unknown + 1))
+          say "     $b  $(printf %-17s "${typ:-bridge}")AtomicOpsCap not reported (needs root)"
+          continue
+        fi
+        case "$typ" in
+          "Root Port")
+            # amdgpu asks for COMP32|COMP64; the Routing bit here is irrelevant
+            case "$cap" in
+              *32bit+*64bit+*) say "     $b  $(printf %-17s "root port")$cap" ;;
+              *) root_fail="$b"; say "     $b  $(printf %-17s "root port")$cap   <- no 32/64-bit AtomicOp completer" ;;
+            esac ;;
+          "Upstream Port"|"Downstream Port")
+            case "$cap" in
+              *Routing+*)
+                say "     $b  $(printf %-17s "$(echo "$typ" | tr "[:upper:]" "[:lower:]")")$cap"
+                case "$ctl" in *EgressBlck+*) [ -z "$switch_break" ] && switch_break="$b"
+                  say "         ^ egress blocking is ENABLED here, which stops AtomicOps" ;; esac ;;
+              *) [ -z "$switch_break" ] && switch_break="$b"
+                 say "     $b  $(printf %-17s "$(echo "$typ" | tr "[:upper:]" "[:lower:]")")$cap   <- does not route AtomicOps" ;;
+            esac ;;
+          *)
+            say "     $b  $(printf %-17s "${typ:-bridge}")$cap" ;;
+        esac
+      done
+      if [ -n "$root_fail" ]; then
+        say "     >> AtomicOps cannot reach this GPU: root port $root_fail does not"
+        say "        advertise 32/64-bit AtomicOp completer support, so nothing below"
+        say "        it can use them. No slot on this host changes that."
+        [ "$verdict_atomics" = "unknown" ] && verdict_atomics="absent"
+      elif [ -n "$switch_break" ]; then
+        say "     >> AtomicOps cannot reach this GPU: switch port $switch_break blocks"
+        say "        them. The root port is fine, so every slot below $switch_break is"
+        say "        equally affected while lanes that bypass it (usually CPU-direct)"
+        say "        are not. Moving the card to a CPU-attached slot should work."
+        [ "$verdict_atomics" = "unknown" ] && verdict_atomics="absent"
+      elif [ "$unknown" -gt 0 ]; then
+        say "     >> inconclusive: $unknown bridge(s) did not report AtomicOpsCap."
+        say "        rerun as root for the full lspci output."
       else
-        say "     (could not resolve upstream port)"
+        say "     >> the path can carry AtomicOps: root port completes them and every"
+        say "        switch in between routes them."
       fi
     done
-    say "   note: on a QEMU guest the upstream port is an emulated pcie-root-port,"
-    say "   which does not implement AtomicOp routing at all."
+    say "   note: a QEMU guest sees one emulated pcie-root-port, which advertises no"
+    say "   AtomicOp completer support at all (32bit- 64bit-). That is the whole"
+    say "   reason passthrough guests are affected, whatever the host can do."
   fi
 else
   say "   lspci not available (install pciutils)."

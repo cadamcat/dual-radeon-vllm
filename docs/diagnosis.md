@@ -29,10 +29,30 @@ If any answer disagrees, stop — you are probably chasing a different problem.
 It reports three things and prints a verdict:
 
 1. whether `amdgpu` logged `PCIE atomic ops is not supported`
-2. whether the GPUs' upstream ports advertise `AtomicOpsCap: Routing+/-`
+2. whether AtomicOps can reach each GPU, and which port stops them if not
 3. whether the RCCL you are using contains `hidden_hostcall_buffer`
 
 **"No atomics" + "RCCL needs hostcall" = affected.**
+
+Step 2 mirrors `pci_enable_atomic_ops_to_root()` in `drivers/pci/pci.c`, the
+function amdgpu calls to decide `have_atomics_support`. Two different bits are
+involved, and reading the wrong one on the wrong port gives a wrong answer:
+
+| port | bit that matters | why |
+|---|---|---|
+| the root port above the GPU | `32bit+ 64bit+`, AtomicOp **completer** support | the root complex is what completes the operation |
+| every switch port in between | `Routing+`, and `EgressBlck-` on upstream ports | each hop has to forward the request |
+
+A root port's own `Routing` bit is about peer-to-peer between root ports and is
+never consulted. Consumer root complexes commonly report `Routing- 32bit+ 64bit+`,
+which passes; an earlier version of this script called that a failure.
+
+Where the break sits decides whether reslotting can help. A switch port that
+refuses to route kills every slot below it while CPU-attached lanes still work —
+that is @adderek's B550 in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520),
+`00:01.2 Routing+` above `03:00.0 Routing-`, with one affected GPU and one
+healthy one in the same machine. A root port without completer support, which is
+what a QEMU guest sees, cannot be worked around by moving anything.
 
 Exit codes: `0` not affected · `1` affected · `2` inconclusive.
 
