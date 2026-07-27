@@ -384,7 +384,8 @@ in the README as a snapshot, not a guarantee.
 > than being a fixed penalty. Reproducer:
 > [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py).
 >
-> This is what the real load sits in — 211 MiB/s is between the two writable
+> This is what the real load sits in. The three models above work out to 76, 30 and
+> 39 MiB/s (15.26 GiB / 206 s, 9.56 / 328, 21.67 / 569), between the two writable
 > regimes, which is what you would expect when only part of the mapping has been
 > faulted in by the time each tensor is copied. It also matches the per-tensor shape
 > above: ~1 s for anything past the threshold, near-free below it.
