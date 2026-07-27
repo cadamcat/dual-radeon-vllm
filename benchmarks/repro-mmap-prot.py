@@ -3,6 +3,10 @@
 runs at ~2 MiB/s on ROCm — about 4400x slower than the same bytes copied from a
 read-only mapping of the same file.
 
+THE HOST KERNEL DECIDES THIS. Measured 2026-07-27 on one guest, same ROCm 7.14
+userspace and same container: 16 020 ms on 7.0.0-28-generic, 22-26 ms on
+6.8.0-136-generic. If you cannot reproduce it, check `uname -r` first.
+
 This is the default path for every safetensors checkpoint loaded into PyTorch:
 safetensors' PyTorch path calls torch.UntypedStorage.from_file(shared=False), and
 PyTorch maps that file writable (visible as `rw-p` in /proc/<pid>/maps).

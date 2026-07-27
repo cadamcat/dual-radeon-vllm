@@ -304,6 +304,26 @@ in the README as a snapshot, not a guarantee.
 > | gemma-4-12B, 9.56 GiB w4a16 | 328 s | **10.5 s** (31×) |
 > | gemma-4-31B, 21.67 GiB w4a16 | 569 s | **25.1 s** (23×) |
 >
+> **vLLM already ships something that helps, and it is worse than the clone.**
+> `--safetensors-load-strategy eager` reads each shard with `f.read()` into
+> anonymous memory instead of mapping it, so it sidesteps the bad path too.
+> Measured on 2026-07-27 with one script that iterates the checkpoint and copies
+> every tensor to the device, on kernel `7.0.0-28`:
+>
+> | model | baseline | `eager` | clone |
+> |---|---:|---:|---:|
+> | Qwen3-8B, 5 shards | 87.0 s / 4.95 GiB RSS | 18.0 s / **12.01 GiB** | **5.9 s** / 4.98 GiB |
+> | gemma-4-12B, 1 shard | 146.0 s / 10.31 GiB | 10.3 s / **20.31 GiB** | **4.4 s** / 10.83 GiB |
+> | gemma-4-31B, 1 shard | 338.3 s / 21.61 GiB | *not runnable* | **11.6 s** / 21.71 GiB |
+>
+> `eager`'s peak RSS is about twice the shard: the `bytes` buffer plus the tensors
+> deserialised out of it. On a single-shard checkpoint that is twice the model, so
+> the 31B does not fit in this machine's 20.3 GiB of available RAM at all, while
+> the clone adds 0.1 GiB. Cloning is also 2.3–2.6× faster than `eager` where
+> `eager` runs, because `f.read()` finishes the whole shard before the first copy
+> starts. These are loader-path numbers from an isolated script, not end-to-end
+> `Loading weights took` figures; the table above is the end-to-end one.
+>
 > **The shape of the cost.** Timing each tensor of one real checkpoint shard
 > (Qwen3-8B, 81 tensors, `safe_open` → `.to("cuda")`):
 >
@@ -325,7 +345,8 @@ in the README as a snapshot, not a guarantee.
 > **Where the time goes.** `perf` on a loading worker: **98.7 % in
 > `kfd_ioctl_svm → svm_range_validate_and_map → hmm_range_fault`**; `strace`: **54
 > ioctls in a 12-second window, ~189 ms each**. Reproduces on **both ROCm 7.0 and
-> 7.14**, so it is long-standing behaviour rather than a regression.
+> 7.14** — but that varies the userspace only. It **is** a regression, in the host
+> kernel; see the 2026-07-27 section below.
 >
 > ### What we got wrong
 >
@@ -392,6 +413,31 @@ in the README as a snapshot, not a guarantee.
 >
 > Breaking copy-on-write page by page when the range is mapped for DMA is the
 > obvious reading — but that is our inference, not a verified explanation.
+>
+> ### It is a kernel regression — 2026-07-27, and it overturns the paragraph below
+>
+> Booted this guest on the kernel it ran until 2026-07-20 and the pathological case
+> is gone:
+>
+> | host kernel | `rw-p`, resident, 32 MiB |
+> |---|---|
+> | `7.0.0-28-generic` | 16 019.3 / 16 019.6 / 16 019.9 / 16 020.1 ms — 2.0 MiB/s |
+> | `6.8.0-136-generic` | 22.1 / 23.3 / 26.0 ms — ~1 400 MiB/s |
+>
+> Same ROCm 7.14 userspace, same container, same reproducer; only the host kernel
+> differs. Roughly **700×**, and the loading path moves with it: iterating a
+> 15.26 GiB checkpoint and copying every tensor to the device takes **87.0 s on
+> 7.0.0-28 against 14.6 s on 6.8.0-136**.
+>
+> Two things this does not do. It does not localise the change — 6.8.0-136 to
+> 7.0.0-28 is far too wide a jump — though @loreggia in
+> [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) reports the slowness
+> appearing at `7.0.0-28` and absent at `7.0.0-14`, and
+> [ROCm#6508](https://github.com/ROCm/ROCm/issues/6508) reports a KFD work queue
+> deadlock specific to `7.0.0-28`. And it does not clear the writable mapping: on
+> 6.8 an anonymous copy of the same tensor still loads ~3× faster than the mapping
+> (4.7 s against 14.6 s). The mapping penalty is on both kernels; what 7.0.0-28
+> adds is the collapse from 3× to 700×.
 >
 > ### Where the writable mapping comes from — not safetensors
 >
