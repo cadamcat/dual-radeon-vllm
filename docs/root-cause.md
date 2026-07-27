@@ -79,7 +79,7 @@ the next person from re-running them.
 | Event flags / `ReleaseToSystem` | ❌ | Read the source: both generations use an ordinary `DisableTiming` event |
 | HIP runtime ≥7.13 gating kernel submission | ❌ **explicitly disproven** | `diagnose/hipgate.cpp` issues the exact `hipExtLaunchKernel` + completion-event form, 4 KB kernarg, cross-stream wait, fine-grained host memory — **all pass** on 7.14 |
 | Dynamic shared-memory size | ❌ | `diagnose/hipgate2.cpp`, 0 → 64 KB, all pass (over-limit returns a correctly *different* error) |
-| Transport / env tuning | ❌ | `diagnose/sweep.sh`: 12 combinations of `NCCL_P2P_DISABLE`, `HSA_ENABLE_SDMA`, `NCCL_SHM_DISABLE`, `NCCL_CUMEM_ENABLE`, `HSA_FORCE_FINE_GRAIN_PCIE`, `GPU_MAX_HW_QUEUES`, `AMD_SERIALIZE_KERNEL` — signature unchanged in all |
+| Transport / env tuning | ❌ | `diagnose/sweep.sh`: 11 combinations of `NCCL_P2P_DISABLE`, `HSA_ENABLE_SDMA`, `NCCL_SHM_DISABLE`, `NCCL_CUMEM_ENABLE`, `HSA_FORCE_FINE_GRAIN_PCIE`, `GPU_MAX_HW_QUEUES`, `AMD_SERIALIZE_KERNEL` — signature unchanged in all |
 | Pipeline parallel instead of tensor parallel | ❌ **cannot dodge it** | `diagnose/ar_p2p.py`: `ncclSend/Recv` kernels need hostcall too, same crash |
 | **No PCIe atomics → hostcall unavailable** | ✅ **root cause** | The whole of §1, and decisively `hipgate3.cpp` |
 

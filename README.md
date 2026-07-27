@@ -94,9 +94,15 @@ or inside a **VFIO/QEMU passthrough VM**, then this repository has the root caus
 30-line reproducer and a working fix.
 
 It applies to **RX 7900 XTX / XT / GRE, RX 7800 XT, RX 7600, RX 6800 / 6900 XT,
-RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe root
-complex rather than the GPU. Verified end to end on gfx1100; the table above says
-what is and is not tested for the rest.
+RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe path to
+the card rather than the card itself. Verified end to end on gfx1100; the table above
+says what is and is not tested for the rest.
+
+One line in that list is the odd one out. `cuMem support requires VMM RDMA support`
+is RCCL declining its own cuMem path because VMM RDMA is unavailable — benign, and
+not the cause of anything here. It is listed because it appears in the same logs and
+because people search for it. `NCCL_CUMEM_ENABLE=1` changes nothing on this machine;
+it is one of the 11 combinations in `diagnose/sweep.sh`.
 
 </details>
 
@@ -366,7 +372,7 @@ diagnose/     Start here. Dependency-free probes
   hipgate3.cpp     ★ plain kernel vs hostcall kernel — decisive, ~30 lines
   check-platform.sh  one-shot triage: dmesg + bridge chain + hostcall count
   ar.py            30-second torchrun all_reduce reproducer
-  sweep.sh         12 env-var combinations that do NOT help
+  sweep.sh         11 env-var combinations that do NOT help
   logs/            AMD_LOG_LEVEL=4 capture at the moment of failure
 
 build/        Rebuild RCCL without hostcall, and verify it
