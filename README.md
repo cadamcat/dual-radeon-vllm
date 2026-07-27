@@ -21,7 +21,7 @@ Three things, each usable on its own:
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer, a rebuild recipe and a deployment script. [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
-| 🔬 **An open problem** | Host→device copies run **~4400× slower** from a writable file mapping whose pages are resident, which is how every PyTorch process loads a safetensors checkpoint. Reproducer included; cause not established. [open-questions.md §8](docs/open-questions.md) |
+| 🔬 **An open problem, now half-answered** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident, which is how every PyTorch process loads a safetensors checkpoint. Traced to the host kernel: `7.0.0-28-generic` is ~700× slower than `6.8.0-136-generic` on the same machine. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), workaround proposed as [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
 
@@ -347,17 +347,30 @@ fan spun **slower**. Cheapest fix in the entire build.
 **Slow host CPU?** It shows up at startup, not at decode: `torch.compile` is
 CPU-bound and vLLM pins it to one thread.
 
-**Weight loading is far slower than your disk — cause not yet identified.**
-Measured here: the disk sustains **1.5 GB/s** (`dd`, direct I/O), yet vLLM loads
-a 15.6 GiB BF16 checkpoint at **77 MB/s** and a 9.56 GiB w4a16 one at
-**29 MB/s** — 20× to 50× below the hardware. Two hypotheses are already
-**disproven**: it is not the disk, and it is not the disabled auto-prefetch
-(`--safetensors-load-strategy=prefetch` changes nothing: 328 s vs 326 s, despite
-the log line advertising it). One contributing factor *is* confirmed —
-quantised weights are repacked at load time by `RDNA3W4A16LinearKernel`, which
-is why the *smaller* 4-bit model loads *slower* than the larger BF16 one — but
-that does not explain the BF16 case. Budget several minutes per start; it is a
-fixed cost and does not affect inference throughput.
+**Weight loading is far slower than your disk, and your host kernel decides how
+much.** The disk sustains **1.5 GB/s** (`dd`, direct I/O), yet vLLM loads a
+15.26 GiB BF16 checkpoint at 76 MiB/s — 19× to 48× below the hardware across
+three models. The source is the mapping: `safetensors` on its PyTorch path calls
+`torch.UntypedStorage.from_file(shared=False)`, PyTorch maps that **writable**,
+and on ROCm a host→device copy out of such a mapping is slow. How slow depends on
+the kernel — 2.0 MiB/s on `7.0.0-28-generic` against ~1 400 MiB/s on
+`6.8.0-136-generic`, same machine and same ROCm. Filed upstream as
+[ROCm#6523](https://github.com/ROCm/ROCm/issues/6523).
+
+**Two workarounds, and one is much better.**
+`--safetensors-load-strategy eager` avoids the mapping, but its peak RSS is about
+twice the shard, which puts a 21.67 GiB single-shard checkpoint out of reach on a
+23 GiB machine. Cloning each tensor into anonymous memory costs one tensor and is
+also faster: **86.7 s → 4.4 s** for the 15.26 GiB checkpoint, **319.5 s → 12.6 s**
+for the 21.67 GiB one. That is proposed upstream as an opt-in flag in
+[vllm-project/vllm#49991](https://github.com/vllm-project/vllm/pull/49991).
+
+Two hypotheses are **disproven**: it is not the disk, and not the disabled
+auto-prefetch (`--safetensors-load-strategy=prefetch` changes nothing: 328 s vs
+326 s, despite the log line advertising it). Quantisation repack is not it
+either — the 12B loads in 10.5 s *including* repack once the mapping is
+sidestepped. What decides the cost is how many tensors clear a threshold
+somewhere between 4 and 8 MiB.
 
 **RAM ceiling.** vLLM `mmap`s the whole checkpoint. A 21.67 GiB file will not
 map into a 21.43 GiB guest even with plenty free — the limit is `MemTotal`, not
@@ -388,7 +401,7 @@ benchmarks/   The measurement data and everything that produced it
   bench_runner.py      the campaign runner: serial, checkpointed, VRAM-safe
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
-  repro-mmap-prot.py   the ~4400× host→device reproducer (PyTorch only)
+  repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive
 
 docs/
   benchmarks.md        ★ the five-model study, with all four charts
