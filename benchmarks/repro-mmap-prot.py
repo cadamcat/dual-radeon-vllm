@@ -9,7 +9,8 @@ PyTorch maps that file writable (visible as `rw-p` in /proc/<pid>/maps).
 
 See docs/open-questions.md section 8 for every hypothesis tested and discarded.
 
-The test file must live on a REAL filesystem — tmpfs/overlayfs will not show it:
+The backing filesystem is not a factor: ext4, a container's overlayfs and tmpfs all
+show the same ~2 MiB/s in the pathological case (measured 2026-07-27):
 
     REPRO_FILE=/data/repro.bin python3 repro-mmap-prot.py
 """
