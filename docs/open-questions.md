@@ -452,30 +452,44 @@ in the README as a snapshot, not a guarantee.
 > fix taken in ROCm/rocm-systems#6676 does not help this copy path, so
 > `ROC_FORCE_STAGED_D2H` is not the remedy to wait for.
 >
-> ### It is a kernel regression — 2026-07-27, and it overturns the paragraph below
+> ### It is a kernel regression inside Ubuntu's 7.0.0 series — 2026-07-27
 >
-> Booted this guest on the kernel it ran until 2026-07-20 and the pathological case
-> is gone:
+> Four configurations, one reproducer, and only one of them is slow:
 >
-> | host kernel | `rw-p`, resident, 32 MiB |
-> |---|---|
-> | `7.0.0-28-generic` | 16 019.3 / 16 019.6 / 16 019.9 / 16 020.1 ms — 2.0 MiB/s |
-> | `6.8.0-136-generic` | 22.1 / 23.3 / 26.0 ms — ~1 400 MiB/s |
+> | environment | kernel | `rw-p`, resident, 32 MiB |
+> |---|---|---|
+> | VFIO guest | **`7.0.0-28-generic`** | **16 019.3 / 16 019.6 / 16 019.9 / 16 020.1 ms** |
+> | VFIO guest | `7.0.0-14-generic` | 18.6 / 18.9 / 20.2 ms |
+> | VFIO guest | `6.8.0-136-generic` | 22.1 / 23.3 / 26.0 ms |
+> | bare metal | `7.0.14-4-pve` | 24.1 / 24.3 / 25.1 / 28.6 ms |
 >
-> Same ROCm 7.14 userspace, same container, same reproducer; only the host kernel
-> differs. Roughly **700×**, and the loading path moves with it: iterating a
-> 15.26 GiB checkpoint and copying every tensor to the device takes **87.0 s on
-> 7.0.0-28 against 14.6 s on 6.8.0-136**.
+> The load path follows: **86.7 s on `-28` against 14.4 s on `-14`** for the same
+> 15.26 GiB checkpoint, and 14.6 s on `6.8.0-136`.
 >
-> Two things this does not do. It does not localise the change — 6.8.0-136 to
-> 7.0.0-28 is far too wide a jump — though @loreggia in
-> [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) reports the slowness
-> appearing at `7.0.0-28` and absent at `7.0.0-14`, and
-> [ROCm#6508](https://github.com/ROCm/ROCm/issues/6508) reports a KFD work queue
-> deadlock specific to `7.0.0-28`. And it does not clear the writable mapping: on
-> 6.8 an anonymous copy of the same tensor still loads ~3× faster than the mapping
-> (4.7 s against 14.6 s). The mapping penalty is on both kernels; what 7.0.0-28
-> adds is the collapse from 3× to 700×.
+> **The first two rows are the ones that matter.** Same guest, same ROCm 7.14
+> userspace, same container image, same reproducer, only the kernel ABI swapped —
+> so **passthrough is not the ingredient**, which was the leading suspicion both
+> here and at AMD. It also reproduces @loreggia's boundary in
+> [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) from a different distro on
+> a different card, and [ROCm#6508](https://github.com/ROCm/ROCm/issues/6508)
+> reports a KFD work queue deadlock specific to the same `-28`.
+>
+> **This is the kernel Ubuntu ships today.** `linux-image-generic-hwe-24.04`
+> resolves to `7.0.0-28.28~24.04.1` out of `noble-updates` and `noble-security`,
+> so it is not a version anyone has moved past — it is what a 24.04 machine gets
+> by letting updates run, on the distro ROCm supports first.
+>
+> It does not localise the change further than ABI `-14` to `-28`, and the archive
+> carries no generic kernel between them. The bare-metal row is a Proxmox `7.0.14`
+> build, so it is not evidence that a newer *Ubuntu* kernel is clear; we have no
+> data on one.
+>
+> The writable mapping is not cleared either. Across the three fast kernels a
+> read-only copy of the same bytes took 3.0 to 5.6 ms against 18.6 to 28.6 ms
+> writable and resident, so **4× to 8×**, not the flat 3–4× quoted earlier in this
+> section — the read-only side got faster on the newer kernels while the writable
+> side did not. That penalty is everywhere; what `-28` adds is the collapse to
+> ~850×.
 >
 > ### Where the writable mapping comes from — not safetensors
 >
