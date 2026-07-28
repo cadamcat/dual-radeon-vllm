@@ -514,6 +514,18 @@ in the README as a snapshot, not a guarantee.
 > gets `-EBUSY`, and never enters the futile retry. The VMA-permission bug is the
 > trigger; `c08972f55594` turned each trigger into a full second.
 >
+> **Why the pair got split.** `342981fff328` carries neither a `Fixes:` tag nor
+> `Cc: stable@vger.kernel.org`, so it was never queued for the stable trees, while
+> `c08972f55594` did reach `-28`. A fix that is not tagged does not follow the
+> commit it repairs. That makes this not an Ubuntu packaging slip but an upstream
+> tagging gap, and any series tracking 7.0.y that took the first commit is in the
+> same state. `Documentation/process/stable-kernel-rules.rst` lets anyone request
+> an already-mainlined commit by mail to `stable@vger.kernel.org`.
+>
+> For the record, `342981fff328` is Honglei Huang's patch, reviewed by Christian
+> König, committed by Alex Deucher; `c08972f55594` is Christian König's, signed
+> off by Alex Deucher.
+>
 > **Not proven by revert.** The evidence is the two commits' presence and absence,
 > the `-14`/`-28` boundary, the exact multiples, and `perf` at 98.7% in that path.
 > Building `-28` with `342981fff328` applied is the test that settles it.
