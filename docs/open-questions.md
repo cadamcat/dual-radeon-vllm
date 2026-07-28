@@ -286,19 +286,20 @@ in the README as a snapshot, not a guarantee.
 
 ---
 
-## 8. Why is weight loading 19–48× slower than the disk? — **two effects, one confirmed and one identified but not proven**
+## 8. Why is weight loading 19–48× slower than the disk? — **two effects, both now established**
 
 > **Read this section as: there are two things here.** A 4× to 8× penalty whose
 > mechanism AMD confirmed down to the kernel line, and on top of it a collapse to
 > whole seconds per copy on guest kernel `7.0.0-28-generic` that is a separate
-> regression. The second one is now traced to a backport that took `c08972f55594`
-> without its follow-up `342981fff328`, which is why every timing lands on an exact
-> multiple of the 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT`. **That tracing is
-> circumstantial and has not been proven by revert** — "The commit" below sets out
-> exactly what is and is not established. An earlier version of this section claimed
-> a root cause that we disproved ourselves, and a later one called the whole thing
-> long-standing rather than a regression, which the kernel comparison overturned.
-> Both are kept below.
+> regression. The second one is a backport that took `c08972f55594` without its
+> follow-up `342981fff328`, which is why every timing lands on an exact multiple of
+> the 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT`. **That is now proven by revert**: the
+> same kernel rebuilt with `342981fff328` applied does the copy in 17.0 ms instead
+> of 16 019.7, with the reproducer's other cases unmoved — see "Proven by revert"
+> below, which also states what the test does not settle. An earlier version of this
+> section claimed a root cause that we disproved ourselves, and a later one called
+> the whole thing long-standing rather than a regression, which the kernel
+> comparison overturned. Both are kept below.
 >
 > ### What is solid
 >
@@ -530,16 +531,41 @@ in the README as a snapshot, not a guarantee.
 > König, committed by Alex Deucher; `c08972f55594` is Christian König's, signed
 > off by Alex Deucher.
 >
-> **Not proven by revert.** The evidence is the two commits' presence and absence,
-> the `-14`/`-28` boundary, the exact multiples, and `perf` at 98.7% in that path.
-> Building `-28` with `342981fff328` applied is the test that settles it.
+> ### Proven by revert — 2026-07-28
+>
+> `amdgpu.ko` built from the `linux-hwe-7.0` 7.0.0-28.28~24.04.1 source with
+> `342981fff328` as the only change, then swapped into the running `-28` kernel.
+> Same machine, same ROCm 7.14 userspace, same reproducer, same file, same
+> gcc 13.3.0 Canonical built `-28` with; `.config` taken verbatim from
+> `/boot/config-7.0.0-28-generic`, with only the Rust options dropped because the
+> box has no `rustc`, and no embedded `.BTF` because there is no locally built
+> `vmlinux`. Neither touches this code path.
+>
+> | amdgpu | `rw-p` resident, 32 MiB |
+> |---|---|
+> | stock `-28` | 16 019.7 / 16 019.6 / 16 019.1 / 16 019.7 / 16 019.0 ms |
+> | `-28` + `342981fff328` | **17.0 / 17.0 / 17.0 ms** |
+>
+> The reproducer's other three cases do not move: `r--p` resident stays at
+> 3.0-3.1 ms and `rw-p` not-resident at 14.5-14.6 ms, before and after. Only the
+> case that entered the futile retry changes, which is what a single-commit revert
+> of that retry should do and nothing more.
+>
+> The residual is what the arithmetic predicted. 16 019.7 ms is sixteen 1000 ms
+> windows plus 19.7 ms of real work, and 17.0 ms lands in the same band
+> `7.0.0-14-generic` produces natively, 18.6 to 20.2 ms.
+>
+> **One thing this does not settle.** Building a module from Ubuntu's source is not
+> the same as Canonical shipping one, and the machine is still a VFIO guest, so it
+> remains untested whether a bare-metal Ubuntu `-28` behaves identically.
 >
 > The writable mapping is not cleared either. Across the three fast kernels a
 > read-only copy of the same bytes took 3.0 to 5.6 ms against 18.6 to 28.6 ms
 > writable and resident, so **4× to 8×**, not the flat 3–4× quoted earlier in this
 > section — the read-only side got faster on the newer kernels while the writable
-> side did not. That penalty is everywhere; what `-28` adds is the collapse to
-> ~850×.
+> side did not. The patched module measures 17.0 against 3.0 ms, i.e. 5.6×, right
+> inside that band. That penalty is everywhere, and `342981fff328` does not address
+> it; what `-28` added on top was the stack of one-second timeouts.
 >
 > ### Where the writable mapping comes from — not safetensors
 >

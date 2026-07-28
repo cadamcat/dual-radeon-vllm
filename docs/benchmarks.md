@@ -274,6 +274,7 @@ like this impractical has a working workaround. Part of it is explained now: AMD
 named the kernel line, and copy-on-write is broken on every resident page because
 the permission comes from the VMA rather than from what the copy actually does.
 The other part, the collapse to whole seconds per copy on guest kernel
-`7.0.0-28-generic`, is traced to a backport that took `c08972f55594` without its
-follow-up `342981fff328` — identified, but not yet proven by revert. Both are in
+`7.0.0-28-generic`, is a backport that took `c08972f55594` without its follow-up
+`342981fff328`, and rebuilding that kernel with the follow-up applied takes the
+copy from 16 019.7 ms to 17.0. Both are in
 [open-questions.md §8](open-questions.md).*
