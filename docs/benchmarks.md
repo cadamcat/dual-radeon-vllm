@@ -269,7 +269,9 @@ second card, and it is invisible in a tokens-per-second table.
 ---
 
 *Campaign executed 2026-07-25, 03:09–06:44. All services restored afterwards; VRAM
-returned to baseline. The 20–50× slow weight loading that used to make a campaign
-like this impractical has a working workaround — its underlying cause is still
-unidentified, and we say so plainly in
-[open-questions.md §8](open-questions.md#8-why-is-weight-loading-2050-slower-than-the-disk--effect-characterised-and-worked-around-mechanism-not-established).*
+returned to baseline. The 19–48× slow weight loading that used to make a campaign
+like this impractical has a working workaround. Part of it is explained now: AMD
+named the kernel line, and copy-on-write is broken on every resident page because
+the permission comes from the VMA rather than from what the copy actually does.
+The other part, a ~700× collapse on one host kernel, is still open. Both are in
+[open-questions.md §8](open-questions.md).*
