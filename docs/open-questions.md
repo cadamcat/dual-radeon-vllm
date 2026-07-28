@@ -593,7 +593,9 @@ in the README as a snapshot, not a guarantee.
 >   `-28`, and we have no such machine.
 >
 > **Reported upstream as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523)**, where
-> AMD confirmed the copy-on-write trigger and named `kfd_svm.c`. Our first attempt at a
+> AMD confirmed the copy-on-write trigger and named `kfd_svm.c`, and to Ubuntu as
+> [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)
+> against `linux-hwe-7.0`, asking for the backport. Our first attempt at a
 > root cause for this section was disproved by our own minimal reproducer, so the bar
 > for the second one was that a stranger can run it and see the same thing. The
 > reproducers are [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py)
