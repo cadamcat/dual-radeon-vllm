@@ -286,11 +286,15 @@ in the README as a snapshot, not a guarantee.
 
 ---
 
-## 8. Why is weight loading 20–50× slower than the disk? — **effect characterised and worked around; mechanism NOT established**
+## 8. Why is weight loading 19–48× slower than the disk? — **two effects: one explained, one still open**
 
-> **Read this section as: we have a reliable reproduction, a measured shape, and a
-> working fix — but we cannot yet say why it happens, and an earlier version of this
-> section claimed a root cause that we have since disproved ourselves.**
+> **Read this section as: there are two things here.** A 3–4× penalty whose
+> mechanism is now confirmed by AMD down to the kernel line, and on top of it a
+> ~700× collapse on host kernel `7.0.0-28-generic` that is a separate regression
+> nobody has localised yet. An earlier version of this section claimed a root cause
+> that we disproved ourselves, and a later one called the whole thing long-standing
+> rather than a regression, which the kernel comparison overturned. Both are kept
+> below.
 >
 > ### What is solid
 >
@@ -411,8 +415,42 @@ in the README as a snapshot, not a guarantee.
 > faulted in by the time each tensor is copied. It also matches the per-tensor shape
 > above: ~1 s for anything past the threshold, near-free below it.
 >
-> Breaking copy-on-write page by page when the range is mapped for DMA is the
-> obvious reading — but that is our inference, not a verified explanation.
+> ### The COW reading was right, and AMD gave the line — 2026-07-27
+>
+> @ashetaia-amd confirmed the mechanism in
+> [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523) and named the site. We
+> traced the whole chain in the upstream tree afterwards; all three hops are real:
+>
+> ```c
+> // drivers/gpu/drm/amd/amdkfd/kfd_svm.c:1777, inside svm_range_validate_and_map
+> readonly = !(vma->vm_flags & VM_WRITE);
+> // :1807 passes it on
+> r = amdgpu_hmm_range_get_pages(&prange->notifier, addr, npages, readonly, owner, range);
+> // drivers/gpu/drm/amd/amdgpu/amdgpu_hmm.c:188
+> if (!readonly)
+>         hmm_range->default_flags |= HMM_PFN_REQ_WRITE;
+> ```
+>
+> **The permission is taken from the VMA rather than from what the GPU is about to
+> do with the range.** A host→device copy only *reads* the source, but because the
+> VMA carries `VM_WRITE`, KFD asks `hmm_range_fault()` for write access, which
+> breaks copy-on-write on every resident page. That is the 3–4× penalty, it is on
+> both kernels, and the line predates them both.
+>
+> It also explains the two-regime shape recorded above without any extra
+> assumption: pages the CPU has not touched are not COW-shared yet, so the
+> not-resident case never pays for the break.
+>
+> AMD's reading of the 700× is that it is a *separate* kernel regression
+> amplifying this same fault path, with the linear ~2 ms per page and the flat
+> per-filesystem offset pointing at a fixed per-page synchronous cost, and
+> VFIO/IOMMU as a prime suspect since it is the only environment measured here.
+>
+> One avenue is closed. Forcing the staged path would sidestep this entirely — with
+> pinning disabled the source is never SVM-registered and a CPU *read* into a
+> staging buffer does not break COW — but @ashetaia-amd states that the long-term
+> fix taken in ROCm/rocm-systems#6676 does not help this copy path, so
+> `ROC_FORCE_STAGED_D2H` is not the remedy to wait for.
 >
 > ### It is a kernel regression — 2026-07-27, and it overturns the paragraph below
 >
