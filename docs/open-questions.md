@@ -484,6 +484,40 @@ in the README as a snapshot, not a guarantee.
 > build, so it is not evidence that a newer *Ubuntu* kernel is clear; we have no
 > data on one.
 >
+> ### The commit — 2026-07-27
+>
+> `-28` picked up **`c08972f55594`** (`drm/amdgpu: fix amdgpu_hmm_range_get_pages`,
+> 2026-02-18) in that upload itself; it is under `-28` in the changelog and absent
+> from the `-26` and `-14` sections. It does **not** carry the follow-up that
+> repairs the consequence, **`342981fff328`** (`drm/amdgpu: drop retry loop in
+> amdgpu_hmm_range_get_pages`, 2026-05-29), which has never been applied. That
+> commit's own message describes what we measured:
+>
+> > the captured notifier_seq is no longer refreshed across retries ... the "goto
+> > retry" therefore degenerates into a busy spin that simply burns CPU for the
+> > full HMM_RANGE_DEFAULT_TIMEOUT (~1s) window before finally bailing out with
+> > -EAGAIN ... it actively hurts the KFD userptr stack
+>
+> `HMM_RANGE_DEFAULT_TIMEOUT` is **1000** (`include/linux/hmm.h`). Every timing in
+> this section is an integer multiple of it plus ~20 ms of real work:
+>
+> | measured | windows |
+> |---|---|
+> | 16 019.3 / 16 019.6 / 16 019.9 / 16 020.1 ms | 16.0 |
+> | 17 020.5 / 17 020.4 ms (overlayfs, tmpfs) | 17.0 |
+> | per-tensor 1005 / 1042 / 1522 ms | 1.0 / 1.0 / 1.5 |
+>
+> So the sub-millisecond reproducibility that looked like a fixed per-page cost is
+> a `jiffies` timeout, and the flat one-second gap between filesystems is one extra
+> retry. **This also joins the two halves.** Breaking copy-on-write is what
+> advances the notifier sequence, so a read-only mapping never invalidates, never
+> gets `-EBUSY`, and never enters the futile retry. The VMA-permission bug is the
+> trigger; `c08972f55594` turned each trigger into a full second.
+>
+> **Not proven by revert.** The evidence is the two commits' presence and absence,
+> the `-14`/`-28` boundary, the exact multiples, and `perf` at 98.7% in that path.
+> Building `-28` with `342981fff328` applied is the test that settles it.
+>
 > The writable mapping is not cleared either. Across the three fast kernels a
 > read-only copy of the same bytes took 3.0 to 5.6 ms against 18.6 to 28.6 ms
 > writable and resident, so **4× to 8×**, not the flat 3–4× quoted earlier in this
