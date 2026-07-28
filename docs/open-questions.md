@@ -286,15 +286,19 @@ in the README as a snapshot, not a guarantee.
 
 ---
 
-## 8. Why is weight loading 19–48× slower than the disk? — **two effects: one explained, one still open**
+## 8. Why is weight loading 19–48× slower than the disk? — **two effects, one confirmed and one identified but not proven**
 
-> **Read this section as: there are two things here.** A 3–4× penalty whose
-> mechanism is now confirmed by AMD down to the kernel line, and on top of it a
-> ~700× collapse on host kernel `7.0.0-28-generic` that is a separate regression
-> nobody has localised yet. An earlier version of this section claimed a root cause
-> that we disproved ourselves, and a later one called the whole thing long-standing
-> rather than a regression, which the kernel comparison overturned. Both are kept
-> below.
+> **Read this section as: there are two things here.** A 4× to 8× penalty whose
+> mechanism AMD confirmed down to the kernel line, and on top of it a collapse to
+> whole seconds per copy on guest kernel `7.0.0-28-generic` that is a separate
+> regression. The second one is now traced to a backport that took `c08972f55594`
+> without its follow-up `342981fff328`, which is why every timing lands on an exact
+> multiple of the 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT`. **That tracing is
+> circumstantial and has not been proven by revert** — "The commit" below sets out
+> exactly what is and is not established. An earlier version of this section claimed
+> a root cause that we disproved ourselves, and a later one called the whole thing
+> long-standing rather than a regression, which the kernel comparison overturned.
+> Both are kept below.
 >
 > ### What is solid
 >
@@ -349,7 +353,7 @@ in the README as a snapshot, not a guarantee.
 > **Where the time goes.** `perf` on a loading worker: **98.7 % in
 > `kfd_ioctl_svm → svm_range_validate_and_map → hmm_range_fault`**; `strace`: **54
 > ioctls in a 12-second window, ~189 ms each**. Reproduces on **both ROCm 7.0 and
-> 7.14** — but that varies the userspace only. It **is** a regression, in the host
+> 7.14** — but that varies the userspace only. It **is** a regression, in the guest
 > kernel; see the 2026-07-27 section below.
 >
 > ### What we got wrong
@@ -556,16 +560,19 @@ in the README as a snapshot, not a guarantee.
 > - **A 17× asymmetry between the two TP ranks** in a single load (~190 ms vs ~11 ms
 >   per ioctl), which we could not reproduce with concurrent processes, memory
 >   pressure, or torchrun + RCCL.
-> - **Whether a passthrough guest is required.** We have no bare-metal machine.
->   [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) reports `svm_range_*` hogging
->   CPU during model loading on bare-metal RDNA3, which is suggestive but is a crash
->   report, not this.
+> - **Whether an affected *Ubuntu* kernel on bare metal behaves the same.** Passthrough
+>   itself is ruled out — the `-14`/`-28` rows above swap only the guest kernel, and the
+>   bare-metal row runs the same reproducer outside any VM. But that row is a Proxmox
+>   `7.0.14` build, so it says nothing about a bare-metal machine running Ubuntu's
+>   `-28`, and we have no such machine.
 >
-> **Not yet reported upstream.** Our first attempt at a root cause for this section
-> was disproved by our own minimal reproducer, so the bar for the second one is that
-> a stranger can run it and see the same thing. The reproducer is
-> [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py); if you can
-> account for the remaining gap between it and a real load, that is the missing piece.
+> **Reported upstream as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523)**, where
+> AMD confirmed the copy-on-write trigger and named `kfd_svm.c`. Our first attempt at a
+> root cause for this section was disproved by our own minimal reproducer, so the bar
+> for the second one was that a stranger can run it and see the same thing. The
+> reproducers are [`benchmarks/repro-mmap-prot.py`](../benchmarks/repro-mmap-prot.py)
+> and, for machines with no PyTorch,
+> [`benchmarks/repro-mmap-prot.hip.cpp`](../benchmarks/repro-mmap-prot.hip.cpp).
 >
 > The workaround is what made the [five-model benchmark campaign](benchmarks.md)
 > practical: model swap cost fell from 5–10 minutes to 2.5–52 seconds.

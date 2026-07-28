@@ -347,7 +347,7 @@ fan spun **slower**. Cheapest fix in the entire build.
 **Slow host CPU?** It shows up at startup, not at decode: `torch.compile` is
 CPU-bound and vLLM pins it to one thread.
 
-**Weight loading is far slower than your disk, and your host kernel decides how
+**Weight loading is far slower than your disk, and the kernel you run decides how
 much.** The disk sustains **1.5 GB/s** (`dd`, direct I/O), yet vLLM loads a
 15.26 GiB BF16 checkpoint at 76 MiB/s — 19× to 48× below the hardware across
 three models. The source is the mapping: `safetensors` on its PyTorch path calls
@@ -402,6 +402,9 @@ benchmarks/   The measurement data and everything that produced it
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
   repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive
+  repro-mmap-prot.hip.cpp  the same case in plain HIP, for machines with no
+                       PyTorch — a hypervisor host, a rescue image, a bare ROCm
+                       install
 
 docs/
   benchmarks.md        ★ the five-model study, with all four charts

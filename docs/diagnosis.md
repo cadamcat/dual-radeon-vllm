@@ -166,7 +166,7 @@ signature:
 - **pipeline parallel instead of tensor parallel** — `ncclSend/Recv` kernels need
   hostcall too (`diagnose/ar_p2p.py` demonstrates this)
 
-The full 12-combination sweep is in [`diagnose/sweep.sh`](../diagnose/sweep.sh).
+The full 11-combination sweep is in [`diagnose/sweep.sh`](../diagnose/sweep.sh).
 
 ---
 

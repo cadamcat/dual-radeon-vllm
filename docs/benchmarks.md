@@ -273,5 +273,7 @@ returned to baseline. The 19–48× slow weight loading that used to make a camp
 like this impractical has a working workaround. Part of it is explained now: AMD
 named the kernel line, and copy-on-write is broken on every resident page because
 the permission comes from the VMA rather than from what the copy actually does.
-The other part, a ~700× collapse on one host kernel, is still open. Both are in
+The other part, the collapse to whole seconds per copy on guest kernel
+`7.0.0-28-generic`, is traced to a backport that took `c08972f55594` without its
+follow-up `342981fff328` — identified, but not yet proven by revert. Both are in
 [open-questions.md §8](open-questions.md).*
