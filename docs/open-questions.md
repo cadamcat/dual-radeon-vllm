@@ -661,6 +661,28 @@ ceiling is real, but raising it is not expected to fix the throughput gap above.
 
 ---
 
+## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s?
+
+The context **slope** is settled — it is the paged-attention fallback, see
+[hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md). The baseline is not.
+
+At 512 tokens of context, before the slope has done anything, `Qwen3.6-27B` does
+12.1 tok/s under vLLM while llama.cpp on the same two cards does 24.89. Something
+costs 2× before long context is involved at all.
+
+`architecture-notes.md` offers four candidates, all about the gated-delta-net
+kernels. The profile makes all four look too small to matter: at 1 K context the
+two GDN kernels together are **0.56 %** of decode time. The dominant item is
+`triton_w4a16_gemm_kernel` at **77 %** — but gemma-4-31B is also w4a16 and decodes
+at 43.2 tok/s, so "the quantised GEMM is slow" is not an answer either.
+
+What would settle it: profile gemma-4-31B the same way and compare the per-step
+breakdown. If its w4a16 GEMM share is much lower, the question becomes what about
+this model's shapes makes the same kernel so much more expensive. That run has not
+been done.
+
+---
+
 ## What we looked for before reporting any of this
 
 Checked 2026-07-26, so that nobody repeats the search:

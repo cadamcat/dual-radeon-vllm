@@ -96,11 +96,19 @@ ctx  24040: 196.85 ms/token
 ctx  32084: 235.29 ms/token
 ```
 
-O(1) was promised; O(S) was measured. The implementation is not taking an
-incremental recurrent path at decode. Corroboration: power *falls* at long context
+O(1) was promised; O(S) was measured. Corroboration: power *falls* at long context
 (232 + 227 W at 24 K, against 265 + 265 W at short) — the GPUs are waiting, not
 working. The logs show `Cannot use ROCm custom paged attention kernel, falling back
-to Triton` and `TRITON_ATTN backend`.
+to Triton`.
+
+> **Corrected 2026-07-29.** This section used to conclude that the implementation
+> "is not taking an incremental recurrent path at decode" — that the
+> linear-attention layers were re-scanning the sequence. A kernel-level profile
+> disproved it: those layers cost 8.466 µs per call at 1 K context and 8.038 µs at
+> 32 K, with identical call counts. They are O(1), as promised. The entire slope
+> comes from the model's *16 ordinary full-attention layers*, whose paged-attention
+> kernel goes from 356.664 µs to 10 095.188 µs per call. Full write-up in
+> [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md).
 
 At 32 K it delivers 4.2 tok/s, which is unusable.
 

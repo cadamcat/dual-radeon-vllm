@@ -9,7 +9,7 @@ Short version:
 | Architecture | On gfx1100 | Why |
 |---|---|---|
 | **Dense transformer** (gemma, Llama, Qwen dense) | 🟢 **Good** | Mature generic GEMM + standard attention |
-| **Hybrid SSM / linear attention** (Qwen3.5, Qwen3.6) | 🔴 **Poor, and worse the longer the context** | NVIDIA-tuned Triton kernels; decode cost grows *linearly* with context instead of staying flat |
+| **Hybrid SSM / linear attention** (Qwen3.5, Qwen3.6) | 🔴 **Poor, and worse the longer the context** | Two separate causes: NVIDIA-tuned Triton kernels drag the *baseline* down, and the model's few full-attention layers fall off vLLM's ROCm paged-attention fast path, which is what makes it collapse with context ([details](hybrid-decode-on-rdna.md)) |
 | **MoE** (128/256 experts) | 🟢 **Good — fastest measured here** *(revised 2026-07-25)* | Once compiled it leads the field; the obstacle is a 26-minute single-threaded compile, not the kernels |
 
 **Practical advice: dense is the safe default, MoE is the fast one if you can pay
@@ -59,15 +59,33 @@ low-occupancy kernels.
    *48* such layers plus their conv updates.
 4. **No AITER fallback**: AITER's gated-delta-net path is gated to gfx9.
 
-There is also a log line that looks alarming but is *not* the main cost:
+> **Qualified 2026-07-29.** All four remain true as statements about the code, but
+> the profile says they cannot carry much of the baseline gap. At 1 K context the
+> two gated-delta-net kernels together account for **0.56 % of decode time**
+> (0.203 + 0.054 ms out of 45.6 ms per step). The largest single item is
+> `triton_w4a16_gemm_kernel` at **77 %**, which is the quantised GEMM and has
+> nothing to do with SSM — though gemma-4-31B is also w4a16 and decodes at
+> 43.2 tok/s, so that alone does not explain it either. **Why the baseline is
+> 12.1 rather than ~25 tok/s is still open.** What is settled is the *slope*, and
+> that is [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md).
+
+There is also this log line:
 
 ```
 Cannot use ROCm custom paged attention kernel, falling back to Triton
 ```
 
-That is the **16 full-attention layers**, not the SSM layers. Hybrid Mamba models
-inflate the KV `block_size` to 2048, and the ROCm custom paged-attention kernel
-requires `block_size == 16`. Minor: 16 layers out of 64.
+That is the **16 full-attention layers**, not the SSM layers.
+
+> **Corrected 2026-07-29 — this line used to be dismissed here as "minor: 16
+> layers out of 64".** That was wrong, and it is the single biggest mistake this
+> document has made. Those 16 layers are where *all* of the context-dependent cost
+> lives: their paged-attention kernel goes from 356.664 µs to 10 095.188 µs per
+> call between 1 K and 32 K context, while the 48 SSM layers stay flat at ~8 µs.
+> Layer count is not cost share. The fallback happens because the model's
+> `head_dim` is 256 and the ROCm custom kernel is only instantiated for 64 and
+> 128 — the `block_size` condition is a second, independent disqualifier. Full
+> analysis in [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md).
 
 **And it gets worse with context — the opposite of the architecture's promise**
 *(measured 2026-07-25)*. A linear-attention layer carries a fixed-size recurrent
@@ -80,17 +98,29 @@ ctx   8026: 117.23 ms/token          ctx  32084: 235.29 ms/token
 ```
 
 That is **4.84 µs of decode time per token of context — 41× the dense 8B's 0.118 µs**
-and 14× the dense 31B's 0.340 µs. O(1) was promised; O(S) was measured, so the
-implementation is not taking an incremental recurrent path at decode. Power *falls*
-at long context (232 + 227 W at 24 K vs 265 + 265 W short): the GPUs are waiting.
-At 32 K it delivers **4.2 tok/s**, which is unusable.
+and 14× the dense 31B's 0.340 µs. O(1) was promised; O(S) was measured. Power
+*falls* at long context (232 + 227 W at 24 K vs 265 + 265 W short): the GPUs are
+waiting. At 32 K it delivers **4.2 tok/s**, which is unusable.
+
+The cause is the paged-attention fallback above, not the recurrence. The SSM
+layers do take the incremental path — `_forward_core_decode_non_spec` calls
+`fused_recurrent_gated_delta_rule_packed_decode`, and it profiles flat across
+context. Running the same model under llama.cpp on the same two cards retains
+87.7 % of its short-context rate at 32 K (ROCm backend) against vLLM's 34.7 %,
+which puts the problem in vLLM's attention path rather than in ROCm, the hardware
+or the architecture.
 
 **Prefill, however, keeps the promise.** The 27B is the only model in our sweep whose
 prefill gets *faster* with length (805 → 880 tok/s, +9 %) while dense models lose
 8–44 %. Linear attention does deliver O(S) prefill here.
 
-**What to do:** use **llama.cpp** for Qwen3.5/3.6. Same two cards, same model,
-**34.5 tok/s** with MTP speculative decoding — ~3× vLLM. vLLM only becomes
+**What to do:** use **llama.cpp** for Qwen3.5/3.6. Measured at matched context
+depth on the same two cards, plain Q4_K_M with no speculative decoding, it is
+**2.1× vLLM at 512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs 4.2)** — the
+advantage widens with context precisely because llama.cpp does not take the path
+in question. Adding MTP speculative decoding on top measured **34.5 tok/s** at a
+~200-token prompt, though that figure is not depth-matched to anything here.
+vLLM only becomes
 interesting for these models under heavy concurrency, where the low-occupancy
 recurrent kernels parallelise across the batch (SSM layers use little KV cache,
 so batch headroom is large: in the five-model campaign the 27B reaches 3.52× concurrency

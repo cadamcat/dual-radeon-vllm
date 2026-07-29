@@ -12,6 +12,7 @@ nothing is hand-edited.
 | `bench_runner.py` | The campaign runner that produced it — serial, checkpointed, VRAM-safe |
 | `analyze/` | The scripts that turn the raw data into the tables and charts in the docs |
 | `prompts/` | Prompt-ladder manifests (the token counts as measured) + the cutter that rebuilds the ladders from the public-domain source |
+| `llamacpp-depth-sweep-{rocm,vulkan}.json` | `llama-bench` decode rate at six context depths, both backends, same model and machine as the vLLM campaign. The control that showed the long-context collapse is specific to vLLM's paged-attention path — see [hybrid-decode-on-rdna.md](../docs/hybrid-decode-on-rdna.md) |
 
 ## Reproducing the analysis (no GPU needed)
 

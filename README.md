@@ -279,9 +279,14 @@ in this README and in `docs/benchmarks.md` comes out of those three scripts.
 - **Below ~1 K prompt tokens, one card prefills faster than two** (3460 vs 2270 tok/s
   at 512): TP adds a ~76 ms per-request communication floor, 72 all-reduces at
   ~1.05 ms each over host shared memory.
-- **Long context: avoid hybrid-SSM.** The 27B costs 4.84 µs of decode time per token
-  of context, **41× the dense 8B**; dense and MoE lose only 23–32 % out to 32 K.
-- **For Qwen3.5/3.6, llama.cpp still wins by ~3×** (34.5 vs 12.1).
+- **Long context: avoid hybrid-SSM *under vLLM*.** The 27B costs 4.84 µs of decode
+  time per token of context, **41× the dense 8B**; dense and MoE lose only 23–32 %
+  out to 32 K. The cause is not the SSM layers — it is the model's few
+  full-attention layers falling off the ROCm paged-attention fast path
+  ([why](docs/hybrid-decode-on-rdna.md)).
+- **For Qwen3.5/3.6, llama.cpp wins, and by more the longer the context**: 2.1× at
+  512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs 4.2), same two cards, same
+  model, ROCm backend both sides.
 - Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
   (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
 
@@ -296,7 +301,7 @@ Stating this plainly is the point of the repository.
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6)** | 🔴 ~3× slower than llama.cpp. Use llama.cpp + MTP instead |
+| **Hybrid SSM (Qwen3.5/3.6)** | 🔴 Collapses with context: retains 34.7% of its short-prompt rate at 32K, where llama.cpp on the same cards retains 87.7%. Not the SSM layers — the few full-attention ones fall off the ROCm paged-attention fast path ([why](docs/hybrid-decode-on-rdna.md)). Use llama.cpp + MTP instead |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1`; a 128-expert graph took 20+ min on a slow CPU. Patch it or use `--enforce-eager` |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
@@ -412,6 +417,8 @@ docs/
   open-questions.md    what we have NOT proven — including one root cause we
                        published, disproved ourselves, and rewrote
   architecture-notes.md  why MoE, dense and hybrid-SSM behave so differently here
+  hybrid-decode-on-rdna.md  why the hybrid-SSM model collapses at long context —
+                       kernel-level profile, and the wrong answer it replaced
   deploy-vllm.md       step-by-step deployment
   diagnosis.md         is this your bug?
   assets/              the four charts, as standalone SVG
