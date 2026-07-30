@@ -351,6 +351,17 @@ in the README as a snapshot, not a guarantee.
 > because of quantisation repack (repack is nearly free — the 12B now loads in 10.5 s
 > *including* it).
 >
+> **Why ~1 s and not something proportional to size — 2026-07-30.** Each timeout
+> window covers 2 MiB of *resident* source. That falls out of the reproducer,
+> 32 MiB in 16 windows and 256 MiB in 128, and @shineday999 confirmed it from
+> outside on a different board and a different ROCm: 8 MiB in exactly four
+> windows, with the residual real work after subtracting the windows landing at
+> 1575-1695 MiB/s against our 1624. So window count is `resident_bytes / 2 MiB`,
+> not tensor size. The tensors above are barely resident when the copy starts,
+> since nothing reads them first, which is why an 8 MiB and a 96 MiB tensor both
+> come out at one window. **That last step is inference:** it follows from the
+> granularity, but we never sampled residency per tensor to check it directly.
+>
 > **Where the time goes.** `perf` on a loading worker: **98.7 % in
 > `kfd_ioctl_svm → svm_range_validate_and_map → hmm_range_fault`**; `strace`: **54
 > ioctls in a 12-second window, ~189 ms each**. Reproduces on **both ROCm 7.0 and
@@ -586,11 +597,15 @@ in the README as a snapshot, not a guarantee.
 > - **A 17× asymmetry between the two TP ranks** in a single load (~190 ms vs ~11 ms
 >   per ioctl), which we could not reproduce with concurrent processes, memory
 >   pressure, or torchrun + RCCL.
-> - **Whether an affected *Ubuntu* kernel on bare metal behaves the same.** Passthrough
->   itself is ruled out — the `-14`/`-28` rows above swap only the guest kernel, and the
->   bare-metal row runs the same reproducer outside any VM. But that row is a Proxmox
->   `7.0.14` build, so it says nothing about a bare-metal machine running Ubuntu's
->   `-28`, and we have no such machine.
+> - ~~**Whether an affected *Ubuntu* kernel on bare metal behaves the same.**~~
+>   **Closed 2026-07-30, by someone else.** We never had such a machine: our
+>   bare-metal row is a Proxmox `7.0.14` build, so it said nothing about
+>   Ubuntu's `-28` outside a VM. @shineday999 reported one in
+>   [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523) — RX 7900 XTX,
+>   ROCm 7.2.1, `7.0.0-28`, no virtualisation — with the same pathology and the
+>   same integer window counts. What remains untested is a module as *Canonical*
+>   ships it: both of us ran either a self-built module or a userspace
+>   workaround.
 >
 > **Reported upstream as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523)**, where
 > AMD confirmed the copy-on-write trigger and named `kfd_svm.c`, and to Ubuntu as
