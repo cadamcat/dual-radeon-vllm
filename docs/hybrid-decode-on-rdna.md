@@ -251,6 +251,58 @@ which disqualifies `use_custom` on its own path. The custom HIP kernel is
 unreachable here three times over — which is why making the *fallback* fast is the
 only route that helps this class of model.
 
+### The split-count heuristic, measured
+
+The last of the four things @thegoldenflow asked us to check, and the only one
+the first run left open. The heuristic sizes its target occupancy from
+`multi_processor_count`, and the kernel's own docstring is careful to claim only
+one architecture: "On gfx12 torch reports WGPs while rocprof reports CUs, so
+target two workgroups per reported processor." Whether gfx11 reports the same
+thing was an assumption. The `2 ×` is a correction, not headroom: if torch
+reported CUs here, `target_workgroups` would come out at twice the hardware and
+every split decision would be sized against a GPU that does not exist.
+
+Measured, both cards:
+
+```
+gcnArchName           = gfx1100
+multi_processor_count = 42        # the 7900 XT has 84 CUs, i.e. 42 WGPs
+warp_size             = 32
+```
+
+RDNA3 reports WGPs as well, so `2 * num_sms` lands on 84, the real CU count. The
+compensation is right here for the same reason it is on RDNA4, where @yanghoeg
+measured 32 against the R9700's 64 CUs.
+
+Replaying `_get_num_splits` at our configuration — `head_size=256`, 4 KV heads,
+physical block 784, which `_choose_compute_block_size` maps to a compute block
+of 16:
+
+| max_seq_len | 512 | 1 024 | 2 048 | 4 096 | 8 192 | 16 384 | 32 768 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| splits | 1 | 1 | 15 | 14 | 14 | 14 | 14 |
+
+14 across our whole range, which is what he predicted on paper. The 1 at short
+context is the `num_n_blocks < 2 * num_sms` early return: splitting does not
+begin until `max_seq_len ≥ 84 × 16 = 1344`, so below that the path switches
+itself off rather than costing anything.
+
+**Where the split count falls with batch depends on the card.** @yanghoeg found
+it collapsing to 1 at batch 16 on gfx1201 and read that as this being a
+low-concurrency optimisation. It is, but the threshold moves with the part:
+
+| batch | 1 | 2 | 4 | 8 | 16 |
+|---|---:|---:|---:|---:|---:|
+| gfx1100, `num_sms=42` | 14 | 9 | 5 | 5 | **5** |
+| gfx1201, `num_sms=32` | 14 | 7 | 4 | 2 | **1** |
+
+Read out of the source rather than inferred from the numbers: the guard is
+`batch_nheads >= 0.8 * (2 * num_sms)`, and `batch_nheads` is
+`batch_size * num_kv_heads`. At batch 16 both cards sit at 64, but the threshold
+is 51.2 on a 32-WGP part and 67.2 on a 42-WGP one. Same batch, collapsed there,
+not here. His reading holds; the concurrency at which it stops paying scales
+with the card.
+
 ### What it does not fix
 
 Paged attention falls from roughly 68 % of the decode step to **11 %**. The
