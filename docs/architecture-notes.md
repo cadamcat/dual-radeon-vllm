@@ -102,6 +102,11 @@ and 14× the dense 31B's 0.340 µs. O(1) was promised; O(S) was measured. Power
 *falls* at long context (232 + 227 W at 24 K vs 265 + 265 W short): the GPUs are
 waiting. At 32 K it delivers **4.2 tok/s**, which is unusable.
 
+**Fixed upstream 2026-07-30, pending merge.** [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)
+adds a split-KV decode kernel gated to `on_gfx12x()`; widening that gate to
+`on_gfx1x()` gives 2.52× at 32K on this machine and takes the slope from 4.840 to
+0.430 µs per context token. See [hybrid-decode-on-rdna.md §6.5](hybrid-decode-on-rdna.md).
+
 The cause is the paged-attention fallback above, not the recurrence. The SSM
 layers do take the incremental path — `_forward_core_decode_non_spec` calls
 `fused_recurrent_gated_delta_rule_packed_decode`, and it profiles flat across

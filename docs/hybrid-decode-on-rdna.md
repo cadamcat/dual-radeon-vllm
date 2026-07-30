@@ -78,6 +78,11 @@ right next to the fallback:
 `gqa_ratio` is 6 and does pass. Two independent conditions each disqualify the
 model, and the warning at `chunked_prefill_paged_decode.py:420` fires.
 
+> **Refined 2026-07-30.** The 2048 above is vLLM's own comment giving an example,
+> not our value. Measured, `cache_config.block_size` is **784**. And it is three
+> conditions, not two: `is_pow2(784)` is `False`, which disqualifies `use_custom`
+> independently. Counterfactual checks in §6.5 show no single one is the blocker.
+
 **The `head_size` check is not conservative gating — it is the kernel's real
 limit.** `CALL_CUSTOM_LAUNCHER_BLK_HEAD` in `csrc/rocm/attention.cu` dispatches
 only `case 64` and `case 128`, and `TORCH_CHECK`s on anything else. Relaxing the
@@ -182,6 +187,70 @@ was describing a different, amplified phenomenon; it was discarded and the run
 redone with graphs on, using `ProfilerConfig`'s iteration schedule to skip prefill
 instead. `benchmarks.md`'s standing rule about never concluding from
 `--enforce-eager` numbers applies to profiles too.
+
+## 6.5 Fixed upstream: PR #45916, verified here 2026-07-30
+
+Filing this as [vllm#50264](https://github.com/vllm-project/vllm/issues/50264)
+turned up the answer within hours. @thegoldenflow pointed out that
+[vllm#45916](https://github.com/vllm-project/vllm/pull/45916) already adds
+`kernel_paged_attention_2d_splitkv` — the exact kernel profiled above — but gates
+it to `on_gfx12x()`, so it is inert on RDNA3. That PR had sat untouched for six
+weeks. @Lafunamor then verified it on gfx1151 at kernel level, and we ran the
+gfx1100 end-to-end half that nobody else had hardware for.
+
+Changing only `on_gfx12x()` → `on_gfx1x()`, nothing else:
+
+| | before | after |
+|---|---:|---:|
+| PR's own test suite | — | **69/69** |
+| `kernel_paged_attention_2d` @32K, per call | 10 095.188 µs | — |
+| `kernel_paged_attention_2d_splitkv` @32K, per call | — | 635.779 µs |
+| `..._splitkv_reduce` | — | 4.117 µs |
+
+**15.8× at the kernel.** The profile contains only the `_splitkv` kernels; the old
+one is absent, which is the only available confirmation since nothing logs the
+choice.
+
+End to end, decode isolated from prefill. The two sides are separate runs so the
+depths differ slightly; the "after" context is longer in every row, making the
+speedups conservative:
+
+| before (ctx) | ms/tok | after (ctx) | ms/tok | speedup |
+|---:|---:|---:|---:|---:|
+| 518 | 82.51 | 1 024 | 79.68 | 1.04× |
+| 8 026 | 117.23 | 8 192 | 82.60 | 1.42× |
+| 16 058 | 156.99 | 16 384 | 85.97 | 1.83× |
+| 32 084 | 235.29 | 32 768 | **93.30** | **2.52×** |
+
+At 32K the campaign reported 4.2 tok/s; this run measures **10.72**. The decode
+slope falls from 4.840 to **0.430 µs per context token**, an 11.3× reduction that
+lands inside the 0.118–0.339 band this machine's dense models produce. **The
+collapse this document is about is gone.**
+
+Output quality holds: greedy decode at 21 012 tokens of context returns a correct,
+coherent answer, so the split kernel's index arithmetic is sound at our block size.
+
+### Two things the verification corrected
+
+**Our KV block size is 784, measured** — `cache_config.block_size`, 16 × 49. §2
+previously leaned on the 2048 in vLLM's own source comment, which was that
+comment's example rather than our value. Same conclusion, real number. It is the
+same family as @Lafunamor's 528 = 16 × 33: divisible by 16, not by 32.
+
+**No single condition is the blocker.** Calling `use_rocm_custom_paged_attention`
+directly with counterfactuals, `head_size` forced to 128 still returns `False` and
+`block_size` forced to 16 still returns `False`. `is_pow2(784)` is also `False`,
+which disqualifies `use_custom` on its own path. The custom HIP kernel is
+unreachable here three times over — which is why making the *fallback* fast is the
+only route that helps this class of model.
+
+### What it does not fix
+
+Paged attention falls from roughly 68 % of the decode step to **11 %**. The
+remainder is dominated by `triton_w4a16_gemm_kernel`. The absolute rate is still
+10.7 tok/s at 32K, against llama.cpp's 21.8 on the same cards, so **llama.cpp
+remains the better choice for this model**. The *slope* is fixed; the baseline is
+[open question 9](open-questions.md).
 
 ## 7. Not established
 

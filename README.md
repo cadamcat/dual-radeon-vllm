@@ -301,7 +301,7 @@ Stating this plainly is the point of the repository.
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6)** | 🔴 Collapses with context: retains 34.7% of its short-prompt rate at 32K, where llama.cpp on the same cards retains 87.7%. Not the SSM layers — the few full-attention ones fall off the ROCm paged-attention fast path ([why](docs/hybrid-decode-on-rdna.md)). Use llama.cpp + MTP instead |
+| **Hybrid SSM (Qwen3.5/3.6)** | 🟡 **Fixed upstream, not yet merged.** Collapsed to 34.7% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). Until it lands, llama.cpp is still 2× faster here |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1`; a 128-expert graph took 20+ min on a slow CPU. Patch it or use `--enforce-eager` |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
