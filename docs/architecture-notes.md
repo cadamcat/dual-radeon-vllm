@@ -93,7 +93,7 @@ state, so decode should cost the same at any context length. Measured, the 27B's
 decode time is a straight line in context:
 
 ```
-ctx    518:  82.51 ms/token          ctx  16058: 156.99 ms/token
+ctx    518:  82.51 ms/token          ctx  16058: 157.60 ms/token
 ctx   8026: 117.23 ms/token          ctx  32084: 235.29 ms/token
 ```
 
@@ -121,10 +121,13 @@ prefill gets *faster* with length (805 → 880 tok/s, +9 %) while dense models l
 
 **What to do:** use **llama.cpp** for Qwen3.5/3.6. Measured at matched context
 depth on the same two cards, plain Q4_K_M with no speculative decoding, it is
-**2.1× vLLM at 512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs 4.2)** — the
-advantage widens with context precisely because llama.cpp does not take the path
-in question. Adding MTP speculative decoding on top measured **34.5 tok/s** at a
-~200-token prompt, though that figure is not depth-matched to anything here.
+**2.1× stock vLLM at 512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs
+4.2)** — the advantage widens with context precisely because llama.cpp does not
+take the path in question. Both are against the stock gate; with #45916's gate
+widened the 32 K gap narrows to 2.0× (21.84 vs 10.72), so that PR closes the
+slope but not the baseline. Adding MTP speculative decoding on top measured
+**34.5 tok/s** at a ~200-token prompt, though that figure is not depth-matched
+to anything here.
 vLLM only becomes
 interesting for these models under heavy concurrency, where the low-occupancy
 recurrent kernels parallelise across the batch (SSM layers use little KV cache,

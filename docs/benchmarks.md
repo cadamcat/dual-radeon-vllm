@@ -91,7 +91,7 @@ The 27B's decode time is a near-perfect straight line in context length —
 ```
 ctx    518:  82.51 ms/token
 ctx   8026: 117.23 ms/token
-ctx  16058: 156.99 ms/token
+ctx  16058: 157.60 ms/token
 ctx  24040: 196.85 ms/token
 ctx  32084: 235.29 ms/token
 ```
@@ -111,6 +111,15 @@ to Triton`.
 > [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md).
 
 At 32 K it delivers 4.2 tok/s, which is unusable.
+
+> **Corrected 2026-07-30.** The slope has since been fixed upstream, by someone
+> else. vLLM [#45916](https://github.com/vllm-project/vllm/pull/45916) adds a
+> split-KV decode kernel gated to `on_gfx12x()`; widening that gate to
+> `on_gfx1x()` and changing nothing else takes this model to 93.30 ms/token at
+> 32 K, which is 10.72 tok/s and 2.52×, and the slope from 4.840 to 0.430 µs
+> per context token. The 4.2 tok/s above is stock vLLM, and stock vLLM is still
+> what you get: the PR is unmerged. Method, the full table and what it does not
+> fix in [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md) §6.5.
 
 **But prefill keeps the promise.** The 27B is the only model whose prefill gets
 *faster* with length (805 → 880 tok/s, +9 %) while dense models lose 8–44 %.
@@ -262,7 +271,7 @@ second card, and it is invisible in a tokens-per-second table.
 | best single-model quality | gemma-4-31B w4a16 | 43.2 tok/s, 29.5 at 32 K; concurrency only 1.74× |
 | short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |
-| **long context** | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–33 % |
+| **long context** | **avoid hybrid-SSM, for now** | the 27B drops to 4.2 tok/s at 32 K on stock vLLM; dense and MoE lose only 23–33 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) fixes the slope (10.72 tok/s at 32 K here) but is unmerged, so this stands |
 
 ## Three findings worth carrying elsewhere
 

@@ -284,9 +284,11 @@ in this README and in `docs/benchmarks.md` comes out of those three scripts.
   out to 32 K. The cause is not the SSM layers — it is the model's few
   full-attention layers falling off the ROCm paged-attention fast path
   ([why](docs/hybrid-decode-on-rdna.md)).
-- **For Qwen3.5/3.6, llama.cpp wins, and by more the longer the context**: 2.1× at
-  512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs 4.2), same two cards, same
-  model, ROCm backend both sides.
+- **For Qwen3.5/3.6, llama.cpp wins, and by more the longer the context**:
+  against stock vLLM, 2.1× at 512 tokens (24.89 vs 12.1) and 5.2× at 32 K
+  (21.84 vs 4.2), same two cards, same model, ROCm backend both sides. With
+  vllm#45916's gate widened the 32 K gap narrows to 2.0× (21.84 vs 10.72); that
+  PR is not merged.
 - Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
   (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
 
@@ -301,7 +303,7 @@ Stating this plainly is the point of the repository.
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6)** | 🟡 **Fixed upstream, not yet merged.** Collapsed to 34.7% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). Until it lands, llama.cpp is still 2× faster here |
+| **Hybrid SSM (Qwen3.5/3.6)** | 🟡 **Fixed upstream, not yet merged.** Collapsed to 34.7% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.2× against stock vLLM, 2.0× with the gate widened |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1`; a 128-expert graph took 20+ min on a slow CPU. Patch it or use `--enforce-eager` |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
@@ -364,10 +366,12 @@ the kernel — 2.0 MiB/s on `7.0.0-28-generic` against ~1 400 MiB/s on
 
 **Two workarounds, and one is much better.**
 `--safetensors-load-strategy eager` avoids the mapping, but its peak RSS is about
-twice the shard, which puts a 21.67 GiB single-shard checkpoint out of reach on a
-23 GiB machine. Cloning each tensor into anonymous memory costs one tensor and is
-also faster: **86.7 s → 4.4 s** for the 15.26 GiB checkpoint, **319.5 s → 12.6 s**
-for the 21.67 GiB one. That is proposed upstream as an opt-in flag in
+twice the shard, which puts a 21.67 GiB single-shard checkpoint out of reach:
+that run was skipped because 2 × 21.67 GiB does not fit in the 20.3 GiB this
+machine had available. Cloning each tensor into anonymous memory costs one
+tensor and is also faster: **86.7 s → 4.4 s** for the 15.26 GiB checkpoint,
+**319.5 s → 12.6 s** for the 21.67 GiB one. That is proposed upstream as an
+opt-in flag in
 [vllm-project/vllm#49991](https://github.com/vllm-project/vllm/pull/49991).
 
 Two hypotheses are **disproven**: it is not the disk, and not the disabled

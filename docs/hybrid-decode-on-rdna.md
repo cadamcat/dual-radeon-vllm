@@ -211,21 +211,28 @@ Changing only `on_gfx12x()` → `on_gfx1x()`, nothing else:
 one is absent, which is the only available confirmation since nothing logs the
 choice.
 
-End to end, decode isolated from prefill. The two sides are separate runs so the
-depths differ slightly; the "after" context is longer in every row, making the
-speedups conservative:
+End to end, decode isolated from prefill. The two sides are separate runs, and
+not quite the same measurement either: "before" is the campaign, which generated
+512 tokens and timed decode first token to last, averaged over two rounds;
+"after" differences a 64-token generation against an 8-token one at the same
+depth, once per depth with no repeat. The depths differ too, the "after" context
+being longer in every row, which makes the speedups conservative. Working the
+generation-length difference through the two slopes puts it under 0.5 %, and
+that part is arithmetic rather than a measurement:
 
 | before (ctx) | ms/tok | after (ctx) | ms/tok | speedup |
 |---:|---:|---:|---:|---:|
 | 518 | 82.51 | 1 024 | 79.68 | 1.04× |
 | 8 026 | 117.23 | 8 192 | 82.60 | 1.42× |
-| 16 058 | 156.99 | 16 384 | 85.97 | 1.83× |
+| 16 058 | 157.60 | 16 384 | 85.97 | 1.83× |
 | 32 084 | 235.29 | 32 768 | **93.30** | **2.52×** |
 
 At 32K the campaign reported 4.2 tok/s; this run measures **10.72**. The decode
-slope falls from 4.840 to **0.430 µs per context token**, an 11.3× reduction that
-lands inside the 0.118–0.339 band this machine's dense models produce. **The
-collapse this document is about is gone.**
+slope falls from 4.840 to **0.430 µs per context token**, an 11.3× reduction.
+That is still above the 0.118–0.339 band this machine's dense models produce, by
+about 27 % over the highest of them, but it is the same order of magnitude
+rather than fourteen times the top of the band. **The collapse this document is
+about is gone.**
 
 Output quality holds: greedy decode at 21 012 tokens of context returns a correct,
 coherent answer, so the split kernel's index arithmetic is sound at our block size.
@@ -258,11 +265,13 @@ remains the better choice for this model**. The *slope* is fixed; the baseline i
   has looser conditions, so this may not reproduce on MI-series.
 - **No NVIDIA comparison.** We cannot say whether the same model decodes flat on
   CUDA, where the custom-kernel question does not arise in this form.
-- **No fix is proposed.** Widening the gating is not one, since there is no
-  `head_size=256` kernel to fall through to. A real fix means adding that
-  instantiation, or giving the Triton path a decode split that does not depend on
-  KV-head count. We are not in a position to judge the cost or the numerical
-  correctness of either.
+- **A fix now exists, and it is not ours — see §6.5.** This item used to say
+  none was in sight: widening the gating is not one, since there is no
+  `head_size=256` kernel to fall through to, and a real fix would mean adding
+  that instantiation or giving the Triton path a decode split that does not
+  depend on KV-head count. PR #45916 is the second of those, and §6.5 measures
+  it working here. The first half still holds: widening
+  `use_rocm_custom_paged_attention` is a dead end, three conditions over.
 - **Raw profiler traces are not in this repository.** They are ~5 MB of
   `.pt.trace.json.gz`, kept with the rest of the raw experiment data rather than
   committed here.
