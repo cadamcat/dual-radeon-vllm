@@ -381,9 +381,11 @@ either — the 12B loads in 10.5 s *including* repack once the mapping is
 sidestepped. What decides the cost is how many tensors clear a threshold
 somewhere between 4 and 8 MiB.
 
-**RAM ceiling.** vLLM `mmap`s the whole checkpoint. A 21.67 GiB file will not
-map into a 21.43 GiB guest even with plenty free — the limit is `MemTotal`, not
-available memory. Add swap or raise the VM's RAM.
+**RAM ceiling.** vLLM `mmap`s the whole checkpoint, and the limit is `MemTotal`
+rather than free memory. A 21.67 GiB file would not map into the 21.43 GiB this
+guest had when that was first hit; the fix was to raise the VM's RAM, which is
+now 23.40 GiB with 8 GiB of swap, and that checkpoint loads. Size for the
+ceiling rather than expecting to hit it.
 
 ---
 
