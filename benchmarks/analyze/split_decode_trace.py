@@ -4,6 +4,15 @@ The long-context trace mixes both: chunked prefill runs 4 iterations before the
 11 decode steps, and paged attention is called in each. Averaging over all of
 them understates or overstates the decode cost depending on which dominates, so
 attribute each kernel call to the engine step whose window it falls in.
+
+Each engine step emits its execute_context annotation *twice* under the same
+name: a `user_annotation` for the CPU-side launch (~5 ms) and a
+`gpu_user_annotation` for the device work (~237 ms at 32K). Counting both gives
+22 windows where there are 11 steps and halves every per-step figure, so this
+takes the GPU one. The check that it is right: the count must match the layer
+arithmetic — 176 paged-attention calls / 16 full-attention layers = 11, and 528
+linear-attention calls / 48 layers = 11 — and torch's own aggregation in
+profiler_out_*.txt reports the same 11 calls at 236.899 ms.
 """
 import json, gzip, sys
 from collections import defaultdict
@@ -17,8 +26,8 @@ ev = d["traceEvents"] if isinstance(d, dict) else d
 # engine-step windows, named by vLLM's execute_context annotation
 windows = []
 for e in ev:
-    if e.get("ph") != "X":
-        continue
+    if e.get("ph") != "X" or e.get("cat") != "gpu_user_annotation":
+        continue                    # the CPU-side twin would double the count
     n = e.get("name", "")
     if n.startswith("execute_context_"):
         ts, dur = e.get("ts", 0), e.get("dur", 0) or 0
