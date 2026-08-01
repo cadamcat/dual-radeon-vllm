@@ -1,0 +1,25 @@
+{
+  "what": "kernel_unified_attention per-call device time, rank 0, gemma-4-31B-it-qat-w4a16-ct, TP=2, 32768-token context. Derived from torch-profiler traces kept on the test machine (prof-31b/ and prof-mtp-31b/, ~2 MB gz each, not in this repo).",
+  "unit": "microseconds",
+  "median_definition": "statistics.median (mean of the two middle values)",
+  "runs": {
+    "no-speculation": {
+      "trace_file": "rank0.1785474893826271908.pt.trace.json.gz",
+      "calls": 3780,
+      "median_us": 106.6,
+      "p75_us": 108.7,
+      "max_us": 647.4,
+      "mean_us": 192.7,
+      "hip_graph_launch": 63
+    },
+    "mtp": {
+      "trace_file": "rank0.1785478737491386378.pt.trace.json.gz",
+      "calls": 3456,
+      "median_us": 126.9,
+      "p75_us": 132.1,
+      "max_us": 9950.3,
+      "mean_us": 1770.3,
+      "hip_graph_launch": 324
+    }
+  }
+}

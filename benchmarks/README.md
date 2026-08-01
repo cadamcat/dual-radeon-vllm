@@ -12,6 +12,7 @@ nothing is hand-edited.
 | `bench_runner.py` | The campaign runner that produced it — serial, checkpointed, VRAM-safe |
 | `analyze/` | The scripts that turn the raw data into the tables and charts in the docs |
 | `prompts/` | Prompt-ladder manifests (the token counts as measured) + the cutter that rebuilds the ladders from the public-domain source |
+| `speculative-decoding/` | Results behind [speculative-decoding-on-rdna.md](../docs/speculative-decoding-on-rdna.md). `splitkv-31b-{stock,patched}.json` is the PR#45916 A/B on the 31B (identical, it runs a different attention backend); `mtp-31b-mtp.json` is the MTP depth curve; `kbench{,2}-0.json` are two constructions of the kernel-level `query_len` sweep; `mtp32k-{tuned,spec3d}.json` are the two 32K single points; `c2-{on,off}.json` carry `token_ids` for the correctness comparison; `trace-unified-attention.json` is the per-call profiler summary, the one file here derived rather than measured directly — the traces it came from are ~2 MB each and stay on the test machine |
 | `llamacpp-depth-sweep-{rocm,vulkan}.json` | `llama-bench` decode rate at six context depths, both backends, same model and machine as the vLLM campaign. The control that showed the long-context collapse is specific to vLLM's paged-attention path — see [hybrid-decode-on-rdna.md](../docs/hybrid-decode-on-rdna.md) |
 
 ## Reproducing the analysis (no GPU needed)

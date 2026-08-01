@@ -1,0 +1,27 @@
+{
+  "model": "/models/gemma-4-31B-it-qat-w4a16-ct",
+  "tag": "stock",
+  "ngen": 64,
+  "rows": [
+    {
+      "depth": 1024,
+      "ms_per_token": 23.03,
+      "tok_per_s": 43.42
+    },
+    {
+      "depth": 8192,
+      "ms_per_token": 26.34,
+      "tok_per_s": 37.97
+    },
+    {
+      "depth": 16384,
+      "ms_per_token": 28.35,
+      "tok_per_s": 35.28
+    },
+    {
+      "depth": 32768,
+      "ms_per_token": 32.99,
+      "tok_per_s": 30.31
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "model": "/models/gemma-4-31B-it-qat-w4a16-ct",
+  "assistant": "/models/gemma-4-31B-it-assistant",
+  "tag": "mtp",
+  "rows": [
+    {
+      "depth": 1024,
+      "ms_per_token": 16.83,
+      "tok_per_s": 59.43
+    },
+    {
+      "depth": 8192,
+      "ms_per_token": 30.64,
+      "tok_per_s": 32.64
+    },
+    {
+      "depth": 16384,
+      "ms_per_token": 41.9,
+      "tok_per_s": 23.86
+    },
+    {
+      "depth": 32768,
+      "ms_per_token": 112.99,
+      "tok_per_s": 8.85
+    }
+  ]
+}
