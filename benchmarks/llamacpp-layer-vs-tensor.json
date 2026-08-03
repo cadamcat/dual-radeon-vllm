@@ -1,0 +1,92 @@
+{
+  "what": "llama.cpp -sm layer vs -sm tensor, gemma-4-31B-it-QAT Q4_0, 2x RX 7900 XT (gfx1100), llama-bench b9999 (47c786924, 2026-07-14), ROCm backend, -fa on -p 0 -n 128 -r 5. Measured 2026-08-01.",
+  "method": "One llama-bench process per (split mode, depth) cell. Never -sm layer,tensor in one process: that combination hangs. Cells at depth 0 and 8192 were run in three independent processes each, because llama-bench's own stddev covers repetitions inside one process and understates the process-to-process spread in tensor mode by an order of magnitude.",
+  "machine": {
+    "kernel": "7.0.0-28-generic",
+    "amdgpu_srcversion": "8F7D3C7777925E8D9DCD377 (stock)",
+    "note": "VFIO guest. Rebooted 2026-08-01 ~02:27Z, GPU temps 54-55 C at test time."
+  },
+  "cells": [
+    {
+      "split_mode": "layer",
+      "depth": 0,
+      "trials_tok_per_s": [25.668, 25.779, 25.732],
+      "mean": 25.726,
+      "process_stddev": 0.056,
+      "spread_pct": 0.4
+    },
+    {
+      "split_mode": "tensor",
+      "depth": 0,
+      "trials_tok_per_s": [27.467, 27.586, 27.072],
+      "mean": 27.375,
+      "process_stddev": 0.269,
+      "spread_pct": 1.9
+    },
+    {
+      "split_mode": "layer",
+      "depth": 8192,
+      "trials_tok_per_s": [24.46, 24.381, 24.356],
+      "mean": 24.399,
+      "process_stddev": 0.054,
+      "spread_pct": 0.4
+    },
+    {
+      "split_mode": "tensor",
+      "depth": 8192,
+      "trials_tok_per_s": [23.335, 26.062, 25.052],
+      "mean": 24.816,
+      "process_stddev": 1.379,
+      "spread_pct": 11.0
+    },
+    {
+      "split_mode": "tensor",
+      "depth": 16384,
+      "tok_per_s": 26.079,
+      "within_process_stddev": 0.557,
+      "note": "single process; no process-to-process replicate"
+    },
+    {
+      "split_mode": "tensor",
+      "depth": 32768,
+      "tok_per_s": 24.992,
+      "within_process_stddev": 0.211,
+      "note": "single process; a second standalone process gave 25.166"
+    },
+    { "split_mode": "layer", "depth": 16384, "aborted": true },
+    { "split_mode": "layer", "depth": 24576, "aborted": true },
+    { "split_mode": "layer", "depth": 32768, "aborted": true }
+  ],
+  "comparison": [
+    { "depth": 0, "gain_pct": 6.4, "observed_range_pct": [5.0, 7.5], "overlaps_zero": false },
+    { "depth": 8192, "gain_pct": 1.7, "observed_range_pct": [-4.6, 7.0], "overlaps_zero": true }
+  ],
+  "reading": "tensor is ahead by 6.4 % at depth 0 and the range does not reach zero. At 8192 the advantage is 1.7 % against a process-to-process spread of 11 % in tensor mode, so it cannot be called. The two depths where layer can be measured show the advantage weakening with depth, not growing. Depths past 8192 cannot be compared at all because layer aborts.",
+  "occupancy": {
+    "source": "2 s sampling of gpu_busy_percent and power1_average",
+    "layer": {
+      "busy_median_pct": [51, 50],
+      "power_median_w": [143, 105],
+      "reading": "pipeline parallel: about half occupancy, asymmetric power"
+    },
+    "tensor": {
+      "busy_median_pct": [82, 84],
+      "power_median_w": [205, 211],
+      "reading": "genuine parallelism: both cards loaded together, symmetric power and VRAM"
+    }
+  },
+  "layer_abort": {
+    "error": "an illegal memory access was encountered, in ggml_backend_cuda_buffer_set_tensor at ggml-cuda.cu:718, on hipMemcpyAsync((char *) tensor->data + offset, data, size, hipMemcpyHostToDevice, ...), reported as current device: -1. dmesg carries a repeating amdgpu [gfxhub] page fault.",
+    "reached_from": "llama_context::state_seq_set_data",
+    "visible_only_without_json_output": "llama-bench with -o json silences ggml's log callback, which is what prints the three error detail lines. Drop -o json and add -v to see them.",
+    "depths_abort": [16384, 24576, 32768],
+    "depths_ok": [0, 8192],
+    "needs_a_state_restore": "-r 1 passes; -r 2 and above abort. llama-bench saves the KV state after the depth prefill and restores it before every subsequent repetition, so a single repetition never exercises the restore.",
+    "not_vram_exhaustion": "peak VRAM at the abort was 10.8-12.6 GiB per card against 19.98 GiB available",
+    "single_gpu_control": "gemma-4-12B Q4_0, same depth and -r 2: -sm none passes, -sm layer aborts. So it is the multi-GPU layer split, not the model, the depth mechanism or the sliding-window cache.",
+    "minimal_repro": "llama-bench -m gemma-4-12B-it-QAT-Q4_0.gguf -sm layer -fa on -p 0 -n 128 -d 16384 -r 2",
+    "tensor_unaffected": "-sm tensor completes 0, 8192, 16384 and 32768",
+    "env_that_does_not_help": "GGML_CUDA_P2P=1 still aborts, and so does HIP_LAUNCH_BLOCKING=1 with AMD_SERIALIZE_KERNEL=3. Under serialisation the site stays at :718, so this is not a late-surfacing asynchronous fault.",
+    "upstream": "Same signature as llama.cpp#21140 (closed) and its unmerged fix PR#21170. IMbackK has traced it to the ROCm runtime and tracks it at ROCm/rocm-systems#4817, with llama.cpp#20176 as the ggml-side thread. Every other report there is a Qwen3.5/3.6 hybrid-recurrent model; gemma-4 has no recurrent layers."
+  }
+}
