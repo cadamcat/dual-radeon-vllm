@@ -495,6 +495,20 @@ in the README as a snapshot, not a guarantee.
 > so it is not a version anyone has moved past — it is what a 24.04 machine gets
 > by letting updates run, on the distro ROCm supports first.
 >
+> **No longer true, corrected 2026-08-23.** The paragraph above was accurate when
+> written and is left standing because the argument it supports — that this was
+> not an exotic kernel — depended on it. `linux-hwe-7.0` is now
+> `7.0.0-30.30~24.04.1` in both `noble-updates` and `noble-security` (published
+> 2026-08-20, with `-31` in proposed), and that changelog carries
+> `drm/amdgpu: drop retry loop in amdgpu_hmm_range_get_pages`, i.e. the follow-up
+> commit this section is about. Checked against the Launchpad archive and the
+> published changelog, not against a summary. **So the remedy on 24.04 is now an
+> upgrade, and the rebuilt module below is evidence rather than advice.** Two
+> things do not change: the residual 4-8× penalty on *writable* mappings, which
+> that commit does not touch, and the fact that LP#2161985 is still `New` and
+> untriaged, so this report did not cause the fix — it came through the ordinary
+> stable route.
+>
 > It does not localise the change further than ABI `-14` to `-28`, and the archive
 > carries no generic kernel between them. The bare-metal row is a Proxmox `7.0.14`
 > build, so it is not evidence that a newer *Ubuntu* kernel is clear; we have no
