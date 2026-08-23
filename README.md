@@ -19,7 +19,7 @@ Three things, each usable on its own:
 
 | | |
 |---|---|
-| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer, a rebuild recipe and a deployment script. [Start here](#am-i-hit-by-the-rccl-bug) |
+| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **In a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)); on bare metal it needs the rebuild recipe and deployment script also in here. [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to `7.0.0-28-generic`, then the current 24.04 HWE kernel, taking `c08972f55594` without its follow-up `342981fff328`: the `-EBUSY` retry can no longer succeed and burns a full 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT` each time. Every timing we measured is an integer multiple of it. **Proven by revert** — that kernel rebuilt with `342981fff328` applied, nothing else changed, does the copy in **17.0 ms instead of 16 019.7**; model loading on `7.0.0-14` goes 86.7 s → 14.4 s. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). **Fixed in `7.0.0-30.30~24.04.1`**, published to `noble-updates` and `noble-security` on 2026-08-20, whose changelog carries `drm/amdgpu: drop retry loop in amdgpu_hmm_range_get_pages`. On 24.04 the fix is now an upgrade, not the rebuilt module described here; that rebuild is what proved the cause, not what you should run. It arrived through the normal stable route — LP#2161985 is still untriaged, so this repository did not drive it. The separate 4-8× penalty for *writable* mappings is untouched by that commit and still argues for the loader flag. [open-questions.md §8](docs/open-questions.md) |
 
@@ -27,13 +27,19 @@ Three things, each usable on its own:
 
 The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU that
 cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
-and **every QEMU/VFIO passthrough guest**, including virtualised Instinct. The fix is a
-rebuild of RCCL; we build it for seven targets:
+and QEMU/VFIO passthrough guests, including virtualised Instinct.
+
+**In a guest, look at the VM configuration before anything else.** Passing a card's
+audio function alongside the GPU is enough to remove AtomicOps on its own, and undoing
+that made stock RCCL work here — [details and the A/B](docs/vfio-atomics.md). The
+rebuild below is for hardware that genuinely cannot deliver AtomicOps: chipset-fed
+slots on bare metal, root ports without completer support, QEMU older than 8.2.0. We
+build it for seven targets:
 
 | Target | Cards | Status |
 |---|---|---|
 | **gfx1100** | RX 7900 XTX / XT | ✅ **verified end to end**: every number in this repository |
-| gfx1030 | RX 6800 / 6800 XT / 6900 XT | ⚪ builds clean, hostcall = 0, never run |
+| gfx1030 | RX 6800 / 6800 XT / 6900 XT | 🟡 dispatch gate verified, collectives not. On a mixed gfx1030+gfx1100 pair the stock library fails on the gfx1030 rank with "the operation cannot be performed in the present state" and ours reaches Init COMPLETE on that same rank. No collective ran: the pair faults in `libamdhip64` under every env tried, and we cannot separate that from architecture mixing without a second gfx1030 |
 | gfx1101 | RX 7800 XT / 7700 XT | ⚪ same |
 | gfx1102 | RX 7600 / 7600 XT | ⚪ same |
 | gfx1200 | RX 9060 | ⚪ same |
@@ -41,8 +47,10 @@ rebuild of RCCL; we build it for seven targets:
 | gfx908 | MI100 | ⚪ same |
 
 ⚪ means the device image passes the static check that matters
-(`hidden_hostcall_buffer` = 0) but **we own only 7900 XTs and have run nothing else**.
-If you try one, a one-line report either way is genuinely useful.
+(`hidden_hostcall_buffer` = 0) but has never been run on real silicon. 🟡 means the
+dispatch gate was verified against a stock control but no collective completed. We
+have only ever owned 7900 XTs and borrowed a 6800 XT for two days, so if you try one
+of the others, a one-line report either way is genuinely useful.
 
 The failure is **not** limited to virtual machines: @adderek independently reproduced
 it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
@@ -73,7 +81,7 @@ You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actual
 - 🟡 **It runs, but you do not know what to expect** → [What performance to expect](#what-performance-to-expect)
 - 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
 
-**Not a vLLM fork.** Nothing here patches vLLM. The fix lives in RCCL: one library, one rebuild, so there is no upstream to keep rebasing against.
+**Not a vLLM fork.** Nothing here patches vLLM. The fix lives below it — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against.
 
 <details>
 <summary><b>Did you get here from a search engine?</b> These are the exact messages this repository explains</summary>
@@ -127,7 +135,17 @@ Everything below was measured on this machine. Nothing is extrapolated.
 
 ## Am I hit by the RCCL bug?
 
-Two commands. The second is decisive and needs no RCCL, no PyTorch, no vLLM.
+**If your GPUs are passed through to a VM, check one thing first.** Passing a
+card's audio function alongside the GPU stops QEMU from advertising PCIe
+AtomicOp completer support, and that alone produces every symptom below. On
+Proxmox it is the difference between `hostpci0: 0000:0b:00` and
+`hostpci0: 0000:0b:00.0`, and on this machine it took stock RCCL from failing to
+working with nothing else changed. **[Read this before rebuilding
+anything](docs/vfio-atomics.md)** — it is a one-line change and it costs
+nothing to rule out.
+
+If you are on bare metal, or the fix above does not apply, carry on: two
+commands, and the second is decisive and needs no RCCL, no PyTorch, no vLLM.
 
 ```bash
 ./diagnose/check-platform.sh          # dmesg + PCIe bridge chain + hostcall count
@@ -157,8 +175,9 @@ on CPU-direct lanes.
 
 ```
 PCIe AtomicOps cannot reach the GPU
-   (QEMU's emulated pcie-root-port completes none; consumer
-    chipset switches do not route them to slots behind them)
+   (a consumer chipset switch does not route them to slots behind
+    it; a QEMU root port advertises no completer support unless the
+    device is passed as a single function -- see docs/vfio-atomics.md)
         ▼
 amdgpu disables PCIe atomics    →  dmesg: "PCIE atomic ops is not supported"
         ▼
