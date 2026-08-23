@@ -135,9 +135,11 @@ if command -v lspci >/dev/null 2>&1; then
         say "        switch in between routes them."
       fi
     done
-    say "   note: a QEMU guest sees one emulated pcie-root-port, which advertises no"
-    say "   AtomicOp completer support at all (32bit- 64bit-). That is the whole"
-    say "   reason passthrough guests are affected, whatever the host can do."
+    say "   note: a QEMU root port shows 32bit- 64bit- only when the device was"
+    say "   passed as multifunction (e.g. Proxmox hostpci0: 0b:00 rather than"
+    say "   0b:00.0). QEMU advertises completer support automatically since 8.1.0,"
+    say "   but not for multifunction devices. Check that before rebuilding:"
+    say "   see docs/vfio-atomics.md."
   fi
 else
   say "   lspci not available (install pciutils)."

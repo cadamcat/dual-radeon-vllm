@@ -33,7 +33,7 @@ and QEMU/VFIO passthrough guests, including virtualised Instinct.
 audio function alongside the GPU is enough to remove AtomicOps on its own, and undoing
 that made stock RCCL work here — [details and the A/B](docs/vfio-atomics.md). The
 rebuild below is for hardware that genuinely cannot deliver AtomicOps: chipset-fed
-slots on bare metal, root ports without completer support, QEMU older than 8.2.0. We
+slots on bare metal, root ports without completer support, QEMU older than 8.1.0. We
 build it for seven targets:
 
 | Target | Cards | Status |
@@ -340,8 +340,11 @@ Background on the SSM and MoE findings, with source-level evidence:
 by the root complex and *routed* by every switch in between, and `amdgpu` checks
 exactly that through `pci_enable_atomic_ops_to_root()`: 32- and 64-bit completer
 support on the root port, AtomicOp routing on each switch port below it. QEMU's
-emulated `pcie-root-port` advertises no completer support at all
-(`32bit- 64bit-`), so the guest loses atomics no matter what the host can do.
+emulated `pcie-root-port` reports `32bit- 64bit-` **when the device is passed as
+multifunction**, which is the Proxmox default and was this machine's state for
+every measurement in this repository. Passed as a single function it advertises
+completer support automatically, and the guest gets atomics — QEMU has done this
+since 8.1.0. [vfio-atomics.md](docs/vfio-atomics.md) has the A/B.
 
 Bare metal fails for a different reason. Root ports on consumer boards normally
 do advertise completer support — this project's own X399 host reports

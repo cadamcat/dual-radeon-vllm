@@ -1,6 +1,14 @@
 # Deploying into a ROCm / vLLM container
 
-## First: build for *your* GPU
+## First: are you in a VM?
+
+If the GPUs are passed through to a guest, check the passthrough configuration
+before building anything — a card passed with its audio function gets no PCIe
+AtomicOps, and that alone causes the failure this page exists to fix. One line,
+no rebuild: [vfio-atomics.md](vfio-atomics.md). The rest of this page assumes
+you have ruled that out.
+
+## Then: build for *your* GPU
 
 Device code in AMDGPU binaries is architecture-specific. A library built for
 `gfx1100` **will not load** on `gfx1101`, `gfx942`, or anything else. Set the

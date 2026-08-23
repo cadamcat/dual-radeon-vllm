@@ -18,17 +18,20 @@ container image, only that line changed:
 | guest root port | `AtomicOpsCap: 32bit- 64bit-` | **`32bit+ 64bit+`** |
 | GPU requester | `AtomicOpsCtl: ReqEn-` | **`ReqEn+`** |
 | `amdgpu` at boot | `PCIE atomic ops is not supported`, twice | silent |
-| **stock RCCL 2.30.4, 2 ranks** | **`the operation cannot be performed in the present state`** | **all collectives correct** |
+| **stock RCCL 2.30.4, 2 ranks** | **`the operation cannot be performed in the present state`** | **correct** |
 
-Reverting the line reproduced the failure, so this is not a side effect of
-reseating the cards. No rebuilt RCCL was involved in the working column: the
+The test is `all_reduce` and `all_gather_into_tensor`, checked elementwise
+against ground truth rather than against each other, for `float32` / `float16` /
+`bfloat16` at 1 024 and 1 048 576 elements: twelve cases, all correct on the
+right and none reached on the left. Reverting the line reproduced the failure,
+so this is not a side effect of reseating the cards. No rebuilt RCCL was involved in the working column: the
 stock library shipped in `rocm/vllm:rocm7.14.0_rdna...` was used unmodified.
 
 ## 1. Why one character does this
 
 QEMU already knows how to advertise AtomicOp completer support on an emulated
 root port. `vfio_pci_enable_rp_atomics()` in `hw/vfio/pci.c` does it
-automatically, and has since v8.2.0. It gives up if any of these is true:
+automatically, and has since v8.1.0. It gives up if any of these is true:
 
 ```c
 if (pci_bus_is_root(bus) || !parent || !parent->exp.exp_cap ||
@@ -88,13 +91,17 @@ Still everyone whose hardware genuinely cannot deliver AtomicOps:
 
 - cards behind a consumer chipset switch, on bare metal
 - hosts whose root ports do not advertise completer support
-- QEMU older than 8.2.0
+- QEMU older than 8.1.0
 - any case where the card must keep its audio function in the guest
 
 The mechanism this repository documents — hostcall buffers declared in device
-metadata, refused at dispatch without atomics — is unchanged, and the
-`-DNDEBUG` rebuild is still the only fix for those. What changed is the
-*ordering*: in a VM, check the configuration first.
+metadata, refused at dispatch without atomics — is unchanged, and the `-DNDEBUG`
+rebuild is what this repository verified for those cases. It is not the only
+conceivable route: an old QEMU can be upgraded, ROCm 7.1.1's own stock RCCL
+already carries no hostcall (§2 of root-cause.md), and we never tested whether
+the audio function can live in the same guest on its own root port while the GPU
+keeps atomics. What changed is the *ordering*: in a VM, check the configuration
+first.
 
 ## 4. Why this took so long to find
 

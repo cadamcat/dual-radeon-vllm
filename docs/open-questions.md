@@ -237,7 +237,7 @@ atomics as things stand. Patching QEMU was out of scope and remains so.
 > **Wrong, and expensively so. Corrected 2026-08-23.** The observation was right
 > — the root port did report `32bit- 64bit-` — but the diagnosis was not.
 > Nothing needed patching. QEMU has advertised AtomicOp completer support on an
-> emulated root port automatically since v8.2.0, in
+> emulated root port automatically since v8.1.0, in
 > `vfio_pci_enable_rp_atomics()`, and 11.0.2 has that code. It declines to do it
 > for a *multifunction* device, and this VM passed each card's HDMI audio
 > function alongside the GPU, so the function never ran. Changing
