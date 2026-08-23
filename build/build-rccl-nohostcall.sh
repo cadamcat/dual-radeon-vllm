@@ -66,9 +66,25 @@ if [ -z "$DEV" ]; then
   echo "       If you built for another target, re-run with ARCH=<gfx target>." >&2
   exit 3
 fi
-echo "hidden_hostcall_buffer (want 0): $(llvm-readelf --notes "$DEV" | grep -ic hidden_hostcall_buffer)"
-echo "ncclCommDump export (want 1):   $(llvm-objdump -T librccl.so.1.0 | grep -c ncclCommDump)"
-rm -f librccl.so.1.0.*gfx1100 librccl.so.1.0.*host* 2>/dev/null || true
+# grep -c exits 1 on a zero count, and a command substitution inside echo hides
+# that status entirely, so these used to print and continue no matter what.
+# Capture, print, then assert.
+HC=$(llvm-readelf --notes "$DEV" 2>/dev/null | grep -ic hidden_hostcall_buffer || true)
+CD=$(llvm-objdump -T librccl.so.1.0 2>/dev/null | grep -c ncclCommDump || true)
+rm -f librccl.so.1.0.*${ARCH} librccl.so.1.0.*host* 2>/dev/null || true
+echo "hidden_hostcall_buffer (want 0): $HC"
+echo "ncclCommDump export (want >= 1): $CD"
+if [ "${HC:-1}" -ne 0 ]; then
+  echo "ERROR: device image still carries a hostcall buffer. NDEBUG did not reach" >&2
+  echo "       the DEVICE pass; see docs/root-cause.md §5." >&2
+  exit 4
+fi
+if [ "${CD:-0}" -lt 1 ]; then
+  echo "ERROR: ncclCommDump is not exported; torch will refuse to load this." >&2
+  echo "       Build the companion dump stub and patchelf --add-needed it, or" >&2
+  echo "       keep the symbol in the build. See NOTICE.md and the release page." >&2
+  exit 5
+fi
 
 # 5. patchelf: drop real librocm_smi64 (poisons torch's amdsmi -> device_count=0),
 #    add the rsmi stub as the provider of the 9 rsmi_* symbols librccl imports

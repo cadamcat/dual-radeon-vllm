@@ -60,7 +60,26 @@ if [ -z "$DEV" ]; then
   rm -f $SDL/librccl.so.1.*gfx* $SDL/librccl.so.1.*host* 2>/dev/null || true
   exit 3
 fi
-echo -n "  hidden_hostcall_buffer (want 0): "; llvm-readelf --notes "$DEV" 2>/dev/null | grep -ic hidden_hostcall_buffer
+# grep -c exits 1 when the count is 0, which is the outcome we want, so it must
+# not be the last command under `set -e` and its status must not be trusted.
+# Capture the number, then decide. Getting this backwards let a good library
+# abort the deploy and a bad one reach DONE.
+HC=$(llvm-readelf --notes "$DEV" 2>/dev/null | grep -ic hidden_hostcall_buffer || true)
 rm -f $SDL/librccl.so.1.*gfx* $SDL/librccl.so.1.*host* 2>/dev/null || true
-python3 -c "import torch; print('  device_count (want 2):', torch.cuda.device_count())"
+echo "  hidden_hostcall_buffer (want 0): $HC"
+if [ "${HC:-1}" -ne 0 ]; then
+  echo "  ERROR: this library still carries a hostcall buffer. ROCr will refuse" >&2
+  echo "         to dispatch it on a platform without PCIe atomics. See" >&2
+  echo "         docs/root-cause.md §5 — NDEBUG must reach the DEVICE pass." >&2
+  exit 4
+fi
+
+DC=$(python3 -c "import torch; print(torch.cuda.device_count())" 2>/dev/null || echo 0)
+echo "  device_count (want >= 2): $DC"
+if [ "${DC:-0}" -lt 2 ]; then
+  echo "  ERROR: torch sees $DC device(s); tensor-parallel needs at least 2." >&2
+  echo "         Check /dev/kfd, /dev/dri and the container's --group-add." >&2
+  exit 5
+fi
+
 echo "DONE. Launch: NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0 vllm serve <model> --tensor-parallel-size 2 ..."
