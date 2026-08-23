@@ -40,8 +40,11 @@ Per-position acceptance rate: 0.115
 ```
 
 Back-solving the 1K speedup implies roughly 0.46 acceptance there, so acceptance
-degrades with depth as well. But acceptance alone cannot produce −70.8 %; at
-worst it makes speculation free.
+degrades with depth as well. Low acceptance is a real cost in itself — a
+rejected draft has still paid for the assistant's forward pass and the target's
+verification — but it cannot account for −70.8 % when the assistant is four
+layers wide. §5 shows what can: restoring the segmented path recovers 3.66× with
+acceptance unchanged.
 
 ## 2. The cause
 
@@ -177,8 +180,8 @@ its different cause, and RDNA3 measurements.
 ## 7. Not established
 
 - **Crossover point.** Somewhere between 1K and 8K, not measured.
-- **Sampling.** All numbers are `temperature=0`, where acceptance is highest.
-  With sampling it can only be worse.
+- **Sampling.** All numbers are `temperature=0`, where draft and target agree
+  most often. Sampling should lower acceptance, but that was not measured.
 - **One model, one machine.** gfx1100, TP=2, VFIO guest without P2P.
 - **Whether the divergence in §5 is benign.** Unresolved.
 - **CUDA.** No NVIDIA hardware here. The mechanism is platform-independent, but
