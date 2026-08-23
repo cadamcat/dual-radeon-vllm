@@ -234,6 +234,24 @@ QEMU 11.0.2's `pcie-root-port` advertises no AtomicOp completer support
 (`32bit- 64bit-`) and there is no PVE-level switch, so the guest cannot have
 atomics as things stand. Patching QEMU was out of scope and remains so.
 
+> **Wrong, and expensively so. Corrected 2026-08-23.** The observation was right
+> — the root port did report `32bit- 64bit-` — but the diagnosis was not.
+> Nothing needed patching. QEMU has advertised AtomicOp completer support on an
+> emulated root port automatically since v8.2.0, in
+> `vfio_pci_enable_rp_atomics()`, and 11.0.2 has that code. It declines to do it
+> for a *multifunction* device, and this VM passed each card's HDMI audio
+> function alongside the GPU, so the function never ran. Changing
+> `hostpci0: 0000:0b:00` to `hostpci0: 0000:0b:00.0` gives the guest
+> `32bit+ 64bit+`, and stock RCCL 2.30.4 then completes collectives that fail
+> without it. The A/B, including the revert, is in
+> [vfio-atomics.md](vfio-atomics.md).
+>
+> The two questions the paragraph below poses as untested are both answered yes:
+> QEMU can advertise completer support on an emulated root port, and the request
+> does survive the VFIO path. This section had already worked out that a
+> QEMU-side fix was "a real avenue for *us*" and then stopped one step short of
+> trying it. That step was a config edit and a reboot.
+
 The second half of the original answer was a mistake we should record. It read:
 *"our host's own Zen 1 root port reports `Routing-`, so even a fixed QEMU would
 not have helped us."* That conflates two different capability bits.

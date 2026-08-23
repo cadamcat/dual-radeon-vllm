@@ -108,6 +108,14 @@ configuration AMD has already shipped and supported.
 
 ## 5. Applying the fix
 
+> **Scope, before you spend 85 minutes.** Everything above is the mechanism, and
+> it holds wherever atomics are missing. This section is the fix for hardware
+> that genuinely cannot deliver them. **If your GPUs are passed through to a VM,
+> they probably can**, and the reason they appear not to is usually that the
+> card's audio function was passed alongside it, which stops QEMU advertising
+> completer support on the root port. That is a one-line change with no rebuild
+> — see [vfio-atomics.md](vfio-atomics.md). Rule it out first.
+
 > **Version scope.** Everything in this section applies to **RCCL 2.27.7**
 > (`ROCm/rccl`, branch `release/rocm-rel-7.1.1.1`), which we verified end to end.
 > It is **not sufficient for RCCL 2.30.4**: there `NDEBUG` removes the asserts and

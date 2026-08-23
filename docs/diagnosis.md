@@ -3,6 +3,14 @@
 Work down this page. Each step is cheap, and each one either confirms or
 eliminates. **Step 2 is decisive on its own** — if you only do one thing, do that.
 
+> **Before any of it, if your GPUs are in a VM.** Passing a card's audio function
+> alongside the GPU stops QEMU advertising PCIe AtomicOp completer support, which
+> produces every symptom on this page on its own. On Proxmox that is
+> `hostpci0: 0000:0b:00` against `hostpci0: 0000:0b:00.0`. Undoing it made stock
+> RCCL work here with nothing else changed — see [vfio-atomics.md](vfio-atomics.md).
+> Rule that out before you read further; the rest of this page is still worth
+> doing, but it may cost you a rebuild you do not need.
+
 ---
 
 ## Step 0 — Does the shape of the failure match?
@@ -172,5 +180,10 @@ The full 11-combination sweep is in [`diagnose/sweep.sh`](../diagnose/sweep.sh).
 
 ## Step 6 — Fix it
 
+**In a guest, try the VM configuration first** — one line, a reboot, and no
+rebuild at all if the host root port can complete AtomicOps
+([vfio-atomics.md](vfio-atomics.md)).
+
+Otherwise, or if that does not apply:
 [docs/deploy-vllm.md](deploy-vllm.md) — and note that the rebuild alone is not
 enough; there are two further traps that look like unrelated failures.
