@@ -522,8 +522,10 @@ in the README as a snapshot, not a guarantee.
 > commit this section is about. Checked against the Launchpad archive and the
 > published changelog, not against a summary. **So the remedy on 24.04 is now an
 > upgrade, and the rebuilt module below is evidence rather than advice.** Two
-> things do not change: the residual 4-8× penalty on *writable* mappings, which
-> that commit does not touch, and the fact that LP#2161985 is still `New` and
+> things do not change: the residual penalty on *writable* mappings, which that
+> commit does not touch and which measured 4.8× on `-30` itself (15.3 ms against
+> 3.2 for 32 MiB — much smaller in absolute terms than the sixteen seconds it
+> used to sit next to), and the fact that LP#2161985 is still `New` and
 > untriaged, so this report did not cause the fix — it came through the ordinary
 > stable route.
 >

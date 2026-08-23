@@ -1,0 +1,36 @@
+{
+  "what": "diagnose/repro-mmap-prot.hip.cpp, 32 MiB per copy, gfx1100, VFIO guest. Host-to-device copy time by source mapping, across three kernel states. The bug is the rw-p resident row.",
+  "why": "The first two states were measured 2026-07-28 and are what the repository published. The third was measured 2026-08-23 on the kernel Canonical actually ships, which until then the repository had only inferred from a changelog entry.",
+  "unit": "milliseconds",
+  "states": [
+    {
+      "kernel": "7.0.0-28-generic",
+      "amdgpu": "stock, as shipped",
+      "date": "2026-07-28",
+      "r_p_resident": 3.0,
+      "rw_p_not_resident": 14.5,
+      "rw_p_resident": [16019.7, 16019.6, 16019.1, 16019.7, 16019.0],
+      "note": "16 019.7 = sixteen 1000 ms HMM_RANGE_DEFAULT_TIMEOUT windows plus 19.7 ms of real work"
+    },
+    {
+      "kernel": "7.0.0-28-generic",
+      "amdgpu": "rebuilt from Ubuntu's -28 source with 342981fff328 applied, nothing else changed",
+      "date": "2026-07-28",
+      "r_p_resident": 3.0,
+      "rw_p_not_resident": 14.6,
+      "rw_p_resident": [17.0, 17.0, 17.0],
+      "note": "this is what proved the cause; it is not a kernel anyone ships"
+    },
+    {
+      "kernel": "7.0.0-30.30~24.04.1",
+      "amdgpu": "stock, as shipped by Canonical in noble-updates and noble-security",
+      "date": "2026-08-23",
+      "r_p_resident": 3.2,
+      "rw_p_not_resident": 13.1,
+      "rw_p_resident": 15.3,
+      "note": "same machine and same reproducer binary as the 2026-07-28 baseline, re-run the same day before upgrading: 16019.3 ms. The upgrade is the only variable."
+    }
+  ],
+  "reading": "Canonical's -30 fixes it. 16019.3 -> 15.3 ms, a factor of 1047, and the two control rows move by less than 0.5 ms, which is what a single-loop fix should look like. The residual writable-mapping penalty survives at 15.3/3.2 = 4.8x, inside the 4-8x band reported earlier, but its absolute size is now about 12 ms per 32 MiB rather than sixteen seconds.",
+  "not_established": "The end-to-end loader benchmark was not re-run on -30. Scaling 12 ms per 32 MiB to a 21.67 GiB checkpoint suggests single-digit seconds, but that is arithmetic, not a measurement, and it is what the vllm#49991 flag now has to justify itself against."
+}
