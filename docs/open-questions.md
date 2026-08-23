@@ -319,6 +319,63 @@ in the README as a snapshot, not a guarantee.
 > the whole thing long-standing rather than a regression, which the kernel
 > comparison overturned. Both are kept below.
 >
+> ### Measured on the shipped fix, and two of our own numbers do not survive — 2026-08-23
+>
+> Everything below this subsection was measured on `7.0.0-28`, which nobody runs
+> now. Re-run on Canonical's `7.0.0-30` with page cache controlled per cell
+> ([`loader-flag-kernel-30.json`](../benchmarks/loader-flag-kernel-30.json), 89
+> cells, four load paths, four checkpoints, each cell a fresh process):
+>
+> | checkpoint | cache | default | `eager` | clone | `pread` |
+> |---|---|---:|---:|---:|---:|
+> | gemma-4-12B, 9.56 GiB, 1 shard | warm | 4.96 | 10.23 | **2.51** | 4.79 |
+> | gemma-4-12B | cold | 8.15 | 11.46 | **4.71** | 7.16 |
+> | Qwen3-8B, 15.26 GiB, 5 shards | warm | 6.78 | 15.93 | **4.49** | 10.48 |
+> | Qwen3-8B | cold | 13.36 | 18.26 | **7.43** | 13.03 |
+> | gemma-4-31B, 21.67 GiB, 1 shard | cold | 88.52 | did not fit | **11.75** | 17.08 |
+> | gemma-4-26B-A4B MoE, 35 743 tensors | cold | **19.17** | not run | 19.95 | 15.87 |
+>
+> **The clone is worth 1.5× to 2.0× while the checkpoint fits in RAM, not the
+> 3.9× to 5.6× this repository published on 2026-07-28.** That figure came from a
+> run with no control over page cache which loaded three models in sequence, so
+> every cell inherited its predecessor's cache. It does not reproduce.
+>
+> **The 4×–8× is not a constant ratio, and the resident set says why.** `VmHWM`
+> cannot separate an anonymous page from a mapped file page. Sampling `RssAnon`
+> and `RssFile` *during* the load — safetensors unmaps a shard the moment the
+> iterator leaves it, so an end-of-loop sample sees nothing — gives the mechanism
+> directly for the first time here. On the 31B the default path peaks at
+> **21 390 MiB `RssAnon` against 782 MiB `RssFile`**; with the clone those swap
+> places, 843 against 21 479. Breaking copy-on-write converts the whole
+> checkpoint into private dirty memory, which is no longer evictable, so a
+> checkpoint that is a large fraction of host RAM drives the loader into swap.
+> That is where the 7.5× comes from, and it is why sharding bounds the damage:
+> Qwen3-8B is the same 15.26 GiB in five shards and peaks at 4 535 MiB of
+> `RssAnon`, roughly one shard.
+>
+> **`safe_open(..., backend="pread")` has shipped since safetensors 0.8.0 and we
+> missed it for a month.** It is absent from the Python docstring and named in
+> the v0.8.0 release notes, "useful for specific archs/platforms". It never maps
+> the file, so the trigger cannot arise; it returned byte-identical tensors for
+> all 1334 tensors of a 12B shard. It is slower than the clone everywhere here
+> except the MoE checkpoint, where it wins, and its peak resident set is 2.4 to
+> 3.9 GiB against 4.9 to 21.8 GiB for every other path.
+>
+> **The clone is not free.** On the MoE checkpoint it is no better than doing
+> nothing and possibly slightly worse, 19.95 against 19.17 with overlapping
+> ranges: almost nothing there is large enough to pay the copy-on-write cost, so
+> the extra host copy is pure overhead.
+>
+> **What this does not settle.** The 2026-07-28 "healthy kernel" column does not
+> reproduce on `-30` even when its ordering is replayed with no cache control
+> (8B baseline 13.87 s against the 36.4 s reported then; 31B 126.61 s against a
+> >900 s timeout). Page cache is therefore not the whole explanation, and two
+> things changed between the sessions: the kernel state, and this VM's PCIe
+> atomics, off in July and on now. The 32 MiB reproducer moved only 17.0 → 15.3 ms
+> across the same change, so the per-copy path is not where the difference lives,
+> but nothing here says where it does. Treat the July table as superseded rather
+> than reconciled.
+>
 > ### What is solid
 >
 > **The workaround.** Materialising each tensor into anonymous memory before the

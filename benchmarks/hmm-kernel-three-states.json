@@ -32,5 +32,5 @@
     }
   ],
   "reading": "Canonical's -30 fixes it. 16019.3 -> 15.3 ms, a factor of 1047, and the two control rows move by less than 0.5 ms, which is what a single-loop fix should look like. The residual writable-mapping penalty survives at 15.3/3.2 = 4.8x, inside the 4-8x band reported earlier, but its absolute size is now about 12 ms per 32 MiB rather than sixteen seconds.",
-  "not_established": "The end-to-end loader benchmark was not re-run on -30. Scaling 12 ms per 32 MiB to a 21.67 GiB checkpoint suggests single-digit seconds, but that is arithmetic, not a measurement, and it is what the vllm#49991 flag now has to justify itself against."
+  "not_established": "Nothing outstanding here. The end-to-end loader benchmark was re-run on -30 the same day; see loader-flag-kernel-30.json. The arithmetic guess recorded here first, that 12 ms per 32 MiB would scale to single-digit seconds on a 21.67 GiB checkpoint, was right about the order and wrong about the shape: what the writable mapping costs depends on how large the checkpoint is against host RAM, because breaking copy-on-write converts it into anonymous memory."
 }
