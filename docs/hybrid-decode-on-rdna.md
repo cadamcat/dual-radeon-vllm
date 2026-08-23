@@ -107,7 +107,12 @@ Triton fallback. With 16 KV heads it pays about 2.9× the slope of a
 Two independent signals agree that this is an occupancy problem:
 
 **Power falls as context grows.** 265 W + 265 W at 518 tokens, 232 W + 227 W at
-24K, while every dense model in the same sweep holds 265 W flat. Idle silicon,
+24K, while no other model in the sweep loses power with depth — the others climb
+to about 265 W and stay there, and this is the only one that comes back down.
+(An earlier version of this sentence said every dense model "holds 265 W flat",
+which is not what the data shows: at 518 tokens the 8B is at 245 W, the 12B at
+206 W and the 26B MoE at 193 W. They get there with depth. The contrast that
+matters is the direction, not the starting value.) Idle silicon,
 not saturated silicon.
 
 **Normalising by KV traffic makes the gap wider, not narrower.** Only 16 of the

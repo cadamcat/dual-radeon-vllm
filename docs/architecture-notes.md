@@ -150,7 +150,7 @@ verdict propagated into this document. It was wrong. Once compiled:
 |---|---|
 | decode, short context | **107.8 tok/s** — 1.35× the next-fastest model of any size |
 | decode at 32 K context | **72.8 tok/s** |
-| power | **265 W / 265 W, synchronised** |
+| power | **193 W / 192 W** at the 107.8 tok/s point; it only reaches 265 W / 265 W from 12 K on, where decode is 88 tok/s |
 | concurrency | 9.50× (313 631 KV tokens) |
 | compile cost | 26 min once, then **cached** (a warm start is seconds) |
 

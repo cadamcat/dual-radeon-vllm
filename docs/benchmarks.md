@@ -54,7 +54,7 @@ With the startup timeout raised, the compile **finishes in 26 minutes** (`init e
 |---|---|---|---|
 | decode, short context | ~15 tok/s | **107.8 tok/s** | **7.2×** |
 | decode at 32 K | not measured | 72.8 tok/s | |
-| power | 131 W / 65 W, *asymmetric* | **265 W / 265 W, synchronised** | the asymmetry was an artefact |
+| power | 131 W / 65 W, *asymmetric* | **193 W / 192 W** at that point, 265 / 265 from 12 K on — symmetric either way | the asymmetry was an artefact |
 | verdict | "MoE is unfriendly on ROCm" | **fastest architecture measured here** | overturned |
 
 The same mistake had been made on the 12B: an earlier context sweep used

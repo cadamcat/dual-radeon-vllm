@@ -2,14 +2,14 @@
 
 **Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL bug that stops most people before they start.**
 
-`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT, and a 26B MoE at **108 tok/s**, with both GPUs at 265 W *synchronised*. The machine is a VFIO virtual machine with **no P2P, no PCIe atomics and cross-die PCIe 3.0**: deliberately the least favourable topology.
+`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P, no PCIe atomics and cross-die PCIe 3.0**: deliberately the least favourable topology.
 
 <table>
 <tr>
 <td><b>43 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
 <td><b>108 tok/s</b><br><sub>gemma-4-26B-A4B MoE, TP=2</sub></td>
 <td><b>1.70×</b><br><sub>TP=2 speed-up on BF16, 85% efficiency</sub></td>
-<td><b>265 W × 2</b><br><sub>synchronised = real tensor parallel</sub></td>
+<td><b>265 W × 2</b><br><sub>31B, both cards together = real tensor parallel</sub></td>
 </tr>
 </table>
 
