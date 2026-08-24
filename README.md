@@ -478,8 +478,9 @@ docs/
 
 **Reported upstream:** the RCCL root cause is
 [ROCm/ROCm#6520](https://github.com/ROCm/ROCm/issues/6520), with a pointer on
-[#6074](https://github.com/ROCm/ROCm/issues/6074). The mmap finding and the SSM
-behaviour are written up in `docs/` but not yet filed; see
+[#6074](https://github.com/ROCm/ROCm/issues/6074). The passthrough caveat behind
+it went to `pve-devel` on 2026-08-24 as a two-patch `pve-docs` series. The SSM
+behaviour is written up in `docs/` but not filed; see
 [open-questions.md](docs/open-questions.md) for what is claimed and how strongly.
 
 **If you only open one file:** [`docs/benchmarks.md`](docs/benchmarks.md) if you came

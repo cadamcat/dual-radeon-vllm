@@ -115,6 +115,13 @@ Proxmox's own documentation describes the `00:02` shorthand as a convenience and
 does not mention what it costs. Searching its `pve-devel` list for AtomicOps
 discussion returns nothing.
 
+We sent a two-patch series to `pve-devel` on 2026-08-24 against `pve-docs`: one
+patch documents the caveat next to the paragraph that introduces the shorthand,
+the other appends the function to the GPU passthrough example, which currently
+pairs `pcie=on` with the all-functions form. Message-ID
+`20260824170828.42821-1-Xy2462381442@gmail.com`. Whether it gets applied is
+Proxmox's call.
+
 Upstream has been circling it. Robin Voetter proposed an `x-atomic-completion`
 property on `pcie-root-port` in April 2023; the automatic vfio path landed
 instead. In February 2026 Manojlo Pekovic proposed extending it to multifunction
