@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" width="780" height="420" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 401" width="780" height="401" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
 <text x="62" y="24" font-size="16" font-weight="700" fill="#8a8a8a">Prefill throughput vs context length</text>
 <text x="62" y="42" font-size="11.5" fill="#8a8a8a" opacity=".85">max_tokens=1, throughput = prompt tokens / TTFT, best of 2 runs</text>
 <text x="62" y="58" font-size="10.5" fill="#8a8a8a" opacity=".7">2026-08-25 &#183; 2x RX 7900 XT &#183; vLLM 0.23.1.dev1+g9ddef7117 &#183; ROCm 7.14 &#183; kernel 7.0.0-30 &#183; patched: #45916 split-KV + window block-skip</text>
@@ -40,18 +40,6 @@
 <circle cx="676.1" cy="168.4" r="3" fill="#8b6ee0"/>
 <circle cx="705.6" cy="175.1" r="3" fill="#8b6ee0"/>
 <circle cx="752.2" cy="187.3" r="3" fill="#8b6ee0"/>
-<polyline points="79.1,217.5 191.2,215.4 303.4,213.2 415.6,216.1 481.2,217.9 527.8,221.0 593.4,225.5 640.0,229.7 676.1,233.2 705.6,236.2 752.2,240.7" fill="none" stroke="#21a0a0" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="217.5" r="3" fill="#21a0a0"/>
-<circle cx="191.2" cy="215.4" r="3" fill="#21a0a0"/>
-<circle cx="303.4" cy="213.2" r="3" fill="#21a0a0"/>
-<circle cx="415.6" cy="216.1" r="3" fill="#21a0a0"/>
-<circle cx="481.2" cy="217.9" r="3" fill="#21a0a0"/>
-<circle cx="527.8" cy="221.0" r="3" fill="#21a0a0"/>
-<circle cx="593.4" cy="225.5" r="3" fill="#21a0a0"/>
-<circle cx="640.0" cy="229.7" r="3" fill="#21a0a0"/>
-<circle cx="676.1" cy="233.2" r="3" fill="#21a0a0"/>
-<circle cx="705.6" cy="236.2" r="3" fill="#21a0a0"/>
-<circle cx="752.2" cy="240.7" r="3" fill="#21a0a0"/>
 <polyline points="79.1,218.9 191.2,215.7 303.4,212.9 415.6,215.4 481.2,217.0 527.8,218.8 593.4,222.9 640.0,226.8 676.1,230.0 705.6,232.8 752.2,237.8" fill="none" stroke="#d1519a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
 <circle cx="79.1" cy="218.9" r="3" fill="#d1519a"/>
 <circle cx="191.2" cy="215.7" r="3" fill="#d1519a"/>
@@ -114,16 +102,14 @@
 <circle cx="752.2" cy="242.1" r="3" fill="#e05c48"/>
 <line x1="62.0" y1="336" x2="84.0" y2="336" stroke="#8b6ee0" stroke-width="3"/>
 <text x="91.0" y="340" font-size="11.5" fill="#8a8a8a">gemma-4-26B-A4B &#183; MoE &#183; TP2</text>
-<line x1="412.0" y1="336" x2="434.0" y2="336" stroke="#21a0a0" stroke-width="3"/>
-<text x="441.0" y="340" font-size="11.5" fill="#8a8a8a">gemma-3-27b &#183; w4a16, sliding window &#183; TP2</text>
-<line x1="62.0" y1="355" x2="84.0" y2="355" stroke="#d1519a" stroke-width="3"/>
-<text x="91.0" y="359" font-size="11.5" fill="#8a8a8a">Muse-Glimmer-30B &#183; int4, sliding window &#183; TP2</text>
-<line x1="412.0" y1="355" x2="434.0" y2="355" stroke="#3f8fd4" stroke-width="3"/>
-<text x="441.0" y="359" font-size="11.5" fill="#8a8a8a">Qwen3-8B &#183; BF16 &#183; TP2</text>
-<line x1="62.0" y1="374" x2="84.0" y2="374" stroke="#2ea36a" stroke-width="3"/>
-<text x="91.0" y="378" font-size="11.5" fill="#8a8a8a">gemma-4-12B &#183; w4a16 &#183; TP2</text>
-<line x1="412.0" y1="374" x2="434.0" y2="374" stroke="#d99a24" stroke-width="3"/>
-<text x="441.0" y="378" font-size="11.5" fill="#8a8a8a">gemma-4-31B &#183; w4a16 &#183; TP2</text>
-<line x1="62.0" y1="393" x2="84.0" y2="393" stroke="#e05c48" stroke-width="3"/>
-<text x="91.0" y="397" font-size="11.5" fill="#8a8a8a">Qwen3.8-27B &#183; hybrid SSM &#183; TP2</text>
+<line x1="412.0" y1="336" x2="434.0" y2="336" stroke="#d1519a" stroke-width="3"/>
+<text x="441.0" y="340" font-size="11.5" fill="#8a8a8a">Muse-Glimmer-30B &#183; int4, sliding window &#183; TP2</text>
+<line x1="62.0" y1="355" x2="84.0" y2="355" stroke="#3f8fd4" stroke-width="3"/>
+<text x="91.0" y="359" font-size="11.5" fill="#8a8a8a">Qwen3-8B &#183; BF16 &#183; TP2</text>
+<line x1="412.0" y1="355" x2="434.0" y2="355" stroke="#2ea36a" stroke-width="3"/>
+<text x="441.0" y="359" font-size="11.5" fill="#8a8a8a">gemma-4-12B &#183; w4a16 &#183; TP2</text>
+<line x1="62.0" y1="374" x2="84.0" y2="374" stroke="#d99a24" stroke-width="3"/>
+<text x="91.0" y="378" font-size="11.5" fill="#8a8a8a">gemma-4-31B &#183; w4a16 &#183; TP2</text>
+<line x1="412.0" y1="374" x2="434.0" y2="374" stroke="#e05c48" stroke-width="3"/>
+<text x="441.0" y="378" font-size="11.5" fill="#8a8a8a">Qwen3.8-27B &#183; hybrid SSM &#183; TP2</text>
 </svg>

@@ -69,7 +69,17 @@ P = lambda c, t: max(pre[c][t]) if c in pre and t in pre[c] else None
 TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
 
 
-def build(fn, title, sub, series, vmax, ylab, ticks, ncol=2):
+def nice_ticks(vmax):
+    """0..vmax in 4-6 steps of a round size. Reproduces the hand-picked ticks the
+    2026-07-25 charts used, and keeps working when a ceiling is changed."""
+    for step in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000):
+        if 4 <= vmax / step <= 6:
+            return [i * step for i in range(int(vmax // step) + 1)]
+    return [0, vmax]
+
+
+def build(fn, title, sub, series, vmax, ylab, ncol=2):
+    ticks = nice_ticks(vmax)
     rowsn = math.ceil(len(series) / ncol)
     W, H = 780, 344 + rowsn * 19
     L, R, T, B = 62, 762, 76, 282
@@ -129,13 +139,13 @@ sm = [(k, [(t, 1000 / D(k, t)) for t in TARGETS if D(k, t)]) for k in TP2]
 charts = [
     build(name("decode-vs-context"), "Decode throughput vs context length",
           "TP=2, CUDA graph, 512-token outputs, mean of 2 runs",
-          sd, a.vmax_decode, "decode tok/s", [0, 20, 40, 60, 80, 100]),
+          sd, a.vmax_decode, "decode tok/s"),
     build(name("prefill-vs-context"), "Prefill throughput vs context length",
           "max_tokens=1, throughput = prompt tokens / TTFT, best of 2 runs",
-          sp, a.vmax_prefill, "prefill tok/s", [0, 1000, 2000, 3000, 4000]),
+          sp, a.vmax_prefill, "prefill tok/s"),
     build(name("decode-ms-per-token"), "Cost of one context token at decode time",
           "slope = ms added per token of context; a linear-attention model should be flat",
-          sm, a.vmax_ms, "ms per generated token", [0, 50, 100, 150, 200, 250]),
+          sm, a.vmax_ms, "ms per generated token"),
 ]
 
 tp1_keys = [k for k in a.tp1_series.split(",") if k.strip() and k in dec]
@@ -144,7 +154,7 @@ if len(tp1_keys) >= 2:
     charts.append(
         build(name("tp1-vs-tp2"), "Single card vs dual card (TP=1 dashed, TP=2 solid)",
               "BF16 scales 1.70x; w4a16 only 1.19x - see 'why' in benchmarks.md",
-              st, a.vmax_tp1, "decode tok/s", [0, 20, 40, 60, 80]))
+              st, a.vmax_tp1, "decode tok/s"))
 else:
     print("note: not enough TP=1 data for tp1-vs-tp2, skipped")
 
