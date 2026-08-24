@@ -34,8 +34,18 @@ The loop covers the whole sequence. The window is applied afterwards, as a mask
 on the scores. Every block older than the window is loaded, multiplied, masked to
 `-10000`, and contributes `exp(-10000 - m)`, which is zero.
 
-At 32 768 context with a 2 048 window and `block_size` 16 that is **2 048 blocks
-read where 128 are needed**.
+At 32 768 context with a 2 048 window and `block_size` 16 that is **2 048 block
+iterations where 128 are needed**.
+
+**What those iterations actually read is one block, over and over.**
+`SlidingWindowManager.remove_skipped_blocks` frees the blocks that fall out of
+the window and writes `self._null_block` into their slots
+(`single_type_kv_cache_manager.py`), so the block table stays full length and
+every skipped position points at the same shared null block. The cost is
+therefore the loop and the matmul against that block, not KV bandwidth — and the
+block table being full length is also why starting the loop later cannot index
+out of bounds. Both of these were read out of the source rather than inferred
+from the outputs matching.
 
 ## 2. The change
 
@@ -172,7 +182,7 @@ kernel's minimum of 3, so all 62 layers run on the Triton path.
 **The gap between the two is the finding.** Unpatched, `gemma-3-27b` decodes at
 8.06 tok/s at 32 K while `gemma-4-31B` — larger, newer, same family — does 30.36.
 Patched, gemma-3 reaches 22.12 and what remains is explicable by the models
-rather than by a kernel reading 32× more KV than it uses.
+rather than by a kernel doing 32× the block iterations it needs.
 
 **The no-window control** is `Qwen3.8-27B`, same `ROCM_ATTN` backend with
 `sliding_window` unset. Three runs per state: 8 192 goes 84.09 → 84.08 and
