@@ -4,6 +4,13 @@ On `Muse-Glimmer-30B` at 32 768 tokens of context that costs **70.67 % of decode
 CUDA time**. Removing it is worth **3.15×** there and **2.75× on `gemma-3-27b`**.
 Eleven lines. Upstream `main` still does it as of 2026-08-24.
 
+**Someone proposed the same eleven lines a month before we found them.**
+[vllm#49588](https://github.com/vllm-project/vllm/pull/49588), opened 2026-07-23,
+is identical once the identifier and the argument order of `tl.maximum` are
+normalised. It has been a draft since 2026-07-25 with no review comments. This
+page is not a proposal; §9 says what the two sets of evidence are and why they
+do not overlap.
+
 Correctness rests on two kernel-level results, §6: upstream's own test file with
 no case changing outcome, and 15 boundary cases bit-identical under
 `torch.equal`. **An earlier version of this page used end-to-end token identity
@@ -305,3 +312,30 @@ KV-cache quantisation scales that this checkpoint does not carry — and by plai
 completions, which come out coherent.
 
 Raw data: [`benchmarks/sliding-window-block-skip.json`](../benchmarks/sliding-window-block-skip.json).
+
+## 9. Someone got here first, and with different evidence
+
+[vllm#49588](https://github.com/vllm-project/vllm/pull/49588) by @hec-ovi,
+opened 2026-07-23, draft since 2026-07-25, no review comments. Its five
+executable lines are the same as §2's after normalising `first_block` against
+`start_block` and the argument order of `tl.maximum`; the comments differ in
+wording, not in reasoning.
+
+We found this by running vLLM's own duplicate check from `AGENTS.md` before
+drafting anything, which is the point of that check. **Nothing here has been
+opened as a second PR and nothing has been posted to that one.**
+
+The two bodies of evidence do not overlap:
+
+| | #49588 | here |
+|---|---|---|
+| hardware | one gfx1151 board | gfx1100 |
+| level | kernel microbenchmark, 100 iterations of one decode call | two real models end to end |
+| repeats | 100 calls in one process | three independent processes per cell, seven depths |
+| correctness | hand-written PyTorch reference, 0.002 tolerance | upstream's own test file, no case changing outcome, plus 15 boundary cases bit-identical |
+| scope | not discussed | which models reach the path and which are routed away |
+
+Its motivating example, `poolside/Laguna-S-2.1`, is real and its description
+checks out — 48 layers, 36 of them sliding with a 512-token window, `head_dim`
+128 — but it is cited as motivation rather than tested; the measurements are
+synthetic parameters shaped after it.
