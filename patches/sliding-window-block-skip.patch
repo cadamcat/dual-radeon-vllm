@@ -9,9 +9,12 @@ the loop there is an identity, not an approximation.
 
 Measured on Muse-Glimmer-30B, gfx1100, TP=2, 32768 context, 2048 window,
 block_size 16: 2048 blocks read where 128 are needed. 1.589 ms -> 154.796 us per
-kernel call, 83.83 -> 26.93 ms per generated token, all 64 generated tokens
-identical. See docs/sliding-window-block-skip.md for the controls that bound the
-scope; gemma-4 is routed to a different backend and is unaffected.
+kernel call, 83.99 -> 26.63 ms per generated token (3.15x), and 2.75x on
+gemma-3-27b, against 1.00x below each model's own window. Correctness: upstream's
+own tests/kernels/attention/test_prefix_prefill.py passes with no case changing
+outcome, and 15 boundary cases are bit-identical under torch.equal. See
+docs/sliding-window-block-skip.md; gemma-4 is routed to a different backend and
+is unaffected.
 
 Against vLLM 0.23.1.dev1+g9ddef7117. main as of 2026-08-24 has the same loop.
 

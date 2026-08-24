@@ -1,0 +1,301 @@
+{
+  "what": "Greedy decoding on this machine is not reproducible across processes. Measured 2026-08-24 on gfx1100, TP=2, as a by-product of verifying an unrelated kernel change.",
+  "why_it_surfaced": "The sliding-window block-skip change was being verified by comparing generated token ids before and after. Sequences differed at depths where the change provably does nothing, including 512 tokens against a 2048 window, so the test itself was suspect rather than the change.",
+  "method": "vLLM 0.23.1.dev, TP=2, greedy (temperature 0, ignore_eos), 64 generated tokens, synthetic repeating-token prompt, one warm-up generate of the same prompt before the measured one. Three independent processes per (model, kernel state, depth). No code differs between the three runs of a cell.",
+  "result": {
+    "cells": 36,
+    "cells_with_more_than_one_output": 10,
+    "split_by_kernel_state": {
+      "before": 5,
+      "after": 5
+    },
+    "note": "Symmetric between the two kernel states, so the change under test is not the cause."
+  },
+  "cells": [
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 512,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 1024,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 2048,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 4096,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 16384,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 4,
+      "tokens_differing": 5,
+      "tokens_generated": 64
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "before",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 512,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 1024,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 2048,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 4096,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 7,
+      "tokens_differing": 57,
+      "tokens_generated": 64
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 16384,
+      "runs": 3,
+      "distinct_outputs": 3,
+      "first_divergence_index": 4,
+      "tokens_differing": 5,
+      "tokens_generated": 64
+    },
+    {
+      "model": "gemma3",
+      "kernel_state": "after",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma4",
+      "kernel_state": "before",
+      "depth": 8192,
+      "runs": 2,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma4",
+      "kernel_state": "before",
+      "depth": 32768,
+      "runs": 2,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma4",
+      "kernel_state": "after",
+      "depth": 8192,
+      "runs": 2,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "gemma4",
+      "kernel_state": "after",
+      "depth": 32768,
+      "runs": 2,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 512,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 0,
+      "tokens_differing": 1,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 1024,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 2048,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 2,
+      "tokens_differing": 4,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 4096,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 3,
+      "tokens_differing": 31,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 3,
+      "tokens_differing": 61,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 16384,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "before",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 512,
+      "runs": 3,
+      "distinct_outputs": 3,
+      "first_divergence_index": 9,
+      "tokens_differing": 53,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 1024,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 0,
+      "tokens_differing": 64,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 2048,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 4096,
+      "runs": 3,
+      "distinct_outputs": 2,
+      "first_divergence_index": 3,
+      "tokens_differing": 31,
+      "tokens_generated": 64
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 16384,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "muse",
+      "kernel_state": "after",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "qwen38",
+      "kernel_state": "before",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "qwen38",
+      "kernel_state": "before",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "qwen38",
+      "kernel_state": "after",
+      "depth": 8192,
+      "runs": 3,
+      "distinct_outputs": 1
+    },
+    {
+      "model": "qwen38",
+      "kernel_state": "after",
+      "depth": 32768,
+      "runs": 3,
+      "distinct_outputs": 1
+    }
+  ],
+  "reading": "10 of 36 cells produced more than one greedy output across three runs with no code change between them. It appears at any depth, including 512 tokens, and the first divergence is usually early, index 0 to 9 of 64, after which greedy decoding amplifies it. gemma-4-31B, which runs on the TRITON_ATTN backend, was deterministic in all four of its cells; the affected models are on ROCM_ATTN and its Triton kernel_paged_attention_2d. The kernel itself is not the source: 15 fixed-input cases run in two separate processes agreed bit for bit (torch.equal), so whatever varies is above the kernel, in the engine.",
+  "relation_to_upstream": "vllm#50603, open since 2026-07-31, reports first-call non-determinism and long-sequence corruption from the same Triton paged-attention fallback on gfx1100, and names gqa_ratio=2 as what gates the CK custom kernel out. gemma-3-27b has gqa_ratio exactly 2. **One detail does not match: that report says a warm-up call fixes the non-determinism, and every measurement here already includes a warm-up generate of the same prompt at the same depth.** Whether this is the same defect seen from a different angle, or a second one, is not settled and nothing has been posted to that issue.",
+  "not_established": "Not tested: whether the same process repeated generates deterministically after warm-up, which would separate cross-process from within-process variation; whether TP=1 behaves differently; whether output quality degrades or merely varies. No claim is made that the outputs are wrong, only that they are not reproducible."
+}

@@ -69,7 +69,7 @@
   "controls": {
     "gemma-4-31B-it-qat-w4a16-ct": {
       "why": "the largest sliding-window model here (window 1024, 50 of 60 layers) and the repository's workhorse",
-      "result": "unaffected. vLLM forces Gemma-4 onto TRITON_ATTN because its head dimensions are heterogeneous (head_dim 256 local, global_head_dim 512), and that backend's kernel already bounds its loop by the window. 8192: 24.36 -> 24.24 ms/tok; 32768: 32.94 -> 33.12 ms/tok; 64 of 64 tokens identical at both depths.",
+      "result": "Unaffected, two runs per state. vLLM forces Gemma-4 onto TRITON_ATTN because its head dimensions are heterogeneous (head_dim 256 local, global_head_dim 512), and that backend's kernel already bounds its loop by the window. 8192: 24.27 before against 24.44 after; 32768: 33.10 against 33.16.",
       "before": {
         "8192": 24.36,
         "32768": 32.94
@@ -77,11 +77,45 @@
       "after": {
         "8192": 24.24,
         "32768": 33.12
-      }
+      },
+      "depth_curve_n2": [
+        {
+          "depth": 8192,
+          "n": 2,
+          "before_median_ms": 24.268,
+          "before_range_ms": [
+            24.229,
+            24.307
+          ],
+          "after_median_ms": 24.441,
+          "after_range_ms": [
+            24.422,
+            24.46
+          ],
+          "speedup": 0.993,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 32768,
+          "n": 2,
+          "before_median_ms": 33.1,
+          "before_range_ms": [
+            33.095,
+            33.106
+          ],
+          "after_median_ms": 33.164,
+          "after_range_ms": [
+            33.104,
+            33.224
+          ],
+          "speedup": 0.998,
+          "ranges_overlap": true
+        }
+      ]
     },
     "Qwen3.8-27B-AWQ-INT4": {
       "why": "no sliding window, same ROCM_ATTN backend: the path the change must not disturb",
-      "result": "patched 84.09 ms/tok at 8192 and 97.17 at 32768, against 83.32 and 94.70 measured unpatched earlier the same day. +0.9% and +2.6%, one run each side, so this does not separate a real regression from process-to-process spread.",
+      "result": "Settled with three runs per state. 8192: 84.09 median before against 84.08 after; 32768: 95.42 against 96.69. The before and after ranges overlap at both depths, so the +2.6% seen in a single earlier run was process-to-process spread and not a regression.",
       "unpatched": {
         "8192": 83.32,
         "32768": 94.7
@@ -89,12 +123,46 @@
       "patched": {
         "8192": 84.09,
         "32768": 97.17
-      }
+      },
+      "depth_curve_n3": [
+        {
+          "depth": 8192,
+          "n": 3,
+          "before_median_ms": 84.092,
+          "before_range_ms": [
+            84.059,
+            84.327
+          ],
+          "after_median_ms": 84.079,
+          "after_range_ms": [
+            83.909,
+            84.258
+          ],
+          "speedup": 1.0,
+          "ranges_overlap": true
+        },
+        {
+          "depth": 32768,
+          "n": 3,
+          "before_median_ms": 95.417,
+          "before_range_ms": [
+            95.302,
+            95.552
+          ],
+          "after_median_ms": 96.688,
+          "after_range_ms": [
+            95.172,
+            97.061
+          ],
+          "speedup": 0.987,
+          "ranges_overlap": true
+        }
+      ]
     }
   },
-  "reading": "Two models reach this path and both gain. Muse-Glimmer-30B goes 83.83 -> 26.93 ms/tok at 32768 (3.11x) and gemma-3-27b-it goes 124.15 -> 45.20 (2.75x), with all 64 generated tokens identical in every case. At the kernel on Muse-Glimmer it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term at 44.7%. The gemma-3 figure is the one that shows the size of the problem: at 32768 it decodes at 8.06 tok/s unpatched against 30.36 tok/s for gemma-4-31B, a larger and newer model, purely because gemma-4 is routed to a backend that already bounds its loop. Patched, gemma-3 reaches 22.12 tok/s and the remaining gap is explicable by the models rather than by a kernel reading 32 times more KV than it uses.",
+  "reading": "Two models reach this path and both gain, with the gain appearing exactly where the mechanism says it should. Below each model's window the change is worth 1.00x, and from there it grows monotonically with depth: gemma-3-27b 1.11x at 2048, 1.63x at 8192, 2.75x at 32768; Muse-Glimmer 1.15x at 4096, 2.01x at 16384, 3.15x at 32768. Three independent processes per cell with narrow ranges. Patched, Muse-Glimmer is nearly context-independent, 21.97 ms/tok at 512 against 26.63 at 32768. At the kernel it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term. The gemma-3 figure is the one that shows the size of the problem: at 32768 it decodes at 8.06 tok/s unpatched against 30.36 for gemma-4-31B, a larger and newer model, purely because gemma-4 is routed to a backend that already bounds its loop.",
   "scope": "Any model with a sliding window that lands on ROCM_ATTN. That includes gemma-3, which is mainstream, and excludes gemma-4, which vLLM forces onto TRITON_ATTN because its head dimensions are heterogeneous. Checked and found not to qualify: Mistral-Small-3.2 and Mistral-7B-v0.3 (no window), Ministral-8B (window 32768, which covers the whole context at the depths measured), Phi-4-reasoning (no window), Phi-4-mini-reasoning (window 262144), GLM-5.2, DeepSeek-V4-Flash, Ornith-1.5 and LFM2.5 (no window, or a window with an architecture out of reach here). A small window relative to context is not common among 2026 flagships; Gemma is where it lives.",
-  "not_established": "Every cell is n=1; nothing here was repeated. Only two models were tested, both on one machine. Correctness rests on token identity for one synthetic prompt at two depths, not on a test suite. Whether the block table is genuinely full-length, rather than the skip merely happening to be safe here, was inferred from the identical output and not read out of the KV cache manager. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change, against 412 GiB/s for the custom HIP kernel on the same run, so the exclusion of those layers from that kernel is untouched; closing that remaining gap would be worth about 19% more, not another 3x, because the weight GEMM now dominates.",
+  "not_established": "Two models on one machine, gfx1100 only. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change against 412 GiB/s for the custom HIP kernel in the same run, so their exclusion from that kernel is untouched; closing it would now be worth about 19%, not another 3x, because the weight GEMM dominates. Whether the block table is genuinely full-length, rather than the skip merely happening to be safe here, has not been read out of the KV cache manager. **An earlier version of this file offered end-to-end token identity as the correctness argument. That test cannot discriminate on this machine and has been replaced by the two kernel-level results above; see gfx1100-greedy-nondeterminism.json.**",
   "models_affected": {
     "Muse-Glimmer-30B-INT4": {
       "window": 2048,
@@ -102,43 +170,120 @@
       "head_dim": 128,
       "block_size": 16,
       "backend": "ROCM_ATTN",
-      "end_to_end": {
-        "method": "one process per column, greedy, 64 generated tokens differenced against 8 at the same depth, synthetic repeating-token prompt",
-        "before": {
-          "8192": {
-            "ms_per_token": 35.8,
-            "tok_per_s": 27.94
-          },
-          "32768": {
-            "ms_per_token": 83.83,
-            "tok_per_s": 11.93
-          }
+      "depth_curve_n3": [
+        {
+          "depth": 512,
+          "n": 3,
+          "before_median_ms": 21.917,
+          "before_range_ms": [
+            21.902,
+            22.136
+          ],
+          "after_median_ms": 21.968,
+          "after_range_ms": [
+            21.952,
+            22.033
+          ],
+          "speedup": 0.998,
+          "ranges_overlap": true
         },
-        "after": {
-          "8192": {
-            "ms_per_token": 24.46,
-            "tok_per_s": 40.88
-          },
-          "32768": {
-            "ms_per_token": 26.93,
-            "tok_per_s": 37.14
-          }
+        {
+          "depth": 1024,
+          "n": 3,
+          "before_median_ms": 23.554,
+          "before_range_ms": [
+            23.509,
+            23.713
+          ],
+          "after_median_ms": 23.527,
+          "after_range_ms": [
+            23.442,
+            23.656
+          ],
+          "speedup": 1.001,
+          "ranges_overlap": true
         },
-        "speedup": {
-          "8192": 1.46,
-          "32768": 3.11
+        {
+          "depth": 2048,
+          "n": 3,
+          "before_median_ms": 26.413,
+          "before_range_ms": [
+            26.284,
+            26.478
+          ],
+          "after_median_ms": 26.26,
+          "after_range_ms": [
+            26.178,
+            26.309
+          ],
+          "speedup": 1.006,
+          "ranges_overlap": true
         },
-        "output_identical": {
-          "8192": {
-            "identical": true,
-            "tokens_compared": 64
-          },
-          "32768": {
-            "identical": true,
-            "tokens_compared": 64
-          }
+        {
+          "depth": 4096,
+          "n": 3,
+          "before_median_ms": 30.155,
+          "before_range_ms": [
+            30.107,
+            30.205
+          ],
+          "after_median_ms": 26.274,
+          "after_range_ms": [
+            26.218,
+            26.367
+          ],
+          "speedup": 1.148,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 8192,
+          "n": 3,
+          "before_median_ms": 37.836,
+          "before_range_ms": [
+            37.797,
+            37.848
+          ],
+          "after_median_ms": 26.314,
+          "after_range_ms": [
+            26.301,
+            26.364
+          ],
+          "speedup": 1.438,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 16384,
+          "n": 3,
+          "before_median_ms": 53.213,
+          "before_range_ms": [
+            53.172,
+            53.255
+          ],
+          "after_median_ms": 26.525,
+          "after_range_ms": [
+            26.512,
+            26.545
+          ],
+          "speedup": 2.006,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 32768,
+          "n": 3,
+          "before_median_ms": 83.986,
+          "before_range_ms": [
+            83.813,
+            84.002
+          ],
+          "after_median_ms": 26.632,
+          "after_range_ms": [
+            26.559,
+            26.733
+          ],
+          "speedup": 3.154,
+          "ranges_overlap": false
         }
-      }
+      ]
     },
     "gemma-3-27b-it-quantized.w4a16": {
       "window": 1024,
@@ -150,43 +295,164 @@
       "block_size": 16,
       "backend": "ROCM_ATTN",
       "why_it_matters": "RedHatAI's w4a16 re-upload of google/gemma-3-27b-it, 344k downloads. head_dim is uniform and there is no global_head_dim, so the Gemma4-specific forcing rule in model_executor/models/config.py does not fire and it is not routed to TRITON_ATTN the way gemma-4 is. gqa_ratio 2 also puts the custom HIP kernel out of reach, so all 62 layers run on the Triton path.",
-      "end_to_end": {
-        "method": "same as the other model: one process per column, greedy, 64 generated tokens differenced against 8 at the same depth",
-        "before": {
-          "8192": {
-            "ms_per_token": 40.49,
-            "tok_per_s": 24.7
-          },
-          "32768": {
-            "ms_per_token": 124.15,
-            "tok_per_s": 8.06
-          }
+      "depth_curve_n3": [
+        {
+          "depth": 512,
+          "n": 3,
+          "before_median_ms": 21.322,
+          "before_range_ms": [
+            21.301,
+            21.43
+          ],
+          "after_median_ms": 21.33,
+          "after_range_ms": [
+            21.309,
+            21.486
+          ],
+          "speedup": 1.0,
+          "ranges_overlap": true
         },
-        "after": {
-          "8192": {
-            "ms_per_token": 26.44,
-            "tok_per_s": 37.82
-          },
-          "32768": {
-            "ms_per_token": 45.2,
-            "tok_per_s": 22.12
-          }
+        {
+          "depth": 1024,
+          "n": 3,
+          "before_median_ms": 23.776,
+          "before_range_ms": [
+            23.637,
+            23.821
+          ],
+          "after_median_ms": 23.637,
+          "after_range_ms": [
+            23.557,
+            23.907
+          ],
+          "speedup": 1.006,
+          "ranges_overlap": true
         },
-        "speedup": {
-          "8192": 1.53,
-          "32768": 2.75
+        {
+          "depth": 2048,
+          "n": 3,
+          "before_median_ms": 26.957,
+          "before_range_ms": [
+            26.955,
+            26.993
+          ],
+          "after_median_ms": 24.316,
+          "after_range_ms": [
+            24.229,
+            24.342
+          ],
+          "speedup": 1.109,
+          "ranges_overlap": false
         },
-        "output_identical": {
-          "8192": {
-            "identical": true,
-            "tokens_compared": 64
-          },
-          "32768": {
-            "identical": true,
-            "tokens_compared": 64
-          }
+        {
+          "depth": 4096,
+          "n": 3,
+          "before_median_ms": 33.339,
+          "before_range_ms": [
+            33.327,
+            33.384
+          ],
+          "after_median_ms": 25.705,
+          "after_range_ms": [
+            25.582,
+            25.803
+          ],
+          "speedup": 1.297,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 8192,
+          "n": 3,
+          "before_median_ms": 46.28,
+          "before_range_ms": [
+            46.199,
+            46.281
+          ],
+          "after_median_ms": 28.461,
+          "after_range_ms": [
+            28.41,
+            28.518
+          ],
+          "speedup": 1.626,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 16384,
+          "n": 3,
+          "before_median_ms": 72.299,
+          "before_range_ms": [
+            72.294,
+            72.379
+          ],
+          "after_median_ms": 33.988,
+          "after_range_ms": [
+            33.955,
+            34.124
+          ],
+          "speedup": 2.127,
+          "ranges_overlap": false
+        },
+        {
+          "depth": 32768,
+          "n": 3,
+          "before_median_ms": 124.291,
+          "before_range_ms": [
+            124.244,
+            124.334
+          ],
+          "after_median_ms": 45.26,
+          "after_range_ms": [
+            45.211,
+            45.373
+          ],
+          "speedup": 2.746,
+          "ranges_overlap": false
         }
-      }
+      ]
+    }
+  },
+  "verification": {
+    "why": "End-to-end token identity was the original correctness argument and it does not work on this machine; see nondeterminism below. These two are kernel-level with fixed inputs and are unaffected by it.",
+    "upstream_kernel_suite": {
+      "what": "tests/kernels/attention/test_prefix_prefill.py from the container's own source tree at /app/vllm, dated 2026-07-15 and matching the installed package. Run whole, unpatched then patched, compared per case from junit XML rather than by summary counts.",
+      "before": {
+        "total": 388,
+        "passed": 164,
+        "skipped": 224,
+        "failed": 0,
+        "seconds": 902.13
+      },
+      "after": {
+        "total": 388,
+        "passed": 164,
+        "skipped": 224,
+        "failed": 0,
+        "seconds": 342.14
+      },
+      "cases_changing_outcome": 0,
+      "cases_only_in_one_run": 0,
+      "sliding_window_coverage": {
+        "w=0": "41 passed",
+        "w=16": "16 passed",
+        "w=2048": "16 passed",
+        "note": "head sizes 24 and 128, num_queries_per_kv 1 and 64, both devices, kv_cache_dtype auto and fp8. The 224 skips are fp8_e5m2, which ROCm's custom paged attention does not support, and are identical in both runs."
+      },
+      "aside": "The suite itself ran 2.6x faster patched, which is independent corroboration of the kernel change."
+    },
+    "boundary_bit_comparison": {
+      "what": "15 hand-built cases through the kernel directly, inputs constructed the way tests/kernels builds them, outputs saved and compared with torch.equal rather than allclose. Skipped blocks contribute exp(-10000 - m) = 0, so bit equality is the right bar.",
+      "result": "15 of 15 bit-identical",
+      "coverage": {
+        "per-sequence first_block varies within one batch": "mixed-w256-bs16, first_block 32..96 across 10 sequences",
+        "seq_len below the window": "seq-below-window, seq_len 101 against window 2048, first_block 0",
+        "seq_len equal to the window": "seq-equal-window, first_block 0",
+        "one token past the window": "seq-window-plus1, first_block still 0 because (257-256)//16 = 0",
+        "one block past the window": "seq-window-plus-blk, first_block becomes 1",
+        "window not a multiple of block_size": "seq-unaligned-window, window 100 with block_size 16, first_block 118 of 126",
+        "almost everything skipped": "mixed-w17-bs16, first_block 47..110 of 49..112",
+        "no window at all": "nowindow-bs16 and nowindow-bs32, bit-identical as required"
+      },
+      "note": "Both runs were separate processes and still agreed bit for bit, which places the engine-level nondeterminism below outside this kernel."
     }
   }
 }

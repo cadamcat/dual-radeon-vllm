@@ -1,9 +1,14 @@
 # The Triton paged-decode kernel reads the whole sequence, then masks the window away
 
 On `Muse-Glimmer-30B` at 32 768 tokens of context that costs **70.67 % of decode
-CUDA time**. Removing it is worth **3.11×** there and **2.75× on `gemma-3-27b`**,
-with the generated tokens identical in every case. Eleven lines. Upstream `main`
-still does it as of 2026-08-24.
+CUDA time**. Removing it is worth **3.15×** there and **2.75× on `gemma-3-27b`**.
+Eleven lines. Upstream `main` still does it as of 2026-08-24.
+
+Correctness rests on two kernel-level results, §6: upstream's own test file with
+no case changing outcome, and 15 boundary cases bit-identical under
+`torch.equal`. **An earlier version of this page used end-to-end token identity
+instead. That test does not work on this machine and the claim has been
+withdrawn** — see §7.
 
 `gemma-3-27b` unpatched decodes at **8.06 tok/s** at 32 K, against 30.36 for
 `gemma-4-31B`, a larger and newer model. §5 explains why the two land on
@@ -58,27 +63,41 @@ tolerance.
 
 ## 3. What it is worth
 
-TP=2, 2× RX 7900 XT, one process per column, greedy, 64 generated tokens
-differenced against 8 at the same depth.
+TP=2, 2× RX 7900 XT, one process per cell, greedy, 64 generated tokens
+differenced against 8 at the same depth. **Three independent processes per
+cell**; the median is shown with the observed range.
+
+`gemma-3-27b-it` w4a16, window 1 024:
+
+| context | before | after | speed-up |
+|---:|---:|---:|---:|
+| 512 | 21.32 (21.30–21.43) | 21.33 (21.31–21.49) | 1.00× |
+| 1 024 | 23.78 | 23.64 | 1.01× |
+| 2 048 | 26.96 | 24.32 | 1.11× |
+| 4 096 | 33.34 | 25.70 | 1.30× |
+| 8 192 | 46.28 | 28.46 | 1.63× |
+| 16 384 | 72.30 | 33.99 | 2.13× |
+| 32 768 | 124.29 (124.24–124.33) | 45.26 (45.21–45.37) | **2.75×** |
 
 `Muse-Glimmer-30B` int4, window 2 048:
 
-| context | before | after | speed-up | tokens identical |
-|---:|---:|---:|---:|---|
-| 8 192 | 35.80 ms/tok (27.94 tok/s) | 24.46 ms/tok (**40.88 tok/s**) | 1.46× | 64 / 64 |
-| 32 768 | 83.83 ms/tok (11.93 tok/s) | 26.93 ms/tok (**37.14 tok/s**) | **3.11×** | 64 / 64 |
+| context | before | after | speed-up |
+|---:|---:|---:|---:|
+| 512 | 21.92 | 21.97 | 1.00× |
+| 1 024 | 23.55 | 23.53 | 1.00× |
+| 2 048 | 26.41 | 26.26 | 1.01× |
+| 4 096 | 30.16 | 26.27 | 1.15× |
+| 8 192 | 37.84 | 26.31 | 1.44× |
+| 16 384 | 53.21 | 26.52 | 2.01× |
+| 32 768 | 83.99 (83.81–84.00) | 26.63 (26.56–26.73) | **3.15×** |
 
-`gemma-3-27b-it` w4a16, window 1 024, `sliding_window_pattern` 6:
+Milliseconds per generated token.
 
-| context | before | after | speed-up | tokens identical |
-|---:|---:|---:|---:|---|
-| 8 192 | 40.49 ms/tok (24.70 tok/s) | 26.44 ms/tok (**37.82 tok/s**) | 1.53× | 64 / 64 |
-| 32 768 | 124.15 ms/tok (**8.06 tok/s**) | 45.20 ms/tok (**22.12 tok/s**) | **2.75×** | 64 / 64 |
-
-A 1 024 window at 32 768 is 2 048 blocks read where 64 are needed, 32× rather
-than Muse-Glimmer's 16×, yet the end-to-end gain is smaller. `gemma-3-27b` has
-62 layers against 52 and a GQA ratio of 2, so more of its step is spent outside
-attention to begin with.
+**The shape is the mechanism check.** Below each model's own window the change is
+worth 1.00×, because there is nothing to skip. From there it grows monotonically.
+A curve of any other shape would have said the explanation was wrong even if the
+headline number was right. Patched, `Muse-Glimmer` is nearly context-independent:
+21.97 ms/tok at 512 against 26.63 at 32 768.
 
 At the kernel, same profiler settings as the existing traces:
 
@@ -95,10 +114,6 @@ not shrink with the block count.
 22 %, and the 4-bit weight GEMM becomes the largest single term at 44.7 %
 (260 calls per step, which is 52 layers × 5 matmuls). For a quantised dense model
 that is the expected shape; the state before the change was not.
-
-**Decode also becomes nearly flat with context** — 40.88 tok/s at 8 192 against
-37.14 at 32 768. A capped window should behave that way, and no other model
-measured in this repository does; they all start fast and fall.
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 
@@ -146,9 +161,8 @@ That is `Gemma4Config.verify_and_update_config`, and it fires only when
 `head_dim` and `global_head_dim` both exist, differ, and the larger exceeds 256.
 `TRITON_ATTN`'s decode kernel already bounds its loop by the window
 (`triton_unified_attention.py`, `for j in range(loop_lo, loop_hi)`), so gemma-4
-never paid this cost. Measured rather than assumed: `gemma-4-31B` goes
-24.36 → 24.24 ms/tok at 8 192 and 32.94 → 33.12 at 32 768, ±0.5 %, 64 of 64
-tokens identical.
+never paid this cost. Measured rather than assumed, two runs per state: `gemma-4-31B` goes
+24.27 → 24.44 ms/tok at 8 192 and 33.10 → 33.16 at 32 768, within 0.7 %.
 
 **`gemma-3` is affected.** It has a single uniform `head_dim` of 128 and no
 `global_head_dim`, so that rule does not fire, and it takes `ROCM_ATTN` by the
@@ -161,10 +175,10 @@ Patched, gemma-3 reaches 22.12 and what remains is explicable by the models
 rather than by a kernel reading 32× more KV than it uses.
 
 **The no-window control** is `Qwen3.8-27B`, same `ROCM_ATTN` backend with
-`sliding_window` unset: patched it reads 84.09 and 97.17 ms/tok against 83.32 and
-94.70 measured unpatched earlier the same day, +0.9 % and +2.6 %. One run each
-side, so **that does not separate a regression from process-to-process spread**
-and should be repeated before the change is trusted on shared paths.
+`sliding_window` unset. Three runs per state: 8 192 goes 84.09 → 84.08 and
+32 768 goes 95.42 → 96.69, and the before and after ranges overlap at both
+depths. An earlier single run showed +2.6 % at 32 768 and this settles it as
+spread rather than a regression.
 
 **Who else might qualify.** A small window relative to context turns out to be
 uncommon among 2026 flagships. Checked and found not to qualify:
@@ -174,12 +188,79 @@ window), `Phi-4-mini-reasoning` (window 262 144), `GLM-5.2`,
 `DeepSeek-V4-Flash`, `Ornith-1.5` and `LFM2.5`. Gemma is where small windows
 live, and gemma-2 was not checked because its config is gated.
 
-## 6. What this does not establish
+## 6. Correctness
 
-Every cell is n=1. Correctness rests on token identity for one synthetic prompt
-at two depths, not a test suite. Whether the block table is genuinely full-length
-— rather than the skip merely happening to be safe here — was inferred from the
-identical output, not read out of the KV cache manager.
+Two kernel-level results, both with fixed inputs, so neither is touched by the
+non-determinism in §7.
+
+**Upstream's own test file, unmodified.** The container carries a full vLLM
+source tree at `/app/vllm` dated 2026-07-15, matching the installed package, so
+`tests/kernels/attention/test_prefix_prefill.py` is version-matched rather than
+borrowed from `main`. Run whole, unpatched then patched, compared per case from
+junit XML rather than by summary counts:
+
+| | cases | passed | skipped | failed | wall |
+|---|---:|---:|---:|---:|---:|
+| unpatched | 388 | 164 | 224 | 0 | 902 s |
+| patched | 388 | 164 | 224 | 0 | **342 s** |
+
+**Zero cases changed outcome and zero appeared in only one run.** The
+sliding-window cases did run rather than skip: 41 passed at `sliding_window=0`,
+16 at `16`, 16 at `2048`, across head sizes 24 and 128, `num_queries_per_kv` 1
+and 64, both devices, `kv_cache_dtype` auto and fp8. The 224 skips are
+`fp8_e5m2`, which ROCm's custom paged attention does not support, and are the
+same 224 in both runs. The suite itself ran 2.6× faster patched, which is
+independent corroboration of the change.
+
+**Fifteen boundary cases, bit-identical.** Inputs built the way `tests/kernels`
+builds them, run through the kernel directly in two separate processes, outputs
+compared with `torch.equal` rather than `allclose` — skipped blocks contribute
+`exp(-10000 - m)`, which is zero, so bit equality is the right bar and anything
+less would mean the mechanism is not what §2 claims.
+
+| case | what it pins |
+|---|---|
+| `mixed-w256-bs16` | `first_block` 32..96 across ten sequences in one batch |
+| `seq-below-window` | `seq_len` 101 against window 2 048, `first_block` 0 |
+| `seq-equal-window` | `seq_len` exactly the window, `first_block` 0 |
+| `seq-window-plus1` | one token past, still 0 since `(257-256)//16 = 0` |
+| `seq-window-plus-blk` | one block past, `first_block` becomes 1 |
+| `seq-unaligned-window` | window 100 with `block_size` 16, `first_block` 118 of 126 |
+| `mixed-w17-bs16` | almost everything skipped, 47..110 of 49..112 |
+| `nowindow-bs16`, `-bs32` | no window: must be bit-identical, and is |
+
+All 15 agree bit for bit. They ran in separate processes and still agreed, which
+places §7 outside this kernel.
+
+## 7. Greedy decoding here is not reproducible, and it is not this change
+
+The original correctness argument on this page was that the generated tokens were
+identical before and after. **That test does not work on this machine.**
+
+Running three independent processes per cell with *no code change between them*,
+10 of 36 cells produced more than one greedy output. It happens at any depth,
+including 512 tokens against a 2 048 window where this change provably does
+nothing, and the split is symmetric between the two kernel states, 5 and 5. The
+first divergence is usually early, index 0 to 9 of 64, after which greedy
+decoding amplifies it.
+
+`gemma-4-31B`, on the `TRITON_ATTN` backend, was deterministic in all four of its
+cells. The affected models are the ones on `ROCM_ATTN`.
+
+This resembles [vllm#50603](https://github.com/vllm-project/vllm/issues/50603),
+open since 2026-07-31, which reports first-call non-determinism from the same
+Triton fallback on gfx1100 and names `gqa_ratio=2` as what gates the CK kernel
+out — `gemma-3-27b` has exactly that. **One detail does not match: that report
+says a warm-up call fixes it, and every measurement here already includes a
+warm-up generate of the same prompt at the same depth.** Whether this is the same
+defect from a different angle or a second one is unsettled, and nothing has been
+posted there. Data: [`benchmarks/gfx1100-greedy-nondeterminism.json`](../benchmarks/gfx1100-greedy-nondeterminism.json).
+
+## 8. What this does not establish
+
+Two models on one machine, gfx1100 only. Whether the block table is genuinely
+full-length — rather than the skip merely happening to be safe here — has not
+been read out of the KV cache manager.
 
 The model itself runs here through a downstream adaptation: vLLM support for
 `Muse-Glimmer` merged upstream on 2026-08-14, after this container was built, so
