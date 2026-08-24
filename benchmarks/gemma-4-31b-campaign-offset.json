@@ -1,0 +1,170 @@
+{
+  "what": "gemma-4-31B-it-qat-w4a16 decodes 0.85% slower in the 2026-08-25 campaign than in the 2026-07-25 one, at every context length, and the cause is not known.",
+  "why_it_is_here": "It is the only one of five controls that moved. Four others reproduce July within 0.25%. Publishing a campaign comparison means saying what did not reconcile, not only what did.",
+  "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-25 22:08 UTC (cold), 2026-08-25 22:30 UTC (warm, started immediately after the cold run)",
+  "machine": {
+    "gpu": "2x Radeon RX 7900 XT (gfx1100), TP=2, VFIO guest",
+    "july_kernel": "7.0.0-28-generic",
+    "august_kernel": "7.0.0-30-generic",
+    "july_vllm": "0.23",
+    "august_vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+    "note": "the August container also carries PR#49991's clone flag, PR#45916's split-KV with the gate widened, and the sliding-window block skip. None is on gemma-4's code path: it is forced onto TRITON_ATTN, it is dense, and it has no sliding window."
+  },
+  "reproducibility": {
+    "runs_on_2026_08_25": 3,
+    "relative_stddev_across_the_three_pct": {
+      "mean": 0.0773,
+      "max": 0.1462
+    },
+    "offset_against_july_pct": {
+      "run1_in_campaign": -0.845,
+      "run2_cold": -0.899,
+      "run3_warm": -0.793
+    },
+    "reading": "Three independent runs agree to 0.077% RSD. The offset is about eleven times that, so it is a property of the two campaigns and not of any one run."
+  },
+  "temperature_is_not_the_cause": {
+    "design": "Run 2 started on a machine idle for 13 minutes at 38C junction. Run 3 started immediately after run 2 finished. Junction was sampled every 15 s throughout run 3.",
+    "run3_junction_c": {
+      "card1_start": 58,
+      "card1_peak": 99,
+      "card2_start": 53,
+      "card2_peak": 95
+    },
+    "dual_card_power_w": {
+      "median": 532,
+      "july_median_same_config": 532
+    },
+    "warm_minus_cold_pct": {
+      "mean": 0.106,
+      "min": -0.147,
+      "max": 0.269
+    },
+    "reading": "Junction climbs from 58C to 99C inside a single 19-minute configuration, so both runs cover most of the range regardless of how they started. Across that range the warm run is 0.11% faster than the cold one, with the per-point range spanning zero. No thermal effect on decode throughput is measurable here between 38C and 100C. Power draw is identical to July's, which is not what throttling looks like.",
+    "separate_hardware_note": "96-99C junction under sustained decode is 6-9C above the 2026-07-23 acceptance test for the interposed fan (92.8C card1, 90.1C card2, 8-way concurrent load). It remains 11C below the 110C throttle line. That is a cooling observation, not an explanation of the offset."
+  },
+  "ruled_out": [
+    "Thermal. See above.",
+    "The w4a16 kernel path. gemma-4-12B is the same quantisation on the same path and reproduces July at -0.02%.",
+    "A machine-wide regression. Qwen3-8B -0.10%, gemma-4-26B-A4B -0.23%, Qwen3-8B at TP=1 +0.01%.",
+    "Run-to-run variance. 0.077% RSD across three runs against a 0.85% offset.",
+    "Campaign position. July's run was fifth, two hours in; run 1 was first on a cold machine; both are 0.85% apart from July in the same direction."
+  ],
+  "not_ruled_out": [
+    "The guest kernel, 7.0.0-28 to 7.0.0-30. It is the largest uncontrolled difference, but it should not be selective for one model when three others on the same machine are unaffected.",
+    "Something in the vLLM build between 0.23 and 0.23.1.dev1 that touches this model's shape specifically.",
+    "A difference in the model files themselves. Not checked: no checksum of the July weights was kept."
+  ],
+  "ladder": [
+    {
+      "context": 500,
+      "july_2026_07_25": 43.155,
+      "aug_run1_in_campaign": 42.84,
+      "aug_run2_cold": 42.705,
+      "aug_run3_warm": 42.82,
+      "warm_vs_cold_pct": 0.269,
+      "aug_mean_vs_july_pct": -0.85,
+      "aug_rsd_pct": 0.139
+    },
+    {
+      "context": 1000,
+      "july_2026_07_25": 41.99,
+      "aug_run1_in_campaign": 41.655,
+      "aug_run2_cold": 41.62,
+      "aug_run3_warm": 41.7,
+      "warm_vs_cold_pct": 0.192,
+      "aug_mean_vs_july_pct": -0.79,
+      "aug_rsd_pct": 0.0786
+    },
+    {
+      "context": 2000,
+      "july_2026_07_25": 41.04,
+      "aug_run1_in_campaign": 40.765,
+      "aug_run2_cold": 40.68,
+      "aug_run3_warm": 40.62,
+      "warm_vs_cold_pct": -0.147,
+      "aug_mean_vs_july_pct": -0.857,
+      "aug_rsd_pct": 0.1462
+    },
+    {
+      "context": 4000,
+      "july_2026_07_25": 39.765,
+      "aug_run1_in_campaign": 39.445,
+      "aug_run2_cold": 39.38,
+      "aug_run3_warm": 39.44,
+      "warm_vs_cold_pct": 0.152,
+      "aug_mean_vs_july_pct": -0.863,
+      "aug_rsd_pct": 0.0749
+    },
+    {
+      "context": 6000,
+      "july_2026_07_25": 38.27,
+      "aug_run1_in_campaign": 37.965,
+      "aug_run2_cold": 37.965,
+      "aug_run3_warm": 37.97,
+      "warm_vs_cold_pct": 0.013,
+      "aug_mean_vs_july_pct": -0.793,
+      "aug_rsd_pct": 0.0062
+    },
+    {
+      "context": 8000,
+      "july_2026_07_25": 36.865,
+      "aug_run1_in_campaign": 36.59,
+      "aug_run2_cold": 36.62,
+      "aug_run3_warm": 36.62,
+      "warm_vs_cold_pct": 0.0,
+      "aug_mean_vs_july_pct": -0.692,
+      "aug_rsd_pct": 0.0386
+    },
+    {
+      "context": 12000,
+      "july_2026_07_25": 35.26,
+      "aug_run1_in_campaign": 34.96,
+      "aug_run2_cold": 34.985,
+      "aug_run3_warm": 35.005,
+      "warm_vs_cold_pct": 0.057,
+      "aug_mean_vs_july_pct": -0.785,
+      "aug_rsd_pct": 0.0526
+    },
+    {
+      "context": 16000,
+      "july_2026_07_25": 33.63,
+      "aug_run1_in_campaign": 33.32,
+      "aug_run2_cold": 33.295,
+      "aug_run3_warm": 33.375,
+      "warm_vs_cold_pct": 0.24,
+      "aug_mean_vs_july_pct": -0.892,
+      "aug_rsd_pct": 0.1003
+    },
+    {
+      "context": 20000,
+      "july_2026_07_25": 32.025,
+      "aug_run1_in_campaign": 31.695,
+      "aug_run2_cold": 31.7,
+      "aug_run3_warm": 31.74,
+      "warm_vs_cold_pct": 0.126,
+      "aug_mean_vs_july_pct": -0.978,
+      "aug_rsd_pct": 0.0635
+    },
+    {
+      "context": 24000,
+      "july_2026_07_25": 30.98,
+      "aug_run1_in_campaign": 30.665,
+      "aug_run2_cold": 30.67,
+      "aug_run3_warm": 30.705,
+      "warm_vs_cold_pct": 0.114,
+      "aug_mean_vs_july_pct": -0.968,
+      "aug_rsd_pct": 0.058
+    },
+    {
+      "context": 32000,
+      "july_2026_07_25": 29.54,
+      "aug_run1_in_campaign": 29.265,
+      "aug_run2_cold": 29.285,
+      "aug_run3_warm": 29.33,
+      "warm_vs_cold_pct": 0.154,
+      "aug_mean_vs_july_pct": -0.835,
+      "aug_rsd_pct": 0.0928
+    }
+  ]
+}

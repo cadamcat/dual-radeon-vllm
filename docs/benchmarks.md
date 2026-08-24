@@ -310,13 +310,43 @@ where July left them, the two campaigns can be read against each other.
 | Qwen3-8B, TP=1 | BF16 | +0.01 % | −0.01 .. +0.03 |
 | gemma-4-31B | w4a16 QAT | **−0.85 %** | −1.03 .. −0.67 |
 
-Four sit in the noise. gemma-4-31B does not: its offset is small but the spread
-is tight, so it is systematic. It is not heat — the round-2-against-round-1
-penalty is −0.08 % here against −0.09 % in July, both campaigns draw the same
-532 W median, and July's gemma-4-31B ran two hours into its campaign while this
-one ran first on a cold machine, which is the wrong direction for a thermal
-story. It is not the w4a16 path either, because gemma-4-12B rides the same one
-at −0.02 %. Recorded as unexplained.
+Four sit in the noise. gemma-4-31B does not, and it was chased down rather than
+waved at. It was measured **three times** on 2026-08-25: once inside the campaign,
+once from a machine idle for thirteen minutes at 38 °C junction, and once starting
+immediately after that second run finished, with junction sampled every 15 s
+throughout.
+
+| run | offset against July |
+|---|---:|
+| in the campaign, first configuration | −0.85 % |
+| again, from cold | −0.90 % |
+| again, immediately after, from warm | −0.79 % |
+
+The three agree with each other to a **relative standard deviation of 0.077 %**,
+0.146 % at the worst point. The offset is eleven times that, so it belongs to the
+two campaigns rather than to any one run.
+
+**Temperature does not explain it.** Junction climbs from 58 °C to 99 °C inside a
+single nineteen-minute configuration, so both runs cover most of the range no
+matter how they start; across it the warm run comes out **0.11 % faster** than the
+cold one, with the per-point range spanning zero. Dual-card power is 532 W median
+in both campaigns, which is not what throttling looks like. July's run of this
+model was fifth, two hours into its campaign, and tonight's first was first on a
+cold machine, and the two are the same distance from July in the same direction.
+
+Also ruled out: the w4a16 path, since gemma-4-12B is the same quantisation on the
+same path at −0.02 %; and anything machine-wide, since three other controls
+reproduce. What is left and not ruled out is the guest kernel moving from
+`7.0.0-28` to `7.0.0-30`, or something in the vLLM build between 0.23 and
+0.23.1.dev1 — neither of which should be selective for one model out of four.
+**Recorded as unexplained**, with the runs, the temperature trace and the
+eliminations in
+[`gemma-4-31b-campaign-offset.json`](../benchmarks/gemma-4-31b-campaign-offset.json).
+
+One thing the temperature trace does say, separately: sustained decode holds
+junction at **96–99 °C**, six to nine degrees above the 2026-07-23 acceptance test
+for the interposed fan, and eleven below the 110 °C throttle line. That is a
+cooling observation, not an explanation.
 
 ### The hybrid-SSM collapse is gone
 

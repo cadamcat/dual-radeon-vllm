@@ -135,6 +135,19 @@ def main():
     ck("benchmarks.md §6 control, 31B", -0.85, offset(jul, aug, "C-31B-tp2"))
     ck("benchmarks.md §6 control, 8B TP=1", 0.01, offset(jul, aug, "B-8B-tp1"))
 
+    # --- benchmarks.md §6, the gemma-4-31B offset investigation --------------
+    off_file = os.path.join(HERE, "..", "gemma-4-31b-campaign-offset.json")
+    if os.path.exists(off_file):
+        off = json.load(open(off_file))
+        rep = off["reproducibility"]
+        ck("§6 offset, run1", -0.85, rep["offset_against_july_pct"]["run1_in_campaign"])
+        ck("§6 offset, run2 cold", -0.90, rep["offset_against_july_pct"]["run2_cold"])
+        ck("§6 offset, run3 warm", -0.79, rep["offset_against_july_pct"]["run3_warm"])
+        ck("§6 offset, RSD mean", 0.077, rep["relative_stddev_across_the_three_pct"]["mean"])
+        ck("§6 offset, RSD max", 0.146, rep["relative_stddev_across_the_three_pct"]["max"])
+        ck("§6 offset, warm minus cold",
+           0.11, off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
