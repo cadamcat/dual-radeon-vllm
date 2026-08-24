@@ -6,6 +6,12 @@ P2P and no PCIe atomics. **292 measurements, zero errors.** Raw data and the run
 are in [`benchmarks/`](../benchmarks/); method is in
 [`benchmarks/README.md`](../benchmarks/README.md).
 
+**The same ladder was measured again on 2026-08-25**, on a patched container and a
+newer guest kernel: 372 measurements, nine configurations, four of them the July
+ones rerun as controls. That campaign is [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25),
+and it is what §2's conclusion should be read against. Sections 1 to 5 are the
+July record and are left as they were measured.
+
 Five models were chosen to isolate *architecture*, not size:
 
 | Model | Precision | Architecture | Why it is here |
@@ -74,6 +80,11 @@ independent of context, with power bouncing between the cards". Compiled, it is
 
 A linear-attention layer carries a fixed-size recurrent state, so decoding should
 cost the **same** whatever the context length. That is the entire selling point.
+
+> This section measures stock vLLM. The cause was found afterwards and the fix
+> exists: [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25) has the
+> same architecture at a 0.391 µs slope instead of 4.850. What follows is why it
+> was 4.850.
 
 ![cost of one context token at decode time](assets/decode-ms-per-token.svg)
 
@@ -274,6 +285,105 @@ second card, and it is invisible in a tokens-per-second table.
 
 ---
 
+## 6. The same machine, patched: a second campaign on 2026-08-25
+
+Everything above is stock vLLM 0.23 on guest kernel `7.0.0-28`. A month later the
+container carries three patch sets and the guest runs `7.0.0-30`, so the same
+ladder was measured again: **372 measurements, nine configurations, eleven
+context lengths, two rounds each, zero errors.**
+
+![decode throughput vs context length, patched](assets/decode-vs-context-2026-08-25.svg)
+
+### The controls are what make the two campaigns comparable
+
+Four of the nine configurations are the July ones rerun unchanged. None of the
+three patch sets touches their code path: gemma-4 is forced onto `TRITON_ATTN`,
+[#45916](https://github.com/vllm-project/vllm/pull/45916) is the hybrid-SSM
+decode path, and the window block-skip needs a sliding window. If they come back
+where July left them, the two campaigns can be read against each other.
+
+| control | quantisation | mean offset over 11 points | spread |
+|---|---|---:|---|
+| Qwen3-8B | BF16 | −0.10 % | −0.24 .. +0.05 |
+| gemma-4-12B | w4a16 QAT | −0.02 % | −1.05 .. +1.45 |
+| gemma-4-26B-A4B | AWQ int4 | −0.23 % | −0.49 .. +0.10 |
+| Qwen3-8B, TP=1 | BF16 | +0.01 % | −0.01 .. +0.03 |
+| gemma-4-31B | w4a16 QAT | **−0.85 %** | −1.03 .. −0.67 |
+
+Four sit in the noise. gemma-4-31B does not: its offset is small but the spread
+is tight, so it is systematic. It is not heat — the round-2-against-round-1
+penalty is −0.08 % here against −0.09 % in July, both campaigns draw the same
+532 W median, and July's gemma-4-31B ran two hours into its campaign while this
+one ran first on a cold machine, which is the wrong direction for a thermal
+story. It is not the w4a16 path either, because gemma-4-12B rides the same one
+at −0.02 %. Recorded as unexplained.
+
+### The hybrid-SSM collapse is gone
+
+[#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel with
+its `on_gfx12x()` gate widened to `on_gfx1x()`, measured end to end on
+`Qwen3.8-27B`, the same architecture as §2's `Qwen3.6-27B` — 64 layers,
+`full_attention_interval` 4, `head_dim` 256, identical in every config field.
+
+| | 500 | 32 K | retained | slope |
+|---|---:|---:|---:|---:|
+| Qwen3.6-27B, 2026-07-25, stock | 12.12 | **4.25** | 35.1 % | 4.850 µs |
+| Qwen3.8-27B, 2026-08-25, patched | 12.30 | **10.68** | 86.8 % | **0.391 µs** |
+
+**2.51× at 32 K.** The kernel-level verification on 2026-07-30 predicted 2.52×
+and measured 10.72 tok/s by a different method entirely — a 64-token generation
+differenced against an 8-token one, once per depth, at depths that did not even
+match. Two methods, one number. The slope falls 12.4×, out of its own order of
+magnitude and into the band the dense models occupy.
+
+### Two sliding-window models, six times apart
+
+The Triton paged-decode kernel used to iterate every block of the sequence and
+mask the out-of-window ones afterwards; the block-skip starts the loop at the
+window instead. Both models that reach that path gain, and they do not gain
+alike.
+
+| | window | full-attn layers | KV heads | slope | 500 → 32 K |
+|---|---:|---:|---:|---:|---:|
+| Muse-Glimmer-30B | 2048 | 13 of 52 | **2** | **0.122 µs** | −14.4 % |
+| gemma-3-27b | 1024 | ~10 of 62 | **16** | **0.730 µs** | −50.7 % |
+
+Muse-Glimmer goes flat where its window is and stays there: 37.99 at 2 000, then
+37.91, 37.87, 37.78, 37.73, 37.67, 37.66, 37.62, 37.40 at 32 K. Its slope of
+0.122 µs is second only to the BF16 model's 0.118 — a 30B model that costs
+almost nothing per token of context.
+
+gemma-3-27b has the **smaller** window and proportionally **more** windowed
+layers, and it is the steepest curve in either campaign. The difference is what
+its full-attention layers cost: 16 KV heads against Muse-Glimmer's 2, so roughly
+82 KB of KV per token against 13 KB. **The long-context slope is set by the KV
+width of the full-attention layers, not by how many layers are windowed.**
+
+gemma-3 is not plotted — between 500 and 4 000 it runs within two tok/s of both
+Muse-Glimmer and gemma-4-31B and the three lines read as one. Its result belongs
+in prose: the block-skip takes it from **8.06 tok/s at 32 K to 22.05**, and the
+32 K point works out to 45.35 ms per token where the kernel A/B measured 45.26
+patched and 124.29 unpatched. Data is in
+[`results-2026-08-25.jsonl`](../benchmarks/results-2026-08-25.jsonl).
+
+![cost of one context token at decode time, patched](assets/decode-ms-per-token-2026-08-25.svg)
+
+**This chart's ceiling is 100 ms, §2's is 250.** Nothing on the patched machine
+passes 94 ms, and at 250 the curves collapsed into the bottom third. The two are
+not to be compared by eye; compare the slope column instead.
+
+### What did not move
+
+Prefill differences between the campaigns are a short-prompt artefact. At 500
+tokens they run +64 % and −60 %; from 4 000 up everything is inside 2 %. Prefill
+throughput is prompt tokens divided by TTFT, and at 500 tokens TTFT is a few
+hundred milliseconds of mostly fixed overhead.
+
+Weight-load times are recorded in the file but are **not** evidence about
+`VLLM_CLONE_MMAP`, which both campaigns set. Page cache was not controlled, and
+this repository has already published one loader claim that did not survive
+controlling it ([open-questions.md §8](open-questions.md)).
+
 ## Choosing a model on this hardware
 
 | you want | use | because |
@@ -282,9 +392,10 @@ second card, and it is invisible in a tokens-per-second table.
 | best single-model quality | gemma-4-31B w4a16 | 43.2 tok/s, 29.5 at 32 K; concurrency only 1.74× |
 | short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |
-| **long context** | **avoid hybrid-SSM, for now** | the 27B drops to 4.2 tok/s at 32 K on stock vLLM; dense and MoE lose only 23–33 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) fixes the slope (10.72 tok/s at 32 K here) but is unmerged, so this stands |
+| **long context** | **Muse-Glimmer-30B, patched** | 37.4 tok/s at 32 K, a 0.122 µs slope, flat from its 2 048-token window onward; needs the window block-skip and a downstream port ([§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)) |
+| long context, stock vLLM | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–33 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) takes the same architecture to 10.7 tok/s and a 12.4× flatter slope, but it is unmerged, so on a stock install this stands |
 
-## Three findings worth carrying elsewhere
+## Four findings worth carrying elsewhere
 
 1. **Architecture beats parameter count.** 26B MoE (107.8) > 8B dense (79.6) >
    12B (59.9) > 31B (43.2) > 27B hybrid-SSM (12.1).
@@ -293,11 +404,15 @@ second card, and it is invisible in a tokens-per-second table.
    power asymmetry.
 3. **Separate the two things a second GPU buys.** BF16: 1.70× speed. Quantised:
    1.19× speed but 2.3× concurrency. Decide which one you need before buying.
+4. **A sliding window does not by itself make long context cheap.** Two windowed
+   models measured here sit six times apart in slope, and the one with the
+   smaller window and more windowed layers is the steeper. What separates them is
+   the KV width of the layers that are *not* windowed: 16 heads against 2.
 
 ---
 
-*Campaign executed 2026-07-25, 03:09–06:44. All services restored afterwards; VRAM
-returned to baseline. The 19–48× slow weight loading that used to make a campaign
+*First campaign executed 2026-07-25, 03:09–06:44; second 2026-08-24 18:04 – 21:53
+UTC. Both restored all services afterwards and returned VRAM to baseline. The 19–48× slow weight loading that used to make a campaign
 like this impractical has a working workaround. Part of it is explained now: AMD
 named the kernel line, and copy-on-write is broken on every resident page because
 the permission comes from the VMA rather than from what the copy actually does.
