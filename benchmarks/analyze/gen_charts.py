@@ -21,8 +21,8 @@ import argparse, json, math, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "docs", "assets")
 
-JULY_STAMP = ("2026-07-25 &#183; vLLM 0.23 + ROCm 7.14 &#183; kernel 7.0.0-28 &#183; "
-              "2x RX 7900 XT, TP=2 &#183; stock, no patches")
+JULY_STAMP = ("2026-07-25 &#183; 2x RX 7900 XT &#183; vLLM 0.23 &#183; ROCm 7.14 &#183; "
+              "kernel 7.0.0-28 &#183; stock, no patches")
 
 C = {
     "E-26B-tp2":  ("#8b6ee0", "gemma-4-26B-A4B &#183; MoE &#183; TP2"),
