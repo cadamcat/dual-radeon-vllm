@@ -103,6 +103,8 @@ cell**; the median is shown with the observed range.
 
 Milliseconds per generated token.
 
+![sliding-window block skip](assets/sliding-window-block-skip.svg)
+
 **The shape is the mechanism check.** Below each model's own window the change is
 worth 1.00×, because there is nothing to skip. From there it grows monotonically.
 A curve of any other shape would have said the explanation was wrong even if the

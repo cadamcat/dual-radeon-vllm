@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<text x="52" y="26" font-size="16" font-weight="700" fill="#8a8a8a">Skipping decode blocks the sliding-window mask would zero anyway</text>
+<text x="52" y="45" font-size="11.5" fill="#8a8a8a" opacity=".85">2× RX 7900 XT (gfx1100), TP=2, ROCM_ATTN. Median of three processes per point. Vertical dashes mark each model’s own window.</text>
+<text x="92" y="62" font-size="12.5" font-weight="600" fill="#8a8a8a">cost — dashed before, solid after</text>
+<line x1="92" y1="300.0" x2="452" y2="300.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="304.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
+<line x1="92" y1="257.3" x2="452" y2="257.3" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="261.3" font-size="10.5" fill="#8a8a8a" text-anchor="end">25</text>
+<line x1="92" y1="214.6" x2="452" y2="214.6" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="218.6" font-size="10.5" fill="#8a8a8a" text-anchor="end">50</text>
+<line x1="92" y1="171.9" x2="452" y2="171.9" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="175.9" font-size="10.5" fill="#8a8a8a" text-anchor="end">75</text>
+<line x1="92" y1="129.2" x2="452" y2="129.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="133.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">100</text>
+<line x1="92" y1="86.5" x2="452" y2="86.5" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="84" y="90.5" font-size="10.5" fill="#8a8a8a" text-anchor="end">125</text>
+<line x1="102.7" y1="300" x2="102.7" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="102.7" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">512</text>
+<line x1="160.4" y1="300" x2="160.4" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="160.4" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="218.1" y1="300" x2="218.1" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="218.1" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="275.8" y1="300" x2="275.8" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="275.8" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="333.5" y1="300" x2="333.5" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="333.5" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="391.2" y1="300" x2="391.2" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="391.2" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="448.9" y1="300" x2="448.9" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="448.9" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">32K</text>
+<text x="48" y="189" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 48 189)">ms per generated token</text>
+<line x1="160.4" y1="78" x2="160.4" y2="300" stroke="#d99a24" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+<polyline points="102.7,263.6 160.4,259.4 218.1,254.0 275.8,243.1 333.5,221.0 391.2,176.5 448.9,87.7" fill="none" stroke="#d99a24" stroke-width="2.1" stroke-dasharray="7 4"/>
+<circle cx="102.7" cy="263.6" r="2.6" fill="#d99a24"/>
+<circle cx="160.4" cy="259.4" r="2.6" fill="#d99a24"/>
+<circle cx="218.1" cy="254.0" r="2.6" fill="#d99a24"/>
+<circle cx="275.8" cy="243.1" r="2.6" fill="#d99a24"/>
+<circle cx="333.5" cy="221.0" r="2.6" fill="#d99a24"/>
+<circle cx="391.2" cy="176.5" r="2.6" fill="#d99a24"/>
+<circle cx="448.9" cy="87.7" r="2.6" fill="#d99a24"/>
+<polyline points="102.7,263.6 160.4,259.6 218.1,258.5 275.8,256.1 333.5,251.4 391.2,242.0 448.9,222.7" fill="none" stroke="#d99a24" stroke-width="2.1"/>
+<circle cx="102.7" cy="263.6" r="2.6" fill="#d99a24"/>
+<circle cx="160.4" cy="259.6" r="2.6" fill="#d99a24"/>
+<circle cx="218.1" cy="258.5" r="2.6" fill="#d99a24"/>
+<circle cx="275.8" cy="256.1" r="2.6" fill="#d99a24"/>
+<circle cx="333.5" cy="251.4" r="2.6" fill="#d99a24"/>
+<circle cx="391.2" cy="242.0" r="2.6" fill="#d99a24"/>
+<circle cx="448.9" cy="222.7" r="2.6" fill="#d99a24"/>
+<line x1="218.1" y1="78" x2="218.1" y2="300" stroke="#8b6ee0" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+<polyline points="102.7,262.6 160.4,259.8 218.1,254.9 275.8,248.5 333.5,235.4 391.2,209.1 448.9,156.6" fill="none" stroke="#8b6ee0" stroke-width="2.1" stroke-dasharray="7 4"/>
+<circle cx="102.7" cy="262.6" r="2.6" fill="#8b6ee0"/>
+<circle cx="160.4" cy="259.8" r="2.6" fill="#8b6ee0"/>
+<circle cx="218.1" cy="254.9" r="2.6" fill="#8b6ee0"/>
+<circle cx="275.8" cy="248.5" r="2.6" fill="#8b6ee0"/>
+<circle cx="333.5" cy="235.4" r="2.6" fill="#8b6ee0"/>
+<circle cx="391.2" cy="209.1" r="2.6" fill="#8b6ee0"/>
+<circle cx="448.9" cy="156.6" r="2.6" fill="#8b6ee0"/>
+<polyline points="102.7,262.5 160.4,259.8 218.1,255.2 275.8,255.1 333.5,255.1 391.2,254.7 448.9,254.5" fill="none" stroke="#8b6ee0" stroke-width="2.1"/>
+<circle cx="102.7" cy="262.5" r="2.6" fill="#8b6ee0"/>
+<circle cx="160.4" cy="259.8" r="2.6" fill="#8b6ee0"/>
+<circle cx="218.1" cy="255.2" r="2.6" fill="#8b6ee0"/>
+<circle cx="275.8" cy="255.1" r="2.6" fill="#8b6ee0"/>
+<circle cx="333.5" cy="255.1" r="2.6" fill="#8b6ee0"/>
+<circle cx="391.2" cy="254.7" r="2.6" fill="#8b6ee0"/>
+<circle cx="448.9" cy="254.5" r="2.6" fill="#8b6ee0"/>
+<text x="548" y="62" font-size="12.5" font-weight="600" fill="#8a8a8a">gain — 1.00× below the window, then monotonic</text>
+<line x1="548" y1="300.0" x2="878" y2="300.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="540" y="304.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">1</text>
+<line x1="548" y1="251.7" x2="878" y2="251.7" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="540" y="255.7" font-size="10.5" fill="#8a8a8a" text-anchor="end">1.5</text>
+<line x1="548" y1="203.5" x2="878" y2="203.5" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="540" y="207.5" font-size="10.5" fill="#8a8a8a" text-anchor="end">2</text>
+<line x1="548" y1="155.2" x2="878" y2="155.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="540" y="159.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">2.5</text>
+<line x1="548" y1="107.0" x2="878" y2="107.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="540" y="111.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">3</text>
+<line x1="557.8" y1="300" x2="557.8" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="557.8" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">512</text>
+<line x1="610.7" y1="300" x2="610.7" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="610.7" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="663.6" y1="300" x2="663.6" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="663.6" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="716.5" y1="300" x2="716.5" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="716.5" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="769.4" y1="300" x2="769.4" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="769.4" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="822.3" y1="300" x2="822.3" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="822.3" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="875.2" y1="300" x2="875.2" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="875.2" y="319" font-size="10" fill="#8a8a8a" text-anchor="middle">32K</text>
+<text x="504" y="189" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 504 189)">speed-up (×)</text>
+<line x1="610.7" y1="78" x2="610.7" y2="300" stroke="#d99a24" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+<polyline points="557.8,300.0 610.7,299.4 663.6,289.5 716.5,271.3 769.4,239.6 822.3,191.2 875.2,131.5" fill="none" stroke="#d99a24" stroke-width="2.1"/>
+<circle cx="557.8" cy="300.0" r="2.6" fill="#d99a24"/>
+<circle cx="610.7" cy="299.4" r="2.6" fill="#d99a24"/>
+<circle cx="663.6" cy="289.5" r="2.6" fill="#d99a24"/>
+<circle cx="716.5" cy="271.3" r="2.6" fill="#d99a24"/>
+<circle cx="769.4" cy="239.6" r="2.6" fill="#d99a24"/>
+<circle cx="822.3" cy="191.2" r="2.6" fill="#d99a24"/>
+<circle cx="875.2" cy="131.5" r="2.6" fill="#d99a24"/>
+<line x1="663.6" y1="78" x2="663.6" y2="300" stroke="#8b6ee0" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+<polyline points="557.8,300.2 610.7,299.9 663.6,299.4 716.5,285.7 769.4,257.7 822.3,202.9 875.2,92.1" fill="none" stroke="#8b6ee0" stroke-width="2.1"/>
+<circle cx="557.8" cy="300.2" r="2.6" fill="#8b6ee0"/>
+<circle cx="610.7" cy="299.9" r="2.6" fill="#8b6ee0"/>
+<circle cx="663.6" cy="299.4" r="2.6" fill="#8b6ee0"/>
+<circle cx="716.5" cy="285.7" r="2.6" fill="#8b6ee0"/>
+<circle cx="769.4" cy="257.7" r="2.6" fill="#8b6ee0"/>
+<circle cx="822.3" cy="202.9" r="2.6" fill="#8b6ee0"/>
+<circle cx="875.2" cy="92.1" r="2.6" fill="#8b6ee0"/>
+<line x1="92" y1="336" x2="118" y2="336" stroke="#d99a24" stroke-width="2.4"/>
+<text x="125" y="340" font-size="11.5" fill="#8a8a8a">gemma-3-27b · w4a16 · window 1024</text>
+<line x1="492" y1="336" x2="518" y2="336" stroke="#8b6ee0" stroke-width="2.4"/>
+<text x="525" y="340" font-size="11.5" fill="#8a8a8a">Muse-Glimmer-30B · int4 · window 2048</text>
+<text x="92" y="362" font-size="10.5" fill="#8a8a8a" opacity=".8">Correctness is kernel-level: upstream’s own test file with no case changing outcome, and 15 boundary cases bit-identical under torch.equal.</text>
+</svg>

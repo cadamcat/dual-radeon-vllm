@@ -30,6 +30,7 @@ python3 decode_slope.py       # cost of one context token, per model
 python3 fit_prefill.py B-8B-tp2   # fit T(S) = a + b*S + c*S^2, report S* = sqrt(a/c)
 python3 analyze.py            # TP2/TP1 speed-up, MBU, cross-model view
 python3 gen_charts.py         # regenerate the SVGs in docs/assets/
+python3 gen_window_chart.py    # the sliding-window block-skip chart, from its own JSON
 ```
 
 All scripts default to `../results.jsonl`; override with `BENCH_RESULTS=/path/to/results.jsonl`.
