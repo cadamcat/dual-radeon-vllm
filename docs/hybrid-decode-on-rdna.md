@@ -83,6 +83,16 @@ model, and the warning at `chunked_prefill_paged_decode.py:420` fires.
 > conditions, not two: `is_pow2(784)` is `False`, which disqualifies `use_custom`
 > independently. Counterfactual checks in §6.5 show no single one is the blocker.
 
+> **The complementary case, 2026-08-24.** `Muse-Glimmer-30B` clears every clause
+> of that predicate except the `sliding_window` one: `head_dim` 128,
+> `block_size` 16, GQA ratio 16, `kv_cache_dtype` auto, bf16. Its 13
+> full-attention layers therefore *do* take the custom kernel and its 39
+> sliding-window layers do not, in the same forward pass — the first time the
+> custom HIP kernel has run at all on this machine. That also makes the
+> `sliding_window` clause the sole blocker for a real model, which
+> `Qwen3.6-27B` could not show because three clauses fail for it at once. See
+> [sliding-window-block-skip.md](sliding-window-block-skip.md).
+
 **The `head_size` check is not conservative gating — it is the kernel's real
 limit.** `CALL_CUSTOM_LAUNCHER_BLK_HEAD` in `csrc/rocm/attention.cu` dispatches
 only `case 64` and `case 128`, and `TORCH_CHECK`s on anything else. Relaxing the

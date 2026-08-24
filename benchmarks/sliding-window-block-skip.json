@@ -1,0 +1,135 @@
+{
+  "what": "Skipping decode blocks that the sliding-window mask would zero anyway, in vLLM's Triton paged-decode kernel (vllm/v1/attention/ops/chunked_prefill_paged_decode.py). Measured 2026-08-23/24 on gfx1100.",
+  "why": "That kernel iterates every block of the sequence and then masks everything outside the window to -10000. On Muse-Glimmer-30B at 32768 context with a 2048 window that is 2048 blocks read where 128 are needed, and it accounted for 70.67% of decode CUDA time.",
+  "the_change": "for j in range(0, num_blocks) becomes for j in range(first_block, num_blocks) with first_block = max(0, seq_len - SLIDING_WINDOW) // BLOCK_SIZE when SLIDING_WINDOW > 0. The mask keeps (context_len - seq_offset) < SLIDING_WINDOW with context_len = seq_len - 1, so the lowest surviving absolute index is seq_len - SLIDING_WINDOW and every block below it is masked in full. exp(-10000 - m) is zero, so this is an identity rather than an approximation. 11 lines including the comment.",
+  "upstream_state": "vllm-project/vllm main as of 2026-08-24 still has range(0, num_blocks) at line 152 of that file. Not reported upstream at the time of writing.",
+  "machine": {
+    "gpu": "2x Radeon RX 7900 XT (gfx1100), TP=2, VFIO guest",
+    "kernel": "7.0.0-30.30~24.04.1",
+    "userspace": "rocm/vllm 7.14.0, PyTorch 2.11.0, vLLM 0.23.1.dev1+g9ddef7117",
+    "note": "the container also carries the PR#49991 clone flag (unset here) and PR#45916's split-KV with the gate widened; neither is on the path this measures"
+  },
+  "model_under_test": {
+    "name": "RedHatAI/Muse-Glimmer-30B-INT4",
+    "params": "30B dense, compressed-tensors pack-quantized int4, group 128, symmetric",
+    "layers": "52: 39 sliding_attention (window 2048) + 13 full_attention (rope_theta 0)",
+    "head_dim": 128,
+    "num_key_value_heads": 2,
+    "block_size": 16,
+    "attention_backend": "ROCM_ATTN, chosen by the platform's own priority order",
+    "port_note": "vLLM support for this model merged upstream 2026-08-14, after this container was built. It runs here through a downstream adaptation: the three new files from the merge commit plus ~15 lines of registration, a load_weights rewritten to this version's stacked_params_mapping convention because WeightsMapper here has no orig_to_new_stacked, and one inlined is_vit_use_data_parallel fallback."
+  },
+  "end_to_end": {
+    "method": "one process per column, greedy, 64 generated tokens differenced against 8 at the same depth, synthetic repeating-token prompt",
+    "before": {
+      "8192": {
+        "ms_per_token": 35.8,
+        "tok_per_s": 27.94
+      },
+      "32768": {
+        "ms_per_token": 83.83,
+        "tok_per_s": 11.93
+      }
+    },
+    "after": {
+      "8192": {
+        "ms_per_token": 24.46,
+        "tok_per_s": 40.88
+      },
+      "32768": {
+        "ms_per_token": 26.93,
+        "tok_per_s": 37.14
+      }
+    },
+    "speedup": {
+      "8192": 1.46,
+      "32768": 3.11
+    },
+    "output_identical": {
+      "8192": {
+        "identical": true,
+        "tokens_compared": 64
+      },
+      "32768": {
+        "identical": true,
+        "tokens_compared": 64
+      }
+    }
+  },
+  "kernel_level": {
+    "method": "torch profiler, delay 2 active 8, 32768 context, rank 0; same settings as prof-mtp-31b.py",
+    "before": {
+      "decode_step": {
+        "total": "5.391s",
+        "per_call": "85.567ms",
+        "calls": 63
+      },
+      "triton_paged_decode": {
+        "total": "3.966s",
+        "per_call": "1.589ms",
+        "calls": 2496
+      },
+      "custom_hip_qkv": {
+        "total": "25.361ms",
+        "per_call": "30.482us",
+        "calls": 832
+      },
+      "custom_hip_reduce": {
+        "total": "19.507us",
+        "per_call": "1.501us",
+        "calls": 13
+      }
+    },
+    "after": {
+      "decode_step": {
+        "total": "130.457ms",
+        "per_call": "2.071ms",
+        "calls": 63
+      },
+      "triton_paged_decode": {
+        "total": "380.334ms",
+        "per_call": "154.796us",
+        "calls": 2457
+      },
+      "custom_hip_qkv": {
+        "total": "25.351ms",
+        "per_call": "30.954us",
+        "calls": 819
+      },
+      "custom_hip_reduce": {
+        "total": "6.993ms",
+        "per_call": "8.539us",
+        "calls": 819
+      }
+    }
+  },
+  "controls": {
+    "gemma-4-31B-it-qat-w4a16-ct": {
+      "why": "the largest sliding-window model here (window 1024, 50 of 60 layers) and the repository's workhorse",
+      "result": "unaffected. vLLM forces Gemma-4 onto TRITON_ATTN because its head dimensions are heterogeneous (head_dim 256 local, global_head_dim 512), and that backend's kernel already bounds its loop by the window. 8192: 24.36 -> 24.24 ms/tok; 32768: 32.94 -> 33.12 ms/tok; 64 of 64 tokens identical at both depths.",
+      "before": {
+        "8192": 24.36,
+        "32768": 32.94
+      },
+      "after": {
+        "8192": 24.24,
+        "32768": 33.12
+      }
+    },
+    "Qwen3.8-27B-AWQ-INT4": {
+      "why": "no sliding window, same ROCM_ATTN backend: the path the change must not disturb",
+      "result": "patched 84.09 ms/tok at 8192 and 97.17 at 32768, against 83.32 and 94.70 measured unpatched earlier the same day. +0.9% and +2.6%, one run each side, so this does not separate a real regression from process-to-process spread.",
+      "unpatched": {
+        "8192": 83.32,
+        "32768": 94.7
+      },
+      "patched": {
+        "8192": 84.09,
+        "32768": 97.17
+      }
+    }
+  },
+  "reading": "On the one model that reaches this path, the change is worth 3.11x at 32768 (83.83 -> 26.93 ms/tok, 11.93 -> 37.14 tok/s) and 1.46x at 8192, with all 64 generated tokens identical at both depths. At the kernel it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term at 44.7%. Decode also becomes nearly flat with context, 40.88 tok/s at 8192 against 37.14 at 32768, which is what a capped window should produce and which no other model measured here does.",
+  "scope": "Narrower than 'sliding-window models'. It requires the model to land on ROCM_ATTN, and Gemma-4, the largest such family available here, is routed away from it by the heterogeneous-head-dimension rule. Muse-Glimmer-30B is the only model on this machine confirmed to reach the affected path. Mistral, Ministral and Phi-3 style models have uniform head dimensions and a sliding window and are the obvious next candidates, but none of them has been tested.",
+  "not_established": "Every cell is n=1; nothing here was repeated. Correctness rests on token identity for one synthetic prompt at two depths, not on a test suite. Whether the block table is genuinely full-length, rather than the skip merely happening to be safe here, was inferred from the identical output and not read out of the KV cache manager. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change, against 412 GiB/s for the custom HIP kernel on the same run, so the exclusion of those layers from that kernel is untouched; closing that remaining gap would be worth about 19% more, not another 3x, because the weight GEMM now dominates."
+}

@@ -244,6 +244,17 @@ the quadratic term; measured `c` is nevertheless the largest of the set. We susp
 the `TRITON_ATTN` fallback does not exploit the sliding window. Not verified — see
 [open-questions.md](open-questions.md).
 
+> **Half of that suspicion is now wrong, 2026-08-24.** gemma-4 is on `TRITON_ATTN`,
+> but not as a fallback: vLLM forces it there because the model's head dimensions
+> are heterogeneous (`head_dim` 256 local, `global_head_dim` 512), to avoid mixing
+> backends. And that backend's *decode* kernel does bound its loop by the window
+> (`triton_unified_attention.py`, `for j in range(loop_lo, loop_hi)`), which the
+> `ROCM_ATTN` kernel does not — see
+> [sliding-window-block-skip.md](sliding-window-block-skip.md). So the decode half
+> of the suspicion is answered and is the opposite of what we guessed. **`c` is a
+> prefill coefficient and prefill is a different kernel path, which has not been
+> read or measured, so the question as asked is still open.**
+
 ---
 
 ## 5. Capacity, which single-stream numbers hide

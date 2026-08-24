@@ -1,0 +1,38 @@
+Skip decode blocks the sliding-window mask would zero anyway.
+
+vllm/v1/attention/ops/chunked_prefill_paged_decode.py iterates every block of the
+sequence and then masks everything outside the window to -10000. The mask keeps a
+token when (context_len - seq_offset) < SLIDING_WINDOW with context_len =
+seq_len - 1, so the lowest surviving absolute index is seq_len - SLIDING_WINDOW
+and every block below it is masked in full. exp(-10000 - m) is zero, so starting
+the loop there is an identity, not an approximation.
+
+Measured on Muse-Glimmer-30B, gfx1100, TP=2, 32768 context, 2048 window,
+block_size 16: 2048 blocks read where 128 are needed. 1.589 ms -> 154.796 us per
+kernel call, 83.83 -> 26.93 ms per generated token, all 64 generated tokens
+identical. See docs/sliding-window-block-skip.md for the controls that bound the
+scope; gemma-4 is routed to a different backend and is unaffected.
+
+Against vLLM 0.23.1.dev1+g9ddef7117. main as of 2026-08-24 has the same loop.
+
+--- a/vllm/v1/attention/ops/chunked_prefill_paged_decode.py
++++ b/vllm/v1/attention/ops/chunked_prefill_paged_decode.py
+@@
+     num_blocks = cdiv_fn(seq_len, BLOCK_SIZE)
+ 
++    # Blocks entirely older than the sliding window are masked to -10000 below,
++    # which contributes exp(-10000 - m) = 0 to the softmax, so reading them is
++    # pure waste. The lowest surviving absolute index is seq_len - SLIDING_WINDOW
++    # because the mask keeps (context_len - seq_offset) < SLIDING_WINDOW with
++    # context_len = seq_len - 1. Starting there is an identity.
++    if SLIDING_WINDOW > 0:
++        first_block = tl.maximum(0, seq_len - SLIDING_WINDOW) // BLOCK_SIZE
++    else:
++        first_block = 0
++
+     offs_n = tl.arange(0, BLOCK_SIZE)
+     offs_d = tl.arange(0, HEAD_SIZE_PADDED)
+     # iterate through tiles
+-    for j in range(0, num_blocks):
++    for j in range(first_block, num_blocks):
+         start_n = j * BLOCK_SIZE
