@@ -83,8 +83,8 @@ cost the **same** whatever the context length. That is the entire selling point.
 
 > This section measures stock vLLM. The cause was found afterwards and the fix
 > exists: [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25) has the
-> same architecture at a 0.391 µs slope instead of 4.850. What follows is why it
-> was 4.850.
+> same architecture at a 0.390 µs slope instead of 4.840. What follows is why it
+> was 4.840.
 
 ![cost of one context token at decode time](assets/decode-ms-per-token.svg)
 
@@ -327,8 +327,8 @@ its `on_gfx12x()` gate widened to `on_gfx1x()`, measured end to end on
 
 | | 500 | 32 K | retained | slope |
 |---|---:|---:|---:|---:|
-| Qwen3.6-27B, 2026-07-25, stock | 12.12 | **4.25** | 35.1 % | 4.850 µs |
-| Qwen3.8-27B, 2026-08-25, patched | 12.30 | **10.68** | 86.8 % | **0.391 µs** |
+| Qwen3.6-27B, 2026-07-25, stock | 12.12 | **4.25** | 35.1 % | 4.840 µs |
+| Qwen3.8-27B, 2026-08-25, patched | 12.30 | **10.68** | 86.8 % | **0.390 µs** |
 
 **2.51× at 32 K.** The kernel-level verification on 2026-07-30 predicted 2.52×
 and measured 10.72 tok/s by a different method entirely — a 64-token generation
@@ -362,7 +362,7 @@ width of the full-attention layers, not by how many layers are windowed.**
 gemma-3 is not plotted — between 500 and 4 000 it runs within two tok/s of both
 Muse-Glimmer and gemma-4-31B and the three lines read as one. Its result belongs
 in prose: the block-skip takes it from **8.06 tok/s at 32 K to 22.05**, and the
-32 K point works out to 45.35 ms per token where the kernel A/B measured 45.26
+32 K point works out to 45.34 ms per token where the kernel A/B measured 45.26
 patched and 124.29 unpatched. Data is in
 [`results-2026-08-25.jsonl`](../benchmarks/results-2026-08-25.jsonl).
 
