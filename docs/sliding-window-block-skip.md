@@ -247,14 +247,29 @@ decoding amplifies it.
 `gemma-4-31B`, on the `TRITON_ATTN` backend, was deterministic in all four of its
 cells. The affected models are the ones on `ROCM_ATTN`.
 
+**It is inside a single process, and a warm-up does not fix it.** One engine, one
+prompt, a warm-up call, then eight identical greedy generations back to back:
+
+| model | context | process 1 | process 2 |
+|---|---:|---:|---:|
+| `Muse-Glimmer-30B` | 512 | **7 distinct of 8** | **8 of 8** |
+| `Muse-Glimmer-30B` | 8 192 | 2 of 8 | 2 of 8 |
+| `gemma-3-27b` | 512 | 1 of 8, deterministic | 1 of 8 |
+| `gemma-3-27b` | 8 192 | 2 of 8 | 2 of 8 |
+
+Model and depth dependent rather than uniform, and the two processes agree on the
+pattern, so it is a property of the configuration rather than luck. Note the
+worst cell, `Muse-Glimmer` at 512, is *below* its own 2 048 window, where this
+change is bit-identical by §6 — so the change is not what is being observed.
+
 This resembles [vllm#50603](https://github.com/vllm-project/vllm/issues/50603),
 open since 2026-07-31, which reports first-call non-determinism from the same
 Triton fallback on gfx1100 and names `gqa_ratio=2` as what gates the CK kernel
-out — `gemma-3-27b` has exactly that. **One detail does not match: that report
-says a warm-up call fixes it, and every measurement here already includes a
-warm-up generate of the same prompt at the same depth.** Whether this is the same
-defect from a different angle or a second one is unsettled, and nothing has been
-posted there. Data: [`benchmarks/gfx1100-greedy-nondeterminism.json`](../benchmarks/gfx1100-greedy-nondeterminism.json).
+out — `gemma-3-27b` has exactly that. **One detail is now measured rather than
+suspected and it does not match: that report says a warm-up call fixes it, and it
+does not here.** Whether this is the same defect from a different angle or a
+second one is unsettled, and nothing has been posted there. Data:
+[`benchmarks/gfx1100-greedy-nondeterminism.json`](../benchmarks/gfx1100-greedy-nondeterminism.json).
 
 ## 8. What this does not establish
 
