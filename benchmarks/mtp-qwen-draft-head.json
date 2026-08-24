@@ -1,0 +1,101 @@
+{
+  "what": "Qwen3.6-27B against Qwen3.8-27B with each checkpoint's built-in MTP draft head, on and off. Measured 2026-08-23 on gfx1100, TP=2.",
+  "why": "The two checkpoints are the same architecture quantised the same way in 63 of 64 transformer layers, so base decode is expected to be identical and is not the point. What differs is the draft head: Qwen3.6's is quantised (7 packed tensors), Qwen3.8's is left in bf16 (15 plain tensors). That isolates draft-head precision, and separately gives this repository its first vLLM MTP numbers for a Qwen model.",
+  "configs_are_the_same": "70 config fields compared; 3 differ. quantization ignore-list length (208 against 313), dtype (float16 against bfloat16), transformers_version. Layers, hidden size, intermediate size, head_dim 256, 4 KV heads, layer_types 48 linear_attention + 16 full_attention, vocab, context length and mtp_num_hidden_layers are identical.",
+  "draft_head_difference": "From each checkpoint's safetensors index: Qwen3.6 has 7 quantised and 8 unquantised mtp.* tensors; Qwen3.8 has 0 quantised and 15 unquantised. Qwen3.8 also leaves layer 0's linear_attn.out_proj unquantised, 1 of 48.",
+  "method": "One process per cell, greedy, 64 generated tokens differenced against 8 at the same depth, synthetic repeating-token prompt, TP=2, gpu_memory_utilization 0.92. Gate line checked on every speculative cell: speculative_config must resolve to method mtp with the target checkpoint as its own draft, which is what makes this the in-checkpoint head rather than a separate assistant model. Enabling MTP moves cache block_size from 784 to 800.",
+  "unit": "milliseconds per generated token",
+  "results": {
+    "Qwen3.6-27B-AWQ-INT4 (draft head int4)": {
+      "off": {
+        "1024": {
+          "ms_per_token": 78.87,
+          "tok_per_s": 12.68
+        },
+        "8192": {
+          "ms_per_token": 81.77,
+          "tok_per_s": 12.23
+        },
+        "16384": {
+          "ms_per_token": 85.79,
+          "tok_per_s": 11.66
+        },
+        "32768": {
+          "ms_per_token": 93.52,
+          "tok_per_s": 10.69
+        }
+      },
+      "mtp": {
+        "1024": {
+          "ms_per_token": 48.6,
+          "tok_per_s": 20.58
+        },
+        "8192": {
+          "ms_per_token": 55.95,
+          "tok_per_s": 17.87
+        },
+        "16384": {
+          "ms_per_token": 70.45,
+          "tok_per_s": 14.19
+        },
+        "32768": {
+          "ms_per_token": 94.1,
+          "tok_per_s": 10.63
+        }
+      },
+      "speedup": {
+        "1024": 1.62,
+        "8192": 1.46,
+        "16384": 1.22,
+        "32768": 0.99
+      }
+    },
+    "Qwen3.8-27B-AWQ-INT4 (draft head bf16)": {
+      "off": {
+        "1024": {
+          "ms_per_token": 80.55,
+          "tok_per_s": 12.42
+        },
+        "8192": {
+          "ms_per_token": 83.32,
+          "tok_per_s": 12.0
+        },
+        "16384": {
+          "ms_per_token": 87.09,
+          "tok_per_s": 11.48
+        },
+        "32768": {
+          "ms_per_token": 94.7,
+          "tok_per_s": 10.56
+        }
+      },
+      "mtp": {
+        "1024": {
+          "ms_per_token": 52.64,
+          "tok_per_s": 19.0
+        },
+        "8192": {
+          "ms_per_token": 57.04,
+          "tok_per_s": 17.53
+        },
+        "16384": {
+          "ms_per_token": 72.43,
+          "tok_per_s": 13.81
+        },
+        "32768": {
+          "ms_per_token": 103.06,
+          "tok_per_s": 9.7
+        }
+      },
+      "speedup": {
+        "1024": 1.53,
+        "8192": 1.46,
+        "16384": 1.2,
+        "32768": 0.92
+      }
+    }
+  },
+  "reading": "Leaving the MTP draft head in bf16 does not pay. The int4 head matches or beats it at every depth, and the gap is widest where it matters: at 32768 the int4 head breaks even (0.99x) while the bf16 head is a net loss (0.92x, 10.56 -> 9.70 tok/s). A plausible mechanism is that the draft head runs once per token and bf16 weights are four times the traffic of int4, which on a bandwidth-bound decode costs more than the dequantisation it saves, but nothing here measures that. Separately, MTP's value collapses with context on both checkpoints: 1.5-1.6x at short prompts, 1.46x at 8192, about 1.2x at 16384, and nothing or worse at 32768. That is the same shape as the gemma-4-31B assistant-model curve already in this repository, arrived at independently through a different mechanism.",
+  "base_decode_is_the_same": "With MTP off the two differ by 2.1%, 1.9%, 1.5% and 1.3% at the four depths, Qwen3.8 slower each time. The direction is consistent but the size is small, and it is compatible with the fp16-against-bf16 difference in the unquantised layers or with the single unquantised out_proj; n=1 per cell cannot separate those from noise.",
+  "not_established": "One run per cell, no repeats, so the 1.62x against 1.53x at 1024 is not a difference this data can call. Acceptance rate was not captured, and it is the variable that would explain the result rather than describe it. Output quality was not checked at any depth."
+}
