@@ -1,0 +1,79 @@
+[
+  {
+    "target": 500,
+    "gemma4_tokens": 471,
+    "gemma3_tokens": 471,
+    "recorded_est": 481,
+    "identical": true
+  },
+  {
+    "target": 1000,
+    "gemma4_tokens": 948,
+    "gemma3_tokens": 948,
+    "recorded_est": 958,
+    "identical": true
+  },
+  {
+    "target": 2000,
+    "gemma4_tokens": 1970,
+    "gemma3_tokens": 1970,
+    "recorded_est": 1980,
+    "identical": true
+  },
+  {
+    "target": 4000,
+    "gemma4_tokens": 3985,
+    "gemma3_tokens": 3985,
+    "recorded_est": 3995,
+    "identical": true
+  },
+  {
+    "target": 6000,
+    "gemma4_tokens": 5983,
+    "gemma3_tokens": 5983,
+    "recorded_est": 5993,
+    "identical": true
+  },
+  {
+    "target": 8000,
+    "gemma4_tokens": 7959,
+    "gemma3_tokens": 7959,
+    "recorded_est": 7969,
+    "identical": true
+  },
+  {
+    "target": 12000,
+    "gemma4_tokens": 11962,
+    "gemma3_tokens": 11962,
+    "recorded_est": 11972,
+    "identical": true
+  },
+  {
+    "target": 16000,
+    "gemma4_tokens": 15988,
+    "gemma3_tokens": 15988,
+    "recorded_est": 15998,
+    "identical": true
+  },
+  {
+    "target": 20000,
+    "gemma4_tokens": 19958,
+    "gemma3_tokens": 19958,
+    "recorded_est": 19968,
+    "identical": true
+  },
+  {
+    "target": 24000,
+    "gemma4_tokens": 23939,
+    "gemma3_tokens": 23939,
+    "recorded_est": 23949,
+    "identical": true
+  },
+  {
+    "target": 32000,
+    "gemma4_tokens": 31934,
+    "gemma3_tokens": 31934,
+    "recorded_est": 31944,
+    "identical": true
+  }
+]

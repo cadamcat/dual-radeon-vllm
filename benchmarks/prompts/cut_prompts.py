@@ -7,7 +7,12 @@ access once; the copy is then cached next to this file.
 
 Each model family gets its own ladder, cut with that model's own tokenizer and
 trimmed to a sentence boundary — the same string is a different number of tokens
-to gemma, to qwen and to gemma-26B.
+to gemma, to qwen, to gemma-26B and to Muse-Glimmer. gemma-3 is the exception:
+it tokenises every rung identically to gemma-4, so it reuses that ladder and its
+counts are recorded alongside as the check.
+
+Ladders are written under the directory names `bench_runner.py` reads
+(`prompts/`, `prompts-qwen/`, ...), so `--out` can point straight at PROMPT_ROOT.
 
 The committed `manifest-*.json` files record the exact token counts that were
 measured. This script re-derives them and **reports any drift**, so you can tell
@@ -19,8 +24,11 @@ whether your rebuild matches what produced `results.jsonl`.
     # verify only, write nothing
     python3 cut_prompts.py --models-dir /path/to/models --check-only
 
-Model directory names default to the ones used in the campaign; override with
---gemma / --qwen / --qwen-alt / --gemma26b if yours differ.
+Model directory names default to the ones used in the campaigns; override with
+--gemma / --gemma-alt / --qwen / --qwen-alt / --gemma26b / --muse if yours differ.
+
+A family with no committed manifest is a new ladder: it is cut and its manifest
+written, with nothing to compare against.
 """
 import argparse, json, os, re, sys, urllib.request
 
@@ -93,12 +101,20 @@ def main():
     ap.add_argument("--models-dir", default=os.environ.get("MODELS_DIR", "/data/incoming"))
     ap.add_argument("--gemma", default="gemma-4-12B-it-qat-w4a16-ct")
     ap.add_argument("--qwen", default="Qwen3-8B")
-    ap.add_argument("--qwen-alt", default="Qwen3.6-27B-AWQ-INT4",
-                    help="second qwen model; its counts are recorded alongside, not used for cutting")
+    ap.add_argument("--qwen-alt", default="Qwen3.6-27B-AWQ-INT4,Qwen3.8-27B-AWQ-INT4",
+                    help="comma-separated further qwen models sharing this ladder; their "
+                         "counts are recorded alongside, not used for cutting")
     ap.add_argument("--gemma26b", default="gemma-4-26B-A4B-AWQ")
+    ap.add_argument("--gemma-alt", default="gemma-3-27b-it-w4a16",
+                    help="comma-separated further gemma models sharing this ladder; measured "
+                         "2026-08-25 to tokenise every rung identically to gemma-4")
+    ap.add_argument("--muse", default="Muse-Glimmer-30B-INT4")
     ap.add_argument("--out", default=HERE, help="where to write prompt_<n>.txt (default: here)")
     ap.add_argument("--check-only", action="store_true",
                     help="verify against the manifests, write nothing")
+    ap.add_argument("--only", default="",
+                    help="comma-separated family labels to process (default: all present). "
+                         "Use this to add a ladder without rewriting the existing ones.")
     a = ap.parse_args()
 
     from transformers import AutoTokenizer      # late import: not needed for --help
@@ -106,28 +122,43 @@ def main():
     ends = sentence_ends(passage)
     print(f"source: {len(passage):,} characters after the anchor\n")
 
-    ladders = [("gemma", a.gemma, "manifest-gemma.json", None),
-               ("qwen", a.qwen, "manifest-qwen.json", a.qwen_alt),
-               ("gemma26b", a.gemma26b, "manifest-gemma26b.json", None)]
-    worst, checked = 0, 0
-    for label, model, manifest_name, alt in ladders:
+    # out_dir is the name bench_runner.py reads, not the family label
+    ladders = [("gemma", a.gemma, "manifest-gemma.json", "prompts", a.gemma_alt),
+               ("qwen", a.qwen, "manifest-qwen.json", "prompts-qwen", a.qwen_alt),
+               ("gemma26b", a.gemma26b, "manifest-gemma26b.json", "prompts-26b", None),
+               ("muse", a.muse, "manifest-muse.json", "prompts-muse", None)]
+    worst, checked, cut_any = 0, 0, False
+    only = {x.strip() for x in a.only.split(",") if x.strip()}
+    for label, model, manifest_name, dirname, alt in ladders:
+        if only and label not in only:
+            continue
         path = os.path.join(a.models_dir, model)
         if not os.path.isdir(path):
             print(f"[{label}] SKIP — {path} not present")
             continue
         tok = AutoTokenizer.from_pretrained(path)
-        alt_path = os.path.join(a.models_dir, alt) if alt else None
-        tok_alt = AutoTokenizer.from_pretrained(alt_path) if alt_path and os.path.isdir(alt_path) else None
-        recorded = {e["target"]: e for e in json.load(open(os.path.join(HERE, manifest_name)))}
-        out_dir = os.path.join(a.out, label)
+        cut_any = True
+        alts = {}
+        for m in (alt.split(",") if alt else []):
+            m = m.strip()
+            ap_ = os.path.join(a.models_dir, m)
+            if m and os.path.isdir(ap_):
+                alts[m] = AutoTokenizer.from_pretrained(ap_)
+        mpath = os.path.join(HERE, manifest_name)
+        if os.path.exists(mpath):
+            recorded = {e["target"]: e for e in json.load(open(mpath))}
+        else:
+            recorded = {}
+            print(f"[{label}] new ladder — no committed manifest, nothing to compare")
+        out_dir = os.path.join(a.out, dirname)
         if not a.check_only:
             os.makedirs(out_dir, exist_ok=True)
         rebuilt = []
         for t in TARGETS:
             text, got = cut_for(tok, passage, t, ends)
             e = {"target": t, "est_prompt_tokens": got, "chars": len(text)}
-            if tok_alt:
-                e["tokens_qwen27"] = len(tok_alt.encode(text, add_special_tokens=False))
+            for m, ta in alts.items():
+                e.setdefault("alt_tokens", {})[m] = len(ta.encode(text, add_special_tokens=False))
             rebuilt.append(e)
             if not a.check_only:
                 open(os.path.join(out_dir, f"prompt_{t}.txt"), "w", encoding="utf-8").write(text)
@@ -139,10 +170,16 @@ def main():
             print(f"[{label}] {t:>6}: {got:>6} tok, {len(text):>7} chars{note}")
         if not a.check_only:
             json.dump(rebuilt, open(os.path.join(out_dir, "manifest.json"), "w"), indent=2)
+            if not recorded:
+                json.dump(rebuilt, open(mpath, "w"), indent=2)
+                print(f"[{label}] wrote {manifest_name}")
         print()
 
+    if not cut_any:
+        sys.exit("no tokenizer was available — nothing cut or verified (set --models-dir)")
     if not checked:
-        sys.exit("no tokenizer was available — nothing verified (set --models-dir)")
+        print("only new ladders were cut; there was nothing to verify against")
+        return
     pct = worst / 32000 * 100
     print(f"largest drift against the committed manifests: {worst} tokens over {checked} rungs "
           f"({pct:.2f} % of the longest rung)")

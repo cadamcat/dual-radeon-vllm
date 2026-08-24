@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""bench_runner.py — five-model dual-GPU vLLM context-scan campaign (plan 2026-07-25, rev2).
+"""bench_runner.py — dual-GPU vLLM context-scan campaign (plan 2026-07-25, rev2).
+
+2026-08-25: three configurations added for the patched-state re-sweep. The four
+2026-07-25 configurations below are unchanged and are re-run as controls: none of
+the patches that container carries touches their code path, so reproducing their
+July numbers is what makes the two campaigns comparable. Select with BENCH_CFGS.
 
 rev2 fixes (after the 2026-07-25 02:xx false-complete incident):
   * util 0.85, not 0.90 — at 0.90 the KV pool leaves ~54 MB free and the Triton
@@ -37,6 +42,9 @@ HW = {
 GEMMA_P = f"{PROMPT_ROOT}/prompts"
 QWEN_P = f"{PROMPT_ROOT}/prompts-qwen"
 P26 = f"{PROMPT_ROOT}/prompts-26b"
+MUSE_P = f"{PROMPT_ROOT}/prompts-muse"
+# gemma-3 tokenises every rung of the gemma ladder identically to gemma-4
+# (verified 2026-08-25, prompts/gemma3-shares-gemma-ladder.json), so it reuses it.
 MML = 33000          # max prompt is ~32,010 tok + 512 output + template
 DEFAULT_UTIL = 0.85  # 0.90 leaves no scratch headroom on 20 GiB cards (see rev2 note)
 
@@ -53,6 +61,16 @@ CFGS = [
     # Try compiled first (the 128-expert fused-MoE graph never finished in the 20 min it was
     # given on 2026-07-22, so its real decode speed is still unknown); eager only as fallback.
     dict(id="E-26B-tp2", model="/models/gemma-4-26B-A4B-AWQ", tp=2, prompts=P26, eager_fallback=True),
+
+    # --- added 2026-08-25, measured against the patched container -------------
+    # Same architecture as D-27B (64 layers, full_attention_interval 4, head_dim
+    # 256) with newer weights, so it inherits D's flags.
+    dict(id="D8-27B-tp2", model="/models/Qwen3.8-27B-AWQ-INT4", tp=2, prompts=QWEN_P,
+         mns=128, eager_fallback=True),
+    dict(id="F-27B-tp2", model="/models/gemma-3-27b-it-w4a16", tp=2, prompts=GEMMA_P),
+    # Runs through the downstream adaptation in patches/adapt-muse-glimmer.py;
+    # upstream support merged 2026-08-14, after this container was built.
+    dict(id="G-30B-tp2", model="/models/Muse-Glimmer-30B-INT4", tp=2, prompts=MUSE_P),
 ]
 
 def sh(cmd, timeout=180):
@@ -331,7 +349,14 @@ def main():
     global CFGS
     only = os.environ.get("BENCH_CFGS")
     if only:
-        CFGS = [c for c in CFGS if c["id"] in only.split(",")]
+        # honour the order given, so the cheapest control and the headline configs
+        # can be put first; an unknown name is a typo, not something to skip
+        order = [x.strip() for x in only.split(",") if x.strip()]
+        by_id = {c["id"]: c for c in CFGS}
+        unknown = [x for x in order if x not in by_id]
+        if unknown:
+            sys.exit(f"BENCH_CFGS names configs that do not exist: {unknown}")
+        CFGS = [by_id[x] for x in order]
     os.makedirs(f"{D}/serve-logs", exist_ok=True)
     log(f"=== campaign start rev2 ({[c['id'] for c in CFGS]}) ===")
     sh("sudo systemctl stop ollama llamacpp-hub"); time.sleep(2)
