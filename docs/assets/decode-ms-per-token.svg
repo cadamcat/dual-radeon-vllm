@@ -1,102 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 387" width="780" height="387" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
-<text x="62" y="26" font-size="16" font-weight="700" fill="#8a8a8a">Cost of one context token at decode time</text>
-<text x="62" y="45" font-size="11.5" fill="#8a8a8a" opacity=".85">slope = ms added per token of context; a linear-attention model should be flat</text>
-<line x1="62" y1="268.0" x2="762" y2="268.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="272.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
-<line x1="62" y1="226.8" x2="762" y2="226.8" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="230.8" font-size="10.5" fill="#8a8a8a" text-anchor="end">50</text>
-<line x1="62" y1="185.6" x2="762" y2="185.6" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="189.6" font-size="10.5" fill="#8a8a8a" text-anchor="end">100</text>
-<line x1="62" y1="144.4" x2="762" y2="144.4" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="148.4" font-size="10.5" fill="#8a8a8a" text-anchor="end">150</text>
-<line x1="62" y1="103.2" x2="762" y2="103.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="107.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">200</text>
-<line x1="62" y1="62.0" x2="762" y2="62.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="66.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">250</text>
-<line x1="79.1" y1="268" x2="79.1" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="79.1" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">500</text>
-<line x1="191.2" y1="268" x2="191.2" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="191.2" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
-<line x1="303.4" y1="268" x2="303.4" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="303.4" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">2K</text>
-<line x1="415.6" y1="268" x2="415.6" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="415.6" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">4K</text>
-<line x1="527.8" y1="268" x2="527.8" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="527.8" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">8K</text>
-<line x1="640.0" y1="268" x2="640.0" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="640.0" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">16K</text>
-<line x1="752.2" y1="268" x2="752.2" y2="273" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
-<text x="752.2" y="287" font-size="10.5" fill="#8a8a8a" text-anchor="middle">32K</text>
-<text x="18" y="165" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 18 165)">ms per generated token</text>
-<text x="412" y="305" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
-<polyline points="79.1,260.4 191.2,260.2 303.4,260.1 415.6,259.8 481.2,259.4 527.8,259.1 593.4,258.7 640.0,258.1 676.1,257.6 705.6,257.2 752.2,256.7" fill="none" stroke="#8b6ee0" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="260.4" r="3" fill="#8b6ee0"/>
-<circle cx="191.2" cy="260.2" r="3" fill="#8b6ee0"/>
-<circle cx="303.4" cy="260.1" r="3" fill="#8b6ee0"/>
-<circle cx="415.6" cy="259.8" r="3" fill="#8b6ee0"/>
-<circle cx="481.2" cy="259.4" r="3" fill="#8b6ee0"/>
-<circle cx="527.8" cy="259.1" r="3" fill="#8b6ee0"/>
-<circle cx="593.4" cy="258.7" r="3" fill="#8b6ee0"/>
-<circle cx="640.0" cy="258.1" r="3" fill="#8b6ee0"/>
-<circle cx="676.1" cy="257.6" r="3" fill="#8b6ee0"/>
-<circle cx="705.6" cy="257.2" r="3" fill="#8b6ee0"/>
-<circle cx="752.2" cy="256.7" r="3" fill="#8b6ee0"/>
-<polyline points="79.1,257.6 191.2,257.5 303.4,257.3 415.6,257.1 481.2,257.0 527.8,256.8 593.4,256.4 640.0,256.0 676.1,255.7 705.6,255.3 752.2,254.6" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="257.6" r="3" fill="#3f8fd4"/>
-<circle cx="191.2" cy="257.5" r="3" fill="#3f8fd4"/>
-<circle cx="303.4" cy="257.3" r="3" fill="#3f8fd4"/>
-<circle cx="415.6" cy="257.1" r="3" fill="#3f8fd4"/>
-<circle cx="481.2" cy="257.0" r="3" fill="#3f8fd4"/>
-<circle cx="527.8" cy="256.8" r="3" fill="#3f8fd4"/>
-<circle cx="593.4" cy="256.4" r="3" fill="#3f8fd4"/>
-<circle cx="640.0" cy="256.0" r="3" fill="#3f8fd4"/>
-<circle cx="676.1" cy="255.7" r="3" fill="#3f8fd4"/>
-<circle cx="705.6" cy="255.3" r="3" fill="#3f8fd4"/>
-<circle cx="752.2" cy="254.6" r="3" fill="#3f8fd4"/>
-<polyline points="79.1,254.2 191.2,253.9 303.4,253.4 415.6,253.3 481.2,252.9 527.8,252.1 593.4,251.3 640.0,250.3 676.1,249.5 705.6,249.0 752.2,248.3" fill="none" stroke="#2ea36a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="254.2" r="3" fill="#2ea36a"/>
-<circle cx="191.2" cy="253.9" r="3" fill="#2ea36a"/>
-<circle cx="303.4" cy="253.4" r="3" fill="#2ea36a"/>
-<circle cx="415.6" cy="253.3" r="3" fill="#2ea36a"/>
-<circle cx="481.2" cy="252.9" r="3" fill="#2ea36a"/>
-<circle cx="527.8" cy="252.1" r="3" fill="#2ea36a"/>
-<circle cx="593.4" cy="251.3" r="3" fill="#2ea36a"/>
-<circle cx="640.0" cy="250.3" r="3" fill="#2ea36a"/>
-<circle cx="676.1" cy="249.5" r="3" fill="#2ea36a"/>
-<circle cx="705.6" cy="249.0" r="3" fill="#2ea36a"/>
-<circle cx="752.2" cy="248.3" r="3" fill="#2ea36a"/>
-<polyline points="79.1,248.9 191.2,248.4 303.4,247.9 415.6,247.3 481.2,246.5 527.8,245.6 593.4,244.6 640.0,243.5 676.1,242.3 705.6,241.4 752.2,240.1" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="248.9" r="3" fill="#d99a24"/>
-<circle cx="191.2" cy="248.4" r="3" fill="#d99a24"/>
-<circle cx="303.4" cy="247.9" r="3" fill="#d99a24"/>
-<circle cx="415.6" cy="247.3" r="3" fill="#d99a24"/>
-<circle cx="481.2" cy="246.5" r="3" fill="#d99a24"/>
-<circle cx="527.8" cy="245.6" r="3" fill="#d99a24"/>
-<circle cx="593.4" cy="244.6" r="3" fill="#d99a24"/>
-<circle cx="640.0" cy="243.5" r="3" fill="#d99a24"/>
-<circle cx="676.1" cy="242.3" r="3" fill="#d99a24"/>
-<circle cx="705.6" cy="241.4" r="3" fill="#d99a24"/>
-<circle cx="752.2" cy="240.1" r="3" fill="#d99a24"/>
-<polyline points="79.1,200.0 191.2,197.3 303.4,193.0 415.6,185.8 481.2,179.1 527.8,171.4 593.4,154.2 640.0,138.1 676.1,122.7 705.6,105.8 752.2,74.1" fill="none" stroke="#e05c48" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="79.1" cy="200.0" r="3" fill="#e05c48"/>
-<circle cx="191.2" cy="197.3" r="3" fill="#e05c48"/>
-<circle cx="303.4" cy="193.0" r="3" fill="#e05c48"/>
-<circle cx="415.6" cy="185.8" r="3" fill="#e05c48"/>
-<circle cx="481.2" cy="179.1" r="3" fill="#e05c48"/>
-<circle cx="527.8" cy="171.4" r="3" fill="#e05c48"/>
-<circle cx="593.4" cy="154.2" r="3" fill="#e05c48"/>
-<circle cx="640.0" cy="138.1" r="3" fill="#e05c48"/>
-<circle cx="676.1" cy="122.7" r="3" fill="#e05c48"/>
-<circle cx="705.6" cy="105.8" r="3" fill="#e05c48"/>
-<circle cx="752.2" cy="74.1" r="3" fill="#e05c48"/>
-<line x1="62.0" y1="322" x2="84.0" y2="322" stroke="#8b6ee0" stroke-width="3"/>
-<text x="91.0" y="326" font-size="11.5" fill="#8a8a8a">gemma-4-26B-A4B · MoE · TP2</text>
-<line x1="412.0" y1="322" x2="434.0" y2="322" stroke="#3f8fd4" stroke-width="3"/>
-<text x="441.0" y="326" font-size="11.5" fill="#8a8a8a">Qwen3-8B · BF16 · TP2</text>
-<line x1="62.0" y1="341" x2="84.0" y2="341" stroke="#2ea36a" stroke-width="3"/>
-<text x="91.0" y="345" font-size="11.5" fill="#8a8a8a">gemma-4-12B · w4a16 · TP2</text>
-<line x1="412.0" y1="341" x2="434.0" y2="341" stroke="#d99a24" stroke-width="3"/>
-<text x="441.0" y="345" font-size="11.5" fill="#8a8a8a">gemma-4-31B · w4a16 · TP2</text>
-<line x1="62.0" y1="360" x2="84.0" y2="360" stroke="#e05c48" stroke-width="3"/>
-<text x="91.0" y="364" font-size="11.5" fill="#8a8a8a">Qwen3.6-27B · hybrid SSM · TP2</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 401" width="780" height="401" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<text x="62" y="24" font-size="16" font-weight="700" fill="#8a8a8a">Cost of one context token at decode time</text>
+<text x="62" y="42" font-size="11.5" fill="#8a8a8a" opacity=".85">slope = ms added per token of context; a linear-attention model should be flat</text>
+<text x="62" y="58" font-size="10.5" fill="#8a8a8a" opacity=".7">2026-07-25 &#183; vLLM 0.23 + ROCm 7.14 &#183; kernel 7.0.0-28 &#183; 2x RX 7900 XT, TP=2 &#183; stock, no patches</text>
+<line x1="62" y1="282.0" x2="762" y2="282.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="286.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
+<line x1="62" y1="240.8" x2="762" y2="240.8" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="244.8" font-size="10.5" fill="#8a8a8a" text-anchor="end">50</text>
+<line x1="62" y1="199.6" x2="762" y2="199.6" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="203.6" font-size="10.5" fill="#8a8a8a" text-anchor="end">100</text>
+<line x1="62" y1="158.4" x2="762" y2="158.4" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="162.4" font-size="10.5" fill="#8a8a8a" text-anchor="end">150</text>
+<line x1="62" y1="117.2" x2="762" y2="117.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="121.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">200</text>
+<line x1="62" y1="76.0" x2="762" y2="76.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="80.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">250</text>
+<line x1="79.1" y1="282" x2="79.1" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="79.1" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">500</text>
+<line x1="191.2" y1="282" x2="191.2" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="191.2" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="303.4" y1="282" x2="303.4" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="303.4" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="415.6" y1="282" x2="415.6" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="415.6" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="527.8" y1="282" x2="527.8" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="527.8" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="640.0" y1="282" x2="640.0" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="640.0" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="752.2" y1="282" x2="752.2" y2="287" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="752.2" y="301" font-size="10.5" fill="#8a8a8a" text-anchor="middle">32K</text>
+<text x="18" y="179" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 18 179)">ms per generated token</text>
+<text x="412" y="319" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
+<polyline points="79.1,274.4 191.2,274.2 303.4,274.1 415.6,273.8 481.2,273.4 527.8,273.1 593.4,272.7 640.0,272.1 676.1,271.6 705.6,271.2 752.2,270.7" fill="none" stroke="#8b6ee0" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="274.4" r="3" fill="#8b6ee0"/>
+<circle cx="191.2" cy="274.2" r="3" fill="#8b6ee0"/>
+<circle cx="303.4" cy="274.1" r="3" fill="#8b6ee0"/>
+<circle cx="415.6" cy="273.8" r="3" fill="#8b6ee0"/>
+<circle cx="481.2" cy="273.4" r="3" fill="#8b6ee0"/>
+<circle cx="527.8" cy="273.1" r="3" fill="#8b6ee0"/>
+<circle cx="593.4" cy="272.7" r="3" fill="#8b6ee0"/>
+<circle cx="640.0" cy="272.1" r="3" fill="#8b6ee0"/>
+<circle cx="676.1" cy="271.6" r="3" fill="#8b6ee0"/>
+<circle cx="705.6" cy="271.2" r="3" fill="#8b6ee0"/>
+<circle cx="752.2" cy="270.7" r="3" fill="#8b6ee0"/>
+<polyline points="79.1,271.6 191.2,271.5 303.4,271.3 415.6,271.1 481.2,271.0 527.8,270.8 593.4,270.4 640.0,270.0 676.1,269.7 705.6,269.3 752.2,268.6" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="271.6" r="3" fill="#3f8fd4"/>
+<circle cx="191.2" cy="271.5" r="3" fill="#3f8fd4"/>
+<circle cx="303.4" cy="271.3" r="3" fill="#3f8fd4"/>
+<circle cx="415.6" cy="271.1" r="3" fill="#3f8fd4"/>
+<circle cx="481.2" cy="271.0" r="3" fill="#3f8fd4"/>
+<circle cx="527.8" cy="270.8" r="3" fill="#3f8fd4"/>
+<circle cx="593.4" cy="270.4" r="3" fill="#3f8fd4"/>
+<circle cx="640.0" cy="270.0" r="3" fill="#3f8fd4"/>
+<circle cx="676.1" cy="269.7" r="3" fill="#3f8fd4"/>
+<circle cx="705.6" cy="269.3" r="3" fill="#3f8fd4"/>
+<circle cx="752.2" cy="268.6" r="3" fill="#3f8fd4"/>
+<polyline points="79.1,268.2 191.2,267.9 303.4,267.4 415.6,267.3 481.2,266.9 527.8,266.1 593.4,265.3 640.0,264.3 676.1,263.5 705.6,263.0 752.2,262.3" fill="none" stroke="#2ea36a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="268.2" r="3" fill="#2ea36a"/>
+<circle cx="191.2" cy="267.9" r="3" fill="#2ea36a"/>
+<circle cx="303.4" cy="267.4" r="3" fill="#2ea36a"/>
+<circle cx="415.6" cy="267.3" r="3" fill="#2ea36a"/>
+<circle cx="481.2" cy="266.9" r="3" fill="#2ea36a"/>
+<circle cx="527.8" cy="266.1" r="3" fill="#2ea36a"/>
+<circle cx="593.4" cy="265.3" r="3" fill="#2ea36a"/>
+<circle cx="640.0" cy="264.3" r="3" fill="#2ea36a"/>
+<circle cx="676.1" cy="263.5" r="3" fill="#2ea36a"/>
+<circle cx="705.6" cy="263.0" r="3" fill="#2ea36a"/>
+<circle cx="752.2" cy="262.3" r="3" fill="#2ea36a"/>
+<polyline points="79.1,262.9 191.2,262.4 303.4,261.9 415.6,261.3 481.2,260.5 527.8,259.6 593.4,258.6 640.0,257.5 676.1,256.3 705.6,255.4 752.2,254.1" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="262.9" r="3" fill="#d99a24"/>
+<circle cx="191.2" cy="262.4" r="3" fill="#d99a24"/>
+<circle cx="303.4" cy="261.9" r="3" fill="#d99a24"/>
+<circle cx="415.6" cy="261.3" r="3" fill="#d99a24"/>
+<circle cx="481.2" cy="260.5" r="3" fill="#d99a24"/>
+<circle cx="527.8" cy="259.6" r="3" fill="#d99a24"/>
+<circle cx="593.4" cy="258.6" r="3" fill="#d99a24"/>
+<circle cx="640.0" cy="257.5" r="3" fill="#d99a24"/>
+<circle cx="676.1" cy="256.3" r="3" fill="#d99a24"/>
+<circle cx="705.6" cy="255.4" r="3" fill="#d99a24"/>
+<circle cx="752.2" cy="254.1" r="3" fill="#d99a24"/>
+<polyline points="79.1,214.0 191.2,211.3 303.4,207.0 415.6,199.8 481.2,193.1 527.8,185.4 593.4,168.2 640.0,152.1 676.1,136.7 705.6,119.8 752.2,88.1" fill="none" stroke="#e05c48" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.1" cy="214.0" r="3" fill="#e05c48"/>
+<circle cx="191.2" cy="211.3" r="3" fill="#e05c48"/>
+<circle cx="303.4" cy="207.0" r="3" fill="#e05c48"/>
+<circle cx="415.6" cy="199.8" r="3" fill="#e05c48"/>
+<circle cx="481.2" cy="193.1" r="3" fill="#e05c48"/>
+<circle cx="527.8" cy="185.4" r="3" fill="#e05c48"/>
+<circle cx="593.4" cy="168.2" r="3" fill="#e05c48"/>
+<circle cx="640.0" cy="152.1" r="3" fill="#e05c48"/>
+<circle cx="676.1" cy="136.7" r="3" fill="#e05c48"/>
+<circle cx="705.6" cy="119.8" r="3" fill="#e05c48"/>
+<circle cx="752.2" cy="88.1" r="3" fill="#e05c48"/>
+<line x1="62.0" y1="336" x2="84.0" y2="336" stroke="#8b6ee0" stroke-width="3"/>
+<text x="91.0" y="340" font-size="11.5" fill="#8a8a8a">gemma-4-26B-A4B &#183; MoE &#183; TP2</text>
+<line x1="412.0" y1="336" x2="434.0" y2="336" stroke="#3f8fd4" stroke-width="3"/>
+<text x="441.0" y="340" font-size="11.5" fill="#8a8a8a">Qwen3-8B &#183; BF16 &#183; TP2</text>
+<line x1="62.0" y1="355" x2="84.0" y2="355" stroke="#2ea36a" stroke-width="3"/>
+<text x="91.0" y="359" font-size="11.5" fill="#8a8a8a">gemma-4-12B &#183; w4a16 &#183; TP2</text>
+<line x1="412.0" y1="355" x2="434.0" y2="355" stroke="#d99a24" stroke-width="3"/>
+<text x="441.0" y="359" font-size="11.5" fill="#8a8a8a">gemma-4-31B &#183; w4a16 &#183; TP2</text>
+<line x1="62.0" y1="374" x2="84.0" y2="374" stroke="#e05c48" stroke-width="3"/>
+<text x="91.0" y="378" font-size="11.5" fill="#8a8a8a">Qwen3.6-27B &#183; hybrid SSM &#183; TP2</text>
 </svg>

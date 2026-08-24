@@ -22,8 +22,8 @@ SERIES = [
     ("Muse-Glimmer-30B-INT4", "#8b6ee0", "Muse-Glimmer-30B · int4 · window 2048", 2048),
 ]
 GREY = "#8a8a8a"
-W, H = 900, 400
-T, B = 78, 300
+W, H = 900, 416
+T, B = 94, 316
 
 
 def panel(o, L, R, curves, vmax, ticks, ylab, title, ratio=False):
@@ -53,6 +53,13 @@ def panel(o, L, R, curves, vmax, ticks, ylab, title, ratio=False):
     return xm, ym
 
 
+def stamp():
+    """date, software and kernel, from the data file rather than from here"""
+    m = d["machine"]
+    return (f'{m["measured"]} &#183; {m["userspace"]} &#183; kernel {m["kernel"]} '
+            f'&#183; {m["gpu"]}')
+
+
 def main():
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
          f'font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">',
@@ -60,7 +67,8 @@ def main():
          f'Skipping decode blocks the sliding-window mask would zero anyway</text>',
          f'<text x="52" y="45" font-size="11.5" fill="{GREY}" opacity=".85">'
          f'2× RX 7900 XT (gfx1100), TP=2, ROCM_ATTN. Median of three processes per point. '
-         f'Vertical dashes mark each model’s own window.</text>']
+         f'Vertical dashes mark each model’s own window.</text>',
+         f'<text x="52" y="61" font-size="10.5" fill="{GREY}" opacity=".7">{stamp()}</text>']
 
     left, right = [], []
     for key, col, _lbl, win in SERIES:

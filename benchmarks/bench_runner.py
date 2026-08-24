@@ -200,6 +200,13 @@ def start_server(cfg, mml, util):
     HARD_CAP, STALL_S, COMPILE_STALL = 5400, 420, 5400
     hl = hostlog(cfg["id"]); t0 = time.time(); last_note = 0
     while time.time() - t0 < HARD_CAP:
+        # The container redirects into CONTAINER_BENCH_DIR while we watch BENCH_DIR.
+        # If those two do not name the same directory the log never appears here and a
+        # healthy server looks like a stalled one, so say so instead of waiting it out.
+        if not os.path.exists(hl) and time.time() - t0 > 90:
+            return "timeout", (f"no log at {hl} after 90 s — the container writes to "
+                               f"{D_IN_CONTAINER}/serve-logs/, check that CONTAINER_BENCH_DIR "
+                               f"and BENCH_DIR name the same directory")
         txt = open(hl).read() if os.path.exists(hl) else ""
         if "Application startup complete" in txt:
             return "ready", txt

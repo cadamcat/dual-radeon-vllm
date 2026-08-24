@@ -1,25 +1,62 @@
 #!/usr/bin/env python3
-"""gen_svg.py — standalone SVG charts for the GitHub repo.
+"""gen_charts.py — standalone SVG charts for the GitHub repo.
 Colours are baked in (no CSS vars) and chosen to read on both light and dark
 GitHub themes; axes/text use neutral grey. Legend and title live inside the SVG
-so the file works as a plain <img> in markdown."""
-import json, math, os
+so the file works as a plain <img> in markdown.
+
+Every chart carries a stamp line naming the date, the software and the kernel it
+was measured on. Two campaigns are not comparable unless that line matches, so it
+is required rather than optional:
+
+    # the 2026-07-25 campaign, stock vLLM
+    python3 gen_charts.py
+
+    # the 2026-08-25 re-sweep, patched container
+    python3 gen_charts.py --source ../results-2026-08-25.jsonl --suffix -2026-08-25 \\
+        --stamp "2026-08-25 - vLLM 0.23.1.dev1+g9ddef7117 + ROCm 7.14 - kernel 7.0.0-30 - ..." \\
+        --series E-26B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2,F-27B-tp2,G-30B-tp2
+"""
+import argparse, json, math, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "docs", "assets")
-os.makedirs(OUT, exist_ok=True)
-rows = [json.loads(l) for l in open(os.path.join(HERE, "..", "results.jsonl")) if l.strip()]
+
+JULY_STAMP = ("2026-07-25 &#183; vLLM 0.23 + ROCm 7.14 &#183; kernel 7.0.0-28 &#183; "
+              "2x RX 7900 XT, TP=2 &#183; stock, no patches")
 
 C = {
-    "E-26B-tp2":  ("#8b6ee0", "gemma-4-26B-A4B · MoE · TP2"),
-    "B-8B-tp2":   ("#3f8fd4", "Qwen3-8B · BF16 · TP2"),
-    "A-12B-tp2":  ("#2ea36a", "gemma-4-12B · w4a16 · TP2"),
-    "C-31B-tp2":  ("#d99a24", "gemma-4-31B · w4a16 · TP2"),
-    "D-27B-tp2":  ("#e05c48", "Qwen3.6-27B · hybrid SSM · TP2"),
-    "B-8B-tp1":   ("#3f8fd4", "Qwen3-8B · BF16 · TP1 (single card)"),
-    "A-12B-tp1":  ("#2ea36a", "gemma-4-12B · w4a16 · TP1 (single card)"),
+    "E-26B-tp2":  ("#8b6ee0", "gemma-4-26B-A4B &#183; MoE &#183; TP2"),
+    "B-8B-tp2":   ("#3f8fd4", "Qwen3-8B &#183; BF16 &#183; TP2"),
+    "A-12B-tp2":  ("#2ea36a", "gemma-4-12B &#183; w4a16 &#183; TP2"),
+    "C-31B-tp2":  ("#d99a24", "gemma-4-31B &#183; w4a16 &#183; TP2"),
+    "D-27B-tp2":  ("#e05c48", "Qwen3.6-27B &#183; hybrid SSM &#183; TP2"),
+    "B-8B-tp1":   ("#3f8fd4", "Qwen3-8B &#183; BF16 &#183; TP1 (single card)"),
+    "A-12B-tp1":  ("#2ea36a", "gemma-4-12B &#183; w4a16 &#183; TP1 (single card)"),
+    # added 2026-08-25. Qwen3.8 keeps Qwen3.6's colour: same architecture, same
+    # slot in the chart, so the two campaigns read as one line moving.
+    "D8-27B-tp2": ("#e05c48", "Qwen3.8-27B &#183; hybrid SSM &#183; TP2"),
+    "F-27B-tp2":  ("#21a0a0", "gemma-3-27b &#183; w4a16, sliding window &#183; TP2"),
+    "G-30B-tp2":  ("#d1519a", "Muse-Glimmer-30B &#183; int4, sliding window &#183; TP2"),
 }
 GREY, GRID = "#8a8a8a", "#8a8a8a"
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--source", default=os.path.join(HERE, "..", "results.jsonl"))
+ap.add_argument("--stamp", default=JULY_STAMP,
+                help="date / software / kernel line, drawn under the subtitle on every chart")
+ap.add_argument("--suffix", default="", help="appended to each output filename")
+ap.add_argument("--series", default="E-26B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D-27B-tp2",
+                help="comma-separated TP2 configs to plot, in legend order")
+ap.add_argument("--tp1-series", default="B-8B-tp2,B-8B-tp1,A-12B-tp2,A-12B-tp1",
+                help="comma-separated configs for the single-vs-dual chart; empty to skip it")
+ap.add_argument("--vmax-decode", type=float, default=115)
+ap.add_argument("--vmax-prefill", type=float, default=4200)
+ap.add_argument("--vmax-tp1", type=float, default=90)
+ap.add_argument("--vmax-ms", type=float, default=250)
+a = ap.parse_args()
+
+os.makedirs(OUT, exist_ok=True)
+rows = [json.loads(l) for l in open(a.source) if l.strip()]
 
 dec, pre = {}, {}
 for r in rows:
@@ -31,16 +68,18 @@ D = lambda c, t: sum(dec[c][t]) / len(dec[c][t]) if c in dec and t in dec[c] els
 P = lambda c, t: max(pre[c][t]) if c in pre and t in pre[c] else None
 TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
 
+
 def build(fn, title, sub, series, vmax, ylab, ticks, ncol=2):
     rowsn = math.ceil(len(series) / ncol)
-    W, H = 780, 330 + rowsn * 19
-    L, R, T, B = 62, 762, 62, 268
+    W, H = 780, 344 + rowsn * 19
+    L, R, T, B = 62, 762, 76, 282
     xm = lambda s: L + (math.log10(s) - math.log10(450)) / (math.log10(34000) - math.log10(450)) * (R - L)
     ym = lambda v: T + (1 - v / vmax) * (B - T)
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
          f'font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">',
-         f'<text x="{L}" y="26" font-size="16" font-weight="700" fill="{GREY}">{title}</text>',
-         f'<text x="{L}" y="45" font-size="11.5" fill="{GREY}" opacity=".85">{sub}</text>']
+         f'<text x="{L}" y="24" font-size="16" font-weight="700" fill="{GREY}">{title}</text>',
+         f'<text x="{L}" y="42" font-size="11.5" fill="{GREY}" opacity=".85">{sub}</text>',
+         f'<text x="{L}" y="58" font-size="10.5" fill="{GREY}" opacity=".7">{a.stamp}</text>']
     for tv in ticks:
         y = ym(tv)
         o.append(f'<line x1="{L}" y1="{y:.1f}" x2="{R}" y2="{y:.1f}" stroke="{GRID}" stroke-width="1" opacity=".28"/>')
@@ -72,25 +111,42 @@ def build(fn, title, sub, series, vmax, ylab, ticks, ncol=2):
     open(f"{OUT}/{fn}", "w").write("\n".join(o))
     return fn
 
-TP2 = ["E-26B-tp2", "B-8B-tp2", "A-12B-tp2", "C-31B-tp2", "D-27B-tp2"]
+
+def name(base):
+    return f"{base}{a.suffix}.svg"
+
+
+TP2 = [k for k in a.series.split(",") if k.strip()]
+missing = [k for k in TP2 if k not in dec]
+if missing:
+    print(f"note: no decode data for {missing} in {os.path.basename(a.source)}")
+    TP2 = [k for k in TP2 if k not in missing]
+
 sd = [(k, [(t, D(k, t)) for t in TARGETS if D(k, t)]) for k in TP2]
 sp = [(k, [(t, P(k, t)) for t in TARGETS if P(k, t)]) for k in TP2]
-st = [(k, [(t, D(k, t)) for t in TARGETS if D(k, t)]) for k in
-      ["B-8B-tp2", "B-8B-tp1", "A-12B-tp2", "A-12B-tp1"]]
 sm = [(k, [(t, 1000 / D(k, t)) for t in TARGETS if D(k, t)]) for k in TP2]
 
-for f in [
-    build("decode-vs-context.svg", "Decode throughput vs context length",
-          "2x RX 7900 XT, vLLM 0.23 + ROCm 7.14, TP=2, CUDA graph, 512-token outputs, mean of 2 runs",
-          sd, 115, "decode tok/s", [0, 20, 40, 60, 80, 100]),
-    build("prefill-vs-context.svg", "Prefill throughput vs context length",
+charts = [
+    build(name("decode-vs-context"), "Decode throughput vs context length",
+          "TP=2, CUDA graph, 512-token outputs, mean of 2 runs",
+          sd, a.vmax_decode, "decode tok/s", [0, 20, 40, 60, 80, 100]),
+    build(name("prefill-vs-context"), "Prefill throughput vs context length",
           "max_tokens=1, throughput = prompt tokens / TTFT, best of 2 runs",
-          sp, 4200, "prefill tok/s", [0, 1000, 2000, 3000, 4000]),
-    build("tp1-vs-tp2.svg", "Single card vs dual card (TP=1 dashed, TP=2 solid)",
-          "BF16 scales 1.70x; w4a16 only 1.19x - see 'why' in benchmarks.md",
-          st, 90, "decode tok/s", [0, 20, 40, 60, 80]),
-    build("decode-ms-per-token.svg", "Cost of one context token at decode time",
+          sp, a.vmax_prefill, "prefill tok/s", [0, 1000, 2000, 3000, 4000]),
+    build(name("decode-ms-per-token"), "Cost of one context token at decode time",
           "slope = ms added per token of context; a linear-attention model should be flat",
-          sm, 250, "ms per generated token", [0, 50, 100, 150, 200, 250]),
-]:
+          sm, a.vmax_ms, "ms per generated token", [0, 50, 100, 150, 200, 250]),
+]
+
+tp1_keys = [k for k in a.tp1_series.split(",") if k.strip() and k in dec]
+if len(tp1_keys) >= 2:
+    st = [(k, [(t, D(k, t)) for t in TARGETS if D(k, t)]) for k in tp1_keys]
+    charts.append(
+        build(name("tp1-vs-tp2"), "Single card vs dual card (TP=1 dashed, TP=2 solid)",
+              "BF16 scales 1.70x; w4a16 only 1.19x - see 'why' in benchmarks.md",
+              st, a.vmax_tp1, "decode tok/s", [0, 20, 40, 60, 80]))
+else:
+    print("note: not enough TP=1 data for tp1-vs-tp2, skipped")
+
+for f in charts:
     print("wrote", f)
