@@ -10,7 +10,7 @@
     "note": "the container also carries the PR#49991 clone flag (unset here) and PR#45916's split-KV with the gate widened; neither is on the path this measures"
   },
   "model_under_test": {
-    "name": "RedHatAI/Muse-Glimmer-30B-INT4",
+    "name": "RedHatAI/Muse-Glimmer-30B-INT4 (first of two; see models_affected)",
     "params": "30B dense, compressed-tensors pack-quantized int4, group 128, symmetric",
     "layers": "52: 39 sliding_attention (window 2048) + 13 full_attention (rope_theta 0)",
     "head_dim": 128,
@@ -18,43 +18,6 @@
     "block_size": 16,
     "attention_backend": "ROCM_ATTN, chosen by the platform's own priority order",
     "port_note": "vLLM support for this model merged upstream 2026-08-14, after this container was built. It runs here through a downstream adaptation: the three new files from the merge commit plus ~15 lines of registration, a load_weights rewritten to this version's stacked_params_mapping convention because WeightsMapper here has no orig_to_new_stacked, and one inlined is_vit_use_data_parallel fallback."
-  },
-  "end_to_end": {
-    "method": "one process per column, greedy, 64 generated tokens differenced against 8 at the same depth, synthetic repeating-token prompt",
-    "before": {
-      "8192": {
-        "ms_per_token": 35.8,
-        "tok_per_s": 27.94
-      },
-      "32768": {
-        "ms_per_token": 83.83,
-        "tok_per_s": 11.93
-      }
-    },
-    "after": {
-      "8192": {
-        "ms_per_token": 24.46,
-        "tok_per_s": 40.88
-      },
-      "32768": {
-        "ms_per_token": 26.93,
-        "tok_per_s": 37.14
-      }
-    },
-    "speedup": {
-      "8192": 1.46,
-      "32768": 3.11
-    },
-    "output_identical": {
-      "8192": {
-        "identical": true,
-        "tokens_compared": 64
-      },
-      "32768": {
-        "identical": true,
-        "tokens_compared": 64
-      }
-    }
   },
   "kernel_level": {
     "method": "torch profiler, delay 2 active 8, 32768 context, rank 0; same settings as prof-mtp-31b.py",
@@ -129,7 +92,101 @@
       }
     }
   },
-  "reading": "On the one model that reaches this path, the change is worth 3.11x at 32768 (83.83 -> 26.93 ms/tok, 11.93 -> 37.14 tok/s) and 1.46x at 8192, with all 64 generated tokens identical at both depths. At the kernel it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term at 44.7%. Decode also becomes nearly flat with context, 40.88 tok/s at 8192 against 37.14 at 32768, which is what a capped window should produce and which no other model measured here does.",
-  "scope": "Narrower than 'sliding-window models'. It requires the model to land on ROCM_ATTN, and Gemma-4, the largest such family available here, is routed away from it by the heterogeneous-head-dimension rule. Muse-Glimmer-30B is the only model on this machine confirmed to reach the affected path. Mistral, Ministral and Phi-3 style models have uniform head dimensions and a sliding window and are the obvious next candidates, but none of them has been tested.",
-  "not_established": "Every cell is n=1; nothing here was repeated. Correctness rests on token identity for one synthetic prompt at two depths, not on a test suite. Whether the block table is genuinely full-length, rather than the skip merely happening to be safe here, was inferred from the identical output and not read out of the KV cache manager. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change, against 412 GiB/s for the custom HIP kernel on the same run, so the exclusion of those layers from that kernel is untouched; closing that remaining gap would be worth about 19% more, not another 3x, because the weight GEMM now dominates."
+  "reading": "Two models reach this path and both gain. Muse-Glimmer-30B goes 83.83 -> 26.93 ms/tok at 32768 (3.11x) and gemma-3-27b-it goes 124.15 -> 45.20 (2.75x), with all 64 generated tokens identical in every case. At the kernel on Muse-Glimmer it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term at 44.7%. The gemma-3 figure is the one that shows the size of the problem: at 32768 it decodes at 8.06 tok/s unpatched against 30.36 tok/s for gemma-4-31B, a larger and newer model, purely because gemma-4 is routed to a backend that already bounds its loop. Patched, gemma-3 reaches 22.12 tok/s and the remaining gap is explicable by the models rather than by a kernel reading 32 times more KV than it uses.",
+  "scope": "Any model with a sliding window that lands on ROCM_ATTN. That includes gemma-3, which is mainstream, and excludes gemma-4, which vLLM forces onto TRITON_ATTN because its head dimensions are heterogeneous. Checked and found not to qualify: Mistral-Small-3.2 and Mistral-7B-v0.3 (no window), Ministral-8B (window 32768, which covers the whole context at the depths measured), Phi-4-reasoning (no window), Phi-4-mini-reasoning (window 262144), GLM-5.2, DeepSeek-V4-Flash, Ornith-1.5 and LFM2.5 (no window, or a window with an architecture out of reach here). A small window relative to context is not common among 2026 flagships; Gemma is where it lives.",
+  "not_established": "Every cell is n=1; nothing here was repeated. Only two models were tested, both on one machine. Correctness rests on token identity for one synthetic prompt at two depths, not on a test suite. Whether the block table is genuinely full-length, rather than the skip merely happening to be safe here, was inferred from the identical output and not read out of the KV cache manager. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change, against 412 GiB/s for the custom HIP kernel on the same run, so the exclusion of those layers from that kernel is untouched; closing that remaining gap would be worth about 19% more, not another 3x, because the weight GEMM now dominates.",
+  "models_affected": {
+    "Muse-Glimmer-30B-INT4": {
+      "window": 2048,
+      "layers": "39 sliding + 13 full of 52",
+      "head_dim": 128,
+      "block_size": 16,
+      "backend": "ROCM_ATTN",
+      "end_to_end": {
+        "method": "one process per column, greedy, 64 generated tokens differenced against 8 at the same depth, synthetic repeating-token prompt",
+        "before": {
+          "8192": {
+            "ms_per_token": 35.8,
+            "tok_per_s": 27.94
+          },
+          "32768": {
+            "ms_per_token": 83.83,
+            "tok_per_s": 11.93
+          }
+        },
+        "after": {
+          "8192": {
+            "ms_per_token": 24.46,
+            "tok_per_s": 40.88
+          },
+          "32768": {
+            "ms_per_token": 26.93,
+            "tok_per_s": 37.14
+          }
+        },
+        "speedup": {
+          "8192": 1.46,
+          "32768": 3.11
+        },
+        "output_identical": {
+          "8192": {
+            "identical": true,
+            "tokens_compared": 64
+          },
+          "32768": {
+            "identical": true,
+            "tokens_compared": 64
+          }
+        }
+      }
+    },
+    "gemma-3-27b-it-quantized.w4a16": {
+      "window": 1024,
+      "layers": "62, sliding_window_pattern 6 so roughly 5 local per global",
+      "head_dim": 128,
+      "num_attention_heads": 32,
+      "num_key_value_heads": 16,
+      "gqa_ratio": 2,
+      "block_size": 16,
+      "backend": "ROCM_ATTN",
+      "why_it_matters": "RedHatAI's w4a16 re-upload of google/gemma-3-27b-it, 344k downloads. head_dim is uniform and there is no global_head_dim, so the Gemma4-specific forcing rule in model_executor/models/config.py does not fire and it is not routed to TRITON_ATTN the way gemma-4 is. gqa_ratio 2 also puts the custom HIP kernel out of reach, so all 62 layers run on the Triton path.",
+      "end_to_end": {
+        "method": "same as the other model: one process per column, greedy, 64 generated tokens differenced against 8 at the same depth",
+        "before": {
+          "8192": {
+            "ms_per_token": 40.49,
+            "tok_per_s": 24.7
+          },
+          "32768": {
+            "ms_per_token": 124.15,
+            "tok_per_s": 8.06
+          }
+        },
+        "after": {
+          "8192": {
+            "ms_per_token": 26.44,
+            "tok_per_s": 37.82
+          },
+          "32768": {
+            "ms_per_token": 45.2,
+            "tok_per_s": 22.12
+          }
+        },
+        "speedup": {
+          "8192": 1.53,
+          "32768": 2.75
+        },
+        "output_identical": {
+          "8192": {
+            "identical": true,
+            "tokens_compared": 64
+          },
+          "32768": {
+            "identical": true,
+            "tokens_compared": 64
+          }
+        }
+      }
+    }
+  }
 }
