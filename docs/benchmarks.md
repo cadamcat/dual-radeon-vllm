@@ -287,10 +287,12 @@ second card, and it is invisible in a tokens-per-second table.
 
 ## 6. The same machine, patched: a second campaign on 2026-08-25
 
-Everything above is stock vLLM 0.23 on guest kernel `7.0.0-28`. A month later the
-container carries three patch sets and the guest runs `7.0.0-30`, so the same
-ladder was measured again: **372 measurements, nine configurations, eleven
-context lengths, two rounds each, zero errors.**
+Everything above is stock vLLM 0.23 on guest kernel `7.0.0-28`, in a guest with no
+PCIe AtomicOps. A month later the container carries three patch sets, the guest
+runs `7.0.0-30`, and **the guest has AtomicOps** — the passthrough was changed to
+the single-function form on 2026-08-23. The same ladder was measured again:
+**372 measurements, nine configurations, eleven context lengths, two rounds each,
+zero errors.**
 
 ![decode throughput vs context length, patched](assets/decode-vs-context-2026-08-25.svg)
 
@@ -335,12 +337,24 @@ model was fifth, two hours into its campaign, and tonight's first was first on a
 cold machine, and the two are the same distance from July in the same direction.
 
 Also ruled out: the w4a16 path, since gemma-4-12B is the same quantisation on the
-same path at −0.02 %; and anything machine-wide, since three other controls
-reproduce. What is left and not ruled out is the guest kernel moving from
-`7.0.0-28` to `7.0.0-30`, or something in the vLLM build between 0.23 and
-0.23.1.dev1 — neither of which should be selective for one model out of four.
-**Recorded as unexplained**, with the runs, the temperature trace and the
-eliminations in
+same path at −0.02 %; and anything machine-wide, since four other controls
+reproduce.
+
+**Three differences between the campaigns are not ruled out**, and the third of
+them is one this repository should have noticed first. The guest kernel moved
+from `7.0.0-28` to `7.0.0-30`. The vLLM build moved from 0.23 to 0.23.1.dev1.
+And **the guest gained PCIe AtomicOps**: `hostpci0`/`hostpci1` were rewritten from
+the all-functions form to the single-function one on 2026-08-23 at 14:17 UTC,
+about twenty-eight hours before this campaign started, so July ran without
+AtomicOps and August ran with them. That is the change this repository is
+largely about, and it was left out of the first version of this section.
+
+None of the three should be selective for one model out of six, which is the
+argument against each of them and not evidence for any. The AtomicOps change is
+the cheapest to test: putting `hostpciX` back to the all-functions form and
+rerunning this one configuration would settle it in half an hour. Until that is
+run it stays on the list. **Recorded as unexplained**, with the runs, the
+temperature trace and the eliminations in
 [`gemma-4-31b-campaign-offset.json`](../benchmarks/gemma-4-31b-campaign-offset.json).
 
 One thing the temperature trace does say, separately: sustained decode holds

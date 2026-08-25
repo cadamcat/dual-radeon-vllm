@@ -8,7 +8,9 @@
     "august_kernel": "7.0.0-30-generic",
     "july_vllm": "0.23",
     "august_vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-    "note": "the August container also carries PR#49991's clone flag, PR#45916's split-KV with the gate widened, and the sliding-window block skip. None is on gemma-4's code path: it is forced onto TRITON_ATTN, it is dense, and it has no sliding window."
+    "note": "the August container also carries PR#49991's clone flag, PR#45916's split-KV with the gate widened, and the sliding-window block skip. None is on gemma-4's code path: it is forced onto TRITON_ATTN, it is dense, and it has no sliding window.",
+    "july_pcie_atomics": "absent (multifunction passthrough)",
+    "august_pcie_atomics": "present (single-function passthrough since 2026-08-23 14:17 UTC)"
   },
   "reproducibility": {
     "runs_on_2026_08_25": 3,
@@ -51,6 +53,7 @@
     "Campaign position. July's run was fifth, two hours in; run 1 was first on a cold machine; both are 0.85% apart from July in the same direction."
   ],
   "not_ruled_out": [
+    "PCIe AtomicOps. The guest had none in July and has them now: hostpciX was rewritten from the all-functions form to the single-function one on 2026-08-23 at 14:17 UTC, twenty-eight hours before the August campaign. Cheapest of the three to test — put hostpciX back and rerun this one configuration.",
     "The guest kernel, 7.0.0-28 to 7.0.0-30. It is the largest uncontrolled difference, but it should not be selective for one model when three others on the same machine are unaffected.",
     "Something in the vLLM build between 0.23 and 0.23.1.dev1 that touches this model's shape specifically.",
     "A difference in the model files themselves. Not checked: no checksum of the July weights was kept."

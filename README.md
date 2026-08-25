@@ -2,7 +2,7 @@
 
 **Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL bug that stops most people before they start.**
 
-`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P, no PCIe atomics and cross-die PCIe 3.0**: deliberately the least favourable topology.
+`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: deliberately the least favourable topology.
 
 <table>
 <tr>
@@ -125,7 +125,7 @@ Everything below was measured on this machine. Nothing is extrapolated.
 | **GPUs** | 2× Radeon RX 7900 XT (gfx1100, RDNA3), 20 GB each = 40 GB |
 | **Interconnect** | Cross-die, PCIe 3.0, **no P2P**, `NCCL_P2P_DISABLE=1` |
 | **Host** | Threadripper 1950X (Zen 1), X399 |
-| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough** (no PCIe atomics — see below) |
+| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough**. No PCIe atomics through 2026-08-23, single-function and with atomics since — [see below](#hardware-notes) |
 | **Stack** | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · **RCCL 2.27.7 rebuilt** |
 
 > The topology is intentionally hostile. If it works here, a bare-metal box with
@@ -360,10 +360,15 @@ by the root complex and *routed* by every switch in between, and `amdgpu` checks
 exactly that through `pci_enable_atomic_ops_to_root()`: 32- and 64-bit completer
 support on the root port, AtomicOp routing on each switch port below it. QEMU's
 emulated `pcie-root-port` reports `32bit- 64bit-` **when the device is passed as
-multifunction**, which is the Proxmox default and was this machine's state for
-every measurement in this repository. Passed as a single function it advertises
-completer support automatically, and the guest gets atomics — QEMU has done this
-since 8.1.0. [vfio-atomics.md](docs/vfio-atomics.md) has the A/B.
+multifunction**, which is the Proxmox default. Passed as a single function it
+advertises completer support automatically, and the guest gets atomics — QEMU has
+done this since 8.1.0. [vfio-atomics.md](docs/vfio-atomics.md) has the A/B.
+
+**This machine changed sides on 2026-08-23 at 14:17 UTC.** Everything measured
+before that, including the 2026-07-25 campaign, ran multifunction and without
+AtomicOps; everything after, including the 2026-08-25 campaign, the loader work
+and the sliding-window measurements, ran single-function and with them. Where
+that matters to a comparison it is called out at the comparison.
 
 Bare metal fails for a different reason. Root ports on consumer boards normally
 do advertise completer support — this project's own X399 host reports
