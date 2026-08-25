@@ -2,15 +2,15 @@
 
 # dual-radeon-vllm
 
-**在两张消费级 Radeon(RX 7900 XT,gfx1100,ROCm 7.14)上把 vLLM 张量并行真正跑通的端到端记录——包括拦住大多数人的那个 RCCL 崩溃:根因、修复和 30 行的复现器。**
+**两张消费级 Radeon(RX 7900 XT,gfx1100,ROCm 7.14)跑通 vLLM 张量并行的完整工程记录——拦住大多数人的那个 RCCL 崩溃,这里有根因、修复,和一个 30 行的复现程序。**
 
-`gemma-4-31B`(w4a16)在 2× RX 7900 XT 上解码 **43 tok/s**,两张卡同时 265 W;26B MoE 短上下文 **108 tok/s**。测试机是 VFIO 虚拟机、无 P2P、跨 die PCIe 3.0——故意选的最不利拓扑,在这里能跑通的,裸机只会更好。
+`gemma-4-31B`(w4a16)在 2× RX 7900 XT 上解码 **43 tok/s**,两张卡同时压满 265 W;26B 的 MoE 短上下文能到 **108 tok/s**。而且测试机还是台 VFIO 虚拟机:无 P2P、跨 die PCIe 3.0——拓扑故意挑了最差的。这里都能跑通,带 P2P 的裸机只会更好。
 
-> 本页是浓缩的中文导览:判定、修复、性能速览。**全部数字与细节以英文文档为准**;命令、报错、配置一律保留英文原样——你搜到的和要跑的就是它们。
+> 这是一页浓缩的中文导览,只讲三件事:怎么确诊、怎么修、能跑多快。**所有数字与细节以英文文档为准**;报错、命令、配置一律保留英文原样,因为你要搜的、要跑的就是它们。
 
 ## 我是不是中招了?
 
-两张以上 AMD 卡,vLLM / PyTorch DDP / 任何走 RCCL 的东西一启动就死,报错长这样:
+两张以上 AMD 卡,vLLM、PyTorch DDP,或任何走 RCCL 的程序一启动就崩,报错长这样:
 
 ```
 RuntimeError: NCCL error: unhandled cuda error
@@ -18,58 +18,72 @@ HIP failure 'the operation cannot be performed in the present state'
 amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
 ```
 
-六十秒判定,不需要 RCCL、PyTorch 或 vLLM:
+一条命令就能确诊,不需要装 RCCL、PyTorch 或 vLLM:
 
 ```bash
 hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-plain 内核通过而 hostcall 内核被拒(`REFUSED`),就是这个问题。机制一句话:PCIe AtomicOps 到不了 GPU,ROCr 就建不起 hostcall 缓冲,于是任何声明了 hostcall 的内核都被拒绝派发,而 RCCL ≥ 2.27.7-b43 的设备内核恰好全都声明了它。完整证据链与排除过的 12 个假设:[docs/root-cause.md](docs/root-cause.md)。
+plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因一句话说完:PCIe AtomicOps 到不了 GPU,ROCr 就建不起 hostcall 缓冲区,凡是声明了 hostcall 的内核都会被拒绝派发,而 RCCL 从 2.27.7-b43 起的设备内核恰好全都声明了它。完整证据链、以及被逐一排除的 12 个假设,见 [docs/root-cause.md](docs/root-cause.md)。
 
-## 修复:两条路
+## 怎么修:两条路
 
-| 你的环境 | 修复 | 代价 |
+| 你的环境 | 修法 | 代价 |
 |---|---|---|
-| **裸机**,卡在芯片组转接的槽位 | 重建一个不含 hostcall 的 RCCL:[build/build-rccl-nohostcall.sh](build/build-rccl-nohostcall.sh),或直接用 [Releases](../../releases) 里带校验和的成品 | 约 85 分钟,或下载 |
-| **虚拟机**(Proxmox/QEMU 直通) | 多数情况只改一行:`hostpci0: 0000:0b:00` 改成 `hostpci0: 0000:0b:00.0`,即单函数直通 | 一次重启 |
+| **裸机**,卡插在走芯片组的槽位 | 重建一个不带 hostcall 的 RCCL:[build/build-rccl-nohostcall.sh](build/build-rccl-nohostcall.sh);不想编译就用 [Releases](../../releases) 里带校验和的成品 | 约 85 分钟,或直接下载 |
+| **虚拟机**(Proxmox/QEMU 直通) | 多数情况改一行就够:`hostpci0: 0000:0b:00` 改成 `hostpci0: 0000:0b:00.0`,也就是只直通 GPU 这一个功能 | 重启一次 |
 
-主流板子的第二条全长槽常挂在芯片组下,所以裸机双卡很容易落进第一行;虚拟机的一行修复原理与 A/B 验证见 [docs/vfio-atomics.md](docs/vfio-atomics.md),裸机全流程见 [docs/deploy-vllm.md](docs/deploy-vllm.md),逐步排查见 [docs/diagnosis.md](docs/diagnosis.md)。
+消费级主板的第二条显卡槽往往走芯片组,裸机装双卡很容易正好踩进第一行。虚拟机那一行修复的原理与 A/B 验证在 [docs/vfio-atomics.md](docs/vfio-atomics.md),裸机完整流程在 [docs/deploy-vllm.md](docs/deploy-vllm.md),想逐步排查看 [docs/diagnosis.md](docs/diagnosis.md)。
 
-注意版本:重建请用 RCCL **2.27.7**(`release/rocm-rel-7.1.1.1` 分支)。2.30.4 的问题出在设备链接步骤,`NDEBUG` 治不了,已在硬件上验证失败——见英文 README 的警告框。
+版本要盯紧:重建请用 RCCL **2.27.7**(`release/rocm-rel-7.1.1.1` 分支)。2.30.4 的问题出在设备链接那一步,`NDEBUG` 治不了——已经在硬件上验证过会失败,细节见英文 README 的警告框。
 
-## 跑起来之后:性能速览
+## 能跑多快
 
-五种架构 × 11 档上下文长度,解码 tok/s(TP=2,两轮均值,2026-07-25 campaign):
+五种架构 × 11 档上下文,解码 tok/s(TP=2,两轮均值,2026-07-25,原生 vLLM):
 
-| 模型 | 500 | 32K | |
+| 模型 | 500 | 32K | 一句话 |
 |---|---:|---:|---|
-| gemma-4-26B-A4B(int4 MoE) | **107.8** | 72.8 | 最快;需一次约 26 分钟的编译,之后有缓存 |
-| Qwen3-8B(BF16) | 79.6 | 61.4 | 双卡对单卡 **1.70×**,BF16 买到的是速度 |
-| gemma-4-12B(w4a16) | 59.9 | 41.9 | 双卡只有 1.19×,第二张卡买到的是并发容量 |
-| gemma-4-31B(w4a16) | 43.2 | 29.5 | 主力模型,两卡同步 265 W |
-| Qwen3.6-27B(hybrid SSM) | 12.1 | 4.2 | 随上下文线性劣化,原生 vLLM 下长上下文避开 |
+| gemma-4-26B-A4B(int4 MoE) | **107.8** | 72.8 | 全场最快;代价是首次约 26 分钟的编译,之后走缓存 |
+| Qwen3-8B(BF16) | 79.6 | 61.4 | 双卡是单卡的 **1.70 倍**,BF16 的第二张卡买到的是速度 |
+| gemma-4-12B(w4a16) | 59.9 | 41.9 | 双卡只快 1.19 倍,第二张卡实际买到的是并发容量 |
+| gemma-4-31B(w4a16) | 43.2 | 29.5 | 干活主力,两张卡同步 265 W |
+| Qwen3.6-27B(hybrid SSM) | 12.1 | 4.2 | 解码随上下文线性下滑,原生 vLLM 跑长上下文要避开 |
 
-![解码吞吐与上下文长度](docs/assets/decode-vs-context.svg)
+虚线是单卡,实线是双卡:蓝色 BF16 一路拉开,绿色 4-bit 几乎贴在一起——第二张卡到底值多少,取决于模型吃不吃带宽:
 
-完整分析——含打补丁后的第二次 campaign、滑窗模型 37 tok/s 跑平 32K 的曲线、prefill 峰值拟合——见 [docs/benchmarks.md](docs/benchmarks.md);架构差异为何这么大见 [docs/architecture-notes.md](docs/architecture-notes.md)。
+![单卡对双卡,2026-08-24](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
-## 还要知道的三件事
+### 打上补丁之后(2026-08-24 第二次测量)
 
-- **权重加载可能慢到 2 MiB/s。** Ubuntu HWE 内核 `7.0.0-28` 的回归,升级 `7.0.0-30` 即除去主害;残余的可写映射惩罚用 [vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的 clone flag 绕开。细节在 [docs/open-questions.md](docs/open-questions.md) §8。
-- **FP8、AITER、调优过的 MoE 配置在 gfx1100 上都不可用**;hybrid-SSM 与滑动窗口解码的下游补丁在 [patches/](patches/)。完整的"什么不行"清单见英文 README。
-- **双卡贴槽安装时上卡吸下卡的排风**,持续负载结温可到 99 °C;卡间对着缝隙加一把 120 mm 风扇能压回 90 °C,是整台机器最便宜的一处改进。
+同一台机器,容器加上 vllm#45916 的 split-KV 补丁(把它的架构门槛放宽到 RDNA3)和本仓库的滑窗跳块补丁,重测同一套阶梯:
 
-## 目录
+![打补丁后的解码吞吐,2026-08-24](docs/assets/decode-vs-context-2026-08-24.svg)
+
+hybrid SSM 的崩塌没有了:同架构的 Qwen3.8-27B 在 32K 从 4.2 提到 **10.7 tok/s**,斜率平了 12.4 倍。滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。这两个补丁上游都还没合并,复现脚本在 [patches/](patches/)。
+
+滑窗跳块是本仓库自己的 11 行改动,收益曲线的形状本身就是机制证明:窗口以内 1.00×(没有块可跳),出了窗口单调上升,到 32K 是 2.75× 到 3.15×:
+
+![滑窗跳块的收益曲线](docs/assets/sliding-window-block-skip.svg)
+
+完整分析——prefill 峰值拟合、KV 容量与并发、控制组、以及为什么架构比参数量重要——见 [docs/benchmarks.md](docs/benchmarks.md) 与 [docs/architecture-notes.md](docs/architecture-notes.md)。
+
+## 还有三件事值得知道
+
+- **权重加载慢得离谱(最差 2 MiB/s)?** 那是 Ubuntu HWE 内核 `7.0.0-28` 的回归,升到 `7.0.0-30` 就去掉了大头;剩下的可写映射惩罚,用 [vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的 clone flag 绕开。来龙去脉在 [docs/open-questions.md](docs/open-questions.md) §8。
+- **FP8、AITER、调优过的 MoE 配置,在 gfx1100 上都没有。** 完整的"什么不行"清单在英文 README,买硬件之前先看它。
+- **双卡贴着装,上面那张会吸下面那张的排风**:持续负载结温能到 99 °C。对着卡缝加一把 120 mm 风扇能压回 90 °C,是整台机器最便宜的一处改进。
+
+## 目录怎么走
 
 ```
-diagnose/    从这里开始:零依赖探针(hipgate3.cpp 最关键)
+diagnose/    从这里开始:零依赖探针,hipgate3.cpp 一条命令确诊
 build/       重建 RCCL,并独立验证产物
-deploy/      注入 ROCm/vLLM 容器的三件套
-benchmarks/  全部原始数据与分析脚本,无 GPU 也能复算
-patches/     campaign 用到的 vLLM 下游补丁
+deploy/      往 ROCm/vLLM 容器里注入的三件套
+benchmarks/  全部原始数据和分析脚本,没有 GPU 也能复算每个数字
+patches/     第二次测量用到的 vLLM 下游补丁
 docs/        根因、基准、修复、开放问题(英文)
 ```
 
 ---
 
-本页对应英文版 2026-08-25 的状态(commit `4ba455f`);两者不一致时,以英文版为准。MIT 许可;与 AMD 无任何关联。仓库不含 RCCL 源码,分发编译产物的 BSD-3 义务见 [NOTICE.md](NOTICE.md)。
+本页对应英文版 commit `514e41e`;两边不一致时,以英文版为准。MIT 许可;与 AMD 无任何关联。仓库不含 RCCL 源码;若分发编译产物,BSD-3 义务见 [NOTICE.md](NOTICE.md)。
