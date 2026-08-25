@@ -1,6 +1,6 @@
 {
   "what": "gemma-4-31B-it-qat-w4a16 decodes 0.85% slower in the 2026-08-25 campaign than in the 2026-07-25 one, at every context length, and the cause is not known.",
-  "why_it_is_here": "It is the only one of five controls that moved. Four others reproduce July within 0.25%. Publishing a campaign comparison means saying what did not reconcile, not only what did.",
+  "why_it_is_here": "It is the one of six controls whose offset is both sizeable and tightly measured. gemma-4-12B at TP=1 is nominally -0.82% but spans -3.95 to +1.50, wide enough that its mean says nothing; the other four reproduce July within 0.25%. Publishing a campaign comparison means saying what did not reconcile, not only what did.",
   "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-25 22:08 UTC (cold), 2026-08-25 22:30 UTC (warm, started immediately after the cold run)",
   "machine": {
     "gpu": "2x Radeon RX 7900 XT (gfx1100), TP=2, VFIO guest",
@@ -8,7 +8,7 @@
     "august_kernel": "7.0.0-30-generic",
     "july_vllm": "0.23",
     "august_vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-    "note": "the August container also carries PR#49991's clone flag, PR#45916's split-KV with the gate widened, and the sliding-window block skip. None is on gemma-4's code path: it is forced onto TRITON_ATTN, it is dense, and it has no sliding window.",
+    "note": "the August container also carries PR#49991's clone flag, PR#45916's split-KV with the gate widened, and the sliding-window block skip. None reaches gemma-4's decode path: vLLM forces it onto TRITON_ATTN because its head dimensions are heterogeneous, and that backend's kernel already bounds its loop by the window. It is not that the model has no window — it has 1024 on 50 of its 60 layers — it is that the patched kernel is not the one it runs.",
     "july_pcie_atomics": "absent (multifunction passthrough)",
     "august_pcie_atomics": "present (single-function passthrough since 2026-08-23 14:17 UTC)"
   },

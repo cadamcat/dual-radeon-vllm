@@ -20,9 +20,17 @@ VLLM="${1:-}"
 F="$VLLM/v1/attention/ops/chunked_prefill_paged_decode.py"
 [ -f "$F" ] || { echo "not found: $F" >&2; exit 2; }
 
+# Two different states both show zero on_gfx12x: already widened, and a vLLM that
+# never carried #45916 at all. Reporting success for the second would tell you the
+# split-KV kernel is reachable when it is not present.
+if ! grep -q 'use_splitkv_decode' "$F"; then
+  echo "ERROR: this vLLM does not carry vllm#45916 — there is no split-KV decode" >&2
+  echo "       path to widen. Apply the PR first; it is not vendored here." >&2
+  exit 3
+fi
 before=$(grep -c 'on_gfx12x' "$F" || true)
 echo "on_gfx12x occurrences before: ${before:-0}"
-[ "${before:-0}" -eq 0 ] && { echo "already widened, or this vLLM does not carry #45916"; exit 0; }
+[ "${before:-0}" -eq 0 ] && { echo "already widened"; exit 0; }
 
 cp -n "$F" "$F.pre-splitkv-gate"
 sed -i 's/\bon_gfx12x\b/on_gfx1x/g' "$F"

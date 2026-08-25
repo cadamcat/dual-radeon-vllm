@@ -135,11 +135,12 @@ if command -v lspci >/dev/null 2>&1; then
         say "        switch in between routes them."
       fi
     done
-    say "   note: a QEMU root port shows 32bit- 64bit- only when the device was"
-    say "   passed as multifunction (e.g. Proxmox hostpci0: 0b:00 rather than"
-    say "   0b:00.0). QEMU advertises completer support automatically since 8.1.0,"
-    say "   but not for multifunction devices. Check that before rebuilding:"
-    say "   see docs/vfio-atomics.md."
+    say "   note: QEMU advertises completer support on an emulated root port"
+    say "   automatically since 8.1.0, but declines under any of seven conditions."
+    say "   The one that bites on the Proxmox default is a multifunction device:"
+    say "   hostpci0: 0b:00 rather than 0b:00.0. If yours is already .0 and the"
+    say "   port still shows 32bit- 64bit-, one of the other six applies — see"
+    say "   docs/vfio-atomics.md."
   fi
 else
   say "   lspci not available (install pciutils)."

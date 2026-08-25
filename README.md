@@ -199,7 +199,11 @@ rocvirtual.cpp:4636  AQL dispatch failed!
 ```
 
 **This is not a Radeon-only problem.** The trigger is the PCIe path, not the card,
-so it also hits **any VFIO/QEMU passthrough guest — including virtualised Instinct.**
+so it reaches **any VFIO/QEMU passthrough guest whose emulated root port declines
+to advertise completer support — including virtualised Instinct.** On the Proxmox
+default that is because the card is passed multifunction, and passing the
+function explicitly fixes it; `vfio_pci_enable_rp_atomics()` has six other ways
+to decline, listed in [vfio-atomics.md](docs/vfio-atomics.md) §1.
 
 Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
 **[docs/root-cause.md](docs/root-cause.md)**
@@ -340,9 +344,9 @@ Stating this plainly is the point of the repository.
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 **Fixed upstream, not yet merged. Now measured end to end:** the full eleven-point ladder on `Qwen3.8-27B` with the gate widened holds **86.8 %** of its short-context rate at 32 K where stock held 35.1 %, a slope of 0.390 µs against 4.840 ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)). Collapsed to 34.7% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.2× against stock vLLM, 2.0× with the gate widened |
+| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 **Fixed upstream, not yet merged. Now measured end to end:** the full eleven-point ladder on `Qwen3.8-27B` with the gate widened holds **86.8 %** of its short-context rate at 32 K where stock held 35.1 %, a slope of 0.390 µs against 4.840 ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)). Collapsed to 35.1% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.1× against stock vLLM, 2.0× with the gate widened |
 | **Speculative decoding (MTP)** | 🟡 Context-dependent. `gemma-4-31B` with Google's official MTP assistant is **+36.9% at 1K** and **−70.8% at 32K** on this hardware: speculation sets `max_seqlen_q=2`, which disables the Triton backend's segmented-softmax path that long-context decode relies on. Enable it for short prompts, disable it by 8K, where it is already 14% down ([details](docs/speculative-decoding-on-rdna.md)) |
-| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Ours to fix, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed. **`gemma-3-27b` decodes at 8.05 tok/s at 32 K because of it, against 30.21 for the larger `gemma-4-31B`**, which vLLM routes to a backend that already bounds its loop. Starting the loop at the window is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each model's window, three runs per cell. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)). **Measured end to end on 2026-08-25**: gemma-3 goes 8.06 → 22.05 tok/s at 32 K, and `Muse-Glimmer-30B` goes flat from its 2 048-token window onward at 37.4 |
+| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Ours to fix, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed. **`gemma-3-27b` decodes at 8.05 tok/s at 32 K because of it, against 30.21 for the larger `gemma-4-31B`**, which vLLM routes to a backend that already bounds its loop. Starting the loop at the window is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each model's window, three runs per cell. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)). **Measured end to end on 2026-08-25**: gemma-3 goes 8.05 → 22.05 tok/s at 32 K, and `Muse-Glimmer-30B` goes flat from its 2 048-token window onward at 37.4 |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took 26 min here and `gemma-4-12B` at TP=1 took 24; both ran at one core out of eight. Patch the line or use `--enforce-eager` |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
@@ -465,7 +469,7 @@ deploy/       Inject into a ROCm/vLLM container (3 pieces, all required)
 
 benchmarks/   The measurement data and everything that produced it
   results-2026-08-25.jsonl 372 measurements on the patched container, same ladder,
-                       four of the nine configurations rerun as controls
+                       six of the nine configurations rerun as controls
   results.jsonl        ★ 292 measurements, one record per request; the source of
                          every number in this repository
   analyze/             turn that into the tables and charts; no GPU needed

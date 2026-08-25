@@ -79,7 +79,15 @@ fi
 # grep -c exits 1 on a zero count, and a command substitution inside echo hides
 # that status entirely, so these used to print and continue no matter what.
 # Capture, print, then assert.
-HC=$(llvm-readelf --notes "$DEV" 2>/dev/null | grep -ic hidden_hostcall_buffer || true)
+# grep -c prints "0" and exits 1 on no match, so `|| true` cannot tell a genuine
+# zero from a readelf that never ran — and ${HC:-1} does not fire either, because
+# HC is "0" rather than empty. Check the reader's own status first.
+if ! RAW=$(llvm-readelf --notes "$DEV" 2>/dev/null); then
+  echo "ERROR: llvm-readelf could not read the device image; hostcall state unknown." >&2
+  exit 4
+fi
+HC=$(printf '%s\n' "$RAW" | grep -ic hidden_hostcall_buffer || true)
+HC=${HC:-1}
 CD=$(llvm-objdump -T librccl.so.1.0 2>/dev/null | grep -c ncclCommDump || true)
 rm -f librccl.so.1.0.*${ARCH} librccl.so.1.0.*host* 2>/dev/null || true
 echo "hidden_hostcall_buffer (want 0): $HC"

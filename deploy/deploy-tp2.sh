@@ -64,7 +64,15 @@ fi
 # not be the last command under `set -e` and its status must not be trusted.
 # Capture the number, then decide. Getting this backwards let a good library
 # abort the deploy and a bad one reach DONE.
-HC=$(llvm-readelf --notes "$DEV" 2>/dev/null | grep -ic hidden_hostcall_buffer || true)
+# grep -c prints "0" and exits 1 on no match, so `|| true` cannot tell a genuine
+# zero from a readelf that never ran — and ${HC:-1} does not fire either, because
+# HC is "0" rather than empty. Check the reader's own status first.
+if ! RAW=$(llvm-readelf --notes "$DEV" 2>/dev/null); then
+  echo "ERROR: llvm-readelf could not read the device image; hostcall state unknown." >&2
+  exit 4
+fi
+HC=$(printf '%s\n' "$RAW" | grep -ic hidden_hostcall_buffer || true)
+HC=${HC:-1}
 rm -f $SDL/librccl.so.1.*gfx* $SDL/librccl.so.1.*host* 2>/dev/null || true
 echo "  hidden_hostcall_buffer (want 0): $HC"
 if [ "${HC:-1}" -ne 0 ]; then

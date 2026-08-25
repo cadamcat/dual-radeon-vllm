@@ -5,9 +5,17 @@ sequence and then masks everything outside the window to -10000. Blocks entirely
 below seq_len - SLIDING_WINDOW contribute exp(-10000 - m), which is zero, so
 skipping them should be exactly equivalent.
 
-"Should be" is the part that needs testing, and the test is the token ids: greedy
-decoding on a fixed prompt has to produce the identical sequence before and
-after. Timing is the same differencing method used everywhere else here.
+"Should be" is the part that needs testing. This script compares token ids
+before and after, and that comparison turned out not to be the correctness
+argument: greedy decoding is not reproducible on this machine even with the
+patch absent, so identical output is not evidence and differing output is not
+either. See docs/sliding-window-block-skip.md §7 and
+benchmarks/gfx1100-greedy-nondeterminism.json.
+
+What the correctness argument rests on instead is upstream's own kernel suite,
+which passes with no case changing outcome, and fifteen boundary cases that are
+bit-identical under torch.equal. What this script is still good for is the cost
+half: the timing here is the same differencing method used everywhere else.
 """
 import json
 import os

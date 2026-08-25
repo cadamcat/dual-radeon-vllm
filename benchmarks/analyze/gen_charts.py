@@ -11,10 +11,14 @@ is required rather than optional:
     # the 2026-07-25 campaign, stock vLLM
     python3 gen_charts.py
 
-    # the 2026-08-25 re-sweep, patched container
-    python3 gen_charts.py --source ../results-2026-08-25.jsonl --suffix -2026-08-25 \\
-        --stamp "2026-08-25 - vLLM 0.23.1.dev1+g9ddef7117 + ROCm 7.14 - kernel 7.0.0-30 - ..." \\
-        --series E-26B-tp2,G-30B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2
+    # the 2026-08-25 re-sweep, patched container. --suffix needs = because its
+    # value starts with a dash and argparse would read it as an option. The stamp
+    # is the committed one in full; abbreviating it changes line 4 of every SVG.
+    python3 gen_charts.py --source=../results-2026-08-25.jsonl --suffix=-2026-08-25 \\
+        --vmax-ms=100 \\
+        --series=E-26B-tp2,G-30B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2 \\
+        --tp1-series=B-8B-tp2,B-8B-tp1,A-12B-tp2,A-12B-tp1 \\
+        --stamp="2026-08-25 &#183; 2x RX 7900 XT &#183; vLLM 0.23.1.dev1+g9ddef7117 &#183; ROCm 7.14 &#183; kernel 7.0.0-30 &#183; patched: #45916 split-KV + window block-skip"
 
 gemma-3 (F-27B-tp2) is measured but deliberately not plotted: between 500 and
 4000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the three

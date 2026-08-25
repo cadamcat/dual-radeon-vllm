@@ -448,8 +448,9 @@ not to be compared by eye; compare the slope column instead.
 ### What did not move
 
 Prefill differences between the campaigns are a short-prompt artefact. At 500
-tokens they run +64 % and −60 %, at 4 000 still +5.9 % and −5.5 %, and only from
-8 000 up is everything inside 2 %. Prefill
+tokens they run +64 % and −60 %, at 4 000 still +5.9 % and −5.5 %, and from
+8 000 up all but one point is inside 2 % — the exception is gemma-4-12B at TP=1
+and 16 000, −2.86 %, under the best-of-rounds rule the charts use. Prefill
 throughput is prompt tokens divided by TTFT, and at 500 tokens TTFT is a few
 hundred milliseconds of mostly fixed overhead.
 

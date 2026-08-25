@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bench_runner.py — dual-GPU vLLM context-scan campaign (plan 2026-07-25, rev2).
 
-2026-08-25: three configurations added for the patched-state re-sweep. The four
+2026-08-25: three configurations added for the patched-state re-sweep. The six
 2026-07-25 configurations below are unchanged and are re-run as controls: none of
 the patches that container carries touches their code path, so reproducing their
 July numbers is what makes the two campaigns comparable. Select with BENCH_CFGS.
