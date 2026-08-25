@@ -130,9 +130,21 @@ At the kernel, same profiler settings as the existing traces:
 not shrink with the block count.
 
 **Decode stops being attention-bound.** Attention falls from 74 % of the step to
-22 %, and the 4-bit weight GEMM becomes the largest single term at 44.7 %
+21 %, and the 4-bit weight GEMM becomes the largest single term at 44.7 %
 (260 calls per step, which is 52 layers × 5 matmuls). For a quantised dense model
 that is the expected shape; the state before the change was not.
+
+> Two caveats on this table, both found by review on 2026-08-25. The 74 % is
+> 3.966 s of attention against a 5.391 s step and recomputes exactly; the second
+> figure is 380.334 ms against 63 × 28.668 ms, which is 21.1 %, and was published
+> as 22 %. And the `after` decode-step row in
+> [`sliding-window-block-skip.json`](../benchmarks/sliding-window-block-skip.json)
+> records 2.071 ms per call, which is smaller than its own attention kernel and
+> would have the profiled run beating the unprofiled machine by 12.9×; the
+> 28.668 ms quoted here is the figure the end-to-end curve corroborates. The GEMM
+> row behind 44.7 % is not in that file at all. The record needs a fresh profiler
+> run, and until then this table's second column rests on a trace that was not
+> committed.
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 

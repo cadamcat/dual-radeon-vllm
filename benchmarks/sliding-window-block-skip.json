@@ -65,6 +65,15 @@
         "per_call": "8.539us",
         "calls": 819
       }
+    },
+    "data_quality": {
+      "issue": "after.decode_step is not usable as recorded. Its total, 130.457 ms, is smaller than the total of one of its own constituent kernels, after.triton_paged_decode at 380.334 ms, which cannot be a consistent attribution.",
+      "which_side_is_wrong": "The record, not the prose. Attention per decode step is 380.334/63 = 6.037 ms; against the 28.668 ms per call that sliding-window-block-skip.md quotes that is 21.1% of the step, and against this record's 2.071 ms it would be 292%.",
+      "what_corroborates_the_prose_figure": "The end-to-end depth curve in this same file measures 26.632 ms per token for this model at 32768 patched. 28.668 ms is that plus 7.6% of profiler overhead, the same direction as the before case, where 85.567 ms profiled against 83.986 ms end to end is plus 1.9%. 2.071 ms would mean the profiled run beat the unprofiled machine by 12.9x.",
+      "likely_cause": "Not established. A self-time column read where a total-time column was intended would produce this shape, but the original trace was not kept and this is a guess.",
+      "status": "The per-call figures in this block are the ones the document quotes and they are corroborated. The after.decode_step total and per_call are left as recorded rather than back-filled from prose, and should be replaced by a fresh profiler run.",
+      "also_missing": "The document's 44.7% for the 4-bit weight GEMM and its 260 calls per step have no row here; that block has only four kernels. Those figures rest on a trace that was not committed.",
+      "found_by": "external review, 2026-08-25"
     }
   },
   "controls": {
