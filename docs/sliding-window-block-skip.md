@@ -1,7 +1,8 @@
 # The Triton paged-decode kernel reads the whole sequence, then masks the window away
 
-On `Muse-Glimmer-30B` at 32 768 tokens of context that costs **70.67 % of decode
-CUDA time**. Removing it is worth **3.15×** there and **2.75× on `gemma-3-27b`**.
+On `Muse-Glimmer-30B` at 32 768 tokens of context that costs **70.67 % of the
+capture's CUDA time** (the capture also holds one prefill step; decode-only
+shares are in §3). Removing it is worth **3.15×** there and **2.75× on `gemma-3-27b`**.
 Eleven lines. Upstream `main` still does it as of 2026-08-24.
 
 **Someone proposed the same eleven lines a month before we found them.**

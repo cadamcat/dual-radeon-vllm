@@ -330,8 +330,8 @@ the 2026-07-25 campaign; the 2026-08-24 one is
 [`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl), and the separate
 findings have their own files. What ties them together is
 [`analyze/verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), which
-recomputes every figure quoted in this README and in `docs/` from whichever file it
-came from, and exits non-zero if one disagrees.
+recomputes the headline figures quoted in this README and in `docs/` from whichever
+file each came from, and exits non-zero if one disagrees.
 
 ### How to read this
 

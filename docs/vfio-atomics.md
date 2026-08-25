@@ -113,7 +113,7 @@ The prevailing advice actively points the wrong way: guides for GPU passthrough
 on Proxmox routinely say to tick "All Functions" along with Rom-Bar and PCIE.
 Proxmox's own documentation describes the `00:02` shorthand as a convenience and
 does not mention what it costs. Searching its `pve-devel` list for AtomicOps
-returned nothing at all until we posted; the five hits it has now are our own
+returned nothing at all until we posted; every hit it has now is our own
 thread.
 
 We sent a [two-patch series][v1] to `pve-devel` on 2026-08-24 against

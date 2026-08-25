@@ -5,7 +5,7 @@ Sections 1 to 5 of [`docs/benchmarks.md`](../docs/benchmarks.md) are derived fro
 [`results-2026-08-24.jsonl`](results-2026-08-24.jsonl) and from the per-finding
 files listed below. Nothing is extrapolated, nothing is hand-edited, and
 [`analyze/verify_doc_figures.py`](analyze/verify_doc_figures.py) recomputes the
-published figures from those files and exits non-zero if any disagrees.
+headline figures from those files and exits non-zero if any disagrees.
 
 ## What is here
 
@@ -51,7 +51,7 @@ python3 cut_prompts.py --models-dir /path/to/models              # rebuild
 python3 cut_prompts.py --models-dir /path/to/models --check-only # verify only
 ```
 
-It cuts one ladder per tokenizer (gemma, qwen, gemma-26B), trims to sentence
+It cuts one ladder per tokenizer (gemma, qwen, gemma-26B, Muse), trims to sentence
 boundaries, and **prints the drift against the committed manifests** so you can see
 whether your rebuild matches the ladder that produced `results.jsonl`.
 
@@ -102,7 +102,7 @@ interrupted run resumes where it stopped.
 - **Task**: incremental truncations of Darwin's *On the Origin of Species*
   (Gutenberg #1228, public domain) with a fixed translation instruction. One
   source text means identical content and difficulty at every length.
-- **Lengths**: cut with **each model's own tokenizer** (three ladders: gemma,
+- **Lengths**: cut with **each model's own tokenizer** (four ladders: gemma,
   qwen, gemma-26B, Muse), trimmed to sentence boundaries. Nominal targets are
   approached, not hit: the cutter stops at whole sentences, so the short rungs
   land up to 5.2 % off — 500 becomes 481 on the gemma ladder, 1 000 becomes 948

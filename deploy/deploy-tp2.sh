@@ -2,7 +2,7 @@
 # deploy-tp2.sh — inject the no-hostcall RCCL into a fresh rocm7.14 vLLM container
 # so tensor-parallel (TP2) works on the VFIO dual-7900XT guest (no PCIe atomics).
 #
-# Root cause (see vllm-tp2-调查档案.md): stock RCCL 2.30.4 device kernels carry a
+# Root cause (see docs/root-cause.md): stock RCCL 2.30.4 device kernels carry a
 # hidden_hostcall_buffer (from device assert()), which ROCr refuses to dispatch
 # when PCIe atomics are unavailable (VFIO guest) -> "operation cannot be performed
 # in the present state". Fix = RCCL rebuilt with -DNDEBUG (0 hostcall).
