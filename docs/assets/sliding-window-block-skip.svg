@@ -108,9 +108,9 @@
 <circle cx="769.4" cy="273.7" r="2.6" fill="#8b6ee0"/>
 <circle cx="822.3" cy="218.9" r="2.6" fill="#8b6ee0"/>
 <circle cx="875.2" cy="108.1" r="2.6" fill="#8b6ee0"/>
-<line x1="92" y1="336" x2="118" y2="336" stroke="#d99a24" stroke-width="2.4"/>
-<text x="125" y="340" font-size="11.5" fill="#8a8a8a">gemma-3-27b · w4a16 · window 1024</text>
-<line x1="492" y1="336" x2="518" y2="336" stroke="#8b6ee0" stroke-width="2.4"/>
-<text x="525" y="340" font-size="11.5" fill="#8a8a8a">Muse-Glimmer-30B · int4 · window 2048</text>
-<text x="92" y="362" font-size="10.5" fill="#8a8a8a" opacity=".8">Correctness is kernel-level: upstream’s own test file with no case changing outcome, and 15 boundary cases bit-identical under torch.equal.</text>
+<line x1="92" y1="354" x2="118" y2="354" stroke="#d99a24" stroke-width="2.4"/>
+<text x="125" y="358" font-size="11.5" fill="#8a8a8a">gemma-3-27b · w4a16 · window 1024</text>
+<line x1="492" y1="354" x2="518" y2="354" stroke="#8b6ee0" stroke-width="2.4"/>
+<text x="525" y="358" font-size="11.5" fill="#8a8a8a">Muse-Glimmer-30B · int4 · window 2048</text>
+<text x="92" y="380" font-size="10.5" fill="#8a8a8a" opacity=".8">Correctness is kernel-level: upstream’s own test file with no case changing outcome, and 15 boundary cases bit-identical under torch.equal.</text>
 </svg>

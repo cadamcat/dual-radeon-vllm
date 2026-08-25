@@ -82,7 +82,9 @@ def main():
     panel(o, 548, 878, right, 3.3, [1, 1.5, 2, 2.5, 3], "speed-up (×)",
           "gain — 1.00× below the window, then monotonic", ratio=True)
 
-    y = 340
+    # Below the x tick labels, which end around y=338: at 340 the legend text
+    # overlapped them (found on the rendered page, 2026-08-25).
+    y = 358
     for i, (_key, col, lbl, _w) in enumerate(SERIES):
         x = 92 + i * 400
         o.append(f'<line x1="{x}" y1="{y-4}" x2="{x+26}" y2="{y-4}" stroke="{col}" stroke-width="2.4"/>')
