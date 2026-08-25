@@ -116,19 +116,69 @@ does not mention what it costs. Searching its `pve-devel` list for AtomicOps
 discussion returns nothing.
 
 We sent a two-patch series to `pve-devel` on 2026-08-24 against `pve-docs`: one
-patch documents the caveat next to the paragraph that introduces the shorthand,
-the other appends the function to the GPU passthrough example, which currently
-pairs `pcie=on` with the all-functions form. Message-ID
-`20260824170828.42821-1-Xy2462381442@gmail.com`. Whether it gets applied is
-Proxmox's call.
+patch documenting the caveat next to the paragraph that introduces the
+shorthand, the other appending the function to the GPU passthrough example.
+Message-ID `20260824170828.42821-1-Xy2462381442@gmail.com`.
 
-Upstream has been circling it. Robin Voetter proposed an `x-atomic-completion`
-property on `pcie-root-port` in April 2023; the automatic vfio path landed
-instead. In February 2026 Manojlo Pekovic proposed extending it to multifunction
-devices by intersecting the capabilities of all functions, and Alex Williamson
-declined it, saying he was "not convinced it's QEMU's job" and that this belongs
-to "VM builders and management tools". So the gap sits between three projects
-with no owner, and the user in the middle sees only one line about atomics.
+Dominik Csapak reviewed it the next day and asked the right question: if bare
+metal is fine, is this not a QEMU bug to report rather than a behaviour to
+document? He also objected that the note read as though everyone needed it, and
+that most users want the card passed as it is on the host, functions included.
+He is right on the second and third points. **v2 scopes the note to multi-GPU
+workloads, names the QEMU version, and drops the example patch**, since passing
+the card as-is is the better default and the note covers the case that needs
+otherwise.
+
+The first question is answered below, and the answer is why the note belongs in
+Proxmox's documentation rather than only in a QEMU bug tracker.
+
+### Why this is not simply a QEMU bug
+
+Bare metal is unaffected, and the reason is that the function count never enters
+into it. `pci_enable_atomic_ops_to_root()` in `drivers/pci/pci.c` requires the
+device to be a PCIe endpoint, the root port's DEVCAP2 to advertise the requested
+completion widths, and every bridge on the path to route AtomicOps without
+blocking egress. It never reads the device's function number and never asks
+whether the slot is multifunction. A card with a GPU and an HDMI audio function
+gets atomics on bare metal exactly as a single-function card would.
+
+Upstream has been circling the emulated side for years. Robin Voetter proposed
+an `x-atomic-completion` property on `pcie-root-port` in April 2023; the
+automatic vfio path landed instead. In February 2026 AMD posted `vfio/pci: Add
+multifunction atomic ops support`, which removed the multifunction guard and
+computed the intersection of the functions' capabilities instead ([thread][mf]).
+Their motivation was the same one Proxmox raises: *"we have come up on more
+than one occasion where the topology of the bare metal was mimicked by VM's
+configuration ... from UX standpoint, the correct way is that user shouldn't
+think about it"*.
+
+Alex Williamson declined it, and his reasoning is not the one the code comment
+gives — he says so himself, that he "should have left better breadcrumbs as to
+the single function restriction". The restriction is less about picking a common
+capability set than about **device-to-device** AtomicOps: QEMU can compose a
+guest multifunction package out of devices that are unrelated on the host, so it
+cannot infer that two functions can reach each other, and the vfio interface
+reports capability relative to the root bus only. His conclusion:
+
+> atomic ops routing is complicated, QEMU currently kicks anything beyond the
+> trivial case back to the VM administrator. If the VM administrator doesn't
+> want to think about it, analyze the host topology, create a compatible VM
+> topology, and manually set appropriate atomic ops bits, then the burden
+> probably needs to go in the direction of VM builders and management tools
+> rather than pushed down into QEMU. QEMU doesn't have the visibility to
+> determine host routing and is forced to work with the topology that's been
+> specified.
+
+and, on the patch itself, *"I'm not convinced it's QEMU's job, or that QEMU is
+even capable of serving the intended goal here."*
+
+So the decision QEMU declines to make — which capability to advertise when a
+slot's functions disagree — is left to whatever composes the slot. On this
+machine that is Proxmox. The guard is unchanged from v8.1.0, where the automatic
+path landed, through v11.1.0, so it is not behaviour that drifts between
+releases either.
+
+[mf]: https://lore.kernel.org/qemu-devel/8b3e30e6-3c3e-49ab-b9db-8296aaf819d1@app.fastmail.com/
 
 **This repository walked the long way round too.** `open-questions.md` §5
 already concluded that a QEMU-side fix was "a real avenue for *us*", then said
