@@ -309,6 +309,14 @@ still the steepest of the six at 0.390 µs against the dense band's 0.118–0.34
 
 ![cost of one context token at decode time, patched](docs/assets/decode-ms-per-token-2026-08-24.svg)
 
+**What eleven lines buy on a windowed model.** The sliding-window block skip
+changes nothing below each model's own window (1.00×, there is nothing to
+skip), then the gain grows monotonically: 2.75× on gemma-3 and 3.15× on
+Muse-Glimmer at 32 K. The shape is the mechanism check —
+[the patch and its correctness argument](docs/sliding-window-block-skip.md):
+
+![sliding-window block skip](docs/assets/sliding-window-block-skip.svg)
+
 **Prefill, for completeness.** Every model peaks early — 2 K for four of the six,
 4 K for the MoE, 6 K for the hybrid-SSM — and then falls away. The ordering does
 not survive the fall: the 8B leads at 500 by 2.1× over the MoE and the MoE has
