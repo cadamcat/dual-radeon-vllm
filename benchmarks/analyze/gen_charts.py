@@ -11,14 +11,14 @@ is required rather than optional:
     # the 2026-07-25 campaign, stock vLLM
     python3 gen_charts.py
 
-    # the 2026-08-25 re-sweep, patched container. --suffix needs = because its
+    # the 2026-08-24 re-sweep, patched container. --suffix needs = because its
     # value starts with a dash and argparse would read it as an option. The stamp
     # is the committed one in full; abbreviating it changes line 4 of every SVG.
-    python3 gen_charts.py --source=../results-2026-08-25.jsonl --suffix=-2026-08-25 \\
+    python3 gen_charts.py --source=../results-2026-08-24.jsonl --suffix=-2026-08-24 \\
         --vmax-ms=100 \\
         --series=E-26B-tp2,G-30B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2 \\
         --tp1-series=B-8B-tp2,B-8B-tp1,A-12B-tp2,A-12B-tp1 \\
-        --stamp="2026-08-25 &#183; 2x RX 7900 XT &#183; vLLM 0.23.1.dev1+g9ddef7117 &#183; ROCm 7.14 &#183; kernel 7.0.0-30 &#183; patched: #45916 split-KV + window block-skip"
+        --stamp="2026-08-24 &#183; 2x RX 7900 XT &#183; vLLM 0.23.1.dev1+g9ddef7117 &#183; ROCm 7.14 &#183; kernel 7.0.0-30 &#183; patched: #45916 split-KV + window block-skip"
 
 gemma-3 (F-27B-tp2) is measured but deliberately not plotted: between 500 and
 4000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the three
@@ -40,7 +40,7 @@ C = {
     "D-27B-tp2":  ("#e05c48", "Qwen3.6-27B &#183; hybrid SSM &#183; TP2"),
     "B-8B-tp1":   ("#3f8fd4", "Qwen3-8B &#183; BF16 &#183; TP1 (single card)"),
     "A-12B-tp1":  ("#2ea36a", "gemma-4-12B &#183; w4a16 &#183; TP1 (single card)"),
-    # added 2026-08-25. Qwen3.8 keeps Qwen3.6's colour: same architecture, same
+    # added 2026-08-24. Qwen3.8 keeps Qwen3.6's colour: same architecture, same
     # slot in the chart, so the two campaigns read as one line moving.
     "D8-27B-tp2": ("#e05c48", "Qwen3.8-27B &#183; hybrid SSM &#183; TP2"),
     "F-27B-tp2":  ("#21a0a0", "gemma-3-27b &#183; w4a16, sliding window &#183; TP2"),
@@ -59,7 +59,7 @@ ap.add_argument("--tp1-series", default="B-8B-tp2,B-8B-tp1,A-12B-tp2,A-12B-tp1",
                 help="comma-separated configs for the single-vs-dual chart; empty to skip it")
 ap.add_argument("--vmax-decode", type=float, default=115)
 ap.add_argument("--vmax-prefill", type=float, default=4600,
-                help="4600 because the 2026-08-25 Qwen3-8B 2K point reaches 4445 tok/s "
+                help="4600 because the 2026-08-24 Qwen3-8B 2K point reaches 4445 tok/s "
                      "and both campaigns' prefill charts share an axis")
 ap.add_argument("--vmax-tp1", type=float, default=90)
 ap.add_argument("--vmax-ms", type=float, default=250)

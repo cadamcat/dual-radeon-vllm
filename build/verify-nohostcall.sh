@@ -35,7 +35,14 @@ for dev in "$tmp"/lib.so.*gfx*; do
   [ -e "$dev" ] || continue
   found=1
   arch=$(basename "$dev" | sed 's/.*\.//')
-  notes=$("$RE" --notes "$dev" 2>/dev/null)
+  # Without checking the reader's own status, a readelf that never ran leaves
+  # notes empty, all three counts come back 0, and this prints PASS for a library
+  # it never looked at. This is the acceptance test; it has to fail closed.
+  if ! notes=$("$RE" --notes "$dev" 2>/dev/null); then
+    printf '  [%s] llvm-readelf could not read this device image\n' "$(basename "$dev" | sed 's/.*\.//')"
+    fail=$((fail + 1))
+    continue
+  fi
   hc=$(printf '%s' "$notes" | grep -ic hidden_hostcall_buffer || true)
   af=$(printf '%s' "$notes" | grep -ic __assert_fail || true)
   fp=$(printf '%s' "$notes" | grep -ic __ockl_fprintf || true)

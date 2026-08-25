@@ -7,7 +7,7 @@
 # sequence. Widening the gate to on_gfx1x() is the whole change; nothing else in
 # the PR is touched.
 #
-# This is what the D8-27B-tp2 configuration of the 2026-08-25 campaign was
+# This is what the D8-27B-tp2 configuration of the 2026-08-24 campaign was
 # measured on. It is a two-token edit rather than a diff because the container's
 # pre-change backup predates it, so no recorded diff of it exists — the sed below
 # is the change as it was made and as it can be checked.

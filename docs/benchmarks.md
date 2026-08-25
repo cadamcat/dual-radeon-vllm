@@ -6,9 +6,9 @@ P2P and no PCIe atomics. **292 measurements, zero errors.** Raw data and the run
 are in [`benchmarks/`](../benchmarks/); method is in
 [`benchmarks/README.md`](../benchmarks/README.md).
 
-**The same ladder was measured again on 2026-08-25**, on a patched container and a
+**The same ladder was measured again on 2026-08-24**, on a patched container and a
 newer guest kernel: 372 measurements, nine configurations, six of them the July
-ones rerun as controls. That campaign is [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25),
+ones rerun as controls. That campaign is [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-24),
 and it is what §2's conclusion should be read against. Sections 1 to 5 are the
 July record and are left as they were measured.
 
@@ -82,7 +82,7 @@ A linear-attention layer carries a fixed-size recurrent state, so decoding shoul
 cost the **same** whatever the context length. That is the entire selling point.
 
 > This section measures stock vLLM. The cause was found afterwards and the fix
-> exists: [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25) has the
+> exists: [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-24) has the
 > same architecture at a 0.390 µs slope instead of 4.840. What follows is why it
 > was 4.840.
 
@@ -287,7 +287,7 @@ second card, and it is invisible in a tokens-per-second table.
 
 ---
 
-## 6. The same machine, patched: a second campaign on 2026-08-25
+## 6. The same machine, patched: a second campaign on 2026-08-24
 
 Everything above is stock vLLM 0.23 on guest kernel `7.0.0-28`, in a guest with no
 PCIe AtomicOps. A month later the container carries three patch sets, the guest
@@ -296,7 +296,7 @@ the single-function form on 2026-08-23. The same ladder was measured again:
 **372 measurements, nine configurations, eleven context lengths, two rounds each,
 zero errors.**
 
-![decode throughput vs context length, patched](assets/decode-vs-context-2026-08-25.svg)
+![decode throughput vs context length, patched](assets/decode-vs-context-2026-08-24.svg)
 
 ### The controls are what make the two campaigns comparable
 
@@ -307,7 +307,7 @@ is the hybrid-SSM decode path, and the window block-skip needs a sliding window.
 If they come back where July left them, the two campaigns can be read against
 each other.
 
-| control | quantisation | mean offset over 11 points | spread |
+| control | quantisation | mean offset, all shared points | spread |
 |---|---|---:|---|
 | Qwen3-8B, TP=1 | BF16 | +0.01 % | −0.01 .. +0.03 |
 | gemma-4-12B | w4a16 QAT | −0.02 % | −1.05 .. +1.45 |
@@ -315,6 +315,9 @@ each other.
 | gemma-4-26B-A4B | AWQ int4 | −0.23 % | −0.49 .. +0.10 |
 | gemma-4-12B, TP=1 | w4a16 QAT | −0.82 % | **−3.95 .. +1.50** |
 | gemma-4-31B | w4a16 QAT | **−0.85 %** | −1.03 .. −0.67 |
+
+Eleven shared context points each, except Qwen3-8B at TP=1, which reaches only
+six thousand tokens on one card and has five.
 
 **Two controls sit near −0.85 %, not one.** They are not equally informative:
 gemma-4-12B at TP=1 has a spread of five and a half percentage points, wide
@@ -328,7 +331,7 @@ configuration with no collectives at all, so nothing mediated by RCCL or by PCIe
 AtomicOps can reach it. If its offset were real it would point away from every
 interconnect explanation; as measured it cannot carry that weight either.
 
-gemma-4-31B was measured **three times** on 2026-08-25: once inside the campaign,
+gemma-4-31B was measured **three times**: once inside the campaign on 2026-08-24,
 once from a machine idle for thirteen minutes at 38 °C junction, and once starting
 immediately after that second run finished, with junction sampled every 15 s
 throughout.
@@ -399,7 +402,7 @@ kernel-level verification of 2026-07-30, which independently gives 2.52×.
 | | 500 | 32 K | retained | slope |
 |---|---:|---:|---:|---:|
 | Qwen3.6-27B, 2026-07-25, stock | 12.12 | **4.25** | 35.1 % | 4.840 µs |
-| Qwen3.8-27B, 2026-08-25, patched | 12.30 | **10.68** | 86.8 % | **0.390 µs** |
+| Qwen3.8-27B, 2026-08-24, patched | 12.30 | **10.68** | 86.8 % | **0.390 µs** |
 
 **2.51× at 32 K.** The kernel-level verification on 2026-07-30 predicted 2.52×
 and measured 10.72 tok/s by a different method entirely — a 64-token generation
@@ -437,9 +440,9 @@ Muse-Glimmer and gemma-4-31B and the three lines read as one. Its result belongs
 in prose: the block-skip takes it from **8.05 tok/s at 32 K to 22.05**, and the
 32 K point works out to 45.34 ms per token where the kernel A/B measured 45.26
 patched and 124.29 unpatched. Data is in
-[`results-2026-08-25.jsonl`](../benchmarks/results-2026-08-25.jsonl).
+[`results-2026-08-24.jsonl`](../benchmarks/results-2026-08-24.jsonl).
 
-![cost of one context token at decode time, patched](assets/decode-ms-per-token-2026-08-25.svg)
+![cost of one context token at decode time, patched](assets/decode-ms-per-token-2026-08-24.svg)
 
 **This chart's ceiling is 100 ms, §2's is 250.** Nothing on the patched machine
 passes 94 ms, and at 250 the curves collapsed into the bottom third. The two are
@@ -467,7 +470,7 @@ controlling it ([open-questions.md §8](open-questions.md)).
 | best single-model quality | gemma-4-31B w4a16 | 43.2 tok/s, 29.5 at 32 K; concurrency only 1.74× |
 | short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |
-| **long context** | **Muse-Glimmer-30B, patched** | 37.4 tok/s at 32 K, a 0.122 µs slope, flat from its 2 048-token window onward; needs the window block-skip and a downstream port ([§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)) |
+| **long context** | **Muse-Glimmer-30B, patched** | 37.4 tok/s at 32 K, a 0.122 µs slope, flat from its 2 048-token window onward; needs the window block-skip and a downstream port ([§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)) |
 | long context, stock vLLM | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–33 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) takes the same architecture to 10.7 tok/s and a 12.4× flatter slope, but it is unmerged, so on a stock install this stands |
 
 ## Four findings worth carrying elsewhere

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bench_runner.py — dual-GPU vLLM context-scan campaign (plan 2026-07-25, rev2).
 
-2026-08-25: three configurations added for the patched-state re-sweep. The six
+2026-08-24: three configurations added for the patched-state re-sweep. The six
 2026-07-25 configurations below are unchanged and are re-run as controls: none of
 the patches that container carries touches their code path, so reproducing their
 July numbers is what makes the two campaigns comparable. Select with BENCH_CFGS.
@@ -44,7 +44,7 @@ QWEN_P = f"{PROMPT_ROOT}/prompts-qwen"
 P26 = f"{PROMPT_ROOT}/prompts-26b"
 MUSE_P = f"{PROMPT_ROOT}/prompts-muse"
 # gemma-3 tokenises every rung of the gemma ladder identically to gemma-4
-# (verified 2026-08-25, prompts/gemma3-shares-gemma-ladder.json), so it reuses it.
+# (verified 2026-08-24, prompts/gemma3-shares-gemma-ladder.json), so it reuses it.
 MML = 33000          # max prompt is ~32,010 tok + 512 output + template
 DEFAULT_UTIL = 0.85  # 0.90 leaves no scratch headroom on 20 GiB cards (see rev2 note)
 
@@ -62,7 +62,7 @@ CFGS = [
     # given on 2026-07-22, so its real decode speed is still unknown); eager only as fallback.
     dict(id="E-26B-tp2", model="/models/gemma-4-26B-A4B-AWQ", tp=2, prompts=P26, eager_fallback=True),
 
-    # --- added 2026-08-25, measured against the patched container -------------
+    # --- added 2026-08-24, measured against the patched container -------------
     # Same architecture as D-27B (64 layers, full_attention_interval 4, head_dim
     # 256) with newer weights, so it inherits D's flags.
     dict(id="D8-27B-tp2", model="/models/Qwen3.8-27B-AWQ-INT4", tp=2, prompts=QWEN_P,

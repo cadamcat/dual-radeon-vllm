@@ -107,7 +107,7 @@ def main():
     ap.add_argument("--gemma26b", default="gemma-4-26B-A4B-AWQ")
     ap.add_argument("--gemma-alt", default="gemma-3-27b-it-w4a16",
                     help="comma-separated further gemma models sharing this ladder; measured "
-                         "2026-08-25 to tokenise every rung identically to gemma-4")
+                         "2026-08-24 to tokenise every rung identically to gemma-4")
     ap.add_argument("--muse", default="Muse-Glimmer-30B-INT4")
     ap.add_argument("--out", default=HERE, help="where to write prompt_<n>.txt (default: here)")
     ap.add_argument("--check-only", action="store_true",

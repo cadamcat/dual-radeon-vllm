@@ -19,7 +19,7 @@ import json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
-AUG = os.path.join(HERE, "..", "results-2026-08-25.jsonl")
+AUG = os.path.join(HERE, "..", "results-2026-08-24.jsonl")
 
 
 def decode(path):
@@ -95,7 +95,7 @@ def main():
     ck("README decode table, 31B 32K", "29.5", tps(jul, "C-31B-tp2", 32000))
     ck("README decode table, 27B SSM 32K", "4.2", tps(jul, "D-27B-tp2", 32000))
 
-    # --- README.md, patched table, 2026-08-25 -------------------------------
+    # --- README.md, patched table, 2026-08-24 -------------------------------
     ck("README patched table, Muse 500", "43.7", tps(aug, "G-30B-tp2", 500))
     ck("README patched table, Muse 8K", "37.8", tps(aug, "G-30B-tp2", 8000))
     ck("README patched table, Muse 32K", "37.4", tps(aug, "G-30B-tp2", 32000))
