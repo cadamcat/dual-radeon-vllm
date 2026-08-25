@@ -145,8 +145,9 @@ again.
 ## Putting it together
 
 ```bash
-# inside a ROCm/vLLM container with this repo mounted
-./deploy/deploy-tp2.sh
+# inside a ROCm/vLLM container with this repo mounted.
+# The argument is your no-hostcall build; the script exits 2 without it.
+./deploy/deploy-tp2.sh /path/to/librccl-final.so
 ```
 
 `deploy-tp2.sh` compiles the stub, swaps `librccl` into **both** ROCm SDK library
@@ -159,7 +160,7 @@ Then launch:
 NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0 \
 vllm serve <model> \
   --tensor-parallel-size 2 \
-  --gpu-memory-utilization 0.90
+  --gpu-memory-utilization 0.85
 ```
 
 `NCCL_P2P_DISABLE=1` and `HSA_ENABLE_SDMA=0` are for our no-P2P cross-die

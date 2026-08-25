@@ -165,14 +165,25 @@ else
     ( cd "$tmp" && "$OD" --offloading lib.so >/dev/null 2>&1 || true )
     dev=$(ls "$tmp"/lib.so.*gfx* 2>/dev/null | head -1)
     if [ -n "$dev" ]; then
-      n=$("$RE" --notes "$dev" 2>/dev/null | grep -ic hidden_hostcall_buffer || echo 0)
-      say "   hidden_hostcall_buffer occurrences: $n"
-      if [ "$n" -gt 0 ]; then
-        say "   >> This RCCL REQUIRES a hostcall. On a platform without atomics it will fail."
-        verdict_hostcall="required"
+      # `grep -c` prints 0 AND exits 1 when it matches nothing, so `|| echo 0`
+      # appends a second line and the comparison below dies with "integer
+      # expression expected" — landing in the else branch, which reports the
+      # good verdict. deploy-tp2.sh already gets this right; this copy did not.
+      # A failed readelf has to be distinguished from a genuine zero as well.
+      if notes=$("$RE" --notes "$dev" 2>/dev/null); then
+        n=$(printf '%s\n' "$notes" | grep -ic hidden_hostcall_buffer || true)
+        n=${n:-0}
+        say "   hidden_hostcall_buffer occurrences: $n"
+        if [ "$n" -gt 0 ]; then
+          say "   >> This RCCL REQUIRES a hostcall. On a platform without atomics it will fail."
+          verdict_hostcall="required"
+        else
+          say "   >> This RCCL needs no hostcall. It will dispatch even without atomics."
+          verdict_hostcall="none"
+        fi
       else
-        say "   >> This RCCL needs no hostcall. It will dispatch even without atomics."
-        verdict_hostcall="none"
+        say "   >> llvm-readelf could not read the device image. Hostcall state UNKNOWN."
+        verdict_hostcall="unknown"
       fi
     else
       nobits=$("$RE" -S "$LIB" 2>/dev/null | grep -i 'hip_fatbin' | grep -ci NOBITS || true)

@@ -20,7 +20,8 @@ Against vLLM 0.23.1.dev1+g9ddef7117. main as of 2026-08-24 has the same loop.
 
 --- a/vllm/v1/attention/ops/chunked_prefill_paged_decode.py
 +++ b/vllm/v1/attention/ops/chunked_prefill_paged_decode.py
-@@
+@@ -164,10 +164,20 @@
+ 
      num_blocks = cdiv_fn(seq_len, BLOCK_SIZE)
  
 +    # Blocks entirely older than the sliding window are masked to -10000 below,
@@ -39,3 +40,5 @@ Against vLLM 0.23.1.dev1+g9ddef7117. main as of 2026-08-24 has the same loop.
 -    for j in range(0, num_blocks):
 +    for j in range(first_block, num_blocks):
          start_n = j * BLOCK_SIZE
+         # Calculate the logical location within a non-standard physical block,
+         # such as 544 in Qwen/Qwen3-Next-80B-A3B-Thinking.

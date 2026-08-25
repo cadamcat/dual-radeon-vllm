@@ -42,6 +42,7 @@
 # /work/rccl-rocm-7.1.1, /work = /data/rccl-build on host). ~85 min (device LTO).
 set -e
 SRC=/work/rccl-rocm-7.1.1
+ARCH="${ARCH:-gfx1100}"
 export PATH=/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin:/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin:$PATH
 
 # 1. THE FIX: force -DNDEBUG onto every compile (incl. the device kernel pass)
@@ -51,6 +52,16 @@ grep -q 'add_compile_definitions(NDEBUG)' CMakeLists.txt || \
   sed -i '/^project(rccl CXX)/a add_compile_definitions(NDEBUG) # VFIO-hostcall-fix' CMakeLists.txt
 
 # 2. reconfigure + verify NDEBUG now reaches the device compile (must print > 0)
+#    A tree that has never been configured has no build/ and no cached cmake
+#    arguments, so `cmake .` there does nothing useful. Configure it first if so;
+#    these are the options this build used.
+if [ ! -f build/build.ninja ]; then
+  echo "no configured build/ — configuring one"
+  cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGPU_TARGETS="$ARCH" \
+    -DCMAKE_PREFIX_PATH="$(dirname "$(command -v hipcc)")/.."
+fi
 cd build && cmake . >/dev/null
 echo "NDEBUG count in build.ninja (want >0): $(grep -c NDEBUG build.ninja)"
 
@@ -59,7 +70,6 @@ ninja
 
 # 4. verify device kernels carry NO hostcall + KEEP ncclCommDump
 llvm-objdump --offloading librccl.so.1.0 >/dev/null 2>&1
-ARCH="${ARCH:-gfx1100}"
 DEV=$(ls librccl.so.1.0.*${ARCH} 2>/dev/null | head -1)
 if [ -z "$DEV" ]; then
   echo "ERROR: no device image for ${ARCH}. Nothing was verified." >&2
