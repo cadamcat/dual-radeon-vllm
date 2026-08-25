@@ -1,8 +1,11 @@
 # Benchmarks — raw data and how to reproduce them
 
-Everything in [`docs/benchmarks.md`](../docs/benchmarks.md) is derived from
-[`results.jsonl`](results.jsonl) in this directory. Nothing is extrapolated,
-nothing is hand-edited.
+Sections 1 to 5 of [`docs/benchmarks.md`](../docs/benchmarks.md) are derived from
+[`results.jsonl`](results.jsonl) in this directory; §6 is derived from
+[`results-2026-08-24.jsonl`](results-2026-08-24.jsonl) and from the per-finding
+files listed below. Nothing is extrapolated, nothing is hand-edited, and
+[`analyze/verify_doc_figures.py`](analyze/verify_doc_figures.py) recomputes the
+published figures from those files and exits non-zero if any disagrees.
 
 ## What is here
 
@@ -14,7 +17,7 @@ nothing is hand-edited.
 | `prompts/` | Prompt-ladder manifests (the token counts as measured) + the cutter that rebuilds the ladders from the public-domain source |
 | `speculative-decoding/` | Results behind [speculative-decoding-on-rdna.md](../docs/speculative-decoding-on-rdna.md). `splitkv-31b-{stock,patched}.json` is the PR#45916 A/B on the 31B (identical, it runs a different attention backend); `mtp-31b-mtp.json` is the MTP depth curve; `kbench{,2}-0.json` are two constructions of the kernel-level `query_len` sweep; `mtp32k-{tuned,spec3d}.json` are the two 32K single points; `c2-{on,off}.json` carry `token_ids` for the correctness comparison; `trace-unified-attention.json` is the per-call profiler summary, the one file here derived rather than measured directly — the traces it came from are ~2 MB each and stay on the test machine |
 | `hmm-kernel-three-states.json` | The mmap reproducer across three kernel states: stock `7.0.0-28`, `-28` with `342981fff328` applied by hand, and Canonical's shipped `7.0.0-30`. The third was measured 2026-08-23 and is the one that matters — until then the repository told people to upgrade on the strength of a changelog entry alone |
-| `loader-flag-kernel-30.json` | **What the writable-mapping penalty is actually worth**, measured 2026-08-23 on the kernel Canonical ships. 89 cells: four load paths (default, `eager`, vllm#49991's clone flag, safetensors' `pread` backend) across four checkpoints, with page cache controlled per cell and `RssAnon`/`RssFile` sampled during the load. The flag is worth 1.5-2.0x while the checkpoint fits in RAM and 7.5x when it does not; the 3.9-5.6x this repository and the PR published on 2026-07-28 came from an uncontrolled page cache and does not reproduce. Includes the counterexample where the flag does not help |
+| `loader-flag-kernel-30.json` | **What the writable-mapping penalty is actually worth**, measured 2026-08-23 on the kernel Canonical ships. 89 cells: four load paths (default, `eager`, vllm#49991's clone flag, safetensors' `pread` backend) across four checkpoints. 73 of them have page cache controlled per cell, warm or cold; the other 16 are `asis` ordering controls that deliberately do not. `RssAnon`/`RssFile` are sampled in 33 of the 89 — the resident-set question only needed the load paths it distinguishes. The flag is worth 1.5-2.0x while the checkpoint fits in RAM and 7.5x when it does not; the 3.9-5.6x this repository and the PR published on 2026-07-28 came from an uncontrolled page cache and does not reproduce. Includes the counterexample where the flag does not help |
 | `sliding-window-block-skip.json` | **The Triton paged-decode kernel reads the whole sequence and masks the sliding window away afterwards.** Two models reach that path and both gain, three runs per cell: `gemma-3-27b` 124.29 → 45.26 ms/tok at 32 K (2.75x, 8.05 → 22.09 tok/s, medians both sides) and `Muse-Glimmer-30B` 83.99 → 26.63 (3.15x), against 1.00x below each model's own window — the shape is the mechanism check. Correctness is upstream's own kernel suite with no case changing outcome, plus 15 boundary cases bit-identical under `torch.equal`. Includes the controls that draw the boundary: `gemma-4` is forced onto a different backend and is unaffected, `Qwen3.8` is the no-window path, and eight other current models were checked and do not qualify |
 | `gfx1100-greedy-nondeterminism.json` | **Greedy decoding on this machine is not reproducible across processes.** 10 of 36 cells produced more than one output across three runs with no code change between them, at any depth including 512 tokens, symmetric between the two kernel states. Surfaced while verifying the row above, and it is why that row's correctness argument is kernel-level rather than end-to-end. Resembles [vllm#50603](https://github.com/vllm-project/vllm/issues/50603) except that a warm-up call, which it says fixes the problem, was already present in every measurement here |
 | `mtp-qwen-draft-head.json` | Qwen3.6-27B against Qwen3.8-27B with each checkpoint's **built-in MTP draft head**, on and off, four depths. The two are the same architecture quantised the same way in 63 of 64 layers; what differs is that Qwen3.8 leaves the draft head in bf16 and Qwen3.6 quantises it. **bf16 does not pay** — the int4 head matches or beats it everywhere and the gap is widest at 32K, where int4 breaks even and bf16 is a net loss. Also this repository's first vLLM MTP numbers for a Qwen model; the existing curve is gemma-4-31B with a separate assistant checkpoint |
@@ -100,7 +103,12 @@ interrupted run resumes where it stopped.
   (Gutenberg #1228, public domain) with a fixed translation instruction. One
   source text means identical content and difficulty at every length.
 - **Lengths**: cut with **each model's own tokenizer** (three ladders: gemma,
-  qwen, gemma-26B), trimmed to sentence boundaries, <1 % error against target.
+  qwen, gemma-26B, Muse), trimmed to sentence boundaries. Nominal targets are
+  approached, not hit: the cutter stops at whole sentences, so the short rungs
+  land up to 5.2 % off — 500 becomes 481 on the gemma ladder, 1 000 becomes 948
+  on gemma-26B. **Nothing downstream uses the nominal length.** Every analysis
+  uses the `prompt_tokens` the server reported per request, which is in
+  `results.jsonl`.
 - **Prefill**: `max_tokens=1`; throughput = prompt tokens / TTFT.
 - **Decode**: `max_tokens=512`; rate measured **from first to last token**, so
   TTFT is excluded.

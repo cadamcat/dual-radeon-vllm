@@ -18,8 +18,5 @@ and are not vendored here.
 **What is still not reproducible from this directory.** vllm#49991's clone flag
 is not here either; the benchmark runner sets `VLLM_CLONE_MMAP=1` on every
 configuration in both campaigns, which does nothing on a vLLM that lacks the PR
-and affects weight loading rather than decode when it is present. And
-`sliding-window-block-skip.patch` did not apply at all until 2026-08-25: its
-hunk header was a bare `@@` with no line numbers, which `git apply` rejects. It
-now applies cleanly to the unpatched file, `11 +` and `1 -`, which is the eleven
-lines the documents describe.
+and affects weight loading rather than decode when it is present. `sliding-window-block-skip.patch` applies to the unpatched
+file at `11 +` and `1 -`, which is the eleven lines the documents describe.

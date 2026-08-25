@@ -70,8 +70,23 @@ NEW_LOAD = '''    def load_weights(self, weights: Iterable[tuple[str, torch.Tens
             f"missing={len(missing)}",
             flush=True,
         )
+        # Counting is not checking. 1600 + 312 = 1912 holds just as well if a
+        # real parameter went unloaded and an expected scale happened to load, so
+        # assert what the missing names are, not how many there are. The expected
+        # remainder is the KV-cache quantisation scales this checkpoint does not
+        # carry, six per layer.
+        EXPECTED = (".k_scale", ".v_scale", ".q_scale", ".prob_scale",
+                    ".k_zp", ".v_zp")
+        unexpected = [n for n in missing if not n.endswith(EXPECTED)]
+        if unexpected:
+            raise RuntimeError(
+                f"[muse-load] {len(unexpected)} parameter(s) received no weight and "
+                f"are not KV-cache scales: {unexpected[:12]}. They keep their "
+                f"initialised values, so this model would run and be wrong."
+            )
         if missing:
-            print(f"[muse-load] first missing: {missing[:12]}", flush=True)
+            print(f"[muse-load] all {len(missing)} missing are KV-cache scales, "
+                  f"e.g. {missing[:3]}", flush=True)
         return loaded
 '''
 

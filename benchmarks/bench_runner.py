@@ -99,7 +99,11 @@ def done_keys():
             except Exception:
                 continue
             if j.get("kind") == "config_complete":
-                ks.add(("cfg", j["cfg"]))
+                # An older record has no target list, which means the whole ladder.
+                # A BENCH_TARGETS subset writes config_complete too, so treating it
+                # as "this configuration is finished" made a later full run skip
+                # everything it had not measured.
+                ks.add(("cfg", j["cfg"], tuple(j.get("targets") or ())))
             elif j.get("kind") in ("prefill", "decode"):
                 ks.add((j["cfg"], j["target"], j["kind"], j["round"]))
     return ks
@@ -254,8 +258,15 @@ class ConfigAborted(Exception):
 
 def run_cfg(cfg, done, util=None, attempt=1):
     cid = cfg["id"]
-    if ("cfg", cid) in done:
-        log(f"{cid}: already complete, skip"); return
+    want = {t for t, _ in points_for(cfg, MML)}
+    for key in done:
+        if key[0] == "cfg" and key[1] == cid:
+            have = set(key[2]) if key[2] else want
+            if want <= have:
+                log(f"{cid}: already complete, skip"); return
+            log(f"{cid}: previous run covered {sorted(have)}, "
+                f"missing {sorted(want - have)} — re-running the configuration")
+            break
     if util is None:
         util = cfg.get("util", DEFAULT_UTIL)
     mml = MML; txt = None
@@ -349,7 +360,8 @@ def run_cfg(cfg, done, util=None, attempt=1):
     if nok == 0:
         emit({"kind": "config_failed", "cfg": cid, "why": "no successful measurement"})
         log(f"{cid}: FAILED (no data)"); return
-    emit({"kind": "config_complete", "cfg": cid, "mml": mml, "util": util, "ok": nok, "err": nerr})
+    emit({"kind": "config_complete", "cfg": cid, "mml": mml, "util": util, "ok": nok, "err": nerr,
+          "targets": sorted(t for t, _ in pts)})
     log(f"{cid}: COMPLETE ({nok} ok, {nerr} err)")
 
 def main():

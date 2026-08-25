@@ -120,13 +120,16 @@ if command -v lspci >/dev/null 2>&1; then
         say "     >> AtomicOps cannot reach this GPU: root port $root_fail does not"
         say "        advertise 32/64-bit AtomicOp completer support, so nothing below"
         say "        it can use them. No slot on this host changes that."
-        [ "$verdict_atomics" = "unknown" ] && verdict_atomics="absent"
+        # lspci is direct evidence; the dmesg step above only sets "present"
+        # because it did not find a message, which it admits may have scrolled
+        # out. A topology reading overrides that, never the other way round.
+        verdict_atomics="absent"
       elif [ -n "$switch_break" ]; then
         say "     >> AtomicOps cannot reach this GPU: switch port $switch_break blocks"
         say "        them. The root port is fine, so every slot below $switch_break is"
         say "        equally affected while lanes that bypass it (usually CPU-direct)"
         say "        are not. Moving the card to a CPU-attached slot should work."
-        [ "$verdict_atomics" = "unknown" ] && verdict_atomics="absent"
+        verdict_atomics="absent"
       elif [ "$unknown" -gt 0 ]; then
         say "     >> inconclusive: $unknown bridge(s) did not report AtomicOpsCap."
         say "        rerun as root for the full lspci output."

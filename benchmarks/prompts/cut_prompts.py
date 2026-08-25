@@ -128,6 +128,7 @@ def main():
                ("gemma26b", a.gemma26b, "manifest-gemma26b.json", "prompts-26b", None),
                ("muse", a.muse, "manifest-muse.json", "prompts-muse", None)]
     worst, checked, cut_any = 0, 0, False
+    alt_drift = []
     only = {x.strip() for x in a.only.split(",") if x.strip()}
     for label, model, manifest_name, dirname, alt in ladders:
         if only and label not in only:
@@ -162,6 +163,13 @@ def main():
             rebuilt.append(e)
             if not a.check_only:
                 open(os.path.join(out_dir, f"prompt_{t}.txt"), "w", encoding="utf-8").write(text)
+            # The alt models share this ladder, and that sharing is a claim the
+            # manifest records. Checking only est_prompt_tokens would let gemma-3
+            # stop matching gemma-4 without this script noticing.
+            was_alt = recorded.get(t, {}).get("alt_tokens") or {}
+            for m, got_alt in e.get("alt_tokens", {}).items():
+                if m in was_alt and was_alt[m] != got_alt:
+                    alt_drift.append((label, t, m, was_alt[m], got_alt))
             was = recorded.get(t, {}).get("est_prompt_tokens")
             note = ""
             if was is not None:
@@ -177,9 +185,14 @@ def main():
 
     if not cut_any:
         sys.exit("no tokenizer was available — nothing cut or verified (set --models-dir)")
+    if alt_drift:
+        print("ALT-TOKENIZER DRIFT — a model that shared a ladder no longer does:")
+        for label, t, m, was, got in alt_drift:
+            print(f"  [{label}] target {t}: {m} recorded {was}, now {got}")
+        print()
     if not checked:
         print("only new ladders were cut; there was nothing to verify against")
-        return
+        return 1 if alt_drift else 0
     pct = worst / 32000 * 100
     print(f"largest drift against the committed manifests: {worst} tokens over {checked} rungs "
           f"({pct:.2f} % of the longest rung)")

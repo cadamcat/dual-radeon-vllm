@@ -408,7 +408,8 @@ kernel-level verification of 2026-07-30, which independently gives 2.52×.
 and measured 10.72 tok/s by a different method entirely — a 64-token generation
 differenced against an 8-token one, once per depth, at depths that did not even
 match. Two methods, one number. The slope falls 12.4×, out of its own order of
-magnitude and into the band the dense models occupy.
+magnitude, though not into the dense band: those run 0.118 to 0.344 µs here and
+0.390 is 13 % above the top of it.
 
 ### Two sliding-window models, six times apart
 

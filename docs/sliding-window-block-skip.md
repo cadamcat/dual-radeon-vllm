@@ -13,9 +13,9 @@ do not overlap.
 
 Correctness rests on two kernel-level results, §6: upstream's own test file with
 no case changing outcome, and 15 boundary cases bit-identical under
-`torch.equal`. **An earlier version of this page used end-to-end token identity
-instead. That test does not work on this machine and the claim has been
-withdrawn** — see §7.
+`torch.equal`. **End-to-end token identity is not
+available as a test here**: greedy decoding is irreproducible on this machine
+with the patch absent — see §7.
 
 `gemma-3-27b` unpatched decodes at **8.05 tok/s** at 32 K, against 30.21 for
 `gemma-4-31B`, a larger and newer model. §5 explains why the two land on
@@ -331,9 +331,12 @@ second one is unsettled, and nothing has been posted there. Data:
 
 ## 8. What this does not establish
 
-Two models on one machine, gfx1100 only. Whether the block table is genuinely
-full-length — rather than the skip merely happening to be safe here — has not
-been read out of the KV cache manager.
+Two models on one machine, gfx1100 only. The block table being full-length is
+read out of `SlidingWindowManager.remove_skipped_blocks` in
+`single_type_kv_cache_manager.py`, quoted in §2; what has not been checked is
+whether every backend that reaches this kernel fills skipped slots the same way,
+so on a path that leaves stale block ids there the skip would be doing more than
+avoiding a null block.
 
 The model itself runs here through a downstream adaptation: vLLM support for
 `Muse-Glimmer` merged upstream on 2026-08-14, after this container was built, so

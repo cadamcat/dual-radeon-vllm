@@ -81,7 +81,7 @@ You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actual
 - 🟡 **It runs, but you do not know what to expect** → [What performance to expect](#what-performance-to-expect)
 - 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
 
-**Not a vLLM fork.** Nothing here patches vLLM. The fix lives below it — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against.
+**Not a vLLM fork.** The RCCL fix lives below vLLM — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against. [`patches/`](patches/) does carry downstream vLLM changes, but only the ones the 2026-08-24 campaign needed; none of them is part of the fix this repository is about.
 
 <details>
 <summary><b>Did you get here from a search engine?</b> These are the exact messages this repository explains</summary>
@@ -302,8 +302,13 @@ python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
 
 No GPU, no dependencies beyond the standard library. They read
 [`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records, one per request,
-each with its prompt length, TTFT, decode rate, per-card power and VRAM. Every number
-in this README and in `docs/benchmarks.md` comes out of those three scripts.
+each with its prompt length, TTFT, decode rate, per-card power and VRAM. That file is
+the 2026-07-25 campaign; the 2026-08-24 one is
+[`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl), and the separate
+findings have their own files. What ties them together is
+[`analyze/verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), which
+recomputes every figure quoted in this README and in `docs/` from whichever file it
+came from, and exits non-zero if one disagrees.
 
 ### How to read this
 
@@ -471,7 +476,7 @@ benchmarks/   The measurement data and everything that produced it
   results-2026-08-24.jsonl 372 measurements on the patched container, same ladder,
                        six of the nine configurations rerun as controls
   results.jsonl        ★ 292 measurements, one record per request; the source of
-                         every number in this repository
+                         the 2026-07-25 tables and charts
   analyze/             turn that into the tables and charts; no GPU needed
   bench_runner.py      the campaign runner: serial, checkpointed, VRAM-safe
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
@@ -484,8 +489,10 @@ benchmarks/   The measurement data and everything that produced it
 patches/      Downstream changes to the installed vLLM, so the numbers above can
               be reproduced. None is a recommendation to run in production
   sliding-window-block-skip.patch  start the paged-decode loop at the window
-  wintest.py           the before/after harness for it; records token ids,
-                       because the correctness claim is equality not tolerance
+  wintest.py           the before/after timing harness for it. It also records
+                       token ids, which turned out not to be a correctness test
+                       here: greedy decoding is irreproducible on this machine
+                       with the patch absent
   adapt-muse-glimmer.py  back-adapt upstream's model file to a vLLM that
                        predates the model
 
