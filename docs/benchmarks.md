@@ -328,7 +328,7 @@ configuration with no collectives at all, so nothing mediated by RCCL or by PCIe
 AtomicOps can reach it. If its offset were real it would point away from every
 interconnect explanation; as measured it cannot carry that weight either.
 
-gemma-4-31B was chased down rather than waved at. It was measured **three times** on 2026-08-25: once inside the campaign,
+gemma-4-31B was measured **three times** on 2026-08-25: once inside the campaign,
 once from a machine idle for thirteen minutes at 38 °C junction, and once starting
 immediately after that second run finished, with junction sampled every 15 s
 throughout.
@@ -362,7 +362,7 @@ And **the guest gained PCIe AtomicOps**: `hostpci0`/`hostpci1` were rewritten fr
 the all-functions form to the single-function one on 2026-08-23 at 14:17 UTC,
 about twenty-eight hours before this campaign started, so July ran without
 AtomicOps and August ran with them. That is the change this repository is
-largely about, and it was left out of the first version of this section.
+largely about, which is not a reason to leave it off the list.
 
 None of the three should be selective for one model out of six, which is the
 argument against each of them and not evidence for any. The AtomicOps change is

@@ -189,9 +189,9 @@ bare-metal reports share this root cause is an **inference** from:
 Neither reporter posted `AMD_LOG_LEVEL=4` output, so the
 `Pcie atomics not enabled` line has not been observed on those machines.
 
-**How to close it:** run `diagnose/check-platform.sh` and `diagnose/hipgate3.cpp`
-on a bare-metal dual-Radeon box and open an issue with the output. This is the
-single highest-value contribution to this repository.
+What would have closed it, and did: `AMD_LOG_LEVEL=4` output from a bare-metal
+dual-Radeon box. @adderek's is in
+[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520).
 
 ---
 

@@ -127,16 +127,15 @@ in `results.jsonl`** — the added ones numbered 3 and 4 and tagged
 drags the @2000 decode mean down from ~58.6 to 56.5. We would rather publish the
 conservative number than curate the dataset.
 
-**That sentence used to end "every other point in the campaign is repeatable
-within 1 % across its two rounds", and it was not true.** Grouping all 292
-measurements into their 142 (config, context, kind) cells and taking
-(max − min) / mean, **30 cells exceed 1 %**: 14 decode and 16 prefill. Excluding
-the two named above, 28. The widest is the 26B MoE's prefill at 4 000, 2 431.3
-against 3 198.6, a 27.3 % range — wider than either anomaly that was re-measured,
-and it was not re-measured.
+Across the 142 (config, context, kind) cells, taking (max − min) / mean,
+**30 exceed 1 %**: 14 decode and 16 prefill, or 28 excluding the two named above.
+The widest is the 26B MoE's prefill at 4 000, 2 431.3 against 3 198.6, a 27.3 %
+range. It is wider than either anomaly that was re-measured, and it was not
+re-measured: the two above were singled out because they were noticed, not
+because they were the worst.
 
-The two above were singled out because they were noticed, not because they were
-the worst. Decode is the tighter of the two: the prefill spread is what dividing
+> **Corrected 2026-08-25.** This paragraph used to say every other point was
+> repeatable within 1 % across its two rounds. Thirty cells are not. Decode is the tighter of the two: the prefill spread is what dividing
 a prompt length by a short TTFT does, and it is why prefill is reported as best
 of rounds while decode is reported as the mean. Anyone comparing single cells
 across campaigns should recompute the spread from `results.jsonl` rather than

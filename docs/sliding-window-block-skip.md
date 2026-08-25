@@ -149,28 +149,17 @@ The GEMM does not get slower or faster — 703.1 ms against 703.8 — so all of 
 rise is the step shrinking underneath it. That is what a kernel becoming the
 bottleneck looks like when nothing was done to it.
 
-> **This block was rebuilt twice on 2026-08-25 and both rebuilds were wrong
-> before this one.** The first read `after.decode_step` from the host-side
-> duplicate row that torch profiler emits for the same event name — 130.457 ms
-> total, 2.071 ms per call, smaller than its own attention kernel. The
-> device-side row is 1.806 s and 28.668 ms per call, which is what the end-to-end
-> curve corroborates at 26.632 ms plus profiler overhead.
+> **How this table is generated.** Every device row at or above 0.3 % of the
+> decode step, read straight out of the committed profiler tables in
+> [`benchmarks/traces/`](../benchmarks/traces/). Torch profiler emits two rows per
+> event name, a device-side one and a host-side one, and reports some work at two
+> levels — `_fwd_kernel` alongside `vllm::unified_attention_with_output`,
+> `_rocm_C::wvSplitK` alongside `wvSplitK_hf_sml_` — so the aliases are dropped
+> and the rows are not additive. Read each against the step.
 >
-> The second rebuild then **withdrew the 44.7 % and the 260 calls as unsupported,
-> and they were supported all along.** `gemm_q4_kernel_rdna3` is in the trace at
-> 703.751 ms and 16 380 calls, 260 per step, and 44.67 % of the profiler's Self
-> CUDA time total. What went wrong was hand-picking which kernels to read out:
-> `_rocm_C::wvSplitK` was assumed to be the 4-bit GEMM, it is a different and
-> much smaller one, and the row that mattered was never looked for. The block is
-> now generated from every device row at or above 0.3 % of the step.
->
-> One thing was wrong in the original and stays corrected: 74 % and 22 % were
-> quoted against different denominators. Both percentages above divide by the
-> decode step. Against the profiler's own Self CUDA column the same two rows are
-> 24.14 % and 44.67 %, which is where 44.7 % came from.
->
-> `before.custom_hip_reduce` was also wrong, 13 calls where the trace says 819.
-> The trace tables are committed at [`benchmarks/traces/`](../benchmarks/traces/).
+> The percentages above all divide by the decode step, which is wall clock and
+> contains gaps. The profiler's own Self CUDA column uses a smaller denominator
+> and gives 24.14 % and 44.67 % for the same two rows; 44.7 % is that column.
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 
