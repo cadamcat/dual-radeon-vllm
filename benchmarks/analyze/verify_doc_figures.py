@@ -176,6 +176,23 @@ def main():
         per = lambda side: float(kl[side]["decode_step"]["per_call"].rstrip("ms"))
         ck("swin decode step 2.98x per call", "2.98", per("before") / per("after"))
 
+    # --- figures the 2026-08-25 review found wrong, so they cannot drift back ---
+    swin_f = os.path.join(HERE, "..", "sliding-window-block-skip.json")
+    if os.path.exists(swin_f):
+        sw = json.load(open(swin_f))
+        g3 = [r for r in sw["models_affected"]["gemma-3-27b-it-quantized.w4a16"]["depth_curve_n3"]
+              if r["depth"] == 32768][0]
+        ck("gemma-3 unpatched 8.05 tok/s", "8.05", 1000 / g3["before_median_ms"])
+        ck("gemma-3 patched 22.09 tok/s", "22.09", 1000 / g3["after_median_ms"])
+        g4 = [r for r in sw["controls"]["gemma-4-31B-it-qat-w4a16-ct"]["depth_curve_n2"]
+              if r["depth"] == 32768][0]
+        ck("gemma-4-31B comparator 30.21", "30.21", 1000 / g4["before_median_ms"])
+    hmm_f = os.path.join(HERE, "..", "hmm-kernel-three-states.json")
+    if os.path.exists(hmm_f):
+        st = json.load(open(hmm_f))["states"]
+        ck("hmm control r--p 3.2", "3.2", st[2]["r_p_resident"])
+        ck("hmm control rw-p 13.1", "13.1", st[2]["rw_p_not_resident"])
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

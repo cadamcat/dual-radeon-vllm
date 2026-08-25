@@ -111,7 +111,7 @@ The cause is the paged-attention fallback above, not the recurrence. The SSM
 layers do take the incremental path — `_forward_core_decode_non_spec` calls
 `fused_recurrent_gated_delta_rule_packed_decode`, and it profiles flat across
 context. Running the same model under llama.cpp on the same two cards retains
-87.7 % of its short-context rate at 32 K (ROCm backend) against vLLM's 34.7 %,
+87.7 % of its short-context rate at 32 K (ROCm backend) against vLLM's 35.1 %,
 which puts the problem in vLLM's attention path rather than in ROCm, the hardware
 or the architecture.
 
@@ -121,7 +121,7 @@ prefill gets *faster* with length (805 → 880 tok/s, +9 %) while dense models l
 
 **What to do:** use **llama.cpp** for Qwen3.5/3.6. Measured at matched context
 depth on the same two cards, plain Q4_K_M with no speculative decoding, it is
-**2.1× stock vLLM at 512 tokens (24.89 vs 12.1) and 5.2× at 32 K (21.84 vs
+**2.1× stock vLLM at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K (21.84 vs
 4.2)** — the advantage widens with context precisely because llama.cpp does not
 take the path in question. Both are against the stock gate; with #45916's gate
 widened the 32 K gap narrows to 2.0× (21.84 vs 10.72), so that PR closes the

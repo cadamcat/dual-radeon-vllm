@@ -132,8 +132,10 @@ At 32 K it delivers 4.2 tok/s, which is unusable.
 > what you get: the PR is unmerged. Method, the full table and what it does not
 > fix in [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md) §6.5.
 
-**But prefill keeps the promise.** The 27B is the only model whose prefill gets
-*faster* with length (805 → 880 tok/s, +9 %) while dense models lose 8–44 %.
+**But prefill keeps the promise.** The 27B's prefill gets *faster* with length,
+805 → 883 tok/s, +9.6 %, where every dense model loses 8–61 %. It is not alone in
+that: the 26B MoE goes 1 693 → 2 098, +24 %, which is more. Among the models
+whose decode this section is about, the 27B is the one that improves.
 Linear attention does deliver O(S) prefill here. If your workload is
 ingest-heavy and generation-light, that is worth something. Otherwise, avoid it.
 
@@ -420,7 +422,7 @@ width of the full-attention layers, not by how many layers are windowed.**
 
 gemma-3 is not plotted — between 500 and 4 000 it runs within two tok/s of both
 Muse-Glimmer and gemma-4-31B and the three lines read as one. Its result belongs
-in prose: the block-skip takes it from **8.06 tok/s at 32 K to 22.05**, and the
+in prose: the block-skip takes it from **8.05 tok/s at 32 K to 22.05**, and the
 32 K point works out to 45.34 ms per token where the kernel A/B measured 45.26
 patched and 124.29 unpatched. Data is in
 [`results-2026-08-25.jsonl`](../benchmarks/results-2026-08-25.jsonl).

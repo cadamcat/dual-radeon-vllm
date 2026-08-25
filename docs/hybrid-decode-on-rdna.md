@@ -142,7 +142,7 @@ and [`-vulkan.json`](../benchmarks/llamacpp-depth-sweep-vulkan.json).
 |---|---:|---:|---:|---:|
 | llama.cpp, ROCm backend | 24.89 tok/s | 21.84 tok/s | 87.7 % | 0.174 |
 | llama.cpp, Vulkan backend | 28.61 tok/s | 26.04 tok/s | 91.0 % | 0.107 |
-| **vLLM** | **12.1 tok/s** | **4.2 tok/s** | **34.7 %** | **4.840** |
+| **vLLM** | **12.1 tok/s** | **4.25 tok/s** | **35.1 %** | **4.840** |
 
 vLLM's slope is 28× llama.cpp's on the same ROCm userspace and 45× the Vulkan
 one. Both llama.cpp backends stay flat, which rules out the driver as well: the

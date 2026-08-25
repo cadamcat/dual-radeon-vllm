@@ -17,7 +17,7 @@ no case changing outcome, and 15 boundary cases bit-identical under
 instead. That test does not work on this machine and the claim has been
 withdrawn** — see §7.
 
-`gemma-3-27b` unpatched decodes at **8.06 tok/s** at 32 K, against 30.36 for
+`gemma-3-27b` unpatched decodes at **8.05 tok/s** at 32 K, against 30.21 for
 `gemma-4-31B`, a larger and newer model. §5 explains why the two land on
 different kernels.
 
@@ -219,8 +219,8 @@ platform's ordinary priority order. Its GQA ratio is 2, below the custom HIP
 kernel's minimum of 3, so all 62 layers run on the Triton path.
 
 **The gap between the two is the finding.** Unpatched, `gemma-3-27b` decodes at
-8.06 tok/s at 32 K while `gemma-4-31B` — larger, newer, same family — does 30.36.
-Patched, gemma-3 reaches 22.12 and what remains is explicable by the models
+8.05 tok/s at 32 K while `gemma-4-31B` — larger, newer, same family — does 30.21.
+Patched, gemma-3 reaches 22.09 and what remains is explicable by the models
 rather than by a kernel doing 32× the block iterations it needs.
 
 **The no-window control** is `Qwen3.8-27B`, same `ROCM_ATTN` backend with
