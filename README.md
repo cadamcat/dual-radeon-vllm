@@ -257,7 +257,7 @@ within 0.25 %, except gemma-4-31B at −0.85 %, which is recorded as unexplained
 |---|---|---:|---:|---:|---|
 | **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
 | **Qwen3.8-27B** | AWQ int4, **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 same architecture as the 27B above. **2.51× at 32 K**, slope 12.4× flatter |
-| gemma-3-27b | w4a16, sliding window 1024 | 44.8 | 34.6 | 22.1 | 🟡 **8.06 → 22.05 at 32 K** from the block-skip, but the steepest curve measured here: 16 KV heads on its full-attention layers against Muse-Glimmer's 2 |
+| gemma-3-27b | w4a16, sliding window 1024 | 44.8 | 34.6 | 22.1 | 🟡 **8.06 → 22.05 at 32 K** from the block-skip, but the steepest curve on the patched machine: 16 KV heads on its full-attention layers against Muse-Glimmer's 2 |
 
 ### llama.cpp, for comparison
 

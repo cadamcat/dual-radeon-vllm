@@ -76,81 +76,86 @@ def main():
     checks = []
 
     def ck(where, claim, value, tol=None):
+        """claim is the figure AS WRITTEN, quoted, so that a trailing zero counts.
+        0.390 as a float is 0.39 and would be given ten times the slack it should
+        have; "0.390" keeps the third place the prose committed to."""
+        text = str(claim)
         if tol is None:
-            # half a unit in the last place the prose actually quotes
-            text = repr(float(claim))
-            decimals = len(text.split(".")[1].rstrip("0")) if "." in text else 0
+            decimals = len(text.split(".")[1]) if "." in text else 0
             allowed = 0.5 * 10 ** -decimals
         else:
             allowed = abs(value) * tol
-        checks.append((abs(claim - value) <= allowed + 1e-12, where, claim, value, allowed))
+        num = float(text)
+        checks.append((abs(num - value) <= allowed + 1e-12, where, text, value, allowed))
 
     # --- README.md, decode table, 2026-07-25 ---------------------------------
-    ck("README decode table, 26B MoE 500", 107.8, tps(jul, "E-26B-tp2", 500))
-    ck("README decode table, 26B MoE 32K", 72.8, tps(jul, "E-26B-tp2", 32000))
-    ck("README decode table, 8B 500", 79.6, tps(jul, "B-8B-tp2", 500))
-    ck("README decode table, 31B 32K", 29.5, tps(jul, "C-31B-tp2", 32000))
-    ck("README decode table, 27B SSM 32K", 4.2, tps(jul, "D-27B-tp2", 32000))
+    ck("README decode table, 26B MoE 500", "107.8", tps(jul, "E-26B-tp2", 500))
+    ck("README decode table, 26B MoE 32K", "72.8", tps(jul, "E-26B-tp2", 32000))
+    ck("README decode table, 8B 500", "79.6", tps(jul, "B-8B-tp2", 500))
+    ck("README decode table, 31B 32K", "29.5", tps(jul, "C-31B-tp2", 32000))
+    ck("README decode table, 27B SSM 32K", "4.2", tps(jul, "D-27B-tp2", 32000))
 
     # --- README.md, patched table, 2026-08-25 -------------------------------
-    ck("README patched table, Muse 500", 43.7, tps(aug, "G-30B-tp2", 500))
-    ck("README patched table, Muse 8K", 37.8, tps(aug, "G-30B-tp2", 8000))
-    ck("README patched table, Muse 32K", 37.4, tps(aug, "G-30B-tp2", 32000))
-    ck("README patched table, Qwen3.8 500", 12.3, tps(aug, "D8-27B-tp2", 500))
-    ck("README patched table, Qwen3.8 8K", 11.7, tps(aug, "D8-27B-tp2", 8000))
-    ck("README patched table, Qwen3.8 32K", 10.7, tps(aug, "D8-27B-tp2", 32000))
-    ck("README patched table, gemma-3 500", 44.8, tps(aug, "F-27B-tp2", 500))
-    ck("README patched table, gemma-3 8K", 34.6, tps(aug, "F-27B-tp2", 8000))
-    ck("README patched table, gemma-3 32K", 22.1, tps(aug, "F-27B-tp2", 32000))
+    ck("README patched table, Muse 500", "43.7", tps(aug, "G-30B-tp2", 500))
+    ck("README patched table, Muse 8K", "37.8", tps(aug, "G-30B-tp2", 8000))
+    ck("README patched table, Muse 32K", "37.4", tps(aug, "G-30B-tp2", 32000))
+    ck("README patched table, Qwen3.8 500", "12.3", tps(aug, "D8-27B-tp2", 500))
+    ck("README patched table, Qwen3.8 8K", "11.7", tps(aug, "D8-27B-tp2", 8000))
+    ck("README patched table, Qwen3.8 32K", "10.7", tps(aug, "D8-27B-tp2", 32000))
+    ck("README patched table, gemma-3 500", "44.8", tps(aug, "F-27B-tp2", 500))
+    ck("README patched table, gemma-3 8K", "34.6", tps(aug, "F-27B-tp2", 8000))
+    ck("README patched table, gemma-3 32K", "22.1", tps(aug, "F-27B-tp2", 32000))
 
     # --- benchmarks.md §2, slopes on stock vLLM -----------------------------
-    ck("benchmarks.md §2 slope, 8B", 0.118, slope_us(jul, "B-8B-tp2"))
-    ck("benchmarks.md §2 slope, 26B", 0.142, slope_us(jul, "E-26B-tp2"))
-    ck("benchmarks.md §2 slope, 12B", 0.228, slope_us(jul, "A-12B-tp2"))
-    ck("benchmarks.md §2 slope, 31B", 0.339, slope_us(jul, "C-31B-tp2"))
-    ck("benchmarks.md §2 slope, 27B SSM", 4.840, slope_us(jul, "D-27B-tp2"))
+    ck("benchmarks.md §2 slope, 8B", "0.118", slope_us(jul, "B-8B-tp2"))
+    ck("benchmarks.md §2 slope, 26B", "0.142", slope_us(jul, "E-26B-tp2"))
+    ck("benchmarks.md §2 slope, 12B", "0.228", slope_us(jul, "A-12B-tp2"))
+    ck("benchmarks.md §2 slope, 31B", "0.339", slope_us(jul, "C-31B-tp2"))
+    ck("benchmarks.md §2 slope, 27B SSM", "4.840", slope_us(jul, "D-27B-tp2"))
 
     # --- benchmarks.md §6, the patched campaign -----------------------------
-    ck("benchmarks.md §6 Qwen3.6 retained %", 35.1, retained(jul, "D-27B-tp2"))
-    ck("benchmarks.md §6 Qwen3.8 retained %", 86.8, retained(aug, "D8-27B-tp2"))
-    ck("benchmarks.md §6 Qwen3.8 slope", 0.390, slope_us(aug, "D8-27B-tp2"))
+    ck("benchmarks.md §6 Qwen3.6 retained %", "35.1", retained(jul, "D-27B-tp2"))
+    ck("benchmarks.md §6 Qwen3.8 retained %", "86.8", retained(aug, "D8-27B-tp2"))
+    ck("benchmarks.md §6 Qwen3.8 slope", "0.390", slope_us(aug, "D8-27B-tp2"))
     ck("benchmarks.md §6 32K speedup",
-       2.51, tps(aug, "D8-27B-tp2", 32000) / tps(jul, "D-27B-tp2", 32000))
+       "2.51", tps(aug, "D8-27B-tp2", 32000) / tps(jul, "D-27B-tp2", 32000))
     ck("benchmarks.md §6 slope ratio 12.4x",
-       12.4, slope_us(jul, "D-27B-tp2") / slope_us(aug, "D8-27B-tp2"))
-    ck("benchmarks.md §6 Muse slope", 0.122, slope_us(aug, "G-30B-tp2"))
-    ck("benchmarks.md §6 gemma-3 slope", 0.730, slope_us(aug, "F-27B-tp2"))
-    ck("benchmarks.md §6 Muse 500->32K %", -14.4,
-       (tps(aug, "G-30B-tp2", 32000) / tps(aug, "G-30B-tp2", 500) - 1) * 100)
-    ck("benchmarks.md §6 gemma-3 500->32K %", -50.7,
-       (tps(aug, "F-27B-tp2", 32000) / tps(aug, "F-27B-tp2", 500) - 1) * 100)
+       "12.4", slope_us(jul, "D-27B-tp2") / slope_us(aug, "D8-27B-tp2"))
+    ck("benchmarks.md §6 Muse slope", "0.122", slope_us(aug, "G-30B-tp2"))
+    ck("benchmarks.md §6 gemma-3 slope", "0.731", slope_us(aug, "F-27B-tp2"))
+    ck("benchmarks.md §6 Muse 500->32K %", "-14.4", (tps(aug, "G-30B-tp2", 32000) / tps(aug, "G-30B-tp2", 500) - 1) * 100)
+    ck("benchmarks.md §6 gemma-3 500->32K %", "-50.7", (tps(aug, "F-27B-tp2", 32000) / tps(aug, "F-27B-tp2", 500) - 1) * 100)
     ck("benchmarks.md §6 gemma-3 32K ms/token",
-       45.34, 1000 / tps(aug, "F-27B-tp2", 32000))
-    ck("benchmarks.md §6 Muse flat at 2000", 37.99, tps(aug, "G-30B-tp2", 2000))
+       "45.34", 1000 / tps(aug, "F-27B-tp2", 32000))
+    ck("benchmarks.md §6 Muse flat at 2000", "37.99", tps(aug, "G-30B-tp2", 2000))
 
     # --- benchmarks.md §6, the control offsets ------------------------------
-    ck("benchmarks.md §6 control, 8B", -0.10, offset(jul, aug, "B-8B-tp2"))
-    ck("benchmarks.md §6 control, 12B", -0.02, offset(jul, aug, "A-12B-tp2"))
-    ck("benchmarks.md §6 control, 26B", -0.23, offset(jul, aug, "E-26B-tp2"))
-    ck("benchmarks.md §6 control, 31B", -0.85, offset(jul, aug, "C-31B-tp2"))
-    ck("benchmarks.md §6 control, 8B TP=1", 0.01, offset(jul, aug, "B-8B-tp1"))
-    ck("benchmarks.md §6 control, 12B TP=1", -0.82, offset(jul, aug, "A-12B-tp1"))
+    ck("benchmarks.md §6 control, 8B", "-0.10", offset(jul, aug, "B-8B-tp2"))
+    ck("benchmarks.md §6 control, 12B", "-0.02", offset(jul, aug, "A-12B-tp2"))
+    ck("benchmarks.md §6 control, 26B", "-0.23", offset(jul, aug, "E-26B-tp2"))
+    ck("benchmarks.md §6 control, 31B", "-0.85", offset(jul, aug, "C-31B-tp2"))
+    ck("benchmarks.md §6 control, 8B TP=1", "0.01", offset(jul, aug, "B-8B-tp1"))
+    ck("benchmarks.md §6 control, 12B TP=1", "-0.82", offset(jul, aug, "A-12B-tp1"))
     # the prose says six of the nine August configurations are July reruns
-    ck("benchmarks.md §6 control count", 6, len(set(jul) & set(aug)))
-    ck("benchmarks.md §6 new configuration count", 3, len(set(aug) - set(jul)))
+    ck("benchmarks.md §6 control count", "6", len(set(jul) & set(aug)))
+    ck("benchmarks.md §6 new configuration count", "3", len(set(aug) - set(jul)))
+    # "steepest curve on the patched machine" — true of August only, and the
+    # July hybrid must stay above it or that qualifier is doing no work
+    ck("§6 gemma-3 steepest in August", "0.731", max(slope_us(aug, c) for c in aug if 32000 in aug[c]))
+    ck("§6 July hybrid still steeper", "4.840", slope_us(jul, "D-27B-tp2"))
 
     # --- benchmarks.md §6, the gemma-4-31B offset investigation --------------
     off_file = os.path.join(HERE, "..", "gemma-4-31b-campaign-offset.json")
     if os.path.exists(off_file):
         off = json.load(open(off_file))
         rep = off["reproducibility"]
-        ck("§6 offset, run1", -0.85, rep["offset_against_july_pct"]["run1_in_campaign"])
-        ck("§6 offset, run2 cold", -0.90, rep["offset_against_july_pct"]["run2_cold"])
-        ck("§6 offset, run3 warm", -0.79, rep["offset_against_july_pct"]["run3_warm"])
-        ck("§6 offset, RSD mean", 0.077, rep["relative_stddev_across_the_three_pct"]["mean"])
-        ck("§6 offset, RSD max", 0.146, rep["relative_stddev_across_the_three_pct"]["max"])
+        ck("§6 offset, run1", "-0.85", rep["offset_against_july_pct"]["run1_in_campaign"])
+        ck("§6 offset, run2 cold", "-0.90", rep["offset_against_july_pct"]["run2_cold"])
+        ck("§6 offset, run3 warm", "-0.79", rep["offset_against_july_pct"]["run3_warm"])
+        ck("§6 offset, RSD mean", "0.077", rep["relative_stddev_across_the_three_pct"]["mean"])
+        ck("§6 offset, RSD max", "0.146", rep["relative_stddev_across_the_three_pct"]["max"])
         ck("§6 offset, warm minus cold",
-           0.11, off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
+           "0.11", off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

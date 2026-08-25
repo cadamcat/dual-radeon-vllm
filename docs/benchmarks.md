@@ -403,7 +403,7 @@ alike.
 | | window | full-attn layers | KV heads | slope | 500 → 32 K |
 |---|---:|---:|---:|---:|---:|
 | Muse-Glimmer-30B | 2048 | 13 of 52 | **2** | **0.122 µs** | −14.4 % |
-| gemma-3-27b | 1024 | ~10 of 62 | **16** | **0.730 µs** | −50.7 % |
+| gemma-3-27b | 1024 | ~10 of 62 | **16** | **0.731 µs** | −50.7 % |
 
 Muse-Glimmer goes flat where its window is and stays there: 37.99 at 2 000, then
 37.91, 37.87, 37.78, 37.73, 37.67, 37.66, 37.62, 37.40 at 32 K. Its slope of
@@ -411,7 +411,9 @@ Muse-Glimmer goes flat where its window is and stays there: 37.99 at 2 000, then
 almost nothing per token of context.
 
 gemma-3-27b has the **smaller** window and proportionally **more** windowed
-layers, and it is the steepest curve in either campaign. The difference is what
+layers, and it is the steepest curve on the patched machine — though nowhere near
+July's unpatched hybrid-SSM at 4.840 µs, which is 6.6× steeper still. The
+difference between the two windowed models is what
 its full-attention layers cost: 16 KV heads against Muse-Glimmer's 2, so roughly
 82 KB of KV per token against 13 KB. **The long-context slope is set by the KV
 width of the full-attention layers, not by how many layers are windowed.**
@@ -432,7 +434,8 @@ not to be compared by eye; compare the slope column instead.
 ### What did not move
 
 Prefill differences between the campaigns are a short-prompt artefact. At 500
-tokens they run +64 % and −60 %; from 4 000 up everything is inside 2 %. Prefill
+tokens they run +64 % and −60 %, at 4 000 still +5.9 % and −5.5 %, and only from
+8 000 up is everything inside 2 %. Prefill
 throughput is prompt tokens divided by TTFT, and at 500 tokens TTFT is a few
 hundred milliseconds of mostly fixed overhead.
 

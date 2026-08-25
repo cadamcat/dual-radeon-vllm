@@ -14,7 +14,11 @@ is required rather than optional:
     # the 2026-08-25 re-sweep, patched container
     python3 gen_charts.py --source ../results-2026-08-25.jsonl --suffix -2026-08-25 \\
         --stamp "2026-08-25 - vLLM 0.23.1.dev1+g9ddef7117 + ROCm 7.14 - kernel 7.0.0-30 - ..." \\
-        --series E-26B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2,F-27B-tp2,G-30B-tp2
+        --series E-26B-tp2,G-30B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D8-27B-tp2
+
+gemma-3 (F-27B-tp2) is measured but deliberately not plotted: between 500 and
+4000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the three
+lines read as one. benchmarks.md quotes its numbers in prose instead.
 """
 import argparse, json, math, os
 
@@ -50,7 +54,9 @@ ap.add_argument("--series", default="E-26B-tp2,B-8B-tp2,A-12B-tp2,C-31B-tp2,D-27
 ap.add_argument("--tp1-series", default="B-8B-tp2,B-8B-tp1,A-12B-tp2,A-12B-tp1",
                 help="comma-separated configs for the single-vs-dual chart; empty to skip it")
 ap.add_argument("--vmax-decode", type=float, default=115)
-ap.add_argument("--vmax-prefill", type=float, default=4200)
+ap.add_argument("--vmax-prefill", type=float, default=4600,
+                help="4600 because the 2026-08-25 Qwen3-8B 2K point reaches 4445 tok/s "
+                     "and both campaigns' prefill charts share an axis")
 ap.add_argument("--vmax-tp1", type=float, default=90)
 ap.add_argument("--vmax-ms", type=float, default=250)
 a = ap.parse_args()
