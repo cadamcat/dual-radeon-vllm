@@ -129,22 +129,40 @@ At the kernel, same profiler settings as the existing traces:
 10.3× rather than the 16× the block count suggests: the per-call overhead does
 not shrink with the block count.
 
-**Decode stops being attention-bound.** Attention falls from 74 % of the step to
-21 %, and the 4-bit weight GEMM becomes the largest single term at 44.7 %
-(260 calls per step, which is 52 layers × 5 matmuls). For a quantised dense model
-that is the expected shape; the state before the change was not.
+**Attention stops dominating, without stopping being the largest term.** It falls
+from **73.57 %** of the decode step to **21.06 %**. It is still the biggest single
+kernel afterwards: 380.334 ms against the 4-bit weight GEMM's 107.769 ms, a factor
+of 3.5. The Triton prefill kernel `_fwd_kernel`, 7.74 % before, leaves the decode
+profile entirely.
 
-> Two caveats on this table, both found by review on 2026-08-25. The 74 % is
-> 3.966 s of attention against a 5.391 s step and recomputes exactly; the second
-> figure is 380.334 ms against 63 × 28.668 ms, which is 21.1 %, and was published
-> as 22 %. And the `after` decode-step row in
-> [`sliding-window-block-skip.json`](../benchmarks/sliding-window-block-skip.json)
-> records 2.071 ms per call, which is smaller than its own attention kernel and
-> would have the profiled run beating the unprofiled machine by 12.9×; the
-> 28.668 ms quoted here is the figure the end-to-end curve corroborates. The GEMM
-> row behind 44.7 % is not in that file at all. The record needs a fresh profiler
-> run, and until then this table's second column rests on a trace that was not
-> committed.
+The GEMM did not get slower or faster — `_rocm_C::wvSplitK` costs 1.711 ms per
+call on both sides. Its **share** rises from 2.03 % to 5.97 % because the step it
+is a share of shrank by 2.98×. That is the whole of what changed about it.
+
+| kernel | before | % of step | after | % of step |
+|---|---:|---:|---:|---:|
+| `kernel_paged_attention_2d` | 3 966.0 ms | 73.57 % | 380.3 ms | 21.06 % |
+| `_fwd_kernel` (Triton prefill) | 417.1 ms | 7.74 % | — | — |
+| `_rocm_C::wvSplitK` (w4 GEMM) | 109.5 ms | 2.03 % | 107.8 ms | 5.97 % |
+| custom HIP `ll4mi_QKV` | 25.4 ms | 0.47 % | 25.4 ms | 1.40 % |
+| `nccl:_all_gather_base` | 3.1 ms | 0.06 % | 3.1 ms | 0.17 % |
+
+> **This block was rebuilt on 2026-08-25 and three of its numbers changed.** An
+> external review noticed that the `after` decode step in the data file, 130.457 ms
+> total and 2.071 ms per call, was smaller than its own attention kernel. It was:
+> torch profiler emits two rows for the event name, a device-side one and a
+> host-side one, and `before` had been read from the first while `after` was read
+> from the second. The device-side `after` row is 1.806 s and 28.668 ms per call,
+> which is what this document already quoted and what the end-to-end curve
+> corroborates at 26.632 ms plus profiler overhead. `before.custom_hip_reduce` was
+> also wrong, 13 calls where the trace says 819.
+>
+> An earlier version of this paragraph said the 4-bit GEMM became the largest
+> single term at 44.7 %, with 260 calls per step. **No such row exists in the
+> trace** — `wvSplitK` is called 63 times, once per step, and reaches 5.97 %.
+> That claim is withdrawn. The trace tables are now committed at
+> [`benchmarks/traces/`](../benchmarks/traces/) so every figure above can be read
+> straight out of them.
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 

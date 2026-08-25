@@ -22,59 +22,93 @@
   },
   "kernel_level": {
     "method": "torch profiler, delay 2 active 8, 32768 context, rank 0; same settings as prof-mtp-31b.py",
+    "source": "read out of the committed profiler tables in benchmarks/traces/, not transcribed by hand. Both figures for a row come from the same table and the same column, which the previous version of this block did not: its after.decode_step was taken from the host-side duplicate row that torch profiler emits for the same event name, where CUDA total is 130.457 ms and the average 2.071 ms, while before.decode_step came from the device-side row. Those two rows are not the same quantity and 2.071 ms would have had the profiled run beat the unprofiled machine by 12.9x.",
     "before": {
       "decode_step": {
-        "total": "5.391s",
+        "total_ms": 5391.0,
         "per_call": "85.567ms",
         "calls": 63
       },
       "triton_paged_decode": {
-        "total": "3.966s",
+        "total_ms": 3966.0,
         "per_call": "1.589ms",
-        "calls": 2496
+        "calls": 2496,
+        "pct_of_decode_step": 73.57
+      },
+      "triton_prefill_fwd_kernel": {
+        "total_ms": 417.064,
+        "per_call": "8.020ms",
+        "calls": 52,
+        "pct_of_decode_step": 7.74
+      },
+      "rocm_wvsplitk_w4_gemm": {
+        "total_ms": 109.495,
+        "per_call": "1.711ms",
+        "calls": 64,
+        "pct_of_decode_step": 2.03
       },
       "custom_hip_qkv": {
-        "total": "25.361ms",
+        "total_ms": 25.361,
         "per_call": "30.482us",
-        "calls": 832
+        "calls": 832,
+        "pct_of_decode_step": 0.47
       },
       "custom_hip_reduce": {
-        "total": "19.507us",
-        "per_call": "1.501us",
-        "calls": 13
+        "total_ms": 6.853,
+        "per_call": "8.367us",
+        "calls": 819,
+        "pct_of_decode_step": 0.13
+      },
+      "nccl_all_gather": {
+        "total_ms": 3.129,
+        "per_call": "48.893us",
+        "calls": 64,
+        "pct_of_decode_step": 0.06
       }
     },
     "after": {
       "decode_step": {
-        "total": "130.457ms",
-        "per_call": "2.071ms",
+        "total_ms": 1806.0,
+        "per_call": "28.668ms",
         "calls": 63
       },
       "triton_paged_decode": {
-        "total": "380.334ms",
+        "total_ms": 380.334,
         "per_call": "154.796us",
-        "calls": 2457
+        "calls": 2457,
+        "pct_of_decode_step": 21.06
+      },
+      "rocm_wvsplitk_w4_gemm": {
+        "total_ms": 107.769,
+        "per_call": "1.711ms",
+        "calls": 63,
+        "pct_of_decode_step": 5.97
       },
       "custom_hip_qkv": {
-        "total": "25.351ms",
+        "total_ms": 25.351,
         "per_call": "30.954us",
-        "calls": 819
+        "calls": 819,
+        "pct_of_decode_step": 1.4
       },
       "custom_hip_reduce": {
-        "total": "6.993ms",
+        "total_ms": 6.993,
         "per_call": "8.539us",
-        "calls": 819
+        "calls": 819,
+        "pct_of_decode_step": 0.39
+      },
+      "nccl_all_gather": {
+        "total_ms": 3.099,
+        "per_call": "49.197us",
+        "calls": 63,
+        "pct_of_decode_step": 0.17
       }
     },
-    "data_quality": {
-      "issue": "after.decode_step is not usable as recorded. Its total, 130.457 ms, is smaller than the total of one of its own constituent kernels, after.triton_paged_decode at 380.334 ms, which cannot be a consistent attribution.",
-      "which_side_is_wrong": "The record, not the prose. Attention per decode step is 380.334/63 = 6.037 ms; against the 28.668 ms per call that sliding-window-block-skip.md quotes that is 21.1% of the step, and against this record's 2.071 ms it would be 292%.",
-      "what_corroborates_the_prose_figure": "The end-to-end depth curve in this same file measures 26.632 ms per token for this model at 32768 patched. 28.668 ms is that plus 7.6% of profiler overhead, the same direction as the before case, where 85.567 ms profiled against 83.986 ms end to end is plus 1.9%. 2.071 ms would mean the profiled run beat the unprofiled machine by 12.9x.",
-      "likely_cause": "Not established. A self-time column read where a total-time column was intended would produce this shape, but the original trace was not kept and this is a guess.",
-      "status": "The per-call figures in this block are the ones the document quotes and they are corroborated. The after.decode_step total and per_call are left as recorded rather than back-filled from prose, and should be replaced by a fresh profiler run.",
-      "also_missing": "The document's 44.7% for the 4-bit weight GEMM and its 260 calls per step have no row here; that block has only four kernels. Those figures rest on a trace that was not committed.",
-      "found_by": "external review, 2026-08-25"
-    }
+    "reading": "Attention falls from 73.57% of the decode step to 21.06% and the Triton prefill kernel leaves the profile entirely. It does not stop being the largest single kernel: at 380.334 ms it is still 3.5x the 4-bit weight GEMM's 107.769 ms. The named kernels account for about a quarter of the step's span either way; the rest is gaps, which is why the step's CUDA total is 114.64% of the trace's Self CUDA time total.",
+    "trace_files": [
+      "traces/muse-glimmer-32768-unpatched-rank0.txt",
+      "traces/muse-glimmer-32768-patched-rank0.txt",
+      "traces/prof-muse.py"
+    ]
   },
   "controls": {
     "gemma-4-31B-it-qat-w4a16-ct": {

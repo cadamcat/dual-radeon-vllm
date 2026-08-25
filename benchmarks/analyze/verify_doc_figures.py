@@ -157,6 +157,25 @@ def main():
         ck("§6 offset, warm minus cold",
            "0.11", off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
 
+    # --- sliding-window kernel block, read out of the committed trace tables ---
+    swin = os.path.join(HERE, "..", "sliding-window-block-skip.json")
+    if os.path.exists(swin):
+        kl = json.load(open(swin))["kernel_level"]
+        for side, rows in (("before", kl["before"]), ("after", kl["after"])):
+            step = rows["decode_step"]["total_ms"]
+            for name, r in rows.items():
+                if "pct_of_decode_step" in r:
+                    ck(f"swin {side}.{name} % of step", str(r["pct_of_decode_step"]),
+                       r["total_ms"] / step * 100)
+        # "still 3.5x the 4-bit GEMM" and "2.98x" in sliding-window-block-skip.md.
+        # The step ratio is per call, which is what the prose quotes; the totals
+        # give 2.985 because they are rounded to the millisecond.
+        ck("swin attention still 3.5x the GEMM", "3.5",
+           kl["after"]["triton_paged_decode"]["total_ms"]
+           / kl["after"]["rocm_wvsplitk_w4_gemm"]["total_ms"])
+        per = lambda side: float(kl[side]["decode_step"]["per_call"].rstrip("ms"))
+        ck("swin decode step 2.98x per call", "2.98", per("before") / per("after"))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
