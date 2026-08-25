@@ -29,3 +29,7 @@ benchmarks/prompts/.gutenberg-1228.txt
 benchmarks/prompts/gemma/
 benchmarks/prompts/qwen/
 benchmarks/prompts/gemma26b/
+
+# Python bytecode from running the analyze scripts in-tree
+__pycache__/
+*.pyc
