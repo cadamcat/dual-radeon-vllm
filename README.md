@@ -19,7 +19,7 @@ Three things, each usable on its own:
 
 | | |
 |---|---|
-| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **In a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)); on bare metal it needs the rebuild recipe and deployment script also in here. [Start here](#am-i-hit-by-the-rccl-bug) |
+| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to `7.0.0-28-generic`, then the current 24.04 HWE kernel, taking `c08972f55594` without its follow-up `342981fff328`: the `-EBUSY` retry can no longer succeed and burns a full 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT` each time. Every timing we measured is an integer multiple of it. **Proven by revert** — that kernel rebuilt with `342981fff328` applied, nothing else changed, does the copy in **17.0 ms instead of 16 019.7**; model loading on `7.0.0-14` goes 86.7 s → 14.4 s. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). **Fixed in `7.0.0-30.30~24.04.1`**, published to `noble-updates` and `noble-security` on 2026-08-20, and **verified here on 2026-08-23**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade, with the two control rows inside their own range, 3.0→3.2 ms and 14.5→13.1 ([data](benchmarks/hmm-kernel-three-states.json)). On 24.04 the fix is an upgrade, not the rebuilt module described here; that rebuild is what proved the cause, not what you should run. It arrived through the normal stable route — LP#2161985 is still untriaged, so this repository did not drive it. The separate penalty for *writable* mappings survives, and on 2026-08-23 it was finally measured rather than estimated, by a harness that runs vLLM's own weights iterator ([data](benchmarks/loader-flag-kernel-30.json)): the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** (21.67 GiB on a 23.4 GiB host, 88.5 s → 11.8 s). The **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** What the run did establish is the mechanism, directly: the default path ends that load holding 21 390 MiB of `RssAnon` against 782 MiB of `RssFile`, and with the flag those swap places — breaking copy-on-write converts the whole checkpoint into private dirty memory, which is why the cost depends on checkpoint size against host RAM instead of being a constant ratio. [open-questions.md §8](docs/open-questions.md) |
 
@@ -56,7 +56,9 @@ The failure is **not** limited to virtual machines: @adderek independently repro
 it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
 board) in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520). Their machine is also
 a useful shape to know about — one GPU affected because it sits behind the chipset,
-one healthy because it is CPU-direct.
+one healthy because it is CPU-direct. On mainstream boards the second
+full-length slot is often wired to the chipset rather than the CPU, so a
+two-GPU build can land in exactly this shape with no VM involved.
 
 > **The built library is not in this repository.** A 97 MB binary does not belong in
 > git. Two ways to get one:
@@ -387,35 +389,38 @@ Background on the SSM and MoE findings, with source-level evidence:
 
 ## Hardware notes
 
-**Why does a VM lack PCIe atomics?** A PCIe atomic operation must be *completed*
-by the root complex and *routed* by every switch in between, and `amdgpu` checks
-exactly that through `pci_enable_atomic_ops_to_root()`: 32- and 64-bit completer
-support on the root port, AtomicOp routing on each switch port below it. QEMU's
-emulated `pcie-root-port` reports `32bit- 64bit-` **when the device is passed as
-multifunction**, which is the Proxmox default. Passed as a single function it
-advertises completer support automatically, and the guest gets atomics — QEMU has
-done this since 8.1.0. [vfio-atomics.md](docs/vfio-atomics.md) has the A/B.
+**What decides whether a GPU has atomics?** A PCIe atomic operation must be
+*completed* by the root complex and *routed* by every switch in between, and
+`amdgpu` checks exactly that through `pci_enable_atomic_ops_to_root()`: 32- and
+64-bit completer support on the root port, AtomicOp routing on each switch port
+below it.
+
+**On bare metal it is the chipset.** Root ports on consumer boards normally
+do advertise completer support — this project's own X399 host reports
+`Routing- 32bit+ 64bit+` on all eight, and that passes, since a root port's
+`Routing` bit refers to peer-to-peer between root ports and is not part of the
+check. That `Routing-` is consistent with this machine having no GPU P2P at
+all, which is a separate capability from atomics to system memory; the kernel
+function says as much in a comment ("no peer-to-peer"). Confirmed on the
+hardware: before these cards were handed to `vfio-pci`, `amdgpu` bound them on
+the host across five boots and never reported atomics missing, while in the
+guest it reports it for both GPUs every time. What breaks these machines is a
+chipset downstream port that reports `Routing-`: it cuts off every slot behind
+it, while a CPU-attached slot on the same board is fine. @adderek's B550 in
+[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520) has one GPU of each kind
+and only the chipset-attached one is affected.
+
+**Why does a VM lack them?** QEMU's emulated `pcie-root-port` reports
+`32bit- 64bit-` **when the device is passed as multifunction**, which is the
+Proxmox default. Passed as a single function it advertises completer support
+automatically, and the guest gets atomics — QEMU has done this since 8.1.0.
+[vfio-atomics.md](docs/vfio-atomics.md) has the A/B.
 
 **This machine changed sides on 2026-08-23 at 14:17 UTC.** Everything measured
 before that, including the 2026-07-25 campaign, ran multifunction and without
 AtomicOps; everything after, including the 2026-08-24 campaign, the loader work
 and the sliding-window measurements, ran single-function and with them. Where
 that matters to a comparison it is called out at the comparison.
-
-Bare metal fails for a different reason. Root ports on consumer boards normally
-do advertise completer support — this project's own X399 host reports
-`Routing- 32bit+ 64bit+` on all eight, and that passes, since a root port's
-`Routing` bit refers to peer-to-peer between root ports and is not part of the
-check. That `Routing-` is consistent with this machine having no GPU P2P at all,
-which is a separate capability from atomics to system memory; the kernel function
-says as much in a comment ("no peer-to-peer"). Confirmed on the hardware: before
-these cards were handed to `vfio-pci`, `amdgpu` bound them on the host across five
-boots and never reported atomics missing, while in the guest it reports it for
-both GPUs every time. What breaks those machines is the chipset: a chipset downstream port that
-reports `Routing-` cuts off every slot behind it, while a CPU-attached slot on
-the same board is fine. @adderek's B550 in
-[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520) has one GPU of each kind
-and only the chipset-attached one is affected.
 
 **Do I need atomics for inference?** No. They are a precondition for *hostcall*,
 which is a debug facility (device `printf`/`assert`), and AMD's own ROCm 7.1.1
