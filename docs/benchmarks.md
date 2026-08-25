@@ -382,7 +382,19 @@ cooling observation, not an explanation.
 [#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel with
 its `on_gfx12x()` gate widened to `on_gfx1x()`, measured end to end on
 `Qwen3.8-27B`, the same architecture as §2's `Qwen3.6-27B` — 64 layers,
-`full_attention_interval` 4, `head_dim` 256, identical in every config field.
+`full_attention_interval` 4, `head_dim` 256, 4 KV heads, the same 48 + 16
+layer split, vocabulary and context length.
+
+**It is not the same checkpoint, and this repository had already measured the
+difference.** `mtp-qwen-draft-head.json` compared 70 config fields and found
+three that differ: the quantisation ignore-list length, 208 against 313; the
+dtype, `float16` against `bfloat16`; and `transformers_version`. With
+speculative decoding off it measured Qwen3.8 slower than Qwen3.6 by 2.1 %,
+1.9 %, 1.5 % and 1.3 % at four depths. So the row below is a ratio across two
+checkpoints, two vLLM builds, two kernels and two campaigns, not a controlled
+A/B — and what checkpoint difference there is runs against the result rather
+than toward it. The controlled same-model version of this comparison is the
+kernel-level verification of 2026-07-30, which independently gives 2.52×.
 
 | | 500 | 32 K | retained | slope |
 |---|---:|---:|---:|---:|

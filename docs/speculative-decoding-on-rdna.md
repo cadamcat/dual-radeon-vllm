@@ -9,10 +9,18 @@ The cause is one line in the Triton attention backend. Enabling speculation sets
 `max_seqlen_q = 2`, which disables the segmented-softmax path that long-context
 decode depends on.
 
-- Turn MTP **on** for short prompts. It is a real 1.37× there.
+- Turn MTP **on** for short prompts. It measured 1.37× there.
 - Turn it **off** for long context. By 8K it is already a net loss, and at 32K
   it costs more than it ever gave.
 - The crossover was not located. It lies between 1K and 8K.
+
+**One measurement per cell.** Every figure in this document is a single run;
+there are no process replicates and no within-cell samples, and acceptance rate
+was not captured. The direction is monotonic across four depths and the
+end-points are far apart, which is why the shape is stated as a finding, but the
+individual ratios are not separated from run-to-run noise the way the decode
+campaigns are. Two independent processes per cell would settle it and have not
+been run.
 
 ---
 

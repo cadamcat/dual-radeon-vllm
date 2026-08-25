@@ -169,7 +169,14 @@ conclusively in AMD's pipeline, not the source. The counting one-liner is in
 
 ---
 
-## 2. Does this reproduce on bare metal?
+## 2. Does this reproduce on bare metal? — **ANSWERED: yes**
+
+> **Closed 2026-08-25.** @adderek reproduced it on bare metal with IOMMU
+> entirely disabled, in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520);
+> [root-cause.md](root-cause.md) has carried that since, listing
+> VFIO/virtualisation as **not necessary** to the mechanism. This section still
+> asked a reader to go and settle it, which it should not have. The reasoning
+> below is left as the inference it was before that report arrived.
 
 We have no bare-metal multi-GPU Radeon machine. Our claim that the public
 bare-metal reports share this root cause is an **inference** from:
@@ -217,11 +224,20 @@ it with `COLLTRACE=OFF`. The counts above explain why the global patch works.)
 
 ---
 
-## 4. Does virtualized Instinct hit this?
+## 4. Does virtualized Instinct hit this? — **premise corrected, question still open**
+
+> **Corrected 2026-08-25, same error as §5.** "Regardless of what is behind it"
+> is false. QEMU advertises completer support on an emulated root port
+> automatically for a single-function device below a root port supporting
+> DEVCAP2, and has since 8.1.0; it declines for a multifunction device, which is
+> what the Proxmox default produces. So a passthrough Instinct is affected when
+> it is passed multifunction and not when it is passed as `.0`, exactly as here.
+> That narrows the question rather than answering it: whether datacentre
+> deployments pass multifunction is not something this repository knows.
 
 The mechanism depends on the *root port*, not the GPU. A QEMU `pcie-root-port`
-advertises no AtomicOp completer support (`32bit- 64bit-`) regardless of what is
-behind it, so passthrough Instinct should be affected too. We have no Instinct
+advertises no AtomicOp completer support (`32bit- 64bit-`) when the device below
+it is passed as multifunction, so passthrough Instinct should be affected too. We have no Instinct
 hardware to confirm. If true, this materially raises the severity of the upstream issue,
 since it would mean RCCL collectives are broken in virtualized datacentre
 deployments and not merely on consumer desktops.
