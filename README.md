@@ -23,7 +23,7 @@ Three things, each usable on its own:
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
-| 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to `7.0.0-28-generic`, then the current 24.04 HWE kernel, taking `c08972f55594` without its follow-up `342981fff328`: the `-EBUSY` retry can no longer succeed and burns a full 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT` each time. Every timing we measured is an integer multiple of it. **Proven by revert** — that kernel rebuilt with `342981fff328` applied, nothing else changed, does the copy in **17.0 ms instead of 16 019.7**; model loading on `7.0.0-14` goes 86.7 s → 14.4 s. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). **Fixed in `7.0.0-30.30~24.04.1`**, published to `noble-updates` and `noble-security` on 2026-08-20, and **verified here on 2026-08-23**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade, with the two control rows inside their own range, 3.0→3.2 ms and 14.5→13.1 ([data](benchmarks/hmm-kernel-three-states.json)). On 24.04 the fix is an upgrade, not the rebuilt module described here; that rebuild is what proved the cause, not what you should run. It arrived through the normal stable route — LP#2161985 is still untriaged, so this repository did not drive it. The separate penalty for *writable* mappings survives, and on 2026-08-23 it was finally measured rather than estimated, by a harness that runs vLLM's own weights iterator ([data](benchmarks/loader-flag-kernel-30.json)): the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** (21.67 GiB on a 23.4 GiB host, 88.5 s → 11.8 s). The **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** What the run did establish is the mechanism, directly: the default path ends that load holding 21 390 MiB of `RssAnon` against 782 MiB of `RssFile`, and with the flag those swap places — breaking copy-on-write converts the whole checkpoint into private dirty memory, which is why the cost depends on checkpoint size against host RAM instead of being a constant ratio. [open-questions.md §8](docs/open-questions.md) |
+| 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by revert**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the revert, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
 
@@ -31,12 +31,12 @@ The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU
 cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
 and QEMU/VFIO passthrough guests, including virtualised Instinct.
 
-**In a guest, look at the VM configuration before anything else.** Passing a card's
-audio function alongside the GPU is enough to remove AtomicOps on its own, and undoing
-that made stock RCCL work here — [details and the A/B](docs/vfio-atomics.md). The
-rebuild below is for hardware that genuinely cannot deliver AtomicOps: chipset-fed
-slots on bare metal, root ports without completer support, QEMU older than 8.1.0. We
-build it for seven targets:
+**In a guest, check the VM configuration first** — passing a card's audio
+function alongside the GPU is enough to remove AtomicOps on its own
+([the one-line fix](docs/vfio-atomics.md)). The rebuild below is for hardware
+that genuinely cannot deliver AtomicOps: chipset-fed slots on bare metal, root
+ports without completer support, QEMU older than 8.1.0. We build it for seven
+targets:
 
 | Target | Cards | Status |
 |---|---|---|
@@ -376,9 +376,9 @@ Stating this plainly is the point of the repository.
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 **Fixed upstream, not yet merged. Now measured end to end:** the full eleven-point ladder on `Qwen3.8-27B` with the gate widened holds **86.8 %** of its short-context rate at 32 K where stock held 35.1 %, a slope of 0.390 µs against 4.840 ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)). Collapsed to 35.1% of its short-prompt rate at 32K; [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV kernel takes that to 2.52× faster at 32K once its `on_gfx12x()` gate is widened to RDNA3 — we verified 69/69 and 15.8× at the kernel on gfx1100 ([details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.1× against stock vLLM, 2.0× with the gate widened |
+| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 **Fixed upstream, not yet merged.** Stock vLLM keeps 35.1 % of its short-context rate at 32 K; with [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV gate widened to RDNA3 the same architecture holds **86.8 %**, a slope of 0.390 µs against 4.840 — verified at the kernel (69/69, 15.8×) and end to end over the eleven-point ladder ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24), [details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.1× against stock vLLM, 2.0× with the gate widened |
 | **Speculative decoding (MTP)** | 🟡 Context-dependent. `gemma-4-31B` with Google's official MTP assistant is **+36.9% at 1K** and **−70.8% at 32K** on this hardware: speculation sets `max_seqlen_q=2`, which disables the Triton backend's segmented-softmax path that long-context decode relies on. Enable it for short prompts, disable it by 8K, where it is already 14% down ([details](docs/speculative-decoding-on-rdna.md)) |
-| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Ours to fix, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed. **`gemma-3-27b` decodes at 8.05 tok/s at 32 K because of it, against 30.21 for the larger `gemma-4-31B`**, which vLLM routes to a backend that already bounds its loop. Starting the loop at the window is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each model's window, three runs per cell. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)). **Measured end to end on 2026-08-24**: gemma-3 goes 8.05 → 22.05 tok/s at 32 K, and `Muse-Glimmer-30B` goes flat from its 2 048-token window onward at 37.4 |
+| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Ours to fix, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed — **`gemma-3-27b` pays it at 8.05 tok/s while the larger `gemma-4-31B`, routed to a backend that bounds its loop, does 30.21**. Skipping the masked blocks is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each window; end to end on 2026-08-24, gemma-3 reaches 22.05 tok/s and `Muse-Glimmer-30B` runs flat at 37.4 from its window onward. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took 26 min here and `gemma-4-12B` at TP=1 took 24; both ran at one core out of eight. Patch the line or use `--enforce-eager` |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
@@ -442,41 +442,22 @@ fan spun **slower**. Cheapest fix in the entire build.
 **Slow host CPU?** It shows up at startup, not at decode: `torch.compile` is
 CPU-bound and vLLM pins it to one thread.
 
-**Weight loading is far slower than your disk, and the kernel you run decides how
-much.** The disk sustains **1.5 GB/s** (`dd`, direct I/O), yet vLLM loads a
-15.26 GiB BF16 checkpoint at 76 MiB/s — 19× to 48× below the hardware across
-three models. The source is the mapping: `safetensors` on its PyTorch path calls
-`torch.UntypedStorage.from_file(shared=False)`, PyTorch maps that **writable**,
-and on ROCm a host→device copy out of such a mapping is slow. How slow depends on
-the kernel — 2.0 MiB/s on `7.0.0-28-generic` against ~1 400 MiB/s on
-`6.8.0-136-generic`, same machine and same ROCm. Filed upstream as
-[ROCm#6523](https://github.com/ROCm/ROCm/issues/6523).
-
-**Three workarounds, and which one wins depends on the checkpoint.** The figures
-below are from `-28`, the affected kernel; for what any of this is worth on a
-current kernel see [`loader-flag-kernel-30.json`](benchmarks/loader-flag-kernel-30.json),
-measured 2026-08-23, which supersedes them.
-`--safetensors-load-strategy eager` avoids the mapping, but its peak RSS is about
-twice the shard, which puts a 21.67 GiB single-shard checkpoint out of reach:
-that run was skipped because 2 × 21.67 GiB does not fit in the 20.3 GiB this
-machine had available. Cloning each tensor into anonymous memory costs one
-tensor and is also faster: **86.7 s → 4.4 s** for the 15.26 GiB checkpoint,
-**319.5 s → 12.6 s** for the 21.67 GiB one. That is proposed upstream as an
-opt-in flag in
-[vllm-project/vllm#49991](https://github.com/vllm-project/vllm/pull/49991).
-The third is `safe_open(..., backend="pread")`, which has shipped in safetensors
-since 0.8.0 and never maps the file at all. **This repository missed it for a
-month**: it is absent from the Python docstring but named in the v0.8.0 release
-notes. It is slower than the clone on every checkpoint measured here except a
-128-expert MoE one, where it is the fastest of the four, and it holds 2.4 to
-3.9 GiB of resident set against 4.9 to 21.8 GiB for every other path.
-
-Two hypotheses are **disproven**: it is not the disk, and not the disabled
-auto-prefetch (`--safetensors-load-strategy=prefetch` changes nothing: 328 s vs
-326 s, despite the log line advertising it). Quantisation repack is not it
-either — the 12B loads in 10.5 s *including* repack once the mapping is
-sidestepped. What decides the cost is how many tensors clear a threshold
-somewhere between 4 and 8 MiB.
+**Weight loading is far slower than your disk, and the kernel decides how
+much.** The disk sustains 1.5 GB/s; vLLM loads checkpoints at 30–76 MiB/s. The
+mapping is the cause: safetensors' PyTorch path maps the checkpoint
+**writable**, and a ROCm host→device copy from such a mapping breaks
+copy-on-write on every resident page — catastrophic on kernel `7.0.0-28`
+(2.0 MiB/s), a 4–8× tax everywhere else. Upgrading the kernel removes the
+catastrophe. For the rest:
+[vllm#49991](https://github.com/vllm-project/vllm/pull/49991)'s clone flag is
+worth 1.5–2.0× while the checkpoint fits in RAM and 7.5× when it does not;
+`safe_open(..., backend="pread")` holds the least memory; and
+`--safetensors-load-strategy eager` peaks at about twice the shard, which is
+how a 21.67 GiB single-shard checkpoint stops fitting on a 23.4 GiB host. All
+of it is measured, four load paths across four checkpoints, in
+[`loader-flag-kernel-30.json`](benchmarks/loader-flag-kernel-30.json); the full
+chain — including what was disproven on the way — is
+[open-questions.md §8](docs/open-questions.md).
 
 **RAM ceiling.** vLLM `mmap`s the whole checkpoint, and the limit is `MemTotal`
 rather than free memory. A 21.67 GiB file would not map into the 21.43 GiB this
