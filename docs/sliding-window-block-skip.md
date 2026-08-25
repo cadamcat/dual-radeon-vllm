@@ -129,37 +129,43 @@ At the kernel, same profiler settings as the existing traces:
 10.3× rather than the 16× the block count suggests: the per-call overhead does
 not shrink with the block count.
 
-**Decode stops being attention-bound.** Attention falls from **73.57 %** of the
+**Decode stops being attention-bound.** Attention falls from **72.42 %** of the
 decode step to **21.06 %**, and the 4-bit weight GEMM becomes the largest single
-kernel at **38.97 %** — 260 calls per step, which is 52 layers × 5 matmuls. For a
-quantised dense model that is the expected shape; the state before the change was
-not. The Triton prefill kernel `_fwd_kernel`, 7.74 % before, leaves the decode
-profile entirely.
+kernel at **38.97 %** — 260 calls per step, which is 52 layers × 5 matmuls, and
+44.67 % of the profiler's own Self CUDA column. For a quantised dense model that
+is the expected shape; the state before the change was not.
 
 | kernel | before | % of step | after | % of step | calls/step |
 |---|---:|---:|---:|---:|---:|
 | `gemm_q4_kernel_rdna3` (w4 GEMM) | 703.1 ms | 13.04 % | **703.8 ms** | **38.97 %** | 260 |
-| `kernel_paged_attention_2d` | 3 966.0 ms | 73.57 % | 380.3 ms | 21.06 % | 39 |
-| `ncclDevKernel_Generic_4` | 195.3 ms | 3.62 % | 185.1 ms | 10.25 % | 106 |
-| `_rocm_C::wvSplitK` | 109.5 ms | 2.03 % | 107.8 ms | 5.97 % | 1 |
-| `_fwd_kernel` (Triton prefill) | 417.1 ms | 7.74 % | — | — | — |
-| custom HIP `ll4mi_QKV` | 25.4 ms | 0.47 % | 25.4 ms | 1.40 % | 13 |
+| `kernel_paged_attention_2d` | 3 904.2 ms | 72.42 % | 380.3 ms | 21.06 % | 39 |
+| `ncclDevKernel_Generic_4` | 192.3 ms | 3.57 % | 185.1 ms | 10.25 % | 106 |
+| `_rocm_C::wvSplitK` | 107.8 ms | 2.00 % | 107.8 ms | 5.97 % | 1 |
+| custom HIP `ll4mi_QKV` | 25.0 ms | 0.46 % | 25.4 ms | 1.40 % | 13 |
 
-The GEMM does not get slower or faster — 703.1 ms against 703.8 — so all of its
-rise is the step shrinking underneath it. That is what a kernel becoming the
-bottleneck looks like when nothing was done to it.
+The GEMM costs the same per call on both sides, 42.927 µs against 42.964, over
+the same 16 380 calls. All of its rise is the step shrinking underneath it.
 
-> **How this table is generated.** Every device row at or above 0.3 % of the
-> decode step, read straight out of the committed profiler tables in
-> [`benchmarks/traces/`](../benchmarks/traces/). Torch profiler emits two rows per
-> event name, a device-side one and a host-side one, and reports some work at two
-> levels — `_fwd_kernel` alongside `vllm::unified_attention_with_output`,
-> `_rocm_C::wvSplitK` alongside `wvSplitK_hf_sml_` — so the aliases are dropped
-> and the rows are not additive. Read each against the step.
+> **The two captures do not cover the same work.** The unpatched trace recorded a
+> prefill step as well as the 63 decode steps — it has a second event,
+> `execute_context_1(16)_generation_0(0)` at 794.798 ms — and the patched trace
+> recorded only the decode steps. So the profiler's printed totals are not
+> comparable as they stand: unpatched `kernel_paged_attention_2d` is 2 496 calls,
+> 39 layers × 64 steps, against the patched 2 457, 39 × 63.
 >
-> The percentages above all divide by the decode step, which is wall clock and
-> contains gaps. The profiler's own Self CUDA column uses a smaller denominator
-> and gives 24.14 % and 44.67 % for the same two rows; 44.7 % is that column.
+> Every figure above is decode-only. Where a row has the same call count on both
+> sides it is measured — that is the GEMM, whose prefill work went to a different
+> kernel, `gemm_q4_wmma_kernel_16x1`. Where it does not, the unpatched side is
+> reconstructed as per-call time × the decode-only call count, which assumes a
+> prefill step costs the same per call as a decode step. It does not exactly, so
+> 72.42 % is an estimate and 21.06 % is not. `_fwd_kernel` and
+> `unified_attention_with_output`, 52 calls each, are prefill kernels present only
+> in the capture that has a prefill; they are excluded rather than reported as
+> having left the profile.
+>
+> Rows are not additive: torch profiler reports some work at two levels, and the
+> step is wall clock and contains gaps. The tables are at
+> [`benchmarks/traces/`](../benchmarks/traces/).
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 

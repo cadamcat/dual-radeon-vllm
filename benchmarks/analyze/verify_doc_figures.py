@@ -161,26 +161,29 @@ def main():
     swin = os.path.join(HERE, "..", "sliding-window-block-skip.json")
     if os.path.exists(swin):
         kl = json.load(open(swin))["kernel_level"]
-        # the two rows the prose names, found by substring rather than by a
-        # hand-written key, which is how the GEMM row got missed the first time
         def row(side, frag):
             hits = [r for r in kl[side]["kernels"] if frag in r["name"]]
             assert len(hits) == 1, f"{side}/{frag}: {len(hits)} rows"
             return hits[0]
         for side in ("before", "after"):
-            step = kl[side]["decode_step"]["ms"]
+            step = kl[side]["decode_step_ms"]
             for r in kl[side]["kernels"]:
-                ck(f"swin {side} {r['name'][:24]} % of step",
-                   str(r["pct_of_decode_step"]), r["ms"] / step * 100)
-                ck(f"swin {side} {r['name'][:24]} calls/step",
-                   str(r["calls_per_step"]), r["calls"] / kl[side]["decode_step"]["calls"])
+                ck(f"swin {side} {r['name'][:22]} % of step",
+                   str(r["pct_of_decode_step"]), r["decode_only_ms"] / step * 100)
+        # the patched side must be measured throughout: that trace has no prefill
+        ck("swin patched rows all measured", "1",
+           1 if all(r["basis"] == "measured" for r in kl["after"]["kernels"]) else 0)
         ck("swin GEMM is the largest patched kernel", "1",
            1 if kl["after"]["kernels"][0]["name"].startswith("void vllm::gptq_rdna3") else 0)
-        ck("swin GEMM 260 calls per step", "260", row("after", "gemm_q4_kernel_rdna3")["calls_per_step"])
-        ck("swin GEMM 44.67 pct of self cuda", "44.67",
-           row("after", "gemm_q4_kernel_rdna3")["pct_of_self_cuda_total"])
-        per = lambda side: float(kl[side]["decode_step"]["per_call"].rstrip("ms"))
-        ck("swin decode step 2.98x per call", "2.98", per("before") / per("after"))
+        ck("swin GEMM 260 calls per step", "260",
+           row("after", "gemm_q4_kernel_rdna3")["calls_per_decode_step"])
+        # the document quotes the profiler's own Self CUDA column, 44.67. Dividing
+        # by the printed 1.575 s gives 44.68 because that denominator is rounded,
+        # so this asserts the two agree to a tenth rather than to the last place.
+        ck("swin GEMM pct of self cuda", "44.7",
+           row("after", "gemm_q4_kernel_rdna3")["decode_only_ms"] / 1575.0 * 100)
+        ck("swin attention 10.3x per call", "10.3", 1.589e3 / 154.796)
+        ck("swin decode step 2.98x per call", "2.98", 85.567 / 28.668)
 
     # --- figures the 2026-08-25 review found wrong, so they cannot drift back ---
     swin_f = os.path.join(HERE, "..", "sliding-window-block-skip.json")

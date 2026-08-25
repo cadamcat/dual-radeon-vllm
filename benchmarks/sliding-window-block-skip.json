@@ -22,278 +22,277 @@
   },
   "kernel_level": {
     "method": "torch profiler, delay 2 active 8, 32768 context, rank 0; same settings as prof-mtp-31b.py",
-    "source": "every device row at or above 0.3% of the decode step, read out of the committed tables in benchmarks/traces/ with no hand-picking. Two earlier versions of this block were hand-picked and both were wrong: the first read after.decode_step from the host-side duplicate row, the second omitted the largest kernel in the patched profile entirely.",
-    "rows_are_not_additive": "torch profiler reports some work at two levels — vllm::unified_attention_with_output alongside _fwd_kernel, wvSplitK_hf_sml_ alongside _rocm_C::wvSplitK — so the aliases are dropped here and the remaining rows still sum to more than the trace's Self CUDA time total. Read each row against the step, not against each other.",
-    "denominators": "pct_of_decode_step divides by the execute_context_0 span, which is wall clock and contains gaps. pct_of_self_cuda_total is the column the profiler prints. They differ by about a fifth and mixing them is how '22%' and '44.7%' ended up in the same sentence with different denominators.",
+    "capture_windows_differ": "The unpatched trace captured one prefill step as well as the 63 decode steps — it has a second event, execute_context_1(16)_generation_0(0) at 794.798 ms — and the patched trace captured only the decode steps. Aggregate totals are therefore not comparable side by side as the profiler prints them: unpatched kernel_paged_attention_2d is 2496 calls, 39 layers x 64 steps, against the patched 2457, 39 x 63.",
+    "how_decode_only_is_obtained": "Rows whose call count is identical on both sides are decode-only as measured and marked measured. The rest are reconstructed as per-call time x the decode-only call count, which assumes the prefill step's per-call cost is the same as a decode step's. It is not exactly, so those percentages are estimates and are marked reconstructed. _fwd_kernel and unified_attention_with_output appear only in the unpatched trace because only that trace has a prefill step; they are prefill kernels and are excluded rather than reported as having disappeared.",
     "before": {
-      "decode_step": {
-        "ms": 5391.0,
-        "per_call": "85.567ms",
-        "calls": 63
-      },
-      "self_cuda_time_total_ms": 5612.0,
+      "decode_step_ms": 5391.0,
+      "decode_steps": 63,
       "kernels": [
         {
           "name": "kernel_paged_attention_2d",
-          "ms": 3966.0,
-          "pct_of_decode_step": 73.57,
-          "pct_of_self_cuda_total": 70.67,
           "per_call": "1.589ms",
-          "calls": 2496,
-          "calls_per_step": 40
+          "calls_in_trace": 2496,
+          "decode_only_calls": 2457,
+          "calls_per_decode_step": 39,
+          "decode_only_ms": 3904.173,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 72.42
         },
         {
           "name": "void vllm::gptq_rdna3::gemm_q4_kernel_rdna3<__hip_bf...",
-          "ms": 703.146,
-          "pct_of_decode_step": 13.04,
-          "pct_of_self_cuda_total": 12.53,
           "per_call": "42.927us",
-          "calls": 16380,
-          "calls_per_step": 260
+          "calls_in_trace": 16380,
+          "decode_only_calls": 16380,
+          "calls_per_decode_step": 260,
+          "decode_only_ms": 703.146,
+          "basis": "measured",
+          "pct_of_decode_step": 13.04
         },
         {
-          "name": "_fwd_kernel",
-          "ms": 417.064,
-          "pct_of_decode_step": 7.74,
-          "pct_of_self_cuda_total": 7.43,
-          "per_call": "8.020ms",
-          "calls": 52,
-          "calls_per_step": 1
+          "name": "hipEventSynchronize",
+          "per_call": "1.855ms",
+          "calls_in_trace": 129,
+          "decode_only_calls": 127,
+          "calls_per_decode_step": 2,
+          "decode_only_ms": 235.585,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 4.37
         },
         {
           "name": "ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<409...",
-          "ms": 195.314,
-          "pct_of_decode_step": 3.62,
-          "pct_of_self_cuda_total": 3.48,
           "per_call": "28.790us",
-          "calls": 6784,
-          "calls_per_step": 108
+          "calls_in_trace": 6784,
+          "decode_only_calls": 6679,
+          "calls_per_decode_step": 106,
+          "decode_only_ms": 192.288,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 3.57
         },
         {
           "name": "_rocm_C::wvSplitK",
-          "ms": 109.495,
-          "pct_of_decode_step": 2.03,
-          "pct_of_self_cuda_total": 1.95,
           "per_call": "1.711ms",
-          "calls": 64,
-          "calls_per_step": 1
-        },
-        {
-          "name": "hipPointerGetAttribute",
-          "ms": 60.278,
-          "pct_of_decode_step": 1.12,
-          "pct_of_self_cuda_total": 1.07,
-          "per_call": "27.374us",
-          "calls": 2202,
-          "calls_per_step": 35
+          "calls_in_trace": 64,
+          "decode_only_calls": 63,
+          "calls_per_decode_step": 1,
+          "decode_only_ms": 107.793,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 2.0
         },
         {
           "name": "triton_poi_fused_5",
-          "ms": 35.451,
-          "pct_of_decode_step": 0.66,
-          "pct_of_self_cuda_total": 0.63,
           "per_call": "14.577us",
-          "calls": 2432,
-          "calls_per_step": 39
+          "calls_in_trace": 2432,
+          "decode_only_calls": 2394,
+          "calls_per_decode_step": 38,
+          "decode_only_ms": 34.897,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.65
+        },
+        {
+          "name": "hipPointerGetAttribute",
+          "per_call": "27.374us",
+          "calls_in_trace": 2202,
+          "decode_only_calls": 1260,
+          "calls_per_decode_step": 20,
+          "decode_only_ms": 34.491,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.64
         },
         {
           "name": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_3",
-          "ms": 31.296,
-          "pct_of_decode_step": 0.58,
-          "pct_of_self_cuda_total": 0.56,
           "per_call": "9.404us",
-          "calls": 3328,
-          "calls_per_step": 53
+          "calls_in_trace": 3328,
+          "decode_only_calls": 3276,
+          "calls_per_decode_step": 52,
+          "decode_only_ms": 30.808,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.57
         },
         {
           "name": "void paged_attention_ll4mi_QKV_mfma16_kernel<__hip_b...",
-          "ms": 25.361,
-          "pct_of_decode_step": 0.47,
-          "pct_of_self_cuda_total": 0.45,
           "per_call": "30.482us",
-          "calls": 832,
-          "calls_per_step": 13
+          "calls_in_trace": 832,
+          "decode_only_calls": 819,
+          "calls_per_decode_step": 13,
+          "decode_only_ms": 24.965,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.46
         },
         {
           "name": "triton_red_fused__to_copy_add_gptq_gemm_rdna3_mean_m...",
-          "ms": 24.897,
-          "pct_of_decode_step": 0.46,
-          "pct_of_self_cuda_total": 0.44,
           "per_call": "7.481us",
-          "calls": 3328,
-          "calls_per_step": 53
-        },
-        {
-          "name": "void vllm::gptq_rdna3_wmma::gemm_q4_wmma_kernel_16x1...",
-          "ms": 24.234,
-          "pct_of_decode_step": 0.45,
-          "pct_of_self_cuda_total": 0.43,
-          "per_call": "93.207us",
-          "calls": 260,
-          "calls_per_step": 4
+          "calls_in_trace": 3328,
+          "decode_only_calls": 3276,
+          "calls_per_decode_step": 52,
+          "decode_only_ms": 24.508,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.45
         },
         {
           "name": "triton_red_fused_4",
-          "ms": 18.325,
-          "pct_of_decode_step": 0.34,
-          "pct_of_self_cuda_total": 0.33,
           "per_call": "5.614us",
-          "calls": 3264,
-          "calls_per_step": 52
+          "calls_in_trace": 3264,
+          "decode_only_calls": 3213,
+          "calls_per_decode_step": 51,
+          "decode_only_ms": 18.038,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.33
         },
         {
           "name": "void at::native::vectorized_elementwise_kernel<8, at...",
-          "ms": 17.629,
-          "pct_of_decode_step": 0.33,
-          "pct_of_self_cuda_total": 0.31,
           "per_call": "1.059us",
-          "calls": 16640,
-          "calls_per_step": 264
-        },
-        {
-          "name": "hipModuleLaunchKernel",
-          "ms": 17.502,
-          "pct_of_decode_step": 0.32,
-          "pct_of_self_cuda_total": 0.31,
-          "per_call": "36.925us",
-          "calls": 474,
-          "calls_per_step": 8
+          "calls_in_trace": 16640,
+          "decode_only_calls": 16380,
+          "calls_per_decode_step": 260,
+          "decode_only_ms": 17.346,
+          "basis": "reconstructed",
+          "pct_of_decode_step": 0.32
         }
       ]
     },
     "after": {
-      "decode_step": {
-        "ms": 1806.0,
-        "per_call": "28.668ms",
-        "calls": 63
-      },
-      "self_cuda_time_total_ms": 1575.0,
+      "decode_step_ms": 1806.0,
+      "decode_steps": 63,
       "kernels": [
         {
           "name": "void vllm::gptq_rdna3::gemm_q4_kernel_rdna3<__hip_bf...",
-          "ms": 703.751,
-          "pct_of_decode_step": 38.97,
-          "pct_of_self_cuda_total": 44.67,
           "per_call": "42.964us",
-          "calls": 16380,
-          "calls_per_step": 260
+          "calls_in_trace": 16380,
+          "decode_only_calls": 16380,
+          "calls_per_decode_step": 260,
+          "decode_only_ms": 703.751,
+          "basis": "measured",
+          "pct_of_decode_step": 38.97
         },
         {
           "name": "kernel_paged_attention_2d",
-          "ms": 380.334,
-          "pct_of_decode_step": 21.06,
-          "pct_of_self_cuda_total": 24.14,
           "per_call": "154.796us",
-          "calls": 2457,
-          "calls_per_step": 39
+          "calls_in_trace": 2457,
+          "decode_only_calls": 2457,
+          "calls_per_decode_step": 39,
+          "decode_only_ms": 380.334,
+          "basis": "measured",
+          "pct_of_decode_step": 21.06
         },
         {
           "name": "ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<409...",
-          "ms": 185.084,
-          "pct_of_decode_step": 10.25,
-          "pct_of_self_cuda_total": 11.75,
           "per_call": "27.711us",
-          "calls": 6679,
-          "calls_per_step": 106
+          "calls_in_trace": 6679,
+          "decode_only_calls": 6679,
+          "calls_per_decode_step": 106,
+          "decode_only_ms": 185.084,
+          "basis": "measured",
+          "pct_of_decode_step": 10.25
         },
         {
           "name": "_rocm_C::wvSplitK",
-          "ms": 107.769,
-          "pct_of_decode_step": 5.97,
-          "pct_of_self_cuda_total": 6.84,
           "per_call": "1.711ms",
-          "calls": 63,
-          "calls_per_step": 1
+          "calls_in_trace": 63,
+          "decode_only_calls": 63,
+          "calls_per_decode_step": 1,
+          "decode_only_ms": 107.769,
+          "basis": "measured",
+          "pct_of_decode_step": 5.97
         },
         {
           "name": "triton_poi_fused_5",
-          "ms": 34.841,
-          "pct_of_decode_step": 1.93,
-          "pct_of_self_cuda_total": 2.21,
           "per_call": "14.554us",
-          "calls": 2394,
-          "calls_per_step": 38
+          "calls_in_trace": 2394,
+          "decode_only_calls": 2394,
+          "calls_per_decode_step": 38,
+          "decode_only_ms": 34.841,
+          "basis": "measured",
+          "pct_of_decode_step": 1.93
         },
         {
           "name": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_3",
-          "ms": 31.042,
-          "pct_of_decode_step": 1.72,
-          "pct_of_self_cuda_total": 1.97,
           "per_call": "9.475us",
-          "calls": 3276,
-          "calls_per_step": 52
+          "calls_in_trace": 3276,
+          "decode_only_calls": 3276,
+          "calls_per_decode_step": 52,
+          "decode_only_ms": 31.042,
+          "basis": "measured",
+          "pct_of_decode_step": 1.72
         },
         {
           "name": "void paged_attention_ll4mi_QKV_mfma16_kernel<__hip_b...",
-          "ms": 25.351,
-          "pct_of_decode_step": 1.4,
-          "pct_of_self_cuda_total": 1.61,
           "per_call": "30.954us",
-          "calls": 819,
-          "calls_per_step": 13
+          "calls_in_trace": 819,
+          "decode_only_calls": 819,
+          "calls_per_decode_step": 13,
+          "decode_only_ms": 25.351,
+          "basis": "measured",
+          "pct_of_decode_step": 1.4
         },
         {
           "name": "triton_red_fused__to_copy_add_gptq_gemm_rdna3_mean_m...",
-          "ms": 24.448,
-          "pct_of_decode_step": 1.35,
-          "pct_of_self_cuda_total": 1.55,
           "per_call": "7.463us",
-          "calls": 3276,
-          "calls_per_step": 52
+          "calls_in_trace": 3276,
+          "decode_only_calls": 3276,
+          "calls_per_decode_step": 52,
+          "decode_only_ms": 24.448,
+          "basis": "measured",
+          "pct_of_decode_step": 1.35
         },
         {
           "name": "triton_red_fused_4",
-          "ms": 22.212,
-          "pct_of_decode_step": 1.23,
-          "pct_of_self_cuda_total": 1.41,
           "per_call": "6.913us",
-          "calls": 3213,
-          "calls_per_step": 51
+          "calls_in_trace": 3213,
+          "decode_only_calls": 3213,
+          "calls_per_decode_step": 51,
+          "decode_only_ms": 22.212,
+          "basis": "measured",
+          "pct_of_decode_step": 1.23
         },
         {
           "name": "void at::native::vectorized_elementwise_kernel<8, at...",
-          "ms": 16.943,
-          "pct_of_decode_step": 0.94,
-          "pct_of_self_cuda_total": 1.08,
           "per_call": "1.034us",
-          "calls": 16380,
-          "calls_per_step": 260
+          "calls_in_trace": 16380,
+          "decode_only_calls": 16380,
+          "calls_per_decode_step": 260,
+          "decode_only_ms": 16.943,
+          "basis": "measured",
+          "pct_of_decode_step": 0.94
         },
         {
           "name": "void vllm::reshape_and_cache_kernel<__hip_bfloat16, ...",
-          "ms": 10.845,
-          "pct_of_decode_step": 0.6,
-          "pct_of_self_cuda_total": 0.69,
           "per_call": "3.310us",
-          "calls": 3276,
-          "calls_per_step": 52
+          "calls_in_trace": 3276,
+          "decode_only_calls": 3276,
+          "calls_per_decode_step": 52,
+          "decode_only_ms": 10.845,
+          "basis": "measured",
+          "pct_of_decode_step": 0.6
         },
         {
           "name": "void paged_attention_ll4mi_reduce_kernel<__hip_bfloa...",
-          "ms": 6.993,
-          "pct_of_decode_step": 0.39,
-          "pct_of_self_cuda_total": 0.44,
           "per_call": "8.539us",
-          "calls": 819,
-          "calls_per_step": 13
+          "calls_in_trace": 819,
+          "decode_only_calls": 819,
+          "calls_per_decode_step": 13,
+          "decode_only_ms": 6.993,
+          "basis": "measured",
+          "pct_of_decode_step": 0.39
         },
         {
           "name": "hipPointerGetAttribute",
-          "ms": 5.919,
-          "pct_of_decode_step": 0.33,
-          "pct_of_self_cuda_total": 0.38,
           "per_call": "4.697us",
-          "calls": 1260,
-          "calls_per_step": 20
+          "calls_in_trace": 1260,
+          "decode_only_calls": 1260,
+          "calls_per_decode_step": 20,
+          "decode_only_ms": 5.919,
+          "basis": "measured",
+          "pct_of_decode_step": 0.33
         },
         {
           "name": "triton_poi_fused__to_copy__unsafe_view_add_clone_mea...",
-          "ms": 5.759,
-          "pct_of_decode_step": 0.32,
-          "pct_of_self_cuda_total": 0.37,
           "per_call": "7.032us",
-          "calls": 819,
-          "calls_per_step": 13
+          "calls_in_trace": 819,
+          "decode_only_calls": 819,
+          "calls_per_decode_step": 13,
+          "decode_only_ms": 5.759,
+          "basis": "measured",
+          "pct_of_decode_step": 0.32
         }
       ]
     },
@@ -301,6 +300,10 @@
       "traces/muse-glimmer-32768-unpatched-rank0.txt",
       "traces/muse-glimmer-32768-patched-rank0.txt",
       "traces/prof-muse.py"
+    ],
+    "prefill_only_excluded": [
+      "_fwd_kernel (52 calls, 417.064 ms)",
+      "vllm::unified_attention_with_output (52 calls, 417.133 ms)"
     ]
   },
   "controls": {
