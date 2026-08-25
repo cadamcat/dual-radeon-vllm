@@ -113,24 +113,39 @@ The prevailing advice actively points the wrong way: guides for GPU passthrough
 on Proxmox routinely say to tick "All Functions" along with Rom-Bar and PCIE.
 Proxmox's own documentation describes the `00:02` shorthand as a convenience and
 does not mention what it costs. Searching its `pve-devel` list for AtomicOps
-discussion returns nothing.
+returned nothing at all until we posted; the five hits it has now are our own
+thread.
 
-We sent a two-patch series to `pve-devel` on 2026-08-24 against `pve-docs`: one
-patch documenting the caveat next to the paragraph that introduces the
-shorthand, the other appending the function to the GPU passthrough example.
-Message-ID `20260824170828.42821-1-Xy2462381442@gmail.com`.
+We sent a [two-patch series][v1] to `pve-devel` on 2026-08-24 against
+`pve-docs`: one patch documenting the caveat next to the paragraph that
+introduces the shorthand, the other appending the function to the GPU
+passthrough example.
 
 Dominik Csapak reviewed it the next day and asked the right question: if bare
 metal is fine, is this not a QEMU bug to report rather than a behaviour to
 document? He also objected that the note read as though everyone needed it, and
 that most users want the card passed as it is on the host, functions included.
-He is right on the second and third points. **v2 scopes the note to multi-GPU
-workloads, names the QEMU version, and drops the example patch**, since passing
-the card as-is is the better default and the note covers the case that needs
-otherwise.
+He was right on the second and third points, and the first is answered in the
+subsection below — which is also why the note belongs in Proxmox's
+documentation rather than only in a QEMU bug tracker. On reading that answer he
+agreed: *"If QEMU does not want to, or cannot handle this themselves it's fine
+do document on our side of course."*
 
-The first question is answered below, and the answer is why the note belongs in
-Proxmox's documentation rather than only in a QEMU bug tracker.
+[v2] went out on 2026-08-25. It scopes the note to multi-GPU workloads,
+names the QEMU version, links the upstream discussion from the note itself
+because Proxmox asked for the rationale to be to hand if it is ever revisited,
+and drops the example patch, since passing the card as-is is the better default
+and the note covers the case that needs otherwise.
+
+**The review supplied something this machine could not.** Proxmox's experience
+is that passing part of a card works most of the time and not always: *"I've
+seen cases where the guest driver refused to work properly when e.g. the audio
+device is missing"*, on Windows guests. Nothing here hit that — this guest is
+Ubuntu and both cards have been passed as `.0` since 2026-08-23 without
+complaint — so the repository had been recommending single-function passthrough
+without knowing what it can cost. v2's note says it is a trade-off rather than
+a better default, which it would not have said on this machine's evidence
+alone.
 
 ### Why this is not simply a QEMU bug
 
@@ -179,6 +194,8 @@ path landed, through v11.1.0, so it is not behaviour that drifts between
 releases either.
 
 [mf]: https://lore.kernel.org/qemu-devel/8b3e30e6-3c3e-49ab-b9db-8296aaf819d1@app.fastmail.com/
+[v1]: https://lore.proxmox.com/all/20260824170828.42821-1-Xy2462381442@gmail.com/
+[v2]: https://lore.proxmox.com/all/20260825141257.80190-1-Xy2462381442@gmail.com/
 
 **This repository walked the long way round too.** `open-questions.md` §5
 already concluded that a QEMU-side fix was "a real avenue for *us*", then said
