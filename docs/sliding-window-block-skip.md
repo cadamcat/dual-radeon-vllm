@@ -129,40 +129,48 @@ At the kernel, same profiler settings as the existing traces:
 10.3× rather than the 16× the block count suggests: the per-call overhead does
 not shrink with the block count.
 
-**Attention stops dominating, without stopping being the largest term.** It falls
-from **73.57 %** of the decode step to **21.06 %**. It is still the biggest single
-kernel afterwards: 380.334 ms against the 4-bit weight GEMM's 107.769 ms, a factor
-of 3.5. The Triton prefill kernel `_fwd_kernel`, 7.74 % before, leaves the decode
+**Decode stops being attention-bound.** Attention falls from **73.57 %** of the
+decode step to **21.06 %**, and the 4-bit weight GEMM becomes the largest single
+kernel at **38.97 %** — 260 calls per step, which is 52 layers × 5 matmuls. For a
+quantised dense model that is the expected shape; the state before the change was
+not. The Triton prefill kernel `_fwd_kernel`, 7.74 % before, leaves the decode
 profile entirely.
 
-The GEMM did not get slower or faster — `_rocm_C::wvSplitK` costs 1.711 ms per
-call on both sides. Its **share** rises from 2.03 % to 5.97 % because the step it
-is a share of shrank by 2.98×. That is the whole of what changed about it.
+| kernel | before | % of step | after | % of step | calls/step |
+|---|---:|---:|---:|---:|---:|
+| `gemm_q4_kernel_rdna3` (w4 GEMM) | 703.1 ms | 13.04 % | **703.8 ms** | **38.97 %** | 260 |
+| `kernel_paged_attention_2d` | 3 966.0 ms | 73.57 % | 380.3 ms | 21.06 % | 39 |
+| `ncclDevKernel_Generic_4` | 195.3 ms | 3.62 % | 185.1 ms | 10.25 % | 106 |
+| `_rocm_C::wvSplitK` | 109.5 ms | 2.03 % | 107.8 ms | 5.97 % | 1 |
+| `_fwd_kernel` (Triton prefill) | 417.1 ms | 7.74 % | — | — | — |
+| custom HIP `ll4mi_QKV` | 25.4 ms | 0.47 % | 25.4 ms | 1.40 % | 13 |
 
-| kernel | before | % of step | after | % of step |
-|---|---:|---:|---:|---:|
-| `kernel_paged_attention_2d` | 3 966.0 ms | 73.57 % | 380.3 ms | 21.06 % |
-| `_fwd_kernel` (Triton prefill) | 417.1 ms | 7.74 % | — | — |
-| `_rocm_C::wvSplitK` (w4 GEMM) | 109.5 ms | 2.03 % | 107.8 ms | 5.97 % |
-| custom HIP `ll4mi_QKV` | 25.4 ms | 0.47 % | 25.4 ms | 1.40 % |
-| `nccl:_all_gather_base` | 3.1 ms | 0.06 % | 3.1 ms | 0.17 % |
+The GEMM does not get slower or faster — 703.1 ms against 703.8 — so all of its
+rise is the step shrinking underneath it. That is what a kernel becoming the
+bottleneck looks like when nothing was done to it.
 
-> **This block was rebuilt on 2026-08-25 and three of its numbers changed.** An
-> external review noticed that the `after` decode step in the data file, 130.457 ms
-> total and 2.071 ms per call, was smaller than its own attention kernel. It was:
-> torch profiler emits two rows for the event name, a device-side one and a
-> host-side one, and `before` had been read from the first while `after` was read
-> from the second. The device-side `after` row is 1.806 s and 28.668 ms per call,
-> which is what this document already quoted and what the end-to-end curve
-> corroborates at 26.632 ms plus profiler overhead. `before.custom_hip_reduce` was
-> also wrong, 13 calls where the trace says 819.
+> **This block was rebuilt twice on 2026-08-25 and both rebuilds were wrong
+> before this one.** The first read `after.decode_step` from the host-side
+> duplicate row that torch profiler emits for the same event name — 130.457 ms
+> total, 2.071 ms per call, smaller than its own attention kernel. The
+> device-side row is 1.806 s and 28.668 ms per call, which is what the end-to-end
+> curve corroborates at 26.632 ms plus profiler overhead.
 >
-> An earlier version of this paragraph said the 4-bit GEMM became the largest
-> single term at 44.7 %, with 260 calls per step. **No such row exists in the
-> trace** — `wvSplitK` is called 63 times, once per step, and reaches 5.97 %.
-> That claim is withdrawn. The trace tables are now committed at
-> [`benchmarks/traces/`](../benchmarks/traces/) so every figure above can be read
-> straight out of them.
+> The second rebuild then **withdrew the 44.7 % and the 260 calls as unsupported,
+> and they were supported all along.** `gemm_q4_kernel_rdna3` is in the trace at
+> 703.751 ms and 16 380 calls, 260 per step, and 44.67 % of the profiler's Self
+> CUDA time total. What went wrong was hand-picking which kernels to read out:
+> `_rocm_C::wvSplitK` was assumed to be the 4-bit GEMM, it is a different and
+> much smaller one, and the row that mattered was never looked for. The block is
+> now generated from every device row at or above 0.3 % of the step.
+>
+> One thing was wrong in the original and stays corrected: 74 % and 22 % were
+> quoted against different denominators. Both percentages above divide by the
+> decode step. Against the profiler's own Self CUDA column the same two rows are
+> 24.14 % and 44.67 %, which is where 44.7 % came from.
+>
+> `before.custom_hip_reduce` was also wrong, 13 calls where the trace says 819.
+> The trace tables are committed at [`benchmarks/traces/`](../benchmarks/traces/).
 
 ## 4. What `Muse-Glimmer` shows about the custom HIP kernel
 

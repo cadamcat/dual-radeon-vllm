@@ -22,88 +22,281 @@
   },
   "kernel_level": {
     "method": "torch profiler, delay 2 active 8, 32768 context, rank 0; same settings as prof-mtp-31b.py",
-    "source": "read out of the committed profiler tables in benchmarks/traces/, not transcribed by hand. Both figures for a row come from the same table and the same column, which the previous version of this block did not: its after.decode_step was taken from the host-side duplicate row that torch profiler emits for the same event name, where CUDA total is 130.457 ms and the average 2.071 ms, while before.decode_step came from the device-side row. Those two rows are not the same quantity and 2.071 ms would have had the profiled run beat the unprofiled machine by 12.9x.",
+    "source": "every device row at or above 0.3% of the decode step, read out of the committed tables in benchmarks/traces/ with no hand-picking. Two earlier versions of this block were hand-picked and both were wrong: the first read after.decode_step from the host-side duplicate row, the second omitted the largest kernel in the patched profile entirely.",
+    "rows_are_not_additive": "torch profiler reports some work at two levels — vllm::unified_attention_with_output alongside _fwd_kernel, wvSplitK_hf_sml_ alongside _rocm_C::wvSplitK — so the aliases are dropped here and the remaining rows still sum to more than the trace's Self CUDA time total. Read each row against the step, not against each other.",
+    "denominators": "pct_of_decode_step divides by the execute_context_0 span, which is wall clock and contains gaps. pct_of_self_cuda_total is the column the profiler prints. They differ by about a fifth and mixing them is how '22%' and '44.7%' ended up in the same sentence with different denominators.",
     "before": {
       "decode_step": {
-        "total_ms": 5391.0,
+        "ms": 5391.0,
         "per_call": "85.567ms",
         "calls": 63
       },
-      "triton_paged_decode": {
-        "total_ms": 3966.0,
-        "per_call": "1.589ms",
-        "calls": 2496,
-        "pct_of_decode_step": 73.57
-      },
-      "triton_prefill_fwd_kernel": {
-        "total_ms": 417.064,
-        "per_call": "8.020ms",
-        "calls": 52,
-        "pct_of_decode_step": 7.74
-      },
-      "rocm_wvsplitk_w4_gemm": {
-        "total_ms": 109.495,
-        "per_call": "1.711ms",
-        "calls": 64,
-        "pct_of_decode_step": 2.03
-      },
-      "custom_hip_qkv": {
-        "total_ms": 25.361,
-        "per_call": "30.482us",
-        "calls": 832,
-        "pct_of_decode_step": 0.47
-      },
-      "custom_hip_reduce": {
-        "total_ms": 6.853,
-        "per_call": "8.367us",
-        "calls": 819,
-        "pct_of_decode_step": 0.13
-      },
-      "nccl_all_gather": {
-        "total_ms": 3.129,
-        "per_call": "48.893us",
-        "calls": 64,
-        "pct_of_decode_step": 0.06
-      }
+      "self_cuda_time_total_ms": 5612.0,
+      "kernels": [
+        {
+          "name": "kernel_paged_attention_2d",
+          "ms": 3966.0,
+          "pct_of_decode_step": 73.57,
+          "pct_of_self_cuda_total": 70.67,
+          "per_call": "1.589ms",
+          "calls": 2496,
+          "calls_per_step": 40
+        },
+        {
+          "name": "void vllm::gptq_rdna3::gemm_q4_kernel_rdna3<__hip_bf...",
+          "ms": 703.146,
+          "pct_of_decode_step": 13.04,
+          "pct_of_self_cuda_total": 12.53,
+          "per_call": "42.927us",
+          "calls": 16380,
+          "calls_per_step": 260
+        },
+        {
+          "name": "_fwd_kernel",
+          "ms": 417.064,
+          "pct_of_decode_step": 7.74,
+          "pct_of_self_cuda_total": 7.43,
+          "per_call": "8.020ms",
+          "calls": 52,
+          "calls_per_step": 1
+        },
+        {
+          "name": "ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<409...",
+          "ms": 195.314,
+          "pct_of_decode_step": 3.62,
+          "pct_of_self_cuda_total": 3.48,
+          "per_call": "28.790us",
+          "calls": 6784,
+          "calls_per_step": 108
+        },
+        {
+          "name": "_rocm_C::wvSplitK",
+          "ms": 109.495,
+          "pct_of_decode_step": 2.03,
+          "pct_of_self_cuda_total": 1.95,
+          "per_call": "1.711ms",
+          "calls": 64,
+          "calls_per_step": 1
+        },
+        {
+          "name": "hipPointerGetAttribute",
+          "ms": 60.278,
+          "pct_of_decode_step": 1.12,
+          "pct_of_self_cuda_total": 1.07,
+          "per_call": "27.374us",
+          "calls": 2202,
+          "calls_per_step": 35
+        },
+        {
+          "name": "triton_poi_fused_5",
+          "ms": 35.451,
+          "pct_of_decode_step": 0.66,
+          "pct_of_self_cuda_total": 0.63,
+          "per_call": "14.577us",
+          "calls": 2432,
+          "calls_per_step": 39
+        },
+        {
+          "name": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_3",
+          "ms": 31.296,
+          "pct_of_decode_step": 0.58,
+          "pct_of_self_cuda_total": 0.56,
+          "per_call": "9.404us",
+          "calls": 3328,
+          "calls_per_step": 53
+        },
+        {
+          "name": "void paged_attention_ll4mi_QKV_mfma16_kernel<__hip_b...",
+          "ms": 25.361,
+          "pct_of_decode_step": 0.47,
+          "pct_of_self_cuda_total": 0.45,
+          "per_call": "30.482us",
+          "calls": 832,
+          "calls_per_step": 13
+        },
+        {
+          "name": "triton_red_fused__to_copy_add_gptq_gemm_rdna3_mean_m...",
+          "ms": 24.897,
+          "pct_of_decode_step": 0.46,
+          "pct_of_self_cuda_total": 0.44,
+          "per_call": "7.481us",
+          "calls": 3328,
+          "calls_per_step": 53
+        },
+        {
+          "name": "void vllm::gptq_rdna3_wmma::gemm_q4_wmma_kernel_16x1...",
+          "ms": 24.234,
+          "pct_of_decode_step": 0.45,
+          "pct_of_self_cuda_total": 0.43,
+          "per_call": "93.207us",
+          "calls": 260,
+          "calls_per_step": 4
+        },
+        {
+          "name": "triton_red_fused_4",
+          "ms": 18.325,
+          "pct_of_decode_step": 0.34,
+          "pct_of_self_cuda_total": 0.33,
+          "per_call": "5.614us",
+          "calls": 3264,
+          "calls_per_step": 52
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<8, at...",
+          "ms": 17.629,
+          "pct_of_decode_step": 0.33,
+          "pct_of_self_cuda_total": 0.31,
+          "per_call": "1.059us",
+          "calls": 16640,
+          "calls_per_step": 264
+        },
+        {
+          "name": "hipModuleLaunchKernel",
+          "ms": 17.502,
+          "pct_of_decode_step": 0.32,
+          "pct_of_self_cuda_total": 0.31,
+          "per_call": "36.925us",
+          "calls": 474,
+          "calls_per_step": 8
+        }
+      ]
     },
     "after": {
       "decode_step": {
-        "total_ms": 1806.0,
+        "ms": 1806.0,
         "per_call": "28.668ms",
         "calls": 63
       },
-      "triton_paged_decode": {
-        "total_ms": 380.334,
-        "per_call": "154.796us",
-        "calls": 2457,
-        "pct_of_decode_step": 21.06
-      },
-      "rocm_wvsplitk_w4_gemm": {
-        "total_ms": 107.769,
-        "per_call": "1.711ms",
-        "calls": 63,
-        "pct_of_decode_step": 5.97
-      },
-      "custom_hip_qkv": {
-        "total_ms": 25.351,
-        "per_call": "30.954us",
-        "calls": 819,
-        "pct_of_decode_step": 1.4
-      },
-      "custom_hip_reduce": {
-        "total_ms": 6.993,
-        "per_call": "8.539us",
-        "calls": 819,
-        "pct_of_decode_step": 0.39
-      },
-      "nccl_all_gather": {
-        "total_ms": 3.099,
-        "per_call": "49.197us",
-        "calls": 63,
-        "pct_of_decode_step": 0.17
-      }
+      "self_cuda_time_total_ms": 1575.0,
+      "kernels": [
+        {
+          "name": "void vllm::gptq_rdna3::gemm_q4_kernel_rdna3<__hip_bf...",
+          "ms": 703.751,
+          "pct_of_decode_step": 38.97,
+          "pct_of_self_cuda_total": 44.67,
+          "per_call": "42.964us",
+          "calls": 16380,
+          "calls_per_step": 260
+        },
+        {
+          "name": "kernel_paged_attention_2d",
+          "ms": 380.334,
+          "pct_of_decode_step": 21.06,
+          "pct_of_self_cuda_total": 24.14,
+          "per_call": "154.796us",
+          "calls": 2457,
+          "calls_per_step": 39
+        },
+        {
+          "name": "ncclDevKernel_Generic_4(ncclDevKernelArgsStorage<409...",
+          "ms": 185.084,
+          "pct_of_decode_step": 10.25,
+          "pct_of_self_cuda_total": 11.75,
+          "per_call": "27.711us",
+          "calls": 6679,
+          "calls_per_step": 106
+        },
+        {
+          "name": "_rocm_C::wvSplitK",
+          "ms": 107.769,
+          "pct_of_decode_step": 5.97,
+          "pct_of_self_cuda_total": 6.84,
+          "per_call": "1.711ms",
+          "calls": 63,
+          "calls_per_step": 1
+        },
+        {
+          "name": "triton_poi_fused_5",
+          "ms": 34.841,
+          "pct_of_decode_step": 1.93,
+          "pct_of_self_cuda_total": 2.21,
+          "per_call": "14.554us",
+          "calls": 2394,
+          "calls_per_step": 38
+        },
+        {
+          "name": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_3",
+          "ms": 31.042,
+          "pct_of_decode_step": 1.72,
+          "pct_of_self_cuda_total": 1.97,
+          "per_call": "9.475us",
+          "calls": 3276,
+          "calls_per_step": 52
+        },
+        {
+          "name": "void paged_attention_ll4mi_QKV_mfma16_kernel<__hip_b...",
+          "ms": 25.351,
+          "pct_of_decode_step": 1.4,
+          "pct_of_self_cuda_total": 1.61,
+          "per_call": "30.954us",
+          "calls": 819,
+          "calls_per_step": 13
+        },
+        {
+          "name": "triton_red_fused__to_copy_add_gptq_gemm_rdna3_mean_m...",
+          "ms": 24.448,
+          "pct_of_decode_step": 1.35,
+          "pct_of_self_cuda_total": 1.55,
+          "per_call": "7.463us",
+          "calls": 3276,
+          "calls_per_step": 52
+        },
+        {
+          "name": "triton_red_fused_4",
+          "ms": 22.212,
+          "pct_of_decode_step": 1.23,
+          "pct_of_self_cuda_total": 1.41,
+          "per_call": "6.913us",
+          "calls": 3213,
+          "calls_per_step": 51
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<8, at...",
+          "ms": 16.943,
+          "pct_of_decode_step": 0.94,
+          "pct_of_self_cuda_total": 1.08,
+          "per_call": "1.034us",
+          "calls": 16380,
+          "calls_per_step": 260
+        },
+        {
+          "name": "void vllm::reshape_and_cache_kernel<__hip_bfloat16, ...",
+          "ms": 10.845,
+          "pct_of_decode_step": 0.6,
+          "pct_of_self_cuda_total": 0.69,
+          "per_call": "3.310us",
+          "calls": 3276,
+          "calls_per_step": 52
+        },
+        {
+          "name": "void paged_attention_ll4mi_reduce_kernel<__hip_bfloa...",
+          "ms": 6.993,
+          "pct_of_decode_step": 0.39,
+          "pct_of_self_cuda_total": 0.44,
+          "per_call": "8.539us",
+          "calls": 819,
+          "calls_per_step": 13
+        },
+        {
+          "name": "hipPointerGetAttribute",
+          "ms": 5.919,
+          "pct_of_decode_step": 0.33,
+          "pct_of_self_cuda_total": 0.38,
+          "per_call": "4.697us",
+          "calls": 1260,
+          "calls_per_step": 20
+        },
+        {
+          "name": "triton_poi_fused__to_copy__unsafe_view_add_clone_mea...",
+          "ms": 5.759,
+          "pct_of_decode_step": 0.32,
+          "pct_of_self_cuda_total": 0.37,
+          "per_call": "7.032us",
+          "calls": 819,
+          "calls_per_step": 13
+        }
+      ]
     },
-    "reading": "Attention falls from 73.57% of the decode step to 21.06% and the Triton prefill kernel leaves the profile entirely. It does not stop being the largest single kernel: at 380.334 ms it is still 3.5x the 4-bit weight GEMM's 107.769 ms. The named kernels account for about a quarter of the step's span either way; the rest is gaps, which is why the step's CUDA total is 114.64% of the trace's Self CUDA time total.",
     "trace_files": [
       "traces/muse-glimmer-32768-unpatched-rank0.txt",
       "traces/muse-glimmer-32768-patched-rank0.txt",
@@ -204,7 +397,7 @@
       ]
     }
   },
-  "reading": "Two models reach this path and both gain, with the gain appearing exactly where the mechanism says it should. Below each model's window the change is worth 1.00x, and from there it grows monotonically with depth: gemma-3-27b 1.11x at 2048, 1.63x at 8192, 2.75x at 32768; Muse-Glimmer 1.15x at 4096, 2.01x at 16384, 3.15x at 32768. Three independent processes per cell with narrow ranges. Patched, Muse-Glimmer is nearly context-independent, 21.97 ms/tok at 512 against 26.63 at 32768. At the kernel it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 22%, and the 4-bit weight GEMM becomes the largest term. The gemma-3 figure is the one that shows the size of the problem: at 32768 it decodes at 8.06 tok/s unpatched against 30.36 for gemma-4-31B, a larger and newer model, purely because gemma-4 is routed to a backend that already bounds its loop.",
+  "reading": "Two models reach this path and both gain, with the gain appearing exactly where the mechanism says it should. Below each model's window the change is worth 1.00x, and from there it grows monotonically with depth: gemma-3-27b 1.11x at 2048, 1.63x at 8192, 2.75x at 32768; Muse-Glimmer 1.15x at 4096, 2.01x at 16384, 3.15x at 32768. Three independent processes per cell with narrow ranges. Patched, Muse-Glimmer is nearly context-independent, 21.97 ms/tok at 512 against 26.63 at 32768. At the kernel it is 1.589 ms -> 154.796 us per call, 10.3x rather than the 16x the block count suggests, the difference being per-call overhead that does not shrink. Decode stops being attention-bound: attention falls from 74% of the step to 21.06%, and the 4-bit weight GEMM becomes the largest term. The gemma-3 figure is the one that shows the size of the problem: at 32768 it decodes at 8.05 tok/s unpatched against 30.21 for gemma-4-31B, a larger and newer model, purely because gemma-4 is routed to a backend that already bounds its loop.",
   "scope": "Any model with a sliding window that lands on ROCM_ATTN. That includes gemma-3, which is mainstream, and excludes gemma-4, which vLLM forces onto TRITON_ATTN because its head dimensions are heterogeneous. Checked and found not to qualify: Mistral-Small-3.2 and Mistral-7B-v0.3 (no window), Ministral-8B (window 32768, which covers the whole context at the depths measured), Phi-4-reasoning (no window), Phi-4-mini-reasoning (window 262144), GLM-5.2, DeepSeek-V4-Flash, Ornith-1.5 and LFM2.5 (no window, or a window with an architecture out of reach here). A small window relative to context is not common among 2026 flagships; Gemma is where it lives.",
   "not_established": "Two models on one machine, gfx1100 only. The 39 sliding layers still run at roughly 6.3 GiB/s of effective KV bandwidth after the change against 412 GiB/s for the custom HIP kernel in the same run, so their exclusion from that kernel is untouched; closing it would now be worth about 19%, not another 3x, because the weight GEMM dominates. **An earlier version of this file offered end-to-end token identity as the correctness argument. That test cannot discriminate on this machine and has been replaced by the two kernel-level results above; see gfx1100-greedy-nondeterminism.json.**",
   "models_affected": {
