@@ -98,7 +98,7 @@ ctx   8026: 117.23 ms/token          ctx  32084: 235.29 ms/token
 ```
 
 That is **4.84 µs of decode time per token of context — 41× the dense 8B's 0.118 µs**
-and 14× the dense 31B's 0.340 µs. O(1) was promised; O(S) was measured. Power
+and 14× the dense 31B's 0.339 µs. O(1) was promised; O(S) was measured. Power
 *falls* at long context (232 + 227 W at 24 K vs 265 + 265 W short): the GPUs are
 waiting. At 32 K it delivers **4.2 tok/s**, which is unusable.
 
@@ -115,9 +115,10 @@ context. Running the same model under llama.cpp on the same two cards retains
 which puts the problem in vLLM's attention path rather than in ROCm, the hardware
 or the architecture.
 
-**Prefill, however, keeps the promise.** The 27B is the only model in our sweep whose
-prefill gets *faster* with length (805 → 880 tok/s, +9 %) while dense models lose
-8–44 %. Linear attention does deliver O(S) prefill here.
+**Prefill, however, keeps the promise.** The 27B's prefill gets *faster* with
+length (805 → 883 tok/s, +9.6 %) while dense models lose 8–61 %; the 26B MoE
+also gains, +24 %, which is more. Linear attention does deliver O(S) prefill
+here.
 
 **What to do:** use **llama.cpp** for Qwen3.5/3.6. Measured at matched context
 depth on the same two cards, plain Q4_K_M with no speculative decoding, it is

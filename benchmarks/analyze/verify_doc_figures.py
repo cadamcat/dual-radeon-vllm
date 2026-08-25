@@ -202,6 +202,38 @@ def main():
         ck("hmm control r--p 3.2", "3.2", st[2]["r_p_resident"])
         ck("hmm control rw-p 13.1", "13.1", st[2]["rw_p_not_resident"])
 
+    # --- figures the 2026-08-25 re-check corrected, pinned the same way -----
+    # benchmarks.md §3 used to derive its T columns from the rounded tok/s in
+    # the table above them (1000/46.7 = 21.41); these assert the raw-data
+    # derivations that replaced them.
+    ck("benchmarks.md §3 T(TP1) 8B", "21.42", 1000 / tps(jul, "B-8B-tp1", 500))
+    ck("benchmarks.md §3 T(TP2) 8B", "12.57", 1000 / tps(jul, "B-8B-tp2", 500))
+    ck("benchmarks.md §3 T(TP1) 12B", "19.87", 1000 / tps(jul, "A-12B-tp1", 500))
+    ck("benchmarks.md §3 12B saved", "3.18",
+       1000 / tps(jul, "A-12B-tp1", 500) - 1000 / tps(jul, "A-12B-tp2", 500))
+    ck("benchmarks.md §3 12B efficiency %", "60",
+       tps(jul, "A-12B-tp2", 500) / tps(jul, "A-12B-tp1", 500) / 2 * 100)
+    pre_j = {}
+    for line in open(JULY):
+        line = line.strip()
+        if not line:
+            continue
+        r = json.loads(line)
+        if r.get("kind") == "prefill":
+            pre_j.setdefault(r["cfg"], {}).setdefault(r["target"], []).append(r["prefill_tps"])
+    bj = lambda c, t: max(pre_j[c][t])
+    ck("§2 27B prefill 500", "805", bj("D-27B-tp2", 500))
+    ck("§2 27B prefill 32K", "883", bj("D-27B-tp2", 32000))
+    ck("§2 27B prefill rise %", "9.6",
+       (bj("D-27B-tp2", 32000) / bj("D-27B-tp2", 500) - 1) * 100)
+    ck("§2 MoE prefill rise %", "24",
+       (bj("E-26B-tp2", 32000) / bj("E-26B-tp2", 500) - 1) * 100)
+    # "measured peak" is the best-of-rounds argmax, which for the 27B is 4000
+    # by one tok/s over 6000 - a margin inside the noise, but it is what the
+    # best-of rule the table states actually yields.
+    ck("§4 27B measured prefill peak", "4000",
+       max(pre_j["D-27B-tp2"], key=lambda t: bj("D-27B-tp2", t)))
+
     # --- claims README makes about the charts it now shows ------------------
     slopes = sorted(slope_us(aug, c) for c in
                     ("E-26B-tp2", "G-30B-tp2", "B-8B-tp2", "A-12B-tp2",

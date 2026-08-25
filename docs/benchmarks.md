@@ -148,7 +148,7 @@ ingest-heavy and generation-light, that is worth something. Otherwise, avoid it.
 | model | TP=1 | TP=2 | speed-up | efficiency |
 |---|---:|---:|---:|---:|
 | Qwen3-8B · BF16 | 46.7 | 79.6 | **1.70×** | 85 % |
-| gemma-4-12B · w4a16 | 50.3 | 59.9 | **1.19×** | 59 % |
+| gemma-4-12B · w4a16 | 50.3 | 59.9 | **1.19×** | 60 % |
 
 Same machine, same interconnect, same RCCL — a threefold difference in what the
 second card buys.
@@ -162,8 +162,8 @@ and the implied *B* must not exceed the hardware's 800 GB/s.
 
 | model | T(TP1) | T(TP2) | saved | implied per-GPU bandwidth | |
 |---|---:|---:|---:|---:|---|
-| Qwen3-8B BF16 | 21.41 ms | 12.56 ms | 8.85 ms | 850 GB/s (106 % of peak) | plausible |
-| gemma-4-12B w4a16 | 19.88 ms | 16.69 ms | 3.19 ms | **1611 GB/s (201 % of peak)** | **impossible** |
+| Qwen3-8B BF16 | 21.42 ms | 12.57 ms | 8.85 ms | 850 GB/s (106 % of peak) | plausible |
+| gemma-4-12B w4a16 | 19.87 ms | 16.69 ms | 3.18 ms | **1611 GB/s (201 % of peak)** | **impossible** |
 
 This comparison never leaves a single model, so architectural differences cannot
 explain it. It proves the 12B **was not bandwidth-bound to begin with**: had it
@@ -224,7 +224,7 @@ three-term model is weakest:
 | gemma-4-12B TP2 | 15 ms | 330.1 µs/tok | 10.70 ns/tok² | 1203 | 2000 |
 | gemma-4-26B-A4B TP2 | 123 ms | 250.1 µs/tok | 7.00 ns/tok² | 4196 | 6000 |
 | gemma-4-31B TP2 | 152 ms | 744.4 µs/tok | 28.04 ns/tok² | 2331 | 2000 |
-| Qwen3.6-27B TP2 | 211 ms | 842.0 µs/tok | 8.88 ns/tok² | 4877 | 6000 |
+| Qwen3.6-27B TP2 | 211 ms | 842.0 µs/tok | 8.88 ns/tok² | 4877 | 4000 |
 
 ### What TP=2 costs, in numbers
 
@@ -472,7 +472,7 @@ controlling it ([open-questions.md §8](open-questions.md)).
 | short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |
 | **long context** | **Muse-Glimmer-30B, patched** | 37.4 tok/s at 32 K, a 0.122 µs slope, flat from its 2 048-token window onward; needs the window block-skip and a downstream port ([§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)) |
-| long context, stock vLLM | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–33 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) takes the same architecture to 10.7 tok/s and a 12.4× flatter slope, but it is unmerged, so on a stock install this stands |
+| long context, stock vLLM | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–32 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) takes the same architecture to 10.7 tok/s and a 12.4× flatter slope, but it is unmerged, so on a stock install this stands |
 
 ## Four findings worth carrying elsewhere
 
