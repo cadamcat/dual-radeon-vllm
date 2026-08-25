@@ -134,6 +134,10 @@ def main():
     ck("benchmarks.md §6 control, 26B", -0.23, offset(jul, aug, "E-26B-tp2"))
     ck("benchmarks.md §6 control, 31B", -0.85, offset(jul, aug, "C-31B-tp2"))
     ck("benchmarks.md §6 control, 8B TP=1", 0.01, offset(jul, aug, "B-8B-tp1"))
+    ck("benchmarks.md §6 control, 12B TP=1", -0.82, offset(jul, aug, "A-12B-tp1"))
+    # the prose says six of the nine August configurations are July reruns
+    ck("benchmarks.md §6 control count", 6, len(set(jul) & set(aug)))
+    ck("benchmarks.md §6 new configuration count", 3, len(set(aug) - set(jul)))
 
     # --- benchmarks.md §6, the gemma-4-31B offset investigation --------------
     off_file = os.path.join(HERE, "..", "gemma-4-31b-campaign-offset.json")

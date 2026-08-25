@@ -231,9 +231,9 @@ defeat prefix caching; decode is measured first-token-to-last, so TTFT is
 excluded.
 
 **A second campaign on 2026-08-25** measured the same ladder on a patched
-container: 372 measurements, nine configurations, four of them the July ones
-rerun as controls. The controls reproduce, which is what lets the two be read
-together ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)).
+container: 372 measurements, nine configurations, six of them the July ones
+rerun as controls. Four reproduce within 0.25 %, one is too noisy to say, and one
+does not — which is discussed rather than dropped ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-25)).
 
 ![decode throughput vs context length](docs/assets/decode-vs-context.svg)
 

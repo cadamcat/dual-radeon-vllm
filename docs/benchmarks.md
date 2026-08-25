@@ -7,7 +7,7 @@ are in [`benchmarks/`](../benchmarks/); method is in
 [`benchmarks/README.md`](../benchmarks/README.md).
 
 **The same ladder was measured again on 2026-08-25**, on a patched container and a
-newer guest kernel: 372 measurements, nine configurations, four of them the July
+newer guest kernel: 372 measurements, nine configurations, six of them the July
 ones rerun as controls. That campaign is [§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-25),
 and it is what §2's conclusion should be read against. Sections 1 to 5 are the
 July record and are left as they were measured.
@@ -298,22 +298,35 @@ zero errors.**
 
 ### The controls are what make the two campaigns comparable
 
-Four of the nine configurations are the July ones rerun unchanged. None of the
-three patch sets touches their code path: gemma-4 is forced onto `TRITON_ATTN`,
-[#45916](https://github.com/vllm-project/vllm/pull/45916) is the hybrid-SSM
-decode path, and the window block-skip needs a sliding window. If they come back
-where July left them, the two campaigns can be read against each other.
+**Six** of the nine configurations are the July ones rerun unchanged; only three
+are new. None of the three patch sets touches a control's code path: gemma-4 is
+forced onto `TRITON_ATTN`, [#45916](https://github.com/vllm-project/vllm/pull/45916)
+is the hybrid-SSM decode path, and the window block-skip needs a sliding window.
+If they come back where July left them, the two campaigns can be read against
+each other.
 
 | control | quantisation | mean offset over 11 points | spread |
 |---|---|---:|---|
-| Qwen3-8B | BF16 | −0.10 % | −0.24 .. +0.05 |
-| gemma-4-12B | w4a16 QAT | −0.02 % | −1.05 .. +1.45 |
-| gemma-4-26B-A4B | AWQ int4 | −0.23 % | −0.49 .. +0.10 |
 | Qwen3-8B, TP=1 | BF16 | +0.01 % | −0.01 .. +0.03 |
+| gemma-4-12B | w4a16 QAT | −0.02 % | −1.05 .. +1.45 |
+| Qwen3-8B | BF16 | −0.10 % | −0.24 .. +0.05 |
+| gemma-4-26B-A4B | AWQ int4 | −0.23 % | −0.49 .. +0.10 |
+| gemma-4-12B, TP=1 | w4a16 QAT | −0.82 % | **−3.95 .. +1.50** |
 | gemma-4-31B | w4a16 QAT | **−0.85 %** | −1.03 .. −0.67 |
 
-Four sit in the noise. gemma-4-31B does not, and it was chased down rather than
-waved at. It was measured **three times** on 2026-08-25: once inside the campaign,
+**Two controls sit near −0.85 %, not one.** They are not equally informative:
+gemma-4-12B at TP=1 has a spread of five and a half percentage points, wide
+enough that its own mean says nothing, while gemma-4-31B's eleven points span
+0.36 points and never cross zero. Only the second is a measurement; the first is
+a wide interval that happens to be centred nearby. Both are in the table because
+a control that is inconvenient is still a control.
+
+The TP=1 row does carry one piece of information. It is a single-card
+configuration with no collectives at all, so nothing mediated by RCCL or by PCIe
+AtomicOps can reach it. If its offset were real it would point away from every
+interconnect explanation; as measured it cannot carry that weight either.
+
+gemma-4-31B was chased down rather than waved at. It was measured **three times** on 2026-08-25: once inside the campaign,
 once from a machine idle for thirteen minutes at 38 °C junction, and once starting
 immediately after that second run finished, with junction sampled every 15 s
 throughout.
@@ -337,8 +350,8 @@ model was fifth, two hours into its campaign, and tonight's first was first on a
 cold machine, and the two are the same distance from July in the same direction.
 
 Also ruled out: the w4a16 path, since gemma-4-12B is the same quantisation on the
-same path at −0.02 %; and anything machine-wide, since four other controls
-reproduce.
+same path at −0.02 %; and anything machine-wide, since four of the five other
+controls reproduce within 0.25 % and the fifth is too noisy to say.
 
 **Three differences between the campaigns are not ruled out**, and the third of
 them is one this repository should have noticed first. The guest kernel moved
