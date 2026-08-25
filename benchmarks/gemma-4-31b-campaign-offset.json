@@ -1,7 +1,7 @@
 {
   "what": "gemma-4-31B-it-qat-w4a16 decodes 0.85% slower in the 2026-08-24 campaign than in the 2026-07-25 one, at every context length, and the cause is not known.",
   "why_it_is_here": "It is the one of six controls whose offset is both sizeable and tightly measured. gemma-4-12B at TP=1 is nominally -0.82% but spans -3.95 to +1.50, wide enough that its mean says nothing; the other four reproduce July within 0.25%. Publishing a campaign comparison means saying what did not reconcile, not only what did.",
-  "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-25 22:08 UTC (cold), 2026-08-25 22:30 UTC (warm, started immediately after the cold run)",
+  "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-24 22:08 UTC (cold), 2026-08-24 22:30 UTC (warm, started immediately after the cold run)",
   "machine": {
     "gpu": "2x Radeon RX 7900 XT (gfx1100), TP=2, VFIO guest",
     "july_kernel": "7.0.0-28-generic",
@@ -13,7 +13,7 @@
     "august_pcie_atomics": "present (single-function passthrough since 2026-08-23 14:17 UTC)"
   },
   "reproducibility": {
-    "runs_on_2026_08_25": 3,
+    "runs_on_2026_08_24": 3,
     "relative_stddev_across_the_three_pct": {
       "mean": 0.0773,
       "max": 0.1462
