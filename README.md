@@ -263,6 +263,12 @@ within 0.25 %, except gemma-4-31B at −0.85 %, which is recorded as unexplained
 | **Qwen3.8-27B** | AWQ int4, **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 same architecture as the 27B above. **2.51× at 32 K**, slope 12.4× flatter |
 | gemma-3-27b | w4a16, sliding window 1024 | 44.8 | 34.6 | 22.1 | 🟡 **8.05 → 22.05 at 32 K** from the block-skip, but the steepest curve on the patched machine: 16 KV heads on its full-attention layers against Muse-Glimmer's 2 |
 
+![decode throughput vs context length, patched](docs/assets/decode-vs-context-2026-08-24.svg)
+
+Same axes as the chart above, so the two can be read against each other. gemma-3
+is measured but not plotted: between 500 and 4 000 it runs within two tok/s of
+both Muse-Glimmer and gemma-4-31B and the three lines read as one.
+
 ### llama.cpp, for comparison
 
 | Model | Mode | Decode |
@@ -272,7 +278,7 @@ within 0.25 %, except gemma-4-31B at −0.85 %, which is recorded as unexplained
 | Qwen3.6-27B | dual card, Vulkan layer split | 27.7 tok/s |
 | **Qwen3.6-27B** | **+ MTP speculative decoding** | **34.5 tok/s** 🟢 |
 
-### Two charts worth the scroll
+### The charts worth the scroll
 
 **What the second GPU actually buys.** Dashed is one card, solid is two. The blue pair
 (BF16) separates; the green pair (4-bit) barely does. Same machine, same interconnect,
@@ -280,16 +286,33 @@ same RCCL, and a threefold difference in what the second card is worth:
 
 ![single card vs dual card](docs/assets/tp1-vs-tp2.svg)
 
+The same pair on the patched container a month later, which is the closest thing
+here to a repeatability check on the whole apparatus — nothing in those patches
+touches either model's code path:
+
+![single card vs dual card, patched](docs/assets/tp1-vs-tp2-2026-08-24.svg)
+
 **Why one architecture is unusable at long context.** Cost per generated token against
 context length. Four models sit flat along the bottom; the hybrid-SSM climbs a straight
 line: O(1) was promised, O(S) was measured.
 
 ![cost of one context token at decode time](docs/assets/decode-ms-per-token.svg)
 
-The fourth chart, prefill against context with the peak position for each model,
-is in [docs/benchmarks.md](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits),
-along with the derivation of where that peak sits (`S* = √(a/c)`, fitted to every
-measured point).
+And the same chart on the patched machine. **Its ceiling is 100 ms where the one
+above is 250**, because nothing here passes 94 — compare the slopes, not the
+heights. The line that used to climb off the top of the plot is on it now, and is
+still the steepest of the six at 0.390 µs against the dense band's 0.118–0.344:
+
+![cost of one context token at decode time, patched](docs/assets/decode-ms-per-token-2026-08-24.svg)
+
+**Prefill, for completeness.** Every model peaks early — 2 K for four of the six,
+4 K for the MoE, 6 K for the hybrid-SSM — and then falls away. The ordering does
+not survive the fall: the 8B leads at 500 by 2.1× over the MoE and the MoE has
+passed it by 32 K. The derivation of where the peak sits (`S* = √(a/c)`, fitted
+to every measured point) is in
+[docs/benchmarks.md](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits).
+
+![prefill throughput vs context length, patched](docs/assets/prefill-vs-context-2026-08-24.svg)
 
 ### Want the raw numbers?
 

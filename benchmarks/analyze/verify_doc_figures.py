@@ -202,6 +202,26 @@ def main():
         ck("hmm control r--p 3.2", "3.2", st[2]["r_p_resident"])
         ck("hmm control rw-p 13.1", "13.1", st[2]["rw_p_not_resident"])
 
+    # --- claims README makes about the charts it now shows ------------------
+    slopes = sorted(slope_us(aug, c) for c in
+                    ("E-26B-tp2", "G-30B-tp2", "B-8B-tp2", "A-12B-tp2",
+                     "C-31B-tp2", "D8-27B-tp2"))
+    ck("README Qwen3.8 is the steepest plotted", "0.390", slopes[-1])
+    ck("README patched dense band top", "0.344", slopes[-2])
+    pre_a = {}
+    for line in open(AUG):
+        line = line.strip()
+        if not line:
+            continue
+        r = json.loads(line)
+        if r.get("kind") == "prefill":
+            pre_a.setdefault(r["cfg"], {}).setdefault(r["target"], []).append(r["prefill_tps"])
+    best = lambda c, t: max(pre_a[c][t])
+    ck("README prefill 8B leads MoE at 500 by 2.1x", "2.1",
+       best("B-8B-tp2", 500) / best("E-26B-tp2", 500))
+    ck("README prefill MoE passes 8B by 32K", "1",
+       1 if best("E-26B-tp2", 32000) > best("B-8B-tp2", 32000) else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
