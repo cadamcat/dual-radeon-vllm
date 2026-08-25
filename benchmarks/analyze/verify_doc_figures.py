@@ -234,6 +234,17 @@ def main():
     ck("§4 27B measured prefill peak", "4000",
        max(pre_j["D-27B-tp2"], key=lambda t: bj("D-27B-tp2", t)))
 
+    # --- README.zh.md is a condensed mirror; pin the cells it adds ----------
+    ck("README.zh 8B 32K", "61.4", tps(jul, "B-8B-tp2", 32000))
+    ck("README.zh 12B 500", "59.9", tps(jul, "A-12B-tp2", 500))
+    ck("README.zh 12B 32K", "41.9", tps(jul, "A-12B-tp2", 32000))
+    ck("README.zh 31B 500", "43.2", tps(jul, "C-31B-tp2", 500))
+    ck("README.zh 27B 500", "12.1", tps(jul, "D-27B-tp2", 500))
+    ck("README.zh TP2 speedup", "1.70",
+       tps(jul, "B-8B-tp2", 500) / tps(jul, "B-8B-tp1", 500))
+    ck("README.zh 12B speedup", "1.19",
+       tps(jul, "A-12B-tp2", 500) / tps(jul, "A-12B-tp1", 500))
+
     # --- claims README makes about the charts it now shows ------------------
     slopes = sorted(slope_us(aug, c) for c in
                     ("E-26B-tp2", "G-30B-tp2", "B-8B-tp2", "A-12B-tp2",
