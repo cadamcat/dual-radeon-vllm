@@ -1,0 +1,18 @@
+# phase-1 summary table as printed
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 18 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+leg                                 decode tok/s   raw
+TRITON_ATTN + MTP                          31.50   t8=0.5s t64=2.3s
+TRITON_ATTN, no spec                       43.85   t8=0.3s t64=1.6s
+FLASHINFER + MTP (#47547 path)             29.46   t8=0.5s t64=2.4s
+FLASHINFER, no spec                        43.67   t8=0.3s t64=1.6s
+
+--- leg1-triton-mtp: routing evidence ---
+INFO 08-26 13:57:16 [config.py:242] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend.
+--- leg2-triton-nospec: routing evidence ---
+INFO 08-26 14:06:19 [config.py:242] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend.
+--- leg3-flashinfer-mtp: routing evidence ---
+--- leg4-flashinfer-nospec: routing evidence ---

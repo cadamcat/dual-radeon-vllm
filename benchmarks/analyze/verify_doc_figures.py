@@ -15,7 +15,7 @@ anything in [4.15, 4.25], 0.391 admits [0.3905, 0.3915]. That is what quoting a
 rounded number means, and it is a tighter test than a percentage for the large
 figures and a looser one for the small. Pass an explicit tol= to override.
 """
-import json, os, sys
+import json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
@@ -270,6 +270,53 @@ def main():
        best("B-8B-tp2", 500) / best("E-26B-tp2", 500))
     ck("README prefill MoE passes 8B by 32K", "1",
        1 if best("E-26B-tp2", 32000) > best("B-8B-tp2", 32000) else 0)
+
+    # --- CUDA A100 annex (benchmarks/cuda-a100/) ----------------------------
+    # Chain: committed probe output -> matrix JSON -> the ratios the two
+    # READMEs quote. The logs are the raw layer; session A survives as
+    # notebook-output extracts (see the annex README), session B as full logs.
+    annex = json.load(open(os.path.join(HERE, "..", "cuda-a100",
+                                        "gemma4-mtp-backend-matrix.json")))
+    M = annex["decode_tok_s"]
+    tf30, fi30 = M["30000"]["triton_forced"], M["30000"]["flashinfer_explicit"]
+    au30 = M["30000"]["auto_selector_47547"]
+    tf50, fi50 = M["50000"]["triton_forced"], M["50000"]["flashinfer_explicit"]
+
+    def probe_result(relpath):
+        """the RESULT line the probe printed, from the committed log/extract"""
+        text = open(os.path.join(HERE, "..", "cuda-a100", "logs", relpath)).read()
+        return float(re.search(r"RESULT decode_tok_s=([\d.]+)", text).group(1))
+
+    for relpath, figure in [
+        ("session-a/leg1-triton-mtp.txt", tf30["mtp"]),
+        ("session-a/leg2-triton-nospec.txt", tf30["nospec"]),
+        ("session-a/leg3c-flashinfer-explicit-mtp.txt", fi30["mtp"]),
+        ("session-b/leg4c-flashinfer-nospec.log", fi30["nospec"]),
+        ("session-b/leg3d-auto-mixed-mtp-coldcache.log", au30["mtp"]),
+        ("session-b/leg4d-auto-mixed-nospec-coldcache.log", au30["nospec"]),
+        ("session-b/leg5c-triton-mtp-50k.log", tf50["mtp"]),
+        ("session-b/leg6c-triton-nospec-50k.log", tf50["nospec"]),
+        ("session-b/leg7c-flashinfer-mtp-50k.log", fi50["mtp"]),
+        ("session-b/leg8c-flashinfer-nospec-50k.log", fi50["nospec"]),
+    ]:
+        ck(f"annex JSON vs {os.path.basename(relpath)}", f"{figure:.2f}",
+           probe_result(relpath))
+
+    pct = lambda new, base: (new / base - 1) * 100
+    ck("annex+main README, MTP delta on default 30K", "-28.2", pct(tf30["mtp"], tf30["nospec"]))
+    ck("annex+main README, MTP delta on default 50K", "-61.1", pct(tf50["mtp"], tf50["nospec"]))
+    ck("annex README, MTP delta healthy 30K (auto)", "35.0", pct(au30["mtp"], au30["nospec"]))
+    ck("annex README, FlashInfer MTP vs off 50K", "-8.7", pct(fi50["mtp"], fi50["nospec"]))
+    ck("annex+main README, MTP-off speedup on default 50K", "2.57", tf50["nospec"] / tf50["mtp"])
+    ck("annex README, FlashInfer over default MTP 50K", "2.63", fi50["mtp"] / tf50["mtp"])
+
+    RD = annex["readings"]
+    ck("annex JSON readings, default delta 30K", str(RD["mtp_delta_on_triton_pct"]["30000"]), pct(tf30["mtp"], tf30["nospec"]))
+    ck("annex JSON readings, default delta 50K", str(RD["mtp_delta_on_triton_pct"]["50000"]), pct(tf50["mtp"], tf50["nospec"]))
+    ck("annex JSON readings, healthy delta 30K", str(RD["mtp_delta_on_healthy_backend_pct"]["30000_auto"]), pct(au30["mtp"], au30["nospec"]))
+    ck("annex JSON readings, healthy delta 50K", str(RD["mtp_delta_on_healthy_backend_pct"]["50000_flashinfer"]), pct(fi50["mtp"], fi50["nospec"]))
+    ck("annex JSON readings, MTP-off speedup", str(RD["default_mtp_off_speedup_50k"]), tf50["nospec"] / tf50["mtp"])
+    ck("annex JSON readings, FlashInfer speedup", str(RD["flashinfer_over_default_mtp_50k"]), fi50["mtp"] / tf50["mtp"])
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

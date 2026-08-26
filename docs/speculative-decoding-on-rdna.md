@@ -193,15 +193,25 @@ CUDA, which fits: the collapse is specific to this Triton kernel, and an
 explicit backend choice bypasses the gemma-4 forcing. ROCm has no FlashInfer,
 so the depth-gating advice above stands here.
 
+**Measured on CUDA on 2026-08-26.** A rented A100 80G ran the full matrix: on
+the forced default routing the MTP loss deepens from −28.2 % at 30K to −61.1 %
+at 50K (this machine: −70.8 % at 32K), and routing the same model to FlashInfer
+removes the collapse. Both of the predictions this section makes held on the
+other vendor. The data, the logs and the exact recipe — including the
+multimodal-limits condition an explicit `FLASHINFER` override needs on vLLM
+0.28 — are in [benchmarks/cuda-a100/](../benchmarks/cuda-a100/README.md).
+
 ## 7. Not established
 
 - **Crossover point.** Somewhere between 1K and 8K, not measured.
 - **Sampling.** All numbers are `temperature=0`, where draft and target agree
   most often. Sampling should lower acceptance, but that was not measured.
-- **One model, one machine.** gfx1100, TP=2, VFIO guest without P2P.
+- **One model, one machine** for the ROCm figures: gfx1100, TP=2, VFIO guest
+  without P2P. The CUDA cross-check in §6 is likewise one model, one GPU.
 - **Whether the divergence in §5 is benign.** Unresolved.
-- **CUDA.** No NVIDIA hardware here. The mechanism is platform-independent, but
-  the numbers are not.
+- **Crossover and sampling on CUDA.** The A100 annex measured 30K and 50K,
+  greedy only; where MTP stops paying on FlashInfer was bracketed
+  (between 30K and 50K), not located.
 
 ## 8. Reproducing
 

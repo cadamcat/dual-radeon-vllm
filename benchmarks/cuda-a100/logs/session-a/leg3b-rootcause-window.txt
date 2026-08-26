@@ -1,0 +1,91 @@
+# first 85-line window around the leg-3b EngineCore ERROR block
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 21 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+(EngineCore pid=16650) INFO 08-26 14:34:02 [model_runner.py:380] Model loading took 19.6 GiB memory and 10.818933 seconds
+(EngineCore pid=16650) INFO 08-26 14:34:02 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=16650) INFO 08-26 14:34:05 [caching.py:343] reconstructed serializable fn from standalone compile artifacts. num_artifacts=6 num_submods=61
+(EngineCore pid=16650) INFO 08-26 14:34:05 [decorators.py:311] Directly load AOT compilation from path /root/.cache/vllm/torch_compile_cache/torch_aot_compile/2a7f2e89a041a9e40e919d094d06fd9bd6ff677d79ee0aff01ee26d4f00c3db2/rank_0_0/model
+(EngineCore pid=16650) INFO 08-26 14:34:05 [monitor.py:53] torch.compile took 1.26 s in total
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346] EngineCore failed to start.
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346] Traceback (most recent call last):
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     super().__init__(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         vllm_config,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         ^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ...<3 lines>...
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         internal_dp_balancing,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     )
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 144, in __init__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 296, in _initialize_kv_caches
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     available_gpu_memory = self.model_executor.determine_available_memory()
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/executor/abstract.py", line 149, in determine_available_memory
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return self.collective_rpc("determine_available_memory")
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]            ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/executor/uniproc_executor.py", line 103, in collective_rpc
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     result = run_method(self.driver_worker, method, args, kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/serial_utils.py", line 510, in run_method
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/worker/gpu_worker.py", line 519, in determine_available_memory
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     self.model_runner.profile_run()
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 813, in profile_run
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     hidden_states, sample_hidden_states = self._dummy_run(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]                                           ~~~~~~~~~~~~~~~^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         self.max_num_tokens, skip_attn=True, is_profile=True
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     )
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/worker/gpu/eplb_utils.py", line 27, in wrapper
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     result = fn(self, *args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 695, in _dummy_run
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     self.execute_model(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ~~~~~~~~~~~~~~~~~~^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         dummy_scheduler_output,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ...<4 lines>...
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         context_len=context_len,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     )
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 1666, in execute_model
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     model_output = self.model(**model_inputs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return self._call_impl(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return forward_call(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/model_executor/models/gemma4_mm.py", line 2088, in forward
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     hidden_states = self.language_model.model(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         input_ids,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ...<4 lines>...
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         **kwargs,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     )
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/compilation/decorators.py", line 573, in __call__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     output = self.aot_compiled_fn(self, *args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/aot_compile.py", line 244, in __call__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return self.fn(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]            ~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/model_executor/models/gemma4.py", line 1269, in forward
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     def forward(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_compile.py", line 54, in inner

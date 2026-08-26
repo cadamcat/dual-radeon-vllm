@@ -1,0 +1,11 @@
+# leg 3 (superseded probe: image=0 only, mm still enabled): auto selection, MTP on
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 14 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+=== leg3-flashinfer-mtp: exit code 0 | full log: leg3-flashinfer-mtp.log ===
+(EngineCore pid=10123) INFO 08-26 14:12:20 [cuda.py:486] Using TRITON_ATTN attention backend out of potential backends: ['TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=10123) INFO 08-26 14:12:27 [cuda.py:486] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=10123) INFO 08-26 14:12:27 [cuda.py:486] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+RESULT decode_tok_s=29.46  t8=0.5s t64=2.4s

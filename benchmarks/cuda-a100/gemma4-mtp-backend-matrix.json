@@ -1,0 +1,62 @@
+{
+  "what": "gemma-4-31B decode rate on one A100 80G across attention backend x speculation x context depth. The forced TRITON_ATTN default loses 61% to MTP at 50K context; routing the same model to FlashInfer removes the collapse. CUDA-side control for the ROCm mechanism in docs/speculative-decoding-on-rdna.md and the measured basis for our comments on vllm#52049, vllm#47547 and vllm#50891.",
+  "why_it_is_here": "The repository's speculative-decoding chapter claims the MTP collapse is a property of the Triton unified-attention kernel's 3D-to-2D drop, not of RDNA. That claim predicts the same collapse on any CUDA machine that routes gemma-4 onto the same kernel, deepening with context, and predicts its disappearance on a backend without the guard. Both predictions are what this matrix tests, and both held.",
+  "measured": "2026-08-26, two Colab sessions. Session A 13:29-14:44 UTC (30K TRITON pair, 30K explicit-FlashInfer MTP, the stale-cache crashes, the superseded image=0-only probes); session B 15:27-15:55 UTC (everything else, including the whole 50K quartet). Fresh VM per session, identical stack.",
+  "machine": {
+    "gpu": "NVIDIA A100-SXM4-80GB (Colab), single card",
+    "vllm": "0.28.0 (PyPI wheel)",
+    "flashinfer": "0.6.16.post3 (vLLM's requirements/cuda.txt pin; contains flashinfer#3739, the Ampere large-head kernel)",
+    "model": "google/gemma-4-31B-it-qat-w4a16-ct + google/gemma-4-31B-it-assistant (MTP drafter, k=1)",
+    "note": "60 layers: 50 sliding (head 256, window 1024) + 10 full attention (head 512). The heterogeneous head dims are why Gemma4Config forces TRITON_ATTN whenever FA4 is unavailable - the routing this matrix is about."
+  },
+  "method": {
+    "serving": "text-only: limit_mm_per_prompt zeroes image, video and audio. gemma-4 registers all three, and vLLM 0.28.0 drops the mm-prefix backend requirement only when every registered modality is 0. Without that, FlashInfer is rejected at engine init regardless of routing.",
+    "measurement": "batch 1, greedy, ignore_eos; decode tok/s = (64-8)/(t64-t8) over two generations from one prompt after a warm-up generation. Prefix caching keeps t8 at 0.3-0.7s, so the differencing is decode-dominated.",
+    "runs": "single run per cell - a probe, not a campaign. The three cross-checks below and the ROCm depth series carry the conclusion; treat third-digit differences as noise.",
+    "cache_discipline": "torch_compile_cache cleared before every leg (vllm#50891: the AOT cache key ignores limit_mm_per_prompt; a stale artifact crashes engine init)."
+  },
+  "decode_tok_s": {
+    "30000": {
+      "triton_forced":       { "mtp": 31.50, "nospec": 43.85, "session": "A" },
+      "flashinfer_explicit": { "mtp": 62.43, "nospec": 47.42, "mtp_session": "A", "nospec_session": "B" },
+      "auto_selector_47547": { "mtp": 66.09, "nospec": 48.95, "session": "B" }
+    },
+    "50000": {
+      "triton_forced":       { "mtp": 15.75, "nospec": 40.47, "session": "B" },
+      "flashinfer_explicit": { "mtp": 41.35, "nospec": 45.27, "session": "B" }
+    }
+  },
+  "timing_raw_s": {
+    "comment": "t8/t64 as printed (0.1s precision); decode_tok_s above is the probe's full-precision computation, which is the authoritative figure.",
+    "30000": {
+      "triton_forced":       { "mtp": [0.5, 2.3], "nospec": [0.3, 1.6] },
+      "flashinfer_explicit": { "mtp": [0.3, 1.2], "nospec": [0.3, 1.5] },
+      "auto_selector_47547": { "mtp": [0.3, 1.1], "nospec": [0.3, 1.4] }
+    },
+    "50000": {
+      "triton_forced":       { "mtp": [0.7, 4.3], "nospec": [0.4, 1.8] },
+      "flashinfer_explicit": { "mtp": [0.4, 1.8], "nospec": [0.4, 1.6] }
+    }
+  },
+  "readings": {
+    "mtp_delta_on_triton_pct": { "30000": -28.2, "50000": -61.1, "rocm_32k_reference": -70.8 },
+    "mtp_delta_on_healthy_backend_pct": { "30000_auto": 35.0, "50000_flashinfer": -8.7 },
+    "default_mtp_off_speedup_50k": 2.57,
+    "flashinfer_over_default_mtp_50k": 2.63,
+    "reading": "On the forced default, MTP is a net loss that deepens with context (-28.2% at 30K, -61.1% at 50K), the reporter's '3x or higher at 50K+' seen from its lower edge and the ROCm curve's -70.8% at 32K from the harder-hit hardware. On a healthy backend the same MTP is +35.0% at 30K; the residual -8.7% at 50K is drafter economics, not the pathological drop. Mixed auto-selection (FA2 sliding + FlashInfer full, what vllm#47547 produces) is the fastest configuration measured."
+  },
+  "crash_findings": {
+    "mm_prefix_validation": {
+      "symptom": "ValueError: Selected backend AttentionBackendEnum.FLASHINFER is not valid for this configuration. Reason: ['partial multimodal token full attention not supported']",
+      "mechanism": "multimodal-enabled gemma-4 sets use_mm_prefix=True; validate_configuration excludes every backend without supports_mm_prefix(); FlashInfer never overrides the False default. Fires on explicit selection too. Gate drops only when all three registered modalities are limit-0 (log line: 'running in text-only mode').",
+      "consequence": "FlashInfer is structurally unavailable to multimodal-enabled gemma-4 deployments on 0.28.0; vllm#46558 is adding the missing mm-prefix support."
+    },
+    "aot_cache_collision_50891": {
+      "symptom": "AttributeError: 'NoneType' object has no attribute 'size' at dynamo call_size, inside 'Directly load AOT compilation' during profile_run",
+      "evidence": "identical cache hash for materially different configs: 2a7f2e89a041a9e40e919d094d06fd9bd6ff677d79ee0aff01ee26d4f00c3db2 keyed both (image=0, mm on, auto->TRITON, MTP) and (all-zero, mm off, auto->FA2+FlashInfer, MTP); 2b4077ad3de16dd3c894d407455e82c70cdf76a983da3f3650781906ee0c9c5d the no-spec pair. Session B reproduced the same hashes on a fresh VM and, cold, both configs compile and run - the collision is deterministic, the artifact is what crashes.",
+      "already_reported": "vllm#50891 (open); fix PR vllm#50908's disabled_mm_modalities hash factor separates both pairs; closed vllm#27283 shows the same call_size signature.",
+      "logs": "logs/session-a/leg3b-*, leg4b-*, errors-tail-3b-4b.txt, cache-fingerprints.txt; fresh-VM control in logs/session-b/leg3d-*, leg4d-*"
+    }
+  },
+  "sessions_caveat": "Sessions A and B are different Colab VMs with the identical software stack. No configuration ran on both, so cross-session variance is unquantified; every ratio quoted above except the two 30K FlashInfer/auto comparisons is computed within one session. The 50K quartet - the headline - is entirely session B."
+}

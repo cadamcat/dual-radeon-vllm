@@ -1,0 +1,42 @@
+# leg 3b: auto mixed FA2+FlashInfer, MTP - crashed on stale AOT cache (vllm#50891)
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 20 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+=== leg3b-flashinfer-mtp: exit code 1 | full log: leg3b-flashinfer-mtp.log ===
+INFO 08-26 14:33:38 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+INFO 08-26 14:33:38 [model.py:875] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(EngineCore pid=16650) INFO 08-26 14:33:52 [cuda.py:486] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=16650) INFO 08-26 14:33:52 [cuda.py:486] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+    ...<2 lines>...
+        log_stats=log_stats,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core_client.py", line 609, in __init__
+    with launch_core_engines(
+         ~~~~~~~~~~~~~~~~~~~^
+        vllm_config, executor_class, log_stats, addresses
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ) as engine_launch:
+    ^
+  File "/usr/lib/python3.13/contextlib.py", line 148, in __exit__
+    next(self.gen)
+    ~~~~^^^^^^^^^^
+  File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/utils.py", line 1206, in launch_core_engines
+    wait_for_engine_startup(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        handshake_socket,
+        ^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        launch,
+        ^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/utils.py", line 1286, in wait_for_engine_startup
+    raise RuntimeError(
+    ...<8 lines>...
+    )
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

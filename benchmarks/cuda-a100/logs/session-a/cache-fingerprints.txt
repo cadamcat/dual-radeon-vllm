@@ -1,0 +1,18 @@
+# torch_aot_compile hash per leg: 3b/4b reuse leg-3/leg-4 hashes; 3c compiles fresh
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 26 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+leg1-triton-mtp                    cache=['0fcc2cc7', '5ba0e3aa'] aot_loads=0
+leg2-triton-nospec                 cache=['56ed81dc'] aot_loads=0
+leg3-flashinfer-mtp                cache=['2a7f2e89', '503b13b0'] aot_loads=0
+leg4-flashinfer-nospec             cache=['2b4077ad'] aot_loads=0
+leg3b-flashinfer-mtp               cache=['2a7f2e89'] aot_loads=1
+leg4b-flashinfer-nospec            cache=['2b4077ad'] aot_loads=1
+leg3c-flashinfer-explicit-mtp      cache=['1fb9c968', '9c014ea4'] aot_loads=0
+
+(EngineCore pid=19316) INFO 08-26 14:42:57 [cuda.py:426] Using AttentionBackendEnum.FLASHINFER backend.
+(EngineCore pid=19316) INFO 08-26 14:42:58 [cuda.py:426] Using AttentionBackendEnum.FLASHINFER backend.
+(EngineCore pid=19316) INFO 08-26 14:44:46 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/1fb9c9683d0a3a6f5888db038d040a22a21eced3c712de885b1a1f3f4a34ae31/rank_0_0/model
+(EngineCore pid=19316) INFO 08-26 14:44:58 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/9c014ea4b86b57fee50bda309b5326813cc590803ad0697a769b386658a63262/rank_0_0/model

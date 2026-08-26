@@ -1,0 +1,9 @@
+# leg 4 (superseded probe: image=0 only, mm still enabled): auto selection, no spec
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 16 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+=== leg4-flashinfer-nospec: exit code 0 | full log: leg4-flashinfer-nospec.log ===
+(EngineCore pid=12437) INFO 08-26 14:18:59 [cuda.py:486] Using TRITON_ATTN attention backend out of potential backends: ['TRITON_ATTN', 'FLEX_ATTENTION'].
+RESULT decode_tok_s=43.67  t8=0.3s t64=1.6s

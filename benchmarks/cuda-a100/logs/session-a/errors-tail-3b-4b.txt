@@ -1,0 +1,50 @@
+# last 20 ERROR lines of legs 3b and 4b (AttributeError NoneType .size at dynamo call_size)
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 25 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+===== leg3b-flashinfer-mtp: last 20 ERROR lines =====
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     hidden_states = self.language_model.model(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         input_ids,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     ...<4 lines>...
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]         **kwargs,
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     )
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/compilation/decorators.py", line 573, in __call__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     output = self.aot_compiled_fn(self, *args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/aot_compile.py", line 244, in __call__
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return self.fn(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]            ~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/model_executor/models/gemma4.py", line 1269, in forward
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     def forward(
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_compile.py", line 54, in inner
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return disable_fn(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/eval_frame.py", line 1446, in _fn
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return fn(*args, **kwargs)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/utils.py", line 5543, in call_size
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]     return x.size(i)
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346]            ^^^^^^
+(EngineCore pid=16650) ERROR 08-26 14:34:05 [core.py:1346] AttributeError: 'NoneType' object has no attribute 'size'
+
+===== leg4b-flashinfer-nospec: last 20 ERROR lines =====
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     hidden_states = self.language_model.model(
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]         input_ids,
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     ...<4 lines>...
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]         **kwargs,
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     )
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/compilation/decorators.py", line 573, in __call__
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     output = self.aot_compiled_fn(self, *args, **kwargs)
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/aot_compile.py", line 244, in __call__
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     return self.fn(*args, **kwargs)
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]            ~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/model_executor/models/gemma4.py", line 1269, in forward
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     def forward(
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_compile.py", line 54, in inner
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     return disable_fn(*args, **kwargs)
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/eval_frame.py", line 1446, in _fn
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     return fn(*args, **kwargs)
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/torch/_dynamo/utils.py", line 5543, in call_size
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]     return x.size(i)
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346]            ^^^^^^
+(EngineCore pid=18643) ERROR 08-26 14:41:12 [core.py:1346] AttributeError: 'NoneType' object has no attribute 'size'
+

@@ -1,0 +1,13 @@
+# leg 3c: explicit attention_backend=FLASHINFER, all modalities zeroed, MTP on
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 24 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+=== leg3c-flashinfer-explicit-mtp: exit code 0 | full log: leg3c-flashinfer-explicit-mtp.log ===
+INFO 08-26 14:42:38 [api_utils.py:272] non-default args: {'max_model_len': 33000, 'gpu_memory_utilization': 0.9, 'disable_log_stats': True, 'limit_mm_per_prompt': {'image': 0, 'video': 0, 'audio': 0}, 'speculative_config': {'method': 'mtp', 'model': 'google/gemma-4-31B-it-assistant', 'num_speculative_tokens': 1}, 'attention_backend': 'FLASHINFER', 'model': 'google/gemma-4-31B-it-qat-w4a16-ct'}
+INFO 08-26 14:42:44 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+INFO 08-26 14:42:44 [model.py:875] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(EngineCore pid=19316) INFO 08-26 14:42:57 [cuda.py:426] Using AttentionBackendEnum.FLASHINFER backend.
+(EngineCore pid=19316) INFO 08-26 14:42:58 [cuda.py:426] Using AttentionBackendEnum.FLASHINFER backend.
+RESULT decode_tok_s=62.43  t8=0.3s t64=1.2s

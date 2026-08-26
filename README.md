@@ -326,6 +326,17 @@ to every measured point) is in
 
 ![prefill throughput vs context length, patched](docs/assets/prefill-vs-context-2026-08-24.svg)
 
+**The speculative-decoding collapse, taken to CUDA.** One rented A100 replaces
+both Radeons and the story survives the port: on the routing gemma-4 gets by
+default (TRITON_ATTN whenever FA4 is unavailable), turning MTP **on** costs
+−28.2% at 30 K and −61.1% at 50 K of context — turning it off is 2.57× faster
+there, which is [vllm#52049](https://github.com/vllm-project/vllm/issues/52049)
+reproduced. Route the same model to FlashInfer and speculation is a gain again.
+Same kernel guard, same collapse, different vendor — measured the same day, one
+GPU, [the annex has the logs](benchmarks/cuda-a100/README.md):
+
+![gemma-4 MTP backend matrix on A100](docs/assets/gemma4-mtp-backend-matrix-a100.svg)
+
 ### Want the raw numbers?
 
 ```bash
@@ -504,6 +515,9 @@ benchmarks/   The measurement data and everything that produced it
   repro-mmap-prot.hip.cpp  the same case in plain HIP, for machines with no
                        PyTorch — a hypervisor host, a rescue image, a bare ROCm
                        install
+  cuda-a100/           one day on a rented A100: the gemma-4 MTP collapse
+                       reproduced on CUDA and removed by rerouting — the
+                       cross-vendor control for docs/speculative-decoding-on-rdna.md
 
 patches/      Downstream changes to the installed vLLM, so the numbers above can
               be reproduced. None is a recommendation to run in production

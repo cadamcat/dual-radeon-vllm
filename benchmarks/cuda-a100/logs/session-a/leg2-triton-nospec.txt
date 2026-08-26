@@ -1,0 +1,11 @@
+# leg 2: forced TRITON default, no speculation, 30K
+# Extracted from gemma4_backend_matrix_a100_v2_ran.ipynb, code cell 11 output.
+# Colab session A, 2026-08-26 (UTC times in the lines below). The session-A VM
+# was recycled before its leg*.log files were saved; these notebook-captured
+# stdout excerpts are the surviving raw record for this session.
+
+=== leg2-triton-nospec: exit code 0 | full log: leg2-triton-nospec.log ===
+INFO 08-26 14:06:19 [config.py:242] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend.
+(EngineCore pid=8282) INFO 08-26 14:06:31 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+(EngineCore pid=8282) INFO 08-26 14:06:31 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+RESULT decode_tok_s=43.85  t8=0.3s t64=1.6s
