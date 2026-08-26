@@ -357,6 +357,7 @@ def main():
         ck(f"45450 README ladder, stock {depth}", s_claim, s)
         ck(f"45450 README ladder, ported {depth}", p_claim, p)
         ck(f"45450 README ladder, ratio {depth}", r_claim, p / s)
+
     ck("45450 README, vs FlashInfer 30K pct", "2.2", (1 - d30 / fi30["mtp"]) * 100)
     ck("45450 README, vs FlashInfer 50K pct", "8.3", (1 - d50 / fi50["mtp"]) * 100)
     ck("45450 README, cross-VM spread 30K pct", "5.6", (1 - c30 / tf30["mtp"]) * 100)
@@ -407,6 +408,23 @@ def main():
        else 0)
     ck("spec-decode doc §5, kcorrect max diff within one bf16 ulp", "1",
        1 if max(r["max_abs_diff"] for r in kc) <= 1e-3 else 0)
+
+    # --- README "Two Radeons against one A100" ------------------------------
+    # 3D-path A100-over-Radeons advantage at matched depths, and the other
+    # cross-vendor readings the section quotes. The 30K A100 leg is compared
+    # against the Radeons' 32K rung, as the prose states.
+    ck("README two-vs-one, advantage 1K", "1.48", leg_result("D1K.log") / pt[1024])
+    ck("README two-vs-one, advantage 8K", "1.20", leg_result("D8K.log") / pt[8192])
+    ck("README two-vs-one, advantage 16K", "1.14", leg_result("D16K.log") / pt[16384])
+    ck("README two-vs-one, advantage 30-32K", "1.87", leg_result("D30.log") / pt[32768])
+    ck("README two-vs-one, 2D retention Radeons pct", "15.8", st[32768] / st[1024] * 100)
+    ck("README two-vs-one, 2D retention A100 pct", "33.6",
+       leg_result("C30.log") / leg_result("C1K.log") * 100)
+    ck("README two-vs-one, spec gain A100 pct", "39",
+       (leg_result("D30.log") / M["30000"]["triton_forced"]["nospec"] - 1) * 100)
+    splitkv_stock = json.load(open(os.path.join(SDIR, "splitkv-31b-stock.json")))
+    nospec32 = {r["depth"]: r["tok_per_s"] for r in splitkv_stock["rows"]}[32768]
+    ck("README two-vs-one, spec gain Radeons pct", "7.5", (pt[32768] / nospec32 - 1) * 100)
 
     id_lists = sum((leg_ids(f) for f in ("A1.log", "A2.log", "B1.log", "B2.log")), [])
     ck("45450 README, 8/8 generations identical", "1",

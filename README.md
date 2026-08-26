@@ -341,6 +341,48 @@ and [speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdn
 
 ![speculative decode on the 2D vs the 3D path](docs/assets/spec-decode-45450-ladder.svg)
 
+### Two Radeons against one A100
+
+The ladder above permits a cross-vendor reading, and at this regime it is
+not the blowout the price gap suggests. Batch-1 decode is
+bandwidth-bound, and two 800 GB/s cards against one 2.0 TB/s card is only
+a 1.27× difference in nominal ceiling. Measured on the healthy 3D path,
+MTP on, matched depths:
+
+| context | 2× RX 7900 XT | A100 80G | A100 advantage |
+|--:|--:|--:|--:|
+| 1K | 74.89 | 110.71 | 1.48× |
+| 8K | 63.25 | 75.63 | 1.20× |
+| 16K | 63.09 | 72.13 | **1.14×** |
+| 32K vs 30K | 32.57 | 61.03 | 1.87× |
+
+The gap is U-shaped, and each end has its own mechanism. At 1K the step
+time is short and TP=2's fixed all-reduce floor weighs heaviest — the
+single A100 pays no such tax. In the middle the two nearly converge:
+fourteen percent apart at 16K, on hardware an order of magnitude apart
+in price. Past 16K the KV scan dominates and the difference in realized
+bandwidth (the Radeons' decode utilization measures 38 % here)
+compounds again.
+
+Two more readings from the same table:
+
+- **The 2D path punishes tensor parallelism itself.** Splitting KV heads
+  across two cards halves each card's 2D workgroups — 8 per rank against
+  the A100's 16 — so the starved path starves harder: at 30K-32K the 2D
+  path retains 15.8 % of its 1K rate here, against 33.6 % on the A100.
+  The same collapse, same kernel, twice the damage.
+- **TP erodes speculation economics too.** The MTP drafter is small, but
+  every draft step still pays the all-reduce floor, which does not
+  shrink with model size: speculation's net win over no-speculation is
+  +39 % on the A100 at 30K and only +7.5 % here at 32K.
+
+What this table does not cover is the territory the A100 wins outright:
+prefill and batched throughput are compute-bound, where its tensor cores
+run against RDNA3 WMMA that already realizes only ~37 % of nominal peak
+here — expect multiples, not percentages. One model, one stack per
+platform (the stack each side actually runs today), single-run probes;
+the campaign-grade version of this comparison is future work.
+
 ### Want the raw numbers?
 
 ```bash
