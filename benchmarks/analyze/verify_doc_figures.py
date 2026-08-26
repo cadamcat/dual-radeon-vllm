@@ -88,23 +88,28 @@ def main():
         num = float(text)
         checks.append((abs(num - value) <= allowed + 1e-12, where, text, value, allowed))
 
-    # --- README.md, decode table, 2026-07-25 ---------------------------------
-    ck("README decode table, 26B MoE 500", "107.8", tps(jul, "E-26B-tp2", 500))
-    ck("README decode table, 26B MoE 32K", "72.8", tps(jul, "E-26B-tp2", 32000))
-    ck("README decode table, 8B 500", "79.6", tps(jul, "B-8B-tp2", 500))
-    ck("README decode table, 31B 32K", "29.5", tps(jul, "C-31B-tp2", 32000))
-    ck("README decode table, 27B SSM 32K", "4.2", tps(jul, "D-27B-tp2", 32000))
+    # --- benchmarks.md, decode table, 2026-07-25 (moved off the README
+    # front page on 2026-08-26; the July campaign lives in benchmarks.md) ----
+    ck("benchmarks.md decode table, 26B MoE 500", "107.8", tps(jul, "E-26B-tp2", 500))
+    ck("benchmarks.md decode table, 26B MoE 32K", "72.8", tps(jul, "E-26B-tp2", 32000))
+    ck("benchmarks.md decode table, 8B 500", "79.6", tps(jul, "B-8B-tp2", 500))
+    ck("benchmarks.md decode table, 31B 32K", "29.5", tps(jul, "C-31B-tp2", 32000))
+    ck("benchmarks.md decode table, 27B SSM 32K", "4.2", tps(jul, "D-27B-tp2", 32000))
 
-    # --- README.md, patched table, 2026-08-24 -------------------------------
-    ck("README patched table, Muse 500", "43.7", tps(aug, "G-30B-tp2", 500))
-    ck("README patched table, Muse 8K", "37.8", tps(aug, "G-30B-tp2", 8000))
-    ck("README patched table, Muse 32K", "37.4", tps(aug, "G-30B-tp2", 32000))
-    ck("README patched table, Qwen3.8 500", "12.3", tps(aug, "D8-27B-tp2", 500))
-    ck("README patched table, Qwen3.8 8K", "11.7", tps(aug, "D8-27B-tp2", 8000))
-    ck("README patched table, Qwen3.8 32K", "10.7", tps(aug, "D8-27B-tp2", 32000))
-    ck("README patched table, gemma-3 500", "44.8", tps(aug, "F-27B-tp2", 500))
-    ck("README patched table, gemma-3 8K", "34.6", tps(aug, "F-27B-tp2", 8000))
-    ck("README patched table, gemma-3 32K", "22.1", tps(aug, "F-27B-tp2", 32000))
+    # --- README.md, the single decode table (2026-08-24 campaign) -----------
+    for cfg, name, claims in (
+        ("E-26B-tp2", "26B MoE", ("107.7", "92.6", "72.9")),
+        ("B-8B-tp2", "8B", ("79.5", "73.4", "61.4")),
+        ("A-12B-tp2", "12B", ("59.9", "52.0", "41.4")),
+        ("C-31B-tp2", "31B", ("42.8", "36.6", "29.3")),
+        ("G-30B-tp2", "Muse", ("43.7", "37.8", "37.4")),
+        ("D8-27B-tp2", "Qwen3.8", ("12.3", "11.7", "10.7")),
+    ):
+        for target, claim in zip((500, 8000, 32000), claims):
+            ck(f"README decode table 08-24, {name} {target}", claim, tps(aug, cfg, target))
+    ck("README gemma-3 note, 500", "44.8", tps(aug, "F-27B-tp2", 500))
+    ck("README gemma-3 note, 8K", "34.6", tps(aug, "F-27B-tp2", 8000))
+    ck("README gemma-3 note, 32K", "22.1", tps(aug, "F-27B-tp2", 32000))
 
     # --- benchmarks.md §2, slopes on stock vLLM -----------------------------
     ck("benchmarks.md §2 slope, 8B", "0.118", slope_us(jul, "B-8B-tp2"))

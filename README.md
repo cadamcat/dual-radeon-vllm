@@ -243,35 +243,27 @@ container: 372 measurements, nine configurations, six of them the July ones
 rerun as controls. Four reproduce within 0.25 %, one is too noisy to say, and one
 does not — which is discussed rather than dropped ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)).
 
-![decode throughput vs context length](docs/assets/decode-vs-context.svg)
-
-### vLLM, tensor parallel — decode tok/s
-
-| Model | Precision | 500 tok | 8 K | 32 K | |
-|---|---|---:|---:|---:|---|
-| **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.8** | 92.6 | **72.8** | 🟢 fastest of the five — *needs one 26-min compile, then cached* |
-| Qwen3-8B | BF16 dense | 79.6 | 73.3 | 61.4 | 🟢 TP=1 → TP=2 is **1.70×** |
-| gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.9 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
-| **gemma-4-31B-it** | w4a16 QAT dense | 43.2 | 36.9 | 29.5 | 🟢 the workhorse. 265 W × 2 synchronised |
-| Qwen3.6-27B | AWQ int4, **hybrid SSM** | 12.1 | 8.5 | **4.2** | 🔴 degrades *linearly* with context |
-
-### The same machine patched, 2026-08-24
-
-Three configurations that stock vLLM cannot reach, measured the same way. The
-four July models above were rerun alongside them as controls and come back
-within 0.25 %, except gemma-4-31B at −0.85 %, which is recorded as unexplained.
-
-| Model | Precision | 500 tok | 8 K | 32 K | |
-|---|---|---:|---:|---:|---|
-| **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
-| **Qwen3.8-27B** | AWQ int4, **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 same architecture as the 27B above. **2.51× at 32 K**, slope 12.4× flatter |
-| gemma-3-27b | w4a16, sliding window 1024 | 44.8 | 34.6 | 22.1 | 🟡 **8.05 → 22.05 at 32 K** from the block-skip, but the steepest curve on the patched machine: 16 KV heads on its full-attention layers against Muse-Glimmer's 2 |
-
 ![decode throughput vs context length, patched](docs/assets/decode-vs-context-2026-08-24.svg)
 
-Same axes as the chart above, so the two can be read against each other. gemma-3
-is measured but not plotted: between 500 and 4 000 it runs within two tok/s of
-both Muse-Glimmer and gemma-4-31B and the three lines read as one.
+### vLLM, tensor parallel — decode tok/s (2026-08-24, patched container)
+
+The six configurations in the chart, measured the same way. The four July
+models were rerun as controls and come back within 0.25 %, except gemma-4-31B
+at −0.85 %, which is recorded as unexplained. The stock 2026-07-25 campaign —
+chart and table — lives in [benchmarks.md](docs/benchmarks.md).
+
+| Model | Precision | 500 tok | 8 K | 32 K | |
+|---|---|---:|---:|---:|---|
+| **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.7** | 92.6 | **72.9** | 🟢 fastest of the nine — *needs one 26-min compile, then cached* |
+| Qwen3-8B | BF16 dense | 79.5 | 73.4 | 61.4 | 🟢 TP=1 → TP=2 is **1.70×** |
+| gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
+| **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
+| **gemma-4-31B-it** | w4a16 QAT dense | 42.8 | 36.6 | 29.3 | 🟢 the workhorse. 265 W × 2 synchronised |
+| **Qwen3.8-27B** | AWQ int4, **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter — still the slowest here |
+
+gemma-3-27b (44.8 / 34.6 / 22.1) is measured but not plotted: between 500 and
+4 000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the
+three lines read as one.
 
 ### llama.cpp, for comparison
 
@@ -286,13 +278,10 @@ both Muse-Glimmer and gemma-4-31B and the three lines read as one.
 
 **What the second GPU actually buys.** Dashed is one card, solid is two. The blue pair
 (BF16) separates; the green pair (4-bit) barely does. Same machine, same interconnect,
-same RCCL, and a threefold difference in what the second card is worth:
-
-![single card vs dual card](docs/assets/tp1-vs-tp2.svg)
-
-The same pair on the patched container a month later, which is the closest thing
-here to a repeatability check on the whole apparatus — nothing in those patches
-touches either model's code path:
+same RCCL, and a threefold difference in what the second card is worth. This is the
+2026-08-24 rerun; the July original — within 0.25 % of it, and the closest thing here
+to a repeatability check on the whole apparatus — is in
+[benchmarks.md](docs/benchmarks.md):
 
 ![single card vs dual card, patched](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
@@ -336,6 +325,18 @@ Same kernel guard, same collapse, different vendor — measured the same day, on
 GPU, [the annex has the logs](benchmarks/cuda-a100/README.md):
 
 ![gemma-4 MTP backend matrix on A100](docs/assets/gemma4-mtp-backend-matrix-a100.svg)
+
+**The collapse, fixed — on both vendors.** The same evening, the fix surfaced:
+[vllm#45450](https://github.com/vllm-project/vllm/pull/45450) admits speculative
+verify steps into the segmented 3D path, and we validated it the day it was
+found — bit-exact output on the A100, one-ULP-bounded at the kernel on the
+Radeons. Dashed is today's default, solid is the admission: **8.81 → 32.57
+tok/s at 32 K** on this machine (3.70×, MTP net-positive at every depth) and
+14.10 → 37.91 at 50 K on the A100. The case file:
+[45450-validation](benchmarks/cuda-a100/45450-validation/README.md) and
+[speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdna.md):
+
+![the MTP collapse fixed on both vendors](docs/assets/spec-decode-45450-ladder.svg)
 
 ### Want the raw numbers?
 
@@ -543,7 +544,7 @@ docs/
                        the correctness argument we had to withdraw and replace
   deploy-vllm.md       step-by-step deployment
   diagnosis.md         is this your bug?
-  assets/              the four charts, as standalone SVG
+  assets/              every chart above and in docs/, as standalone SVG
 
 ```
 
