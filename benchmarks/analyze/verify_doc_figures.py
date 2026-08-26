@@ -156,6 +156,12 @@ def main():
         ck("§6 offset, RSD max", "0.146", rep["relative_stddev_across_the_three_pct"]["max"])
         ck("§6 offset, warm minus cold",
            "0.11", off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
+        ab = off["atomics_ab_2026_08_26"]
+        ck("§6 A/B run4 fresh boot", "-0.26",
+           ab["offset_against_july_pct"]["run4_fresh_boot"])
+        ck("§6 A/B run5 warm", "-0.78", ab["offset_against_july_pct"]["run5_warm"])
+        ck("§6 A/B run5 vs August mean", "0.07", ab["run5_vs_august_mean_pct"])
+        ck("§6 A/B run4-run5 gap", "0.52", ab["run4_vs_run5_offset_gap_pct"])
 
     # --- sliding-window kernel block, read out of the committed trace tables ---
     swin = os.path.join(HERE, "..", "sliding-window-block-skip.json")

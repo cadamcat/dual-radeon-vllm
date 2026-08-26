@@ -1,7 +1,7 @@
 {
   "what": "gemma-4-31B-it-qat-w4a16 decodes 0.85% slower in the 2026-08-24 campaign than in the 2026-07-25 one, at every context length, and the cause is not known.",
   "why_it_is_here": "It is the one of six controls whose offset is both sizeable and tightly measured. gemma-4-12B at TP=1 is nominally -0.82% but spans -3.95 to +1.50, wide enough that its mean says nothing; the other four reproduce July within 0.25%. Publishing a campaign comparison means saying what did not reconcile, not only what did.",
-  "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-24 22:08 UTC (cold), 2026-08-24 22:30 UTC (warm, started immediately after the cold run)",
+  "measured": "2026-08-24 18:05 UTC (in campaign), 2026-08-24 22:08 UTC (cold), 2026-08-24 22:30 UTC (warm, started immediately after the cold run); 2026-08-26 11:17 and 11:41 UTC (no-atomics A/B, runs 4 and 5)",
   "machine": {
     "gpu": "2x Radeon RX 7900 XT (gfx1100), TP=2, VFIO guest",
     "july_kernel": "7.0.0-28-generic",
@@ -45,15 +45,27 @@
     "reading": "Junction climbs from 58C to 99C inside a single 19-minute configuration, so both runs cover most of the range regardless of how they started. Across that range the warm run is 0.11% faster than the cold one, with the per-point range spanning zero. No thermal effect on decode throughput is measurable here between 38C and 100C. Power draw is identical to July's, which is not what throttling looks like.",
     "separate_hardware_note": "96-99C junction under sustained decode is 6-9C above the 2026-07-23 acceptance test for the interposed fan (92.8C card1, 90.1C card2, 8-way concurrent load). It remains 11C below the 110C throttle line. That is a cooling observation, not an explanation of the offset."
   },
+  "atomics_ab_2026_08_26": {
+    "design": "hostpciX put back to the all-functions form (0000:0b:00 / 0000:44:00), guest rebooted, no-atomics state verified (amdgpu printed 'PCIE atomic ops is not supported' for both cards; emulated root ports report AtomicOpsCap 32bit- 64bit-), then this one configuration run twice with the byte-identical runner the August reruns used. Same guest kernel 7.0.0-30, same container and vLLM build as August. Config reverted and re-verified afterwards.",
+    "runs": "run4 2026-08-26 11:17-11:39 UTC, first GPU work after a fresh guest boot (~9 min uptime); run5 11:41-12:04 UTC, started two minutes after run4 finished. 44 ok / 0 err each.",
+    "offset_against_july_pct": {
+      "run4_fresh_boot": -0.258,
+      "run5_warm": -0.78
+    },
+    "run5_vs_august_mean_pct": 0.067,
+    "run4_vs_run5_offset_gap_pct": 0.523,
+    "reading": "AtomicOps is ruled out. Run 5, with the capability removed and machine state matching the August runs' long-uptime profile, lands inside the August band (-0.78% vs July; +0.07% vs the August mean), so the capability is performance-neutral for this stack. Run 4, the only run of the five taken on a freshly booted guest, nearly closes the offset (-0.26%) with atomics equally absent: the two no-atomics runs disagree by 0.52 points, nearly seven times the August trio's 0.077% RSD. Guest boot state moves this configuration more than the passthrough change does, which puts it on the candidate list and weakens the July comparison itself - nothing recorded whether July ran on a fresh boot."
+  },
   "ruled_out": [
     "Thermal. See above.",
     "The w4a16 kernel path. gemma-4-12B is the same quantisation on the same path and reproduces July at -0.02%.",
     "A machine-wide regression. Qwen3-8B -0.10%, gemma-4-26B-A4B -0.23%, Qwen3-8B at TP=1 +0.01%.",
-    "Run-to-run variance. 0.077% RSD across three runs against a 0.85% offset.",
-    "Campaign position. July's run was fifth, two hours in; run 1 was first on a cold machine; both are 0.85% apart from July in the same direction."
+    "Run-to-run variance. 0.077% RSD across three runs against a 0.85% offset. Within a matched machine state: across a fresh guest boot the same configuration moved 0.52% with no config change - see atomics_ab_2026_08_26.",
+    "Campaign position. July's run was fifth, two hours in; run 1 was first on a cold machine; both are 0.85% apart from July in the same direction.",
+    "PCIe AtomicOps. Removed for runs 4 and 5 on 2026-08-26; run 5, state-matched to the August runs, reproduces the August offset with the capability absent. See atomics_ab_2026_08_26."
   ],
   "not_ruled_out": [
-    "PCIe AtomicOps. The guest had none in July and has them now: hostpciX was rewritten from the all-functions form to the single-function one on 2026-08-23 at 14:17 UTC, twenty-eight hours before the August campaign. Cheapest of the three to test — put hostpciX back and rerun this one configuration.",
+    "Guest uptime state. Run 4, the only run taken on a freshly booted guest, sits 0.52 points from run 5 taken twenty minutes later - larger than any config candidate has measured. July's boot state was not recorded.",
     "The guest kernel, 7.0.0-28 to 7.0.0-30. It is the largest uncontrolled difference, but it should not be selective for one model when three others on the same machine are unaffected.",
     "Something in the vLLM build between 0.23 and 0.23.1.dev1 that touches this model's shape specifically.",
     "A difference in the model files themselves. Not checked: no checksum of the July weights was kept."
@@ -67,7 +79,9 @@
       "aug_run3_warm": 42.82,
       "warm_vs_cold_pct": 0.269,
       "aug_mean_vs_july_pct": -0.85,
-      "aug_rsd_pct": 0.139
+      "aug_rsd_pct": 0.139,
+      "noatom_run4_fresh_boot": 43.14,
+      "noatom_run5_warm": 42.875
     },
     {
       "context": 1000,
@@ -77,7 +91,9 @@
       "aug_run3_warm": 41.7,
       "warm_vs_cold_pct": 0.192,
       "aug_mean_vs_july_pct": -0.79,
-      "aug_rsd_pct": 0.0786
+      "aug_rsd_pct": 0.0786,
+      "noatom_run4_fresh_boot": 42.07,
+      "noatom_run5_warm": 41.79
     },
     {
       "context": 2000,
@@ -87,7 +103,9 @@
       "aug_run3_warm": 40.62,
       "warm_vs_cold_pct": -0.147,
       "aug_mean_vs_july_pct": -0.857,
-      "aug_rsd_pct": 0.1462
+      "aug_rsd_pct": 0.1462,
+      "noatom_run4_fresh_boot": 41.055,
+      "noatom_run5_warm": 40.805
     },
     {
       "context": 4000,
@@ -97,7 +115,9 @@
       "aug_run3_warm": 39.44,
       "warm_vs_cold_pct": 0.152,
       "aug_mean_vs_july_pct": -0.863,
-      "aug_rsd_pct": 0.0749
+      "aug_rsd_pct": 0.0749,
+      "noatom_run4_fresh_boot": 39.725,
+      "noatom_run5_warm": 39.445
     },
     {
       "context": 6000,
@@ -107,7 +127,9 @@
       "aug_run3_warm": 37.97,
       "warm_vs_cold_pct": 0.013,
       "aug_mean_vs_july_pct": -0.793,
-      "aug_rsd_pct": 0.0062
+      "aug_rsd_pct": 0.0062,
+      "noatom_run4_fresh_boot": 38.145,
+      "noatom_run5_warm": 37.935
     },
     {
       "context": 8000,
@@ -117,7 +139,9 @@
       "aug_run3_warm": 36.62,
       "warm_vs_cold_pct": 0.0,
       "aug_mean_vs_july_pct": -0.692,
-      "aug_rsd_pct": 0.0386
+      "aug_rsd_pct": 0.0386,
+      "noatom_run4_fresh_boot": 36.755,
+      "noatom_run5_warm": 36.565
     },
     {
       "context": 12000,
@@ -127,7 +151,9 @@
       "aug_run3_warm": 35.005,
       "warm_vs_cold_pct": 0.057,
       "aug_mean_vs_july_pct": -0.785,
-      "aug_rsd_pct": 0.0526
+      "aug_rsd_pct": 0.0526,
+      "noatom_run4_fresh_boot": 35.115,
+      "noatom_run5_warm": 34.985
     },
     {
       "context": 16000,
@@ -137,7 +163,9 @@
       "aug_run3_warm": 33.375,
       "warm_vs_cold_pct": 0.24,
       "aug_mean_vs_july_pct": -0.892,
-      "aug_rsd_pct": 0.1003
+      "aug_rsd_pct": 0.1003,
+      "noatom_run4_fresh_boot": 33.51,
+      "noatom_run5_warm": 33.335
     },
     {
       "context": 20000,
@@ -147,7 +175,9 @@
       "aug_run3_warm": 31.74,
       "warm_vs_cold_pct": 0.126,
       "aug_mean_vs_july_pct": -0.978,
-      "aug_rsd_pct": 0.0635
+      "aug_rsd_pct": 0.0635,
+      "noatom_run4_fresh_boot": 31.835,
+      "noatom_run5_warm": 31.72
     },
     {
       "context": 24000,
@@ -157,7 +187,9 @@
       "aug_run3_warm": 30.705,
       "warm_vs_cold_pct": 0.114,
       "aug_mean_vs_july_pct": -0.968,
-      "aug_rsd_pct": 0.058
+      "aug_rsd_pct": 0.058,
+      "noatom_run4_fresh_boot": 30.81,
+      "noatom_run5_warm": 30.68
     },
     {
       "context": 32000,
@@ -167,7 +199,9 @@
       "aug_run3_warm": 29.33,
       "warm_vs_cold_pct": 0.154,
       "aug_mean_vs_july_pct": -0.835,
-      "aug_rsd_pct": 0.0928
+      "aug_rsd_pct": 0.0928,
+      "noatom_run4_fresh_boot": 29.425,
+      "noatom_run5_warm": 29.3
     }
   ]
 }

@@ -212,4 +212,9 @@ configuration default.
 - **Other hypervisors.** Only Proxmox/QEMU was tested. The QEMU condition is
   generic, but libvirt and others compose devices differently.
 - **Performance.** Whether stock RCCL with real atomics is faster or slower than
-  our no-hostcall build was not measured. Only correctness was.
+  our no-hostcall build was not measured. Only correctness was. The adjacent
+  question is measured now: the same no-hostcall build with the capability
+  present against absent moved +0.07 % under a matched machine state
+  ([gemma-4-31b-campaign-offset.json](../benchmarks/gemma-4-31b-campaign-offset.json),
+  the 2026-08-26 A/B), so the platform capability itself is
+  performance-neutral here; the library comparison stands open.

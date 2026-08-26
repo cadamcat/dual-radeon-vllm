@@ -358,21 +358,22 @@ Also ruled out: the w4a16 path, since gemma-4-12B is the same quantisation on th
 same path at −0.02 %; and anything machine-wide, since four of the five other
 controls reproduce within 0.25 % and the fifth is too noisy to say.
 
-**Three differences between the campaigns are not ruled out**, and the third of
-them is one this repository should have noticed first. The guest kernel moved
-from `7.0.0-28` to `7.0.0-30`. The vLLM build moved from 0.23 to 0.23.1.dev1.
-And **the guest gained PCIe AtomicOps**: `hostpci0`/`hostpci1` were rewritten from
-the all-functions form to the single-function one on 2026-08-23 at 14:17 UTC,
-about twenty-eight hours before this campaign started, so July ran without
-AtomicOps and August ran with them. That is the change this repository is
-largely about, which is not a reason to leave it off the list.
-
-None of the three should be selective for one model out of six, which is the
-argument against each of them and not evidence for any. The AtomicOps change is
-the cheapest to test: putting `hostpciX` back to the all-functions form and
-rerunning this one configuration would settle it in half an hour. Until that is
-run it stays on the list. **Recorded as unexplained**, with the runs, the
-temperature trace and the eliminations in
+**Three differences between the campaigns were candidates**, and the cheapest
+was tested on 2026-08-26: `hostpciX` went back to the all-functions form, the
+guest booted with `PCIE atomic ops is not supported` on both cards again, and
+this configuration ran twice more with nothing else changed. **AtomicOps is
+ruled out.** The state-matched run — started warm, twenty minutes into the
+session, like the August three — landed at −0.78 % against July with the
+capability absent, inside the August band, and +0.07 % against the August
+mean: the capability is performance-neutral for this stack. The other run
+muddied rather than helped: taken on a freshly booted guest, the same
+configuration measured −0.26 %, so the two no-atomics runs disagree by 0.52
+points — nearly seven times the August trio's 0.077 % RSD. A fresh boot moves
+this model more than the passthrough change does, which adds **guest uptime
+state** to the list and weakens the July comparison itself, since nothing
+recorded whether July's campaign ran on a fresh boot. The kernel
+(`7.0.0-28` → `-30`) and the vLLM build remain. **Still unexplained**, with
+all five runs, the temperature trace and the eliminations in
 [`gemma-4-31b-campaign-offset.json`](../benchmarks/gemma-4-31b-campaign-offset.json).
 
 One thing the temperature trace does say, separately: sustained decode holds
