@@ -3,7 +3,7 @@
 On `Muse-Glimmer-30B` at 32 768 tokens of context that costs **70.67 % of the
 capture's CUDA time** (the capture also holds one prefill step; decode-only
 shares are in §3). Removing it is worth **3.15×** there and **2.75× on `gemma-3-27b`**.
-Eleven lines. Upstream `main` still does it as of 2026-08-24.
+Eleven lines. Upstream `main` still does it as of 2026-08-26.
 
 **Someone proposed the same eleven lines a month before we found them.**
 [vllm#49588](https://github.com/vllm-project/vllm/pull/49588), opened 2026-07-23,
@@ -360,7 +360,8 @@ wording, not in reasoning.
 
 We found this by running vLLM's own duplicate check from `AGENTS.md` before
 drafting anything, which is the point of that check. **Nothing here has been
-opened as a second PR and nothing has been posted to that one.**
+opened as a second PR.** The evidence on this page was posted to that PR on
+2026-08-26, as a comment in support of it leaving draft.
 
 The two bodies of evidence do not overlap:
 
