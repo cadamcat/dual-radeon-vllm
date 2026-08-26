@@ -188,6 +188,10 @@ thread on 2026-08-01, and on 2026-08-26 to
 [vllm#52049](https://github.com/vllm-project/vllm/issues/52049), a CUDA-side
 report of the same symptom on the same model — Ampere lacks FA4, so gemma-4 is
 forced onto `TRITON_ATTN` there too, and the mechanism carries over unchanged.
+That reporter confirmed that explicitly selecting `FLASHINFER` sidesteps it on
+CUDA, which fits: the collapse is specific to this Triton kernel, and an
+explicit backend choice bypasses the gemma-4 forcing. ROCm has no FlashInfer,
+so the depth-gating advice above stands here.
 
 ## 7. Not established
 
