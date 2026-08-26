@@ -183,7 +183,11 @@ threshold from SM count. Both are open as of 2026-08-01.
 **That fix does not reach this trigger.** `max_seqlen_q > 1` sits in the same
 `or` chain but is independent of the threshold, so speculation keeps falling to
 2D however the threshold is computed. What is new here is the second trigger,
-its different cause, and RDNA3 measurements.
+its different cause, and RDNA3 measurements. The trigger was posted to that
+thread on 2026-08-01, and on 2026-08-26 to
+[vllm#52049](https://github.com/vllm-project/vllm/issues/52049), a CUDA-side
+report of the same symptom on the same model — Ampere lacks FA4, so gemma-4 is
+forced onto `TRITON_ATTN` there too, and the mechanism carries over unchanged.
 
 ## 7. Not established
 
