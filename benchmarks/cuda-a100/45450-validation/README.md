@@ -77,7 +77,29 @@ is why every ratio above is within one VM.
 - Perf probe: [`../probe_matrix.py`](../probe_matrix.py) (`AUTO mtp
   30000|50000`).
 
-Limits: k=1 only (the reporter population's config); single-run probes;
-one GPU; the window-relative segmentation half of #45450 is untested
-here; bit-exactness is demonstrated for this model/depth/config, not
-proven in general.
+## k-sweep (same day, second session)
+
+The k=1 limit above is closed by a second session sweeping
+`num_speculative_tokens` — #45450's own config is k=4. Correctness
+holds at every k: for k=2 and k=4, all four generations (two per
+engine, stock 2D and patched 3D) are identical token sequences, with
+the 3D marker present exactly once in every patched leg and never in a
+stock leg (`logs-ksweep/`). Performance at 30K:
+
+| k | stock 2D | patched 3D | ratio |
+|--:|---:|---:|---:|
+| 1 | 29.75 | 61.03 | 2.05x |
+| 2 | 29.02 | 56.11 | 1.93x |
+| 4 | 27.54 | 53.40 | 1.94x |
+
+Two readings. On the 2D path, deeper speculation only digs deeper
+(29.75 -> 27.54): each extra draft token raises the per-step verify
+cost on the crippled kernel while the emitted-token gain cannot keep
+up. The admission ratio is stable near 2x across k. And k=1 is the
+throughput optimum on both paths for this model and prompt — the
+drafter's own per-step cost grows linearly in k while acceptance gains
+saturate. Acceptance-rate counters were not captured in these runs.
+
+Limits: single-run probes; one GPU; the window-relative segmentation
+half of #45450 is untested here; bit-exactness is demonstrated for
+this model/depth/config at k in {1, 2, 4}, not proven in general.

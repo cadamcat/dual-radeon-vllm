@@ -347,6 +347,28 @@ def main():
     ck("45450 README, cross-VM spread 30K pct", "5.6", (1 - c30 / tf30["mtp"]) * 100)
     ck("45450 README, cross-VM spread 50K pct", "10.5", (1 - c50 / tf50["mtp"]) * 100)
 
+    KDIR = os.path.join(HERE, "..", "cuda-a100", "45450-validation", "logs-ksweep")
+
+    def kleg_result(name):
+        text = open(os.path.join(KDIR, name)).read()
+        return float(re.search(r"RESULT decode_tok_s=([\d.]+)", text).group(1))
+
+    def kleg_ids(name):
+        text = open(os.path.join(KDIR, name)).read()
+        return [json.loads(m) for m in re.findall(r"^IDS\d (\[.*\])$", text, re.M)]
+
+    for k, s_claim, p_claim, ratio_claim in (
+        (2, "29.02", "56.11", "1.93"),
+        (4, "27.54", "53.40", "1.94"),
+    ):
+        s, p = kleg_result(f"s-k{k}-30k.log"), kleg_result(f"p-k{k}-30k.log")
+        ck(f"45450 README k-sweep, stock k={k}", s_claim, s)
+        ck(f"45450 README k-sweep, ported k={k}", p_claim, p)
+        ck(f"45450 README k-sweep, ratio k={k}", ratio_claim, p / s)
+        kid = kleg_ids(f"s-k{k}-ids.log") + kleg_ids(f"p-k{k}-ids.log")
+        ck(f"45450 README k-sweep, 4/4 identical k={k}", "1",
+           1 if len(kid) == 4 and all(x == kid[0] for x in kid) else 0)
+
     id_lists = sum((leg_ids(f) for f in ("A1.log", "A2.log", "B1.log", "B2.log")), [])
     ck("45450 README, 8/8 generations identical", "1",
        1 if len(id_lists) == 8 and all(x == id_lists[0] for x in id_lists) else 0)
