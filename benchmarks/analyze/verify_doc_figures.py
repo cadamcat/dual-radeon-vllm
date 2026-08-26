@@ -347,6 +347,16 @@ def main():
     ck("45450 README, ported 50K", "37.91", d50)
     ck("45450 README, ratio 30K", "2.05", d30 / c30)
     ck("45450 README, ratio 50K", "2.69", d50 / c50)
+    for depth, s_claim, p_claim, r_claim in (
+        ("1K", "88.67", "110.71", "1.25"),
+        ("8K", "52.51", "75.63", "1.44"),
+        ("16K", "42.23", "72.13", "1.71"),
+    ):
+        s = leg_result(f"C{depth}.log")
+        p = leg_result(f"D{depth}.log")
+        ck(f"45450 README ladder, stock {depth}", s_claim, s)
+        ck(f"45450 README ladder, ported {depth}", p_claim, p)
+        ck(f"45450 README ladder, ratio {depth}", r_claim, p / s)
     ck("45450 README, vs FlashInfer 30K pct", "2.2", (1 - d30 / fi30["mtp"]) * 100)
     ck("45450 README, vs FlashInfer 50K pct", "8.3", (1 - d50 / fi50["mtp"]) * 100)
     ck("45450 README, cross-VM spread 30K pct", "5.6", (1 - c30 / tf30["mtp"]) * 100)

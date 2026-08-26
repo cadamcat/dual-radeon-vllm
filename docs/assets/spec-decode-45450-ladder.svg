@@ -4,14 +4,14 @@
 <text x="62" y="58" font-size="10.5" fill="#8a8a8a" opacity=".7">2026-08-26 &#183; 2x RX 7900 XT (TP2, ROCm 7.14) &#183; A100 80G (CUDA, vLLM 0.28.0) &#183; gemma-4-31B w4a16 + MTP k=1 &#183; single-run probes</text>
 <line x1="62" y1="300.0" x2="762" y2="300.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
 <text x="54" y="304.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
-<line x1="62" y1="244.0" x2="762" y2="244.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="248.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">20</text>
-<line x1="62" y1="188.0" x2="762" y2="188.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="192.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">40</text>
-<line x1="62" y1="132.0" x2="762" y2="132.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="136.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">60</text>
-<line x1="62" y1="76.0" x2="762" y2="76.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
-<text x="54" y="80.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">80</text>
+<line x1="62" y1="251.3" x2="762" y2="251.3" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="255.3" font-size="10.5" fill="#8a8a8a" text-anchor="end">25</text>
+<line x1="62" y1="202.6" x2="762" y2="202.6" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="206.6" font-size="10.5" fill="#8a8a8a" text-anchor="end">50</text>
+<line x1="62" y1="153.9" x2="762" y2="153.9" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="157.9" font-size="10.5" fill="#8a8a8a" text-anchor="end">75</text>
+<line x1="62" y1="105.2" x2="762" y2="105.2" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="109.2" font-size="10.5" fill="#8a8a8a" text-anchor="end">100</text>
 <line x1="79.9" y1="300" x2="79.9" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
 <text x="79.9" y="319" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
 <line x1="197.9" y1="300" x2="197.9" y2="305" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
@@ -28,22 +28,28 @@
 <text x="745.8" y="319" font-size="10.5" fill="#8a8a8a" text-anchor="middle">50K</text>
 <text x="18" y="188" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 18 188)">decode tok/s</text>
 <text x="412" y="337" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
-<polyline points="84.0,143.6 437.9,208.3 555.9,233.3 673.9,275.3" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
-<circle cx="84.0" cy="143.6" r="3" fill="#d99a24"/>
-<circle cx="437.9" cy="208.3" r="3" fill="#d99a24"/>
-<circle cx="555.9" cy="233.3" r="3" fill="#d99a24"/>
-<circle cx="673.9" cy="275.3" r="3" fill="#d99a24"/>
-<polyline points="84.0,90.3 437.9,122.9 555.9,123.3 673.9,208.8" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="84.0" cy="90.3" r="3" fill="#d99a24"/>
-<circle cx="437.9" cy="122.9" r="3" fill="#d99a24"/>
-<circle cx="555.9" cy="123.3" r="3" fill="#d99a24"/>
-<circle cx="673.9" cy="208.8" r="3" fill="#d99a24"/>
-<polyline points="658.8,216.7 745.8,260.5" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
-<circle cx="658.8" cy="216.7" r="3" fill="#3f8fd4"/>
-<circle cx="745.8" cy="260.5" r="3" fill="#3f8fd4"/>
-<polyline points="658.8,129.1 745.8,193.9" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="658.8" cy="129.1" r="3" fill="#3f8fd4"/>
-<circle cx="745.8" cy="193.9" r="3" fill="#3f8fd4"/>
+<polyline points="84.0,191.2 437.9,236.2 555.9,253.6 673.9,282.8" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<circle cx="84.0" cy="191.2" r="3" fill="#d99a24"/>
+<circle cx="437.9" cy="236.2" r="3" fill="#d99a24"/>
+<circle cx="555.9" cy="253.6" r="3" fill="#d99a24"/>
+<circle cx="673.9" cy="282.8" r="3" fill="#d99a24"/>
+<polyline points="84.0,154.1 437.9,176.8 555.9,177.1 673.9,236.6" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="84.0" cy="154.1" r="3" fill="#d99a24"/>
+<circle cx="437.9" cy="176.8" r="3" fill="#d99a24"/>
+<circle cx="555.9" cy="177.1" r="3" fill="#d99a24"/>
+<circle cx="673.9" cy="236.6" r="3" fill="#d99a24"/>
+<polyline points="79.9,127.3 433.9,197.7 551.8,217.7 658.8,242.1 745.8,272.5" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<circle cx="79.9" cy="127.3" r="3" fill="#3f8fd4"/>
+<circle cx="433.9" cy="197.7" r="3" fill="#3f8fd4"/>
+<circle cx="551.8" cy="217.7" r="3" fill="#3f8fd4"/>
+<circle cx="658.8" cy="242.1" r="3" fill="#3f8fd4"/>
+<circle cx="745.8" cy="272.5" r="3" fill="#3f8fd4"/>
+<polyline points="79.9,84.4 433.9,152.7 551.8,159.5 658.8,181.1 745.8,226.2" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="79.9" cy="84.4" r="3" fill="#3f8fd4"/>
+<circle cx="433.9" cy="152.7" r="3" fill="#3f8fd4"/>
+<circle cx="551.8" cy="159.5" r="3" fill="#3f8fd4"/>
+<circle cx="658.8" cy="181.1" r="3" fill="#3f8fd4"/>
+<circle cx="745.8" cy="226.2" r="3" fill="#3f8fd4"/>
 <line x1="62.0" y1="354" x2="84.0" y2="354" stroke="#d99a24" stroke-width="3" stroke-dasharray="7 4"/>
 <text x="91.0" y="358" font-size="11.5" fill="#8a8a8a">2x RX 7900 XT, stock (2D under speculation)</text>
 <line x1="412.0" y1="354" x2="434.0" y2="354" stroke="#d99a24" stroke-width="3"/>

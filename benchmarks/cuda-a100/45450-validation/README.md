@@ -49,11 +49,18 @@ either way, admission is output-transparent for this configuration.
 
 Same session, decode tok/s by 64-vs-8 differencing, MTP on:
 
-| routing under speculation | 30K | 50K |
-|---|---:|---:|
-| stock 0.28.0 (2D path)   | 29.75 | 14.10 |
-| ported #45450 (3D path)  | 61.03 | 37.91 |
-| ratio                     | 2.05x | 2.69x |
+| routing under speculation | 1K | 8K | 16K | 30K | 50K |
+|---|---:|---:|---:|---:|---:|
+| stock 0.28.0 (2D path)   | 88.67 | 52.51 | 42.23 | 29.75 | 14.10 |
+| ported #45450 (3D path)  | 110.71 | 75.63 | 72.13 | 61.03 | 37.91 |
+| ratio | 1.25x | 1.44x | 1.71x | 2.05x | 2.69x |
+
+The 1K/8K/16K columns were added in a third session on the same stack
+(logs `C1K/C8K/C16K/D1K/D8K/D16K.log`); every column's pair is measured
+within one VM. The shape mirrors the ROCm ladder: the admission's gain
+grows monotonically with depth, and even at 1K — where the 2D path is
+still healthy — it is a 1.25x win, so there is no depth at which the
+admission costs anything.
 
 For scale: explicit FLASHINFER + MTP on the same stack measured 62.43
 (30K, session A) and 41.35 (50K, session B) — the 3D admission brings

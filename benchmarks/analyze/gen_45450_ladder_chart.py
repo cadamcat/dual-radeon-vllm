@@ -3,7 +3,7 @@
 
 Four series from committed data: the stock MTP collapse and vllm#45450's
 admission, on the Radeons (mtp-31b-{stock45450,p45450}.json, four depths)
-and on the A100 (C30/C50/D30/D50 logs of the validation, two depths).
+and on the A100 (the validation logs, five depths).
 Same conventions as the other generators: baked colours, grey text,
 legend and stamp inside the SVG, byte-identical output. ROCm keeps the
 house orange, the A100 the palette blue; dashed = stock 2D, solid = the
@@ -39,12 +39,16 @@ def leg(name, depth):
 SERIES = [
     (ROCM, True,  "2x RX 7900 XT, stock (2D under speculation)", sweep("stock45450")),
     (ROCM, False, "2x RX 7900 XT, with #45450 (3D admitted)", sweep("p45450")),
-    (A100, True,  "A100 80G, stock", [leg("C30.log", 30000), leg("C50.log", 50000)]),
-    (A100, False, "A100 80G, with #45450", [leg("D30.log", 30000), leg("D50.log", 50000)]),
+    (A100, True,  "A100 80G, stock",
+     [leg("C1K.log", 1000), leg("C8K.log", 8000), leg("C16K.log", 16000),
+      leg("C30.log", 30000), leg("C50.log", 50000)]),
+    (A100, False, "A100 80G, with #45450",
+     [leg("D1K.log", 1000), leg("D8K.log", 8000), leg("D16K.log", 16000),
+      leg("D30.log", 30000), leg("D50.log", 50000)]),
 ]
 
-VMAX = 80.0
-TICKS = [0, 20, 40, 60, 80]
+VMAX = 115.0
+TICKS = [0, 25, 50, 75, 100]
 W, H = 780, 396
 L, R, T, B = 62, 762, 76, 300
 xm = lambda s: L + (math.log10(s) - math.log10(900)) / (math.log10(55000) - math.log10(900)) * (R - L)
