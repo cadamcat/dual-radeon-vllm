@@ -90,3 +90,9 @@ Readings, each recomputed by `../analyze/verify_doc_figures.py`:
 Chart: `../analyze/gen_cuda_annex_chart.py` regenerates the SVG
 byte-identically from the JSON. Figure checks live in
 `../analyze/verify_doc_figures.py`.
+
+Follow-up (2026-08-26 evening): [`45450-validation/`](45450-validation/)
+ports vllm#45450's spec-admission mechanism onto 0.28.0 and shows it is
+**bit-exact** (8/8 identical greedy generations across the 2D/3D paths)
+and recovers the collapse on TRITON itself (2.05x at 30K, 2.69x at 50K,
+within 2-8% of FlashInfer).

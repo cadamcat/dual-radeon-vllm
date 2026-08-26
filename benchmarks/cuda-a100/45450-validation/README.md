@@ -1,0 +1,83 @@
+# vllm#45450 validated: 3D flash-decoding under speculation is bit-exact
+
+[vllm#45450](https://github.com/vllm-project/vllm/pull/45450) admits
+speculative-decode verify steps (query_len = 1 + num_spec) into the
+Triton unified-attention 3D flash-decoding path — the fix for the
+collapse documented in
+[speculative-decoding-on-rdna.md](../../../docs/speculative-decoding-on-rdna.md)
+and measured across this annex. The PR has been stalled with conflicts
+since 2026-07-03, its numbers were taken on B300 + vLLM v0.22.1, and
+nobody had tested the one thing that gates a merge: whether the 3D path
+under speculation computes the same thing the 2D path does.
+
+This directory is that test. `inject_45450.py` ports the PR's
+spec-admission mechanism onto released vLLM 0.28.0 — the launcher gate
+(`max_seqlen_q > 1` → `> decode_query_len`) plus per-token sizing of the
+three `softmax_segm_*` buffers, threaded from the speculative config.
+The window-relative segmentation (`WINDOW_SEG_3D`) is deliberately not
+ported: sliding layers keep today's window-blind full-sequence
+segmentation, the same one they use for q=1 3D, so the port isolates
+the admission question. A probe-only instrumentation line prints
+`PROBE_3D_SPEC_ACTIVE` once when the 3D path actually serves a
+`max_seqlen_q > 1` step; every patched log contains it exactly once,
+every stock log zero times.
+
+One Colab session (A100-SXM4-80GB, vLLM 0.28.0 as released,
+`gemma-4-31B-it-qat-w4a16-ct` + the official MTP assistant, k=1,
+gemma-4's config path forcing TRITON_ATTN throughout).
+
+## Correctness: 8/8 bit-identical
+
+`probe_ids.py`: fixed token-id prompt (8192 tokens), greedy, 64
+generated tokens, two generations per engine, two engines per state.
+
+- Machine determinism first: the four stock generations (2 in-process
+  x 2 processes) are identical — this A100 is bit-deterministic for
+  this workload, unlike the gfx1100 box (vllm#50603), so identity is a
+  valid test here.
+- Then the four patched generations are identical to each other **and
+  to the stock four**: 8/8 equal token-id sequences across
+  {2D, 3D-under-spec} x {in-process x2, cross-process x2}
+  (`logs/A1,A2,B1,B2.log`; recomputed by
+  `../analyze/verify_doc_figures.py`).
+
+The segmented-softmax reduction is exactly associative-safe here or its
+reordering lands below greedy's decision threshold for all 64 steps;
+either way, admission is output-transparent for this configuration.
+
+## Performance: the collapse is recovered on TRITON itself
+
+Same session, decode tok/s by 64-vs-8 differencing, MTP on:
+
+| routing under speculation | 30K | 50K |
+|---|---:|---:|
+| stock 0.28.0 (2D path)   | 29.75 | 14.10 |
+| ported #45450 (3D path)  | 61.03 | 37.91 |
+| ratio                     | 2.05x | 2.69x |
+
+For scale: explicit FLASHINFER + MTP on the same stack measured 62.43
+(30K, session A) and 41.35 (50K, session B) — the 3D admission brings
+TRITON within 2.2% and 8.3% of FlashInfer without leaving the backend.
+On ROCm, where FlashInfer does not exist and TRITON_ATTN is the default
+for these models, #45450 is the only fix path; the same collapse
+measures -71% at 32K there.
+
+Same-session baselines were rerun rather than reused: the cross-VM
+spread against the earlier sessions' 31.50/15.75 is 5.6%/10.5%, which
+is why every ratio above is within one VM.
+
+## Files
+
+- `inject_45450.py` — the port, anchored string surgery with asserts;
+  apply to a stock 0.28.0 install, revert with
+  `pip install --force-reinstall --no-deps vllm==0.28.0`.
+- `probe_ids.py` — the bit-exactness probe.
+- `logs/` — full engine logs: A1/A2 (stock ids), B1/B2 (patched ids),
+  C30/C50 (stock perf), D30/D50 (patched perf).
+- Perf probe: [`../probe_matrix.py`](../probe_matrix.py) (`AUTO mtp
+  30000|50000`).
+
+Limits: k=1 only (the reporter population's config); single-run probes;
+one GPU; the window-relative segmentation half of #45450 is untested
+here; bit-exactness is demonstrated for this model/depth/config, not
+proven in general.

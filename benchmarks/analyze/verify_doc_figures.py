@@ -318,6 +318,43 @@ def main():
     ck("annex JSON readings, MTP-off speedup", str(RD["default_mtp_off_speedup_50k"]), tf50["nospec"] / tf50["mtp"])
     ck("annex JSON readings, FlashInfer speedup", str(RD["flashinfer_over_default_mtp_50k"]), fi50["mtp"] / tf50["mtp"])
 
+    # --- 45450 validation (benchmarks/cuda-a100/45450-validation/) ----------
+    # Chain: leg logs -> the README's table, ratios, and the 8/8 identity.
+    VDIR = os.path.join(HERE, "..", "cuda-a100", "45450-validation", "logs")
+
+    def leg_result(name):
+        text = open(os.path.join(VDIR, name)).read()
+        return float(re.search(r"RESULT decode_tok_s=([\d.]+)", text).group(1))
+
+    def leg_ids(name):
+        """the two greedy token-id lists an ids-probe log carries"""
+        text = open(os.path.join(VDIR, name)).read()
+        return [json.loads(m) for m in re.findall(r"^IDS\d (\[.*\])$", text, re.M)]
+
+    def marker_count(name):
+        return open(os.path.join(VDIR, name)).read().count("PROBE_3D_SPEC_ACTIVE")
+
+    c30, c50 = leg_result("C30.log"), leg_result("C50.log")
+    d30, d50 = leg_result("D30.log"), leg_result("D50.log")
+    ck("45450 README, stock 30K", "29.75", c30)
+    ck("45450 README, stock 50K", "14.10", c50)
+    ck("45450 README, ported 30K", "61.03", d30)
+    ck("45450 README, ported 50K", "37.91", d50)
+    ck("45450 README, ratio 30K", "2.05", d30 / c30)
+    ck("45450 README, ratio 50K", "2.69", d50 / c50)
+    ck("45450 README, vs FlashInfer 30K pct", "2.2", (1 - d30 / fi30["mtp"]) * 100)
+    ck("45450 README, vs FlashInfer 50K pct", "8.3", (1 - d50 / fi50["mtp"]) * 100)
+    ck("45450 README, cross-VM spread 30K pct", "5.6", (1 - c30 / tf30["mtp"]) * 100)
+    ck("45450 README, cross-VM spread 50K pct", "10.5", (1 - c50 / tf50["mtp"]) * 100)
+
+    id_lists = sum((leg_ids(f) for f in ("A1.log", "A2.log", "B1.log", "B2.log")), [])
+    ck("45450 README, 8/8 generations identical", "1",
+       1 if len(id_lists) == 8 and all(x == id_lists[0] for x in id_lists) else 0)
+    ck("45450 logs, 3D marker exactly once in every patched leg", "1",
+       1 if all(marker_count(f) == 1 for f in ("B1.log", "B2.log", "D30.log", "D50.log"))
+       and all(marker_count(f) == 0 for f in ("A1.log", "A2.log", "C30.log", "C50.log"))
+       else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
