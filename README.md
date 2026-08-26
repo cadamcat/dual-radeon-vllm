@@ -326,17 +326,20 @@ GPU, [the annex has the logs](benchmarks/cuda-a100/README.md):
 
 ![gemma-4 MTP backend matrix on A100](docs/assets/gemma4-mtp-backend-matrix-a100.svg)
 
-**The collapse, fixed — on both vendors.** The same evening, the fix surfaced:
-[vllm#45450](https://github.com/vllm-project/vllm/pull/45450) admits speculative
-verify steps into the segmented 3D path, and we validated it the day it was
-found — bit-exact output on the A100, one-ULP-bounded at the kernel on the
-Radeons. Dashed is today's default, solid is the admission: **8.81 → 32.57
-tok/s at 32 K** on this machine (3.70×, MTP net-positive at every depth) and
-14.10 → 37.91 at 50 K on the A100. The case file:
-[45450-validation](benchmarks/cuda-a100/45450-validation/README.md) and
-[speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdna.md):
+**The collapse is a path choice.** Speculative decoding makes every decode
+step carry two query tokens, and the Triton attention launcher treats
+anything above one as prefill: decode silently leaves the segmented **3D
+flash-decoding path** — the one that splits the KV scan across the whole
+GPU — for the serial **2D path**, 8 workgroups per rank instead of 128.
+Dashed below is that 2D detour, solid is the 3D path readmitted by
+[vllm#45450](https://github.com/vllm-project/vllm/pull/45450), which we
+validated on both vendors the day we found it (bit-exact output on the
+A100, one-ULP-bounded at the kernel on the Radeons): **8.81 → 32.57
+tok/s at 32 K** on this machine, and no depth at which 3D loses. The
+case file: [45450-validation](benchmarks/cuda-a100/45450-validation/README.md)
+and [speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdna.md):
 
-![the MTP collapse fixed on both vendors](docs/assets/spec-decode-45450-ladder.svg)
+![speculative decode on the 2D vs the 3D path](docs/assets/spec-decode-45450-ladder.svg)
 
 ### Want the raw numbers?
 

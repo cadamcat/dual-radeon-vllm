@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 396" width="780" height="396" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
-<text x="62" y="24" font-size="16" font-weight="700" fill="#8a8a8a">The MTP collapse, fixed on both vendors (vllm#45450)</text>
-<text x="62" y="42" font-size="11.5" fill="#8a8a8a" opacity=".85">decode tok/s vs context, speculation on; dashed = stock routing (2D path), solid = with the 3D admission</text>
+<text x="62" y="24" font-size="16" font-weight="700" fill="#8a8a8a">Speculative decode: the serial 2D path vs 3D flash-decoding</text>
+<text x="62" y="42" font-size="11.5" fill="#8a8a8a" opacity=".85">decode tok/s with MTP on; dashed = the 2D path speculation is forced onto today, solid = the segmented 3D path (vllm#45450)</text>
 <text x="62" y="58" font-size="10.5" fill="#8a8a8a" opacity=".7">2026-08-26 &#183; 2x RX 7900 XT (TP2, ROCm 7.14) &#183; A100 80G (CUDA, vLLM 0.28.0) &#183; gemma-4-31B w4a16 + MTP k=1 &#183; single-run probes</text>
 <line x1="62" y1="300.0" x2="762" y2="300.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
 <text x="54" y="304.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
@@ -51,11 +51,11 @@
 <circle cx="658.8" cy="181.1" r="3" fill="#3f8fd4"/>
 <circle cx="745.8" cy="226.2" r="3" fill="#3f8fd4"/>
 <line x1="62.0" y1="354" x2="84.0" y2="354" stroke="#d99a24" stroke-width="3" stroke-dasharray="7 4"/>
-<text x="91.0" y="358" font-size="11.5" fill="#8a8a8a">2x RX 7900 XT, stock (2D under speculation)</text>
+<text x="91.0" y="358" font-size="11.5" fill="#8a8a8a">2x RX 7900 XT, 2D path (today's default)</text>
 <line x1="412.0" y1="354" x2="434.0" y2="354" stroke="#d99a24" stroke-width="3"/>
-<text x="441.0" y="358" font-size="11.5" fill="#8a8a8a">2x RX 7900 XT, with #45450 (3D admitted)</text>
+<text x="441.0" y="358" font-size="11.5" fill="#8a8a8a">2x RX 7900 XT, 3D path (vllm#45450)</text>
 <line x1="62.0" y1="373" x2="84.0" y2="373" stroke="#3f8fd4" stroke-width="3" stroke-dasharray="7 4"/>
-<text x="91.0" y="377" font-size="11.5" fill="#8a8a8a">A100 80G, stock</text>
+<text x="91.0" y="377" font-size="11.5" fill="#8a8a8a">A100 80G, 2D path (today's default)</text>
 <line x1="412.0" y1="373" x2="434.0" y2="373" stroke="#3f8fd4" stroke-width="3"/>
-<text x="441.0" y="377" font-size="11.5" fill="#8a8a8a">A100 80G, with #45450</text>
+<text x="441.0" y="377" font-size="11.5" fill="#8a8a8a">A100 80G, 3D path (vllm#45450)</text>
 </svg>

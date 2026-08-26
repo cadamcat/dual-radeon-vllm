@@ -37,12 +37,12 @@ def leg(name, depth):
 
 
 SERIES = [
-    (ROCM, True,  "2x RX 7900 XT, stock (2D under speculation)", sweep("stock45450")),
-    (ROCM, False, "2x RX 7900 XT, with #45450 (3D admitted)", sweep("p45450")),
-    (A100, True,  "A100 80G, stock",
+    (ROCM, True,  "2x RX 7900 XT, 2D path (today\'s default)", sweep("stock45450")),
+    (ROCM, False, "2x RX 7900 XT, 3D path (vllm#45450)", sweep("p45450")),
+    (A100, True,  "A100 80G, 2D path (today\'s default)",
      [leg("C1K.log", 1000), leg("C8K.log", 8000), leg("C16K.log", 16000),
       leg("C30.log", 30000), leg("C50.log", 50000)]),
-    (A100, False, "A100 80G, with #45450",
+    (A100, False, "A100 80G, 3D path (vllm#45450)",
      [leg("D1K.log", 1000), leg("D8K.log", 8000), leg("D16K.log", 16000),
       leg("D30.log", 30000), leg("D50.log", 50000)]),
 ]
@@ -57,10 +57,10 @@ ym = lambda v: T + (1 - v / VMAX) * (B - T)
 o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
      f'font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">',
      f'<text x="{L}" y="24" font-size="16" font-weight="700" fill="{GREY}">'
-     f'The MTP collapse, fixed on both vendors (vllm#45450)</text>',
+     f'Speculative decode: the serial 2D path vs 3D flash-decoding</text>',
      f'<text x="{L}" y="42" font-size="11.5" fill="{GREY}" opacity=".85">'
-     f'decode tok/s vs context, speculation on; dashed = stock routing '
-     f'(2D path), solid = with the 3D admission</text>',
+     f'decode tok/s with MTP on; dashed = the 2D path speculation is forced '
+     f'onto today, solid = the segmented 3D path (vllm#45450)</text>',
      f'<text x="{L}" y="58" font-size="10.5" fill="{GREY}" opacity=".7">{STAMP}</text>']
 
 for tv in TICKS:
