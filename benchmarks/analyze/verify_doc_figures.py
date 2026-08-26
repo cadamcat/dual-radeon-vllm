@@ -369,6 +369,30 @@ def main():
         ck(f"45450 README k-sweep, 4/4 identical k={k}", "1",
            1 if len(kid) == 4 and all(x == kid[0] for x in kid) else 0)
 
+    # ROCm side of the 45450 validation (benchmarks/speculative-decoding/)
+    SDIR = os.path.join(HERE, "..", "speculative-decoding")
+
+    def sweep(tag):
+        d = json.load(open(os.path.join(SDIR, f"mtp-31b-{tag}.json")))
+        return {r["depth"]: r["tok_per_s"] for r in d["rows"]}
+
+    st, pt = sweep("stock45450"), sweep("p45450")
+    for depth, s_claim, p_claim in ((1024, "55.84", "74.89"), (8192, "32.76", "63.25"),
+                                    (16384, "23.82", "63.09"), (32768, "8.81", "32.57")):
+        ck(f"spec-decode doc §5, stock {depth}", s_claim, st[depth])
+        ck(f"spec-decode doc §5, ported {depth}", p_claim, pt[depth])
+    ck("spec-decode doc §6, 32K ratio", "3.70", pt[32768] / st[32768])
+    spec3d = json.load(open(os.path.join(SDIR, "mtp32k-spec3d.json")))
+    ck("spec-decode doc §5, rerun vs original pct", "0.5",
+       (pt[32768] / spec3d["tok_per_s"] - 1) * 100)
+    kc = json.load(open(os.path.join(SDIR, "kcorrect-45450.json")))
+    ck("spec-decode doc §5, kcorrect 18 cases", "18", len(kc))
+    ck("spec-decode doc §5, kcorrect all deterministic and 3D-written", "1",
+       1 if all(r.get("det2") and r.get("det3") and r.get("segm_touched") for r in kc)
+       else 0)
+    ck("spec-decode doc §5, kcorrect max diff within one bf16 ulp", "1",
+       1 if max(r["max_abs_diff"] for r in kc) <= 1e-3 else 0)
+
     id_lists = sum((leg_ids(f) for f in ("A1.log", "A2.log", "B1.log", "B2.log")), [])
     ck("45450 README, 8/8 generations identical", "1",
        1 if len(id_lists) == 8 and all(x == id_lists[0] for x in id_lists) else 0)

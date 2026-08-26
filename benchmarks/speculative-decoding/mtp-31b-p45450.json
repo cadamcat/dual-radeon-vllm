@@ -1,0 +1,27 @@
+{
+  "model": "/models/gemma-4-31B-it-qat-w4a16-ct",
+  "assistant": "/models/gemma-4-31B-it-assistant",
+  "tag": "p45450",
+  "rows": [
+    {
+      "depth": 1024,
+      "ms_per_token": 13.35,
+      "tok_per_s": 74.89
+    },
+    {
+      "depth": 8192,
+      "ms_per_token": 15.81,
+      "tok_per_s": 63.25
+    },
+    {
+      "depth": 16384,
+      "ms_per_token": 15.85,
+      "tok_per_s": 63.09
+    },
+    {
+      "depth": 32768,
+      "ms_per_token": 30.7,
+      "tok_per_s": 32.57
+    }
+  ]
+}

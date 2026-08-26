@@ -1,0 +1,27 @@
+{
+  "model": "/models/gemma-4-31B-it-qat-w4a16-ct",
+  "assistant": "/models/gemma-4-31B-it-assistant",
+  "tag": "stock45450",
+  "rows": [
+    {
+      "depth": 1024,
+      "ms_per_token": 17.91,
+      "tok_per_s": 55.84
+    },
+    {
+      "depth": 8192,
+      "ms_per_token": 30.53,
+      "tok_per_s": 32.76
+    },
+    {
+      "depth": 16384,
+      "ms_per_token": 41.98,
+      "tok_per_s": 23.82
+    },
+    {
+      "depth": 32768,
+      "ms_per_token": 113.48,
+      "tok_per_s": 8.81
+    }
+  ]
+}

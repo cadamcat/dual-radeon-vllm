@@ -170,6 +170,22 @@ Prefill also still has to be excluded, and `max_seqlen_q` alone cannot express
 "speculation's 2 but not prefill's 4096". A real fix means making the 3D path
 support multiple query rows, not widening the condition.
 
+**Resolved on 2026-08-26** by validating vllm#45450's admission mechanism
+(§6), which is exactly the shape this section asks for: the gate becomes
+`max_seqlen_q > decode_query_len` — prefill stays excluded — and the
+segment buffers are sized per token. Rerun through that shape, the
+experiment lands at **32.57 tok/s at 32K, 0.5 % from the 32.42 above**,
+and holds the whole ladder: 74.89 / 63.25 / 63.09 / 32.57 against
+stock's 55.84 / 32.76 / 23.82 / 8.81
+(`benchmarks/speculative-decoding/mtp-31b-{stock45450,p45450}.json`).
+The three unseparated causes are separated now: fixed-input kernel-level
+comparison (`kcorrect-45450.json`, 18 cases) shows each path
+individually bit-deterministic and the two differing by at most one bf16
+ULP — at `query_len = 1`, today's shipped behaviour, exactly as at 2 and
+4. The token-35 divergence was the pre-existing 2D/3D reduction-order
+reassociation that batch size already toggles in production, not a
+defect of the admission.
+
 ## 6. Upstream
 
 **The same 3D-to-2D drop was reported first**, in
@@ -201,6 +217,18 @@ other vendor. The data, the logs and the exact recipe — including the
 multimodal-limits condition an explicit `FLASHINFER` override needs on vLLM
 0.28 — are in [benchmarks/cuda-a100/](../benchmarks/cuda-a100/README.md).
 
+**The fix exists as [vllm#45450](https://github.com/vllm-project/vllm/pull/45450)**
+(found 2026-08-26; open since June, stalled with merge conflicts and no
+review): it admits uniform spec-verify steps into the 3D path via
+`max_seqlen_q > decode_query_len` and sizes the segment buffers per
+token — independently converging on §5's prescription. We validated its
+admission mechanism on both vendors the same day: bit-exact greedy
+output and a stable ~2x at k ∈ {1, 2, 4} on an A100
+([benchmarks/cuda-a100/45450-validation/](../benchmarks/cuda-a100/45450-validation/)),
+and on this machine the ladder in §5 — 3.70x at 32K, MTP net-positive at
+every depth tried. A100 half posted:
+[pull/45450#issuecomment-5430268840](https://github.com/vllm-project/vllm/pull/45450#issuecomment-5430268840).
+
 ## 7. Not established
 
 - **Crossover point.** Somewhere between 1K and 8K, not measured.
@@ -208,10 +236,10 @@ multimodal-limits condition an explicit `FLASHINFER` override needs on vLLM
   most often. Sampling should lower acceptance, but that was not measured.
 - **One model, one machine** for the ROCm figures: gfx1100, TP=2, VFIO guest
   without P2P. The CUDA cross-check in §6 is likewise one model, one GPU.
-- **Whether the divergence in §5 is benign.** Unresolved.
 - **Crossover and sampling on CUDA.** The A100 annex measured 30K and 50K,
   greedy only; where MTP stops paying on FlashInfer was bracketed
-  (between 30K and 50K), not located.
+  (between 30K and 50K), not located. (The §5 divergence question was
+  resolved on 2026-08-26 — see the end of §5.)
 
 ## 8. Reproducing
 
