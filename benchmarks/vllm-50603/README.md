@@ -127,6 +127,49 @@ band means something. Three side notes worth keeping:
   measurement can answer, and is worth asking upstream;
 - this is **not** the reported bug. vllm#50603 is on 0.25.1, which has the mask.
 
+## Stage 3: what widening the gate is worth end to end
+
+Stage 1 measured kernels. This measures a model, which is the number a PR has
+to justify. `gemma-3-27b-it-w4a16`, TP=2, CUDA graphs on, decode tok/s by
+64-vs-8 differencing, one fresh container per cell so the source edit cannot
+leak between arms. The `widened` arm applies the one-line change at source
+(`gqa_ratio >= 3` -> `>= 1`, gfx11 branch only).
+
+| ctx | stock | widened | |
+|---|---:|---:|---:|
+| 1024 | 41.44 | 42.57 | **1.027x** |
+| 8192 | 21.36 | 23.88 | **1.118x** |
+| 32768 | 8.00 | 9.55 | **1.194x** |
+
+The gain grows with context because of what moves. gemma-3-27b is 62 layers
+with `sliding_window_pattern: 6`, so only the ~10 full-attention layers can
+reach CK; the ~52 sliding layers fail the gate's `sliding_window == 0`
+condition in **both** arms. At 1K the sliding layers dominate and the effect is
+small. At 32K a full layer scans the whole context while a sliding layer scans
+1024, so the layers that moved carry most of the KV traffic, and 19.4% is what
+that is worth.
+
+Routing is recorded from inside the TP workers, not inferred, in every cell
+(`logs/stage3-routes/`):
+
+| layer | stock | widened |
+|---|---|---|
+| full-attention, `window=0` | `use_custom=False` | `use_custom=True` |
+| sliding, `window=1023` | `use_custom=False` | `use_custom=False` |
+
+on both ranks, at all three depths. Those records also show the full-attention
+layers arriving with `head_size=128, block_size=16`, native KV layout and a
+power-of-two block, so **`gqa_ratio` is the only gate condition they fail**.
+
+Two things this measurement is not. Output equality between arms is not the
+correctness test: greedy decoding on this box is not reproducible across
+processes for this model (`../gfx1100-greedy-nondeterminism.json`), so
+comparing token ids would measure our own nondeterminism. The numerical case
+is Stage 1's, against an fp32 reference. And the parent-process kernel counter
+used in the first attempt was blind, because TP=2 runs attention in spawned
+workers; `diag_route2.py` is the instrumentation that reaches them, and it is
+why the routing table above exists.
+
 ## Stage 1c: gfx11 runtime evidence for vllm#53856
 
 [vllm#53856](https://github.com/vllm-project/vllm/pull/53856) (open, assigned,
@@ -182,6 +225,7 @@ TP>1 are all untested here.
 - `probe_50603.py` — Stage 1, both ROCm paths against fp32
 - `probe_50603b.py` — Stage 1b, the NaN-tail positive control
 - `probe_53856.py` — Stage 1c, gfx11 runtime evidence for vllm#53856
+- `probe_stage3.py` + `diag_route2.py` — Stage 3, end-to-end and the worker-side routing proof
 - `probe_50603_cuda.py` + `kernel_lifted.py` — Stage 2, same kernel text on CUDA
 - `setup_50603.py` — the CUDA-side install, with the kernel hash assertion
 - `stage*.jsonl` — every measured cell; `logs/` — the runs that produced them

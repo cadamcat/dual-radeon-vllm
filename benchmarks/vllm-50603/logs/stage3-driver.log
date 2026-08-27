@@ -1,0 +1,26 @@
+########## arm=stock ctx=1024  14:49:45 ##########
+ARM=stock ctx=1024 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=41.44 t8=0.2 t64=1.6 routes=pid=126 (2, 128, 16, 1023, False) | pid=125 (2, 128, 16, 1023, False) | pid=126 (2, 128, 16, 0, False) | pid=125 (2, 128, 16, 0, False)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=widened ctx=1024  14:56:04 ##########
+ARM=widened ctx=1024 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=42.57 t8=0.2 t64=1.5 routes=pid=125 (2, 128, 16, 1023, False) | pid=124 (2, 128, 16, 1023, False) | pid=125 (2, 128, 16, 0, True) | pid=124 (2, 128, 16, 0, True)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=stock ctx=8192  15:02:20 ##########
+ARM=stock ctx=8192 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=21.36 t8=0.4 t64=3.0 routes=pid=124 (2, 128, 16, 1023, False) | pid=125 (2, 128, 16, 1023, False) | pid=124 (2, 128, 16, 0, False) | pid=125 (2, 128, 16, 0, False)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=widened ctx=8192  15:08:14 ##########
+ARM=widened ctx=8192 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=23.88 t8=0.4 t64=2.7 routes=pid=124 (2, 128, 16, 1023, False) | pid=123 (2, 128, 16, 1023, False) | pid=124 (2, 128, 16, 0, True) | pid=123 (2, 128, 16, 0, True)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=stock ctx=32768  15:14:16 ##########
+ARM=stock ctx=32768 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=8.00 t8=1.1 t64=8.1 routes=pid=123 (2, 128, 16, 1023, False) | pid=124 (2, 128, 16, 1023, False) | pid=123 (2, 128, 16, 0, False) | pid=124 (2, 128, 16, 0, False)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x785ccb74805d in /opt/python/lib/python3.14/site-packages/torch/lib/libc10.so)
+########## arm=widened ctx=32768  15:21:02 ##########
+ARM=widened ctx=32768 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=9.55 t8=1.0 t64=6.8 routes=pid=124 (2, 128, 16, 1023, False) | pid=123 (2, 128, 16, 1023, False) | pid=124 (2, 128, 16, 0, True) | pid=123 (2, 128, 16, 0, True)
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+STAGE3_DONE

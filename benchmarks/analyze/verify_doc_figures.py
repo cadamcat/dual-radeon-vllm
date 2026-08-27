@@ -639,6 +639,39 @@ def main():
     ck("50603 README, only a straddling final tile poisons", "1",
        1 if all(not r["block_aligned"] for r in poisoned)
        and all(r["as_shipped"]["all_finite"] for r in g1c if r["block_aligned"]) else 0)
+    # stage 3: end-to-end effect of widening the gate, on gemma-3-27b
+    g3 = [json.loads(l) for l in open(os.path.join(GDIR, "stage3-endtoend.jsonl"))]
+    by3 = {(r["arm"], r["ctx"]): r for r in g3}
+    ck("50603 README, stage3 cells", "6", len(g3))
+    for depth, s_claim, w_claim, r_claim in [
+        (1024, "41.44", "42.57", "1.027"),
+        (8192, "21.36", "23.88", "1.118"),
+        (32768, "8.00", "9.55", "1.194"),
+    ]:
+        st, wd = by3[("stock", depth)], by3[("widened", depth)]
+        ck(f"50603 README stage3, stock {depth}", s_claim, st["decode_tok_s"])
+        ck(f"50603 README stage3, widened {depth}", w_claim, wd["decode_tok_s"])
+        ck(f"50603 README stage3, ratio {depth}", r_claim,
+           wd["decode_tok_s"] / st["decode_tok_s"])
+        ck(f"50603 README stage3, gate flipped at {depth}", "1",
+           1 if (not st["gate_gqa2"]) and wd["gate_gqa2"] else 0)
+    # routing, recorded from inside the TP workers
+    rdir = os.path.join(GDIR, "logs", "stage3-routes")
+    full_stock = full_wide = slide_any_ck = 0
+    for depth in (1024, 8192, 32768):
+        for arm in ("stock", "widened"):
+            for line in open(os.path.join(rdir, f"route-{arm}-{depth}.txt")):
+                if ", 0, " in line:          # full-attention layers
+                    if arm == "stock" and "False)" in line:
+                        full_stock += 1
+                    if arm == "widened" and "True)" in line:
+                        full_wide += 1
+                elif ", 1023, " in line and "True)" in line:
+                    slide_any_ck += 1
+    ck("50603 README stage3, full-attn layers off CK in stock", "6", full_stock)
+    ck("50603 README stage3, full-attn layers on CK when widened", "6", full_wide)
+    ck("50603 README stage3, sliding layers never reach CK", "0", slide_any_ck)
+
     ck("50603 README, Triton poisons on the same rows", "1",
        1 if all((not r["triton_forced"]["all_finite"]) == (not r["as_shipped"]["all_finite"])
                 for r in g1c) else 0)
