@@ -1,0 +1,24 @@
+device=AMD Radeon RX 7900 XT vllm=0.23.1.dev1+g9ddef7117.d20260715
+
+--- gqa_ratio=4 (16/4) gate_as_shipped=True ---
+WARNING 08-27 13:29:33 [chunked_prefill_paged_decode.py:414] Cannot use ROCm custom paged attention kernel, falling back to Triton implementation.
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=True) NaN x4096          | ck_forced NaN x4096          | triton NaN x4096
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=True) NaN x4096          | ck_forced NaN x4096          | triton NaN x4096
+
+--- gqa_ratio=2 (8/4) gate_as_shipped=False ---
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=False) NaN x2048          | ck_forced NaN x2048          | triton NaN x2048
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=False) NaN x2048          | ck_forced NaN x2048          | triton NaN x2048
+
+PROBE_DONE

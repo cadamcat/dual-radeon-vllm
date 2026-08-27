@@ -622,6 +622,27 @@ def main():
     ck("50603 README, gqa 3 and 4 are gated in", "12",
        sum(1 for r in g1 if r["gqa_ratio"] >= 3 and r["gate_as_shipped"]))
 
+    # stage 1c: gfx11 runtime evidence for vllm#53856's V-cache padding fix
+    g1c = [json.loads(l) for l in open(os.path.join(GDIR, "stage1c-53856-vcache.jsonl"))]
+    ck("50603 README, stage1c cells", "16", len(g1c))
+    adm = [r for r in g1c if r["gqa_ratio"] == 4]
+    ck("50603 README, gqa4 is admitted by the shipped gate", "8",
+       sum(1 for r in adm if r["gate_as_shipped"]))
+    ck("50603 README, and really ran the CK kernel", "8",
+       sum(1 for r in adm if r["as_shipped"]["used_ck_kernel"]))
+    poisoned = [r for r in g1c if not r["as_shipped"]["all_finite"]]
+    ck("50603 README, 53856 poisoned rows", "4", len(poisoned))
+    ck("50603 README, poison is V-side only", "1",
+       1 if all(r["poison"] in ("v_only", "both") for r in poisoned) else 0)
+    ck("50603 README, K-only never poisons", "1",
+       1 if all(r["as_shipped"]["all_finite"] for r in g1c if r["poison"] == "k_only") else 0)
+    ck("50603 README, only a straddling final tile poisons", "1",
+       1 if all(not r["block_aligned"] for r in poisoned)
+       and all(r["as_shipped"]["all_finite"] for r in g1c if r["block_aligned"]) else 0)
+    ck("50603 README, Triton poisons on the same rows", "1",
+       1 if all((not r["triton_forced"]["all_finite"]) == (not r["as_shipped"]["all_finite"])
+                for r in g1c) else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

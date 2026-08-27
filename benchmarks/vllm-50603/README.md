@@ -127,6 +127,48 @@ band means something. Three side notes worth keeping:
   measurement can answer, and is worth asking upstream;
 - this is **not** the reported bug. vllm#50603 is on 0.25.1, which has the mask.
 
+## Stage 1c: gfx11 runtime evidence for vllm#53856
+
+[vllm#53856](https://github.com/vllm-project/vllm/pull/53856) (open, assigned,
+no human comments as of 2026-08-27) fixes the CK side of exactly this: the
+kernel masks logits past `seq_len` but its vectorized **V**-cache load still
+consumes the whole final block. Its test plan says gfx11 and gfx12 received
+**compile validation only, because those devices were not available**.
+
+Stage 1b above demonstrated the fault at `gqa_ratio=2`, which the gfx11 gate
+excludes, so it showed a path stock gfx11 never takes. Stage 1c fixes that and
+two other holes: it runs at `gqa_ratio=4`, which the gate admits; it proves the
+CK kernel ran by wrapping `ops.paged_attention_rocm` rather than inferring it
+from timing; and it poisons K and V separately, because #53856 sanitises V
+only.
+
+`gqa_ratio=4` (16/4), gate as shipped admits CK, `used_ck_kernel` true in 8/8:
+
+| poison | ctx 4096 (tail 0) | ctx 4090 (tail 6) |
+|---|---|---|
+| none | ok, rel 3.0e-03 | ok, rel 3.1e-03 |
+| K only | ok, rel 3.0e-03 | **ok, rel 3.1e-03** |
+| V only | ok, rel 3.0e-03 | **all 4096 outputs NaN** |
+| both | ok, rel 3.0e-03 | all 4096 outputs NaN |
+
+Three things that make this the shape #53856 describes: **V alone is
+sufficient**; **K alone does nothing**, because the logit mask already covers
+it; and the boundary is exact, only the length whose final tile straddles
+`seq_len`. The `gqa_ratio=2` rows behave identically and are recorded as
+force-enabled.
+
+One gfx11-specific note. #53856 is framed around FP8 NaN, but the gfx11 branch
+of `use_rocm_custom_paged_attention` requires `kv_cache_dtype == "auto"`, so an
+FP8 KV cache never reaches the CK kernel on gfx11 at all. The poisoning above
+is bf16. The fix matters on gfx11, for a reason the PR's description does not
+cover.
+
+How a NaN gets into padding is not asserted here. `allocate_kv_cache`
+(`vllm/v1/worker/utils.py`) zero-fills the backing allocation, so it is not
+fresh-allocation garbage; #53856 attributes it to sleep mode and allocator
+behaviour. This probe injects it deliberately and only measures what the kernel
+then does.
+
 ## What this does not settle
 
 Symptom B is not explained. We do not have the reporter's model
@@ -139,6 +181,7 @@ TP>1 are all untested here.
 
 - `probe_50603.py` — Stage 1, both ROCm paths against fp32
 - `probe_50603b.py` — Stage 1b, the NaN-tail positive control
+- `probe_53856.py` — Stage 1c, gfx11 runtime evidence for vllm#53856
 - `probe_50603_cuda.py` + `kernel_lifted.py` — Stage 2, same kernel text on CUDA
 - `setup_50603.py` — the CUDA-side install, with the kernel hash assertion
 - `stage*.jsonl` — every measured cell; `logs/` — the runs that produced them
