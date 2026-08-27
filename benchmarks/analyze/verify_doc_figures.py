@@ -887,6 +887,44 @@ def main():
     ck("w4a16 README, and it lands on (groups, N/8)", "1",
        1 if "after permute      : (544, 640)" in perm else 0)
 
+    # --- the three-line fix, and its control ------------------------------
+    fx = {r["arm"]: r for r in (json.loads(l) for l in
+                                open(os.path.join(WDIR, "w4a16-fix.jsonl")))}
+    ck("w4a16 README, fix arms", "2", len(fx))
+    ck("w4a16 README, fixed tok/s", "35.50", fx["fixed"]["decode_tok_s"])
+    ck("w4a16 README, fixed mean logprob", "-0.1835", fx["fixed"]["mean_logprob"])
+    ck("w4a16 README, fixed over stock Triton", "3.11",
+       fx["fixed"]["decode_tok_s"] / stock["decode_tok_s"])
+    ck("w4a16 README, fixed reaches this % of the symmetric checkpoint", "95.3",
+       fx["fixed"]["decode_tok_s"] / aby[("sym", 1024)]["decode_tok_s"] * 100)
+    ck("w4a16 README, fixed answers exactly as the Triton control does", "1",
+       1 if fx["fixed"]["answer"].strip() == stock["answer"].strip() else 0)
+
+    # the control: same speed, so the native kernel really ran, but the zero
+    # points are read one too high and the output collapses
+    ck("w4a16 README, layout_only tok/s", "35.45",
+       fx["layout_only"]["decode_tok_s"])
+    ck("w4a16 README, layout_only mean logprob", "-4.4321",
+       fx["layout_only"]["mean_logprob"])
+    ck("w4a16 README, layout_only is as fast as fixed to within %", "0.14",
+       abs(fx["layout_only"]["decode_tok_s"] / fx["fixed"]["decode_tok_s"] - 1) * 100)
+    ck("w4a16 README, but its logprob is this many times worse", "24.2",
+       fx["layout_only"]["mean_logprob"] / fx["fixed"]["mean_logprob"])
+    ck("w4a16 README, and its answer is not the control's", "0",
+       1 if fx["layout_only"]["answer"].strip() == stock["answer"].strip() else 0)
+    for arm in ("fixed", "layout_only"):
+        k = open(os.path.join(WDIR, "logs", f"kernels-fix-{arm}.txt")).read()
+        ck(f"w4a16 README, {arm} ran the native kernel on both ranks", "2",
+           sum(1 for l in k.splitlines()
+               if "('RDNA3W4A16LinearKernel', 'uint4', 32, True, True)" in l))
+
+    # why "subtract one" would have been wrong, had use_v2_format not existed
+    zpv = open(os.path.join(WDIR, "logs", "zp-values.log"), errors="replace").read()
+    ck("w4a16 README, the checkpoint does use a zero point of 0", "1",
+       1 if "SUBTRACT_ONE_IS_SAFE=False" in zpv else 0)
+    ck("w4a16 README, and there are this many of them in the sample", "22",
+       int(zpv.split("count_of_zero=")[1].split()[0]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

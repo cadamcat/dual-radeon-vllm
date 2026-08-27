@@ -216,11 +216,12 @@ checkpoint ships (`check_permute.py`, `logs/check_permute.log`):
 The transpose moves the packed dimension from 0 to 1, which is exactly where
 `packed_dim=1` asks for it, so the assertion passes.
 
-**And the encoding question is still open.** The GPTQv1 "+1 quirk" — the kernel
-adds 1 to the stored zero, which is why the symmetric path encodes `bias - 1` —
-sits *behind* this shape check and was never exercised. Fixing the layout is
-what would expose it. Anyone attempting this should expect two problems, not
-one, and should check output quality rather than only that it runs.
+**And a second problem sits behind this one.** The GPTQv1 "+1 quirk" — the
+kernel adds 1 to the stored zero, which is why the symmetric path encodes
+`bias - 1` — is *behind* this shape check and was not exercised by this run.
+Fixing the layout is what exposes it. The next section does exactly that, and
+the second problem is real: skipping it produces a fast, confident stream of
+garbage.
 
 The `stock` arm of the same script is the control that makes the instrument
 credible: same checkpoint, same prompt, Triton as shipped, **11.41 tok/s**
@@ -228,6 +229,82 @@ credible: same checkpoint, same prompt, Triton as shipped, **11.41 tok/s**
 logprob of **-0.1859** over 29 generated tokens, answering the question
 correctly. Coherence was going to be scored, not eyeballed; the patched arm
 simply never got far enough to be scored.
+
+## The three-line fix, and the control proving all three are needed
+
+Reading `csrc/rocm/q_gemm_rdna3.cu` turns the remaining work from "host-side
+layout plus an unknown encoding problem" into three Python lines, because the
+kernel already implements both zero-point conventions and the Python side
+simply never uses the second one:
+
+    q_gemm_rdna3.cu:668   const int zero_offset = use_v2_format ? 0 : 1;
+
+`use_v2_format` is already a parameter of `gptq_gemm_rdna3`. v2 means "the
+stored zero *is* the zero", which is exactly what compressed-tensors writes.
+`apply_weights` hard-codes `False`. So no zero-point arithmetic is needed at
+all:
+
+```diff
+-    SUPPORTED_QUANT_TYPES = [scalar_types.uint4b8]
++    SUPPORTED_QUANT_TYPES = [scalar_types.uint4b8, scalar_types.uint4]
+
++        if c.zero_points:
++            def transform_w_zp(x):
++                assert isinstance(x, BasevLLMParameter)
++                permute_param_layout_(x, input_dim=0, output_dim=1, packed_dim=1)
++                x.data = x.data.contiguous()
++                return x
++            self._transform_param(layer, self.w_zp_name, transform_w_zp)
+
+-        output = ops.gptq_gemm_rdna3(x_2d, w_q, w_zp, w_s, w_g_idx, False)
++        output = ops.gptq_gemm_rdna3(x_2d, w_q, w_zp, w_s, w_g_idx, c.zero_points)
+```
+
+Measured on the same AWQ checkpoint and the same prompt as the `stock` control
+above. `layout_only` applies the first two changes and leaves `use_v2_format`
+at `False`; it exists so that the third change has to earn its place:
+
+| arm | decode | mean logprob | answer |
+|---|---:|---:|---|
+| stock, Triton as shipped | 11.41 | -0.1859 | correct |
+| **fixed**, all three | **35.50** | **-0.1835** | correct, token for token identical to stock |
+| layout_only, no v2 | 35.45 | **-4.4321** | `terasterasterasteras...` |
+
+**3.11x, and it is right.** The `fixed` arm produces the same 64 tokens as the
+Triton control. Not bitwise-identical arithmetic — the mean logprob differs,
+-0.1835 against -0.1859 — but the difference is small enough not to move any
+argmax, which is what changing kernels should look like.
+
+**The control is the point.** `layout_only` runs at the same speed, 35.45
+against 35.50, so it really is executing the native kernel; it just reads every
+zero point one too high. Its logprob is **24x worse** and its output is
+repetition. A patch that stopped after the layout fix would have looked like a
+success in every way except correctness.
+
+Against the symmetric checkpoint's 37.24, the fixed asymmetric arm reaches
+95.3%. The residual is the direction group size predicts: 32 against 128 means
+four times as many scale and zero-point rows to read per output tile. So group
+size does cost something — just nothing to do with which kernel is chosen.
+
+**Why "subtract one" would have been the wrong fix**, had `use_v2_format` not
+existed. Sampling this checkpoint's own zero points, 22.3M entries across 12
+tensors (`zp_values.py`, `logs/zp-values.log`):
+
+    histogram 0..15: [22, 714, 5667, 37396, 264602, 1276645, 3595641, 5957601,
+                      5956628, 3594489, 1280982, 266719, 38435, 5787, 874, 38]
+    SUBTRACT_ONE_IS_SAFE=False
+
+22 entries are 0, and 0 has no representation under GPTQv1's `stored = real-1`.
+At ~1e-6 that is exactly the sort of error that survives a coherence check.
+The v2 route is not merely more convenient, it avoids a wrong answer.
+
+**Why no existing test catches any of this.**
+`tests/kernels/quantization/test_rdna3_w4a16.py` does exercise a zero-point
+path, but it builds `zeros_gn` as `[K//G, N]` and packs along N — handing the
+kernel the group-major layout it wants. A real checkpoint ships the transpose.
+It also pairs `uint4b8`, a symmetric type, with explicit zero points, which no
+checkpoint produces. The layout mismatch is unreachable from the suite as
+written.
 
 ## What this means for the campaign
 
@@ -297,9 +374,20 @@ encoding, which sits behind the shape check and has still never been
 exercised. A patch that fixes only the first will run and may well be wrong,
 so output quality has to be checked, not just that it starts.
 
-We have not written that patch. What this directory establishes is that the
-question is a host-side layout question with a named failure, not an open
-kernel-authoring problem, and that on this hardware it is worth up to 3.24x.
+That patch is written and measured above: three Python lines in one file, no
+C++ change, **3.11x on the asymmetric checkpoint with output that matches the
+Triton control token for token**, and a control arm showing the third line is
+load-bearing rather than decorative.
+
+What it still needs before it is a pull request. Only gfx1100 was tested, and
+only one model, one group size and TP=2; the `partition_scales` and
+channel-wise (`PackedColumnParameter`, which carries no `input_dim`) paths are
+untouched here and the permute assumes the group-quantized layout. The
+`gptq_gemm_rdna3_wmma` entry point takes the same `use_v2_format` argument and
+is selected on larger M, so it should be exercised too. And the upstream tests
+would need a case built the way `compressed_tensors_wNa16.py` actually
+registers the parameter, since the existing ones construct the layout the
+kernel already wants and therefore cannot fail.
 
 ## Files
 
@@ -311,10 +399,12 @@ kernel-authoring problem, and that on this hardware it is worth up to 3.24x.
 - `probe_w4a16_forced.py` + `run_forced.sh` — one checkpoint, two kernels
 - `zp_layout.py` — the zero-point layout census, from safetensors headers
 - `check_permute.py` — whether vLLM's existing layout tool can do the fix
+- `probe_w4a16_fix.py` + `run_fix.sh` — the three-line fix and its control arm
+- `zp_values.py` — the checkpoint's actual zero-point distribution
 - `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,
   and its sha256 against the Hub's own ETags
-- `w4a16-ab.jsonl` — the six measured cells; `w4a16-forced.jsonl` — the
-  forced-kernel control
+- `w4a16-ab.jsonl` — the six measured cells; `w4a16-forced.jsonl` and
+  `w4a16-fix.jsonl` — the forced-kernel control and the fix
 - `w4a16-selection*.json`, `ckpt-layer-census.json`, `ckpt-sha256-sym.json` —
   the derived records
 - `logs/` — the runs that produced them, including the per-cell worker-side

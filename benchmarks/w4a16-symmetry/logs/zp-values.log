@@ -1,0 +1,19 @@
+399 zero-point tensors in the checkpoint
+  layers.0.linear_attn.in_proj_qkv.weight_zero_point min= 1 max=14 zeros=0
+  layers.13.mlp.down_proj.weight_zero_point      min= 1 max=14 zeros=0
+  layers.18.mlp.up_proj.weight_zero_point        min= 0 max=15 zeros=4
+  layers.23.mlp.gate_proj.weight_zero_point      min= 1 max=14 zeros=0
+  layers.28.linear_attn.out_proj.weight_zero_point min= 0 max=14 zeros=2
+  layers.32.mlp.down_proj.weight_zero_point      min= 0 max=15 zeros=1
+  layers.37.mlp.up_proj.weight_zero_point        min= 1 max=14 zeros=0
+  layers.42.linear_attn.in_proj_z.weight_zero_point min= 0 max=15 zeros=2
+  layers.47.self_attn.k_proj.weight_zero_point   min= 0 max=15 zeros=11
+  layers.51.self_attn.q_proj.weight_zero_point   min= 0 max=15 zeros=1
+  layers.57.linear_attn.in_proj_qkv.weight_zero_point min= 0 max=14 zeros=1
+  layers.61.linear_attn.out_proj.weight_zero_point min= 1 max=15 zeros=0
+
+sampled 22282240 zero-point entries across 12 tensors
+  min=0  max=15  count_of_zero=22
+  histogram 0..15: [22, 714, 5667, 37396, 264602, 1276645, 3595641, 5957601, 5956628, 3594489, 1280982, 266719, 38435, 5787, 874, 38]
+SUBTRACT_ONE_IS_SAFE=False
+ZPVAL_DONE
