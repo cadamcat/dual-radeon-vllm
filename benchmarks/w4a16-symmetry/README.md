@@ -202,6 +202,20 @@ So the missing piece is a layout transform on the host, in the same function
 that already transforms the other two tensors — not new kernel math. The HIP
 kernel was never reached with wrong data; it refused the shapes at the door.
 
+vLLM's existing tool does that transform, with no repacking, which is worth
+checking rather than assuming because `permute_param_layout_` asserts rather
+than repacks when the packed dimension does not land where it is asked for.
+Driving the real function with the attributes `compressed_tensors_wNa16.py`
+registers (`input_dim=1, output_dim=0, packed_dim=0`) and the shape the
+checkpoint ships (`check_permute.py`, `logs/check_permute.log`):
+
+    checkpoint ships   : (640, 544)  input_dim=1 output_dim=0 packed_dim=0
+    after permute      : (544, 640)  input_dim=0 output_dim=1 packed_dim=1
+    PERMUTE_OK=True
+
+The transpose moves the packed dimension from 0 to 1, which is exactly where
+`packed_dim=1` asks for it, so the assertion passes.
+
 **And the encoding question is still open.** The GPTQv1 "+1 quirk" — the kernel
 adds 1 to the stored zero, which is why the symmetric path encodes `bias - 1` —
 sits *behind* this shape check and was never exercised. Fixing the layout is
@@ -296,6 +310,7 @@ kernel-authoring problem, and that on this hardware it is worth up to 3.24x.
 - `census_ckpt.py` — the quantized-layer census
 - `probe_w4a16_forced.py` + `run_forced.sh` — one checkpoint, two kernels
 - `zp_layout.py` — the zero-point layout census, from safetensors headers
+- `check_permute.py` — whether vLLM's existing layout tool can do the fix
 - `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,
   and its sha256 against the Hub's own ETags
 - `w4a16-ab.jsonl` — the six measured cells; `w4a16-forced.jsonl` — the

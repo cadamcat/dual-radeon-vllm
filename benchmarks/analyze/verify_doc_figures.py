@@ -878,6 +878,15 @@ def main():
     ck("w4a16 README, the two numbers the entry check compares differ", "1",
        0 if zp["groups"] == zp["n_over_8"] else 1)
 
+    # the fix is reachable with the layout tool vLLM already has: the permute
+    # moves the packed dim to where the kernel wants it, so no repacking.
+    perm = open(os.path.join(WDIR, "logs", "check_permute.log"),
+                errors="replace").read()
+    ck("w4a16 README, the existing permute produces the kernel layout", "1",
+       1 if "PERMUTE_OK=True" in perm else 0)
+    ck("w4a16 README, and it lands on (groups, N/8)", "1",
+       1 if "after permute      : (544, 640)" in perm else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

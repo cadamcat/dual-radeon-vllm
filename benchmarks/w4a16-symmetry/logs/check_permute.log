@@ -1,0 +1,5 @@
+checkpoint ships   : (640, 544)  input_dim=1 output_dim=0 packed_dim=0
+after permute      : (544, 640)  input_dim=0 output_dim=1 packed_dim=1
+PERMUTE_OK=True  (kernel wants (544, 640))
+without packed_dim : (544, 640) (same permutation)
+CHECK_DONE
