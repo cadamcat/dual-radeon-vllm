@@ -41,8 +41,11 @@ for c in ORDER:
     P = sorted(pre.get(c, {}))
     p_lo = max(pre[c][P[0]]) if P else 0
     p_hi = max(pre[c][P[-1]]) if P else 0
+    # a config can have decode rows and no prefill rows; print the decode half
+    # rather than dividing by a zero p_lo
+    p_delta = f"{(p_hi / p_lo - 1) * 100:>5.1f}%" if p_lo else "    -"
     print(f"{c:>18} | {d_lo:>12.1f} {d_hi:>11.1f} {(d_hi/d_lo-1)*100:>5.1f}% | "
-          f"{slope:>14.3f} | {p_lo:>13.0f} {p_hi:>12.0f} {(p_hi/p_lo-1)*100:>5.1f}%   "
+          f"{slope:>14.3f} | {p_lo:>13.0f} {p_hi:>12.0f} {p_delta}   "
           f"(rounds {len(dec[c][lo])}/{len(dec[c][hi])}, ctx {actual(c,lo):.0f}->{actual(c,hi):.0f})")
 
 print("\n# linearity check for D-27B (is the SSM part really O(1) per token?)")

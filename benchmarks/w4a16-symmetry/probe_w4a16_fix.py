@@ -115,6 +115,16 @@ def apply_fix():
 
     # (3) pick the zero-point convention from the checkpoint instead of
     # hard-coding GPTQv1. Skipped on the layout_only arm, which is the control.
+    #
+    # NOTE: this uses `c.zero_points`, and `apply_patch.py` uses
+    # `not c.weight_type.has_bias()`. That difference is deliberate and the two
+    # files must not be reconciled by editing this one. This script produced the
+    # measurements in w4a16-fix.jsonl and is kept exactly as it ran; the unit
+    # tests later showed `zero_points` is the wrong key, because a GPTQ
+    # checkpoint carries explicit zero points and still wants the v1 "+1", so
+    # `apply_patch.py` and the upstream diff use `has_bias()`. On this
+    # checkpoint (uint4, no bias, zero points present) the two keys agree, which
+    # is why the numbers here stand. See README, "the regression they caught".
     old3 = "        output = ops.gptq_gemm_rdna3(x_2d, w_q, w_zp, w_s, w_g_idx, False)\n"
     assert src.count(old3) == 1
     if ARM == "fixed":

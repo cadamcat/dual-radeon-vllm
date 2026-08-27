@@ -112,6 +112,26 @@ the devices are `['gfx1100', 'gfx1100']`, that both `all_gather_perf` and
 against RCCL 2.30.4 rather than anything about the collectives, and the PyTorch
 ground-truth reproducer above is the reporter's own primary one anyway.
 
+### A limitation of the reporter's script, disclosed 2026-08-27
+
+`rccl_allgather_truth.py` computes `bad_list` and `bad_into` on every rank, but
+increments `fail` and prints the verdict only under `if rank == 0`. Corruption
+visible solely on rank 1 would therefore not be counted, and the run would still
+print `ALL CORRECT`. Since every one of the 135 passes above is that script's
+verdict, the negative result is really "no corruption observed **on rank 0**"
+rather than "on either rank".
+
+The script is deliberately left exactly as it is: it is the reporter's own
+reproducer, taken verbatim from the issue body, and its md5 is quoted above so
+that anyone can confirm it was not retyped or adjusted. Editing it, even to add
+a reduction, would cost the one property that makes a negative result from it
+worth anything to the reporter. So this is recorded as a bound on the claim
+instead.
+
+What would tighten it: a separate cross-rank variant that all-reduces the
+failure count before deciding, run over the same arms. Not done here; the
+result above should be read with the rank-0 caveat until it is.
+
 The first attempt at this ran through a wrapper that filtered the output and
 printed a parsed verdict; the filter matched nothing and reported `FAILED` for
 every collective including `all_reduce`, which the PyTorch test passes 135 times

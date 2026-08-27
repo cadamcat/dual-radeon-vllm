@@ -7,9 +7,19 @@ and layers/linear.py, which every one of the 143 models here shares, so instead
 the same mapping is expressed the way this version does it everywhere else: a
 stacked_params_mapping loop in the model's own load_weights.
 
-Ordering is preserved. Upstream applies substr before stacked, which is what
-keeps `.self_attn.gate_proj` -> `.self_attn.output_gate_proj` from being folded
-into gate_up_proj; the mapper still runs first here, so that still holds.
+Ordering is preserved: upstream applies the substring mapper before the stacked
+fold, and the mapper still runs first here.
+
+What keeps `.self_attn.gate_proj` from being folded into `gate_up_proj` is NOT
+that ordering, and an earlier version of this note said it was. The mapper
+renames it to `.self_attn.output_gate_proj`, which still contains the substring
+`gate_proj` and still matches the fold table. The actual defence is the
+`if mapped not in params_dict: continue` check in the loop below: the folded
+name `output_gate_up_proj` does not exist on the model, so the mapping is
+rejected and the weight loads under its own name. Do not remove that check on
+the assumption the rename is doing the work. The unloaded-parameter
+`raise RuntimeError` at the end is the second line of defence, and would turn
+any such mistake into a loud failure rather than a silently wrong weight.
 """
 import ast
 import re

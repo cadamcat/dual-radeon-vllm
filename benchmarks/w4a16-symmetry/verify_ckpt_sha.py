@@ -49,6 +49,11 @@ def main():
         fname = name[: -len(".metadata")]
         local = os.path.join(root, fname)
         if not os.path.exists(local):
+            # The Hub advertised this file and it is not on disk. Silently
+            # skipping it would let a partial download report SHA_OK on a
+            # quietly smaller set, which is the one thing this script exists
+            # to rule out.
+            rows.append({"file": fname, "status": "MISSING"})
             continue
         parts = open(os.path.join(mdir, name)).read().split()
         commit, etag = parts[0], parts[1]
@@ -64,11 +69,13 @@ def main():
         print(f"  {rows[-1]['status']:<9} {fname}", flush=True)
 
     lfs = [r for r in rows if r["status"] in ("match", "MISMATCH")]
+    missing = [r for r in rows if r["status"] == "MISSING"]
     out = {
         "checkpoint": root,
         "repo_commit": sorted(commits),
         "lfs_files_checked": len(lfs),
         "lfs_files_matching": sum(1 for r in lfs if r["status"] == "match"),
+        "files_missing": len(missing),
         "files": rows,
     }
     with open(dest, "w") as fh:
@@ -76,7 +83,11 @@ def main():
     print(f"commit(s): {sorted(commits)}")
     print(f"{out['lfs_files_matching']}/{out['lfs_files_checked']} LFS files match "
           f"the ETag the Hub advertised")
-    ok = lfs and all(r["status"] == "match" for r in lfs)
+    for r in missing:
+        print(f"  MISSING   {r['file']}")
+    if missing:
+        print(f"{len(missing)} file(s) advertised by the Hub are absent locally")
+    ok = lfs and not missing and all(r["status"] == "match" for r in lfs)
     print("SHA_OK" if ok else "SHA_FAILED")
     return 0 if ok else 1
 

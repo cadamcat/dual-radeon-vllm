@@ -3,8 +3,9 @@
 gptq_gemm_rdna3 dispatches to gptq_gemm_rdna3_wmma when
   a.size(1) % 16 == 0  (K)   and  b_q_weight.size(1) % 16 == 0  (N)
   and (bf16 and M >= 16) or (half and M >= 64)
-b_q_weight is [K/8, N], so size(1) is N. Read N and K per layer off the
-safetensors headers and count how many layers can reach it.
+The kernel sees b_q_weight as [K/8, N], so its size(1) is N; on disk the
+checkpoint stores the transpose, (N, K/8), which is what is read here. Count
+how many layers can reach the WMMA path.
 """
 import collections, json, struct
 
@@ -21,8 +22,13 @@ def header(shard):
 both = k16only = n16only = neither = 0
 examples = collections.defaultdict(list)
 for key in sorted(k for k in idx if k.endswith(".weight_packed")):
-    shape = header(idx[key])[key]["shape"]      # [K/8, N]
-    K, N = shape[0] * 8, shape[1]
+    # weight_packed is (N, K/8) on disk -- dim 0 is N. Confirmed against
+    # weight_scale, which is (N, groups): only this reading makes
+    # groups == K/group_size come out equal to weight_scale's second dim.
+    # (Read the other way round for down_proj it would give K=40960 and
+    # groups=1280 against a scale tensor whose second dim is 544.)
+    shape = header(idx[key])[key]["shape"]      # (N, K/8)
+    N, K = shape[0], shape[1] * 8
     ok_k, ok_n = K % 16 == 0, N % 16 == 0
     if ok_k and ok_n:
         both += 1; examples["wmma-eligible"].append((key.split(".")[-2], K, N))

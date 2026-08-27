@@ -4,5 +4,5 @@ quantised linears: 399
   N ok, K not mult of 16                : 0
   neither                               : 0
 WMMA_FRACTION=1.0000
-  wmma-eligible: e.g. [('in_proj_qkv', 81920, 640), ('in_proj_z', 49152, 640), ('down_proj', 40960, 2176)]
+  wmma-eligible: e.g. [('in_proj_qkv', 5120, 10240), ('in_proj_z', 5120, 6144), ('down_proj', 17408, 5120)]
 WMMA_DONE

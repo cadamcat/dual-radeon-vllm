@@ -312,11 +312,15 @@ def run_cfg(cfg, done, util=None, attempt=1):
 
     pts = points_for(cfg, mml)
     log(f"{cid}: ready (mml={mml}, util={util}), {len(pts)} points")
-    nerr = consec = nok = 0
+    nerr = consec = nok = nskip = 0
 
     def do(kind, target, rnd, base, to):
-        nonlocal nerr, consec, nok
+        nonlocal nerr, consec, nok, nskip
         if (cid, target, kind, rnd) in done:
+            # already measured in an earlier run. Counted separately so that a
+            # resumed or re-run config does not fall through to the nok == 0
+            # branch below and emit a config_failed record for data that exists.
+            nskip += 1
             return
         smp = Sampler()
         if kind == "decode":
@@ -357,9 +361,11 @@ def run_cfg(cfg, done, util=None, attempt=1):
             return run_cfg(cfg, done, util=round(util - 0.03, 2), attempt=2)
         return
 
-    if nok == 0:
+    if nok == 0 and nskip == 0:
         emit({"kind": "config_failed", "cfg": cid, "why": "no successful measurement"})
         log(f"{cid}: FAILED (no data)"); return
+    if nok == 0:
+        log(f"{cid}: COMPLETE (nothing to do, {nskip} points already measured)"); return
     emit({"kind": "config_complete", "cfg": cid, "mml": mml, "util": util, "ok": nok, "err": nerr,
           "targets": sorted(t for t, _ in pts)})
     log(f"{cid}: COMPLETE ({nok} ok, {nerr} err)")

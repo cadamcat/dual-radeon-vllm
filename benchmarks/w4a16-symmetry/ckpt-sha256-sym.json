@@ -5,6 +5,7 @@
  ],
  "lfs_files_checked": 3,
  "lfs_files_matching": 3,
+ "files_missing": 0,
  "files": [
   {
    "file": ".gitattributes",

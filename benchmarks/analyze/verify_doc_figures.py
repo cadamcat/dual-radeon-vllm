@@ -953,6 +953,22 @@ def main():
        sum(1 for k in reg if k in ("RDNA3W4A16LinearKernel",
                                    "TritonW4A16LinearKernel")))
 
+    # Two scripts read the same safetensors header independently; an audit on
+    # 2026-08-27 found wmma_reach.py had K and N swapped relative to
+    # zp_layout.py. Cross-check them against each other so the axes cannot
+    # drift apart again. weight_scale is what settles which reading is right:
+    # it is (N, groups), so groups must equal K/group_size.
+    m = re.search(r"\('down_proj', (\d+), (\d+)\)", wr)
+    wr_k, wr_n = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+    ck("w4a16, wmma_reach and zp_layout agree on K", str(zp["K"]), wr_k)
+    ck("w4a16, wmma_reach and zp_layout agree on N", str(zp["N"]), wr_n)
+    ck("w4a16, and that reading is the one weight_scale supports", "1",
+       1 if zp["K"] // zp["group_size"] == zp["groups"] else 0)
+
+    # a partial download must not be able to report SHA_OK on a smaller set
+    ck("w4a16, no checkpoint file advertised by the Hub is missing", "0",
+       sha.get("files_missing", -1))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
