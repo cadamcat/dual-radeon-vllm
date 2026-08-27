@@ -434,6 +434,73 @@ def main():
        and all(marker_count(f) == 0 for f in ("A1.log", "A2.log", "C30.log", "C50.log"))
        else 0)
 
+    # --- 52684 BLOCK_M on A100 (benchmarks/cuda-a100/52684-blockm/) ---------
+    # Chain: the two committed probe JSONLs -> the ratios that README quotes.
+    # Pass 1 is the 3-arm matrix, pass 2 the numerics and crossover sweep.
+    BDIR = os.path.join(HERE, "..", "cuda-a100", "52684-blockm")
+    p1 = [json.loads(l) for l in open(os.path.join(BDIR, "pass1-matrix.jsonl"))]
+    p2 = [json.loads(l) for l in open(os.path.join(BDIR, "pass2-numerics-crossover.jsonl"))]
+    xover = [r for r in p2 if r["kind"] == "crossover"]
+    numer = [r for r in p2 if r["kind"] == "numerics"]
+
+    def median(v):
+        v = sorted(v)
+        n = len(v)
+        return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+
+    def arm(r, a, field="speedup_vs_base"):
+        return r["arms"][a][field]
+
+    ck("52684 README, 140 pass-1 rows", "140", len(p1))
+    ck("52684 README, 117 pass-2 rows", "117", len(p2))
+    for depth, m_claim, lo_claim, hi_claim in [
+        (256, "1.021", "0.981", "1.046"), (512, "0.948", "0.848", "0.991"),
+        (1024, "0.987", "0.911", "1.282"), (2048, "1.281", "1.102", "1.819"),
+        (4096, "1.394", "1.181", "2.186"), (8192, "1.529", "1.221", "2.080"),
+        (16384, "1.597", "1.238", "2.189"),
+    ]:
+        # q_len=256 is the control: all three arms select the same launch, so
+        # its spread is the noise floor, and both tuned arms count toward it.
+        s = ([arm(r, "pr") for r in p1 if r["q_len"] == depth]
+             + ([arm(r, "bm64") for r in p1 if r["q_len"] == depth] if depth == 256 else []))
+        ck(f"52684 README speed table, median {depth}", m_claim, median(s))
+        ck(f"52684 README speed table, min {depth}", lo_claim, min(s))
+        ck(f"52684 README speed table, max {depth}", hi_claim, max(s))
+    ctl = ([arm(r, "pr") for r in p1 if r["q_len"] == 256]
+           + [arm(r, "bm64") for r in p1 if r["q_len"] == 256])
+    ck("52684 README, control noise band pct", "4.6",
+       100 * max(abs(1 - min(ctl)), abs(max(ctl) - 1)))
+    ck("52684 README, all 20 rows at 512 lose", "20",
+       sum(1 for r in p1 if r["q_len"] == 512 and arm(r, "pr") < 1.0))
+    ck("52684 README, every row at 16384 wins", "20",
+       sum(1 for r in p1 if r["q_len"] == 16384 and arm(r, "pr") > 1.0))
+    ck("52684 README, warp pin is a wash", "1.001",
+       median([arm(r, "pr", "median_ms") / arm(r, "bm64", "median_ms")
+               for r in p1 if r["q_len"] >= 512]))
+    ck("52684 README, bitwise-equal pass-1 rows", "117",
+       sum(1 for r in p1 if arm(r, "pr", "bitwise_equal")))
+    ck("52684 README, unequal rows all bf16 head_size 64", "1",
+       1 if all(r["head_size"] == 64 and r["dtype"] == "bf16"
+                for r in p1 if not arm(r, "pr", "bitwise_equal")) else 0)
+    for depth, claim in [(512, "0.982"), (640, "0.996"), (768, "0.991"),
+                         (896, "0.982"), (1024, "0.991"), (1280, "1.165"),
+                         (1536, "1.244"), (1792, "1.363"), (2048, "1.404"),
+                         (3072, "1.536")]:
+        ck(f"52684 README crossover, median {depth}", claim,
+           median([r["speedup"] for r in xover if r["q_len"] == depth]))
+    ck("52684 README, ordering drift", "1.000",
+       median([r["drift"] for r in xover]))
+    ck("52684 README, max ULP distance", "1.0000",
+       max(r["max_ulp"] for r in numer))
+    ck("52684 README, elements beyond one ULP", "0",
+       sum(r.get("n_gt_1ulp", 0) for r in numer))
+    ck("52684 README, differing elements", "507",
+       sum(r["n_diff"] for r in numer))
+    ck("52684 README, elements compared", "550502400",
+       sum(r["n_elems"] for r in numer))
+    ck("52684 README, differing element pct", "0.0001",
+       100 * sum(r["n_diff"] for r in numer) / sum(r["n_elems"] for r in numer))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

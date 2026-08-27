@@ -96,3 +96,11 @@ ports vllm#45450's spec-admission mechanism onto 0.28.0 and shows it is
 **bit-exact** (8/8 identical greedy generations across the 2D/3D paths)
 and recovers the collapse on TRITON itself (2.05x at 30K, 2.69x at 50K,
 within 2-8% of FlashInfer).
+
+Follow-up (2026-08-27): [`52684-blockm/`](52684-blockm/) answers the CUDA
+question vllm#52585 left open. The gfx1100-gated `BLOCK_M=64` long-prefill
+block of vllm#52684 is worth **1.60x at 16K on A100** as well (up to 2.19x),
+so the architecture gate is not what separates the machines that benefit —
+but the `>= 512` threshold is wrong for CUDA, where the gain only crosses
+1.0 between 1024 and 1280. Output is bitwise-equal except for a
+**one-ULP** bf16 tail confined to `head_size=64`.
