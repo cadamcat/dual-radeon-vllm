@@ -1,0 +1,21 @@
+device=AMD Radeon RX 7900 XT vllm=0.23.1.dev1+g9ddef7117.d20260715
+WARNING 08-27 12:52:49 [chunked_prefill_paged_decode.py:414] Cannot use ROCm custom paged attention kernel, falling back to Triton implementation.
+fill=zeros    ctx=1024   aligned=True  tail=0   | triton rel=2.54e-03                 | ck rel=3.30e-03
+fill=zeros    ctx=4096   aligned=True  tail=0   | triton rel=2.72e-03                 | ck rel=3.38e-03
+fill=zeros    ctx=1000   aligned=False tail=8   | triton rel=2.24e-03                 | ck rel=2.92e-03
+fill=zeros    ctx=1015   aligned=False tail=9   | triton rel=2.95e-03                 | ck rel=3.60e-03
+fill=zeros    ctx=4095   aligned=False tail=1   | triton rel=2.78e-03                 | ck rel=3.32e-03
+fill=zeros    ctx=4090   aligned=False tail=6   | triton rel=3.05e-03                 | ck rel=3.63e-03
+fill=nan      ctx=1024   aligned=True  tail=0   | triton rel=2.54e-03                 | ck rel=3.30e-03
+fill=nan      ctx=4096   aligned=True  tail=0   | triton rel=2.72e-03                 | ck rel=3.38e-03
+fill=nan      ctx=1000   aligned=False tail=8   | triton POISONED nan=2048 inf=0      | ck POISONED nan=2048 inf=0
+fill=nan      ctx=1015   aligned=False tail=9   | triton POISONED nan=2048 inf=0      | ck POISONED nan=2048 inf=0
+fill=nan      ctx=4095   aligned=False tail=1   | triton POISONED nan=2048 inf=0      | ck POISONED nan=2048 inf=0
+fill=nan      ctx=4090   aligned=False tail=6   | triton POISONED nan=2048 inf=0      | ck POISONED nan=2048 inf=0
+fill=garbage  ctx=1024   aligned=True  tail=0   | triton rel=2.54e-03                 | ck rel=3.30e-03
+fill=garbage  ctx=4096   aligned=True  tail=0   | triton rel=2.72e-03                 | ck rel=3.38e-03
+fill=garbage  ctx=1000   aligned=False tail=8   | triton rel=2.24e-03                 | ck rel=2.92e-03
+fill=garbage  ctx=1015   aligned=False tail=9   | triton rel=2.95e-03                 | ck rel=3.60e-03
+fill=garbage  ctx=4095   aligned=False tail=1   | triton rel=2.78e-03                 | ck rel=3.32e-03
+fill=garbage  ctx=4090   aligned=False tail=6   | triton rel=3.05e-03                 | ck rel=3.63e-03
+PROBE_DONE

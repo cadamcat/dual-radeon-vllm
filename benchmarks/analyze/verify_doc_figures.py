@@ -550,6 +550,78 @@ def main():
     ck("6565 README, the deprecated rccl-tests branch", "1",
        1 if "develop_deprecated:40b1b17" in raw else 0)
 
+    # --- vllm#50603 gfx11 gate (benchmarks/vllm-50603/) ---------------------
+    # Chain: the three committed probe JSONLs -> the tables that README quotes.
+    GDIR = os.path.join(HERE, "..", "vllm-50603")
+    g1 = [json.loads(l) for l in open(os.path.join(GDIR, "stage1-rocm-paths.jsonl"))]
+    g1b = [json.loads(l) for l in open(os.path.join(GDIR, "stage1b-tail-control.jsonl"))]
+    g2 = [json.loads(l) for l in open(os.path.join(GDIR, "stage2-cuda-control.jsonl"))]
+
+    def med(v):
+        v = sorted(v)
+        n = len(v)
+        return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+
+    ck("50603 README, stage1 cells", "30", len(g1))
+    ck("50603 README, stage2 cells", "30", len(g2))
+    ck("50603 README, stage1b cells", "18", len(g1b))
+    ck("50603 README, cells over both arches", "90",
+       2 * len(g1) + len(g2))
+    # the speed table, Triton/CK per shape and length
+    for (h, kv), claims in {
+        (8, 8): ("2.06", "2.28", "2.87", "2.51", "4.11", "4.83"),
+        (8, 4): ("2.31", "2.42", "3.21", "3.86", "6.53", "7.28"),
+        (32, 16): ("2.14", "2.24", "1.84", "1.88", "2.71", "2.86"),
+        (12, 4): ("2.40", "2.57", "3.20", "3.64", "6.36", "7.23"),
+        (16, 4): ("2.40", "2.35", "3.20", "3.71", "6.42", "7.40"),
+    }.items():
+        for depth, claim in zip((1024, 2048, 4096, 8192, 16384, 32768), claims):
+            row = [r for r in g1 if r["num_heads"] == h and r["num_kv_heads"] == kv
+                   and r["ctx_len"] == depth][0]
+            ck(f"50603 README speed, {h}/{kv} @{depth}", claim,
+               row["triton"]["median_ms"] / row["ck"]["median_ms"])
+    # the accuracy table
+    for depth, t_claim, k_claim, a_claim in [
+        (1024, "2.62e-03", "3.56e-03", "2.86e-03"),
+        (2048, "2.66e-03", "3.67e-03", "2.86e-03"),
+        (4096, "2.94e-03", "3.38e-03", "2.71e-03"),
+        (8192, "2.77e-03", "3.78e-03", "3.25e-03"),
+        (16384, "2.89e-03", "3.40e-03", "3.10e-03"),
+        (32768, "2.80e-03", "3.42e-03", "2.64e-03"),
+    ]:
+        for arm, claim, data in (("triton", t_claim, g1), ("ck", k_claim, g1),
+                                 ("cuda", a_claim, g2)):
+            key = "triton" if arm == "cuda" else arm
+            v = med([r[key]["max_rel_err"] for r in data if r["ctx_len"] == depth])
+            ck(f"50603 README accuracy, {arm} @{depth}", float(claim), v, tol=5e-3)
+    allv = ([r[a]["max_rel_err"] for r in g1 for a in ("triton", "ck")]
+            + [r["triton"]["max_rel_err"] for r in g2])
+    ck("50603 README, error band low", 2.12e-03, min(allv), tol=5e-3)
+    ck("50603 README, error band high", 4.72e-03, max(allv), tol=5e-3)
+    ck("50603 README, error band median", 3.02e-03, med(allv), tol=5e-3)
+    lo = [r[a]["max_rel_err"] for r in g1 for a in ("triton", "ck") if r["ctx_len"] <= 2048]
+    lo += [r["triton"]["max_rel_err"] for r in g2 if r["ctx_len"] <= 2048]
+    hi = [r[a]["max_rel_err"] for r in g1 for a in ("triton", "ck") if r["ctx_len"] >= 16384]
+    hi += [r["triton"]["max_rel_err"] for r in g2 if r["ctx_len"] >= 16384]
+    ck("50603 README, 16x context moves the median by", "1.06", med(hi) / med(lo))
+    # the positive control
+    nan_rows = [r for r in g1b if r["fill"] == "nan"]
+    ck("50603 README, nan rows", "6", len(nan_rows))
+    ck("50603 README, poisoned rows", "4",
+       sum(1 for r in nan_rows if not r["triton"]["all_finite"]))
+    ck("50603 README, poisoned rows are exactly the unaligned ones", "1",
+       1 if all(not r["block_aligned"] for r in nan_rows if not r["triton"]["all_finite"])
+       and all(r["block_aligned"] for r in nan_rows if r["triton"]["all_finite"]) else 0)
+    ck("50603 README, CK is poisoned identically", "1",
+       1 if all(r["triton"]["all_finite"] == r["ck"]["all_finite"] for r in nan_rows) else 0)
+    ck("50603 README, finite garbage stays correct", "1",
+       1 if all(r["triton"]["all_finite"] and r["ck"]["all_finite"]
+                for r in g1b if r["fill"] == "garbage") else 0)
+    ck("50603 README, gqa 1 and 2 are gated out", "0",
+       sum(1 for r in g1 if r["gqa_ratio"] <= 2 and r["gate_as_shipped"]))
+    ck("50603 README, gqa 3 and 4 are gated in", "12",
+       sum(1 for r in g1 if r["gqa_ratio"] >= 3 and r["gate_as_shipped"]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

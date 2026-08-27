@@ -1,0 +1,32 @@
+device=NVIDIA A100-SXM4-40GB torch=2.11.0+cu128 triton=3.6.0
+gqa=1 (8/8) ctx=1024   | triton rel=2.81e-03 rms=4.46e-04 ulp=61.5 0.373ms
+gqa=1 (8/8) ctx=2048   | triton rel=3.09e-03 rms=5.94e-04 ulp=100.2 0.584ms
+gqa=1 (8/8) ctx=4096   | triton rel=2.18e-03 rms=5.08e-04 ulp=80.4 0.841ms
+gqa=1 (8/8) ctx=8192   | triton rel=3.25e-03 rms=4.91e-04 ulp=75.8 1.470ms
+gqa=1 (8/8) ctx=16384  | triton rel=2.61e-03 rms=5.64e-04 ulp=99.3 2.693ms
+gqa=1 (8/8) ctx=32768  | triton rel=2.55e-03 rms=6.65e-04 ulp=69.8 5.016ms
+gqa=2 (8/4) ctx=1024   | triton rel=3.18e-03 rms=5.15e-04 ulp=68.1 0.298ms
+gqa=2 (8/4) ctx=2048   | triton rel=2.86e-03 rms=5.34e-04 ulp=146.1 0.391ms
+gqa=2 (8/4) ctx=4096   | triton rel=2.71e-03 rms=5.33e-04 ulp=78.1 0.720ms
+gqa=2 (8/4) ctx=8192   | triton rel=2.90e-03 rms=6.35e-04 ulp=115.3 1.244ms
+gqa=2 (8/4) ctx=16384  | triton rel=3.10e-03 rms=5.09e-04 ulp=65.9 2.209ms
+gqa=2 (8/4) ctx=32768  | triton rel=2.90e-03 rms=6.51e-04 ulp=130.4 4.194ms
+gqa=3 (12/4) ctx=1024   | triton rel=2.86e-03 rms=4.42e-04 ulp=88.3 0.301ms
+gqa=3 (12/4) ctx=2048   | triton rel=2.68e-03 rms=5.48e-04 ulp=68.6 0.418ms
+gqa=3 (12/4) ctx=4096   | triton rel=3.03e-03 rms=6.04e-04 ulp=114.1 0.815ms
+gqa=3 (12/4) ctx=8192   | triton rel=3.32e-03 rms=6.35e-04 ulp=161.7 1.453ms
+gqa=3 (12/4) ctx=16384  | triton rel=4.17e-03 rms=6.94e-04 ulp=143.4 2.654ms
+gqa=3 (12/4) ctx=32768  | triton rel=2.61e-03 rms=6.71e-04 ulp=87.6 5.083ms
+gqa=4 (16/4) ctx=1024   | triton rel=2.56e-03 rms=4.99e-04 ulp=65.7 0.305ms
+gqa=4 (16/4) ctx=2048   | triton rel=3.60e-03 rms=6.03e-04 ulp=77.8 0.398ms
+gqa=4 (16/4) ctx=4096   | triton rel=2.47e-03 rms=4.75e-04 ulp=126.9 0.732ms
+gqa=4 (16/4) ctx=8192   | triton rel=2.86e-03 rms=6.22e-04 ulp=161.7 1.274ms
+gqa=4 (16/4) ctx=16384  | triton rel=2.87e-03 rms=5.60e-04 ulp=143.4 2.334ms
+gqa=4 (16/4) ctx=32768  | triton rel=2.64e-03 rms=5.81e-04 ulp=87.6 4.407ms
+gqa=2 (32/16) ctx=1024   | triton rel=3.17e-03 rms=4.14e-04 ulp=85.2 0.334ms
+gqa=2 (32/16) ctx=2048   | triton rel=2.80e-03 rms=4.43e-04 ulp=93.7 0.471ms
+gqa=2 (32/16) ctx=4096   | triton rel=2.73e-03 rms=5.05e-04 ulp=107.2 0.726ms
+gqa=2 (32/16) ctx=8192   | triton rel=3.26e-03 rms=5.51e-04 ulp=101.1 1.255ms
+gqa=2 (32/16) ctx=16384  | triton rel=3.20e-03 rms=5.62e-04 ulp=158.0 2.254ms
+gqa=2 (32/16) ctx=32768  | triton rel=3.64e-03 rms=6.12e-04 ulp=108.4 4.287ms
+PROBE_DONE
