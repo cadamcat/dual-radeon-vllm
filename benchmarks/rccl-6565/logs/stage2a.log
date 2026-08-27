@@ -1,0 +1,64 @@
+=== arm=ch1  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=1 NCCL_MAX_NCHANNELS=1  N=15 ===
+=== arm=ch1 RESULT pass=15 fail=0 error=0 of 15 ===
+    Channel 00/01
+    isAllDirectP2p 0
+    via /proc/kallsyms
+    via SHM/direct/direct
+
+=== arm=ch4  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=4  N=15 ===
+=== arm=ch4 RESULT pass=15 fail=0 error=0 of 15 ===
+    Channel 00/04
+    Channel 01/04
+    Channel 02/04
+    Channel 03/04
+    isAllDirectP2p 0
+    via /proc/kallsyms
+    via SHM/direct/direct
+
+=== arm=ch8  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=8  N=15 ===
+=== arm=ch8 RESULT pass=15 fail=0 error=0 of 15 ===
+    Channel 00/08
+    Channel 01/08
+    Channel 02/08
+    Channel 03/08
+    Channel 04/08
+    Channel 05/08
+    Channel 06/08
+    Channel 07/08
+    isAllDirectP2p 0
+    via /proc/kallsyms
+    via SHM/direct/direct
+
+=== arm=ch16  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=16  N=15 ===
+=== arm=ch16 RESULT pass=15 fail=0 error=0 of 15 ===
+    Channel 00/16
+    Channel 01/16
+    Channel 02/16
+    Channel 03/16
+    Channel 04/16
+    Channel 05/16
+    Channel 06/16
+    Channel 07/16
+    Channel 08/16
+    Channel 09/16
+    Channel 10/16
+    Channel 11/16
+    Channel 12/16
+    Channel 13/16
+    Channel 14/16
+    Channel 15/16
+    isAllDirectP2p 0
+    via /proc/kallsyms
+    via SHM/direct/direct
+
+=== arm=shmoff  env: NCCL_SHM_DISABLE=1  N=15 ===
+=== arm=shmoff RESULT pass=15 fail=0 error=0 of 15 ===
+    Channel 00/0
+    Channel 00/02
+    Channel 01/0
+    Channel 01/02
+    isAllDirectP2p 1
+    via /proc/kallsyms
+    via NET/Socket/
+
+STAGE2A_DONE

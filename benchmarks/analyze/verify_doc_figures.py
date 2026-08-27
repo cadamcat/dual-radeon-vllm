@@ -15,7 +15,7 @@ anything in [4.15, 4.25], 0.391 admits [0.3905, 0.3915]. That is what quoting a
 rounded number means, and it is a tighter test than a percentage for the large
 figures and a looser one for the small. Pass an explicit tol= to override.
 """
-import json, os, re, sys
+import hashlib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
@@ -500,6 +500,45 @@ def main():
        sum(r["n_elems"] for r in numer))
     ck("52684 README, differing element pct", "0.0001",
        100 * sum(r["n_diff"] for r in numer) / sum(r["n_elems"] for r in numer))
+
+    # --- ROCm#6565 contrast cell (benchmarks/rccl-6565/) --------------------
+    # Chain: the committed stage logs -> the tallies the README quotes. Parsed
+    # back out of the logs rather than trusted from results.json, so a stale
+    # JSON cannot agree with prose the logs disagree with.
+    RDIR = os.path.join(HERE, "..", "rccl-6565")
+    arms = []
+    for stage in ("stage1", "stage2a"):
+        text = open(os.path.join(RDIR, "logs", f"{stage}.log")).read()
+        for m in re.finditer(
+            r"=== arm=(\S+) RESULT pass=(\d+) fail=(\d+)(?: error=(\d+))? of (\d+)", text
+        ):
+            arms.append({"arm": m.group(1), "passed": int(m.group(2)),
+                         "failed": int(m.group(3)), "error": int(m.group(4) or 0),
+                         "n": int(m.group(5))})
+    ck("6565 README, arms measured", "8", len(arms))
+    ck("6565 README, cold inits total", "135", sum(a["n"] for a in arms))
+    ck("6565 README, cold inits correct", "135", sum(a["passed"] for a in arms))
+    ck("6565 README, failures", "0", sum(a["failed"] for a in arms))
+    ck("6565 README, init errors", "0", sum(a["error"] for a in arms))
+    for name, n in [("default", 20), ("p2pdisable", 20), ("prod", 20),
+                    ("ch1", 15), ("ch4", 15), ("ch8", 15), ("ch16", 15),
+                    ("shmoff", 15)]:
+        got = [a for a in arms if a["arm"] == name]
+        ck(f"6565 README table, {name} all correct", str(n),
+           got[0]["passed"] if len(got) == 1 and got[0]["n"] == n else -1)
+    s1 = open(os.path.join(RDIR, "logs", "stage1.log")).read()
+    ck("6565 README, RCCL version is 2.30.4", "1",
+       1 if "RCCL version : 2.30.4-HEAD:2b22ab0" in s1 else 0)
+    ck("6565 README, default channel count is 2", "1",
+       1 if "Channel 00/02" in s1 and "Channel 01/02" in s1 else 0)
+    ck("6565 README, the reporter's script is verbatim", "1",
+       1 if hashlib.md5(
+           open(os.path.join(RDIR, "rccl_allgather_truth.py"), "rb").read()
+       ).hexdigest() == "bffbc297cad9f1956c8bb2b7e8a4bb0f" else 0)
+    env = open(os.path.join(RDIR, "logs", "environment.txt")).read()
+    ck("6565 README, zero PCIE-atomic complaints", "0",
+       int(re.search(r"PCIE-atomic complaints: (\d+)", env).group(1)))
+    ck("6565 README, both GPUs advertise ReqEn+", "2", env.count("AtomicOpsCtl: ReqEn+"))
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

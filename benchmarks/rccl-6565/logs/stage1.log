@@ -1,0 +1,128 @@
+########## RCCL version banner (from a real comm init) ##########
+RCCL version : 2.30.4-HEAD:2b22ab0
+Librccl path : /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1
+
+########## topology as RCCL sees it ##########
+1aabaf84e0d0:77:77 [0] NCCL INFO DMA_BUF Support Enabled via /proc/kallsyms (dma_buf_move_notify + pci_p2pdma)
+1aabaf84e0d0:78:78 [1] NCCL INFO DMA_BUF Support Enabled via /proc/kallsyms (dma_buf_move_notify + pci_p2pdma)
+1aabaf84e0d0:78:78 [1] NCCL INFO NCCL_P2P_DISABLE set by environment to 1
+1aabaf84e0d0:77:77 [0] NCCL INFO NCCL_P2P_DISABLE set by environment to 1
+1aabaf84e0d0:77:77 [0] NCCL INFO Pattern 4, crossNic 0, nChannels 1, bw 24.000000/24.000000, type PHB/PIX, sameChannels 1
+1aabaf84e0d0:77:77 [0] NCCL INFO ringGraph->nChannels = 1 
+1aabaf84e0d0:77:77 [0] NCCL INFO Pattern 1, crossNic 0, nChannels 1, bw 24.000000/24.000000, type PHB/PIX, sameChannels 1
+1aabaf84e0d0:78:78 [1] NCCL INFO Pattern 4, crossNic 0, nChannels 1, bw 24.000000/24.000000, type PHB/PIX, sameChannels 1
+1aabaf84e0d0:78:78 [1] NCCL INFO ringGraph->nChannels = 1 
+1aabaf84e0d0:78:78 [1] NCCL INFO Pattern 1, crossNic 0, nChannels 1, bw 24.000000/24.000000, type PHB/PIX, sameChannels 1
+1aabaf84e0d0:77:77 [0] NCCL INFO [RINGS]      00
+1aabaf84e0d0:77:77 [0] NCCL INFO [RINGS]  00->01
+1aabaf84e0d0:78:78 [1] NCCL INFO Trees [0] -1/-1/-1->1->0 [1] -1/-1/-1->1->0 comm 0x1a41c910 nRanks 02 busId 2000
+1aabaf84e0d0:77:77 [0] NCCL INFO Channel 00/02 : 0 1
+1aabaf84e0d0:77:77 [0] NCCL INFO Channel 01/02 : 0 1
+1aabaf84e0d0:78:78 [1] NCCL INFO P2P Chunksize set to 131072
+1aabaf84e0d0:77:77 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 comm 0x2874c920 nRanks 02 busId 1000
+1aabaf84e0d0:77:77 [0] NCCL INFO P2P Chunksize set to 131072
+1aabaf84e0d0:77:77 [0] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 1
+1aabaf84e0d0:78:78 [1] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 1
+1aabaf84e0d0:77:77 [0] NCCL INFO ncclP2pSchedule: group size used is 2
+1aabaf84e0d0:78:78 [1] NCCL INFO ncclP2pSchedule: group size used is 2
+1aabaf84e0d0:77:77 [0] NCCL INFO Channel 00 : 0[1000] -> 1[2000] via SHM/direct/direct comm 0x2874c920 nRanks 02
+1aabaf84e0d0:78:78 [1] NCCL INFO Channel 00 : 1[2000] -> 0[1000] via SHM/direct/direct comm 0x1a41c910 nRanks 02
+1aabaf84e0d0:77:77 [0] NCCL INFO Channel 01 : 0[1000] -> 1[2000] via SHM/direct/direct comm 0x2874c920 nRanks 02
+
+##########################################################
+=== arm=default  env: <none>  N=20 ===
+--- stack ---
+    torch 2.11.0+rocm7.14.0
+    hip 7.14.60850
+    devices 2 ['AMD Radeon RX 7900 XT', 'AMD Radeon RX 7900 XT']
+--- librccl in the load path (proves stock, not our NDEBUG rebuild) ---
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1.0  symlink->librccl.so.1
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+run 1/20: ALL CORRECT
+run 2/20: ALL CORRECT
+run 3/20: ALL CORRECT
+run 4/20: ALL CORRECT
+run 5/20: ALL CORRECT
+run 6/20: ALL CORRECT
+run 7/20: ALL CORRECT
+run 8/20: ALL CORRECT
+run 9/20: ALL CORRECT
+run 10/20: ALL CORRECT
+run 11/20: ALL CORRECT
+run 12/20: ALL CORRECT
+run 13/20: ALL CORRECT
+run 14/20: ALL CORRECT
+run 15/20: ALL CORRECT
+run 16/20: ALL CORRECT
+run 17/20: ALL CORRECT
+run 18/20: ALL CORRECT
+run 19/20: ALL CORRECT
+run 20/20: ALL CORRECT
+=== arm=default RESULT pass=20 fail=0 of 20 cold inits ===
+
+##########################################################
+=== arm=p2pdisable  env: NCCL_P2P_DISABLE=1  N=20 ===
+--- stack ---
+    torch 2.11.0+rocm7.14.0
+    hip 7.14.60850
+    devices 2 ['AMD Radeon RX 7900 XT', 'AMD Radeon RX 7900 XT']
+--- librccl in the load path (proves stock, not our NDEBUG rebuild) ---
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1.0  symlink->librccl.so.1
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+run 1/20: ALL CORRECT
+run 2/20: ALL CORRECT
+run 3/20: ALL CORRECT
+run 4/20: ALL CORRECT
+run 5/20: ALL CORRECT
+run 6/20: ALL CORRECT
+run 7/20: ALL CORRECT
+run 8/20: ALL CORRECT
+run 9/20: ALL CORRECT
+run 10/20: ALL CORRECT
+run 11/20: ALL CORRECT
+run 12/20: ALL CORRECT
+run 13/20: ALL CORRECT
+run 14/20: ALL CORRECT
+run 15/20: ALL CORRECT
+run 16/20: ALL CORRECT
+run 17/20: ALL CORRECT
+run 18/20: ALL CORRECT
+run 19/20: ALL CORRECT
+run 20/20: ALL CORRECT
+=== arm=p2pdisable RESULT pass=20 fail=0 of 20 cold inits ===
+
+##########################################################
+=== arm=prod  env: NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0  N=20 ===
+--- stack ---
+    torch 2.11.0+rocm7.14.0
+    hip 7.14.60850
+    devices 2 ['AMD Radeon RX 7900 XT', 'AMD Radeon RX 7900 XT']
+--- librccl in the load path (proves stock, not our NDEBUG rebuild) ---
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1.0  symlink->librccl.so.1
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+run 1/20: ALL CORRECT
+run 2/20: ALL CORRECT
+run 3/20: ALL CORRECT
+run 4/20: ALL CORRECT
+run 5/20: ALL CORRECT
+run 6/20: ALL CORRECT
+run 7/20: ALL CORRECT
+run 8/20: ALL CORRECT
+run 9/20: ALL CORRECT
+run 10/20: ALL CORRECT
+run 11/20: ALL CORRECT
+run 12/20: ALL CORRECT
+run 13/20: ALL CORRECT
+run 14/20: ALL CORRECT
+run 15/20: ALL CORRECT
+run 16/20: ALL CORRECT
+run 17/20: ALL CORRECT
+run 18/20: ALL CORRECT
+run 19/20: ALL CORRECT
+run 20/20: ALL CORRECT
+=== arm=prod RESULT pass=20 fail=0 of 20 cold inits ===
+
+STAGE1_DONE

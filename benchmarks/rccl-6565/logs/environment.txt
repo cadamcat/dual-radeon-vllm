@@ -1,0 +1,43 @@
+# Environment fingerprint for ROCm/legacy-rocm-build#6565 contrast cell
+# captured 2026-08-27T11:48:43Z UTC on the guest
+
+== guest ==
+Linux ai 7.0.0-30-generic #30~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Aug  7 13:27:52 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
+Description:	Ubuntu 24.04.4 LTS
+kernel cmdline: BOOT_IMAGE=/vmlinuz-7.0.0-30-generic root=UUID=6239d00e-fbe6-43e9-89d8-d80643d1e789 ro console=tty1 console=ttyS0
+
+== GPUs ==
+0000:00:01.0 VGA compatible controller: Device 1234:1111 (rev 02)
+0000:01:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M] (rev cc)
+0000:02:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M] (rev cc)
+-- 0000:01:00.0
+   		LnkCap:	Port #0, Speed 16GT/s, Width x16, ASPM L1, Exit Latency L1 <1us
+   		LnkSta:	Speed 16GT/s, Width x16
+   			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+   			 AtomicOpsCtl: ReqEn+
+-- 0000:02:00.0
+   		LnkCap:	Port #0, Speed 16GT/s, Width x16, ASPM L1, Exit Latency L1 <1us
+   		LnkSta:	Speed 16GT/s, Width x16
+   			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+   			 AtomicOpsCtl: ReqEn+
+
+== amdgpu / atomics in dmesg ==
+[    9.253293] amdgpu 0000:01:00.0: detected ip block number 0 <common_v1_0_0> (soc21_common)
+[    9.253308] amdgpu 0000:01:00.0: detected ip block number 1 <gmc_v11_0_0> (gmc_v11_0)
+[    9.253317] amdgpu 0000:01:00.0: detected ip block number 2 <ih_v6_0_0> (ih_v6_0)
+[    9.253321] amdgpu 0000:01:00.0: detected ip block number 3 <psp_v13_0_0> (psp)
+[    9.253329] amdgpu 0000:01:00.0: detected ip block number 4 <smu_v13_0_0> (smu)
+[    9.253332] amdgpu 0000:01:00.0: detected ip block number 5 <dce_v1_0_0> (dm)
+[    9.253336] amdgpu 0000:01:00.0: detected ip block number 6 <gfx_v11_0_0> (gfx_v11_0)
+[    9.253345] amdgpu 0000:01:00.0: detected ip block number 7 <sdma_v6_0_0> (sdma_v6_0)
+PCIE-atomic complaints: 0
+
+== VRAM baseline ==
+/sys/class/drm/card1/device/mem_info_vram_used = 28008448
+/sys/class/drm/card2/device/mem_info_vram_used = 28008448
+
+== IOMMU ==
+iommu groups: 0
+
+== container image ==
+sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0 created=2026-07-15T20:08:46.480337423Z

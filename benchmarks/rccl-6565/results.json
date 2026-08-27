@@ -1,0 +1,66 @@
+[
+ {
+  "stage": "stage1",
+  "arm": "default",
+  "passed": 20,
+  "failed": 0,
+  "error": 0,
+  "n": 20
+ },
+ {
+  "stage": "stage1",
+  "arm": "p2pdisable",
+  "passed": 20,
+  "failed": 0,
+  "error": 0,
+  "n": 20
+ },
+ {
+  "stage": "stage1",
+  "arm": "prod",
+  "passed": 20,
+  "failed": 0,
+  "error": 0,
+  "n": 20
+ },
+ {
+  "stage": "stage2a",
+  "arm": "ch1",
+  "passed": 15,
+  "failed": 0,
+  "error": 0,
+  "n": 15
+ },
+ {
+  "stage": "stage2a",
+  "arm": "ch4",
+  "passed": 15,
+  "failed": 0,
+  "error": 0,
+  "n": 15
+ },
+ {
+  "stage": "stage2a",
+  "arm": "ch8",
+  "passed": 15,
+  "failed": 0,
+  "error": 0,
+  "n": 15
+ },
+ {
+  "stage": "stage2a",
+  "arm": "ch16",
+  "passed": 15,
+  "failed": 0,
+  "error": 0,
+  "n": 15
+ },
+ {
+  "stage": "stage2a",
+  "arm": "shmoff",
+  "passed": 15,
+  "failed": 0,
+  "error": 0,
+  "n": 15
+ }
+]
