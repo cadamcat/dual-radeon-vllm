@@ -931,6 +931,17 @@ def main():
     ck("w4a16 README, that is all of them", "1",
        1 if "WMMA_FRACTION=1.0000" in wr else 0)
 
+    # the upstream test cases, run on gfx1100 before and after the patch
+    tr = open(os.path.join(WDIR, "logs", "tests-run.log"), errors="replace").read()
+    before, after = tr.split("applying the three-line patch")
+    ck("w4a16 README, new numerical cases fail before the patch", "14",
+       max(int(n) for n in re.findall(r"(\d+) failed", before)))
+    ck("w4a16 README, selection suite after the patch", "12",
+       int(re.findall(r"(\d+) passed", after)[0]))
+    ck("w4a16 README, numerical suite after the patch", "38",
+       int(re.findall(r"(\d+) passed", after)[1]))
+    ck("w4a16 README, nothing fails after the patch", "0", after.count("FAILED"))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

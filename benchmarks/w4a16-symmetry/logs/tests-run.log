@@ -1,0 +1,48 @@
+pytest 9.1.1
+######## STOCK: the new asymmetric tests must FAIL ########
+  /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/share/amd_smi/amdsmi/amdsmi_wrapper.py:4662: DeprecationWarning: Due to '_pack_', the 'struct_amdsmi_ttm_info_t' Structure will use memory layout compatible with MSVC (Windows). If this is intended, set _layout_ to 'ms'. The implicit default is deprecated and slated to become an error in Python 3.19.
+    struct_amdsmi_ttm_info_t._fields_ = [
+
+../../opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: 14 warnings
+  /opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: DeprecationWarning: `torch.jit.script_method` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test_rdna3_w4a16_selection.py::test_selection_prefers_rdna3_asymmetric[dtype0]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 10 deselected, 128 warnings in 14.34s
+---- stock selection exit=0 ----
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m2_k256_n256_g128-dtype1]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m8_k256_n512_g64-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m8_k256_n512_g64-dtype1]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m16_k512_n256_g128-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m16_k512_n256_g128-dtype1]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m32_k512_n512_g64-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_matches_reference[m32_k512_n512_g64-dtype1]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_zero_point_of_zero[decode-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_zero_point_of_zero[decode-dtype1]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_zero_point_of_zero[prefill-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_zero_point_of_zero[prefill-dtype1]
+14 failed, 24 deselected, 128 warnings in 13.06s
+---- stock numeric exit=0 ----
+######## applying the three-line patch ########
+PATCH_APPLIED
+######## PATCHED: everything must PASS ########
+../../opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: 14 warnings
+  /opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: DeprecationWarning: `torch.jit.script_method` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+12 passed, 128 warnings in 7.59s
+---- patched selection exit=0 ----
+    struct_amdsmi_ttm_info_t._fields_ = [
+
+../../opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: 14 warnings
+  /opt/python/lib/python3.14/site-packages/torch/jit/_script.py:359: DeprecationWarning: `torch.jit.script_method` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+38 passed, 128 warnings in 19.42s
+---- patched numeric exit=0 ----
+TESTS_DONE

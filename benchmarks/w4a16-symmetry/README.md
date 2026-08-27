@@ -317,6 +317,57 @@ It also pairs `uint4b8`, a symmetric type, with explicit zero points, which no
 checkpoint produces. The layout mismatch is unreachable from the suite as
 written.
 
+## Tests, and the regression they caught
+
+The end-to-end run above says the patch works on one checkpoint. Upstream will
+want tests, and writing them changed the patch.
+
+Added to the two files vllm#41394 shipped, built the way
+`compressed_tensors_wNa16.py` actually registers an asymmetric layer —
+`weight_zero_point` as `[N//8, K//G]` with `input_dim=1, output_dim=0,
+packed_dim=0`, which is the transpose of what the existing `with_zp` cases
+construct:
+
+- `test_selection_prefers_rdna3_asymmetric` — `uint4` + `zero_points=True`
+  resolves to the RDNA3 kernel, fp16 and bf16
+- `test_can_implement_accepts_both_quant_types` — both int4 types admitted,
+  `uint8b128` still refused
+- `test_rdna3_w4a16_asymmetric_matches_reference` — five M/K/N/group shapes
+  spanning the scalar path and the WMMA path, against an fp32 reference that
+  does *not* apply the "+1"
+- `test_rdna3_w4a16_asymmetric_zero_point_of_zero` — a zero point of exactly 0,
+  which GPTQv1 cannot encode and which real AWQ checkpoints do use
+
+Run on gfx1100 before and after the patch (`run_tests.sh`, `apply_patch.py`,
+`logs/tests-run.log`):
+
+| | selection | numerical |
+|---|---|---|
+| stock | 1 failed (asym) | **14 failed** |
+| patched | **12 passed** | **38 passed** |
+
+**The regression the tests caught.** The first version of the patch chose the
+convention with `use_v2_format=c.zero_points`. That passed the end-to-end run
+and broke ten existing cases: `test_rdna3_w4a16_matches_reference[...with_zp]`
+pairs `uint4b8` with explicit zero points, and that is not a synthetic
+combination — **a GPTQ checkpoint stores its zero points explicitly and still
+uses the v1 "+1"**. Keying on `zero_points` would have silently mis-dequantized
+every asymmetric GPTQ checkpoint on RDNA3.
+
+The right key is the one the symmetric branch already uses to decide whether it
+can synthesize at all:
+
+```python
+output = ops.gptq_gemm_rdna3(x_2d, w_q, w_zp, w_s, w_g_idx,
+                             not c.weight_type.has_bias())
+```
+
+`uint4b8` carries bias 8 and means v1; `uint4` has no bias and means v2. With
+that key the ten regressions disappear and all 38 numerical cases pass. The
+end-to-end result above is unaffected — on `uint4` both keys agree — but the
+patch as first written would have been wrong for a checkpoint format this
+directory never tested.
+
 ## What this means for the campaign
 
 The 2026-08-24 campaign contains a natural control that was not read as one.
@@ -411,6 +462,8 @@ kernel already wants and therefore cannot fail.
 - `check_permute.py` — whether vLLM's existing layout tool can do the fix
 - `probe_w4a16_fix.py` + `run_fix.sh` — the three-line fix and its control arm
 - `zp_values.py` — the checkpoint's actual zero-point distribution
+- `upstream-tests/` + `apply_patch.py` + `run_tests.sh` — the test cases
+  proposed upstream, and the before/after run that validates them
 - `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,
   and its sha256 against the Hub's own ETags
 - `w4a16-ab.jsonl` — the six measured cells; `w4a16-forced.jsonl` and
