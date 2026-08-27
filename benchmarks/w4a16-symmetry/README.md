@@ -156,6 +156,65 @@ cells, an independent container start, and `max_num_seqs` 256 against 128:
 So the pinned `max_num_seqs` rescued the asymmetric arm without moving the
 symmetric one, and the sym arm reproduces to 1.31% across container starts.
 
+## Forcing the native kernel onto the asymmetric checkpoint
+
+The A/B compares checkpoints from two publishers, so "symmetry is what matters"
+still rests on the two arms being alike in every other way. This removes the
+publisher entirely: **one checkpoint, two kernels**, differing only in whether
+`uint4` is admitted to `SUPPORTED_QUANT_TYPES`.
+
+    -    SUPPORTED_QUANT_TYPES = [scalar_types.uint4b8]
+    +    SUPPORTED_QUANT_TYPES = [scalar_types.uint4b8, scalar_types.uint4]
+
+Applied on disk before the engine starts, since TP=2 builds layers in spawned
+workers that re-import the module. Nothing else was changed.
+
+**The type gate is indeed the only thing standing in the way of selection.**
+Both ranks record `('RDNA3W4A16LinearKernel', 'uint4', 32, True, True)` — the
+trailing `True` is `can_implement` passing — and `TritonW4A16LinearKernel` no
+longer appears at all. Weight loading then completes without complaint.
+
+**It fails at the kernel call**, not before:
+
+    RuntimeError: b_scales must have same group count as qzeros
+
+raised from `torch.ops._rocm_C.gptq_gemm_rdna3` on the first forward. So the
+answer to "is the type gate the only thing?" is: for *selection* yes, for
+*working* no. The reason is a layout the symmetric path never has to think
+about, read here straight from the safetensors headers (`zp_layout.py`,
+`zp-layout.json`, one `down_proj`, N=5120, K=17408, group_size 32, 544 groups):
+
+| tensor | shape | layout |
+|---|---|---|
+| `weight_scale` | 5120 x 544 | (N, groups) |
+| `weight_zero_point` | **640 x 544** | (N/8, groups) |
+| what the kernel expects | **544 x 640** | (groups, N/8) |
+
+`process_weights_after_loading` runs `permute_param_layout_` on `w_q` and on
+`w_s`, so scales arrive group-major. **It never touches `w_zp`** — and on the
+symmetric path it does not need to, because that path fabricates the tensor
+itself as `(groups, out_features)` and packs along dim 1, which is group-major
+by construction. A real asymmetric checkpoint ships the transpose of that. The
+entry check then compares `b_scales.size(0) = 544` against
+`qzeros.size(0) = 640` and stops.
+
+So the missing piece is a layout transform on the host, in the same function
+that already transforms the other two tensors — not new kernel math. The HIP
+kernel was never reached with wrong data; it refused the shapes at the door.
+
+**And the encoding question is still open.** The GPTQv1 "+1 quirk" — the kernel
+adds 1 to the stored zero, which is why the symmetric path encodes `bias - 1` —
+sits *behind* this shape check and was never exercised. Fixing the layout is
+what would expose it. Anyone attempting this should expect two problems, not
+one, and should check output quality rather than only that it runs.
+
+The `stock` arm of the same script is the control that makes the instrument
+credible: same checkpoint, same prompt, Triton as shipped, **11.41 tok/s**
+(against 11.49 in the A/B, an independent reproduction 0.7% apart) and a mean
+logprob of **-0.1859** over 29 generated tokens, answering the question
+correctly. Coherence was going to be scored, not eyeballed; the patched arm
+simply never got far enough to be scored.
+
 ## What this means for the campaign
 
 The 2026-08-24 campaign contains a natural control that was not read as one.
@@ -207,21 +266,26 @@ an asymmetric one does not, nothing in the logs says so, and the model name is
 not a reliable guide. Symmetric builds of this model exist from several
 publishers.
 
-For vLLM, the general fix looks smaller than "write a kernel". The RDNA3 kernel
-does not avoid zero points, it **requires** them: `apply` asserts the
-zero-point tensor is present, and the symmetric path works by synthesizing a
-constant `qzeros` of `weight_type.bias - 1` on the host. So
-`ops.gptq_gemm_rdna3` is already a general asymmetric GPTQ dequant, and
+For vLLM, the general fix is smaller than "write a kernel", and the section
+above measures how much smaller. The RDNA3 kernel does not avoid zero points,
+it **requires** them: `apply_weights` asserts one is present, and the symmetric
+path works by fabricating a constant `qzeros` of `weight_type.bias - 1` on the
+host. `ops.gptq_gemm_rdna3` is already a general asymmetric GPTQ dequant, and
 compressed-tensors already registers a real `weight_zero_point` for asymmetric
-checkpoints under the same config field the kernel reads. What stands between
-them is the type gate and the zero-point *encoding* convention — the GPTQv1
-"+1 quirk" the source documents — rather than new kernel math.
+checkpoints under the same config field the kernel reads.
 
-Whether the two conventions agree is **not tested here**, and that is the next
-experiment: admit `uint4`, run the asymmetric checkpoint, and check coherence
-as well as speed. Incoherent output would mean the encodings differ and the
-work is real after all. It would also close the last gap in this one, by
-removing the publisher as a variable: the same checkpoint, two kernels.
+Forced onto an asymmetric checkpoint it selects, loads, and then refuses the
+zero-point tensor's shape, because `process_weights_after_loading` transforms
+`w_q` and `w_s` and leaves `w_zp` alone. Two things follow. The work is on the
+host, in that function, alongside transforms that already exist. And it is
+**two** problems rather than one: the layout, and then the GPTQv1 "+1"
+encoding, which sits behind the shape check and has still never been
+exercised. A patch that fixes only the first will run and may well be wrong,
+so output quality has to be checked, not just that it starts.
+
+We have not written that patch. What this directory establishes is that the
+question is a host-side layout question with a named failure, not an open
+kernel-authoring problem, and that on this hardware it is worth up to 3.24x.
 
 ## Files
 
@@ -230,9 +294,12 @@ removing the publisher as a variable: the same checkpoint, two kernels.
 - `probe_w4a16_2x2.py` — the registry, all four corners plus every campaign
   checkpoint
 - `census_ckpt.py` — the quantized-layer census
+- `probe_w4a16_forced.py` + `run_forced.sh` — one checkpoint, two kernels
+- `zp_layout.py` — the zero-point layout census, from safetensors headers
 - `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,
   and its sha256 against the Hub's own ETags
-- `w4a16-ab.jsonl` — the six measured cells
+- `w4a16-ab.jsonl` — the six measured cells; `w4a16-forced.jsonl` — the
+  forced-kernel control
 - `w4a16-selection*.json`, `ckpt-layer-census.json`, `ckpt-sha256-sym.json` —
   the derived records
 - `logs/` — the runs that produced them, including the per-cell worker-side

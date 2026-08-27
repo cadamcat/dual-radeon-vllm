@@ -1,0 +1,52 @@
+{
+ "asym": {
+  "layer": "model.language_model.layers.0.mlp.down_proj",
+  "weight_packed": [
+   5120,
+   2176
+  ],
+  "weight_packed_dtype": "I32",
+  "weight_scale": [
+   5120,
+   544
+  ],
+  "weight_scale_dtype": "BF16",
+  "weight_zero_point": [
+   640,
+   544
+  ],
+  "weight_zero_point_dtype": "I32"
+ },
+ "sym": {
+  "layer": "model.language_model.layers.0.mlp.down_proj",
+  "weight_packed": [
+   5120,
+   2176
+  ],
+  "weight_packed_dtype": "I32",
+  "weight_scale": [
+   5120,
+   136
+  ],
+  "weight_scale_dtype": "BF16",
+  "weight_zero_point": null
+ },
+ "derived": {
+  "N": 5120,
+  "K": 17408,
+  "group_size": 32,
+  "groups": 544,
+  "scale_layout": "(N, groups)",
+  "zero_point_layout": "(N/8, groups)",
+  "kernel_expects_zp": [
+   544,
+   640
+  ],
+  "checkpoint_provides_zp": [
+   640,
+   544
+  ],
+  "is_transpose": true,
+  "n_over_8": 640
+ }
+}

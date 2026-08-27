@@ -1,0 +1,4 @@
+pid=134 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc
+pid=134 ('TritonW4A16LinearKernel', 'uint4', 32, True, True) 
+pid=133 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc
+pid=133 ('TritonW4A16LinearKernel', 'uint4', 32, True, True) 

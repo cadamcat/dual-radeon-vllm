@@ -833,6 +833,51 @@ def main():
     ck("w4a16 README, that penalty is flat across a 32x context range to within %",
        "8.2", spread * 100)
 
+    # --- forcing the native kernel onto the asymmetric checkpoint -----------
+    # One checkpoint, two kernels. The patched arm is expected to FAIL, and the
+    # checks below pin down where: selection succeeds, the kernel call does not.
+    fr = [json.loads(l) for l in open(os.path.join(WDIR, "w4a16-forced.jsonl"))]
+    ck("w4a16 README, forced-run rows (patched never reached a result)", "1", len(fr))
+    stock = fr[0]
+    ck("w4a16 README, forced stock tok/s", "11.41", stock["decode_tok_s"])
+    ck("w4a16 README, forced stock mean logprob", "-0.1859", stock["mean_logprob"])
+    ck("w4a16 README, forced stock logprob sample size", "29", stock["n_logprobs"])
+    ck("w4a16 README, forced stock reproduces the A/B asym cell to within %",
+       "0.7", abs(stock["decode_tok_s"] / aby[("asym", 1024)]["decode_tok_s"] - 1) * 100)
+    ck("w4a16 README, forced stock answers correctly", "1",
+       1 if ("Paris" in stock["answer"] and "Seine" in stock["answer"]) else 0)
+
+    # the patch does flip selection: can_implement passes on both ranks, and
+    # Triton stops appearing. Recorded inside the workers, as everywhere else.
+    fk = {arm: open(os.path.join(WDIR, "logs", f"kernels-forced-{arm}.txt")).read()
+          for arm in ("stock", "patched")}
+    ck("w4a16 README, patched: native kernel accepted on both ranks", "2",
+       sum(1 for l in fk["patched"].splitlines()
+           if "('RDNA3W4A16LinearKernel', 'uint4', 32, True, True)" in l))
+    ck("w4a16 README, patched: Triton no longer appears", "0",
+       fk["patched"].count("TritonW4A16LinearKernel"))
+    ck("w4a16 README, stock: native rejected, Triton selected", "1",
+       1 if ("not supported by" in fk["stock"]
+             and "TritonW4A16LinearKernel" in fk["stock"]) else 0)
+
+    # ...and then dies at the kernel entry check, not before
+    plog = open(os.path.join(WDIR, "logs", "forced-patched.log"),
+                errors="replace").read()
+    ck("w4a16 README, patched fails on the group-count check", "1",
+       1 if "b_scales must have same group count as qzeros" in plog else 0)
+    ck("w4a16 README, and it fails inside gptq_gemm_rdna3", "1",
+       1 if "gptq_gemm_rdna3" in plog else 0)
+
+    # why: the checkpoint ships the transpose of what the kernel expects
+    zp = json.load(open(os.path.join(WDIR, "zp-layout.json")))["derived"]
+    ck("w4a16 README, zp layout: groups", "544", zp["groups"])
+    ck("w4a16 README, zp layout: N/8", "640", zp["n_over_8"])
+    ck("w4a16 README, zp layout: group_size", "32", zp["group_size"])
+    ck("w4a16 README, the checkpoint zp is the transpose of what is expected", "1",
+       1 if zp["is_transpose"] else 0)
+    ck("w4a16 README, the two numbers the entry check compares differ", "1",
+       0 if zp["groups"] == zp["n_over_8"] else 1)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
