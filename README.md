@@ -259,11 +259,20 @@ chart and table — lives in [benchmarks.md](docs/benchmarks.md).
 | gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
 | **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
 | **gemma-4-31B-it** | w4a16 QAT dense | 42.8 | 36.6 | 29.3 | 🟢 the workhorse. 265 W × 2 synchronised |
-| **Qwen3.8-27B** | AWQ int4, **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter — still the slowest here |
+| **Qwen3.8-27B** | AWQ int4 (asymmetric), **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter. Slowest here — but that is the checkpoint, see below |
 
 gemma-3-27b (44.8 / 34.6 / 22.1) is measured but not plotted: between 500 and
 4 000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the
 three lines read as one.
+
+> **The Qwen3.8-27B row is checkpoint-bound, not architecture-bound**
+> *(2026-08-27)*. That checkpoint is asymmetric int4, which misses vLLM's native
+> gfx1100 W4A16 kernel and sends every quantised linear to Triton. The same
+> model with a symmetric checkpoint is **3.24× faster at 1 K** under matched
+> conditions, a flat ~60 ms per decode step
+> ([benchmarks/w4a16-symmetry](benchmarks/w4a16-symmetry/)). The *slope*
+> conclusions for this row are unaffected. Note also that gemma-3-27b, one row
+> above in size, is symmetric — the two 27B models differ by 3.64× here.
 
 ### llama.cpp, for comparison
 
@@ -404,8 +413,13 @@ file each came from, and exits non-zero if one disagrees.
 
 ### How to read this
 
-- **Architecture beats parameter count.** The fastest model here is the 26B MoE;
-  the slowest is a 27B, beaten 3.6× by a *larger* 31B dense.
+- **Architecture beats parameter count.** The fastest model here is the 26B MoE,
+  ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**.
+  *(Corrected 2026-08-27: this used to read "the slowest is a 27B, beaten 3.6× by
+  a larger 31B dense". That comparison is confounded — the 27B's checkpoint is
+  asymmetric int4 and misses the native W4A16 kernel, worth up to 3.24× on its
+  own, see [w4a16-symmetry](benchmarks/w4a16-symmetry/). The MoE-over-dense
+  result is not confounded: every model in it is on its best kernel path.)*
 - **Never benchmark with `--enforce-eager`.** It costs **3.8–7.2×** on this stack and
   invents artefacts (asymmetric power, context-independence). Two wrong conclusions
   in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",

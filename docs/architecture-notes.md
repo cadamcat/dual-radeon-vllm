@@ -1,19 +1,31 @@
 # Which model architectures run well on RDNA3 — and why
 
 Once tensor parallelism works, the next surprise is that **model architecture
-matters far more than model size** on consumer Radeon. A 27B model can be 3.6×
-slower than a 31B model on the same two cards.
+matters far more than model size** on consumer Radeon. A 26B MoE outruns a
+*larger* 31B dense by 2.513× on the same two cards.
+
+> **Corrected 2026-08-27.** The opening example used to be "a 27B model can be
+> 3.6× slower than a 31B model", and the hybrid-SSM row below carried that gap
+> as an architecture result. Most of it is not architecture: that 27B's
+> checkpoint is asymmetric int4, which misses vLLM's native gfx1100 W4A16 kernel
+> and sends every quantised linear to Triton. Holding the model fixed and
+> changing only the checkpoint is worth up to 3.24×, a flat ~60 ms per decode
+> step ([benchmarks/w4a16-symmetry](../benchmarks/w4a16-symmetry/)). The
+> context-*slope* findings in this document are unaffected.
 
 Short version:
 
 | Architecture | On gfx1100 | Why |
 |---|---|---|
 | **Dense transformer** (gemma, Llama, Qwen dense) | 🟢 **Good** | Mature generic GEMM + standard attention |
-| **Hybrid SSM / linear attention** (Qwen3.5, Qwen3.6) | 🔴 **Poor, and worse the longer the context** | Two separate causes: NVIDIA-tuned Triton kernels drag the *baseline* down, and the model's few full-attention layers fall off vLLM's ROCm paged-attention fast path, which is what makes it collapse with context ([details](hybrid-decode-on-rdna.md)) |
+| **Hybrid SSM / linear attention** (Qwen3.5, Qwen3.6) | 🔴 **Poor, and worse the longer the context** | Two separate causes, and neither is the linear attention. The *collapse* is architectural: the model's few full-attention layers fall off vLLM's ROCm paged-attention fast path ([details](hybrid-decode-on-rdna.md)). The low *baseline* is not architectural at all — the checkpoints measured here are asymmetric int4 and miss the native W4A16 kernel ([w4a16-symmetry](../benchmarks/w4a16-symmetry/)). The gated-delta-net kernels are 0.56 % of a decode step and were never the problem |
 | **MoE** (128/256 experts) | 🟢 **Good — fastest measured here** *(revised 2026-07-25)* | Once compiled it leads the field; the obstacle is a 26-minute single-threaded compile, not the kernels |
 
 **Practical advice: dense is the safe default, MoE is the fast one if you can pay
-the compile once, hybrid-SSM is the one to avoid.** Everything below is the evidence.
+the compile once, hybrid-SSM is the one to avoid.** Everything below is the
+evidence. On stock vLLM that advice still holds as measured, but half of what
+makes the hybrid-SSM entry bad is its checkpoint: pick a *symmetric* int4 build
+and the baseline half goes away ([w4a16-symmetry](../benchmarks/w4a16-symmetry/)).
 
 > **Revised 2026-07-25.** The MoE verdict here used to read "🟡 mediocre, ~15 tok/s".
 > That number came from an `--enforce-eager` run, because an earlier attempt gave the
@@ -29,7 +41,8 @@ the compile once, hybrid-SSM is the one to avoid.** Everything below is the evid
 
 `Qwen3.6-27B` (`model_type=qwen3_5`) is 64 layers: **48 gated-delta-net layers**
 + 16 full-attention + an MTP head. On our dual 7900 XT under vLLM TP=2 it decodes
-at **12.1 tok/s** — 3.6× slower than the *larger* dense gemma-4-31B.
+at **12.1 tok/s**. Most of the distance to the *larger* dense gemma-4-31B is
+the checkpoint rather than the architecture, see the correction at the top.
 
 The symptom is diagnostic: **both GPUs sit at 265 W** (busy, not idle) while
 **memory-bandwidth utilisation is far below the dense models'** (an earlier probe at

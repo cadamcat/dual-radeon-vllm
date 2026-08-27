@@ -783,7 +783,21 @@ ceiling is real, but raising it is not expected to fix the throughput gap above.
 
 ---
 
-## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s?
+## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s? ANSWERED
+
+> **Answered 2026-08-27.** The checkpoint is asymmetric int4, so every quantised
+> linear misses vLLM's native gfx1100 W4A16 kernel and runs on Triton instead.
+> The same model with a symmetric checkpoint is **3.24× faster at 1 K**, and the
+> penalty is a flat ~60 ms per decode step across a 32× context range
+> ([benchmarks/w4a16-symmetry](../benchmarks/w4a16-symmetry/)).
+>
+> The reasoning below eliminated the right suspect on a bad comparison, and is
+> left in place because the mistake is the reusable part: "gemma-4-31B is also
+> w4a16" is true and irrelevant, because *also w4a16* is not *also the same
+> kernel*. gemma-4-31B is symmetric and runs the native HIP kernel; this model
+> is asymmetric and runs Triton. Two kernels behind one word in a config file.
+> The 77 % figure below was right the whole time.
+
 
 The context **slope** is settled — it is the paged-attention fallback, see
 [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md). The baseline is not.

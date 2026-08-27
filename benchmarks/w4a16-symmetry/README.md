@@ -227,12 +227,16 @@ removing the publisher as a variable: the same checkpoint, two kernels.
 
 - `probe_w4a16_ab.py` + `run_ab.sh` — the A/B, one fresh container per cell
 - `probe_w4a16.py` — the registry, four real checkpoints
-- `probe_w4a16_2x2.py` — the registry, all four corners plus every campaign checkpoint
+- `probe_w4a16_2x2.py` — the registry, all four corners plus every campaign
+  checkpoint
 - `census_ckpt.py` — the quantized-layer census
-- `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched, and its sha256 against the Hub's own ETags
+- `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,
+  and its sha256 against the Hub's own ETags
 - `w4a16-ab.jsonl` — the six measured cells
-- `w4a16-selection*.json`, `ckpt-layer-census.json`, `ckpt-sha256-sym.json` — the derived records
-- `logs/` — the runs that produced them, including the per-cell worker-side kernel records
+- `w4a16-selection*.json`, `ckpt-layer-census.json`, `ckpt-sha256-sym.json` —
+  the derived records
+- `logs/` — the runs that produced them, including the per-cell worker-side
+  kernel records
 
 Figures above are recomputed from these files by
 [`verify_doc_figures.py`](../analyze/verify_doc_figures.py).

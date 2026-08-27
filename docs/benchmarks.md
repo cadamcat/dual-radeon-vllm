@@ -41,8 +41,16 @@ mean of all rounds (two per point; four for the two points that were re-measured
 see [`benchmarks/README.md`](../benchmarks/README.md#two-anomalies-and-what-was-done-about-them)).
 
 By parameter count the order should be 8B > 12B > 26B > 27B > 31B. It is not.
-**The fastest model is the 26B MoE, and the 27B hybrid-SSM is 3.6× slower than the
-larger 31B dense.** On this stack, architecture matters more than size.
+**The fastest model is the 26B MoE, ahead of the 8B dense by 1.355× and of the
+larger 31B dense by 2.513×.** On this stack, architecture matters more than size.
+
+> **Corrected 2026-08-27.** This paragraph used to give the headline as "the 27B
+> hybrid-SSM is 3.6× slower than the larger 31B dense". That gap is mostly the
+> checkpoint rather than the architecture: the 27B is packaged as asymmetric
+> int4, which misses vLLM's native gfx1100 W4A16 kernel, and the same model with
+> a symmetric checkpoint is 3.24× faster at 1 K
+> ([benchmarks/w4a16-symmetry](../benchmarks/w4a16-symmetry/)). The replacement
+> comparison uses only models that are on their best kernel path.
 
 ---
 
@@ -478,7 +486,10 @@ controlling it ([open-questions.md §8](open-questions.md)).
 ## Four findings worth carrying elsewhere
 
 1. **Architecture beats parameter count.** 26B MoE (107.8) > 8B dense (79.6) >
-   12B (59.9) > 31B (43.2) > 27B hybrid-SSM (12.1).
+   12B (59.9) > 31B (43.2). The 27B hybrid-SSM's 12.1 belongs to a different
+   comparison: its checkpoint is asymmetric int4 and misses the native W4A16
+   kernel, so that figure measures packaging as much as architecture
+   ([w4a16-symmetry](../benchmarks/w4a16-symmetry/), 2026-08-27).
 2. **Never conclude anything from `--enforce-eager` numbers.** Two wrong conclusions
    on this machine came from exactly that, at a cost of 3.8–7.2× and fabricated
    power asymmetry.

@@ -773,6 +773,13 @@ def main():
     ck("w4a16 README, the AWQ name does not imply asymmetric", "1",
        1 if cby["gemma-4-26B-A4B-AWQ"]["symmetric"] else 0)
 
+    # the replacement comparisons that took over from the confounded 3.6x, in
+    # README.md, docs/benchmarks.md and docs/architecture-notes.md. Both use
+    # only models that are on their best kernel path.
+    ck("README/benchmarks/arch-notes, MoE over 8B dense", "1.355",
+       tps(aug, "E-26B-tp2", 500) / tps(aug, "B-8B-tp2", 500))
+    ck("README/benchmarks/arch-notes, MoE over the larger 31B dense", "2.513",
+       tps(aug, "E-26B-tp2", 500) / tps(aug, "C-31B-tp2", 500))
     # the two 27B models in the 08-24 campaign, parameter count held constant
     ck("w4a16 README, two 27B models a factor apart", "3.64",
        tps(aug, "F-27B-tp2", 500) / tps(aug, "D8-27B-tp2", 500))
