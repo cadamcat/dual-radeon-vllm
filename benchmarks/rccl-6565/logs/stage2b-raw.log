@@ -1,0 +1,58 @@
++ cd /work/rccl-tests
++ git log --oneline -1
+40b1b17 Migration complete
++ SDD=/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/llvm/bin/llvm-objdump --offloading ./build/all_gather_perf
++ grep -o 'gfx[0-9]*'
++ sort -u
+gfx1100
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/llvm/bin/llvm-objdump --offloading ./build/verifiable/verifiable.o
++ grep -o 'gfx[0-9]*'
++ sort -u
+gfx1100
++ python -c 'import torch;print([torch.cuda.get_device_properties(i).gcnArchName for i in range(2)])'
+['gfx1100', 'gfx1100']
++ NCCL_P2P_DISABLE=1
++ ./build/all_gather_perf -b 8 -e 1M -f 4 -g 2 -c 1
+# Collective test starting: all_gather_perf
+# nThread 1 nGpus 2 minBytes 8 maxBytes 1048576 step: 4(factor) warmup iters: 5 iters: 20 agg iters: 1 validation: 1 graph: 0
+#
+rccl-tests: Version develop_deprecated:40b1b17
+# Using devices
+#  Rank  0 Group  0 Pid     33 on fa17e408abd1 device  0 [0000:01:00] AMD Radeon RX 7900 XT
+#  Rank  1 Group  0 Pid     33 on fa17e408abd1 device  1 [0000:02:00] AMD Radeon RX 7900 XT
+#
+#                                                              out-of-place                       in-place          
+#       size         count      type   redop    root     time   algbw   busbw #wrong     time   algbw   busbw #wrong                               
+#        (B)    (elements)                               (us)  (GB/s)  (GB/s)            (us)  (GB/s)  (GB/s)                                      
+fa17e408abd1:33:33 [1] [FATAL ERROR]: HIP failure: 'invalid device function'
+fa17e408abd1: Test NCCL failure /work/rccl-tests/build/hipify/common.cu.cpp:650 'unhandled cuda error (run with NCCL_DEBUG=INFO for details) / '
+ .. fa17e408abd1 pid 33: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:873
+ .. fa17e408abd1 pid 33: Test failure /work/rccl-tests/build/hipify/all_gather.cu.cpp:91
+ .. fa17e408abd1 pid 33: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1005
+ .. fa17e408abd1 pid 33: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1746
+ .. fa17e408abd1 pid 33: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1416
++ echo exit=3
++ NCCL_P2P_DISABLE=1
++ ./build/all_gather_perf -b 8 -e 1024 -f 4 -g 2
+exit=3
+# Collective test starting: all_gather_perf
+# nThread 1 nGpus 2 minBytes 8 maxBytes 1024 step: 4(factor) warmup iters: 5 iters: 20 agg iters: 1 validation: 1 graph: 0
+#
+rccl-tests: Version develop_deprecated:40b1b17
+# Using devices
+#  Rank  0 Group  0 Pid     50 on fa17e408abd1 device  0 [0000:01:00] AMD Radeon RX 7900 XT
+#  Rank  1 Group  0 Pid     50 on fa17e408abd1 device  1 [0000:02:00] AMD Radeon RX 7900 XT
+#
+#                                                              out-of-place                       in-place          
+#       size         count      type   redop    root     time   algbw   busbw #wrong     time   algbw   busbw #wrong                               
+#        (B)    (elements)                               (us)  (GB/s)  (GB/s)            (us)  (GB/s)  (GB/s)                                      
+fa17e408abd1:50:50 [1] [FATAL ERROR]: HIP failure: 'invalid device function'
+fa17e408abd1: Test NCCL failure /work/rccl-tests/build/hipify/common.cu.cpp:650 'unhandled cuda error (run with NCCL_DEBUG=INFO for details) / '
+ .. fa17e408abd1 pid 50: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:873
+ .. fa17e408abd1 pid 50: Test failure /work/rccl-tests/build/hipify/all_gather.cu.cpp:91
+ .. fa17e408abd1 pid 50: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1005
+ .. fa17e408abd1 pid 50: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1746
+ .. fa17e408abd1 pid 50: Test failure /work/rccl-tests/build/hipify/common.cu.cpp:1416
+exit_noverify=3
++ echo exit_noverify=3

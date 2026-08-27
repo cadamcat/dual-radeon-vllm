@@ -104,11 +104,19 @@ data-init kernel on rank 1:
 Test NCCL failure .../common.cu.cpp:650
 ```
 
-It fails identically with and without `-c 1`, so it is not the verification
-kernels. The clone reports `Version develop_deprecated:40b1b17`; this looks like
-the deprecated rccl-tests branch against RCCL 2.30.4 rather than anything about
-the collectives, and the PyTorch ground-truth reproducer above is the reporter's
-own primary one. Recorded rather than dropped: `logs/stage2b.log`.
+It fails identically with and without `-c 1` (exit 3 either way), so it is not
+the verification kernels, and `logs/stage2b-raw.log` records in one capture that
+the devices are `['gfx1100', 'gfx1100']`, that both `all_gather_perf` and
+`verifiable.o` carry gfx1100 code objects, and that the clone is
+`develop_deprecated:40b1b17`. That reads as the deprecated rccl-tests branch
+against RCCL 2.30.4 rather than anything about the collectives, and the PyTorch
+ground-truth reproducer above is the reporter's own primary one anyway.
+
+The first attempt at this ran through a wrapper that filtered the output and
+printed a parsed verdict; the filter matched nothing and reported `FAILED` for
+every collective including `all_reduce`, which the PyTorch test passes 135 times
+over. That log is not kept, because a wrong verdict line is worse to leave lying
+around than no log. `logs/stage2b-raw.log` is the unfiltered re-run.
 
 ## Files
 
@@ -116,6 +124,6 @@ own primary one. Recorded rather than dropped: `logs/stage2b.log`.
 - `scripts/` — the arm runners and stage drivers actually used
 - `logs/stage1.log` — three transport arms, RCCL version banner, topology dump
 - `logs/stage2a.log` — channel sweep and `NCCL_SHM_DISABLE=1`
-- `logs/stage2b.log` — the rccl-tests attempt
+- `logs/stage2b-raw.log` — the rccl-tests attempt, unfiltered
 - `logs/environment.txt` — machine fingerprint at capture time
 - `results.json` — the per-arm tallies parsed back out of the logs

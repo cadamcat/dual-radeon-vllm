@@ -539,6 +539,16 @@ def main():
     ck("6565 README, zero PCIE-atomic complaints", "0",
        int(re.search(r"PCIE-atomic complaints: (\d+)", env).group(1)))
     ck("6565 README, both GPUs advertise ReqEn+", "2", env.count("AtomicOpsCtl: ReqEn+"))
+    # the rccl-tests limitation the README and our comment both state
+    raw = open(os.path.join(RDIR, "logs", "stage2b-raw.log")).read()
+    ck("6565 README, rccl-tests fails on both invocations", "2",
+       raw.count("invalid device function"))
+    ck("6565 README, and at the data-init kernel", "2",
+       raw.count("common.cu.cpp:650"))
+    ck("6565 README, devices really are gfx1100", "1",
+       1 if "['gfx1100', 'gfx1100']" in raw else 0)
+    ck("6565 README, the deprecated rccl-tests branch", "1",
+       1 if "develop_deprecated:40b1b17" in raw else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
