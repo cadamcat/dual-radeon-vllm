@@ -642,6 +642,14 @@ def main():
     # stage 3: end-to-end effect of widening the gate, on gemma-3-27b
     g3 = [json.loads(l) for l in open(os.path.join(GDIR, "stage3-endtoend.jsonl"))]
     by3 = {(r["arm"], r["ctx"]): r for r in g3}
+    # the headline range, which must be over the EXCLUDED ratios only. Stated
+    # as 2.06x once, which was the min over gqa=1 alone and understated the
+    # floor; the real floor is the 32/16 shape at 4K.
+    exc = [r["triton"]["median_ms"] / r["ck"]["median_ms"]
+           for r in g1 if r["gqa_ratio"] <= 2]
+    ck("50603 README, excluded-ratio speedup floor", "1.84", min(exc))
+    ck("50603 README, excluded-ratio speedup ceiling", "7.28", max(exc))
+
     ck("50603 README, stage3 cells", "6", len(g3))
     for depth, s_claim, w_claim, r_claim in [
         (1024, "41.44", "42.57", "1.027"),

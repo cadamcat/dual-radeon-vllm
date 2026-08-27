@@ -19,9 +19,12 @@ Both are still true on `main` today.
 
 This directory tests the heuristic. Two findings:
 
-1. **It is inverted on this hardware.** At `gqa_ratio` 1 and 2 — exactly the
-   excluded range — the CK kernel is **2.06x to 7.28x faster** than the Triton
-   fallback it is being passed over for, and numerically equivalent to it.
+1. **It is inverted on this hardware.** At `gqa_ratio` 1 and 2, exactly the
+   excluded range, the CK kernel is **1.84x to 7.28x faster** than the Triton
+   fallback it is being passed over for, and numerically equivalent to it. The
+   floor is the 32/16 shape at 4K; the per-shape table below is the detail.
+   (Corrected 2026-08-27: this line first said 2.06x, which was the minimum
+   over `gqa_ratio` 1 alone and understated the floor.)
 2. **Neither path loses accuracy with context length.** Across 90 cells on two
    architectures, from 1K to 32K, relative error stays in a flat band
    (2.12e-3 to 4.72e-3, median 3.02e-3). A 16x context increase moves the
