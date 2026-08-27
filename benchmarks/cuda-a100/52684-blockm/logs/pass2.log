@@ -1,0 +1,123 @@
+device=NVIDIA A100-SXM4-40GB torch=2.13.0+cu130 triton=3.7.1
+
+=== (a) numerics ===
+bf16 hs=64  nq=4   q=1024   diff 14/2097152 (0.0007%) maxabs=0.000977 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=4   q=4096   diff 24/8388608 (0.0003%) maxabs=0.000244 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=4   q=16384  diff 180/33554432 (0.0005%) maxabs=0.00391 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=8   q=1024   diff 9/2097152 (0.0004%) maxabs=0.000488 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=8   q=4096   diff 36/8388608 (0.0004%) maxabs=0.000488 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=8   q=16384  diff 158/33554432 (0.0005%) maxabs=0.000977 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=16  q=1024   diff 0/1048576 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=64  nq=16  q=4096   diff 21/4194304 (0.0005%) maxabs=0.000488 max_ulp=1.000 >1ulp=0
+bf16 hs=64  nq=16  q=16384  diff 65/16777216 (0.0004%) maxabs=0.000977 max_ulp=1.000 >1ulp=0
+bf16 hs=128 nq=4   q=1024   diff 0/4194304 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=4   q=4096   diff 0/16777216 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=4   q=16384  diff 0/67108864 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=8   q=1024   diff 0/4194304 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=8   q=4096   diff 0/16777216 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=8   q=16384  diff 0/67108864 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=16  q=1024   diff 0/2097152 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=16  q=4096   diff 0/8388608 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+bf16 hs=128 nq=16  q=16384  diff 0/33554432 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=4   q=1024   diff 0/4194304 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=4   q=4096   diff 0/16777216 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=4   q=16384  diff 0/67108864 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=8   q=1024   diff 0/4194304 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=8   q=4096   diff 0/16777216 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=8   q=16384  diff 0/67108864 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=16  q=1024   diff 0/2097152 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=16  q=4096   diff 0/8388608 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+fp16 hs=128 nq=16  q=16384  diff 0/33554432 (0.0000%) maxabs=0 max_ulp=0.000 >1ulp=0
+
+=== (b) crossover ===
+bf16 hs=128 nq=4   q=512    base=0.2284 pr=0.2314 base2=0.2683 x0.987 (vs base2 x1.159) drift=1.175
+bf16 hs=128 nq=4   q=640    base=0.2304 pr=0.2314 base2=0.2243 x0.996 (vs base2 x0.969) drift=0.973
+bf16 hs=128 nq=4   q=768    base=0.2243 pr=0.2284 base2=0.2222 x0.982 (vs base2 x0.973) drift=0.991
+bf16 hs=128 nq=4   q=896    base=0.2222 pr=0.2273 base2=0.2263 x0.977 (vs base2 x0.995) drift=1.018
+bf16 hs=128 nq=4   q=1024   base=0.2755 pr=0.2673 base2=0.2765 x1.031 (vs base2 x1.034) drift=1.004
+bf16 hs=128 nq=4   q=1280   base=0.4106 pr=0.2990 base2=0.3205 x1.373 (vs base2 x1.072) drift=0.781
+bf16 hs=128 nq=4   q=1536   base=0.4454 pr=0.4055 base2=0.4444 x1.098 (vs base2 x1.096) drift=0.998
+bf16 hs=128 nq=4   q=1792   base=0.5888 pr=0.5263 base2=0.5878 x1.119 (vs base2 x1.117) drift=0.998
+bf16 hs=128 nq=4   q=2048   base=0.7485 pr=0.6595 base2=0.7485 x1.135 (vs base2 x1.135) drift=1.000
+bf16 hs=128 nq=4   q=3072   base=1.5892 pr=1.3640 base2=1.5923 x1.165 (vs base2 x1.167) drift=1.002
+bf16 hs=128 nq=8   q=512    base=0.2232 pr=0.2284 base2=0.2232 x0.978 (vs base2 x0.978) drift=1.000
+bf16 hs=128 nq=8   q=640    base=0.2304 pr=0.2386 base2=0.2263 x0.966 (vs base2 x0.948) drift=0.982
+bf16 hs=128 nq=8   q=768    base=0.2253 pr=0.2284 base2=0.2222 x0.987 (vs base2 x0.973) drift=0.986
+bf16 hs=128 nq=8   q=896    base=0.2263 pr=0.2355 base2=0.2263 x0.961 (vs base2 x0.961) drift=1.000
+bf16 hs=128 nq=8   q=1024   base=0.2222 pr=0.2284 base2=0.2232 x0.973 (vs base2 x0.978) drift=1.005
+bf16 hs=128 nq=8   q=1280   base=0.3185 pr=0.2734 base2=0.3185 x1.165 (vs base2 x1.165) drift=1.000
+bf16 hs=128 nq=8   q=1536   base=0.4403 pr=0.3287 base2=0.4393 x1.340 (vs base2 x1.336) drift=0.998
+bf16 hs=128 nq=8   q=1792   base=0.5827 pr=0.4024 base2=0.5837 x1.448 (vs base2 x1.450) drift=1.002
+bf16 hs=128 nq=8   q=2048   base=0.7465 pr=0.5212 base2=0.7465 x1.432 (vs base2 x1.432) drift=1.000
+bf16 hs=128 nq=8   q=3072   base=1.5933 pr=1.0455 base2=1.5923 x1.524 (vs base2 x1.523) drift=0.999
+bf16 hs=128 nq=16  q=512    base=0.2191 pr=0.2263 base2=0.2212 x0.968 (vs base2 x0.977) drift=1.009
+bf16 hs=128 nq=16  q=640    base=0.2324 pr=0.2355 base2=0.2253 x0.987 (vs base2 x0.957) drift=0.969
+bf16 hs=128 nq=16  q=768    base=0.2253 pr=0.2263 base2=0.2222 x0.995 (vs base2 x0.982) drift=0.986
+bf16 hs=128 nq=16  q=896    base=0.2273 pr=0.2284 base2=0.2243 x0.996 (vs base2 x0.982) drift=0.986
+bf16 hs=128 nq=16  q=1024   base=0.2222 pr=0.2284 base2=0.2253 x0.973 (vs base2 x0.987) drift=1.014
+bf16 hs=128 nq=16  q=1280   base=0.2253 pr=0.2314 base2=0.2284 x0.973 (vs base2 x0.987) drift=1.014
+bf16 hs=128 nq=16  q=1536   base=0.2243 pr=0.2263 base2=0.2212 x0.991 (vs base2 x0.977) drift=0.986
+bf16 hs=128 nq=16  q=1792   base=0.2898 pr=0.2447 base2=0.2888 x1.184 (vs base2 x1.180) drift=0.996
+bf16 hs=128 nq=16  q=2048   base=0.3625 pr=0.2939 base2=0.3645 x1.233 (vs base2 x1.240) drift=1.006
+bf16 hs=128 nq=16  q=3072   base=0.7608 pr=0.5714 base2=0.7608 x1.332 (vs base2 x1.332) drift=1.000
+bf16 hs=64  nq=4   q=512    base=0.2273 pr=0.2273 base2=0.2273 x1.000 (vs base2 x1.000) drift=1.000
+bf16 hs=64  nq=4   q=640    base=0.2324 pr=0.2335 base2=0.2273 x0.996 (vs base2 x0.974) drift=0.978
+bf16 hs=64  nq=4   q=768    base=0.2263 pr=0.2365 base2=0.2447 x0.957 (vs base2 x1.035) drift=1.081
+bf16 hs=64  nq=4   q=896    base=0.2468 pr=0.2263 base2=0.2222 x1.090 (vs base2 x0.982) drift=0.900
+bf16 hs=64  nq=4   q=1024   base=0.2232 pr=0.2273 base2=0.2232 x0.982 (vs base2 x0.982) drift=1.000
+bf16 hs=64  nq=4   q=1280   base=0.2232 pr=0.2284 base2=0.2232 x0.978 (vs base2 x0.978) drift=1.000
+bf16 hs=64  nq=4   q=1536   base=0.2867 pr=0.2304 base2=0.2877 x1.244 (vs base2 x1.249) drift=1.004
+bf16 hs=64  nq=4   q=1792   base=0.3789 pr=0.2314 base2=0.3779 x1.637 (vs base2 x1.633) drift=0.997
+bf16 hs=64  nq=4   q=2048   base=0.4803 pr=0.2652 base2=0.4803 x1.811 (vs base2 x1.811) drift=1.000
+bf16 hs=64  nq=4   q=3072   base=1.0158 pr=0.5366 base2=1.0168 x1.893 (vs base2 x1.895) drift=1.001
+bf16 hs=64  nq=8   q=512    base=0.2232 pr=0.2273 base2=0.2232 x0.982 (vs base2 x0.982) drift=1.000
+bf16 hs=64  nq=8   q=640    base=0.2335 pr=0.2365 base2=0.2294 x0.987 (vs base2 x0.970) drift=0.982
+bf16 hs=64  nq=8   q=768    base=0.2263 pr=0.2314 base2=0.2243 x0.978 (vs base2 x0.969) drift=0.991
+bf16 hs=64  nq=8   q=896    base=0.2253 pr=0.2294 base2=0.2253 x0.982 (vs base2 x0.982) drift=1.000
+bf16 hs=64  nq=8   q=1024   base=0.2232 pr=0.2314 base2=0.2284 x0.965 (vs base2 x0.987) drift=1.023
+bf16 hs=64  nq=8   q=1280   base=0.2284 pr=0.2304 base2=0.2273 x0.991 (vs base2 x0.987) drift=0.996
+bf16 hs=64  nq=8   q=1536   base=0.2867 pr=0.2304 base2=0.2867 x1.244 (vs base2 x1.244) drift=1.000
+bf16 hs=64  nq=8   q=1792   base=0.3789 pr=0.2304 base2=0.3779 x1.644 (vs base2 x1.640) drift=0.997
+bf16 hs=64  nq=8   q=2048   base=0.4792 pr=0.2703 base2=0.4772 x1.773 (vs base2 x1.765) drift=0.996
+bf16 hs=64  nq=8   q=3072   base=1.0076 pr=0.5581 base2=1.0066 x1.806 (vs base2 x1.804) drift=0.999
+bf16 hs=64  nq=16  q=512    base=0.2222 pr=0.2232 base2=0.2294 x0.995 (vs base2 x1.028) drift=1.032
+bf16 hs=64  nq=16  q=640    base=0.2314 pr=0.2284 base2=0.2232 x1.013 (vs base2 x0.978) drift=0.965
+bf16 hs=64  nq=16  q=768    base=0.2243 pr=0.2253 base2=0.2222 x0.995 (vs base2 x0.986) drift=0.991
+bf16 hs=64  nq=16  q=896    base=0.2243 pr=0.2314 base2=0.2243 x0.969 (vs base2 x0.969) drift=1.000
+bf16 hs=64  nq=16  q=1024   base=0.2263 pr=0.2284 base2=0.2212 x0.991 (vs base2 x0.969) drift=0.977
+bf16 hs=64  nq=16  q=1280   base=0.2232 pr=0.2284 base2=0.2222 x0.978 (vs base2 x0.973) drift=0.995
+bf16 hs=64  nq=16  q=1536   base=0.2232 pr=0.2355 base2=0.2263 x0.948 (vs base2 x0.961) drift=1.014
+bf16 hs=64  nq=16  q=1792   base=0.2386 pr=0.2314 base2=0.2232 x1.031 (vs base2 x0.965) drift=0.936
+bf16 hs=64  nq=16  q=2048   base=0.2509 pr=0.2273 base2=0.2560 x1.104 (vs base2 x1.126) drift=1.020
+bf16 hs=64  nq=16  q=3072   base=0.5212 pr=0.2806 base2=0.5222 x1.858 (vs base2 x1.861) drift=1.002
+bf16 hs=256 nq=4   q=512    base=0.2314 pr=0.2365 base2=0.2324 x0.978 (vs base2 x0.983) drift=1.004
+bf16 hs=256 nq=4   q=640    base=0.2386 pr=0.2376 base2=0.2335 x1.004 (vs base2 x0.983) drift=0.979
+bf16 hs=256 nq=4   q=768    base=0.3082 pr=0.2867 base2=0.3092 x1.075 (vs base2 x1.079) drift=1.003
+bf16 hs=256 nq=4   q=896    base=0.3850 pr=0.3676 base2=0.3850 x1.047 (vs base2 x1.047) drift=1.000
+bf16 hs=256 nq=4   q=1024   base=0.4946 pr=0.4413 base2=0.4946 x1.121 (vs base2 x1.121) drift=1.000
+bf16 hs=256 nq=4   q=1280   base=0.7148 pr=0.4925 base2=0.5571 x1.451 (vs base2 x1.131) drift=0.779
+bf16 hs=256 nq=4   q=1536   base=0.7864 pr=0.6666 base2=0.7875 x1.180 (vs base2 x1.181) drift=1.001
+bf16 hs=256 nq=4   q=1792   base=1.0312 pr=0.8550 base2=1.0301 x1.206 (vs base2 x1.205) drift=0.999
+bf16 hs=256 nq=4   q=2048   base=1.3343 pr=1.0813 base2=1.3353 x1.234 (vs base2 x1.235) drift=1.001
+bf16 hs=256 nq=4   q=3072   base=2.8314 pr=2.2241 base2=2.8334 x1.273 (vs base2 x1.274) drift=1.001
+bf16 hs=256 nq=8   q=512    base=0.2345 pr=0.2437 base2=0.3205 x0.962 (vs base2 x1.315) drift=1.367
+bf16 hs=256 nq=8   q=640    base=0.2376 pr=0.2396 base2=0.2284 x0.991 (vs base2 x0.953) drift=0.961
+bf16 hs=256 nq=8   q=768    base=0.2867 pr=0.2365 base2=0.2877 x1.212 (vs base2 x1.216) drift=1.004
+bf16 hs=256 nq=8   q=896    base=0.3758 pr=0.3041 base2=0.3768 x1.236 (vs base2 x1.239) drift=1.003
+bf16 hs=256 nq=8   q=1024   base=0.4680 pr=0.3686 base2=0.4669 x1.269 (vs base2 x1.267) drift=0.998
+bf16 hs=256 nq=8   q=1280   base=0.6963 pr=0.5171 base2=0.5437 x1.347 (vs base2 x1.051) drift=0.781
+bf16 hs=256 nq=8   q=1536   base=0.7485 pr=0.5458 base2=0.7485 x1.371 (vs base2 x1.371) drift=1.000
+bf16 hs=256 nq=8   q=1792   base=0.9994 pr=0.7076 base2=0.9994 x1.412 (vs base2 x1.412) drift=1.000
+bf16 hs=256 nq=8   q=2048   base=1.2759 pr=0.8837 base2=1.2759 x1.444 (vs base2 x1.444) drift=1.000
+bf16 hs=256 nq=8   q=3072   base=2.7607 pr=1.7971 base2=2.7587 x1.536 (vs base2 x1.535) drift=0.999
+bf16 hs=256 nq=16  q=512    base=0.2406 pr=0.2437 base2=0.2304 x0.987 (vs base2 x0.945) drift=0.957
+bf16 hs=256 nq=16  q=640    base=0.3072 pr=0.2427 base2=0.2232 x1.266 (vs base2 x0.920) drift=0.727
+bf16 hs=256 nq=16  q=768    base=0.2284 pr=0.2304 base2=0.2294 x0.991 (vs base2 x0.996) drift=1.004
+bf16 hs=256 nq=16  q=896    base=0.2263 pr=0.2345 base2=0.2232 x0.965 (vs base2 x0.952) drift=0.986
+bf16 hs=256 nq=16  q=1024   base=0.2580 pr=0.2335 base2=0.2570 x1.105 (vs base2 x1.101) drift=0.996
+bf16 hs=256 nq=16  q=1280   base=0.3686 pr=0.2908 base2=0.3717 x1.268 (vs base2 x1.278) drift=1.008
+bf16 hs=256 nq=16  q=1536   base=0.5120 pr=0.3881 base2=0.5028 x1.319 (vs base2 x1.296) drift=0.982
+bf16 hs=256 nq=16  q=1792   base=0.5304 pr=0.3891 base2=0.5294 x1.363 (vs base2 x1.361) drift=0.998
+bf16 hs=256 nq=16  q=2048   base=0.6871 pr=0.4895 base2=0.6861 x1.404 (vs base2 x1.402) drift=0.999
+bf16 hs=256 nq=16  q=3072   base=1.4479 pr=0.9277 base2=1.4469 x1.561 (vs base2 x1.560) drift=0.999
+PROBE2_DONE

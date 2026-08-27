@@ -17,6 +17,10 @@ diagnose/*.out
 diagnose/logs/*-full.txt
 *.log
 !diagnose/logs/amdlog-crash-excerpt.txt
+# ...but benchmark session logs ARE the raw layer verify_doc_figures.py
+# recomputes from, so they have to travel with the repo.
+!benchmarks/**/logs/*.log
+!benchmarks/**/logs-*/*.log
 
 # OS / editor
 .DS_Store

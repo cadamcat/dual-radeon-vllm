@@ -1,0 +1,143 @@
+device=NVIDIA A100-SXM4-40GB cap=(8, 0) torch=2.13.0+cu130 triton=3.7.1
+is_device_capability_family(100)= False
+bf16 hs=128 nq=4   q=256    win=None  BM 16->16 base=0.228 pr=0.224 bm64=0.230 ms | pr x1.018 bm64 x0.991 | bit-equal
+bf16 hs=128 nq=4   q=512    win=None  BM 16->64 base=0.236 pr=0.242 bm64=0.229 ms | pr x0.975 bm64 x1.027 | bit-equal
+bf16 hs=128 nq=4   q=1024   win=None  BM 16->64 base=0.279 pr=0.265 bm64=0.264 ms | pr x1.050 bm64 x1.054 | bit-equal
+bf16 hs=128 nq=4   q=2048   win=None  BM 16->64 base=0.963 pr=0.680 bm64=0.677 ms | pr x1.416 bm64 x1.422 | bit-equal
+bf16 hs=128 nq=4   q=4096   win=None  BM 16->64 base=2.815 pr=2.303 bm64=2.303 ms | pr x1.222 bm64 x1.222 | bit-equal
+bf16 hs=128 nq=4   q=8192   win=None  BM 16->64 base=10.604 pr=8.523 bm64=8.520 ms | pr x1.244 bm64 x1.245 | bit-equal
+bf16 hs=128 nq=4   q=16384  win=None  BM 16->64 base=41.649 pr=32.905 bm64=32.891 ms | pr x1.266 bm64 x1.266 | bit-equal
+bf16 hs=128 nq=7   q=256    win=None  BM 16->16 base=0.222 pr=0.215 bm64=0.215 ms | pr x1.033 bm64 x1.033 | bit-equal
+bf16 hs=128 nq=7   q=512    win=None  BM 16->64 base=0.227 pr=0.233 bm64=0.223 ms | pr x0.974 bm64 x1.018 | bit-equal
+bf16 hs=128 nq=7   q=1024   win=None  BM 16->64 base=0.225 pr=0.233 bm64=0.223 ms | pr x0.965 bm64 x1.009 | bit-equal
+bf16 hs=128 nq=7   q=2048   win=None  BM 16->64 base=0.739 pr=0.671 bm64=0.668 ms | pr x1.102 bm64 x1.107 | bit-equal
+bf16 hs=128 nq=7   q=4096   win=None  BM 16->64 base=2.724 pr=2.307 bm64=2.303 ms | pr x1.181 bm64 x1.183 | bit-equal
+bf16 hs=128 nq=7   q=8192   win=None  BM 16->64 base=10.494 pr=8.595 bm64=8.594 ms | pr x1.221 bm64 x1.221 | bit-equal
+bf16 hs=128 nq=7   q=16384  win=None  BM 16->64 base=41.161 pr=33.240 bm64=33.230 ms | pr x1.238 bm64 x1.239 | bit-equal
+bf16 hs=128 nq=8   q=256    win=None  BM 16->16 base=0.219 pr=0.215 bm64=0.213 ms | pr x1.019 bm64 x1.029 | bit-equal
+bf16 hs=128 nq=8   q=512    win=None  BM 16->64 base=0.224 pr=0.229 bm64=0.224 ms | pr x0.978 bm64 x1.000 | bit-equal
+bf16 hs=128 nq=8   q=1024   win=None  BM 16->64 base=0.224 pr=0.230 bm64=0.225 ms | pr x0.973 bm64 x0.995 | bit-equal
+bf16 hs=128 nq=8   q=2048   win=None  BM 16->64 base=0.748 pr=0.520 bm64=0.516 ms | pr x1.437 bm64 x1.448 | bit-equal
+bf16 hs=128 nq=8   q=4096   win=None  BM 16->64 base=2.768 pr=1.743 bm64=1.744 ms | pr x1.588 bm64 x1.587 | bit-equal
+bf16 hs=128 nq=8   q=8192   win=None  BM 16->64 base=10.680 pr=6.326 bm64=6.329 ms | pr x1.688 bm64 x1.687 | bit-equal
+bf16 hs=128 nq=8   q=16384  win=None  BM 16->64 base=41.933 pr=24.250 bm64=24.245 ms | pr x1.729 bm64 x1.730 | bit-equal
+bf16 hs=128 nq=16  q=256    win=None  BM 16->16 base=0.213 pr=0.212 bm64=0.211 ms | pr x1.005 bm64 x1.010 | bit-equal
+bf16 hs=128 nq=16  q=512    win=None  BM 16->64 base=0.217 pr=0.256 bm64=0.234 ms | pr x0.848 bm64 x0.926 | bit-equal
+bf16 hs=128 nq=16  q=1024   win=None  BM 16->64 base=0.229 pr=0.237 bm64=0.227 ms | pr x0.970 bm64 x1.009 | bit-equal
+bf16 hs=128 nq=16  q=2048   win=None  BM 16->64 base=0.367 pr=0.296 bm64=0.295 ms | pr x1.239 bm64 x1.243 | bit-equal
+bf16 hs=128 nq=16  q=4096   win=None  BM 16->64 base=1.316 pr=0.942 bm64=0.944 ms | pr x1.397 bm64 x1.394 | bit-equal
+bf16 hs=128 nq=16  q=8192   win=None  BM 16->64 base=4.966 pr=3.249 bm64=3.253 ms | pr x1.529 bm64 x1.527 | bit-equal
+bf16 hs=128 nq=16  q=16384  win=None  BM 16->64 base=19.376 pr=12.131 bm64=12.133 ms | pr x1.597 bm64 x1.597 | bit-equal
+bf16 hs=128 nq=4   q=256    win=4096  BM 16->16 base=0.226 pr=0.225 bm64=0.225 ms | pr x1.005 bm64 x1.005 | bit-equal
+bf16 hs=128 nq=4   q=512    win=4096  BM 16->64 base=0.227 pr=0.240 bm64=0.228 ms | pr x0.949 bm64 x0.996 | bit-equal
+bf16 hs=128 nq=4   q=1024   win=4096  BM 16->64 base=0.276 pr=0.234 bm64=0.233 ms | pr x1.179 bm64 x1.184 | bit-equal
+bf16 hs=128 nq=4   q=2048   win=4096  BM 16->64 base=0.967 pr=0.740 bm64=0.737 ms | pr x1.306 bm64 x1.311 | bit-equal
+bf16 hs=128 nq=4   q=4096   win=4096  BM 16->64 base=3.572 pr=2.586 bm64=2.584 ms | pr x1.381 bm64 x1.382 | bit-equal
+bf16 hs=128 nq=4   q=8192   win=4096  BM 16->64 base=10.326 pr=7.140 bm64=7.140 ms | pr x1.446 bm64 x1.446 | bit-equal
+bf16 hs=128 nq=4   q=16384  win=4096  BM 16->64 base=23.868 pr=16.256 bm64=16.256 ms | pr x1.468 bm64 x1.468 | bit-equal
+bf16 hs=128 nq=7   q=256    win=4096  BM 16->16 base=0.224 pr=0.221 bm64=0.218 ms | pr x1.014 bm64 x1.028 | bit-equal
+bf16 hs=128 nq=7   q=512    win=4096  BM 16->64 base=0.224 pr=0.231 bm64=0.226 ms | pr x0.969 bm64 x0.991 | bit-equal
+bf16 hs=128 nq=7   q=1024   win=4096  BM 16->64 base=0.350 pr=0.302 bm64=0.302 ms | pr x1.159 bm64 x1.159 | bit-equal
+bf16 hs=128 nq=7   q=2048   win=4096  BM 16->64 base=1.211 pr=0.950 bm64=0.749 ms | pr x1.275 bm64 x1.618 | bit-equal
+bf16 hs=128 nq=7   q=4096   win=4096  BM 16->64 base=3.518 pr=2.558 bm64=2.555 ms | pr x1.376 bm64 x1.377 | bit-equal
+bf16 hs=128 nq=7   q=8192   win=4096  BM 16->64 base=10.203 pr=7.101 bm64=7.099 ms | pr x1.437 bm64 x1.437 | bit-equal
+bf16 hs=128 nq=7   q=16384  win=4096  BM 16->64 base=23.587 pr=16.227 bm64=16.229 ms | pr x1.454 bm64 x1.453 | bit-equal
+bf16 hs=128 nq=8   q=256    win=4096  BM 16->16 base=0.224 pr=0.222 bm64=0.217 ms | pr x1.009 bm64 x1.033 | bit-equal
+bf16 hs=128 nq=8   q=512    win=4096  BM 16->64 base=0.226 pr=0.232 bm64=0.223 ms | pr x0.974 bm64 x1.014 | bit-equal
+bf16 hs=128 nq=8   q=1024   win=4096  BM 16->64 base=0.272 pr=0.233 bm64=0.233 ms | pr x1.167 bm64 x1.167 | bit-equal
+bf16 hs=128 nq=8   q=2048   win=4096  BM 16->64 base=0.942 pr=0.740 bm64=0.739 ms | pr x1.272 bm64 x1.274 | bit-equal
+bf16 hs=128 nq=8   q=4096   win=4096  BM 16->64 base=3.522 pr=2.572 bm64=2.573 ms | pr x1.369 bm64 x1.368 | bit-equal
+bf16 hs=128 nq=8   q=8192   win=4096  BM 16->64 base=10.242 pr=7.149 bm64=7.150 ms | pr x1.433 bm64 x1.433 | bit-equal
+bf16 hs=128 nq=8   q=16384  win=4096  BM 16->64 base=23.666 pr=16.350 bm64=16.345 ms | pr x1.447 bm64 x1.448 | bit-equal
+bf16 hs=128 nq=16  q=256    win=4096  BM 16->16 base=0.212 pr=0.212 bm64=0.209 ms | pr x1.000 bm64 x1.015 | bit-equal
+bf16 hs=128 nq=16  q=512    win=4096  BM 16->64 base=0.218 pr=0.249 bm64=0.228 ms | pr x0.877 bm64 x0.955 | bit-equal
+bf16 hs=128 nq=16  q=1024   win=4096  BM 16->64 base=0.224 pr=0.231 bm64=0.225 ms | pr x0.969 bm64 x0.995 | bit-equal
+bf16 hs=128 nq=16  q=2048   win=4096  BM 16->64 base=0.458 pr=0.355 bm64=0.354 ms | pr x1.288 bm64 x1.292 | bit-equal
+bf16 hs=128 nq=16  q=4096   win=4096  BM 16->64 base=1.670 pr=1.146 bm64=1.146 ms | pr x1.458 bm64 x1.458 | bit-equal
+bf16 hs=128 nq=16  q=8192   win=4096  BM 16->64 base=4.778 pr=2.996 bm64=2.997 ms | pr x1.595 bm64 x1.594 | bit-equal
+bf16 hs=128 nq=16  q=16384  win=4096  BM 16->64 base=10.992 pr=6.717 bm64=6.718 ms | pr x1.636 bm64 x1.636 | bit-equal
+bf16 hs=64  nq=4   q=256    win=None  BM 16->16 base=0.215 pr=0.209 bm64=0.208 ms | pr x1.029 bm64 x1.034 | bit-equal
+bf16 hs=64  nq=4   q=512    win=None  BM 16->64 base=0.220 pr=0.231 bm64=0.224 ms | pr x0.951 bm64 x0.982 | DIFF 0.000977
+bf16 hs=64  nq=4   q=1024   win=None  BM 16->64 base=0.225 pr=0.236 bm64=0.224 ms | pr x0.957 bm64 x1.005 | DIFF 0.000977
+bf16 hs=64  nq=4   q=2048   win=None  BM 16->64 base=0.482 pr=0.265 bm64=0.264 ms | pr x1.819 bm64 x1.826 | DIFF 0.000977
+bf16 hs=64  nq=4   q=4096   win=None  BM 16->64 base=1.757 pr=0.902 bm64=0.901 ms | pr x1.948 bm64 x1.950 | DIFF 0.000244
+bf16 hs=64  nq=4   q=8192   win=None  BM 16->64 base=6.674 pr=3.242 bm64=3.248 ms | pr x2.059 bm64 x2.055 | DIFF 0.000977
+bf16 hs=64  nq=4   q=16384  win=None  BM 16->64 base=26.084 pr=12.307 bm64=12.311 ms | pr x2.119 bm64 x2.119 | DIFF 0.00391
+bf16 hs=64  nq=7   q=256    win=None  BM 16->16 base=0.216 pr=0.214 bm64=0.212 ms | pr x1.010 bm64 x1.019 | bit-equal
+bf16 hs=64  nq=7   q=512    win=None  BM 16->64 base=0.222 pr=0.227 bm64=0.224 ms | pr x0.977 bm64 x0.991 | DIFF 0.000977
+bf16 hs=64  nq=7   q=1024   win=None  BM 16->64 base=0.225 pr=0.230 bm64=0.224 ms | pr x0.978 bm64 x1.005 | DIFF 0.000488
+bf16 hs=64  nq=7   q=2048   win=None  BM 16->64 base=0.479 pr=0.265 bm64=0.264 ms | pr x1.807 bm64 x1.814 | DIFF 0.00195
+bf16 hs=64  nq=7   q=4096   win=None  BM 16->64 base=1.739 pr=0.893 bm64=0.889 ms | pr x1.947 bm64 x1.956 | DIFF 0.00195
+bf16 hs=64  nq=7   q=8192   win=None  BM 16->64 base=6.652 pr=3.217 bm64=3.217 ms | pr x2.067 bm64 x2.067 | DIFF 0.000488
+bf16 hs=64  nq=7   q=16384  win=None  BM 16->64 base=26.094 pr=12.283 bm64=12.275 ms | pr x2.124 bm64 x2.126 | DIFF 0.000977
+bf16 hs=64  nq=8   q=256    win=None  BM 16->16 base=0.214 pr=0.213 bm64=0.218 ms | pr x1.005 bm64 x0.981 | bit-equal
+bf16 hs=64  nq=8   q=512    win=None  BM 16->64 base=0.222 pr=0.234 bm64=0.230 ms | pr x0.948 bm64 x0.964 | DIFF 0.000488
+bf16 hs=64  nq=8   q=1024   win=None  BM 16->64 base=0.229 pr=0.238 bm64=0.224 ms | pr x0.966 bm64 x1.023 | DIFF 0.000488
+bf16 hs=64  nq=8   q=2048   win=None  BM 16->64 base=0.479 pr=0.273 bm64=0.274 ms | pr x1.753 bm64 x1.746 | DIFF 0.00195
+bf16 hs=64  nq=8   q=4096   win=None  BM 16->64 base=1.740 pr=0.925 bm64=0.925 ms | pr x1.882 bm64 x1.882 | DIFF 0.000488
+bf16 hs=64  nq=8   q=8192   win=None  BM 16->64 base=6.650 pr=3.327 bm64=3.323 ms | pr x1.999 bm64 x2.001 | DIFF 0.000488
+bf16 hs=64  nq=8   q=16384  win=None  BM 16->64 base=26.065 pr=12.656 bm64=12.657 ms | pr x2.060 bm64 x2.059 | DIFF 0.000977
+bf16 hs=64  nq=16  q=256    win=None  BM 16->16 base=0.212 pr=0.211 bm64=0.207 ms | pr x1.005 bm64 x1.025 | bit-equal
+bf16 hs=64  nq=16  q=512    win=None  BM 16->64 base=0.218 pr=0.220 bm64=0.212 ms | pr x0.991 bm64 x1.029 | DIFF 0.000977
+bf16 hs=64  nq=16  q=1024   win=None  BM 16->64 base=0.221 pr=0.226 bm64=0.222 ms | pr x0.977 bm64 x0.995 | bit-equal
+bf16 hs=64  nq=16  q=2048   win=None  BM 16->64 base=0.252 pr=0.224 bm64=0.220 ms | pr x1.123 bm64 x1.144 | DIFF 0.000488
+bf16 hs=64  nq=16  q=4096   win=None  BM 16->64 base=0.879 pr=0.459 bm64=0.459 ms | pr x1.915 bm64 x1.915 | DIFF 0.000488
+bf16 hs=64  nq=16  q=8192   win=None  BM 16->64 base=3.317 pr=1.594 bm64=1.591 ms | pr x2.080 bm64 x2.084 | DIFF 0.000977
+bf16 hs=64  nq=16  q=16384  win=None  BM 16->64 base=12.906 pr=5.895 bm64=5.901 ms | pr x2.189 bm64 x2.187 | DIFF 0.000977
+bf16 hs=256 nq=4   q=256    win=None  BM 16->16 base=0.232 pr=0.226 bm64=0.227 ms | pr x1.027 bm64 x1.023 | bit-equal
+bf16 hs=256 nq=4   q=512    win=None  BM 16->64 base=0.226 pr=0.245 bm64=0.225 ms | pr x0.925 bm64 x1.005 | bit-equal
+bf16 hs=256 nq=4   q=1024   win=None  BM 16->64 base=0.482 pr=0.445 bm64=0.441 ms | pr x1.083 bm64 x1.093 | bit-equal
+bf16 hs=256 nq=4   q=2048   win=None  BM 16->64 base=1.314 pr=1.081 bm64=1.085 ms | pr x1.215 bm64 x1.210 | bit-equal
+bf16 hs=256 nq=4   q=4096   win=None  BM 16->64 base=4.942 pr=3.781 bm64=3.775 ms | pr x1.307 bm64 x1.309 | bit-equal
+bf16 hs=256 nq=4   q=8192   win=None  BM 16->64 base=19.043 pr=14.000 bm64=14.020 ms | pr x1.360 bm64 x1.358 | bit-equal
+bf16 hs=256 nq=4   q=16384  win=None  BM 16->64 base=74.613 pr=54.234 bm64=54.217 ms | pr x1.376 bm64 x1.376 | bit-equal
+bf16 hs=256 nq=7   q=256    win=None  BM 16->16 base=0.236 pr=0.230 bm64=0.228 ms | pr x1.022 bm64 x1.031 | bit-equal
+bf16 hs=256 nq=7   q=512    win=None  BM 16->64 base=0.228 pr=0.242 bm64=0.233 ms | pr x0.945 bm64 x0.978 | bit-equal
+bf16 hs=256 nq=7   q=1024   win=None  BM 16->64 base=0.485 pr=0.463 bm64=0.462 ms | pr x1.049 bm64 x1.051 | bit-equal
+bf16 hs=256 nq=7   q=2048   win=None  BM 16->64 base=1.697 pr=1.420 bm64=1.112 ms | pr x1.195 bm64 x1.526 | bit-equal
+bf16 hs=256 nq=7   q=4096   win=None  BM 16->64 base=4.967 pr=3.801 bm64=3.806 ms | pr x1.307 bm64 x1.305 | bit-equal
+bf16 hs=256 nq=7   q=8192   win=None  BM 16->64 base=19.184 pr=14.113 bm64=14.108 ms | pr x1.359 bm64 x1.360 | bit-equal
+bf16 hs=256 nq=7   q=16384  win=None  BM 16->64 base=75.215 pr=54.535 bm64=54.535 ms | pr x1.379 bm64 x1.379 | bit-equal
+bf16 hs=256 nq=8   q=256    win=None  BM 16->16 base=0.233 pr=0.223 bm64=0.226 ms | pr x1.046 bm64 x1.032 | bit-equal
+bf16 hs=256 nq=8   q=512    win=None  BM 16->64 base=0.226 pr=0.240 bm64=0.226 ms | pr x0.944 bm64 x1.000 | bit-equal
+bf16 hs=256 nq=8   q=1024   win=None  BM 16->64 base=0.470 pr=0.367 bm64=0.367 ms | pr x1.282 bm64 x1.282 | bit-equal
+bf16 hs=256 nq=8   q=2048   win=None  BM 16->64 base=1.650 pr=1.128 bm64=1.127 ms | pr x1.462 bm64 x1.463 | bit-equal
+bf16 hs=256 nq=8   q=4096   win=None  BM 16->64 base=4.837 pr=3.050 bm64=3.059 ms | pr x1.586 bm64 x1.582 | bit-equal
+bf16 hs=256 nq=8   q=8192   win=None  BM 16->64 base=18.692 pr=11.454 bm64=11.463 ms | pr x1.632 bm64 x1.631 | bit-equal
+bf16 hs=256 nq=8   q=16384  win=None  BM 16->64 base=73.548 pr=44.560 bm64=44.572 ms | pr x1.651 bm64 x1.650 | bit-equal
+bf16 hs=256 nq=16  q=256    win=None  BM 16->16 base=0.216 pr=0.215 bm64=0.213 ms | pr x1.005 bm64 x1.014 | bit-equal
+bf16 hs=256 nq=16  q=512    win=None  BM 16->64 base=0.222 pr=0.237 bm64=0.269 ms | pr x0.939 bm64 x0.825 | bit-equal
+bf16 hs=256 nq=16  q=1024   win=None  BM 16->64 base=0.263 pr=0.226 bm64=0.227 ms | pr x1.163 bm64 x1.158 | bit-equal
+bf16 hs=256 nq=16  q=2048   win=None  BM 16->64 base=0.867 pr=0.626 bm64=0.614 ms | pr x1.386 bm64 x1.412 | bit-equal
+bf16 hs=256 nq=16  q=4096   win=None  BM 16->64 base=3.291 pr=1.505 bm64=1.498 ms | pr x2.186 bm64 x2.197 | bit-equal
+bf16 hs=256 nq=16  q=8192   win=None  BM 16->64 base=9.406 pr=5.318 bm64=5.308 ms | pr x1.769 bm64 x1.772 | bit-equal
+bf16 hs=256 nq=16  q=16384  win=None  BM 16->64 base=37.258 pr=19.999 bm64=19.985 ms | pr x1.863 bm64 x1.864 | bit-equal
+fp16 hs=128 nq=4   q=256    win=None  BM 16->16 base=0.218 pr=0.213 bm64=0.211 ms | pr x1.024 bm64 x1.034 | bit-equal
+fp16 hs=128 nq=4   q=512    win=None  BM 16->64 base=0.218 pr=0.238 bm64=0.223 ms | pr x0.918 bm64 x0.977 | bit-equal
+fp16 hs=128 nq=4   q=1024   win=None  BM 16->64 base=0.223 pr=0.224 bm64=0.226 ms | pr x0.995 bm64 x0.986 | bit-equal
+fp16 hs=128 nq=4   q=2048   win=None  BM 16->64 base=0.752 pr=0.666 bm64=0.666 ms | pr x1.129 bm64 x1.129 | bit-equal
+fp16 hs=128 nq=4   q=4096   win=None  BM 16->64 base=2.763 pr=2.298 bm64=2.302 ms | pr x1.202 bm64 x1.200 | bit-equal
+fp16 hs=128 nq=4   q=8192   win=None  BM 16->64 base=10.587 pr=8.508 bm64=8.505 ms | pr x1.244 bm64 x1.245 | bit-equal
+fp16 hs=128 nq=4   q=16384  win=None  BM 16->64 base=41.589 pr=32.849 bm64=32.845 ms | pr x1.266 bm64 x1.266 | bit-equal
+fp16 hs=128 nq=7   q=256    win=None  BM 16->16 base=0.220 pr=0.215 bm64=0.212 ms | pr x1.024 bm64 x1.039 | bit-equal
+fp16 hs=128 nq=7   q=512    win=None  BM 16->64 base=0.222 pr=0.238 bm64=0.233 ms | pr x0.935 bm64 x0.952 | bit-equal
+fp16 hs=128 nq=7   q=1024   win=None  BM 16->64 base=0.227 pr=0.225 bm64=0.271 ms | pr x1.009 bm64 x0.838 | bit-equal
+fp16 hs=128 nq=7   q=2048   win=None  BM 16->64 base=0.945 pr=0.850 bm64=0.848 ms | pr x1.112 bm64 x1.115 | bit-equal
+fp16 hs=128 nq=7   q=4096   win=None  BM 16->64 base=2.721 pr=2.304 bm64=2.305 ms | pr x1.181 bm64 x1.180 | bit-equal
+fp16 hs=128 nq=7   q=8192   win=None  BM 16->64 base=10.477 pr=8.580 bm64=8.576 ms | pr x1.221 bm64 x1.222 | bit-equal
+fp16 hs=128 nq=7   q=16384  win=None  BM 16->64 base=41.144 pr=33.221 bm64=33.222 ms | pr x1.239 bm64 x1.238 | bit-equal
+fp16 hs=128 nq=8   q=256    win=None  BM 16->16 base=0.221 pr=0.213 bm64=0.215 ms | pr x1.038 bm64 x1.029 | bit-equal
+fp16 hs=128 nq=8   q=512    win=None  BM 16->64 base=0.221 pr=0.234 bm64=0.226 ms | pr x0.943 bm64 x0.977 | bit-equal
+fp16 hs=128 nq=8   q=1024   win=None  BM 16->64 base=0.221 pr=0.243 bm64=0.232 ms | pr x0.911 bm64 x0.952 | bit-equal
+fp16 hs=128 nq=8   q=2048   win=None  BM 16->64 base=0.748 pr=0.514 bm64=0.519 ms | pr x1.454 bm64 x1.440 | bit-equal
+fp16 hs=128 nq=8   q=4096   win=None  BM 16->64 base=2.767 pr=1.732 bm64=1.740 ms | pr x1.598 bm64 x1.590 | bit-equal
+fp16 hs=128 nq=8   q=8192   win=None  BM 16->64 base=10.665 pr=6.329 bm64=6.327 ms | pr x1.685 bm64 x1.686 | bit-equal
+fp16 hs=128 nq=8   q=16384  win=None  BM 16->64 base=41.918 pr=24.247 bm64=24.250 ms | pr x1.729 bm64 x1.729 | bit-equal
+fp16 hs=128 nq=16  q=256    win=None  BM 16->16 base=0.213 pr=0.211 bm64=0.210 ms | pr x1.010 bm64 x1.015 | bit-equal
+fp16 hs=128 nq=16  q=512    win=None  BM 16->64 base=0.223 pr=0.232 bm64=0.221 ms | pr x0.960 bm64 x1.009 | bit-equal
+fp16 hs=128 nq=16  q=1024   win=None  BM 16->64 base=0.221 pr=0.228 bm64=0.225 ms | pr x0.969 bm64 x0.982 | bit-equal
+fp16 hs=128 nq=16  q=2048   win=None  BM 16->64 base=0.368 pr=0.295 bm64=0.295 ms | pr x1.247 bm64 x1.247 | bit-equal
+fp16 hs=128 nq=16  q=4096   win=None  BM 16->64 base=1.315 pr=0.945 bm64=0.938 ms | pr x1.391 bm64 x1.402 | bit-equal
+fp16 hs=128 nq=16  q=8192   win=None  BM 16->64 base=4.967 pr=3.247 bm64=3.249 ms | pr x1.530 bm64 x1.529 | bit-equal
+fp16 hs=128 nq=16  q=16384  win=None  BM 16->64 base=19.371 pr=12.126 bm64=12.124 ms | pr x1.597 bm64 x1.598 | bit-equal
+PROBE_DONE
