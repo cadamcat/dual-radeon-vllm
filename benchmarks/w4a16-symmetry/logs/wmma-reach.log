@@ -1,0 +1,8 @@
+quantised linears: 399
+  K%16==0 and N%16==0  -> WMMA eligible : 399
+  K ok, N not mult of 16                : 0
+  N ok, K not mult of 16                : 0
+  neither                               : 0
+WMMA_FRACTION=1.0000
+  wmma-eligible: e.g. [('in_proj_qkv', 81920, 640), ('in_proj_z', 49152, 640), ('down_proj', 40960, 2176)]
+WMMA_DONE

@@ -925,6 +925,12 @@ def main():
     ck("w4a16 README, and there are this many of them in the sample", "22",
        int(zpv.split("count_of_zero=")[1].split()[0]))
 
+    wr = open(os.path.join(WDIR, "logs", "wmma-reach.log"), errors="replace").read()
+    ck("w4a16 README, every quantised linear qualifies for the WMMA path", "399",
+       int(wr.split("WMMA eligible :")[1].split()[0]))
+    ck("w4a16 README, that is all of them", "1",
+       1 if "WMMA_FRACTION=1.0000" in wr else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

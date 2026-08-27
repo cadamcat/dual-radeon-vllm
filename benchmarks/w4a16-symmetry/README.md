@@ -281,6 +281,17 @@ zero point one too high. Its logprob is **24x worse** and its output is
 repetition. A patch that stopped after the layout fix would have looked like a
 success in every way except correctness.
 
+**Both entry points were exercised, which was not obvious.**
+`gptq_gemm_rdna3` hands off to `gptq_gemm_rdna3_wmma` when K and N are both
+multiples of 16 and M is at least 16 for bf16. Every one of this checkpoint's
+**399 quantised linears qualifies** (`wmma_reach.py`, `logs/wmma-reach.log`),
+so the prefills in this run — 30 tokens for the question, 1024 for the timing
+prompt — went through the WMMA kernel, while decode at M=1 went through the
+scalar one. Both produced correct output on the `fixed` arm. The control makes
+the same point in reverse: `layout_only`'s very first generated token is
+already garbage, and that token comes out of a prefill, so the WMMA path
+honours `use_v2_format` too.
+
 Against the symmetric checkpoint's 37.24, the fixed asymmetric arm reaches
 95.3%. The residual is the direction group size predicts: 32 against 128 means
 four times as many scale and zero-point rows to read per output tile. So group
@@ -382,9 +393,8 @@ load-bearing rather than decorative.
 What it still needs before it is a pull request. Only gfx1100 was tested, and
 only one model, one group size and TP=2; the `partition_scales` and
 channel-wise (`PackedColumnParameter`, which carries no `input_dim`) paths are
-untouched here and the permute assumes the group-quantized layout. The
-`gptq_gemm_rdna3_wmma` entry point takes the same `use_v2_format` argument and
-is selected on larger M, so it should be exercised too. And the upstream tests
+untouched here and the permute assumes the group-quantized layout. Only bf16
+activations were run, though the kernel also serves fp16. And the upstream tests
 would need a case built the way `compressed_tensors_wNa16.py` actually
 registers the parameter, since the existing ones construct the layout the
 kernel already wants and therefore cannot fail.
