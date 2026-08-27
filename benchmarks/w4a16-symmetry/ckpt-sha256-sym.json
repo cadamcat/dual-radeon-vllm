@@ -1,0 +1,85 @@
+{
+ "checkpoint": "/data/incoming/Qwen3.8-27B-INT4-sym",
+ "repo_commit": [
+  "2fb0debc365fb6c1683d7d3ad7722470919627a8"
+ ],
+ "lfs_files_checked": 3,
+ "lfs_files_matching": 3,
+ "files": [
+  {
+   "file": ".gitattributes",
+   "status": "not_lfs",
+   "etag": "52373fe24473b1aa44333d318f578ae6bf04b49b",
+   "size": 1570
+  },
+  {
+   "file": "README.md",
+   "status": "not_lfs",
+   "etag": "0e1dd2110d44fdf6fa00a3620f0463f5eb56811c",
+   "size": 5522
+  },
+  {
+   "file": "chat_template.jinja",
+   "status": "not_lfs",
+   "etag": "c0c686f9c38d70d179fb7b5f5aa7530bc913dda3",
+   "size": 8952
+  },
+  {
+   "file": "config.json",
+   "status": "not_lfs",
+   "etag": "9b4fada483c8264b293a45e7607e04ddb7a3f066",
+   "size": 18145
+  },
+  {
+   "file": "generation_config.json",
+   "status": "not_lfs",
+   "etag": "0bc3addd19dc59c5c8899fc1fb887d50b592e7c3",
+   "size": 214
+  },
+  {
+   "file": "model.safetensors.index.json",
+   "status": "not_lfs",
+   "etag": "35296fa8d7d710762fec4b932fa15582375d3216",
+   "size": 168292
+  },
+  {
+   "file": "model.safetensors",
+   "status": "match",
+   "expected_sha256": "f078f51aed0c1dba613c1759487004ee06aba1a290606b6be125f59ab710959e",
+   "actual_sha256": "f078f51aed0c1dba613c1759487004ee06aba1a290606b6be125f59ab710959e",
+   "size": 18603383720
+  },
+  {
+   "file": "model_mtp.safetensors",
+   "status": "match",
+   "expected_sha256": "1d8268aa85ace093a561e3e7b63b9d390dac1cd55a90cd55b5ec509c3c9da9fe",
+   "actual_sha256": "1d8268aa85ace093a561e3e7b63b9d390dac1cd55a90cd55b5ec509c3c9da9fe",
+   "size": 849400392
+  },
+  {
+   "file": "processor_config.json",
+   "status": "not_lfs",
+   "etag": "33818c7f9e991ad735fd240209f4fa73e6c28c50",
+   "size": 1191
+  },
+  {
+   "file": "recipe.yaml",
+   "status": "not_lfs",
+   "etag": "2cb819ba547c5a90f571976987a54faa2aae7e41",
+   "size": 1449
+  },
+  {
+   "file": "tokenizer.json",
+   "status": "match",
+   "expected_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+   "actual_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+   "size": 19989325
+  },
+  {
+   "file": "tokenizer_config.json",
+   "status": "not_lfs",
+   "etag": "b4acebe045132228e18a4e2ca7f75ce137d1fbf7",
+   "size": 1166
+  }
+ ]
+}

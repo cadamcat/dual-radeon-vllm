@@ -1,0 +1,77 @@
+platform=PlatformEnum.ROCM capability=110
+kernels registered for this platform: ['RDNA3W4A16LinearKernel', 'TritonW4A16LinearKernel', 'ConchLinearKernel', 'ExllamaLinearKernel']
+
+=== Qwen3.8-27B-AWQ-INT4  (ours, A/B arm A)
+    num_bits=4 group_size=32 symmetric=False -> weight_type=uint4 zero_points=True has_g_idx=False
+      no        RDNA3W4A16LinearKernel       Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]
+      SELECTED  TritonW4A16LinearKernel      
+      no        ConchLinearKernel            Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: TritonW4A16LinearKernel
+
+=== Qwen3.8-27B-INT4  (RedHatAI, A/B arm B)
+    num_bits=4 group_size=128 symmetric=True -> weight_type=uint4b8 zero_points=False has_g_idx=False
+      SELECTED  RDNA3W4A16LinearKernel       
+      ok        TritonW4A16LinearKernel      
+      ok        ConchLinearKernel            
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: RDNA3W4A16LinearKernel
+
+=== counterfactual: symmetric at arm A's group size
+    num_bits=4 group_size=32 symmetric=True -> weight_type=uint4b8 zero_points=False has_g_idx=False
+      SELECTED  RDNA3W4A16LinearKernel       
+      ok        TritonW4A16LinearKernel      
+      no        ConchLinearKernel            Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: RDNA3W4A16LinearKernel
+
+=== counterfactual: asymmetric at arm B's group size
+    num_bits=4 group_size=128 symmetric=False -> weight_type=uint4 zero_points=True has_g_idx=False
+      no        RDNA3W4A16LinearKernel       Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]
+      SELECTED  TritonW4A16LinearKernel      
+      ok        ConchLinearKernel            
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: TritonW4A16LinearKernel
+
+=== gemma-3-27b-it-w4a16  (the fast 27B here)
+    num_bits=4 group_size=128 symmetric=True -> weight_type=uint4b8 zero_points=False has_g_idx=False
+      SELECTED  RDNA3W4A16LinearKernel       
+      ok        TritonW4A16LinearKernel      
+      ok        ConchLinearKernel            
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: RDNA3W4A16LinearKernel
+
+=== Qwen/Qwen3.5-27B-GPTQ-Int4  sym=True desc_act=False
+    num_bits=4 group_size=128 symmetric=True -> weight_type=uint4b8 zero_points=False has_g_idx=False
+      SELECTED  RDNA3W4A16LinearKernel       
+      ok        TritonW4A16LinearKernel      
+      ok        ConchLinearKernel            
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: RDNA3W4A16LinearKernel
+
+=== ...same but if the GPTQ path sets has_g_idx
+    num_bits=4 group_size=128 symmetric=True -> weight_type=uint4b8 zero_points=False has_g_idx=True
+      SELECTED  RDNA3W4A16LinearKernel       
+      no        TritonW4A16LinearKernel      Activation reordering (g_idx) is not supported by TritonW4A16LinearKernel
+      ok        ConchLinearKernel            
+      no        ExllamaLinearKernel          Exllama only supports float16 activations
+    -> first kernel that can implement: RDNA3W4A16LinearKernel
+
+2x2 by corner:
+    asym g32   -> TritonW4A16LinearKernel
+    sym g32    -> RDNA3W4A16LinearKernel
+    asym g128  -> TritonW4A16LinearKernel
+    sym g128   -> RDNA3W4A16LinearKernel
+SELECTION_TRACKS_SYMMETRY_NOT_GROUP_SIZE=True
+
+campaign checkpoints on this box:
+    Muse-Glimmer-30B-INT4              sym=True  g128  -> RDNA3W4A16LinearKernel
+    Qwen3.6-27B-AWQ-INT4               sym=False g32   -> TritonW4A16LinearKernel
+    Qwen3.8-27B-AWQ-INT4               sym=False g32   -> TritonW4A16LinearKernel
+    Qwen3.8-27B-INT4-sym               sym=True  g128  -> RDNA3W4A16LinearKernel
+    gemma-3-27b-it-w4a16               sym=True  g128  -> RDNA3W4A16LinearKernel
+    gemma-4-12B-it-qat-w4a16-ct        sym=True  g32   -> RDNA3W4A16LinearKernel
+    gemma-4-26B-A4B-AWQ                sym=True  g32   -> RDNA3W4A16LinearKernel
+    gemma-4-31B-it-qat-w4a16-ct        sym=True  g32   -> RDNA3W4A16LinearKernel
+    group_size 32 checkpoints select: ['RDNA3W4A16LinearKernel', 'TritonW4A16LinearKernel']
+PROBE_DONE

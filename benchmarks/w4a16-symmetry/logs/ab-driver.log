@@ -1,0 +1,27 @@
+########## arm=asym ctx=1024  18:00:50 ##########
+ARM=asym ctx=1024 model=/data/incoming/Qwen3.8-27B-AWQ-INT4
+RESULT decode_tok_s=11.49 t8=1.5 t64=6.3
+KERNELS pid=131 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=131 ('TritonW4A16LinearKernel', 'uint4', 32, True, True)  | pid=132 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=132 ('TritonW4A16LinearKernel', 'uint4', 32, True, True) 
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7ad4f8f4805d in /opt/python/lib/python3.14/site-packages/torch/lib/libc10.so)
+########## arm=sym ctx=1024  18:13:19 ##########
+ARM=sym ctx=1024 model=/data/incoming/Qwen3.8-27B-INT4-sym
+RESULT decode_tok_s=37.24 t8=0.9 t64=2.4
+KERNELS pid=132 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True)  | pid=133 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True) 
+########## arm=asym ctx=8192  18:24:45 ##########
+ARM=asym ctx=8192 model=/data/incoming/Qwen3.8-27B-AWQ-INT4
+RESULT decode_tok_s=7.58 t8=10.1 t64=17.5
+KERNELS pid=133 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=133 ('TritonW4A16LinearKernel', 'uint4', 32, True, True)  | pid=134 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=134 ('TritonW4A16LinearKernel', 'uint4', 32, True, True) 
+########## arm=sym ctx=8192  18:37:52 ##########
+ARM=sym ctx=8192 model=/data/incoming/Qwen3.8-27B-INT4-sym
+RESULT decode_tok_s=13.54 t8=6.1 t64=10.3
+KERNELS pid=134 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True)  | pid=135 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True) 
+########## arm=asym ctx=32768  18:49:51 ##########
+ARM=asym ctx=32768 model=/data/incoming/Qwen3.8-27B-AWQ-INT4
+RESULT decode_tok_s=3.35 t8=45.5 t64=62.2
+KERNELS pid=133 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=133 ('TritonW4A16LinearKernel', 'uint4', 32, True, True)  | pid=134 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=134 ('TritonW4A16LinearKernel', 'uint4', 32, True, True) 
+########## arm=sym ctx=32768  19:04:33 ##########
+ARM=sym ctx=32768 model=/data/incoming/Qwen3.8-27B-INT4-sym
+RESULT decode_tok_s=4.24 t8=30.4 t64=43.6
+KERNELS pid=133 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True)  | pid=134 ('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True) 
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x757ab6cf905d in /opt/python/lib/python3.14/site-packages/torch/lib/libc10.so)
+AB_DONE

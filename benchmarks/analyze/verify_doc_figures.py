@@ -684,6 +684,148 @@ def main():
        1 if all((not r["triton_forced"]["all_finite"]) == (not r["as_shipped"]["all_finite"])
                 for r in g1c) else 0)
 
+    # --- w4a16 symmetry on gfx1100 (benchmarks/w4a16-symmetry/) -------------
+    # The A/B holds the model fixed and changes only the checkpoint, so the
+    # figures that matter are the three ratios; the per-arm rates are checked
+    # too because the prose quotes them.
+    WDIR = os.path.join(HERE, "..", "w4a16-symmetry")
+    ab = [json.loads(l) for l in open(os.path.join(WDIR, "w4a16-ab.jsonl"))]
+    ck("w4a16 README, A/B cells", "6", len(ab))
+    aby = {(r["arm"], r["ctx"]): r for r in ab}
+    for depth, a_claim, s_claim, r_claim in (
+        (1024, "11.49", "37.24", "3.241"),
+        (8192, "7.58", "13.54", "1.786"),
+        (32768, "3.35", "4.24", "1.266"),
+    ):
+        a, s = aby[("asym", depth)], aby[("sym", depth)]
+        ck(f"w4a16 README, asym {depth}", a_claim, a["decode_tok_s"])
+        ck(f"w4a16 README, sym {depth}", s_claim, s["decode_tok_s"])
+        # both components are checked to their own last quoted place just
+        # above; the ratio is derived from them, and its third decimal sits a
+        # hair inside the place-based bound at 8K (1.7855 against a quoted
+        # 1.786), so a relative tolerance is the honest test here.
+        ck(f"w4a16 README, ratio {depth}", r_claim,
+           s["decode_tok_s"] / a["decode_tok_s"], tol=1e-3)
+
+    # kernel selection, recorded from inside the TP workers in every cell.
+    # Two ranks build layers, so each cell must carry two distinct pids.
+    NATIVE_SYM = "('RDNA3W4A16LinearKernel', 'uint4b8', 128, False, True)"
+    NATIVE_REJECTED = "('RDNA3W4A16LinearKernel', 'uint4', 32, True, False)"
+    TRITON_SEL = "('TritonW4A16LinearKernel', 'uint4', 32, True, True)"
+    asym_rows = [r for r in ab if r["arm"] == "asym"]
+    sym_rows = [r for r in ab if r["arm"] == "sym"]
+    ck("w4a16 README, asym cells fall to Triton", "3",
+       sum(1 for r in asym_rows
+           if TRITON_SEL in r["kernels"] and NATIVE_REJECTED in r["kernels"]))
+    ck("w4a16 README, asym never reaches the native kernel", "0",
+       sum(1 for r in asym_rows if "uint4b8" in r["kernels"]))
+    ck("w4a16 README, sym cells select the native kernel", "3",
+       sum(1 for r in sym_rows if NATIVE_SYM in r["kernels"]))
+    ck("w4a16 README, sym never falls to Triton", "0",
+       sum(1 for r in sym_rows if "TritonW4A16LinearKernel" in r["kernels"]))
+    ck("w4a16 README, both ranks recorded in every cell", "6",
+       sum(1 for r in ab if len({t.split()[0] for t in r["kernels"].split("|")
+                                 if t.strip().startswith("pid=")}) == 2))
+
+    # the quantized-layer census: the third difference, and its size
+    cen = json.load(open(os.path.join(WDIR, "ckpt-layer-census.json")))
+    ck("w4a16 README, asym quantized linears", "399",
+       cen["asym"]["quantized_linear_layers"])
+    ck("w4a16 README, sym quantized linears", "400",
+       cen["sym"]["quantized_linear_layers"])
+    ck("w4a16 README, the layer sets differ by one", "1",
+       len(cen["diff"]["only_asym"]) + len(cen["diff"]["only_sym"]))
+    ck("w4a16 README, and the extra layer is on the symmetric side", "1",
+       1 if cen["diff"]["only_sym"] == [
+           "model.language_model.layers.0.linear_attn.out_proj"] else 0)
+    ck("w4a16 README, the two arms differ in symmetry", "1",
+       1 if (cen["asym"]["symmetric"] is False
+             and cen["sym"]["symmetric"] is True) else 0)
+
+    # the 2x2: selection follows the symmetric flag, not the group size
+    x2 = json.load(open(os.path.join(WDIR, "w4a16-selection-2x2.json")))
+    corner = {r["corner"]: r["chosen"] for r in x2}
+    NATIVE = "RDNA3W4A16LinearKernel"
+    ck("w4a16 README, symmetric at group 32 still selects native", "1",
+       1 if corner.get("sym g32") == NATIVE else 0)
+    ck("w4a16 README, asymmetric at group 128 still does not", "0",
+       1 if corner.get("asym g128") == NATIVE else 0)
+    ck("w4a16 README, selection tracks symmetry not group size", "1",
+       1 if (corner.get("sym g32") == NATIVE and corner.get("sym g128") == NATIVE
+             and corner.get("asym g32") != NATIVE
+             and corner.get("asym g128") != NATIVE) else 0)
+
+    # the campaign's own checkpoints, which is what retires the group-size
+    # confound: the fastest model measured here shares the group size with the
+    # slowest, so group size cannot be what separates them.
+    camp = json.load(open(os.path.join(WDIR, "w4a16-campaign-selection.json")))
+    cby = {r["checkpoint"]: r for r in camp}
+    ck("w4a16 README, the fastest campaign model is group 32", "32",
+       cby["gemma-4-26B-A4B-AWQ"]["group_size"])
+    ck("w4a16 README, and so is the asymmetric one", "32",
+       cby["Qwen3.8-27B-AWQ-INT4"]["group_size"])
+    ck("w4a16 README, every group-32 checkpoint but the AWQ ones is native", "1",
+       1 if all(r["chosen"] == NATIVE for r in camp
+                if r["group_size"] == 32 and r["symmetric"]) else 0)
+    ck("w4a16 README, only the Qwen3.x AWQ checkpoints are asymmetric", "1",
+       1 if sorted(r["checkpoint"] for r in camp if not r["symmetric"]) == [
+           "Qwen3.6-27B-AWQ-INT4", "Qwen3.8-27B-AWQ-INT4"] else 0)
+    ck("w4a16 README, the AWQ name does not imply asymmetric", "1",
+       1 if cby["gemma-4-26B-A4B-AWQ"]["symmetric"] else 0)
+
+    # the two 27B models in the 08-24 campaign, parameter count held constant
+    ck("w4a16 README, two 27B models a factor apart", "3.64",
+       tps(aug, "F-27B-tp2", 500) / tps(aug, "D8-27B-tp2", 500))
+
+    # provenance of the symmetric checkpoint against the Hub's own ETags
+    sha = json.load(open(os.path.join(WDIR, "ckpt-sha256-sym.json")))
+    ck("w4a16 README, sym checkpoint LFS files verified", "3",
+       sha["lfs_files_checked"])
+    ck("w4a16 README, and all of them match", "3",
+       sha["lfs_files_matching"])
+
+    # the measurement is JIT-free: every Triton compile lands in the warm-up
+    # generation, not in either timed call. Checked on both arms so that a
+    # compile cannot be inflating one side only.
+    jit_ok = 0
+    for r in ab:
+        path = os.path.join(WDIR, "logs", f"ab-{r['arm']}-{r['ctx']}.log")
+        gen = 0
+        placements = set()
+        for line in open(path, errors="replace"):
+            # vLLM's progress bars rewrite with \r, so several markers can share
+            # one line; count them rather than counting lines.
+            if "Triton kernel JIT compilation during inference" in line:
+                placements.add(gen)
+            gen += line.count("Rendering prompts:   0%")
+        if placements and placements == {1}:
+            jit_ok += 1
+    ck("w4a16 README, no timed call carries a JIT compile", "6", jit_ok)
+
+    # the only repeat measurement in the experiment: the first attempt's sym arm
+    # ran at max_num_seqs 256 (its asym cells died there), this run pinned 128.
+    first = [json.loads(l) for l in open(os.path.join(
+        WDIR, "logs", "w4a16-ab-firstattempt-symonly.jsonl"))]
+    fby = {r["ctx"]: r["decode_tok_s"] for r in first}
+    worst = max(abs(fby[c] / aby[("sym", c)]["decode_tok_s"] - 1)
+                for c in (1024, 8192, 32768))
+    ck("w4a16 README, sym arm repeats to within", "1.31", worst * 100)
+
+    # Internal consistency: decode time per token is additive, so if the
+    # penalty really is a per-step GEMM it should be a context-INDEPENDENT
+    # number of milliseconds even though the ratio falls as attention grows
+    # underneath both arms. This is the check that distinguishes "the
+    # checkpoint costs a fixed amount per step" from "the arms differ somehow".
+    diffs = {c: 1000.0 / aby[("asym", c)]["decode_tok_s"]
+                - 1000.0 / aby[("sym", c)]["decode_tok_s"]
+             for c in (1024, 8192, 32768)}
+    for c in (1024, 8192, 32768):
+        ck(f"w4a16 README, asym penalty ms/token @{c}",
+           {1024: "60.17", 8192: "58.03", 32768: "62.79"}[c], diffs[c])
+    spread = (max(diffs.values()) - min(diffs.values())) / min(diffs.values())
+    ck("w4a16 README, that penalty is flat across a 32x context range to within %",
+       "8.2", spread * 100)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

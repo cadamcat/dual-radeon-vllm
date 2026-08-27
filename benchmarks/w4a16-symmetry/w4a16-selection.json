@@ -1,0 +1,130 @@
+[
+ {
+  "case": "Qwen3.8-27B-AWQ-INT4  (ours, compressed-tensors)",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": false,
+  "has_g_idx": false,
+  "weight_type": "uint4",
+  "zero_points": true,
+  "chosen": "TritonW4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": false,
+    "reason": "Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]"
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "case": "gemma-3-27b-it-w4a16  (the fast 27B here)",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "has_g_idx": false,
+  "weight_type": "uint4b8",
+  "zero_points": false,
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "case": "Qwen/Qwen3.5-27B-GPTQ-Int4  sym=True desc_act=False",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "has_g_idx": false,
+  "weight_type": "uint4b8",
+  "zero_points": false,
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "case": "...same but if the GPTQ path sets has_g_idx",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "has_g_idx": true,
+  "weight_type": "uint4b8",
+  "zero_points": false,
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": false,
+    "reason": "Activation reordering (g_idx) is not supported by TritonW4A16LinearKernel"
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ }
+]

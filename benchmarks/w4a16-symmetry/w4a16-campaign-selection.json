@@ -1,0 +1,242 @@
+[
+ {
+  "checkpoint": "Muse-Glimmer-30B-INT4",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "Qwen3.6-27B-AWQ-INT4",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": false,
+  "weight_type": "uint4",
+  "chosen": "TritonW4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": false,
+    "reason": "Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]"
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "Qwen3.8-27B-AWQ-INT4",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": false,
+  "weight_type": "uint4",
+  "chosen": "TritonW4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": false,
+    "reason": "Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]"
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "Qwen3.8-27B-INT4-sym",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "gemma-3-27b-it-w4a16",
+  "num_bits": 4,
+  "group_size": 128,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "gemma-4-12B-it-qat-w4a16-ct",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "gemma-4-26B-A4B-AWQ",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ },
+ {
+  "checkpoint": "gemma-4-31B-it-qat-w4a16-ct",
+  "num_bits": 4,
+  "group_size": 32,
+  "symmetric": true,
+  "weight_type": "uint4b8",
+  "chosen": "RDNA3W4A16LinearKernel",
+  "verdicts": [
+   {
+    "kernel": "RDNA3W4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "TritonW4A16LinearKernel",
+    "ok": true,
+    "reason": null
+   },
+   {
+    "kernel": "ConchLinearKernel",
+    "ok": false,
+    "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+   },
+   {
+    "kernel": "ExllamaLinearKernel",
+    "ok": false,
+    "reason": "Exllama only supports float16 activations"
+   }
+  ]
+ }
+]
