@@ -969,6 +969,19 @@ def main():
     ck("w4a16, no checkpoint file advertised by the Hub is missing", "0",
        sha.get("files_missing", -1))
 
+    # Every cell every probe recorded carries both ranks. Before 2026-08-28 a
+    # probe whose instrumentation never reached the workers wrote an empty
+    # kernels field and exited 0, so this asserts on the committed data what
+    # kernel_record.read now enforces at run time.
+    all_recorded = ab + list(fx.values()) + [stock] + first
+    ck("w4a16, cells with a kernel record", "12", len(all_recorded))
+    ck("w4a16, and every one carries both ranks", str(len(all_recorded)),
+       sum(1 for r in all_recorded
+           if len({t.split()[0] for t in r["kernels"].split("|")
+                   if t.strip().startswith("pid=")}) == 2))
+    ck("w4a16, no cell has an empty kernel record", "0",
+       sum(1 for r in all_recorded if not r["kernels"].strip()))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

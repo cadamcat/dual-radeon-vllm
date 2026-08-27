@@ -37,37 +37,15 @@ MODELS = {
 }
 
 import torch
-import vllm.model_executor.kernels.linear as LK
+
+import kernel_record
 from vllm import LLM, SamplingParams
 
 
 def main():
-    # record the kernel choice from whichever process builds the layers
-    kpath = pathlib.Path(LK.__file__)
-    ksrc = kpath.read_text()
-    anchor = "        can_implement, failure_reason = kernel.can_implement(config)\n"
-    assert ksrc.count(anchor) == 1, ksrc.count(anchor)
-    rec = f"/work/kernels-{ARM}-{CTX}.txt"
-    probe = (
-        "        try:\n"
-        "            import os as _os\n"
-        "            _ok, _why = kernel.can_implement(config)\n"
-        "            _k = (kernel.__name__, str(config.weight_type),\n"
-        "                  config.group_size, bool(config.zero_points), bool(_ok))\n"
-        "            _s = getattr(choose_mp_linear_kernel, '_seen', None)\n"
-        "            if _s is None:\n"
-        "                _s = set(); choose_mp_linear_kernel._seen = _s\n"
-        "            if _k not in _s:\n"
-        "                _s.add(_k)\n"
-        "                with open('" + rec + "', 'a') as _fh:\n"
-        "                    _fh.write('pid=%d %s %s\\n' % (_os.getpid(), _k,\n"
-        "                              ('' if _ok else (_why or '')[:70])))\n"
-        "        except Exception:\n"
-        "            pass\n"
-    )
-    kpath.write_text(ksrc.replace(anchor, probe + anchor))
-    import ast
-    ast.parse(kpath.read_text())
+    # instrumentation goes on before the engine starts: TP=2 builds the layers
+    # in spawned workers, which re-import the patched module from disk
+    rec = kernel_record.install(f"{ARM}-{CTX}")
     print(f"ARM={ARM} ctx={CTX} model={MODELS[ARM]}", flush=True)
 
     # max_num_seqs is pinned for BOTH arms. The asymmetric checkpoint carries
@@ -92,10 +70,7 @@ def main():
     t64, text = timed(64)
     tps = (64 - 8) / (t64 - t8)
 
-    chosen = ""
-    if pathlib.Path(rec).exists():
-        lines = sorted(set(pathlib.Path(rec).read_text().splitlines()))
-        chosen = " | ".join(lines)
+    chosen = kernel_record.read(rec)
     row = {"arm": ARM, "model": MODELS[ARM], "ctx": CTX, "decode_tok_s": tps,
            "t8": t8, "t64": t64, "kernels": chosen, "sample_text": text[:160]}
     with open(OUT, "a") as fh:

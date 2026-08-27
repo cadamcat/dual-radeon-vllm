@@ -44,7 +44,8 @@ MODEL = "/data/incoming/Qwen3.8-27B-AWQ-INT4"
 assert ARM in ("fixed", "layout_only"), ARM
 
 import torch
-import vllm.model_executor.kernels.linear as LK
+
+import kernel_record
 import vllm.model_executor.kernels.linear.mixed_precision.rdna3_w4a16 as RK
 from vllm import LLM, SamplingParams
 
@@ -54,32 +55,6 @@ QUESTION = (
 )
 
 
-def patch_kernel_record():
-    kpath = pathlib.Path(LK.__file__)
-    ksrc = kpath.read_text()
-    anchor = "        can_implement, failure_reason = kernel.can_implement(config)\n"
-    assert ksrc.count(anchor) == 1
-    rec = f"/work/kernels-fix-{ARM}.txt"
-    probe = (
-        "        try:\n"
-        "            import os as _os\n"
-        "            _ok, _why = kernel.can_implement(config)\n"
-        "            _k = (kernel.__name__, str(config.weight_type),\n"
-        "                  config.group_size, bool(config.zero_points), bool(_ok))\n"
-        "            _s = getattr(choose_mp_linear_kernel, '_seen', None)\n"
-        "            if _s is None:\n"
-        "                _s = set(); choose_mp_linear_kernel._seen = _s\n"
-        "            if _k not in _s:\n"
-        "                _s.add(_k)\n"
-        "                with open('" + rec + "', 'a') as _fh:\n"
-        "                    _fh.write('pid=%d %s %s\\n' % (_os.getpid(), _k,\n"
-        "                              ('' if _ok else (_why or '')[:70])))\n"
-        "        except Exception:\n"
-        "            pass\n"
-    )
-    kpath.write_text(ksrc.replace(anchor, probe + anchor))
-    ast.parse(kpath.read_text())
-    return rec
 
 
 def apply_fix():
@@ -147,7 +122,7 @@ def apply_fix():
 
 
 def main():
-    rec = patch_kernel_record()
+    rec = kernel_record.install(f"fix-{ARM}")
     apply_fix()
     print(f"ARM={ARM} model={MODEL}", flush=True)
 
@@ -175,9 +150,7 @@ def main():
     t64, _ = timed(64)
     tps = (64 - 8) / (t64 - t8)
 
-    chosen = ""
-    if pathlib.Path(rec).exists():
-        chosen = " | ".join(sorted(set(pathlib.Path(rec).read_text().splitlines())))
+    chosen = kernel_record.read(rec)
 
     row = {"arm": ARM, "model": MODEL, "decode_tok_s": tps, "t8": t8, "t64": t64,
            "mean_logprob": mean_lp, "n_logprobs": len(lps),
