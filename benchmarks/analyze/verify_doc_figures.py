@@ -942,6 +942,17 @@ def main():
        int(re.findall(r"(\d+) passed", after)[1]))
     ck("w4a16 README, nothing fails after the patch", "0", after.count("FAILED"))
 
+    # the version qualifier: what was measured is 0.23.x, where the ROCm
+    # registry has no Hybrid kernel. Asserted from the committed registry dump
+    # rather than from prose, so the qualifier cannot drift from its evidence.
+    ksel = json.load(open(os.path.join(WDIR, "w4a16-selection.json")))
+    reg = [v["kernel"] for v in ksel[0]["verdicts"]]
+    ck("w4a16 README, the measured registry has no Hybrid kernel", "0",
+       sum(1 for k in reg if "Hybrid" in k))
+    ck("w4a16 README, and it does have RDNA3 and Triton", "2",
+       sum(1 for k in reg if k in ("RDNA3W4A16LinearKernel",
+                                   "TritonW4A16LinearKernel")))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

@@ -1,5 +1,27 @@
 # An asymmetric int4 checkpoint costs a flat 60 ms per decode step on gfx1100
 
+> **Version qualifier, added 2026-08-27 after publishing.** Everything below was
+> measured on vLLM **0.23.1.dev** (container `d20260715`), whose ROCm
+> mixed-precision registry is `[RDNA3, Triton, Conch, Exllama]`. On **`main`**
+> that list is `[RDNA3, RDNAHybrid, Triton, ...]`:
+> [vllm#40977](https://github.com/vllm-project/vllm/pull/40977) added
+> `RDNAHybridW4A16LinearKernel` on 2026-07-14, and it accepts `uint4`,
+> `group_size` 32, and all of gfx11 including gfx1100. **So on `main` an
+> asymmetric checkpoint lands on Hybrid, not on Triton**, and the "falls back to
+> Triton" framing here applies to 0.23.x and to any build without #40977 rather
+> than to current `main`.
+>
+> What is unaffected: every measurement in this directory, and the mechanism
+> established about `RDNA3W4A16LinearKernel` itself — the type gate, the
+> transposed zero-point layout, `use_v2_format`, and the `has_bias()` regression
+> — all of which are still true of that kernel on `main`.
+>
+> What is now open, and is the interesting question: **on gfx1100, for an
+> asymmetric checkpoint, is the patched RDNA3 kernel faster than Hybrid?** Not
+> measured. Hybrid did not exist in the container used here.
+> [vllm#46186](https://github.com/vllm-project/vllm/pull/46186) is arguing about
+> exactly this trade-off for gfx1151 without gfx1100 AWQ numbers.
+
 [vllm#50264](https://github.com/vllm-project/vllm/issues/50264) settled why
 `Qwen3.8-27B` *collapses* with context on this box, and
 [vllm#45916](https://github.com/vllm-project/vllm/pull/45916) fixes that half.
@@ -36,6 +58,11 @@ One line excludes this checkpoint
 ```python
 SUPPORTED_QUANT_TYPES = [scalar_types.uint4b8]
 ```
+
+Since #40977 this no longer means the checkpoint reaches Triton: on `main` it
+reaches `RDNAHybridW4A16LinearKernel`, which does accept `uint4`. It still means
+it does not reach the native RDNA3 kernel, which is what the rest of this
+directory is about.
 
 `uint4b8` is symmetric int4. `compressed_tensors_wNa16.py` picks the weight
 type from the checkpoint's `symmetric` flag — `WNA16_ZP_SUPPORTED_TYPES_MAP`
