@@ -1,0 +1,671 @@
+<header class="top">
+  <div class="kicker">RDNA3 · W4A16 · vLLM · measured on 2× RX 7900 XT</div>
+  <h1>Twelve tokens a second<br>was two problems</h1>
+  <p class="lede">A 27B model decoded at 12 tok/s on this machine and every document here treated that
+  as one fault with one cause. It is two costs stacked on each other: one flat, one growing with
+  context. Separating them takes a single A/B, and once separated each turns out to have its own
+  upstream fix, written by someone else.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">vLLM <b>0.23.1.dev</b> and <b>0.27.1.dev5</b></span>
+    <span class="chip"><b>Qwen3.8-27B</b> · compressed-tensors int4</span>
+    <span class="chip">measured <b>2026-08-27</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>The same model family, packaged asymmetrically and symmetrically, differs by <strong>3.241× at
+  1K of context, 1.786× at 8K and 1.266× at 32K</strong>. Read as a ratio that looks like one effect
+  fading. Read as decode time per step it is the opposite: the difference stays between
+  <strong>58.03 and 62.79 ms</strong>, a spread of 8.2 %, while the ratio falls by 60.9 %. A flat cost
+  sitting under a growing one.</p>
+  <p>The flat cost is the W4A16 linear kernel. An asymmetric checkpoint arrives as
+  <code>uint4</code>; one line of <code>SUPPORTED_QUANT_TYPES</code> admits only
+  <code>uint4b8</code>; the layer silently falls to Triton. Nothing warns, and the model name does not
+  tell you which kind you have.</p>
+  <p>The growing cost is paged attention, which
+  <a href="hybrid-ssm-collapse.html">has its own article</a>. Both halves are now fixed upstream and
+  <strong>neither fix is ours</strong>: <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
+  added a second native kernel that does accept <code>uint4</code>, and
+  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> widens the split-KV
+  attention gate.</p>
+  <p>What this article contributes is the separation, and one thing found on the way: sweeping the
+  asymmetric configuration space on gfx1100, three of twelve configurations are served by two kernels,
+  one by Triton, and <strong>eight by nothing at all</strong>. Every asymmetric checkpoint with
+  act-order is in the last group.</p>
+</div>
+
+<h2><span class="n">1</span>What is being measured</h2>
+
+<p>Decode rate here is a differenced measurement, not a server-reported one: generate 8 tokens, generate
+64, and divide the extra 56 by the extra time. That removes prefill and the first-token cost from a
+number that is supposed to be about steady-state decoding. Every cell runs in a fresh container off a
+stock image, after a warm-up generation that is discarded.</p>
+
+<p>The warm-up earns its place rather than being a ritual. Every cell JIT-compiles exactly four Triton
+kernels, and on both arms all four land inside the warm-up, so neither timed call carries a compile.
+That is checked from the container logs rather than assumed, and it is checked on both arms so a compile
+cannot be inflating one side only.</p>
+
+<p><strong>Which kernel actually served the layers is recorded from inside the workers.</strong> Under
+<code>--tensor-parallel-size 2</code> the linear layers are built in spawned processes, where a
+monkeypatch applied in the parent sees nothing at all. So <code>choose_mp_linear_kernel</code> is patched
+on disk before the engine starts and each rank writes its own verdict. Every cell in this article carries
+two distinct pids; a cell whose instrumentation never reached the workers would otherwise write an empty
+record and exit zero.</p>
+
+<div class="note">
+  <span class="lbl">What the absolute numbers are worth</span>
+  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen as
+  the least favourable topology rather than a showcase. The <em>shapes</em> here transfer; the levels are
+  a floor. Cells measured on different container images are not comparable to each other in absolute
+  terms, and Figure 3 marks where that applies.
+</div>
+
+<h2><span class="n">2</span>The claim this replaces</h2>
+
+<p>On 2026-08-24 this box measured two 27B models on the same day: a dense one at 44.8 tok/s and this
+hybrid-SSM one at 12.3, a factor of <strong>3.64× with parameter count held constant</strong>. That was
+read as an architecture result, and it is the reading the repository's own documents carried.</p>
+
+<p>It was confounded. Every quantized checkpoint in that campaign is symmetric except the two Qwen3.x
+AWQ ones, and those are exactly the two the documents single out as slow. The architecture comparison
+and the packaging difference coincide precisely where the conclusion was drawn. The A/B below is what
+separates them, and it is worth up to 3.24× on its own.</p>
+
+<h2><span class="n">3</span>One family, two packagings</h2>
+
+<p>Two checkpoints of the same model — <code>Qwen3_5ForConditionalGeneration</code>,
+compressed-tensors pack-quantized on both sides, same two cards, same image, one fresh container per
+cell. One is <code>symmetric: false</code>, the other <code>symmetric: true</code>.</p>
+
+<p>Decode time per token is additive. If the cause is a per-step GEMM then it has to appear as a
+<strong>context-independent number of milliseconds</strong>, with the ratio falling only because the
+attention term grows underneath both arms. That is a prediction the ratio on its own cannot make, and
+it is the reason this figure defaults to milliseconds rather than to the larger-looking multiple.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · a flat cost under a growing one
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="dec"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Six cells, one per arm per depth, from
+    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>. In the millisecond view the orange block is
+    the difference between the arms and is drawn to the same scale in all three rows, which is the
+    argument: it does not grow. The ratio view is the same six numbers read the way a headline reads
+    them. <strong>One container start per cell</strong>, so no run-to-run range is quoted here; the one
+    repeat this experiment has moves the symmetric arm by at most 1.31 % across container starts, so the
+    8.2 % spread in the penalty is larger than the noise floor but the same order as it.
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>Why one of them gets a native kernel</h2>
+
+<p>vLLM has had a native gfx1100 W4A16 kernel since
+<a href="https://github.com/vllm-project/vllm/pull/41394">vllm#41394</a>, registered for the same
+mixed-precision path compressed-tensors uses, and its own docstring says it is registered ahead of the
+Triton kernel for the ROCm-RDNA3 path. One line decides who reaches it:</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/model_executor/kernels/linear/mixed_precision/rdna3_w4a16.py</span></div>
+<pre>SUPPORTED_QUANT_TYPES = [scalar_types.<span class="k">uint4b8</span>]
+</pre></div>
+
+<p><code>uint4b8</code> is symmetric int4. <code>compressed_tensors_wNa16.py</code> picks the weight type
+from the checkpoint's own <code>symmetric</code> flag and sets <code>zero_points = not symmetric</code>,
+so an asymmetric checkpoint arrives as <code>uint4</code> and fails the type check. Asked directly, the
+registry says exactly that:</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">choose_mp_linear_kernel, recorded from inside a TP worker</span></div>
+<pre>no        RDNA3W4A16LinearKernel   <span class="r">Quant type (uint4) not supported by
+                                   RDNA3 W4A16 kernel; supported: [uint4b8]</span>
+SELECTED  TritonW4A16LinearKernel
+</pre></div>
+
+<p><strong>Nothing warns.</strong> The model loads, runs, answers correctly, and is slow.</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · selection follows the symmetric flag, not the group size
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="k2" id="corners"></div>
+    <div class="barunit" id="cknote"></div>
+    <div class="ck" id="ckpts"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Top: the registry asked for all four corners of symmetry × group size
+    (<code>w4a16-selection-2x2.json</code>). It follows the symmetric flag and ignores the group size,
+    which is what retires the obvious confound — the two arms also differ at 32 against 128. Bottom:
+    every quantized checkpoint on this box, with the kernel the registry picks for its real
+    quantization parameters. The fastest model measured here shares its group size with the slowest, and
+    <code>gemma-4-26B-A4B-AWQ</code> is named AWQ and is symmetric, so the name is not a guide. The field
+    that decides is <code>quantization_config.config_groups.*.weights.symmetric</code>.
+  </figcaption>
+</figure>
+
+<p>Two other differences between the arms had to be retired rather than argued away. <strong>Group
+size</strong>, 32 against 128: no checkpoint exists that separates it from symmetry, so this A/B cannot,
+but <code>can_implement</code> has no group-size-128 condition in its source, the four corners above
+ignore it, and the fastest model on this box is group 32. <strong>Which layers are quantized</strong>:
+the two <code>ignore</code> lists differ, so the quantized linears were counted from each
+<code>model.safetensors.index.json</code> rather than assumed. 399 against 400, differing by exactly one
+layer that only the symmetric checkpoint quantizes — which gives the symmetric arm one <em>more</em>
+W4A16 GEMM, so it cannot be what makes that arm faster.</p>
+
+<h2><span class="n">5</span>The other term</h2>
+
+<p>The flat block is the whole of the difference between the arms, and it is nowhere near the whole of
+the decode step. At 32K both arms spend most of a step inside
+<code>kernel_paged_attention_2d</code>, whose per-call cost grows by a factor of 28 between 1K and 32K
+while every other kernel in the profile stays flat. That is the second problem, it is not about
+quantization at all, and it has
+<a href="hybrid-ssm-collapse.html">its own article and its own fix</a>.</p>
+
+<p>The two terms are why neither headline number was ever a good summary. At 1K the packaging penalty is
+essentially the entire gap; at 32K it is a rounding error next to attention. A single ratio quoted
+without its context length hides which of the two it is mostly measuring.</p>
+
+<h2><span class="n">6</span>Two fixes, neither of them ours</h2>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged on 2026-07-14 and
+added <code>RDNAHybridW4A16LinearKernel</code>, which accepts <code>uint4</code>, group size 32, and all
+of gfx11. So on current <code>main</code> an asymmetric checkpoint does get a native kernel — a
+different one from the kernel this investigation was about, reached by widening the registry rather than
+the type gate. The same checkpoint that decoded at 11.41 tok/s against Triton decodes at 37.32 there.</p>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> is the attention half, and
+this repository's contribution to it is the gfx1100 end-to-end verification rather than the code.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · the two fixes have opposite context profiles
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="arms"></div>
+    <div class="barunit" id="gainhd"></div>
+    <div class="gains" id="gains"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> The same asymmetric checkpoint on three stacks. <strong>The two vertical
+    comparisons are not equivalent in kind.</strong> The 0.27 pair is a controlled A/B: one image, one
+    container configuration, one patch apart, two runs per cell, drawn from
+    <code>benchmarks/ledger.jsonl</code>. The step from 0.23.1 to 0.27 crosses ROCm, vLLM and
+    <code>max_num_seqs</code> at once, so it is a statement about stacks rather than about one variable;
+    the controlled measurement of the packaging penalty is Figure 1, not this arrow. A hollow ring after a
+    value marks a cell the ledger declines to grade for chart use. Hover any bar for its run count
+    and range.
+  </figcaption>
+</figure>
+
+<p>A cross-campaign control makes the 0.27 arm worth trusting on its own terms. The 1K stock cell was
+measured twice by the split-KV campaign and once more, weeks apart and by a different script, as the
+<code>hybrid</code> arm of the kernel pair in this directory. The two campaigns land
+<strong>0.21 % apart</strong>. Neither was corrected towards the other.</p>
+
+<h2><span class="n">7</span>What is left, and why it is not a pull request</h2>
+
+<p>The type gate can be opened. Doing it exposes a second problem behind the first, which is the part
+worth reporting: the checkpoint ships its zero points as <code>(N/8, groups)</code> and the kernel wants
+<code>(groups, N/8)</code>, so the layer selects, loads, and then refuses at the kernel entry with
+<code>b_scales must have same group count as qzeros</code>. The HIP kernel was never reached with wrong
+data; it declined the shapes at the door.</p>
+
+<p>Three Python lines fix both halves: admit <code>uint4</code>, run the transpose that
+<code>process_weights_after_loading</code> already runs on the other two tensors, and pass the
+zero-point convention the kernel has always supported instead of hard-coding the GPTQv1 one.
+<strong>3.11× on 0.23.1, with output token for token identical to the Triton control.</strong></p>
+
+<div class="note warn">
+  <span class="lbl">The control arm is the reason to believe the third line</span>
+  An arm with only the first two changes runs at <strong>35.45 tok/s against 35.50</strong>, so it really
+  is executing the native kernel. Its mean logprob is 24× worse and its output is
+  <code>terasterasterasteras…</code>. A patch that stopped after the layout fix would have looked like a
+  success on every axis except correctness.
+</div>
+
+<p>On <code>main</code> it is still the wrong patch. Where Hybrid competes it wins by 5.9 % (37.32
+against 35.22), and <code>RDNA3W4A16LinearKernel</code> sits <em>ahead</em> of Hybrid in the ROCm
+priority list, so admitting <code>uint4</code> there hands the layer to the slower of two working
+kernels. The patch cannot tell that case apart from the case where it is the only option.</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · twelve asymmetric configurations, and what serves them today
+      <span class="prov cmd">check with probe_coverage_gap.py</span></div>
+    <div class="covwrap"><div class="cov" id="cov"></div></div>
+    <div class="legend" id="covlg"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> Group size against act-order, asymmetric throughout, asked of the real registry on a
+    0.27.1 image (<code>coverage-gap.json</code>). This is <code>can_implement</code> only — no kernel
+    runs — so it says which configurations load, not which are fast. Every asymmetric configuration with
+    act-order has no kernel at all on gfx1100 today: Hybrid rejects <code>g_idx</code>, Triton rejects it
+    too, and <code>choose_mp_linear_kernel</code> raises. <code>desc_act=True</code> is a standard GPTQ
+    quality option, not an exotic setting.
+  </figcaption>
+</figure>
+
+<p>The eight are checked numerically rather than left at the registry's word: a real <code>desc_act</code>
+permutation against an fp32 reference that indexes scales and zero points through <code>g_idx</code>,
+fp16 and bf16, decode and prefill shapes. Four cases fail before the patch, four pass after, and the full
+suite goes to 54 passing with no regression.</p>
+
+<p>That is where this sits. Not a pull request, because taking the nine without the three needs a
+decision that belongs to whoever owns the priority list, and the same argument was already made from the
+gfx1151 side on <a href="https://github.com/vllm-project/vllm/pull/46186">vllm#46186</a>. Widening
+Hybrid instead is probably what upstream wants, and that is not our code to change.</p>
+
+<h2><span class="n">8</span>What is not established</h2>
+
+<h3>That the flat term is only the GEMM</h3>
+<p>The additive decomposition is consistent with a per-step cost that does not depend on context, and the
+kernel record says which GEMM ran. It does not by itself exclude some other flat term riding along with
+it. What is measured is that the difference between the two arms is flat to 8.2 % over a 32× change in
+context, and that the arms differ in which linear kernel serves them.</p>
+
+<h3>Accuracy</h3>
+<p>These are two independent quantizations by two publishers at different group sizes, and this measures
+speed only. "Prefer a symmetric checkpoint on RDNA3" is a throughput statement. Whether the two are
+equally good models is a separate question nothing here answers.</p>
+
+<h3>How far the result carries</h3>
+<p>One machine, one model family, gfx1100 only, TP=2, bf16 activations only. The
+<code>partition_scales</code> and channel-wise parameter paths are untouched, and the permute assumes the
+group-quantized layout. The coverage sweep is a registry verdict on synthetic parameters; which of those
+nine configurations anyone actually ships is not measured.</p>
+
+<h3>One run per cell in the A/B</h3>
+<p>Six cells, one container start each. The repeat that exists covers the symmetric arm only and moves it
+by at most 1.31 %. The 0.27 arms in Figure 3 carry two runs each and their own ranges.</p>
+
+<h2><span class="n">9</span>What has changed since</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-07-14 · the fallback stopped being Triton</span>
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged, adding
+  <code>RDNAHybridW4A16LinearKernel</code>. On <code>main</code> an asymmetric checkpoint reaches a
+  native kernel and the "falls back to Triton" framing applies to 0.23.x and to builds without that PR.
+  Everything about <code>RDNA3W4A16LinearKernel</code> itself — the type gate, the transposed zero-point
+  layout, <code>use_v2_format</code> — is unchanged on <code>main</code>.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-27 · measured on 0.27, and the first reading was too broad</span>
+  The pair on a 0.27.1.dev5 image put Hybrid ahead by 5.9 %, which was first written down as "the patch
+  is a loss". It is a loss on <em>that configuration</em>. The sweep the following day found three
+  configurations where it displaces a faster kernel and nine where it is the only one, and the claim was
+  narrowed to match.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · the campaign's architecture claim was corrected in place</span>
+  The 3.64× between two 27B models was attributed to architecture and is confounded with packaging. The
+  affected statements in <code>README.md</code>, <code>docs/benchmarks.md</code> and
+  <code>docs/architecture-notes.md</code> were corrected and dated, and
+  <code>docs/open-questions.md</code> §9 is marked answered. What survives untouched: every slope
+  conclusion, and the ordering among the four models that are all on their best kernel path.
+</div>
+
+<div class="note warn">
+  <span class="lbl">Writing the tests changed the patch</span>
+  The first version keyed the zero-point convention on <code>c.zero_points</code>. That passed the
+  end-to-end run and broke ten existing cases, because a GPTQ checkpoint stores zero points explicitly
+  and still uses the v1 "+1" offset. The right key is
+  <code>not c.weight_type.has_bias()</code>. Keying on <code>zero_points</code> would have silently
+  mis-dequantized every asymmetric GPTQ checkpoint on RDNA3 while passing the run that was supposed to
+  validate it.
+</div>
+
+<div class="foot-note">
+  <p><strong>The data behind every figure.</strong> The A/B, the forced-kernel run, the three-line fix
+  and its control, the coverage sweep and the upstream test cases are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/w4a16-symmetry/README.md"><code>benchmarks/w4a16-symmetry/</code></a>,
+  together with the per-cell worker-side kernel records. Every figure on this page is recomputed from
+  those files by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
+  which exits non-zero if any of them disagrees.</p>
+  <p>Upstream: <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> is the fix for the
+  flat half and <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> for the growing
+  one; <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a> is where the second was
+  reported. The trade-off between widening the RDNA3 kernel and displacing Hybrid was argued from the
+  gfx1151 side by @JartX on <a href="https://github.com/vllm-project/vllm/pull/46186">vllm#46186</a>.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "viewMs": "milliseconds per step",
+ "viewRatio": "ratio, sym ÷ asym",
+ "asym": "asymmetric",
+ "sym": "symmetric",
+ "f1legBase": "shared cost",
+ "f1legPen": "packaging penalty",
+ "f1unitMs": "the orange block is drawn to one scale in all three rows",
+ "f1unitRatio": "how much faster the symmetric checkpoint is, at each context length",
+ "f1flat": "penalty {lo}–{hi} ms, spread {sp}% · ratio falls {dr}%",
+ "ctxK": "{n}K context",
+ "run": "run", "runs": "runs",
+ "range": "range", "noRepeat": "one container start, no repeat",
+ "ungraded": "ungraded for chart use",
+ "gs": "group size {n}",
+ "gsShort": "g{n}",
+ "symYes": "symmetric", "symNo": "asymmetric",
+ "ckHead": "every quantized checkpoint on this box, and the kernel the registry picks for it",
+ "native": "native", "triton": "Triton",
+ "stock": "stock",
+ "armLabels": { "023": "0.23.1 Triton", "027": "0.27 Hybrid", "027p": "0.27 +#45916" },
+ "gainHead": "what each fix is worth, by context length",
+ "gainShort": "#40977 · linear kernel",
+ "gainLong": "#45916 · attention",
+ "covNone": "nothing serves it",
+ "covOverlap": "Hybrid serves it",
+ "covTriton": "Triton only",
+ "covActOrder": "act-order",
+ "covPlain": "no act-order",
+ "covUnit": "{n} of 12 asymmetric configurations have no kernel on gfx1100 today",
+ "unitMs": " ms"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) {
+    return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; });
+  }
+  var kctx = function (n) { return fmt(S.ctxK, { n: Math.round(n / 1024) }); };
+  function runsLine(p) {
+    if (p.range_pct === null || p.range_pct === undefined) return S.noRepeat;
+    return p.runs + " " + (p.runs > 1 ? S.runs : S.run) + " · " + S.range + " " +
+           p.range_pct.toFixed(2) + "%" + (p.graded ? "" : " · " + S.ungraded);
+  }
+
+  /* ---------- Figure 1: the decomposition ---------- */
+  (function () {
+    var box = document.getElementById("dec"), vbox = document.getElementById("v1");
+    var mode = 0, first = true;                    /* 0 = ms, 1 = ratio */
+    var C = F.fig1.cells;
+    var maxMs = Math.max.apply(null, C.map(function (c) { return c.asym_ms; }));
+    var maxR = Math.max.apply(null, C.map(function (c) { return c.ratio; }));
+
+    function bar(label, inner, val) {
+      el(box, "lab rv", label);
+      var tr = el(box, "track rv");
+      tr.appendChild(inner);
+      el(box, "val rv", val);
+    }
+    function draw() {
+      box.innerHTML = "";
+      C.forEach(function (c) {
+        if (!mode) el(box, "head", kctx(c.ctx));
+        if (mode) {
+          var seg = document.createElement("div");
+          seg.className = "seg";
+          var f = document.createElement("span");
+          f.className = "pen";
+          seg.appendChild(f);
+          bar(kctx(c.ctx), seg, c.ratio.toFixed(3) + "×");
+          requestAnimationFrame(function () { f.style.width = (c.ratio / maxR * 100) + "%"; });
+          f.title = c.sym_tok_s.toFixed(2) + " ÷ " + c.asym_tok_s.toFixed(2) + " tok/s";
+          return;
+        }
+        [["sym", c.sym_ms, 0], ["asym", c.asym_ms, 1]].forEach(function (r) {
+          var seg = document.createElement("div");
+          seg.className = "seg";
+          var base = document.createElement("span"); base.className = "base";
+          seg.appendChild(base);
+          var pen = null;
+          if (r[2]) { pen = document.createElement("span"); pen.className = "pen"; seg.appendChild(pen); }
+          bar(S[r[0]], seg, r[1].toFixed(2) + S.unitMs);
+          requestAnimationFrame(function () {
+            base.style.width = (c.sym_ms / maxMs * 100) + "%";
+            if (pen) pen.style.width = (c.penalty_ms / maxMs * 100) + "%";
+          });
+          var tokline = "<b>" + (r[2] ? c.asym_tok_s : c.sym_tok_s).toFixed(2) + "</b> tok/s";
+          base.addEventListener("mouseenter", function (e) {
+            showTip(e, '<span class="hd">' + S[r[0]] + " · " + kctx(c.ctx) + "</span><br>" +
+              tokline + " · " + r[1].toFixed(2) + " ms<br>" +
+              '<span class="sub">' + runsLine(c) + "</span>");
+          });
+          base.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+          base.addEventListener("mouseleave", hideTip);
+          if (pen) {
+            pen.addEventListener("mouseenter", function (e) {
+              showTip(e, '<span class="hd">' + c.penalty_ms.toFixed(2) + " ms</span><br>" +
+                S.asym + " − " + S.sym + "<br><span class=\"sub\">" + kctx(c.ctx) + "</span>");
+            });
+            pen.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+            pen.addEventListener("mouseleave", hideTip);
+          }
+        });
+      });
+      var u = el(box, "barunit", "");
+      u.style.gridColumn = "1 / -1";
+      if (mode) {
+        u.textContent = S.f1unitRatio;
+      } else {
+        u.innerHTML = '<span class="swatch" style="background:var(--s2)"></span>' + S.f1legBase +
+          ' &nbsp; <span class="swatch" style="background:var(--s1)"></span>' + S.f1legPen +
+          " &middot; " + S.f1unitMs;
+      }
+      var pens = C.map(function (c) { return c.penalty_ms; });
+      var f = el(box, "barunit", fmt(S.f1flat, {
+        lo: Math.min.apply(null, pens).toFixed(2), hi: Math.max.apply(null, pens).toFixed(2),
+        sp: F.fig1.penalty_spread_pct.toFixed(1), dr: F.fig1.ratio_decline_pct.toFixed(1) }));
+      f.style.gridColumn = "1 / -1";
+      f.style.color = "var(--text-2)";
+      // the reveal observer only ever sees the rows built on the first pass, so
+      // a redraw has to show its own or the view switches to a blank figure
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewMs, 0], [S.viewRatio, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) { x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- Figure 2: the four corners, and the campaign ---------- */
+  (function () {
+    var box = document.getElementById("corners");
+    el(box, "hd", "");
+    [32, 128].forEach(function (g) { el(box, "hd", fmt(S.gs, { n: g })); });
+    [true, false].forEach(function (sym) {
+      el(box, "rw", sym ? S.symYes : S.symNo);
+      [32, 128].forEach(function (g) {
+        var c = F.fig2.corners.filter(function (x) {
+          return x.symmetric === sym && x.group_size === g; })[0];
+        el(box, "cell " + (c.native ? "native" : "fall"),
+           "<b>" + c.chosen + "</b><span>" + (c.native ? S.native : S.triton) + "</span>");
+      });
+    });
+    document.getElementById("cknote").textContent = S.ckHead;
+    var cb = document.getElementById("ckpts");
+    F.fig2.campaign.forEach(function (r) {
+      var native = r.chosen === "RDNA3W4A16LinearKernel";
+      el(cb, "nm rv", r.checkpoint);
+      el(cb, "sy rv " + (r.symmetric ? "yes" : "no"), r.symmetric ? S.symYes : S.symNo);
+      el(cb, "gs rv", fmt(S.gsShort, { n: r.group_size }));
+      el(cb, "kn rv " + (native ? "n" : "t"), r.chosen);
+    });
+  })();
+
+  /* ---------- Figure 3: three stacks, three depths ---------- */
+  (function () {
+    var box = document.getElementById("arms");
+    var A = F.fig3.arms;
+    var max = 0;
+    A.forEach(function (a) { a.points.forEach(function (p) { max = Math.max(max, p.tok_s); }); });
+    A[0].points.forEach(function (_, i) {
+      el(box, "head", kctx(A[0].points[i].ctx));
+      A.forEach(function (a) {
+        var p = a.points[i];
+        el(box, "lab rv", S.armLabels[a.id]);
+        var tr = el(box, "track rv");
+        var f = document.createElement("span");
+        f.style.cssText = "display:block;height:100%;width:0;background:var(--" +
+          (a.id === "023" ? "s1" : a.id === "027" ? "s2" : "s3") + ");" +
+          "transition:width 1s cubic-bezier(.22,1,.36,1)";
+        tr.appendChild(f);
+        requestAnimationFrame(function () { f.style.width = (p.tok_s / max * 100) + "%"; });
+        el(box, "val rv", p.tok_s.toFixed(2) + (p.graded ? "" : " ○"));
+        tr.addEventListener("mouseenter", function (e) {
+          showTip(e, '<span class="hd">' + S.armLabels[a.id] + "</span><br>" +
+            kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+            '<span class="sub">' + runsLine(p) + "<br>max_num_seqs " + a.max_num_seqs +
+            " · " + a.source + "</span>");
+        });
+        tr.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+        tr.addEventListener("mouseleave", hideTip);
+      });
+    });
+    var ids = el(box, "armid");
+    ids.style.gridColumn = "1 / -1";
+    ids.style.marginTop = ".9em";
+    A.forEach(function (a) {
+      var bits = [S.armLabels[a.id], "vLLM " + a.vllm, "TP=" + a.tp,
+                  a.patches.length ? a.patches.join(" + ") : S.stock,
+                  "max_num_seqs " + a.max_num_seqs, a.harness, a.date];
+      var s = document.createElement("span");
+      s.textContent = bits.join(" · ");
+      s.style.whiteSpace = "normal";
+      ids.appendChild(s);
+    });
+    document.getElementById("gainhd").textContent = S.gainHead;
+    var g = document.getElementById("gains");
+    el(g, "k hd", "");
+    el(g, "g1 hd", S.gainShort).style.color = "var(--s2)";
+    el(g, "g2 hd", S.gainLong).style.color = "var(--s3)";
+    Object.keys(F.fig3.gain).forEach(function (c) {
+      var r = F.fig3.gain[c];
+      el(g, "k rv", kctx(Number(c)));
+      var a = el(g, "g1 rv", r.short_fix.toFixed(2) + "×");
+      var b = el(g, "g2 rv", r.long_fix.toFixed(2) + "×");
+      (r.short_fix > r.long_fix ? a : b).classList.add("big");
+    });
+  })();
+
+  /* ---------- Figure 4: the coverage sweep ---------- */
+  (function () {
+    var box = document.getElementById("cov");
+    var gs = [], seen = {};
+    F.fig4.configs.forEach(function (c) {
+      if (!seen[c.group_size]) { seen[c.group_size] = 1; gs.push(c.group_size); }
+    });
+    gs.sort(function (a, b) { return a - b; });
+    el(box, "ax", "");
+    gs.forEach(function (g) { el(box, "top", "g" + g); });
+    [false, true].forEach(function (ao) {
+      el(box, "ax", ao ? S.covActOrder : S.covPlain);
+      gs.forEach(function (g) {
+        var c = F.fig4.configs.filter(function (x) {
+          return x.group_size === g && x.act_order === ao; })[0];
+        var label = c.region === "none" ? S.covNone
+                  : c.region === "triton" ? S.covTriton : S.covOverlap;
+        var cell = el(box, "cv " + c.region + " rv",
+                      "<b>" + (c.served_by ? c.served_by.replace("W4A16LinearKernel", "") : "—") +
+                      "</b>");
+        cell.title = c.reason || label;
+      });
+    });
+    var lg = document.getElementById("covlg");
+    [["none", S.covNone, "--red"], ["triton", S.covTriton, "--text-dim"],
+     ["overlap", S.covOverlap, "--blue"]].forEach(function (o) {
+      var b = document.createElement("span");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(" + o[2] + ")");
+      b.style.cursor = "default";
+      b.innerHTML = '<span class="sw"></span>' + o[1] + " · " + F.fig4.counts[o[0]];
+      lg.appendChild(b);
+    });
+    var u = el(lg.parentNode, "barunit",
+               fmt(S.covUnit, { n: F.fig4.counts.none }));
+    u.style.width = "100%";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

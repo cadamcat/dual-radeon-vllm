@@ -1,0 +1,366 @@
+{
+ "_what": "Every figure in w4a16-two-problems.html. Derived from benchmarks/w4a16-symmetry/ and benchmarks/ledger.jsonl by site/src/genfig-w4a16.py; edit the data, not this file.",
+ "fig1": {
+  "cells": [
+   {
+    "ctx": 1024,
+    "asym_tok_s": 11.491488957396546,
+    "sym_tok_s": 37.23978780009069,
+    "asym_ms": 87.02092511313303,
+    "sym_ms": 26.85299941471645,
+    "penalty_ms": 60.16792569841658,
+    "ratio": 3.240640785380657,
+    "runs": 1,
+    "range_pct": null,
+    "graded": true
+   },
+   {
+    "ctx": 8192,
+    "asym_tok_s": 7.581036955328367,
+    "sym_tok_s": 13.5359457955967,
+    "asym_ms": 131.90807615007674,
+    "sym_ms": 73.87736439704895,
+    "penalty_ms": 58.03071175302779,
+    "ratio": 1.7855005687688803,
+    "runs": 1,
+    "range_pct": null,
+    "graded": true
+   },
+   {
+    "ctx": 32768,
+    "asym_tok_s": 3.3503859360175503,
+    "sym_tok_s": 4.243016481088193,
+    "asym_ms": 298.4730771609715,
+    "sym_ms": 235.68138480186462,
+    "penalty_ms": 62.79169235910689,
+    "ratio": 1.26642618555511,
+    "runs": 1,
+    "range_pct": null,
+    "graded": true
+   }
+  ],
+  "penalty_spread_pct": 8.204242998675085,
+  "ratio_decline_pct": 60.92050093091848,
+  "sym_repeat_worst_pct": 1.3072174121432356
+ },
+ "fig2": {
+  "corners": [
+   {
+    "corner": "asym g128",
+    "symmetric": false,
+    "group_size": 128,
+    "chosen": "TritonW4A16LinearKernel",
+    "native": false
+   },
+   {
+    "corner": "asym g32",
+    "symmetric": false,
+    "group_size": 32,
+    "chosen": "TritonW4A16LinearKernel",
+    "native": false
+   },
+   {
+    "corner": "sym g128",
+    "symmetric": true,
+    "group_size": 128,
+    "chosen": "RDNA3W4A16LinearKernel",
+    "native": true
+   },
+   {
+    "corner": "sym g32",
+    "symmetric": true,
+    "group_size": 32,
+    "chosen": "RDNA3W4A16LinearKernel",
+    "native": true
+   }
+  ],
+  "campaign": [
+   {
+    "checkpoint": "Muse-Glimmer-30B-INT4",
+    "symmetric": true,
+    "group_size": 128,
+    "chosen": "RDNA3W4A16LinearKernel"
+   },
+   {
+    "checkpoint": "Qwen3.6-27B-AWQ-INT4",
+    "symmetric": false,
+    "group_size": 32,
+    "chosen": "TritonW4A16LinearKernel"
+   },
+   {
+    "checkpoint": "Qwen3.8-27B-AWQ-INT4",
+    "symmetric": false,
+    "group_size": 32,
+    "chosen": "TritonW4A16LinearKernel"
+   },
+   {
+    "checkpoint": "Qwen3.8-27B-INT4-sym",
+    "symmetric": true,
+    "group_size": 128,
+    "chosen": "RDNA3W4A16LinearKernel"
+   },
+   {
+    "checkpoint": "gemma-3-27b-it-w4a16",
+    "symmetric": true,
+    "group_size": 128,
+    "chosen": "RDNA3W4A16LinearKernel"
+   },
+   {
+    "checkpoint": "gemma-4-12B-it-qat-w4a16-ct",
+    "symmetric": true,
+    "group_size": 32,
+    "chosen": "RDNA3W4A16LinearKernel"
+   },
+   {
+    "checkpoint": "gemma-4-26B-A4B-AWQ",
+    "symmetric": true,
+    "group_size": 32,
+    "chosen": "RDNA3W4A16LinearKernel"
+   },
+   {
+    "checkpoint": "gemma-4-31B-it-qat-w4a16-ct",
+    "symmetric": true,
+    "group_size": 32,
+    "chosen": "RDNA3W4A16LinearKernel"
+   }
+  ],
+  "worker_record": {
+   "asym": "RDNA3W4A16LinearKernel rejected (uint4) -> TritonW4A16LinearKernel",
+   "sym": "RDNA3W4A16LinearKernel selected (uint4b8)"
+  },
+  "asym_cells_on_triton": 3,
+  "sym_cells_on_native": 3
+ },
+ "fig3": {
+  "arms": [
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "id": "023",
+    "vllm": "0.23.1.dev",
+    "kernel": "TritonW4A16LinearKernel",
+    "patches": [],
+    "max_num_seqs": 128,
+    "harness": "probe-t8t64",
+    "date": "2026-08-27",
+    "source": "benchmarks/w4a16-symmetry/w4a16-ab.jsonl",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 11.491488957396546,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 7.581036955328367,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 3.3503859360175503,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "id": "027",
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "kernel": "RDNAHybridW4A16LinearKernel",
+    "patches": [],
+    "max_num_seqs": 16,
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 37.39875627347579,
+      "runs": 2,
+      "range_pct": 1.9200038719770232,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 12.596368059421426,
+      "runs": 2,
+      "range_pct": 0.4537609679547572,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 3.8181059977723963,
+      "runs": 2,
+      "range_pct": 0.495587815857265,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "id": "027p",
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "kernel": "RDNAHybridW4A16LinearKernel",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "max_num_seqs": 16,
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 51.61950396234055,
+      "runs": 2,
+      "range_pct": 0.7207002092390873,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 44.286645291258964,
+      "runs": 4,
+      "range_pct": 16.793271375671562,
+      "graded": false
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 36.12291880809809,
+      "runs": 2,
+      "range_pct": 5.117549957300597,
+      "graded": true
+     }
+    ]
+   }
+  ],
+  "control": {
+   "w4a16_hybrid_1k": 37.31902014484255,
+   "ledger_stock_1k": 37.39875627347579,
+   "apart_pct": 0.2132052949840868,
+   "forced_stock_1k": 11.408400097375088
+  },
+  "gain": {
+   "1024": {
+    "short_fix": 3.2544743689984506,
+    "long_fix": 1.3802465404163855
+   },
+   "8192": {
+    "short_fix": 1.6615626771965557,
+    "long_fix": 3.515826552728813
+   },
+   "32768": {
+    "short_fix": 1.1396018460818884,
+    "long_fix": 9.460952322741523
+   }
+  }
+ },
+ "fig4": {
+  "configs": [
+   {
+    "group_size": 16,
+    "act_order": false,
+    "served_by": null,
+    "region": "none",
+    "reason": "Group size 16 not supported; supported: [32, 64, 128]"
+   },
+   {
+    "group_size": 16,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   },
+   {
+    "group_size": 32,
+    "act_order": false,
+    "served_by": "RDNAHybridW4A16LinearKernel",
+    "region": "overlap",
+    "reason": null
+   },
+   {
+    "group_size": 32,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   },
+   {
+    "group_size": 64,
+    "act_order": false,
+    "served_by": "RDNAHybridW4A16LinearKernel",
+    "region": "overlap",
+    "reason": null
+   },
+   {
+    "group_size": 64,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   },
+   {
+    "group_size": 128,
+    "act_order": false,
+    "served_by": "RDNAHybridW4A16LinearKernel",
+    "region": "overlap",
+    "reason": null
+   },
+   {
+    "group_size": 128,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   },
+   {
+    "group_size": 256,
+    "act_order": false,
+    "served_by": "TritonW4A16LinearKernel",
+    "region": "triton",
+    "reason": "Group size 256 not supported; supported: [32, 64, 128]"
+   },
+   {
+    "group_size": 256,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   },
+   {
+    "group_size": 512,
+    "act_order": false,
+    "served_by": null,
+    "region": "none",
+    "reason": "Group size 512 not supported; supported: [32, 64, 128]"
+   },
+   {
+    "group_size": 512,
+    "act_order": true,
+    "served_by": null,
+    "region": "none",
+    "reason": "does not support g_idx reordering"
+   }
+  ],
+  "counts": {
+   "overlap": 3,
+   "triton": 1,
+   "none": 8
+  },
+  "act_order_unserved": 6,
+  "act_order_total": 6
+ }
+}

@@ -1,6 +1,21 @@
 {
  "articles": [
   {
+   "href": "articles/w4a16-two-problems.html",
+   "title": "Twelve tokens a second was two problems",
+   "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
+   "measured": "measured 2026-08-27",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "W4A16",
+    "kernel selection",
+    "vllm#40977"
+   ]
+  },
+  {
    "href": "articles/rccl-atomics-hostcall.html",
    "title": "The RCCL crash was never about RCCL",
    "blurb": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",

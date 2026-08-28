@@ -1,0 +1,349 @@
+
+<header class="top">
+  <div class="kicker">RDNA3 · W4A16 · vLLM · 实测于 2× RX 7900 XT</div>
+  <h1>12 tok/s<br>是两个问题</h1>
+  <p class="lede">一个 27B 模型在这台机器上解码只有 12 tok/s，而本仓库此前所有文档都把它当成一个故障、
+  一个原因。它其实是两笔叠在一起的开销：一笔与上下文无关，一笔随上下文增长。分开它们只需要一次 A/B；
+  分开之后会发现，两笔各自都已经有了上游修复，而且都不是我们做的。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">vLLM <b>0.23.1.dev</b> 与 <b>0.27.1.dev5</b></span>
+    <span class="chip"><b>Qwen3.8-27B</b> · compressed-tensors int4</span>
+    <span class="chip">实测 <b>2026-08-27</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>同一个模型家族，非对称打包与对称打包相差 <strong>1K 上下文 3.241×、8K 1.786×、32K
+  1.266×</strong>。按比值读，像是一个正在消退的效应。按每步解码耗时读，结论恰好相反：两臂之差始终落在
+  <strong>58.03 到 62.79 ms</strong> 之间，散布 8.2 %，而比值下降了 60.9 %。
+  一笔固定开销压在一笔增长开销下面。</p>
+  <p>固定的那笔是 W4A16 线性 kernel。非对称 checkpoint 以 <code>uint4</code> 抵达，
+  而 <code>SUPPORTED_QUANT_TYPES</code> 只收 <code>uint4b8</code>，这一层就静默地退回 Triton。
+  没有任何警告，模型名字也不告诉你手上是哪一种。</p>
+  <p>增长的那笔是 paged attention，<a href="hybrid-ssm-collapse.zh.html">它有自己的一篇</a>。
+  两半如今都已在上游修好，<strong>而且两个修复都不是我们做的</strong>：
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
+  加了第二个确实接受 <code>uint4</code> 的原生 kernel，
+  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 放宽了 split-KV 的注意力门槛。</p>
+  <p>这篇文章贡献的是"把两者分开"，以及分开途中发现的一件事：在 gfx1100 上扫过非对称配置空间，
+  十二个配置里有三个被两个 kernel 同时接受、一个只剩 Triton，
+  <strong>另外八个根本没有任何 kernel 能服务</strong>。所有带 act-order 的非对称 checkpoint 都落在最后这一档。</p>
+</div>
+
+<h2><span class="n">1</span>测的是什么</h2>
+
+<p>这里的解码速率是差分测量，不是服务端自报的数字：生成 8 个 token，再生成 64 个，
+用多出来的 56 个除以多出来的时间。这样可以把 prefill 和首 token 的开销从一个本该描述稳态解码的数字里剔掉。
+每个格子都在原版镜像上起一个全新容器，先跑一次预热生成并丢弃。</p>
+
+<p>预热不是仪式，它是有理由的。每个格子恰好 JIT 编译四个 Triton kernel，两臂上这四个都落在预热里，
+所以两次计时调用都不带编译。这一点是从容器日志里核过的，不是假定的；而且两臂都核过，
+免得某一侧被编译时间抬高。</p>
+
+<p><strong>究竟是哪个 kernel 服务了这些层，是从 worker 内部记录的。</strong>在
+<code>--tensor-parallel-size 2</code> 下线性层是在 spawn 出来的进程里构造的，
+在父进程里打的 monkeypatch 在那边什么也看不到。所以 <code>choose_mp_linear_kernel</code>
+是在引擎启动前直接改在磁盘上的，每个 rank 各写各的判定。本文每个格子都带两个不同的 pid；
+若某次插桩根本没到 worker，它会写下一条空记录然后以 0 退出。</p>
+
+<div class="note">
+  <span class="lbl">这些绝对值值多少</span>
+  这是一台 VFIO 直通的虚拟机，两卡之间没有 P2P，走的是跨 die 的 PCIe 3.0，
+  这是刻意挑的最不利拓扑而非展示配置。这里的<em>形状</em>可以外推，绝对水平是下界。
+  不同容器镜像上测的格子彼此之间不可作绝对比较，图 3 标出了适用范围。
+</div>
+
+<h2><span class="n">2</span>被它替换掉的那个结论</h2>
+
+<p>2026-08-24 这台机器同一天测了两个 27B 模型：一个稠密模型 44.8 tok/s，
+这个混合 SSM 模型 12.3，<strong>在参数量固定的前提下相差 3.64×</strong>。
+当时把它读成了架构结论，仓库自己的文档也是这么写的。</p>
+
+<p>这个读法有混杂。那次 campaign 里除了两个 Qwen3.x AWQ checkpoint，其余全是对称的，
+而那两个恰好就是文档里点名"慢"的那两个。架构对比和打包差异，正好在得出结论的那一点上重合。
+下面这次 A/B 就是用来把它们分开的，而打包本身值到 3.24×。</p>
+
+<h2><span class="n">3</span>一个家族，两种打包</h2>
+
+<p>同一个模型的两个 checkpoint —— <code>Qwen3_5ForConditionalGeneration</code>，
+两边都是 compressed-tensors pack-quantized，同两张卡、同一镜像、每格一个全新容器。
+一个是 <code>symmetric: false</code>，另一个 <code>symmetric: true</code>。</p>
+
+<p>每 token 的解码时间是可加的。如果原因是每步一次 GEMM，那它必须表现为
+<strong>一个与上下文无关的毫秒数</strong>，比值下降只是因为两臂下面的注意力项在长大。
+这是比值本身给不出的预测，也是这张图默认显示毫秒而不是那个看起来更大的倍数的理由。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 一笔固定开销压在一笔增长开销下面
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="dec"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 六个格子，每臂每深度一个，来自
+    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>。毫秒视图里橙色块就是两臂之差，
+    三行按同一比例尺绘制，这正是论点所在：它不随上下文增长。比值视图是同样六个数字，
+    按标题党的读法读一遍。<strong>每格只起了一次容器</strong>，所以这里不报 run 间区间；
+    这次实验唯一的一次重复把对称臂移动了至多 1.31 %，
+    所以 8.2 % 的散布大于噪声底，但与它同量级。
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>为什么其中一个拿得到原生 kernel</h2>
+
+<p>自 <a href="https://github.com/vllm-project/vllm/pull/41394">vllm#41394</a> 起，
+vLLM 就有了 gfx1100 上的原生 W4A16 kernel，注册在 compressed-tensors 用的同一条混合精度路径上，
+它自己的 docstring 写着"在 ROCm-RDNA3 路径上注册在 Triton kernel 之前"。决定谁能走到它的是一行：</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/model_executor/kernels/linear/mixed_precision/rdna3_w4a16.py</span></div>
+<pre>SUPPORTED_QUANT_TYPES = [scalar_types.<span class="k">uint4b8</span>]
+</pre></div>
+
+<p><code>uint4b8</code> 是对称 int4。<code>compressed_tensors_wNa16.py</code> 按 checkpoint
+自己的 <code>symmetric</code> 标志挑权重类型，并设 <code>zero_points = not symmetric</code>，
+于是非对称 checkpoint 以 <code>uint4</code> 抵达并卡在类型检查上。直接问注册表，它就是这么说的：</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">choose_mp_linear_kernel，从 TP worker 内部记录</span></div>
+<pre>no        RDNA3W4A16LinearKernel   <span class="r">Quant type (uint4) not supported by
+                                   RDNA3 W4A16 kernel; supported: [uint4b8]</span>
+SELECTED  TritonW4A16LinearKernel
+</pre></div>
+
+<p><strong>没有任何警告。</strong>模型照常加载、照常运行、答案也对，就是慢。</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 选择跟随 symmetric 标志，而不是 group size
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="k2" id="corners"></div>
+    <div class="barunit" id="cknote"></div>
+    <div class="ck" id="ckpts"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 上：把对称性 × group size 的四个角都问了一遍注册表
+    （<code>w4a16-selection-2x2.json</code>）。它跟随 symmetric 标志、忽略 group size，
+    这正是用来排掉那个显而易见的混杂的 —— 两臂的 group size 也不同，32 对 128。
+    下：这台机器上每个量化 checkpoint，以及注册表按它真实量化参数挑出的 kernel。
+    这里测过的最快模型与最慢模型 group size 相同，而 <code>gemma-4-26B-A4B-AWQ</code>
+    名字里带 AWQ 却是对称的，所以名字不是判据。真正决定的字段是
+    <code>quantization_config.config_groups.*.weights.symmetric</code>。
+  </figcaption>
+</figure>
+
+<p>两臂之间另外两处差异必须被实测排掉，而不是靠讲道理排掉。<strong>group size</strong>，32 对 128：
+没有任何 checkpoint 能把它与对称性分开，所以这次 A/B 分不开；但 <code>can_implement</code>
+的源码里根本没有 group-size-128 这个条件，上面四个角也忽略它，而这台机器上最快的模型就是 group 32。
+<strong>哪些层被量化</strong>：两边的 <code>ignore</code> 列表不同，所以量化线性层是从各自的
+<code>model.safetensors.index.json</code> 里数出来的，不是假定的。399 对 400，
+差的正是一个只有对称 checkpoint 才量化的层 —— 那反而给对称臂多了<em>一次</em> W4A16 GEMM，
+所以它不可能是对称臂更快的原因。</p>
+
+<h2><span class="n">5</span>另一项</h2>
+
+<p>那个固定块是两臂之差的全部，却远不是解码步骤的全部。在 32K 上两臂的绝大部分时间都花在
+<code>kernel_paged_attention_2d</code> 里，它的单次调用耗时在 1K 到 32K 之间涨了 28 倍，
+而 profile 里其他每一个 kernel 都是平的。这就是第二个问题，它和量化毫无关系，
+<a href="hybrid-ssm-collapse.zh.html">有自己的一篇文章和自己的修复</a>。</p>
+
+<p>有这两项，就能解释为什么任何一个标题数字都不是好总结。1K 上打包罚金几乎就是全部差距；
+32K 上它在注意力面前只是舍入误差。一个不带上下文长度的比值，
+掩盖的正是"它主要在测哪一个"。</p>
+
+<h2><span class="n">6</span>两个修复，都不是我们做的</h2>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 在 2026-07-14 合入，
+加入了 <code>RDNAHybridW4A16LinearKernel</code>，它接受 <code>uint4</code>、group size 32
+以及整个 gfx11。所以在当前 <code>main</code> 上，非对称 checkpoint 确实拿得到原生 kernel ——
+只不过是另一个 kernel，走的是放宽注册表而不是放宽类型门。同一个在 Triton 上跑出 11.41 tok/s
+的 checkpoint，在那边是 37.32。</p>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 是注意力那一半，
+本仓库对它的贡献是 gfx1100 上的端到端验证，不是代码。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 两个修复的上下文剖面正好相反
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="arms"></div>
+    <div class="barunit" id="gainhd"></div>
+    <div class="gains" id="gains"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 同一个非对称 checkpoint，三套栈。<strong>两组纵向对比的性质并不相同。</strong>
+    0.27 那一对是受控 A/B：同一镜像、同一容器配置、只差一个 patch、每格两次 run，
+    取自 <code>benchmarks/ledger.jsonl</code>。从 0.23.1 到 0.27 这一步同时跨过了 ROCm、vLLM
+    和 <code>max_num_seqs</code>，所以那是关于两套栈的陈述，不是关于某一个变量的；
+    打包罚金的受控测量是图 1，不是这支箭头。数值后面的空心圈标记 ledger 拒绝给出制图评级的格子。
+    把鼠标停在任意一条上可以看到它的 run 数与区间。
+  </figcaption>
+</figure>
+
+<p>一个跨 campaign 的对照让 0.27 这一臂本身也站得住。1K 的 stock 格子被 split-KV 那次 campaign
+测了两遍，另外还有一次是几周之后、由另一个脚本作为本目录里 kernel 对比的 <code>hybrid</code>
+臂测的。两次 campaign 相差 <strong>0.21 %</strong>，并且谁也没有向谁靠拢过。</p>
+
+<h2><span class="n">7</span>剩下的那部分，以及它为什么还不是一个 PR</h2>
+
+<p>类型门是可以打开的。打开之后会暴露出藏在它后面的第二个问题，而这才是值得报告的部分：
+checkpoint 交付的零点布局是 <code>(N/8, groups)</code>，kernel 要的是 <code>(groups, N/8)</code>，
+于是这一层选中了、加载了，然后在 kernel 入口以
+<code>b_scales must have same group count as qzeros</code> 拒绝。
+HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回去了。</p>
+
+<p>三行 Python 同时修好两半：放行 <code>uint4</code>；跑一次
+<code>process_weights_after_loading</code> 已经在对另外两个张量做的转置；
+以及把 kernel 一直支持的那个零点约定传进去，而不是写死 GPTQv1 的那个。
+<strong>在 0.23.1 上是 3.11×，输出与 Triton 对照逐 token 一致。</strong></p>
+
+<div class="note warn">
+  <span class="lbl">让人相信第三行的是那条对照臂</span>
+  只做前两处改动的那一臂跑出 <strong>35.45 tok/s，对 35.50</strong>，
+  所以它确实在执行原生 kernel。它的平均 logprob 差 24 倍，输出是
+  <code>terasterasterasteras…</code>。一个止步于布局修复的 patch，
+  在除正确性之外的每一个维度上都会看起来像成功。
+</div>
+
+<p>但在 <code>main</code> 上它仍然是错的 patch。在 Hybrid 也能接的配置上 Hybrid 快 5.9 %
+（37.32 对 35.22），而 <code>RDNA3W4A16LinearKernel</code> 在 ROCm 优先级表里排在 Hybrid
+<em>前面</em>，所以在那里放行 <code>uint4</code> 等于把这一层交给两个能用的 kernel 中较慢的那个。
+而这个 patch 没有办法把这种情况和"它是唯一选择"的情况区分开。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 十二个非对称配置，以及今天谁能服务它们
+      <span class="prov cmd">可用 probe_coverage_gap.py 自行核对</span></div>
+    <div class="covwrap"><div class="cov" id="cov"></div></div>
+    <div class="legend" id="covlg"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> group size 对 act-order，全程非对称，在 0.27.1 镜像上问真实注册表
+    （<code>coverage-gap.json</code>）。这里只有 <code>can_implement</code>，没有 kernel 真的跑，
+    所以它说的是哪些配置能加载，不是哪些快。今天在 gfx1100 上，
+    所有带 act-order 的非对称配置都没有任何 kernel：Hybrid 拒 <code>g_idx</code>，Triton 也拒，
+    <code>choose_mp_linear_kernel</code> 直接抛异常。<code>desc_act=True</code>
+    是 GPTQ 的常规质量选项，不是什么冷门设置。
+  </figcaption>
+</figure>
+
+<p>这八个是用数值核过的，没有停在注册表的说法上：真实的 <code>desc_act</code> 置换，
+对照一个通过 <code>g_idx</code> 索引 scale 和零点的 fp32 参考实现，fp16 与 bf16、decode 与 prefill
+形状都跑。patch 前四例失败，patch 后四例通过，整个测试套件到 54 通过且无回归。</p>
+
+<p>事情就停在这里。不是 PR，因为"只要那九个、不要那三个"需要一个属于优先级表主人的决定；
+而同样的论点已经有人从 gfx1151 那一侧在
+<a href="https://github.com/vllm-project/vllm/pull/46186">vllm#46186</a> 上讲过了。
+更可能是上游想要的做法是去放宽 Hybrid，而那不是我们该改的代码。</p>
+
+<h2><span class="n">8</span>没有被确立的部分</h2>
+
+<h3>那笔固定开销是否只有 GEMM</h3>
+<p>可加分解与"一笔不随上下文变化的每步开销"一致，kernel 记录也说明了跑的是哪个 GEMM。
+但这本身并不能排除另有一项固定开销搭在里面。被测到的是：两臂之差在 32 倍上下文变化里平到 8.2 %，
+以及两臂由不同的线性 kernel 服务。</p>
+
+<h3>精度</h3>
+<p>这是两个发布方在不同 group size 下各自独立量化的结果，这里只测速度。
+"在 RDNA3 上优先选对称 checkpoint"是一句吞吐结论。这两个模型是否一样好，这里什么也没回答。</p>
+
+<h3>结论能走多远</h3>
+<p>一台机器、一个模型家族、只有 gfx1100、只有 TP=2、只有 bf16 激活。
+<code>partition_scales</code> 与逐通道参数路径完全没有触及，permute 假定的是分组量化的布局。
+覆盖扫描是注册表对合成参数的判定；那九个配置里究竟有多少真的有人在用，没有测。</p>
+
+<h3>A/B 每格只有一次 run</h3>
+<p>六个格子，各起一次容器。已有的重复只覆盖对称臂，把它移动了至多 1.31 %。
+图 3 里 0.27 的两臂每格两次 run，并带各自的区间。</p>
+
+<h2><span class="n">9</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-07-14 · 兜底不再是 Triton</span>
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 合入，
+  加入 <code>RDNAHybridW4A16LinearKernel</code>。在 <code>main</code> 上非对称 checkpoint
+  能拿到原生 kernel，"退回 Triton"这个说法只适用于 0.23.x 以及没有这个 PR 的构建。
+  关于 <code>RDNA3W4A16LinearKernel</code> 自身的一切 —— 类型门、转置的零点布局、
+  <code>use_v2_format</code> —— 在 <code>main</code> 上都没有变。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-27 · 在 0.27 上实测，而第一次读法太宽</span>
+  在 0.27.1.dev5 镜像上的这一对让 Hybrid 领先 5.9 %，当时写下的是"这个 patch 是净亏"。
+  它是<em>在那个配置上</em>净亏。第二天的扫描找到三个它会挤掉更快 kernel 的配置，
+  以及九个它是唯一选择的配置，结论随之收窄。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · campaign 里的架构结论已就地更正</span>
+  两个 27B 模型之间的 3.64× 曾被归因于架构，而它与打包混杂。
+  <code>README.md</code>、<code>docs/benchmarks.md</code> 与 <code>docs/architecture-notes.md</code>
+  里受影响的陈述已更正并标注日期，<code>docs/open-questions.md</code> §9 标记为已回答。
+  没有受影响的是：每一条斜率结论，以及那四个都在各自最佳 kernel 路径上的模型之间的排序。
+</div>
+
+<div class="note warn">
+  <span class="lbl">写测试改变了这个 patch</span>
+  第一版把零点约定挂在 <code>c.zero_points</code> 上。它通过了端到端运行，却弄坏了十个已有用例，
+  因为 GPTQ checkpoint 会显式存零点、同时仍然使用 v1 的 "+1" 偏移。正确的键是
+  <code>not c.weight_type.has_bias()</code>。挂在 <code>zero_points</code> 上会让 RDNA3
+  上每一个非对称 GPTQ checkpoint 被静默反量化错，而那次本该验证它的运行还是会通过。
+</div>
+
+<div class="foot-note">
+  <p><strong>每张图背后的数据。</strong>A/B、强制换 kernel 的那次运行、三行修复及其对照臂、
+  覆盖扫描以及提给上游的测试用例都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/w4a16-symmetry/README.md"><code>benchmarks/w4a16-symmetry/</code></a>，
+  连同每个格子在 worker 内部记录的 kernel 判定。本页每一张图都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从这些文件重算，任何一处对不上就非零退出。</p>
+  <p>上游：<a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 修的是固定的那一半，
+  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 修的是增长的那一半；
+  第二个问题上报在 <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a>。
+  "放宽 RDNA3 kernel 会挤掉 Hybrid"这个取舍，@JartX 已在
+  <a href="https://github.com/vllm-project/vllm/pull/46186">vllm#46186</a> 上从 gfx1151 那侧讲过。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "viewMs": "每步毫秒",
+ "viewRatio": "比值，对称 ÷ 非对称",
+ "asym": "非对称",
+ "sym": "对称",
+ "f1legBase": "共同开销",
+ "f1legPen": "打包罚金",
+ "f1unitMs": "橙色块在三行里按同一比例尺绘制",
+ "f1unitRatio": "在每个上下文长度上，对称 checkpoint 快多少",
+ "f1flat": "罚金 {lo}–{hi} ms，散布 {sp}% · 比值下降 {dr}%",
+ "ctxK": "{n}K 上下文",
+ "run": "次", "runs": "次",
+ "range": "区间", "noRepeat": "只起过一次容器，无重复",
+ "ungraded": "未获制图评级",
+ "gs": "group size {n}",
+ "gsShort": "g{n}",
+ "symYes": "对称", "symNo": "非对称",
+ "ckHead": "这台机器上每个量化 checkpoint，以及注册表为它挑的 kernel",
+ "native": "原生", "triton": "Triton",
+ "stock": "原版",
+ "armLabels": { "023": "0.23.1 Triton", "027": "0.27 Hybrid", "027p": "0.27 +#45916" },
+ "gainHead": "每个修复各值多少，按上下文长度",
+ "gainShort": "#40977 · 线性 kernel",
+ "gainLong": "#45916 · 注意力",
+ "covNone": "无人服务",
+ "covOverlap": "Hybrid 服务",
+ "covTriton": "只有 Triton",
+ "covActOrder": "带 act-order",
+ "covPlain": "无 act-order",
+ "covUnit": "十二个非对称配置里有 {n} 个今天在 gfx1100 上没有 kernel",
+ "unitMs": " ms"
+}</script>
+__SCRIPT__
+</body>
+</html>

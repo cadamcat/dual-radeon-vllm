@@ -63,6 +63,7 @@ IDX_LABELS = ("Colour theme", "Match system", "Light", "Dark")
 
 H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"
 R_EN, R_ZH = "rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"
+W_EN, W_ZH = "w4a16-two-problems.html", "w4a16-two-problems.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -97,7 +98,31 @@ if (D / "rccl-body-zh.html").exists():
                            "dispatch 被拒。",
                       out="articles/" + R_ZH, nav=lang_nav("zh", R_EN, R_ZH), labels=ZH_LABELS))
 
+built.append(page("w4a16-body.html", lang="en", figures="figures-w4a16.json",
+                  extra_css="w4a16-extra.css",
+                  title="Twelve tokens a second was two problems",
+                  desc="One 27B model, two independent costs: a flat 60 ms per decode step from the "
+                       "W4A16 linear kernel, and a paged-attention term that grows with context. "
+                       "Separated by an A/B, each fixed upstream by someone else.",
+                  out="articles/" + W_EN, nav=lang_nav("en", W_EN, W_ZH), labels=EN_LABELS))
+if (D / "w4a16-body-zh.html").exists():
+    built.append(page("w4a16-body-zh.html", lang="zh-CN", figures="figures-w4a16.json",
+                      extra_css="w4a16-extra.css", script_from="w4a16-body.html",
+                      title="12 tok/s 是两个问题",
+                      desc="一个 27B 模型上叠着两笔独立开销：W4A16 线性 "
+                           "kernel 每步固定 60 ms，以及随上下文增长的 paged "
+                           "attention。用一次 A/B 把它们分开，两个修复都是"
+                           "别人做的。",
+                      out="articles/" + W_ZH, nav=lang_nav("zh", W_EN, W_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + W_EN, "title": "Twelve tokens a second was two problems",
+     "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x "
+              "at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one "
+              "growing cost, and each has its own upstream fix.",
+     "measured": "measured 2026-08-27",
+     "langs": ["EN", "\u4e2d"] if (D / "w4a16-body-zh.html").exists() else ["EN"],
+     "tags": ["W4A16", "kernel selection", "vllm#40977"]},
     {"href": "articles/" + R_EN, "title": "The RCCL crash was never about RCCL",
      "blurb": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers "
               "below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual "
@@ -144,7 +169,7 @@ for p in built:
            if not u.startswith("https://github.com")]
     assert not ext, f"{p.name} pulls external assets: {ext}"
 # the language pairs must agree on the parts that are not prose
-for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH)):
+for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue
