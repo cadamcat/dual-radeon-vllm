@@ -30,6 +30,11 @@ This directory tests the heuristic. Two findings:
    (2.12e-3 to 4.72e-3, median 3.02e-3). A 16x context increase moves the
    median by **1.06x**. So "the Triton kernel degrades at long context" is not
    supported here, and the report's symptom B needs a different explanation.
+   *(Derivation stated 2026-08-29, unchanged: the 1.06x compares the pooled
+   median of the two shortest depths against the two longest, whose centres are
+   about 16x apart. Read end to end instead — 1K against 32K, a 32x span — the
+   pooled median moves 1.03x, and no two depths' pooled medians differ by more
+   than 1.09x. All three are recomputed by `verify_doc_figures.py`.)*
 
 ## Method
 

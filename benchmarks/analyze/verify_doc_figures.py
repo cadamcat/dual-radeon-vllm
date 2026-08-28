@@ -754,7 +754,8 @@ def main():
              ["weight-loading-19x.html", "weight-loading-19x.zh.html"],
              ["speculative-decoding-net-loss.html",
               "speculative-decoding-net-loss.zh.html"],
-             ["a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"]]
+             ["a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"],
+             ["gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -2044,11 +2045,13 @@ def main():
 
     # fig1: three kernel states, three mapping cases, one file
     ck("loader article, fig1 states", "3", len(LART["fig1"]["states"]))
-    med = lambda v: sorted(v)[len(v) // 2] if isinstance(v, list) else float(v)
+    # a scalar or the middle of a list of repeats; NOT the med() helper above,
+    # which is a real median and would average the two middles
+    mid = lambda v: sorted(v)[len(v) // 2] if isinstance(v, list) else float(v)
     for st, src in zip(LART["fig1"]["states"], hmm["states"]):
         ck(f'loader article, fig1 {src["kernel"]} {src["date"]} cases', "3",
            len(st["cases"]))
-        same = all(abs(c["ms"] - med(src[c["key"]])) < 1e-9 for c in st["cases"])
+        same = all(abs(c["ms"] - mid(src[c["key"]])) < 1e-9 for c in st["cases"])
         ck(f'loader article, fig1 {src["kernel"]} {src["date"]} matches its source',
            "1", 1 if same and st["kernel"] == src["kernel"] else 0)
     ck("loader article, fig1 stock -28", "16019.6", LART["fig1"]["stock28"])
@@ -2422,6 +2425,173 @@ def main():
                         "A100 那边没有测过对应的数字")):
         ck(f"a100 article {fn}, says the A100 side of fig4 is missing", "1",
            1 if phrase.replace("\n    ", " ") in " ".join(pages[fn].split()) else 0)
+
+    # --- gqa-gate-costs-nothing.html -----------------------------------------
+    # The argument is that no cell is an exception, so the check is per cell
+    # rather than against the summary ranges the prose quotes.
+    QART = json.loads(block(pages["gqa-gate-costs-nothing.html"], "figures"))
+    QDIR = os.path.join(HERE, "..", "vllm-50603")
+    qjl = lambda fn: [json.loads(l) for l in open(os.path.join(QDIR, fn))]
+    QSRC = {"023": qjl("stage1-rocm-paths.jsonl"), "027": qjl("stage1-027-r1.jsonl")}
+
+    ck("gqa article, fig1 versions", "2", len(QART["fig1"]["versions"]))
+    ck("gqa article, fig1 cells drawn", "60", QART["fig1"]["cells"])
+    matched = 0
+    for v in QART["fig1"]["versions"]:
+        by = {(r["num_heads"], r["num_kv_heads"], r["ctx_len"]): r for r in QSRC[v["id"]]}
+        for row in v["rows"]:
+            h, kv = (int(x) for x in row["shape"].split("/"))
+            for c in row["cells"]:
+                s = by[(h, kv, c["ctx"])]
+                if (abs(c["ratio"] - s["triton"]["median_ms"] / s["ck"]["median_ms"]) < 1e-12
+                        and c["triton_ms"] == s["triton"]["median_ms"]
+                        and c["ck_ms"] == s["ck"]["median_ms"]
+                        and row["admitted"] == s["gate_as_shipped"]
+                        and row["gqa"] == s["gqa_ratio"]):
+                    matched += 1
+    ck("gqa article, fig1 every cell matches its source", "60", matched)
+    ck("gqa article, fig1 no cell has the custom kernel slower", "60",
+       QART["fig1"]["never_slower"])
+    ck("gqa article, fig1 the floor across both versions", "1.70", QART["fig1"]["min"])
+    ck("gqa article, fig1 and the ceiling", "7.40", QART["fig1"]["max"])
+    for v in QART["fig1"]["versions"]:
+        ck(f'gqa article, fig1 {v["id"]} bands overlap', "1",
+           1 if v["bands_overlap"] else 0)
+        # the bands are quoted over every round measured on that version
+        ck(f'gqa article, fig1 {v["id"]} rounds pooled', "1" if v["id"] == "023" else "2",
+           v["rounds"])
+    b23 = [v for v in QART["fig1"]["versions"] if v["id"] == "023"][0]
+    b27 = [v for v in QART["fig1"]["versions"] if v["id"] == "027"][0]
+    ck("gqa article, fig1 0.23.1 excluded floor", "1.84", b23["excluded_band"][0])
+    ck("gqa article, fig1 0.23.1 excluded ceiling", "7.28", b23["excluded_band"][1])
+    ck("gqa article, fig1 0.23.1 admitted floor", "2.35", b23["admitted_band"][0])
+    ck("gqa article, fig1 0.27 excluded floor", "1.70", b27["excluded_band"][0])
+    ck("gqa article, fig1 0.27 admitted floor", "2.20", b27["admitted_band"][0])
+    ck("gqa article, fig1 round-to-round spread, worst", "5.8",
+       QART["fig1"]["round_spread_pct"]["max"])
+    ck("gqa article, fig1 and median", "2.3", QART["fig1"]["round_spread_pct"]["median"])
+    # the shape set has to include the one that is a real model's
+    ck("gqa article, fig1 includes gemma-3-27b's own shape", "1",
+       sum(1 for r in QART["fig1"]["versions"][0]["rows"] if r["shape"] == "32/16"))
+
+    # fig2: the flat band, its full extent, and the control under it
+    s1q = QSRC["023"]
+    cuq = qjl("stage2-cuda-control.jsonl")
+    allq = ([r["triton"]["max_rel_err"] for r in s1q]
+            + [r["ck"]["max_rel_err"] for r in s1q]
+            + [r["triton"]["max_rel_err"] for r in cuq])
+    ck("gqa article, fig2 cells", str(len(allq)), QART["fig2"]["cells"])
+    ck("gqa article, fig2 band floor", repr(min(allq)), QART["fig2"]["band"][0], tol=1e-12)
+    ck("gqa article, fig2 band ceiling", repr(max(allq)), QART["fig2"]["band"][1], tol=1e-12)
+    ck("gqa article, fig2 median", repr(med(allq)), QART["fig2"]["median"], tol=1e-12)
+    ck("gqa article, fig2 the bucketed span the source quotes", "16",
+       QART["fig2"]["bucket_span"], tol=1e-3)
+    ck("gqa article, fig2 and what it moves the median by", "1.06",
+       QART["fig2"]["bucket_move"])
+    # recomputed here rather than reusing `lo`/`hi` from the 50603 block: both
+    # names are rebound to floats further down this function
+    qbucket = lambda cs: med(
+        [r[a]["max_rel_err"] for r in s1q for a in ("triton", "ck") if r["ctx_len"] in cs]
+        + [r["triton"]["max_rel_err"] for r in cuq if r["ctx_len"] in cs])
+    ck("gqa article, fig2 that is the same number the directory quotes",
+       repr(qbucket([16384, 32768]) / qbucket([1024, 2048])),
+       QART["fig2"]["bucket_move"], tol=1e-12)
+    ck("gqa article, fig2 the context span it is quoted over", "32",
+       QART["fig2"]["context_span"])
+    ck("gqa article, fig2 what that span moves the median by", "1.03",
+       QART["fig2"]["context_move"])
+    ck("gqa article, fig2 and the widest gap between any two depths", "1.09",
+       QART["fig2"]["context_worst_ratio"])
+    ck("gqa article, fig2 the band is flat by any reading", "1",
+       1 if QART["fig2"]["context_worst_ratio"] < 1.2 else 0)
+    ck("gqa article, fig2 three series", "3", len(QART["fig2"]["series"]))
+    ck("gqa article, fig2 the CUDA control is one of them", "1",
+       sum(1 for s in QART["fig2"]["series"] if s["id"] == "a100_triton"))
+    # the positive control is what makes a flat band mean anything
+    C = QART["fig2"]["control"]
+    ctrlq = qjl("stage1b-tail-control.jsonl")
+    ck("gqa article, fig2 control rows", str(len(ctrlq)), C["rows"])
+    ck("gqa article, fig2 the harness does see corruption", "1",
+       1 if C["poisoned"] > 0 else 0)
+    ck("gqa article, fig2 and only where the tile straddles", "1",
+       1 if C["all_poisoned_straddle"] and C["aligned_all_clean"] else 0)
+    ck("gqa article, fig2 both paths poison alike on this version", "1",
+       1 if C["ck_matches_triton"] else 0)
+    ck("gqa article, fig2 finite garbage does not poison", "1",
+       1 if C["garbage_clean"] else 0)
+    ck("gqa article, fig2 control rows match their file", str(len(ctrlq)),
+       sum(1 for a, b in zip(C["cases"], ctrlq)
+           if a["ctx"] == b["ctx_len"] and a["fill"] == b["fill"]
+           and a["triton_finite"] == b["triton"]["all_finite"]
+           and a["ck_finite"] == b["ck"]["all_finite"]))
+
+    # fig3: end to end, three passes
+    E2E = {"023": "stage3-endtoend.jsonl", "027A": "stage3-027.jsonl",
+           "027B": "stage3-027b.jsonl"}
+    ck("gqa article, fig3 runs", "3", len(QART["fig3"]["runs"]))
+    ok3 = 0
+    for k, fn in E2E.items():
+        src = {(r["arm"], r["ctx"]): r for r in qjl(fn)}
+        for c in QART["fig3"]["depths"]:
+            r = QART["fig3"]["runs"][k][str(c)] if str(c) in QART["fig3"]["runs"][k] \
+                else QART["fig3"]["runs"][k][c]
+            if (abs(r["stock"] - src[("stock", c)]["decode_tok_s"]) < 1e-9
+                    and abs(r["widened"] - src[("widened", c)]["decode_tok_s"]) < 1e-9
+                    and abs(r["ratio"] - r["widened"] / r["stock"]) < 1e-12):
+                ok3 += 1
+    ck("gqa article, fig3 every cell matches its file", "9", ok3)
+    ck("gqa article, fig3 the gate flipped in every cell", "1",
+       1 if QART["fig3"]["gate_flipped_everywhere"] else 0)
+    ck("gqa article, fig3 the gain grows with context", "1",
+       1 if QART["fig3"]["grows_with_context"] else 0)
+    ck("gqa article, fig3 worst spread between the two 0.27 passes", "2.8",
+       QART["fig3"]["worst_pass_spread_pct"])
+    pooled = QART["fig3"]["pooled_027"]
+    ck("gqa article, fig3 pooled 32K", "1.167", pooled.get("32768", pooled.get(32768)))
+    ck("gqa article, fig3 pooled 1K", "1.024", pooled.get("1024", pooled.get(1024)))
+    # the effect at 1K is small; it has to be larger than the repeatability
+    ck("gqa article, fig3 and 1K is still bigger than the pass spread", "1",
+       1 if (pooled.get("1024", pooled.get(1024)) - 1) * 100
+       > QART["fig3"]["worst_pass_spread_pct"] / 3 else 0)
+
+    # fig4: the fault widening the gate would admit
+    stq, paq = qjl("53856-027-stock.jsonl"), qjl("53856-027-patched.jsonl")
+    ck("gqa article, fig4 rows per arm", str(len(stq)), QART["fig4"]["rows_per_arm"])
+    ck("gqa article, fig4 poisoned on the stock arm", "4",
+       QART["fig4"]["poisoned_stock"])
+    ck("gqa article, fig4 recomputes that count",
+       str(sum(1 for r in stq if not r["as_shipped"]["all_finite"])),
+       QART["fig4"]["poisoned_stock"])
+    ck("gqa article, fig4 all of them fixed", "4", QART["fig4"]["fixed"])
+    ck("gqa article, fig4 none newly broken", "0", QART["fig4"]["newly_broken"])
+    ck("gqa article, fig4 forced past the gate it is eight", "8",
+       QART["fig4"]["poisoned_forced"])
+    ck("gqa article, fig4 and all eight are fixed", "8", QART["fig4"]["fixed_forced"])
+    ck("gqa article, fig4 K alone never poisons", "0",
+       QART["fig4"]["k_only_ever_poisons"])
+    ck("gqa article, fig4 only straddling lengths poison", "1",
+       1 if QART["fig4"]["all_poisoned_straddle"] else 0)
+    ck("gqa article, fig4 the custom kernel really ran", str(QART["fig4"]["ck_expected"]),
+       QART["fig4"]["ck_ran"])
+    ck("gqa article, fig4 Triton is clean throughout", str(len(stq)),
+       QART["fig4"]["triton_clean"])
+
+    # the source directory's two corrections must stay stated
+    gq = open(os.path.join(QDIR, "README.md"), encoding="utf-8").read()
+    ck("50603 README, the speedup-floor correction is stated", "1",
+       1 if "first said 2.06x, which was the minimum" in gq else 0)
+    ck("50603 README, and the derivation of the 1.06x", "1",
+       1 if "whose centres are" in gq and "about 16x apart" in gq else 0)
+    ck("50603 README, which states both readings", "1",
+       1 if "pooled median moves 1.03x" in " ".join(gq.split()) else 0)
+
+    for fn, heads in (("gqa-gate-costs-nothing.html",
+                       ("What is not established", "What has changed since")),
+                      ("gqa-gate-costs-nothing.zh.html",
+                       ("没有被确立的部分", "此后发生的变化"))):
+        for h in heads:
+            ck(f"gqa article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

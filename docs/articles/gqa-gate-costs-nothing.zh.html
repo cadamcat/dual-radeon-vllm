@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一道 2–7 倍的门，什么也没换来</title>
+<meta name="description" content="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 gqa_ratio 3 这道门挡在外面。而在被排除的区间里，它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #e2e { --labw:132px; }
+  @media (max-width:480px){ #e2e { --labw:104px; } }
+
+  /* ---- the sixty-cell grid ---- */
+  /* the argument is that no cell is an exception, so every cell has to be on
+     the page rather than summarised into a range */
+  .gridwrap { overflow-x:auto; }
+  .cgrid { display:grid; grid-template-columns:max-content max-content repeat(6, 1fr);
+           gap:.3em; min-width:470px; }
+  .cgrid .hd { font-family:var(--mono); font-size:.68rem; color:var(--text-dim);
+               text-align:center; padding-bottom:.2em; align-self:end; }
+  .cgrid .rh { font-family:var(--mono); font-size:.73rem; color:var(--text-2);
+               align-self:center; white-space:nowrap; }
+  .cgrid .gate { font-family:var(--mono); font-size:.64rem; align-self:center;
+                 white-space:nowrap; padding:.1em .45em; border-radius:99px;
+                 border:1px solid var(--border); color:var(--text-dim); }
+  .cgrid .gate.out { color:var(--red);
+                     border-color:color-mix(in srgb, var(--red) 40%, transparent); }
+  .cgrid .gate.in { color:var(--green);
+                    border-color:color-mix(in srgb, var(--green) 40%, transparent); }
+  .cell { border-radius:6px; padding:.5em .2em; text-align:center;
+          font-family:var(--mono); font-size:.7rem; font-weight:700;
+          color:var(--text); cursor:default;
+          transition:transform .18s; }
+  .cell:hover { transform:scale(1.06); }
+  .cell.out { outline:1px solid color-mix(in srgb, var(--red) 28%, transparent); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+  .scale { display:flex; align-items:center; gap:.5em; margin-top:1em;
+           font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .scale .ramp { flex:1; height:10px; border-radius:99px; }
+
+  /* ---- the accuracy band ---- */
+  .band { position:relative; height:120px; margin:.4em 0 .2em;
+          border-left:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .band .zone { position:absolute; left:0; right:0; background:var(--surface-3);
+                border-top:1px dashed var(--border-2);
+                border-bottom:1px dashed var(--border-2); }
+  .band .pt { position:absolute; width:9px; height:9px; border-radius:99px;
+              transform:translate(-50%, 50%); cursor:default; }
+  .band .yl { position:absolute; right:calc(100% + .5em); white-space:nowrap;
+              font-family:var(--mono); font-size:.64rem; color:var(--text-dim); }
+  .band .xl { position:absolute; bottom:-1.35em; transform:translateX(-50%);
+              font-family:var(--mono); font-size:.66rem; color:var(--text-dim); }
+  .bandwrap { padding:.2em 1.4em 1.9em 4.4em; }
+
+  /* ---- the two-arm fault table ---- */
+  .fault { display:grid; grid-template-columns:repeat(4, max-content) 1fr 1fr;
+           column-gap:.9em; align-items:center; font-size:.84rem; margin-top:.5em; }
+  .fault > div { padding:.4em 0; border-bottom:1px solid var(--border); }
+  .fault > div:nth-last-child(-n+6) { border-bottom:0; }
+  .fault .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+              text-transform:uppercase; color:var(--text-dim);
+              border-bottom:1px solid var(--border-2); }
+  .fault .k { font-family:var(--mono); font-size:.74rem; color:var(--text-2); }
+  .fault .v { font-family:var(--mono); font-size:.74rem; }
+  .fault .v.bad { color:var(--red); font-weight:700; }
+  .fault .v.ok { color:var(--green); }
+  @media (max-width:560px){ .fault { font-size:.78rem; column-gap:.5em; } }
+
+  .counts { display:grid; grid-template-columns:repeat(4, 1fr); gap:.7em; margin:1.2em 0 0; }
+  .cnt { border:1px solid var(--border); border-radius:10px; padding:.75em .5em;
+         text-align:center; background:var(--surface-2); }
+  .cnt .n { font-family:var(--mono); font-size:1.35rem; font-weight:800; color:var(--text); }
+  .cnt .l { font-family:var(--mono); font-size:.65rem; color:var(--text-dim);
+            line-height:1.35; margin-top:.2em; }
+  .cnt.bad .n { color:var(--red); } .cnt.good .n { color:var(--green); }
+  @media (max-width:520px){ .counts { grid-template-columns:repeat(2, 1fr); } }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="语言与配色主题">
+  <a class="lang" href="gqa-gate-costs-nothing.html" hreflang="en">EN</a>
+  <a class="lang" href="gqa-gate-costs-nothing.zh.html" hreflang="zh" aria-current="page">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="跟随系统">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="浅色">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="深色">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">RDNA3 · paged attention · vLLM · 实测于 2× RX 7900 XT</div>
+  <h1>一道 2 到 7 倍的门，<br>什么也没换来</h1>
+  <p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention kernel 只在 query 与 KV
+  head 之比至少为 3 时才启用。而在被排除的那个区间里，同一个 kernel
+  比它被越过去换来的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>，数值上又与之等价。
+  六十个格子、两个 vLLM 版本，无一例外。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100</span>
+    <span class="chip">vLLM <b>0.23.1</b> 与 <b>0.27.1</b></span>
+    <span class="chip">外加一张跑同一份 Triton 源码的 <b>A100</b></span>
+    <span class="chip">已提为 <b>vllm#54210</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>这个界限随
+  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 进来，
+  它自己的说明写着这个 kernel "支持 gqa_ratio 到 16，并在 gqa_ratio 为 3 或更高时相对现有
+  kernel 有性能收益"。所以它是<strong>一个性能启发式，不是能力限制</strong>；
+  同一个函数的 CDNA 分支从 ratio 1 起就跑同一个 kernel。这两点在 <code>main</code> 上今天依然成立。</p>
+  <p>真去测，这个启发式在这里是反的。六十个实测格子 —— 五种形状、六个上下文长度、两代 vLLM ——
+  定制 kernel 在<strong>每一个</strong>格子里都更快，而且被排除的区间与被放行的区间在两个版本上都重叠。
+  这道界限没有分开任何东西。</p>
+  <p>引出这件事的报告 <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>
+  还把长上下文下的精度下降算在兜底路径头上。这一条不成立：两种架构上 90 个格子的相对误差都落在
+  2.12e-3 到 4.72e-3 之间，而且<strong>任意两个深度的汇总中位数相差不超过 1.09 倍</strong>。
+  <strong>而一条平坦的带子只有在仪器能看见故障时才有意义</strong>，所以同一套测量被喂了一个故障：
+  最后一个 KV tile 未写入尾部里的 NaN 会污染两条路径，而且只在跨过那个边界的长度上，别的长度都不会。</p>
+  <p>在真实模型上端到端，把那一行放宽在 1K 上值 1.02 倍，在 32K 上值 <strong>1.17 倍</strong>，
+  在较新镜像上以两种运行顺序各复现一次。这就是
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>，而本页是它的依据。</p>
+</div>
+
+<h2><span class="n">1</span>测的是什么</h2>
+
+<p>两条路径都通过 vLLM 自己的 <code>chunked_prefill_paged_decode</code> 分发驱动，
+只强制 <code>use_rocm_custom_paged_attention</code> 一个变量，所以两臂之间参数打包的方式完全一致。
+纯 decode：每个序列一个 query token，上下文完全在缓存里 —— 这正是报告描述的形状。
+参考实现是 fp32，而且是从分页<em>之前</em>的 KV 算的，不是从缓存里算的，
+所以<strong>分页错误不会自己抵消掉自己</strong>。打分用相对 L-infinity，
+以参考实现自身的尺度为基准，这才让不同长度之间可比。</p>
+
+<p>形状集合覆盖 head size 128、block size 16 下的 ratio 1、2、3、4，
+外加 32/16 —— 那是 <code>gemma-3-27b-it</code> 的真实形状，满足 gfx11 这道门除比值之外的每一个条件。
+CUDA 对照编译的是同一份 Triton 文本：kernel 被原样提取到一个独立模块里，
+启动参数照抄分发处的参数表。</p>
+
+<h2><span class="n">2</span>六十个格子，没有例外</h2>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · Triton 耗时 ÷ 定制 kernel 耗时，按形状与深度
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="gridwrap"><div class="cgrid" id="grid"></div></div>
+    <div class="scale" id="scale"></div>
+    <div class="barunit" id="gridnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 大于 1.0 表示被挡在外面的那个 kernel 更快。这道门<em>放行</em>的那几行是对照：
+    它们展示的正是这道门当初想抓住的收益。它排除的那几行展示的是同样的收益、同样的量级，被拒之门外。
+    把鼠标停在任意格子上可以看到背后的两个耗时。较新的镜像整体低一点，
+    是因为 Triton 兜底变快了，不是定制 kernel 变慢了；0.27 的两轮中位相差 2.3 %，最差 5.8 %。
+  </figcaption>
+</figure>
+
+<p>论据是那两条带子，不是最大值。0.23.1 上被排除的比值跨 1.84× 到 7.28×，被放行的跨 2.35× 到
+7.40×；0.27 上是 1.70×–6.05× 对 2.20×–6.05×。<strong>两个版本上两条带子都重叠</strong>——
+这就是"这道界限没有分开任何东西"这句话的一句话版本。</p>
+
+<h2><span class="n">3</span>精度那条主张，以及它下面的对照</h2>
+
+<p>原始报告描述了两个症状。第一个 —— 兜底路径被走到 —— 完全正确，上面所有内容都是关于它的。
+第二个是兜底路径随上下文变差。这一条在这里可测，而且不成立。</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 相对误差中位数对上下文长度
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v2"></div>
+    <div class="bandwrap"><div class="band" id="band"></div></div>
+    <div class="barunit" id="bandnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 每个长度上对所有形状取中位数；阴影区是全部 90 个单独格子构成的完整带子。
+    定制 kernel 一贯略高于 Triton，那是累加顺序不同，不是缺陷 ——
+    两者都落在这么长的求和在 bf16 下应有的范围内。第三条序列是同一份 Triton 源码在 A100
+    上编译出来的，它落在同一条带子里。正是那一列，让这件事成为一个有界的否定结论，
+    而不是"没有证据"。
+  </figcaption>
+</figure>
+
+<div class="note">
+  <span class="lbl">一次干净的扫描，如果仪器是瞎的，就一文不值</span>
+  上面那次扫描没有触及两件事：每个长度都是 block size 的整数倍，
+  所以最后一个 KV tile 从不跨过序列末端；而且缓存是零填充的。
+  把它填成 NaN、并使用会跨过边界的长度，就能按需造出这个故障 ——<strong>而且只在那里</strong>。
+  <div class="fault" id="control"></div>
+  只有 NaN 会传播：1e4 这种有限的垃圾值单靠分数掩码就正确处理了，这正是它微妙的地方。
+  在这个版本上两条路径被污染的方式完全一样。
+</div>
+
+<h2><span class="n">4</span>放宽它在一个模型上值多少</h2>
+
+<p>kernel 微基准不是一个 PR 需要拿出来的东西。<code>gemma-3-27b-it-w4a16</code>，
+TP=2，开 CUDA graph，解码用 64 减 8 差分，每格一个全新容器，
+这样源码改动不会在两臂之间泄漏：</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 一行改动，一个模型，三个深度，三次通过
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="e2e"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 0.27 的两次通过把两臂的顺序对调了 —— 一次在每个深度都先测 stock，另一次先测放宽 ——
+    所以四十分钟里的漂移不可能两次都落在同一臂上。同一臂、同一深度、跨两次通过：最多相差 2.8 %。
+    收益随上下文增长，原因在于<em>动的是什么</em>：这个模型 62 层，滑动窗口模式为 6，
+    所以只有那十层全注意力层能走到定制 kernel。1K 上滑动层占主导；
+    32K 上一层全注意力要扫完整个上下文，而一层滑动层只扫 1024。
+  </figcaption>
+</figure>
+
+<p>路由是从 TP worker 内部记录的，不是推断的，每一格都记。那些全注意力层带着 head size 128、
+block size 16、原生 KV 布局和 2 的幂 block 抵达，所以<strong>比值是它们唯一没通过的那个条件</strong>；
+滑动层在两臂里都卡在 <code>sliding_window == 0</code> 上，从不移动。</p>
+
+<div class="note warn">
+  <span class="lbl">这次测量不是的两件事</span>
+  两臂输出是否相同不是正确性测试。在这台机器上，这个模型的 greedy 解码跨进程不可复现，
+  所以比较 token id 测的会是我们自己的非确定性。数值论证在图 2，对着一个 fp32 参考实现。
+  另外第一次尝试用的 kernel 计数器是瞎的，因为 TP=2 在 spawn 出来的 worker 里跑注意力，
+  父进程里的计数器什么也看不到。
+</div>
+
+<h2><span class="n">5</span>放宽它同时会放进来什么</h2>
+
+<p>打开一道门，门后的东西都会进来。
+<a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a>
+修的正是同一个定制 kernel 里的一个真实故障：它给序列末端之后的 logit 打了掩码，
+但它向量化的 V-cache 读取仍然吃掉整个最后一个 block，
+于是尾部一个未写入的 NaN 会污染输出。它的测试计划写着 gfx11 只做了编译验证，因为作者没有这种设备。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · gfx1100 上的这个故障，以及那个修复
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="counts" id="counts"></div>
+    <div class="fault" id="faults"></div>
+    <div class="barunit" id="faultnote"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> 64 行，每臂 32：两种 dtype × 两个比值 × 四种投毒方式 × 两个长度，
+    分别跑在原样镜像上和一个带着该 PR 当前 head 的重编版本上。
+    有判别力的是模式，不是通过数。<strong>只投 K 从不产生污染</strong> ——
+    logit 掩码已经覆盖了它，所以一个连 K 也一起清洗的修复，治的是一个不存在的症状。
+    <strong>只有跨边界的那个长度</strong>：4096 正好填满最后一个 tile，是干净的；
+    4090 留下六个未写入的槽位，就不干净。哪个 kernel 跑了是靠包住那个 op 数出来的，不是从耗时推的。
+  </figcaption>
+</figure>
+
+<p>强制那一列才是与这个提案直接相关的。绕过这道门之后，原样那一臂被污染的是八个格子而不是四个：
+比值 2 在跨边界长度上以完全相同的方式失败，两种 dtype、只投 V 和 K+V 都失败。
+八个在打了补丁的那一臂上全都干净。<strong>所以放宽这道门会把比值 2 放进这个 kernel，
+而这就是它会一起放进来的那个故障</strong>—— 这也是为什么这两个线程该放在一起说，
+以及为什么 gfx11 的运行时证据是应那个 PR 作者的请求送过去的。</p>
+
+<h2><span class="n">6</span>没有被确立的部分</h2>
+
+<h3>报告里的第二个症状</h3>
+<p>这里排除掉的只是一个假设 —— Triton 2D kernel 随上下文增长而丢失精度。
+报告者的模型是本项目没有的一个 VLM，跑在本项目没有的硬件上，
+而这里测的是 kernel，不是他们的输出。他们那个症状仍然需要一个解释。</p>
+
+<h3>纯 decode、这些形状之外的一切</h3>
+<p>滑动窗口形状、fp8 KV、prefill 形状，以及 kernel 层面的 TP&gt;1，这里都没有测。
+端到端那次测量是 TP=2，但那是模型层面的测量，不是 kernel 层面的。</p>
+
+<h3>NaN 是怎么进去的</h3>
+<p><code>allocate_kv_cache</code> 会把后备分配零填充，所以不是新分配的垃圾值；
+vllm#53856 把它归因于 sleep 模式和分配器行为。这个探针是故意注入的，
+它只测量 kernel 之后会怎么做。</p>
+
+<h3>一台机器，以及 model runner 那个问题</h3>
+<p>这里的一切都在一台 gfx1100 上。一个相关问题 —— Model Runner V2 是否会走到同一道 guard ——
+在这台硬件上测过，答案是会，37 行里有 36 行与 V1 完全相同；
+但投机是否会让 MRv2 下的 decode 带上多于一行 query，无法测量，
+因为这里没有任何 checkpoint 能在那个镜像上配置起来。那一半靠的是读代码。</p>
+
+<h2><span class="n">7</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · 已提给上游</span>
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>，
+  <code>use_rocm_custom_paged_attention</code> 的 gfx11 分支里一行：一增一删。
+  截至 2026-08-29 开着，还没有人类 review。PR 正文里是本页这些表；仓库里是算出它们的那些行。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · 应请求补上了另一个 PR 的 gfx11 那一半</span>
+  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 的作者已在 MI350X
+  上验证过那个修复，并希望有人补上他们没有的 gfx11。图 4 就是那份验证，
+  跑在他们当前的 head 上，而且两臂都跑 —— 因为一个干净的打补丁臂，
+  在原样臂没能复现故障时什么也证明不了。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-27 · 加速下限曾被低估</span>
+  最初写的是 2.06×，那是只在比值 1 上取的最小值。真正的下限是 4K 上的 32/16 形状，
+  0.23.1 上 1.84×，0.27 上 1.70×。已就地更正并标注日期，
+  现在由 <code>verify_doc_figures.py</code> 重算，不再是抄写。
+</div>
+
+<div class="note">
+  <span class="lbl">2026-08-29 · 有一个数字需要的是写清推导，不是更正</span>
+  源目录里写着"16 倍上下文增长把中位数动了 1.06 倍"，对着一条跨度 32 倍的阶梯看起来像是错的。
+  它不是：那个数字把最短的两个深度汇总起来对比最长的两个，两者的中心大约相差 16 倍。
+  按端到端读，这个变化是 1.03 倍。两种推导现在都写下来了，两个也都有检查 ——
+  因为那句话同时既站得住、又读不出来。
+</div>
+
+<div class="foot-note">
+  <p><strong>每一个格子。</strong>探针、它们写出的 JSONL 以及容器日志都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/vllm-50603/README.md"><code>benchmarks/vllm-50603/</code></a>，
+  包括 CUDA 对照那份被提取出来的 kernel，以及那条让两侧保持在同一份 Triton 文本上的哈希断言。
+  本页每一张图都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从这些文件重算。</p>
+  <p>上游：<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a> 是报告，
+  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 引入了这道界限，
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a> 是那一行改动，
+  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 是图 4 说的那个故障。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in gqa-gate-costs-nothing.html, recomputed from benchmarks/vllm-50603/*.jsonl by site/src/genfig-gqa.py.",
+ "fig1": {
+  "versions": [
+   {
+    "id": "023",
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "rocm": "7.14",
+    "rows": [
+     {
+      "shape": "8/8",
+      "gqa": 1,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.0566375663891474,
+        "triton_ms": 0.42957401275634766,
+        "ck_ms": 0.2088720053434372
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.2833838630312258,
+        "triton_ms": 0.40368399024009705,
+        "ck_ms": 0.1767919957637787
+       },
+       {
+        "ctx": 4096,
+        "ratio": 2.870312200761237,
+        "triton_ms": 0.6130470037460327,
+        "ck_ms": 0.21358199417591095
+       },
+       {
+        "ctx": 8192,
+        "ratio": 2.512962696196673,
+        "triton_ms": 0.8552190065383911,
+        "ck_ms": 0.34032300114631653
+       },
+       {
+        "ctx": 16384,
+        "ratio": 4.110769965467451,
+        "triton_ms": 1.4140349626541138,
+        "ck_ms": 0.343982994556427
+       },
+       {
+        "ctx": 32768,
+        "ratio": 4.829520235162114,
+        "triton_ms": 2.547595977783203,
+        "ck_ms": 0.5275049805641174
+       }
+      ]
+     },
+     {
+      "shape": "8/4",
+      "gqa": 2,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.312339653395059,
+        "triton_ms": 0.41814500093460083,
+        "ck_ms": 0.18083199858665466
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.4182078719381446,
+        "triton_ms": 0.4723049998283386,
+        "ck_ms": 0.1953119933605194
+       },
+       {
+        "ctx": 4096,
+        "ratio": 3.2118707197607126,
+        "triton_ms": 0.6062470078468323,
+        "ck_ms": 0.18875199556350708
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.8606171570208914,
+        "triton_ms": 0.7558779716491699,
+        "ck_ms": 0.19579200446605682
+       },
+       {
+        "ctx": 16384,
+        "ratio": 6.525235804291858,
+        "triton_ms": 1.2566429376602173,
+        "ck_ms": 0.19258199632167816
+       },
+       {
+        "ctx": 32768,
+        "ratio": 7.278998789318378,
+        "triton_ms": 2.553865909576416,
+        "ck_ms": 0.3508540093898773
+       }
+      ]
+     },
+     {
+      "shape": "32/16",
+      "gqa": 2,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.1397195799460507,
+        "triton_ms": 0.4554649889469147,
+        "ck_ms": 0.21286199986934662
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.2401581293984263,
+        "triton_ms": 0.46649500727653503,
+        "ck_ms": 0.2082419991493225
+       },
+       {
+        "ctx": 4096,
+        "ratio": 1.8372758188208707,
+        "triton_ms": 0.6584870219230652,
+        "ck_ms": 0.3584040105342865
+       },
+       {
+        "ctx": 8192,
+        "ratio": 1.8833531027937764,
+        "triton_ms": 0.9988099932670593,
+        "ck_ms": 0.5303360223770142
+       },
+       {
+        "ctx": 16384,
+        "ratio": 2.712422601982096,
+        "triton_ms": 1.4368950128555298,
+        "ck_ms": 0.5297459959983826
+       },
+       {
+        "ctx": 32768,
+        "ratio": 2.863281182924803,
+        "triton_ms": 2.584136962890625,
+        "ck_ms": 0.9025089740753174
+       }
+      ]
+     },
+     {
+      "shape": "12/4",
+      "gqa": 3,
+      "admitted": true,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.3972896992393355,
+        "triton_ms": 0.4252839982509613,
+        "ck_ms": 0.17740200459957123
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.567118479072677,
+        "triton_ms": 0.5055760145187378,
+        "ck_ms": 0.196942999958992
+       },
+       {
+        "ctx": 4096,
+        "ratio": 3.199480330028837,
+        "triton_ms": 0.6057959794998169,
+        "ck_ms": 0.18934199213981628
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.639401778244813,
+        "triton_ms": 0.7598779797554016,
+        "ck_ms": 0.20879200100898743
+       },
+       {
+        "ctx": 16384,
+        "ratio": 6.3635959794102,
+        "triton_ms": 1.2547229528427124,
+        "ck_ms": 0.19717200100421906
+       },
+       {
+        "ctx": 32768,
+        "ratio": 7.231975831314931,
+        "triton_ms": 2.546046018600464,
+        "ck_ms": 0.35205399990081787
+       }
+      ]
+     },
+     {
+      "shape": "16/4",
+      "gqa": 4,
+      "admitted": true,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.4048624633224023,
+        "triton_ms": 0.4308840036392212,
+        "ck_ms": 0.17917199432849884
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.35359907652533,
+        "triton_ms": 0.4576149880886078,
+        "ck_ms": 0.19443200528621674
+       },
+       {
+        "ctx": 4096,
+        "ratio": 3.1957298370976104,
+        "triton_ms": 0.609495997428894,
+        "ck_ms": 0.1907220035791397
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.7147707197039757,
+        "triton_ms": 0.7637680172920227,
+        "ck_ms": 0.2056030035018921
+       },
+       {
+        "ctx": 16384,
+        "ratio": 6.422860647184209,
+        "triton_ms": 1.2385330200195312,
+        "ck_ms": 0.19283199310302734
+       },
+       {
+        "ctx": 32768,
+        "ratio": 7.397910508596247,
+        "triton_ms": 2.582336902618408,
+        "ck_ms": 0.3490630090236664
+       }
+      ]
+     }
+    ],
+    "source": "stage1-rocm-paths.jsonl",
+    "excluded_band": [
+     1.8372758188208707,
+     7.278998789318378
+    ],
+    "admitted_band": [
+     2.35359907652533,
+     7.397910508596247
+    ],
+    "bands_overlap": true,
+    "rounds": 1
+   },
+   {
+    "id": "027",
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "rocm": "10.0",
+    "rows": [
+     {
+      "shape": "8/8",
+      "gqa": 1,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.036472404262424,
+        "triton_ms": 0.436583012342453,
+        "ck_ms": 0.21438199281692505
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.0325771765761464,
+        "triton_ms": 0.4212130010128021,
+        "ck_ms": 0.20723100006580353
+       },
+       {
+        "ctx": 4096,
+        "ratio": 2.682809748824645,
+        "triton_ms": 0.5720850229263306,
+        "ck_ms": 0.21324099600315094
+       },
+       {
+        "ctx": 8192,
+        "ratio": 2.278572023006283,
+        "triton_ms": 0.8151659965515137,
+        "ck_ms": 0.3577530086040497
+       },
+       {
+        "ctx": 16384,
+        "ratio": 3.568800356124917,
+        "triton_ms": 1.2593690156936646,
+        "ck_ms": 0.3528830111026764
+       },
+       {
+        "ctx": 32768,
+        "ratio": 4.0898305577988605,
+        "triton_ms": 2.186316967010498,
+        "ck_ms": 0.5345739722251892
+       }
+      ]
+     },
+     {
+      "shape": "8/4",
+      "gqa": 2,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.2387874086457256,
+        "triton_ms": 0.43108299374580383,
+        "ck_ms": 0.19255200028419495
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.5377130803512373,
+        "triton_ms": 0.4879539906978607,
+        "ck_ms": 0.19228099286556244
+       },
+       {
+        "ctx": 4096,
+        "ratio": 3.044019256035561,
+        "triton_ms": 0.5980949997901917,
+        "ck_ms": 0.19648200273513794
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.5631044796326594,
+        "triton_ms": 0.8909969925880432,
+        "ck_ms": 0.2500619888305664
+       },
+       {
+        "ctx": 16384,
+        "ratio": 5.4876839915936495,
+        "triton_ms": 1.2344599962234497,
+        "ck_ms": 0.22495099902153015
+       },
+       {
+        "ctx": 32768,
+        "ratio": 5.943091700650254,
+        "triton_ms": 2.193197011947632,
+        "ck_ms": 0.36903300881385803
+       }
+      ]
+     },
+     {
+      "shape": "32/16",
+      "gqa": 2,
+      "admitted": false,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 1.9531142298202546,
+        "triton_ms": 0.46322399377822876,
+        "ck_ms": 0.2371719926595688
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.107357976290863,
+        "triton_ms": 0.4536130130290985,
+        "ck_ms": 0.21525199711322784
+       },
+       {
+        "ctx": 4096,
+        "ratio": 1.7017379547781009,
+        "triton_ms": 0.6116250157356262,
+        "ck_ms": 0.35941198468208313
+       },
+       {
+        "ctx": 8192,
+        "ratio": 1.7239641667816494,
+        "triton_ms": 0.9331369996070862,
+        "ck_ms": 0.5412740111351013
+       },
+       {
+        "ctx": 16384,
+        "ratio": 2.3493944401790743,
+        "triton_ms": 1.2800300121307373,
+        "ck_ms": 0.5448340177536011
+       },
+       {
+        "ctx": 32768,
+        "ratio": 2.434380869490015,
+        "triton_ms": 2.2314679622650146,
+        "ck_ms": 0.9166470170021057
+       }
+      ]
+     },
+     {
+      "shape": "12/4",
+      "gqa": 3,
+      "admitted": true,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.30584706659169,
+        "triton_ms": 0.43841299414634705,
+        "ck_ms": 0.19013099372386932
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.5088259847096266,
+        "triton_ms": 0.49005401134490967,
+        "ck_ms": 0.19533200562000275
+       },
+       {
+        "ctx": 4096,
+        "ratio": 2.8464939457815484,
+        "triton_ms": 0.5798649787902832,
+        "ck_ms": 0.20371200144290924
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.5831322374910037,
+        "triton_ms": 0.7289559841156006,
+        "ck_ms": 0.20344099402427673
+       },
+       {
+        "ctx": 16384,
+        "ratio": 5.552428952818542,
+        "triton_ms": 1.152029037475586,
+        "ck_ms": 0.2074819952249527
+       },
+       {
+        "ctx": 32768,
+        "ratio": 6.031348207191447,
+        "triton_ms": 2.191206932067871,
+        "ck_ms": 0.363303005695343
+       }
+      ]
+     },
+     {
+      "shape": "16/4",
+      "gqa": 4,
+      "admitted": true,
+      "cells": [
+       {
+        "ctx": 1024,
+        "ratio": 2.347549192174168,
+        "triton_ms": 0.43364399671554565,
+        "ck_ms": 0.18472200632095337
+       },
+       {
+        "ctx": 2048,
+        "ratio": 2.4020588769353526,
+        "triton_ms": 0.46343401074409485,
+        "ck_ms": 0.19293199479579926
+       },
+       {
+        "ctx": 4096,
+        "ratio": 2.7974542274436525,
+        "triton_ms": 0.5468239784240723,
+        "ck_ms": 0.19547200202941895
+       },
+       {
+        "ctx": 8192,
+        "ratio": 3.5237383519389174,
+        "triton_ms": 0.733896017074585,
+        "ck_ms": 0.20827199518680573
+       },
+       {
+        "ctx": 16384,
+        "ratio": 5.817792614030436,
+        "triton_ms": 1.1618189811706543,
+        "ck_ms": 0.1997009962797165
+       },
+       {
+        "ctx": 32768,
+        "ratio": 6.037044178736837,
+        "triton_ms": 2.198287010192871,
+        "ck_ms": 0.36413300037384033
+       }
+      ]
+     }
+    ],
+    "source": "stage1-027-r1.jsonl",
+    "excluded_band": [
+     1.7017379547781009,
+     6.05318221132226
+    ],
+    "admitted_band": [
+     2.1975836450919037,
+     6.054139602036058
+    ],
+    "bands_overlap": true,
+    "rounds": 2
+   }
+  ],
+  "ctxs": [
+   1024,
+   2048,
+   4096,
+   8192,
+   16384,
+   32768
+  ],
+  "cells": 60,
+  "never_slower": 60,
+  "min": 1.7017379547781009,
+  "max": 7.397910508596247,
+  "round_spread_pct": {
+   "max": 5.8157590839172935,
+   "median": 2.283604408348816
+  }
+ },
+ "fig2": {
+  "series": [
+   {
+    "id": "rocm_triton",
+    "points": [
+     {
+      "ctx": 1024,
+      "rel": 0.0026151113162998776
+     },
+     {
+      "ctx": 2048,
+      "rel": 0.0026624083581181105
+     },
+     {
+      "ctx": 4096,
+      "rel": 0.002943697288938233
+     },
+     {
+      "ctx": 8192,
+      "rel": 0.002771861038289702
+     },
+     {
+      "ctx": 16384,
+      "rel": 0.0028943733796229346
+     },
+     {
+      "ctx": 32768,
+      "rel": 0.002795087545341479
+     }
+    ]
+   },
+   {
+    "id": "rocm_ck",
+    "points": [
+     {
+      "ctx": 1024,
+      "rel": 0.0035619161406877085
+     },
+     {
+      "ctx": 2048,
+      "rel": 0.0036651925179518254
+     },
+     {
+      "ctx": 4096,
+      "rel": 0.0033837480104115325
+     },
+     {
+      "ctx": 8192,
+      "rel": 0.0037773505921608135
+     },
+     {
+      "ctx": 16384,
+      "rel": 0.0034016626223208795
+     },
+     {
+      "ctx": 32768,
+      "rel": 0.0034176384430053327
+     }
+    ]
+   },
+   {
+    "id": "a100_triton",
+    "points": [
+     {
+      "ctx": 1024,
+      "rel": 0.002856052834524387
+     },
+     {
+      "ctx": 2048,
+      "rel": 0.002864267743189884
+     },
+     {
+      "ctx": 4096,
+      "rel": 0.0027127739578115665
+     },
+     {
+      "ctx": 8192,
+      "rel": 0.0032475373085070315
+     },
+     {
+      "ctx": 16384,
+      "rel": 0.0031000600111854306
+     },
+     {
+      "ctx": 32768,
+      "rel": 0.0026352269832457475
+     }
+    ]
+   }
+  ],
+  "cells": 90,
+  "band": [
+   0.0021170216825526712,
+   0.00471678138810165
+  ],
+  "median": 0.003024519729063309,
+  "context_move": 1.0293720849034333,
+  "context_span": 32,
+  "context_worst_ratio": 1.0891591968624992,
+  "bucket_move": 1.0569761257626225,
+  "bucket_span": 16.0,
+  "per_depth_median": [
+   {
+    "ctx": 1024,
+    "rel": 0.002856052834524387
+   },
+   {
+    "ctx": 2048,
+    "rel": 0.0029976937838085077
+   },
+   {
+    "ctx": 4096,
+    "rel": 0.003014311313240134
+   },
+   {
+    "ctx": 8192,
+    "rel": 0.003110696211447446
+   },
+   {
+    "ctx": 16384,
+    "rel": 0.0031000600111854306
+   },
+   {
+    "ctx": 32768,
+    "rel": 0.0029399410608687286
+   }
+  ],
+  "control": {
+   "rows": 18,
+   "cases": [
+    {
+     "fill": "zeros",
+     "ctx": 1024,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "zeros",
+     "ctx": 4096,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "zeros",
+     "ctx": 1000,
+     "aligned": false,
+     "tail": 8,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "zeros",
+     "ctx": 1015,
+     "aligned": false,
+     "tail": 9,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "zeros",
+     "ctx": 4095,
+     "aligned": false,
+     "tail": 1,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "zeros",
+     "ctx": 4090,
+     "aligned": false,
+     "tail": 6,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "nan",
+     "ctx": 1024,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "nan",
+     "ctx": 4096,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "nan",
+     "ctx": 1000,
+     "aligned": false,
+     "tail": 8,
+     "triton_finite": false,
+     "ck_finite": false
+    },
+    {
+     "fill": "nan",
+     "ctx": 1015,
+     "aligned": false,
+     "tail": 9,
+     "triton_finite": false,
+     "ck_finite": false
+    },
+    {
+     "fill": "nan",
+     "ctx": 4095,
+     "aligned": false,
+     "tail": 1,
+     "triton_finite": false,
+     "ck_finite": false
+    },
+    {
+     "fill": "nan",
+     "ctx": 4090,
+     "aligned": false,
+     "tail": 6,
+     "triton_finite": false,
+     "ck_finite": false
+    },
+    {
+     "fill": "garbage",
+     "ctx": 1024,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "garbage",
+     "ctx": 4096,
+     "aligned": true,
+     "tail": 0,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "garbage",
+     "ctx": 1000,
+     "aligned": false,
+     "tail": 8,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "garbage",
+     "ctx": 1015,
+     "aligned": false,
+     "tail": 9,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "garbage",
+     "ctx": 4095,
+     "aligned": false,
+     "tail": 1,
+     "triton_finite": true,
+     "ck_finite": true
+    },
+    {
+     "fill": "garbage",
+     "ctx": 4090,
+     "aligned": false,
+     "tail": 6,
+     "triton_finite": true,
+     "ck_finite": true
+    }
+   ],
+   "nan_rows": 6,
+   "poisoned": 4,
+   "all_poisoned_straddle": true,
+   "aligned_all_clean": true,
+   "ck_matches_triton": true,
+   "garbage_clean": true
+  }
+ },
+ "fig3": {
+  "depths": [
+   1024,
+   8192,
+   32768
+  ],
+  "runs": {
+   "023": {
+    "1024": {
+     "stock": 41.436720275307415,
+     "widened": 42.56772902481941,
+     "ratio": 1.0272948424005934,
+     "gate_flipped": true
+    },
+    "8192": {
+     "stock": 21.361059907016863,
+     "widened": 23.87784372869284,
+     "ratio": 1.117821111528705,
+     "gate_flipped": true
+    },
+    "32768": {
+     "stock": 7.997584391376539,
+     "widened": 9.548401909867186,
+     "ratio": 1.19391074136871,
+     "gate_flipped": true
+    }
+   },
+   "027A": {
+    "1024": {
+     "stock": 43.754157399902645,
+     "widened": 44.873589921215554,
+     "ratio": 1.0255845978493325,
+     "gate_flipped": true
+    },
+    "8192": {
+     "stock": 23.390035000254432,
+     "widened": 24.90815624031006,
+     "ratio": 1.0649046160058808,
+     "gate_flipped": true
+    },
+    "32768": {
+     "stock": 8.503321450649889,
+     "widened": 9.935094103390005,
+     "ratio": 1.1683780462786915,
+     "gate_flipped": true
+    }
+   },
+   "027B": {
+    "1024": {
+     "stock": 43.98331607440129,
+     "widened": 44.986540104268414,
+     "ratio": 1.0228091949267784,
+     "gate_flipped": true
+    },
+    "8192": {
+     "stock": 22.729579949748956,
+     "widened": 25.073949467159547,
+     "ratio": 1.1031417880397953,
+     "gate_flipped": true
+    },
+    "32768": {
+     "stock": 8.519311891562632,
+     "widened": 9.93829104705118,
+     "ratio": 1.166560301295446,
+     "gate_flipped": true
+    }
+   }
+  },
+  "pooled_027": {
+   "1024": 1.0241968963880554,
+   "8192": 1.0840232020228382,
+   "32768": 1.1674691737870688
+  },
+  "order": {
+   "027A": "stock before widened at every depth",
+   "027B": "the reverse"
+  },
+  "gate_flipped_everywhere": true,
+  "worst_pass_spread_pct": 2.8236599496250903,
+  "grows_with_context": true
+ },
+ "fig4": {
+  "cells": [
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "none",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "none",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "k_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "k_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "v_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "v_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": false,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "both",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 4,
+    "poison": "both",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": false,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "none",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "none",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "k_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "k_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "v_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "v_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "both",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "bfloat16",
+    "gqa": 2,
+    "poison": "both",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "none",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "none",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "k_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "k_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "v_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "v_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": false,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "both",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": true,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 4,
+    "poison": "both",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": true,
+    "stock_ok": false,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "none",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "none",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "k_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "k_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "v_only",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "v_only",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "both",
+    "ctx": 4096,
+    "tail": 0,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": true,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   },
+   {
+    "dtype": "float16",
+    "gqa": 2,
+    "poison": "both",
+    "ctx": 4090,
+    "tail": 6,
+    "admitted": false,
+    "stock_ok": true,
+    "patched_ok": true,
+    "stock_forced_ok": false,
+    "patched_forced_ok": true,
+    "triton_ok": true
+   }
+  ],
+  "rows_per_arm": 32,
+  "poisoned_stock": 4,
+  "fixed": 4,
+  "newly_broken": 0,
+  "poisoned_forced": 8,
+  "fixed_forced": 8,
+  "triton_clean": 32,
+  "k_only_ever_poisons": 0,
+  "ck_ran": 32,
+  "ck_expected": 32,
+  "all_poisoned_straddle": true
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "v023": "vLLM 0.23.1",
+ "v027": "vLLM 0.27.1",
+ "shape": "形状",
+ "gateIn": "放行",
+ "gateOut": "排除",
+ "ctxK": "{n}K",
+ "gridNote": "{t} 个格子里有 {n} 个是被挡在外面的 kernel 更快 · 排除区间 {el}–{eh}×，放行区间 {al}–{ah}×，两者重叠",
+ "scaleLow": "1×", "scaleHigh": "{n}×",
+ "scaleLabel": "Triton ÷ 定制 kernel",
+ "cellTip": "Triton {t} ms · 定制 {c} ms",
+ "sTriton": "gfx1100 Triton",
+ "sCk": "gfx1100 定制 kernel",
+ "sA100": "A100 Triton，同一份源码",
+ "bandNote": "{n} 个格子跨 {lo} 到 {hi} · 任意两个深度之间最多差 {w} 倍 · 端到端 {s} 倍跨度让汇总中位数动 {m} 倍；按源文档分桶的读法，{bs} 倍动 {bm} 倍",
+ "ctrlH": ["填充", "上下文", "尾部槽位", "对齐", "Triton", "定制"],
+ "ctrlNan": "NaN", "ctrlZeros": "全零", "ctrlGarbage": "垃圾值 1e4",
+ "ctrlYes": "是", "ctrlNo": "否",
+ "ctrlFinite": "有限", "ctrlPoison": "全 NaN",
+ "stock": "原样", "widened": "放宽",
+ "e2eUnit": "解码 tok/s，gemma-3-27b-it-w4a16，TP=2",
+ "e2eNote": "每一格里这道门都翻转了 · 各次通过之间最多相差 {s}%",
+ "run023": "0.23.1", "run027A": "0.27 第一遍", "run027B": "0.27 第二遍",
+ "cntPoisoned": "原样臂上被污染",
+ "cntFixed": "其中被修好的",
+ "cntBroken": "被修复新弄坏的",
+ "cntCk": "确实跑了 kernel 的比值-4 格子",
+ "faultH": ["dtype", "比值", "投毒", "上下文", "原样", "打补丁"],
+ "faultNote": "绕过这道门，原样臂被污染的是 {f} 个而不是 {a} 个 —— 比值 2 以同样方式失败，而这 {f} 个在打补丁后全都干净",
+ "ok": "正常", "nan": "NaN ×{n}"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  var kctx = function (n) { return fmt(S.ctxK, { n: n / 1024 }); };
+  /* one hue, lightness carrying the ratio: the reading is "how much", and a
+     rainbow would invite a category reading of a continuous quantity */
+  function heat(v, lo, hi) {
+    var t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+    return "color-mix(in srgb, var(--s3) " + (14 + t * 72).toFixed(1) + "%, transparent)";
+  }
+
+  /* ---------- Figure 1: the grid ---------- */
+  (function () {
+    var box = document.getElementById("grid"), vbox = document.getElementById("v1");
+    var idx = 0;
+    var all = [];
+    F.fig1.versions.forEach(function (v) {
+      v.rows.forEach(function (r) { r.cells.forEach(function (c) { all.push(c.ratio); }); });
+    });
+    var lo = 1.0, hi = Math.max.apply(null, all);
+    function draw() {
+      var V = F.fig1.versions[idx];
+      box.innerHTML = "";
+      el(box, "hd", S.shape);
+      el(box, "hd", "");
+      F.fig1.ctxs.forEach(function (c) { el(box, "hd", kctx(c)); });
+      V.rows.forEach(function (r) {
+        el(box, "rh", r.shape);
+        el(box, "gate " + (r.admitted ? "in" : "out"),
+           (r.admitted ? S.gateIn : S.gateOut) + " · gqa " + r.gqa);
+        r.cells.forEach(function (c) {
+          var d = el(box, "cell" + (r.admitted ? "" : " out"),
+                     c.ratio.toFixed(2) + "×");
+          d.style.background = heat(c.ratio, lo, hi);
+          hover(d, '<span class="hd">' + r.shape + " · " + kctx(c.ctx) + "</span><br>" +
+            (r.admitted ? S.gateIn : S.gateOut) + "<br>" +
+            fmt(S.cellTip, { t: c.triton_ms.toFixed(3), c: c.ck_ms.toFixed(3) }));
+        });
+      });
+      var sc = document.getElementById("scale");
+      sc.innerHTML = "";
+      el(sc, "", S.scaleLow);
+      var ramp = el(sc, "ramp");
+      ramp.style.background = "linear-gradient(90deg," + heat(lo, lo, hi) + "," +
+        heat(hi, lo, hi) + ")";
+      el(sc, "", fmt(S.scaleHigh, { n: hi.toFixed(1) }));
+      el(sc, "", "· " + S.scaleLabel);
+      document.getElementById("gridnote").textContent = fmt(S.gridNote, {
+        n: F.fig1.never_slower, t: F.fig1.cells,
+        el: V.excluded_band[0].toFixed(2), eh: V.excluded_band[1].toFixed(2),
+        al: V.admitted_band[0].toFixed(2), ah: V.admitted_band[1].toFixed(2) });
+    }
+    [[S.v023, 0], [S.v027, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (i === idx ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        idx = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- Figure 2: the accuracy band ---------- */
+  (function () {
+    var box = document.getElementById("band"), vbox = document.getElementById("v2");
+    var NAMES = { rocm_triton: S.sTriton, rocm_ck: S.sCk, a100_triton: S.sA100 };
+    var COL = { rocm_triton: "--s2", rocm_ck: "--s1", a100_triton: "--s3" };
+    var lo = F.fig2.band[0] * 0.92, hi = F.fig2.band[1] * 1.04;
+    var X = F.fig2.series[0].points.map(function (p) { return p.ctx; });
+    var y = function (v) { return (1 - (v - lo) / (hi - lo)) * 100; };
+    var zone = el(box, "zone");
+    zone.style.top = y(F.fig2.band[1]) + "%";
+    zone.style.height = (y(F.fig2.band[0]) - y(F.fig2.band[1])) + "%";
+    // the band's own edges are the only scale this chart needs, and without
+    // them the reader has no idea what "flat" is flat against
+    [[F.fig2.band[1], "top"], [F.fig2.band[0], "bottom"]].forEach(function (e) {
+      var l = el(box, "yl", e[0].toExponential(2));
+      l.style.top = "calc(" + y(e[0]) + "% - .6em)";
+    });
+    X.forEach(function (c, i) {
+      var lab = el(box, "xl", kctx(c));
+      lab.style.left = (i / (X.length - 1) * 100) + "%";
+    });
+    F.fig2.series.forEach(function (s) {
+      s.points.forEach(function (p, i) {
+        var d = el(box, "pt");
+        d.style.left = (i / (X.length - 1) * 100) + "%";
+        d.style.bottom = (100 - y(p.rel)) + "%";
+        d.style.background = "var(" + COL[s.id] + ")";
+        hover(d, '<span class="hd">' + NAMES[s.id] + "</span><br>" + kctx(p.ctx) +
+          " · <b>" + p.rel.toExponential(2) + "</b>");
+      });
+      var b = document.createElement("span");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(" + COL[s.id] + ")");
+      b.style.cursor = "default";
+      b.innerHTML = '<span class="sw"></span>' + NAMES[s.id];
+      vbox.appendChild(b);
+    });
+    document.getElementById("bandnote").textContent = fmt(S.bandNote, {
+      n: F.fig2.cells, lo: F.fig2.band[0].toExponential(2),
+      hi: F.fig2.band[1].toExponential(2), s: F.fig2.context_span,
+      m: F.fig2.context_move.toFixed(2),
+      w: F.fig2.context_worst_ratio.toFixed(2),
+      bs: F.fig2.bucket_span.toFixed(0), bm: F.fig2.bucket_move.toFixed(2) });
+
+    var ct = document.getElementById("control");
+    S.ctrlH.forEach(function (h) { el(ct, "h k", h); });
+    var FILL = { nan: S.ctrlNan, zeros: S.ctrlZeros, "garbage_1e4": S.ctrlGarbage };
+    F.fig2.control.cases.forEach(function (c) {
+      el(ct, "k", FILL[c.fill] || c.fill);
+      el(ct, "k", c.ctx.toLocaleString());
+      el(ct, "k", String(c.tail));
+      el(ct, "k", c.aligned ? S.ctrlYes : S.ctrlNo);
+      el(ct, "v " + (c.triton_finite ? "ok" : "bad"),
+         c.triton_finite ? S.ctrlFinite : S.ctrlPoison);
+      el(ct, "v " + (c.ck_finite ? "ok" : "bad"),
+         c.ck_finite ? S.ctrlFinite : S.ctrlPoison);
+    });
+  })();
+
+  /* ---------- Figure 3: end to end ---------- */
+  (function () {
+    var box = document.getElementById("e2e");
+    var RUNS = [["023", S.run023], ["027A", S.run027A], ["027B", S.run027B]];
+    var max = 0;
+    RUNS.forEach(function (k) {
+      F.fig3.depths.forEach(function (c) {
+        var r = F.fig3.runs[k[0]][c];
+        max = Math.max(max, r.stock, r.widened);
+      });
+    });
+    F.fig3.depths.forEach(function (c) {
+      el(box, "grp", kctx(c) + ' <span class="tagline">· pooled ' +
+         F.fig3.pooled_027[c].toFixed(3) + "×</span>");
+      RUNS.forEach(function (k) {
+        var r = F.fig3.runs[k[0]][c];
+        el(box, "lab rv", k[1]);
+        var tr = el(box, "track rv");
+        tr.style.position = "relative";
+        var a = document.createElement("span");
+        a.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:0;" +
+          "background:var(--s2);transition:width 1s cubic-bezier(.22,1,.36,1)";
+        var b = document.createElement("span");
+        b.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:0;" +
+          "background:var(--s3);opacity:.55;" +
+          "transition:width 1s cubic-bezier(.22,1,.36,1)";
+        tr.appendChild(b); tr.appendChild(a);
+        if (reduce) {
+          a.style.width = r.stock / max * 100 + "%";
+          b.style.width = r.widened / max * 100 + "%";
+        } else {
+          requestAnimationFrame(function () {
+            a.style.width = r.stock / max * 100 + "%";
+            b.style.width = r.widened / max * 100 + "%";
+          });
+        }
+        el(box, "val rv", r.ratio.toFixed(3) + "×");
+        hover(tr, '<span class="hd">' + k[1] + " · " + kctx(c) + "</span><br>" +
+          S.stock + " <b>" + r.stock.toFixed(2) + "</b> tok/s<br>" +
+          S.widened + " <b>" + r.widened.toFixed(2) + "</b> tok/s");
+      });
+    });
+    var u = el(box, "barunit", "");
+    u.style.gridColumn = "1 / -1";
+    u.innerHTML = '<span class="swatch" style="background:var(--s2)"></span>' + S.stock +
+      ' &nbsp; <span class="swatch" style="background:var(--s3)"></span>' + S.widened +
+      " · " + S.e2eUnit;
+    var n = el(box, "barunit", fmt(S.e2eNote, {
+      s: F.fig3.worst_pass_spread_pct.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- Figure 4: the fault and the fix ---------- */
+  (function () {
+    var box = document.getElementById("counts");
+    [[F.fig4.poisoned_stock, S.cntPoisoned, "bad"],
+     [F.fig4.fixed, S.cntFixed, "good"],
+     [F.fig4.newly_broken, S.cntBroken, "good"],
+     [F.fig4.ck_ran + " / " + F.fig4.ck_expected, S.cntCk, ""]].forEach(function (c) {
+      var d = el(box, "cnt " + c[2]);
+      el(d, "n", String(c[0]));
+      el(d, "l", c[1]);
+    });
+    var ft = document.getElementById("faults");
+    S.faultH.forEach(function (h) { el(ft, "h k", h); });
+    F.fig4.cells.filter(function (c) { return !c.stock_ok; }).forEach(function (c) {
+      el(ft, "k", c.dtype);
+      el(ft, "k", String(c.gqa));
+      el(ft, "k", c.poison);
+      el(ft, "k", c.ctx.toLocaleString() + " (+" + c.tail + ")");
+      el(ft, "v bad", fmt(S.nan, { n: c.ctx }));
+      el(ft, "v ok", S.ok);
+    });
+    document.getElementById("faultnote").textContent = fmt(S.faultNote, {
+      f: F.fig4.poisoned_forced, a: F.fig4.poisoned_stock });
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

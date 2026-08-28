@@ -68,6 +68,7 @@ M_EN, M_ZH = "moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"
 L_EN, L_ZH = "weight-loading-19x.html", "weight-loading-19x.zh.html"
 S_EN, S_ZH = "speculative-decoding-net-loss.html", "speculative-decoding-net-loss.zh.html"
 A_EN, A_ZH = "a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"
+Q_EN, Q_ZH = "gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -183,7 +184,30 @@ if (D / "a100-body-zh.html").exists():
                            "而两端都关于张量并行，不关于硅片本身。",
                       out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
 
+built.append(page("gqa-body.html", lang="en", figures="figures-gqa.json",
+                  extra_css="gqa-extra.css",
+                  title="A gate that costs 2 to 7 times and buys nothing",
+                  desc="vLLM's ROCm custom paged attention is gated off below gqa_ratio 3 on gfx11. "
+                       "In the excluded range it is 1.70x to 7.28x faster than the fallback, in every "
+                       "one of sixty measured cells.",
+                  out="articles/" + Q_EN, nav=lang_nav("en", Q_EN, Q_ZH), labels=EN_LABELS))
+if (D / "gqa-body-zh.html").exists():
+    built.append(page("gqa-body-zh.html", lang="zh-CN", figures="figures-gqa.json",
+                      extra_css="gqa-extra.css", script_from="gqa-body.html",
+                      title="一道 2–7 倍的门，什么也没换来",
+                      desc="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 "
+                           "gqa_ratio 3 这道门挡在外面。而在被排除的区间里，"
+                           "它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。",
+                      out="articles/" + Q_ZH, nav=lang_nav("zh", Q_EN, Q_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + Q_EN, "title": "A gate that costs 2 to 7 times and buys nothing",
+     "blurb": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is "
+              "a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and "
+              "the excluded band overlaps the admitted one on both.",
+     "measured": "measured 2026-08-28",
+     "langs": ["EN", "\u4e2d"] if (D / "gqa-body-zh.html").exists() else ["EN"],
+     "tags": ["paged attention", "gqa_ratio", "vllm#54210"]},
     {"href": "articles/" + A_EN, "title": "Two consumer Radeons against one A100",
      "blurb": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, "
               "1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about "
@@ -272,7 +296,7 @@ for p in built:
     assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
-                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH)):
+                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

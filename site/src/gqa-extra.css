@@ -1,0 +1,72 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #e2e { --labw:132px; }
+  @media (max-width:480px){ #e2e { --labw:104px; } }
+
+  /* ---- the sixty-cell grid ---- */
+  /* the argument is that no cell is an exception, so every cell has to be on
+     the page rather than summarised into a range */
+  .gridwrap { overflow-x:auto; }
+  .cgrid { display:grid; grid-template-columns:max-content max-content repeat(6, 1fr);
+           gap:.3em; min-width:470px; }
+  .cgrid .hd { font-family:var(--mono); font-size:.68rem; color:var(--text-dim);
+               text-align:center; padding-bottom:.2em; align-self:end; }
+  .cgrid .rh { font-family:var(--mono); font-size:.73rem; color:var(--text-2);
+               align-self:center; white-space:nowrap; }
+  .cgrid .gate { font-family:var(--mono); font-size:.64rem; align-self:center;
+                 white-space:nowrap; padding:.1em .45em; border-radius:99px;
+                 border:1px solid var(--border); color:var(--text-dim); }
+  .cgrid .gate.out { color:var(--red);
+                     border-color:color-mix(in srgb, var(--red) 40%, transparent); }
+  .cgrid .gate.in { color:var(--green);
+                    border-color:color-mix(in srgb, var(--green) 40%, transparent); }
+  .cell { border-radius:6px; padding:.5em .2em; text-align:center;
+          font-family:var(--mono); font-size:.7rem; font-weight:700;
+          color:var(--text); cursor:default;
+          transition:transform .18s; }
+  .cell:hover { transform:scale(1.06); }
+  .cell.out { outline:1px solid color-mix(in srgb, var(--red) 28%, transparent); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+  .scale { display:flex; align-items:center; gap:.5em; margin-top:1em;
+           font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .scale .ramp { flex:1; height:10px; border-radius:99px; }
+
+  /* ---- the accuracy band ---- */
+  .band { position:relative; height:120px; margin:.4em 0 .2em;
+          border-left:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .band .zone { position:absolute; left:0; right:0; background:var(--surface-3);
+                border-top:1px dashed var(--border-2);
+                border-bottom:1px dashed var(--border-2); }
+  .band .pt { position:absolute; width:9px; height:9px; border-radius:99px;
+              transform:translate(-50%, 50%); cursor:default; }
+  .band .yl { position:absolute; right:calc(100% + .5em); white-space:nowrap;
+              font-family:var(--mono); font-size:.64rem; color:var(--text-dim); }
+  .band .xl { position:absolute; bottom:-1.35em; transform:translateX(-50%);
+              font-family:var(--mono); font-size:.66rem; color:var(--text-dim); }
+  .bandwrap { padding:.2em 1.4em 1.9em 4.4em; }
+
+  /* ---- the two-arm fault table ---- */
+  .fault { display:grid; grid-template-columns:repeat(4, max-content) 1fr 1fr;
+           column-gap:.9em; align-items:center; font-size:.84rem; margin-top:.5em; }
+  .fault > div { padding:.4em 0; border-bottom:1px solid var(--border); }
+  .fault > div:nth-last-child(-n+6) { border-bottom:0; }
+  .fault .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+              text-transform:uppercase; color:var(--text-dim);
+              border-bottom:1px solid var(--border-2); }
+  .fault .k { font-family:var(--mono); font-size:.74rem; color:var(--text-2); }
+  .fault .v { font-family:var(--mono); font-size:.74rem; }
+  .fault .v.bad { color:var(--red); font-weight:700; }
+  .fault .v.ok { color:var(--green); }
+  @media (max-width:560px){ .fault { font-size:.78rem; column-gap:.5em; } }
+
+  .counts { display:grid; grid-template-columns:repeat(4, 1fr); gap:.7em; margin:1.2em 0 0; }
+  .cnt { border:1px solid var(--border); border-radius:10px; padding:.75em .5em;
+         text-align:center; background:var(--surface-2); }
+  .cnt .n { font-family:var(--mono); font-size:1.35rem; font-weight:800; color:var(--text); }
+  .cnt .l { font-family:var(--mono); font-size:.65rem; color:var(--text-dim);
+            line-height:1.35; margin-top:.2em; }
+  .cnt.bad .n { color:var(--red); } .cnt.good .n { color:var(--green); }
+  @media (max-width:520px){ .counts { grid-template-columns:repeat(2, 1fr); } }
