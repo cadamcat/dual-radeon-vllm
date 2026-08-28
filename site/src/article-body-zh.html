@@ -1,0 +1,297 @@
+
+<header class="top">
+  <div class="kicker">RDNA3 · vLLM · 实测于 2× RX 7900 XT</div>
+  <h1>一个上下文越长<br>解码越慢的混合 SSM 模型</h1>
+  <p class="lede">线性注意力本该让长上下文变便宜。在这台机器上，<code>Qwen3.6-27B</code> 从 500 token 到 32 000 token
+  由 12.1 掉到 4.2 tok/s，而同一个下午测的稠密 8B 保住了 77 % 的短上下文速率。问题不在那 48 层线性注意力。
+  在剩下的 16 层。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">vLLM <b>0.23.1.dev1</b> · ROCm 7.14</span>
+    <span class="chip">VFIO 直通 · <b>无 P2P</b> · 跨 die PCIe 3.0</span>
+    <span class="chip">campaign <b>2026-07-25</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>一个混合 Mamba / gated-delta-net 检查点，在 500 到 32 000 token 之间<strong>丢掉 65 % 的解码速率</strong>，
+  曲线比同一台机器同一场 campaign 里任何稠密模型都陡四到四十倍。</p>
+  <p>kernel 级 profile 把这段增长几乎全部指向一处：<code>kernel_paged_attention_2d</code>，
+  服务该模型 16 个全注意力层的 Triton 回退路径，单次调用成本涨 28.3 倍，而这一步里其余 kernel 全都持平或更便宜。
+  线性注意力层交付了架构承诺的东西。</p>
+  <p>之所以走回退，是因为 ROCm 的自定义 paged-attention kernel 对这个模型在三个条件上都够不到；
+  之所以<em>在这个模型上</em>特别慢，是因为 batch=1 时只有 4 个 KV head，kernel 几乎没有可并行的东西。
+  两条独立信号一致：单卡功耗随深度<em>下降</em>，而按读取的 KV 字节数归一化后差距不是缩小而是拉大。</p>
+  <p>同一台机器同一天，同一个检查点在 llama.cpp 下的斜率浅 28 倍，这排除了驱动和硬件。
+  上游修复存在，这里测了两次，最近一次是 vLLM 0.27 上的受控 A/B：<strong>32 K 处 9.46 倍</strong>。
+  该 A/B 有一格是双峰的，文中如实报告。</p>
+</div>
+
+<h2><span class="n">1</span>测了什么，怎么测的</h2>
+
+<p>第 2 节的全部数据来自同一场 campaign：一套软件栈、一个下午、所有模型都钉在上面。
+五个架构、十一个上下文长度，292 次解码与预填充测量。每格由 <code>vllm serve</code> 提供服务，
+TP=2、开启 CUDA graph、<code>--gpu-memory-utilization 0.85</code>、512 token 输出，取两轮的均值。</p>
+
+<p>速率报的是它自己那几轮的极差，而不是标准差。每格只有二到四轮，标准差给出的精度超过样本能支撑的程度；
+极差占均值的比例说的是同一件事，又不必假定一个分布。图 1 每个点都带着它的轮数和这个极差，悬停可见。</p>
+
+<div class="note">
+  <span class="lbl">关于绝对值怎么读</span>
+  这是一台 VFIO 直通的虚拟机，两卡之间没有 P2P，走跨 die 的 PCIe 3.0，是刻意选的最不利拓扑。
+  本文里的<em>形状</em>可以迁移；绝对速率是下界，不是这套硬件的性能标定。
+</div>
+
+<h2><span class="n">2</span>观察到的现象</h2>
+
+<p>五个架构、十一个深度、一场 campaign。其中四个随上下文平缓下降，这是 KV cache 决定的、躲不掉的。
+第五个不是这样。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 解码速率对上下文长度 <span class="prov yes">可从仓库重算</span></div>
+    <div class="hint">点击模型名增减曲线 · 悬停数据点查看轮数与极差</div>
+    <div class="legend" id="view1"></div>
+    <div class="legend" id="lg1"></div>
+    <svg class="chart" id="c1" viewBox="0 0 760 400" role="img" aria-label="五个模型架构的解码速率随上下文长度变化"></svg>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 解码 tok/s 对上下文长度，2026-07-25 campaign，TP=2，未打补丁的 vLLM 0.23.1.dev1。
+    默认亮起两条：<code>Qwen3.6-27B</code>，本文讨论的混合 SSM 检查点；<code>Qwen3-8B</code>，稠密对照。
+    另外三条点一下就出来。从 500 到 32 000 token 的保留率：8B <b>77.2 %</b>、12B <b>69.9 %</b>、
+    26B MoE <b>67.5 %</b>、31B <b>68.4 %</b>、混合 SSM <b>35.1 %</b>。
+    数据来源：<code>benchmarks/ledger.jsonl</code>。
+  </figcaption>
+</figure>
+
+<p>混合模型在每个深度上都是绝对值最慢的——按参数量本不该如此——而且它是唯一一条向下弯而不是趋平的曲线。
+保留率是更干净的统计量：其余每个配置在 32 000 token 处都保住了短上下文速率的 67 % 到 78 %，
+这一个只保住 <strong>35.1 %</strong>。</p>
+
+<p>换成斜率，也就是每多一个 token 上下文所增加的解码微秒数：混合模型 <strong>4.84 µs</strong>，
+稠密 8B <strong>0.118 µs</strong>。相差 41 倍，本文余下部分就是关于这个数字的。</p>
+
+<h2><span class="n">3</span>归因：是一个 kernel，不是这个架构</h2>
+
+<p>在两个深度上各做一次 torch profile，保持 CUDA graph 开启，并把 kernel 调用归属到它所落入的那个引擎步窗口，
+以免 chunked prefill 的调用混进解码数字里。</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 单次调用 GPU 时间，1 K 对 32 K <span class="prov no">原始 trace 未入库</span></div>
+    <div class="bars" id="bars2" style="--labw:210px"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> rank 0 上的单次调用 GPU 时间，对数刻度。两个深度的调用次数完全相同——
+    线性注意力 kernel 528 次（48 层 × 11 步），paged attention 176 次（16 × 11）——
+    所以这是单次调用变贵，不是发出了更多工作。与本文其他图不同，这份 profile 的原始输出
+    <b>不在</b>仓库里；这四行是从写作稿转录的，无法从已提交数据重算。
+  </figcaption>
+</figure>
+
+<p>48 个 gated-delta-net 层在 32 K 处和 1 K 处一样贵——0.95 倍——这正是线性注意力承诺的，也是这份实现交付的。
+量化 GEMM 同样持平。只有一个 kernel 动了，而且动了 <strong>28.3 倍</strong>。</p>
+
+<p>算术是闭合的。按每步 16 次调用，paged attention 从 5.71 ms/步涨到 161.5 ms/步，多 155.8 ms。
+而解码步本身，从 CUDA graph 回放测得，从 85.85 ms 涨到 236.9 ms，多 151 ms。
+<strong>paged attention 的增长解释了全部解码变慢</strong>；其余每个 kernel 在更长上下文下都持平或更快。</p>
+
+<h2><span class="n">4</span>为什么会走回退路径</h2>
+
+<p>那 16 个全注意力层落到 Triton 上，是因为 ROCm 的自定义 paged-attention kernel 拒绝了它们。
+<code>vllm/platforms/rocm.py</code> 里 <code>use_rocm_custom_paged_attention</code> 的 RDNA 分支要求
+（除其他条件外）<code>head_size == 128</code> 且 <code>block_size == 16</code>。</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">use_rocm_custom_paged_attention · 反事实调用</span></div>
+<pre><span class="c"># 在运行中的引擎上测出来的，不是从 config 里读的</span>
+head_dim                = <span class="r">256</span>       <span class="c"># gate 要 128</span>
+cache_config.block_size = <span class="r">784</span>       <span class="c"># = 16 x 49，gate 要 16</span>
+is_pow2(784)            = <span class="r">False</span>     <span class="c"># 在它自己那条路径上就否掉 use_custom</span>
+gqa_ratio               = <span class="g">6</span>         <span class="c"># 这一条是过的</span>
+
+<span class="c"># 单独放宽任何一个不满足的条件，仍然不够</span>
+use_rocm_custom_paged_attention(head_size=<span class="k">128</span>)   -> <span class="r">False</span>
+use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span class="r">False</span>
+</pre></div>
+
+<p><strong>没有任何单一条件是那个阻塞点。</strong>单独放宽其中一个，gate 依然关着；
+而 <code>chunked_prefill_paged_decode.py</code> 还会独立地在 <code>is_pow2</code> 上否掉 <code>use_custom</code>。
+自定义 kernel 在这里三重不可达——这就是为什么把回退路径改快是对这一类模型唯一管用的办法。</p>
+
+<div class="note warn">
+  <span class="lbl">最容易想到的那个修法不成立</span>
+  放宽 <code>head_size</code> 检查只是把失败挪个地方，不是移除它。
+  <code>csrc/rocm/attention.cu</code> 里的 <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> 只分发
+  <code>case 64</code> 和 <code>case 128</code>，其余一律 <code>TORCH_CHECK</code>。
+  这个条件是 kernel 的实际能力边界，不是保守的门槛。
+</div>
+
+<h2><span class="n">5</span>为什么回退路径<em>在这个模型上</em>特别慢</h2>
+
+<p>同一台机器上的稠密模型也走同一条 Triton 路径，却不会这样退化。差别在于 batch 为 1 的解码阶段，
+kernel 手里有多少可并行的东西。</p>
+
+<div class="tbl"><table>
+  <thead><tr><th>模型</th><th class="n">KV heads</th><th class="n">query heads</th><th class="n">GQA</th><th class="n">每 token 上下文的微秒数</th></tr></thead>
+  <tbody>
+    <tr><td>Qwen3-8B，BF16 稠密</td><td class="n">8</td><td class="n">32</td><td class="n">4:1</td><td class="n">0.118</td></tr>
+    <tr><td>gemma-4-31B，w4a16 稠密</td><td class="n">16</td><td class="n">32</td><td class="n">2:1</td><td class="n">0.339</td></tr>
+    <tr><td><strong>Qwen3.6-27B，混合</strong></td><td class="n"><strong>4</strong></td><td class="n">24</td><td class="n">6:1</td><td class="n"><strong>4.840</strong></td></tr>
+  </tbody>
+</table></div>
+
+<p>4 个 KV head、batch 为 1，能铺到这张卡 84 个 CU 上的东西非常少。两条独立信号都指向占用率而不是工作量：</p>
+
+<h3>功耗随上下文增长而下降</h3>
+<p>518 token 时是 265 W + 265 W，24 K 时是 232 W + 227 W。这轮 sweep 里没有别的模型会随深度掉功耗；
+其余模型都是往 265 W 爬然后停在那儿，只有这一个会掉回来。起始值本来就不同——518 token 时 8B 在 245 W、
+12B 在 206 W、26B MoE 在 193 W——所以有意义的对比是方向，不是水平。是硅片在空转，不是在饱和。</p>
+
+<h3>按 KV 流量归一化后差距更大</h3>
+<p>64 层里只有 16 层带 KV cache，而且 GQA 比例激进，所以这个模型读的 KV 是三者中<em>最少</em>的：
+每 token 64 KiB，对 Qwen3-8B 的 144 KiB 和 gemma-4-31B 的 160 KiB。按每 KiB 读取量算，
+它是 Qwen3-8B 的 <strong>92 倍</strong>、gemma-4-31B 的 <strong>36 倍</strong>。
+所以不可能是"这个模型本来就更重"。</p>
+
+<h2><span class="n">6</span>对照：同一个模型换一个引擎</h2>
+
+<p>同一台机器、同一天、同一个检查点家族，只换推理引擎。如果崩溃来自驱动、GPU 或者拓扑，这里也该出现。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 解码斜率，每 token 上下文的微秒数 <span class="prov yes">可从仓库重算</span></div>
+    <div class="bars" id="bars3" style="--labw:158px"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 越低越平。阴影区间是这台机器上稠密模型在 vLLM 下产生的范围，0.118 到 0.339 µs。
+    llama.cpp 跑的是 Q4_K_M 而 vLLM 跑的是 AWQ-INT4，所以跨引擎的绝对吞吐不可比，只有斜率可比。
+    ROCm 后端用的是与 vLLM 相同的 userspace。数据来源：
+    <code>benchmarks/llamacpp-depth-sweep-{rocm,vulkan}.json</code>、<code>benchmarks/results.jsonl</code>。
+  </figcaption>
+</figure>
+
+<p>llama.cpp 的斜率落在稠密模型在 vLLM 下产生的那个区间<em>之内</em>。
+于是有两个独立来源对"这台硬件上正常的斜率长什么样"给出了一致答案，而这一个配置比它高出一个数量级。</p>
+
+<div class="note">
+  <span class="lbl">一个受扰动的点，说明而不是删掉</span>
+  ROCm 的 16 384 那一点测出 21.35 tok/s，标准差 2.635，而其余各点都在 0.06–0.09；
+  而且更深的 24 576 反而更快。那一次测量受了扰动，不该单独拿来读。
+  它留在图里，是因为悄悄拿掉不方便的点比展示一个更糟。
+</div>
+
+<p>与此同时，预填充的表现正如架构所承诺：吞吐随长度<em>上升</em>，从 500 到 32 K 是 805 → 880 tok/s，
+而稠密模型在同一区间掉 8–44 %。反转的是解码。</p>
+
+<h2><span class="n">7</span>修复，测了两次</h2>
+
+<p>上游修复是 <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a>，
+它给 Triton 回退路径加了一个 split-KV 解码 kernel：不再是每个 (序列, KV head) 一个 workgroup 走完整个上下文，
+而是把 KV 区间切开分给更多 workgroup，之后再归约。这恰好是这个模型缺的那种并行度。</p>
+
+<p>这里先在 7 月的 vLLM 0.23.1 上验证过一次——32 K 处 2.52 倍，单次差分、两侧深度略有不同——
+然后做了正式的一次：0.27 镜像上的受控 A/B，两臂同栈同 harness，每格一个全新容器，只换那一个 kernel 文件，
+跑两遍并把两臂顺序颠倒。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · vLLM 0.27 上的受控 A/B <span class="prov yes">可从仓库重算</span></div>
+    <div class="hint">点击柱组在速率与每 token 毫秒之间切换</div>
+    <div class="bars" id="ab4" style="--labw:128px"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>，TP=2，vLLM 0.27.1.dev5，离线 64-vs-8 差分。
+    <b>与图 1 是不同的模型、不同的栈</b>——见下方的限定。路由是从 TP worker 内部记录的，不是推断的：
+    两个 rank、每个深度、两轮都读到 <code>(head_size 256, sliding_window 0, use_splitkv True)</code>；
+    两个文件的 md5 在运行时断言，所以某一臂如果没换成功会中止而不是把另一臂测两遍。
+    数据来源：<code>benchmarks/hybrid-splitkv-027/</code>。
+  </figcaption>
+</figure>
+
+<p>两轮合并后：<strong>1 K 处 1.38 倍，8 K 处 3.52 倍，32 K 处 9.46 倍</strong>。
+32 K 处解码从每 token 261.9 ms 降到 27.7 ms，斜率从 7.408 降到
+<strong>每 1 000 token 上下文 0.262 ms</strong>，1 K 到 32 K 的保留率从 10.2 % 升到 70.0 %。崩溃消失了。</p>
+
+<h2><span class="n">8</span>没有被确立的部分</h2>
+
+<p>四条。因为一个只列自己成功之处的结果，不算测量。</p>
+
+<h3>A/B 有一格是双峰的</h3>
+<p>8 192 token 处，打了补丁的那一臂四轮给出 47.02、40.14、47.58、42.41 tok/s。排序之后，
+相邻值之间的最大间隔大于总极差的一半，而且落在中间：这是<strong>相距约 15 % 的两个模态</strong>，
+不是一个有噪声的数。加跑第三、第四轮让极差<em>变宽</em>了，从 15.8 % 到 16.8 %，不是收窄。
+它不是 split-count 启发式——那是一个对配置固定住的输入而言的纯函数。机理没有被确立。
+上面引的 3.52 倍是四轮的均值，它描述的是两个簇里的任何一个都不是。</p>
+
+<h3>图 4 是另一个模型、另一套栈</h3>
+<p>图 1 是 0.23.1 上的 <code>Qwen3.6-27B</code>，图 4 是 0.27 上的 <code>Qwen3.8-27B</code>。
+在新栈上这个检查点还会选到不同的 W4A16 线性 kernel，光那一项就值大约 3 倍，与注意力无关。
+<strong>两张图的绝对水平不可比</strong>；可比的是比值和形状。</p>
+
+<h3>一台机器</h3>
+<p>单机、单一厂商、全程 batch 为 1。占用率那套解释预测：batch 增大时崩溃应当减轻。这一点这里没有测。</p>
+
+<h3>这个修复没修掉的东西</h3>
+<p>paged attention 从解码步的约 68 % 降到 11 %。剩下的由量化 GEMM 主导，在短上下文时约占一个解码步的 77 %。
+被解决的是<em>斜率</em>；基线是另一个问题，有另一个答案。</p>
+
+<h2><span class="n">9</span>此后发生的变化</h2>
+
+<p>本文是一份带日期的记录，不是长期有效的建议。上面的测量之后，有两件事已经变了。</p>
+
+<div class="note ok">
+  <span class="lbl">2026-08-10 · gate 不再需要谁去放宽</span>
+  7 月那次验证在本地把 <code>on_gfx12x()</code> 放宽成 <code>on_gfx1x()</code>，好让 gfx11 够得到新 kernel。
+  那个改动已于 2026-08-10 合入 vllm#45916 自己的分支，所以这个 PR 如今按其现状就接纳 RDNA3，本地什么都不用做。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · 基线那个问题有答案了</span>
+  7 月的写作稿收在"斜率解决了，基线是另一个问题"。图 4 的 0.27 A/B 回答了它：
+  32 K 处该模型现在跑 36.1 tok/s，对最初 campaign 测到的 4.2；
+  而残余斜率落进了这台机器上稠密模型产生的区间之内，不再高出 27 %。
+</div>
+
+<div class="foot-note">
+  <p><strong>数据与复现。</strong>每一张标了 <span class="prov yes">可从仓库重算</span> 的图，
+  都由 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  对着它的来源文件校验；正文与数据不一致时它非零退出。
+  本文背后的完整章节，包括一开始搞错的部分，在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/hybrid-decode-on-rdna.md">docs/hybrid-decode-on-rdna.md</a>。
+  原始数据：<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl">ledger.jsonl</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/hybrid-splitkv-027">hybrid-splitkv-027</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">仓库</a>。</p>
+  <p>已作为 <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a> 上报。
+  修复是 @feiyehua 的 <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a>，
+  gfx11 放宽由 @thegoldenflow 贡献；本项工作提供的是 gfx1100 上的端到端验证和 0.27 的 A/B。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "ctxAxis": "上下文长度（token）",
+ "rateAxis": "解码 tok/s",
+ "retAxis": "保留率，占自身 500-token 速率的 %",
+ "viewRate": "解码 tok/s",
+ "viewRet": "保留率 %",
+ "tokens": "token",
+ "run": "轮", "runs": "轮",
+ "range": "极差",
+ "ungraded": "未定级",
+ "retSuffix": "% 保留",
+ "f2unit": "单次调用 GPU 时间，对数刻度 · rank 0",
+ "f3unit": "每 token 上下文所增加的解码微秒数 · 越低越平",
+ "f4stock": "未打补丁 0.27",
+ "f4patch": "打上 #45916",
+ "f4bimodal": "轮，极差 {r}% — 双峰，见第 8 节",
+ "f4showing": "当前显示：{x} · 点击切换",
+ "f4rate": "解码 tok/s", "f4ms": "每 token 毫秒",
+ "unitMs": " ms", "unitTok": " tok/s"
+}</script>
+__SCRIPT__
+</body>
+</html>

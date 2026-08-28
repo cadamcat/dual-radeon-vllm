@@ -1,0 +1,108 @@
+
+<header class="top">
+  <div class="kicker">dual-radeon-vllm · write-ups</div>
+  <h1>Two consumer Radeons,<br>measured</h1>
+  <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
+  (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
+  the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
+    <span class="chip"><a href="https://github.com/cadamcat/dual-radeon-vllm">repository</a></span>
+  </div>
+</header>
+
+<h2><span class="n">1</span>Articles</h2>
+
+<div class="cards" id="cards"></div>
+
+<h2><span class="n">2</span>How to read these</h2>
+
+<p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
+this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
+<code>7.0.0-30</code>, and a loader speed-up of 3.9× to 5.6× was withdrawn when page cache was properly
+controlled. Every article therefore closes with a section listing what has changed since, which is
+appended to rather than rewritten.</p>
+
+<p>Figures carry a provenance marker. <span class="prov yes">recomputable from repo</span> means
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+checks that value against its source file and fails non-zero if the two disagree — the same check that
+guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
+number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
+
+<p>The absolute rates are a floor rather than a benchmark of the hardware: this is a VFIO guest with no
+peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as the least favourable
+topology. The shapes transfer; the levels are the worst case.</p>
+
+<div class="foot-note">
+  <p>Source, raw data and the runners that produced it:
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">github.com/cadamcat/dual-radeon-vllm</a>.
+  Upstream reports and patches are linked from each article.</p>
+</div>
+</div>
+
+<script type="application/json" id="articles">__ARTICLES_JSON__</script>
+<script>
+(function () {
+  "use strict";
+  var A = JSON.parse(document.getElementById("articles").textContent);
+  var root = document.documentElement, KEY = "hssm-theme";
+  var btns = { auto: document.getElementById("th-auto"),
+               light: document.getElementById("th-light"),
+               dark: document.getElementById("th-dark") };
+  function paint(mode) {
+    if (mode === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mode);
+    for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+  }
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+  paint(stored === "light" || stored === "dark" ? stored : "auto");
+  // the bar is fixed, so it would sit on top of whatever scrolls under it
+  var bar = document.querySelector(".themebar"), last = window.scrollY;
+  addEventListener("scroll", function () {
+    var y = window.scrollY;
+    bar.classList.toggle("away", y > last && y > 220);
+    last = y;
+  }, { passive: true });
+  Object.keys(btns).forEach(function (k) {
+    btns[k].addEventListener("click", function () {
+      paint(k);
+      try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+      catch (e) { /* nothing to persist to */ }
+    });
+  });
+
+  var box = document.getElementById("cards");
+  A.articles.forEach(function (a, i) {
+    var el = document.createElement("a");
+    el.className = "card rv"; el.href = a.href;
+    el.innerHTML =
+      '<div class="card-date">' + a.measured + "</div>" +
+      "<h3>" + a.title + "</h3>" +
+      "<p>" + a.blurb + "</p>" +
+      '<div class="card-foot"><span class="card-tags">' +
+      a.tags.map(function (t) { return "<span>" + t + "</span>"; }).join("") +
+      '</span><span class="card-lang">' + a.langs.join(" · ") + "</span></div>";
+    box.appendChild(el);
+  });
+
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.15 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = (i * 70) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

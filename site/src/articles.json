@@ -1,0 +1,34 @@
+{
+ "articles": [
+  {
+   "href": "articles/rccl-atomics-hostcall.html",
+   "title": "The RCCL crash was never about RCCL",
+   "blurb": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",
+   "measured": "reported 2026-07-26",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "PCIe atomics",
+    "hostcall",
+    "ROCm#6520"
+   ]
+  },
+  {
+   "href": "articles/hybrid-ssm-collapse.html",
+   "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
+   "blurb": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
+   "measured": "measured 2026-07-25",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "hybrid SSM",
+    "paged attention",
+    "vllm#45916"
+   ]
+  }
+ ]
+}

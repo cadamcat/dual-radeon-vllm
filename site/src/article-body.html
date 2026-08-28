@@ -1,0 +1,620 @@
+
+<header class="top">
+  <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
+  <h1>A hybrid-SSM model that decodes<br>slower the longer you talk to it</h1>
+  <p class="lede">Linear attention is supposed to make long context cheap. On this machine
+  <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
+  dense 8B on the same afternoon keeps 77 % of its short-context rate. The 48 linear-attention
+  layers are not the problem. The 16 that are left are.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">vLLM <b>0.23.1.dev1</b> · ROCm 7.14</span>
+    <span class="chip">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
+    <span class="chip">campaign <b>2026-07-25</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>A hybrid Mamba/gated-delta-net checkpoint loses <strong>65 % of its decode rate</strong> between
+  500 and 32 000 tokens of context under vLLM on RDNA3, a curve four to forty times steeper than any
+  dense model measured on the same machine in the same campaign.</p>
+  <p>A kernel-level profile puts essentially all of the growth in one place: <code>kernel_paged_attention_2d</code>,
+  the Triton fallback serving the model's 16 full-attention layers, whose per-call cost grows 28.3× while
+  every other kernel in the step is flat or slightly cheaper. The linear-attention layers deliver what
+  the architecture promises.</p>
+  <p>The fallback is taken because the ROCm custom paged-attention kernel is unreachable for this model
+  three conditions over, and it is slow <em>on this model in particular</em> because 4 KV heads at batch 1
+  leave the kernel almost nothing to parallelise over. Two independent signals agree: per-card power
+  <em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than narrower.</p>
+  <p>The same checkpoint under llama.cpp on the same machine and the same day holds a slope 28× shallower,
+  which rules out the driver and the hardware. An upstream fix exists and is measured here twice, most
+  recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>. One cell of that A/B is
+  bimodal and is reported as such.</p>
+</div>
+
+<h2><span class="n">1</span>What was measured, and how</h2>
+
+<p>Everything in §2 comes from one campaign: one software stack, one afternoon, every model pinned to it.
+292 decode and prefill measurements across five architectures and eleven context lengths. Each cell is
+served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
+512-token outputs, and is the mean of two rounds.</p>
+
+<p>Rates are reported with the spread of their own rounds rather than a standard deviation. At two to four
+rounds per cell a standard deviation is a number with more precision than the sample supports; the range
+as a fraction of the mean says the same thing without implying a distribution. Every point in Figure 1
+carries its round count and that range, visible on hover.</p>
+
+<div class="note">
+  <span class="lbl">On reading the absolute values</span>
+  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen
+  deliberately as the least favourable topology. The <em>shapes</em> in this article transfer; the absolute
+  rates are a floor, not a benchmark of the hardware.
+</div>
+
+<h2><span class="n">2</span>The observation</h2>
+
+<p>Five architectures, eleven depths, one campaign. Four of the five decline gently with context in the way
+a KV cache makes inevitable. The fifth does something else.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · decode rate against context <span class="prov yes">recomputable from repo</span></div>
+    <div class="hint">click a model to add or remove its line · hover a point for round count and spread</div>
+    <div class="legend" id="view1"></div>
+    <div class="legend" id="lg1"></div>
+    <svg class="chart" id="c1" viewBox="0 0 760 400" role="img" aria-label="Decode rate against context length for five model architectures"></svg>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode tok/s against context length, 2026-07-25 campaign, TP=2, stock vLLM 0.23.1.dev1.
+    Two lines are lit by default: <code>Qwen3.6-27B</code>, the hybrid-SSM checkpoint this article is about,
+    and <code>Qwen3-8B</code>, the dense control. The other three are one click away. Retention from 500 to
+    32 000 tokens: 8B <b>77.2 %</b>, 12B <b>69.9 %</b>, 26B MoE <b>67.5 %</b>, 31B <b>68.4 %</b>,
+    hybrid-SSM <b>35.1 %</b>. Source: <code>benchmarks/ledger.jsonl</code>.
+  </figcaption>
+</figure>
+
+<p>The hybrid model is the slowest in absolute terms at every depth, which by parameter count it should not
+be, and it is also the only one whose curve bends downward instead of flattening. Retention is the cleaner
+statistic: every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
+This one keeps <strong>35.1 %</strong>.</p>
+
+<p>Expressed as a slope — decode microseconds added per token of context — the campaign gives
+<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. That is a
+factor of 41, and it is the number the rest of this article is about.</p>
+
+<h2><span class="n">3</span>Attribution: one kernel, not the architecture</h2>
+
+<p>A torch profile at two depths, with CUDA graphs left on and kernel calls attributed to the engine step
+whose window they fall in, so that chunked-prefill calls are not mixed into the decode figures.</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · per-call GPU time, 1 K against 32 K <span class="prov no">raw trace not committed</span></div>
+    <div class="bars" id="bars2" style="--labw:210px"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Per-call GPU time on rank 0, logarithmic. Call counts are identical at the two
+    depths — 528 for the linear-attention kernels (48 layers × 11 steps), 176 for paged attention
+    (16 × 11) — so these are per-call costs, not more work being issued. Unlike the other figures here,
+    the raw profile output is <b>not</b> in the repository; these four rows are transcribed from the
+    write-up and cannot be recomputed from committed data.
+  </figcaption>
+</figure>
+
+<p>The 48 gated-delta-net layers cost the same at 32 K as at 1 K — 0.95× — which is what linear attention
+promises and what this implementation delivers. The quantised GEMM is likewise flat. One kernel moves, and
+it moves by <strong>28.3×</strong>.</p>
+
+<p>The arithmetic closes. At 16 calls per step, paged attention goes from 5.71 ms/step to 161.5 ms/step,
+up 155.8 ms. The decode step itself, measured from the CUDA-graph replay, goes from 85.85 ms to 236.9 ms,
+up 151 ms. <strong>The paged-attention growth accounts for the entire decode slowdown</strong>; every other
+kernel is flat or slightly faster at the longer context.</p>
+
+<h2><span class="n">4</span>Why the fallback is taken</h2>
+
+<p>The 16 full-attention layers land on Triton because ROCm's custom paged-attention kernel declines them.
+The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code>
+requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">use_rocm_custom_paged_attention · counterfactuals</span></div>
+<pre><span class="c"># measured on the running engine, not read off the config</span>
+head_dim                = <span class="r">256</span>       <span class="c"># gate wants 128</span>
+cache_config.block_size = <span class="r">784</span>       <span class="c"># = 16 x 49, gate wants 16</span>
+is_pow2(784)            = <span class="r">False</span>     <span class="c"># fails use_custom on its own path</span>
+gqa_ratio               = <span class="g">6</span>         <span class="c"># this one passes</span>
+
+<span class="c"># forcing either failing condition on its own is still not enough</span>
+use_rocm_custom_paged_attention(head_size=<span class="k">128</span>)   -> <span class="r">False</span>
+use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span class="r">False</span>
+</pre></div>
+
+<p><strong>No single condition is the blocker.</strong> Relaxing either failing condition on its own
+leaves the gate closed, and <code>chunked_prefill_paged_decode.py</code> fails <code>use_custom</code> on
+<code>is_pow2</code> independently of both. The custom kernel is unreachable here three times over, which
+is why making the fallback fast is the only path that helps this class of model.</p>
+
+<div class="note warn">
+  <span class="lbl">The obvious fix does not work</span>
+  Relaxing the <code>head_size</code> check moves the failure rather than removing it.
+  <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> in <code>csrc/rocm/attention.cu</code> dispatches only
+  <code>case 64</code> and <code>case 128</code> and <code>TORCH_CHECK</code>s on anything else. The
+  condition is the kernel's actual limit, not conservative gating.
+</div>
+
+<h2><span class="n">5</span>Why the fallback is slow <em>on this model</em></h2>
+
+<p>Dense models on the same machine take the same Triton path and do not degrade like this. The difference
+is how much parallelism the kernel has to work with at decode, where the batch is 1.</p>
+
+<div class="tbl"><table>
+  <thead><tr><th>model</th><th class="n">KV heads</th><th class="n">query heads</th><th class="n">GQA</th><th class="n">µs per context token</th></tr></thead>
+  <tbody>
+    <tr><td>Qwen3-8B, BF16 dense</td><td class="n">8</td><td class="n">32</td><td class="n">4:1</td><td class="n">0.118</td></tr>
+    <tr><td>gemma-4-31B, w4a16 dense</td><td class="n">16</td><td class="n">32</td><td class="n">2:1</td><td class="n">0.339</td></tr>
+    <tr><td><strong>Qwen3.6-27B, hybrid</strong></td><td class="n"><strong>4</strong></td><td class="n">24</td><td class="n">6:1</td><td class="n"><strong>4.840</strong></td></tr>
+  </tbody>
+</table></div>
+
+<p>With 4 KV heads and a batch of 1 there is very little for the kernel to spread across the card's 84 CUs.
+Two independent signals agree that this is occupancy rather than work:</p>
+
+<h3>Power falls as context grows</h3>
+<p>265 W + 265 W at 518 tokens, 232 W + 227 W at 24 K. No other model in the sweep loses power with depth;
+the others climb toward 265 W and stay there, and this is the only one that comes back down. The starting
+values differ — at 518 tokens the 8B is at 245 W, the 12B at 206 W, the 26B MoE at 193 W — so the contrast
+that matters is the direction, not the level. Idle silicon, not saturated silicon.</p>
+
+<h3>Normalising by KV traffic widens the gap</h3>
+<p>Only 16 of the 64 layers carry a KV cache at all, and the GQA ratio is aggressive, so this model reads
+the <em>least</em> KV of the three: 64 KiB per token against 144 KiB for Qwen3-8B and 160 KiB for
+gemma-4-31B. Per KiB read it is <strong>92×</strong> the cost of Qwen3-8B and <strong>36×</strong> that of
+gemma-4-31B. It cannot be that this model is simply heavier.</p>
+
+<h2><span class="n">6</span>Control: the same model under a different engine</h2>
+
+<p>Same machine, same day, same checkpoint family, only the inference engine changed. If the collapse were
+the driver, the GPU, or the topology, it would appear here too.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · decode slope, microseconds per token of context <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="bars3" style="--labw:158px"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Lower is flatter. The shaded band is the range the dense models under vLLM produce on
+    this machine, 0.118 to 0.339 µs. llama.cpp runs Q4_K_M where vLLM runs AWQ-INT4, so absolute throughput
+    is not comparable across engines — only the slope is. The ROCm backend uses the same userspace vLLM
+    does. Sources: <code>benchmarks/llamacpp-depth-sweep-{rocm,vulkan}.json</code>,
+    <code>benchmarks/results.jsonl</code>.
+  </figcaption>
+</figure>
+
+<p>llama.cpp's slope lands <em>inside</em> the band the dense models produce under vLLM. Two independent
+sources therefore agree on what a normal slope looks like on this hardware, and this one configuration sits
+an order of magnitude outside it.</p>
+
+<div class="note">
+  <span class="lbl">One disturbed point, stated rather than dropped</span>
+  The ROCm 16 384 point came out at 21.35 tok/s with a standard deviation of 2.635 against 0.06–0.09
+  everywhere else, and the deeper 24 576 point is faster. That single measurement was disturbed and should
+  not be read on its own. It is kept in the figure because removing inconvenient points quietly is worse
+  than showing one.
+</div>
+
+<p>Prefill, meanwhile, behaves as the architecture promises: throughput <em>improves</em> with length,
+805 → 880 tok/s from 500 to 32 K, while dense models lose 8–44 % over the same range. It is decode that
+inverts.</p>
+
+<h2><span class="n">7</span>The fix, measured twice</h2>
+
+<p>The upstream fix is <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a>, which adds a
+split-KV decode kernel to the Triton fallback: instead of one workgroup per (sequence, KV head) walking the
+whole context, the KV range is split across more workgroups and reduced afterwards. That is exactly the
+parallelism this model was short of.</p>
+
+<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K, single differencing runs at slightly
+different depths — and then properly, as a controlled A/B on the 0.27 image, both arms on one stack and one
+harness, one fresh container per cell, only the kernel file swapped, run twice with the arm order reversed.</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · controlled A/B on vLLM 0.27 <span class="prov yes">recomputable from repo</span></div>
+    <div class="hint">click a bar group to switch between rate and milliseconds per token</div>
+    <div class="bars" id="ab4" style="--labw:128px"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>, TP=2, vLLM 0.27.1.dev5, offline 64-vs-8 differencing.
+    <b>Different model and different stack from Figure 1</b> — see the caveat below. Routing was recorded
+    from inside the TP workers, not inferred: <code>(head_size 256, sliding_window 0, use_splitkv True)</code>
+    on both ranks at every depth in both passes, and both file md5s are asserted at runtime so an arm that
+    silently failed to swap would abort rather than measure the other arm twice.
+    Source: <code>benchmarks/hybrid-splitkv-027/</code>.
+  </figcaption>
+</figure>
+
+<p>Pooled across both passes: <strong>1.38× at 1 K, 3.52× at 8 K, 9.46× at 32 K</strong>. Decode goes from
+261.9 to 27.7 ms per token at 32 K, the slope from 7.408 to <strong>0.262 ms per 1 000 tokens of
+context</strong>, and retention from 1 K to 32 K from 10.2 % to 70.0 %. The collapse is gone.</p>
+
+<h2><span class="n">8</span>What is not established</h2>
+
+<p>Four things, because a result that only lists its successes is not a measurement.</p>
+
+<h3>One cell of the A/B is bimodal</h3>
+<p>At 8 192 tokens the patched arm gave 47.02, 40.14, 47.58 and 42.41 tok/s over four passes. Sorted, the
+largest gap between neighbours is bigger than half the total range and falls in the middle: these are
+<strong>two modes about 15 % apart</strong>, not one noisy number. Adding the third and fourth passes made
+the range <em>wider</em>, 15.8 % to 16.8 %, not narrower. It is not the split-count heuristic, which is a
+pure function of inputs the configuration fixes. No mechanism is established. The 3.52× quoted above is the
+mean of all four and describes neither cluster.</p>
+
+<h3>Figure 4 is a different model on a different stack</h3>
+<p>Figure 1 is <code>Qwen3.6-27B</code> on 0.23.1; Figure 4 is <code>Qwen3.8-27B</code> on 0.27. On the
+newer stack this checkpoint also picks a different W4A16 linear kernel, worth roughly 3× on its own and
+nothing to do with attention. <strong>The absolute levels in the two figures are not comparable</strong>;
+the ratios and the shape are.</p>
+
+<h3>One machine</h3>
+<p>Single box, single vendor, batch 1 throughout. The occupancy argument predicts that the collapse should
+soften as batch size rises, and that is untested here.</p>
+
+<h3>What the fix does not fix</h3>
+<p>Paged attention falls from about 68 % of the decode step to 11 %. The remainder is dominated by the
+quantised GEMM, roughly 77 % of a decode step at short context. The <em>slope</em> is resolved; the
+baseline is a different question with a different answer.</p>
+
+<h2><span class="n">9</span>What has changed since</h2>
+
+<p>This article is a dated record, not standing advice. Two things have moved since the measurements above.</p>
+
+<div class="note ok">
+  <span class="lbl">2026-08-10 · the gate no longer needs widening</span>
+  The July verification widened <code>on_gfx12x()</code> to <code>on_gfx1x()</code> locally so that gfx11
+  could reach the new kernel. That change was merged into vllm#45916's own branch on 2026-08-10, so the PR
+  now admits RDNA3 as it stands and nothing local is required.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · the baseline question is answered</span>
+  The July write-up closed on "the slope is resolved; the baseline is a separate question". The 0.27 A/B in
+  Figure 4 answers it: at 32 K the model now decodes at 36.1 tok/s against the 4.2 the original campaign
+  measured, and the residual slope sits inside the band this machine's dense models produce rather than
+  27 % above it.
+</div>
+
+<div class="foot">
+  <p><strong>Data and reproduction.</strong> Every figure marked <span class="prov yes">recomputable from repo</span>
+  is checked against its source file by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
+  which fails non-zero if the prose and the data disagree. The full chapter behind this article, including the
+  parts that were wrong first, is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/hybrid-decode-on-rdna.md">docs/hybrid-decode-on-rdna.md</a>.
+  Raw rows: <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl">ledger.jsonl</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/hybrid-splitkv-027">hybrid-splitkv-027</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">repository</a>.</p>
+  <p>Reported upstream as <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a>.
+  The fix is <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> by @feiyehua, with the
+  gfx11 widening by @thegoldenflow; this work contributed the gfx1100 end-to-end verification and the 0.27 A/B.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "ctxAxis": "context length (tokens)",
+ "rateAxis": "decode tok/s",
+ "retAxis": "retained, % of own 500-token rate",
+ "viewRate": "decode tok/s",
+ "viewRet": "retained %",
+ "tokens": "tokens",
+ "run": "run", "runs": "runs",
+ "range": "range",
+ "ungraded": "ungraded",
+ "retSuffix": "% retained",
+ "f2unit": "per-call GPU time, log scale · rank 0",
+ "f3unit": "microseconds of decode time added per token of context · lower is flatter",
+ "f4stock": "stock 0.27",
+ "f4patch": "with #45916",
+ "f4bimodal": "runs, range {r}% — bimodal, see §8",
+ "f4showing": "showing {x} · click to switch",
+ "f4rate": "decode tok/s", "f4ms": "milliseconds per token",
+ "unitMs": " ms", "unitTok": " tok/s"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SER = ["--s1", "--s2", "--s3", "--s4", "--s5"];
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+
+  /* Colours are written as var(--sN) rather than resolved at build time, so a
+     theme switch repaints every line and bar without redrawing anything. */
+  function svgEl(n, attrs, style) {
+    var e = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (style) e.setAttribute("style", style);
+    return e;
+  }
+
+  /* ---------- Figure 1 ---------- */
+  var W = 760, H = 400, M = { t: 14, r: 16, b: 46, l: 62 };
+  var s1 = F.fig1.series;
+  var lit = s1.map(function (s) { return /Qwen3\.6-27B|Qwen3-8B/.test(s.model); });
+  // absolute rates put the collapse at 4 % of an axis the MoE stretches to 108,
+  // which hides the one thing this figure is for
+  var mode1 = 0;
+  var svg = document.getElementById("c1");
+
+  var allCtx = [];
+  s1.forEach(function (s) { s.points.forEach(function (p) { allCtx.push(p.ctx); }); });
+  var xmin = Math.min.apply(null, allCtx), xmax = Math.max.apply(null, allCtx);
+  var X = function (v) { return M.l + (v - xmin) / (xmax - xmin) * (W - M.l - M.r); };
+  function yval(s, p) { return mode1 ? p.tok_s / s.points[0].tok_s * 100 : p.tok_s; }
+
+  var paths = [], dots = [];
+  function draw(animate) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    paths = []; dots = [];
+    var ymax = 0;
+    s1.forEach(function (s) { s.points.forEach(function (p) { ymax = Math.max(ymax, yval(s, p)); }); });
+    ymax *= 1.06;
+    var Y = function (v) { return H - M.b - v / ymax * (H - M.t - M.b); };
+    var ticks = mode1 ? [0, 25, 50, 75, 100] : [0, 20, 40, 60, 80, 100];
+
+    var g = svgEl("g", { "class": "grid" });
+    ticks.forEach(function (v) {
+      if (v > ymax) return;
+      g.appendChild(svgEl("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+    });
+    svg.appendChild(g);
+
+    var ax = svgEl("g", { "class": "axis" });
+    ticks.forEach(function (v) {
+      if (v > ymax) return;
+      var t = svgEl("text", { x: M.l - 10, y: Y(v) + 3.5, "text-anchor": "end" });
+      t.textContent = mode1 ? v + "%" : v; ax.appendChild(t);
+    });
+    [500, 8000, 16000, 24000, 32000].forEach(function (v) {
+      var t = svgEl("text", { x: X(v), y: H - M.b + 20, "text-anchor": "middle" });
+      t.textContent = v >= 1000 ? (v / 1000) + "K" : v; ax.appendChild(t);
+    });
+    var xt = svgEl("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle", "class": "ttl" });
+    xt.textContent = S.ctxAxis; ax.appendChild(xt);
+    var yt = svgEl("text", { x: -(H - M.b + M.t) / 2, y: 16, "text-anchor": "middle", "class": "ttl",
+                             transform: "rotate(-90)" });
+    yt.textContent = mode1 ? S.retAxis : S.rateAxis;
+    ax.appendChild(yt); svg.appendChild(ax);
+
+    s1.forEach(function (s, i) {
+      var c = "var(" + SER[i % SER.length] + ")";
+      var d = s.points.map(function (p, j) {
+        return (j ? "L" : "M") + X(p.ctx) + " " + Y(yval(s, p));
+      }).join(" ");
+      var path = svgEl("path", { "class": "ln", d: d }, "stroke:" + c);
+      svg.appendChild(path); paths.push(path);
+      var dg = [];
+      s.points.forEach(function (p) {
+        var dot = svgEl("circle", { "class": "dot", cx: X(p.ctx), cy: Y(yval(s, p)),
+                                    r: p.graded ? 3.6 : 4.4 },
+                        "stroke:" + c + ";stroke-width:2;fill:" + (p.graded ? c : "var(--surface)"));
+        dot.addEventListener("mouseenter", function (e) {
+          showTip(e, '<span class="hd">' + s.model + "</span><br>" +
+            p.ctx.toLocaleString() + " " + S.tokens + " &middot; <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
+            (mode1 ? " &middot; " + yval(s, p).toFixed(1) + S.retSuffix : "") + "<br>" +
+            '<span class="sub">' + p.runs + " " + (p.runs > 1 ? S.runs : S.run) +
+            " &middot; " + S.range + " " + p.range_pct.toFixed(2) + "%" +
+            (p.graded ? "" : " &middot; " + S.ungraded) + "</span>");
+        });
+        dot.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+        dot.addEventListener("mouseleave", hideTip);
+        svg.appendChild(dot); dg.push(dot);
+      });
+      dots.push(dg);
+    });
+    apply();
+    if (animate) drawIn();
+  }
+  function apply() {
+    paths.forEach(function (p, i) { p.classList.toggle("dim", !lit[i]); });
+    dots.forEach(function (dg, i) { dg.forEach(function (d) { d.classList.toggle("dim", !lit[i]); }); });
+  }
+  function drawIn() {
+    if (reduce) return;
+    paths.forEach(function (p) {
+      var L = p.getTotalLength();
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = "stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)";
+      p.style.strokeDashoffset = "0";
+    });
+    dots.forEach(function (dg) {
+      dg.forEach(function (d, j) {
+        d.style.opacity = "0";
+        setTimeout(function () { d.style.opacity = ""; }, 340 + j * 50);
+      });
+    });
+  }
+
+  var vbox = document.getElementById("view1");
+  [[S.viewRate, 0], [S.viewRet, 1]].forEach(function (o) {
+    var b = document.createElement("button");
+    b.className = "lg" + (o[1] === mode1 ? " on" : "");
+    b.style.setProperty("--c", "var(--accent)");
+    b.textContent = o[0];
+    b.addEventListener("click", function () {
+      if (mode1 === o[1]) return;
+      mode1 = o[1];
+      Array.prototype.forEach.call(vbox.children, function (x, k) { x.classList.toggle("on", k === mode1); });
+      draw(true);
+    });
+    vbox.appendChild(b);
+  });
+
+  var lgbox = document.getElementById("lg1");
+  s1.forEach(function (s, i) {
+    var c = "var(" + SER[i % SER.length] + ")";
+    var b = document.createElement("button");
+    b.className = "lg" + (lit[i] ? " on" : "");
+    b.style.setProperty("--c", c);
+    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
+    b.addEventListener("click", function () {
+      lit[i] = !lit[i]; b.classList.toggle("on", lit[i]); apply();
+    });
+    lgbox.appendChild(b);
+  });
+  draw(false);
+
+  /* ---------- bar helper: one grid, so every track shares a left edge ---------- */
+  function row(box, label, pct, colour, value) {
+    var l = document.createElement("div"); l.className = "lab"; l.textContent = label;
+    var t = document.createElement("div"); t.className = "track";
+    var f = document.createElement("div"); f.className = "fill";
+    f.setAttribute("data-w", pct); f.style.background = colour; t.appendChild(f);
+    var v = document.createElement("div"); v.className = "val"; v.textContent = value;
+    box.appendChild(l); box.appendChild(t); box.appendChild(v);
+  }
+  function span(box, cls, text, colour) {
+    var d = document.createElement("div"); d.className = cls; d.innerHTML = text;
+    if (colour) d.style.color = colour; box.appendChild(d);
+  }
+
+  /* ---------- Figure 2 ---------- */
+  (function () {
+    var box = document.getElementById("bars2"), ks = F.fig2.kernels;
+    var max = Math.max.apply(null, ks.map(function (k) { return k.us_32k; }));
+    var lg = function (v) { return Math.log10(v + 1) / Math.log10(max + 1) * 100; };
+    ks.forEach(function (k) {
+      var moved = k.us_32k / k.us_1k, hot = moved > 2;
+      span(box, "head", "<code>" + k.name + "</code> &middot; " + k.layers);
+      row(box, "1 K", lg(k.us_1k), "var(--border-2)", k.us_1k.toFixed(3) + " µs");
+      row(box, "32 K", lg(k.us_32k), hot ? "var(--red)" : "var(--text-dim)",
+          k.us_32k.toLocaleString(undefined, { minimumFractionDigits: 3 }) + " µs");
+      span(box, "foot", (hot ? "▲ " : "") + moved.toFixed(2) + "×",
+           hot ? "var(--red)" : "var(--green)");
+    });
+    span(box, "barunit", S.f2unit);
+  })();
+
+  /* ---------- Figure 3 ---------- */
+  (function () {
+    var box = document.getElementById("bars3"), f = F.fig3;
+    var rows = [
+      ["vLLM · hybrid-SSM", f.vllm_hybrid_slope_us, "var(--red)", null],
+      ["llama.cpp · ROCm", f.llamacpp.rocm.slope_us, "var(--s2)", null],
+      ["llama.cpp · Vulkan", f.llamacpp.vulkan.slope_us, "var(--s3)", null],
+      ["vLLM · dense band", f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
+    ];
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
+    rows.forEach(function (r) {
+      row(box, r[0], r[1] / max * 100, r[2],
+          r[3] ? r[3][0] + "–" + r[3][1] : r[1].toFixed(3));
+    });
+    span(box, "barunit", S.f3unit);
+  })();
+
+  /* ---------- Figure 4 ---------- */
+  (function () {
+    var box = document.getElementById("ab4"), ss = F.fig4.series;
+    var stock = ss.filter(function (s) { return !s.patches.length; })[0];
+    var patch = ss.filter(function (s) { return s.patches.length; })[0];
+    var mode = 0;
+    function val(p) { return mode ? 1000 / p.tok_s : p.tok_s; }
+    function render(animate) {
+      box.innerHTML = "";
+      var max = 0;
+      stock.points.forEach(function (p, i) { max = Math.max(max, val(p), val(patch.points[i])); });
+      stock.points.forEach(function (p, i) {
+        var q = patch.points[i];
+        span(box, "head", p.ctx.toLocaleString() + " " + S.tokens + " &nbsp;<b style='color:var(--accent)'>" +
+             (q.tok_s / p.tok_s).toFixed(2) + "×</b>");
+        [[p, S.f4stock, "var(--text-dim)"], [q, S.f4patch, "var(--green)"]].forEach(function (a) {
+          row(box, a[1], val(a[0]) / max * 100, a[2],
+              val(a[0]).toFixed(mode ? 1 : 2) + (mode ? S.unitMs : S.unitTok));
+          if (a[0].runs > 2 || a[0].range_pct > 6) {
+            span(box, "foot", a[0].runs + " " + S.f4bimodal.replace("{r}", a[0].range_pct.toFixed(1)),
+                 "var(--red)");
+          }
+        });
+      });
+      span(box, "barunit", S.f4showing.replace("{x}", mode ? S.f4ms : S.f4rate));
+      if (animate) grow(box);
+    }
+    box.addEventListener("click", function () { mode = 1 - mode; render(true); });
+    render(false);
+  })();
+
+  /* ---------- reveal ---------- */
+  function grow(scope) {
+    var bars = (scope || document).querySelectorAll(".fill");
+    for (var i = 0; i < bars.length; i++) {
+      (function (b, n) {
+        b.style.width = "0";
+        setTimeout(function () { b.style.width = b.getAttribute("data-w") + "%"; },
+                   reduce ? 0 : 60 + n * 50);
+      })(bars[i], i);
+    }
+  }
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+    grow();
+  } else {
+    var seen = {};
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting || seen[en.target.id]) return;
+        seen[en.target.id] = 1;
+        en.target.classList.add("in");
+        if (en.target.id === "fig1") setTimeout(drawIn, 180);
+        else grow(en.target);
+      });
+    }, { threshold: 0.16 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { io.observe(e); });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+{
+ "_what": "Figures for rccl-atomics-hostcall.html, extracted from docs/root-cause.md.",
+ "chain": [
+  {
+   "n": 1,
+   "link": "The root port above the GPU advertises no 32/64-bit AtomicOp completer support",
+   "evidence": "guest lspci -vvs 00:1c.0 → AtomicOpsCap: Routing- 32bit- 64bit-, the emulated pcie-root-port. Two bits matter here and are easy to conflate: completion on the root port, routing on any switch port in between. This repository's own host reports Routing- 32bit+ 64bit+ on all eight root ports and does pass: amdgpu bound these same cards on the host across five boots and never emitted the message, while in the guest it emits it for both GPUs at every boot. The passthrough layer removes the capability, not the Zen 1 silicon"
+  },
+  {
+   "n": 2,
+   "link": "→ amdgpu therefore disables PCIe atomics",
+   "evidence": "guest dmesg: amdgpu 0000:01:00.0: PCIE atomic ops is not supported (every GPU). pci_enable_atomic_ops_to_root() requires COMP32+COMP64 at the root port and AtomicOp routing on each switch port below it; the emulated root port carries neither completer bit"
+  },
+  {
+   "n": 3,
+   "link": "→ ROCr cannot build a hostcall buffer",
+   "evidence": "AMD_LOG_LEVEL=4 at the exact failure: rocvirtual.cpp:4208 Pcie atomics not enabled, hostcall not supported → 4636 AQL dispatch failed! → hipErrorIllegalState. Hostcall's ring signalling depends on atomics"
+  },
+  {
+   "n": 4,
+   "link": "→ any kernel needing hostcall is refused",
+   "evidence": "diagnose/hipgate3.cpp: identical launch path, two kernels. Plain kernel passes; kernel with device printf (which requires hostcall) fails with the exact production error"
+  },
+  {
+   "n": 5,
+   "link": "→ RCCL ≥ 2.27.7-b43 device kernels need hostcall",
+   "evidence": "llvm-readelf --notes on the device image: every ncclDevKernel_Generic carries hidden_hostcall_buffer. Source: device-side assert() throughout src/device/ links __assert_fail; ENABLE_COLLTRACE adds device printf → __ockl_fprintf"
+  }
+ ],
+ "shipped": [
+  {
+   "rccl": "ROCm 7.0 (2.26.6)",
+   "hostcall": "0",
+   "behaviour": "works"
+  },
+  {
+   "rccl": "ROCm 7.1.1 (2.27.7-b38)",
+   "hostcall": "0",
+   "behaviour": "works"
+  },
+  {
+   "rccl": "ROCm 7.2+ (2.27.7-b43+)",
+   "hostcall": "N (every Generic kernel)",
+   "behaviour": "fails"
+  },
+  {
+   "rccl": "ROCm 7.13 / 7.14 (2.30.4)",
+   "hostcall": "N",
+   "behaviour": "fails"
+  }
+ ],
+ "ruled_out": [
+  {
+   "hypothesis": "Guest RAM too small",
+   "verdict": "❌",
+   "how": "Raised 16 G → 22 G, identical signature; no OOM in dmesg, headroom at crash"
+  },
+  {
+   "hypothesis": "NUMA asymmetry",
+   "verdict": "❌",
+   "how": "Two public bare-metal reports are single-NUMA desktops (7800X3D, 13900K) and reproduce"
+  },
+  {
+   "hypothesis": "VFIO/virtualization itself",
+   "verdict": "❌ not necessary",
+   "how": "independently reproduced on bare metal with IOMMU entirely disabled, by @adderek in ROCm#6520: 2× RX 7900 XTX on a B550 board, same failure, same fix. Their machine has one affected GPU (chipset-attached) and one healthy one (CPU-direct)"
+  },
+  {
+   "hypothesis": "vLLM version",
+   "verdict": "❌",
+   "how": "0.19.1 and 0.23 fail, 0.11.2 passes — it is only the caller"
+  },
+  {
+   "hypothesis": "RCCL version regression (b38 ↔ b81)",
+   "verdict": "❌ as the primary cause",
+   "how": "Our own b38 built from source still failed — because our build did not get NDEBUG to the device pass either. The variable is hostcall, not version"
+  },
+  {
+   "hypothesis": "Guest kernel too old (6.8)",
+   "verdict": "❌",
+   "how": "Upgraded to HWE 7.0.0-28, identical signature"
+  },
+  {
+   "hypothesis": "Missing iommu=pt",
+   "verdict": "❌",
+   "how": "Read the source: string check only, warns but does not gate"
+  },
+  {
+   "hypothesis": "Event flags / ReleaseToSystem",
+   "verdict": "❌",
+   "how": "Read the source: both generations use an ordinary DisableTiming event"
+  },
+  {
+   "hypothesis": "HIP runtime ≥7.13 gating kernel submission",
+   "verdict": "❌ explicitly disproven",
+   "how": "diagnose/hipgate.cpp issues the exact hipExtLaunchKernel + completion-event form, 4 KB kernarg, cross-stream wait, fine-grained host memory — all pass on 7.14"
+  },
+  {
+   "hypothesis": "Dynamic shared-memory size",
+   "verdict": "❌",
+   "how": "diagnose/hipgate2.cpp, 0 → 64 KB, all pass (over-limit returns a correctly different error)"
+  },
+  {
+   "hypothesis": "Transport / env tuning",
+   "verdict": "❌",
+   "how": "diagnose/sweep.sh: 11 combinations of NCCL_P2P_DISABLE, HSA_ENABLE_SDMA, NCCL_SHM_DISABLE, NCCL_CUMEM_ENABLE, HSA_FORCE_FINE_GRAIN_PCIE, GPU_MAX_HW_QUEUES, AMD_SERIALIZE_KERNEL — signature unchanged in all"
+  },
+  {
+   "hypothesis": "Pipeline parallel instead of tensor parallel",
+   "verdict": "❌ cannot dodge it",
+   "how": "diagnose/ar_p2p.py: ncclSend/Recv kernels need hostcall too, same crash"
+  },
+  {
+   "hypothesis": "No PCIe atomics → hostcall unavailable",
+   "verdict": "✅ root cause",
+   "how": "The whole of §1, and decisively hipgate3.cpp"
+  }
+ ],
+ "counts": {
+  "chain_links": 5,
+  "hypotheses_total": 13,
+  "hypotheses_eliminated": 12,
+  "hypotheses_confirmed": 1
+ }
+}

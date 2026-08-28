@@ -1,0 +1,19 @@
+  /* ---- index cards ---- */
+  .cards { display:grid; gap:1em; margin:1.6em 0; }
+  .card { display:block; background:var(--surface); border:1px solid var(--border);
+          border-radius:13px; padding:1.25em 1.4em; box-shadow:var(--shadow);
+          color:inherit; border-bottom:1px solid var(--border);
+          transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s; }
+  .card:hover { transform:translateY(-3px); border-color:var(--border-2);
+                box-shadow:0 2px 4px rgba(0,0,0,.06), 0 16px 40px rgba(0,0,0,.10); }
+  .card h3 { margin:.15em 0 .3em; font-size:1.24rem; letter-spacing:-.01em; }
+  .card p { margin:0; color:var(--text-2); font-size:.96rem; }
+  .card-date { font-family:var(--mono); font-size:.71rem; letter-spacing:.1em;
+               text-transform:uppercase; color:var(--accent); font-weight:700; }
+  .card-foot { display:flex; justify-content:space-between; align-items:center;
+               gap:1em; margin-top:1em; flex-wrap:wrap; }
+  .card-tags { display:flex; flex-wrap:wrap; gap:.4em; }
+  .card-tags span { font-family:var(--mono); font-size:.69rem; color:var(--text-dim);
+                    background:var(--surface-2); border:1px solid var(--border);
+                    border-radius:99px; padding:.2em .65em; }
+  .card-lang { font-family:var(--mono); font-size:.71rem; color:var(--text-dim); }

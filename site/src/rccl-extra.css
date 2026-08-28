@@ -1,0 +1,64 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  /* ---- figure 1: the chain ---- */
+  .step { border:1px solid var(--border); border-radius:11px; background:var(--surface-2);
+          overflow:hidden; transition:border-color .25s, background .25s; }
+  .step.open { border-color:var(--border-2); background:var(--surface); }
+  .step-head { width:100%; display:grid; grid-template-columns:34px 1fr max-content;
+               gap:.9em; align-items:center; text-align:left; background:none; border:0;
+               padding:.85em 1.1em; cursor:pointer; color:var(--text); font:inherit; font-size:.95rem; }
+  .step-n { width:26px; height:26px; border-radius:99px; display:grid; place-items:center;
+            background:var(--accent); color:var(--bg); font-family:var(--mono);
+            font-size:.78rem; font-weight:800; }
+  .step-t { line-height:1.55; }
+  .step-x { font-family:var(--mono); font-size:.7rem; letter-spacing:.09em; text-transform:uppercase;
+            color:var(--text-dim); }
+  .step.open .step-x { color:var(--accent); }
+  .step-ev { max-height:0; overflow:hidden; transition:max-height .4s cubic-bezier(.22,1,.36,1);
+             font-size:.89rem; color:var(--text-2); line-height:1.7; padding:0 1.1em; }
+  .step.open .step-ev { padding-bottom:1.05em; }
+  .step-arrow { text-align:center; color:var(--border-2); font-size:1.1rem; line-height:1.2; margin:.15em 0; }
+
+  /* ---- figure 2: shipped libraries ---- */
+  .ship { display:grid; grid-template-columns:minmax(150px,1fr) 78px minmax(110px,1fr);
+          gap:1em; align-items:center; padding:.7em 1em; border-radius:9px; margin-bottom:.45em;
+          border:1px solid var(--border); font-size:.9rem; }
+  .ship.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 26%, transparent); }
+  .ship.bad { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 26%, transparent); }
+  .ship-v { font-family:var(--mono); font-size:.82rem; color:var(--text); }
+  .ship-c { font-family:var(--mono); font-weight:800; text-align:center; font-size:1.05rem; }
+  .ship.ok .ship-c { color:var(--green); } .ship.bad .ship-c { color:var(--red); }
+  .ship-b { color:var(--text-2); font-size:.86rem; }
+  @media (max-width:560px){ .ship{ grid-template-columns:1fr 54px; } .ship-b{ grid-column:1/-1; } }
+
+  /* ---- figure 3: hypotheses ---- */
+  .hyp { width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border);
+         border-radius:9px; padding:.6em .9em; margin-bottom:.4em; cursor:pointer;
+         display:grid; grid-template-columns:20px 1fr max-content; gap:.7em; align-items:center;
+         color:var(--text-2); font:inherit; font-size:.9rem;
+         transition:border-color .22s, background .22s, color .22s; }
+  .hyp:hover { border-color:var(--border-2); }
+  .hyp-mark { font-weight:800; color:var(--text-dim); text-align:center; }
+  .hyp-v { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+           color:var(--text-dim); }
+  .hyp.yes { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 34%, transparent);
+             color:var(--text); }
+  .hyp.yes .hyp-mark, .hyp.yes .hyp-v { color:var(--green); }
+  .hyp-how { grid-column:2/-1; max-height:0; overflow:hidden; font-size:.85rem; color:var(--text-2);
+             line-height:1.65; transition:max-height .35s cubic-bezier(.22,1,.36,1); }
+  .hyp.open .hyp-how { padding-top:.5em; }
+
+  /* ---- figure 4: the A/B ---- */
+  .ab-row { display:grid; grid-template-columns:minmax(120px,1fr) 1.25fr 1.25fr; gap:.9em;
+            padding:.6em .2em; border-bottom:1px solid var(--border); align-items:start;
+            font-size:.88rem; }
+  .ab-head { border-bottom:1px solid var(--border-2); padding-bottom:.7em; }
+  .ab-head code { font-size:.78rem; }
+  .ab-k { font-family:var(--mono); font-size:.78rem; color:var(--text-dim); }
+  .ab-b { color:var(--text-2); }
+  .ab-a { color:var(--green); font-weight:600; }
+  .ab-last .ab-b { color:var(--red); }
+  .ab-last { border-bottom:0; }
+  @media (max-width:560px){ .ab-row{ grid-template-columns:1fr; gap:.25em; } }

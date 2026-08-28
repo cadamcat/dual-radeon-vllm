@@ -1,0 +1,636 @@
+{
+ "_what": "Every figure in hybrid-ssm-collapse.html. Checked against the data files by benchmarks/analyze/verify_doc_figures.py; edit the data, not this.",
+ "fig1": {
+  "caption_source": "benchmarks/ledger.jsonl",
+  "series": [
+   {
+    "model": "Qwen3-8B",
+    "quant": "bf16",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 79.58500000000001,
+      "runs": 2,
+      "range_pct": 0.012565181881014156,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 78.50999999999999,
+      "runs": 2,
+      "range_pct": 0.02547446185198831,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 77.13499999999999,
+      "runs": 2,
+      "range_pct": 0.01296428339924174,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 75.69999999999999,
+      "runs": 2,
+      "range_pct": 0.026420079260232526,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 74.63,
+      "runs": 2,
+      "range_pct": 0.0803966233418227,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 73.32,
+      "runs": 2,
+      "range_pct": 0.16366612111291648,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 71.175,
+      "runs": 2,
+      "range_pct": 0.04214963119072868,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 68.82,
+      "runs": 2,
+      "range_pct": 0.11624527753559764,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 66.9,
+      "runs": 2,
+      "range_pct": 0.05979073243648168,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.91,
+      "runs": 2,
+      "range_pct": 0.21568325373594296,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 61.44,
+      "runs": 2,
+      "range_pct": 0.03255208333333842,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.6-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 12.120000000000001,
+      "runs": 2,
+      "range_pct": 1.155115511551145,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 11.649999999999999,
+      "runs": 2,
+      "range_pct": 0.5150214592274721,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 10.99,
+      "runs": 2,
+      "range_pct": 0.18198362147406347,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 10.03,
+      "runs": 2,
+      "range_pct": 0.19940179461614732,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 9.27,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 8.53,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 7.24,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 6.345000000000001,
+      "runs": 2,
+      "range_pct": 0.7880220646178064,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 5.67,
+      "runs": 2,
+      "range_pct": 1.058201058201067,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 5.08,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 4.25,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.905,
+      "runs": 2,
+      "range_pct": 1.3187546949336435,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.474999999999994,
+      "runs": 2,
+      "range_pct": 1.1115861479264622,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 58.75,
+      "runs": 2,
+      "range_pct": 0.851063829787234,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 56.09,
+      "runs": 2,
+      "range_pct": 1.1766803351756172,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.745000000000005,
+      "runs": 2,
+      "range_pct": 1.296922093341859,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 51.97,
+      "runs": 2,
+      "range_pct": 3.502020396382529,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.46,
+      "runs": 2,
+      "range_pct": 0.040436716538609016,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 46.504999999999995,
+      "runs": 2,
+      "range_pct": 2.6018707665842404,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.504999999999995,
+      "runs": 2,
+      "range_pct": 1.7750814515222992,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.45,
+      "runs": 2,
+      "range_pct": 1.1967779056386723,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.885,
+      "runs": 2,
+      "range_pct": 2.3158648680911993,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "quant": "int4",
+    "arch": "MoE, 128 experts",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.82,
+      "runs": 2,
+      "range_pct": 0.01854943424225192,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.935,
+      "runs": 2,
+      "range_pct": 0.2548732713456327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.31,
+      "runs": 2,
+      "range_pct": 0.13421531972006573,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 100.21000000000001,
+      "runs": 2,
+      "range_pct": 0.059874264045492516,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 96.28999999999999,
+      "runs": 2,
+      "range_pct": 0.04154117769239408,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.57499999999999,
+      "runs": 2,
+      "range_pct": 0.594112881447472,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.36500000000001,
+      "runs": 2,
+      "range_pct": 0.011316697787591371,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.495,
+      "runs": 2,
+      "range_pct": 0.035930295227260475,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 79.19,
+      "runs": 2,
+      "range_pct": 0.025255714105311303,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 76.075,
+      "runs": 2,
+      "range_pct": 0.2760433782451633,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.795,
+      "runs": 2,
+      "range_pct": 0.28848135174120193,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 43.155,
+      "runs": 2,
+      "range_pct": 0.20855057351408507,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.99,
+      "runs": 2,
+      "range_pct": 0.14289116456299658,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 41.04,
+      "runs": 2,
+      "range_pct": 0.19493177387913815,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 39.765,
+      "runs": 2,
+      "range_pct": 0.1760342009304672,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 38.269999999999996,
+      "runs": 2,
+      "range_pct": 0.2090410243010332,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 36.864999999999995,
+      "runs": 2,
+      "range_pct": 0.027126000271254613,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 35.26,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 33.629999999999995,
+      "runs": 2,
+      "range_pct": 0.05947071067500188,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 32.025000000000006,
+      "runs": 2,
+      "range_pct": 0.031225604996090582,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 30.979999999999997,
+      "runs": 2,
+      "range_pct": 0.06455777921239372,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 29.54,
+      "runs": 2,
+      "range_pct": 0.06770480704129848,
+      "graded": true
+     }
+    ]
+   }
+  ]
+ },
+ "fig2": {
+  "caption_source": "torch profile, raw output not committed",
+  "reproducible_from_repo": false,
+  "kernels": [
+   {
+    "name": "fused_recurrent_gated_delta_rule_packed_decode",
+    "layers": "48 linear",
+    "us_1k": 8.466,
+    "us_32k": 8.038
+   },
+   {
+    "name": "_causal_conv1d_update_kernel",
+    "layers": "48 linear",
+    "us_1k": 2.26,
+    "us_32k": 2.139
+   },
+   {
+    "name": "triton_w4a16_gemm_kernel",
+    "layers": "all",
+    "us_1k": 275.792,
+    "us_32k": 251.447
+   },
+   {
+    "name": "kernel_paged_attention_2d",
+    "layers": "16 full",
+    "us_1k": 356.664,
+    "us_32k": 10095.188
+   }
+  ]
+ },
+ "fig3": {
+  "vllm_hybrid_slope_us": 4.84,
+  "vllm_hybrid_retained_pct": 35.1,
+  "llamacpp": {
+   "rocm": {
+    "points": [
+     {
+      "depth": 512,
+      "tok_s": 24.89,
+      "stddev_ts": 0.091
+     },
+     {
+      "depth": 4096,
+      "tok_s": 24.56,
+      "stddev_ts": 0.073
+     },
+     {
+      "depth": 8192,
+      "tok_s": 24.17,
+      "stddev_ts": 0.059
+     },
+     {
+      "depth": 16384,
+      "tok_s": 21.35,
+      "stddev_ts": 2.635
+     },
+     {
+      "depth": 24576,
+      "tok_s": 22.48,
+      "stddev_ts": 0.058
+     },
+     {
+      "depth": 32768,
+      "tok_s": 21.84,
+      "stddev_ts": 0.055
+     }
+    ],
+    "slope_us": 0.174
+   },
+   "vulkan": {
+    "points": [
+     {
+      "depth": 512,
+      "tok_s": 28.61,
+      "stddev_ts": 0.037
+     },
+     {
+      "depth": 4096,
+      "tok_s": 28.27,
+      "stddev_ts": 0.069
+     },
+     {
+      "depth": 8192,
+      "tok_s": 27.79,
+      "stddev_ts": 0.043
+     },
+     {
+      "depth": 16384,
+      "tok_s": 27.04,
+      "stddev_ts": 0.046
+     },
+     {
+      "depth": 24576,
+      "tok_s": 26.43,
+      "stddev_ts": 0.098
+     },
+     {
+      "depth": 32768,
+      "tok_s": 26.04,
+      "stddev_ts": 0.023
+     }
+    ],
+    "slope_us": 0.107
+   }
+  },
+  "dense_band_us": [
+   0.118,
+   0.339
+  ]
+ },
+ "fig4": {
+  "caption_source": "benchmarks/hybrid-splitkv-027/",
+  "series": [
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 37.39875627347579,
+      "runs": 2,
+      "range_pct": 1.9200038719770232,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 12.596368059421426,
+      "runs": 2,
+      "range_pct": 0.4537609679547572,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 3.8181059977723963,
+      "runs": 2,
+      "range_pct": 0.495587815857265,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 51.61950396234055,
+      "runs": 2,
+      "range_pct": 0.7207002092390873,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 44.286645291258964,
+      "runs": 4,
+      "range_pct": 16.793271375671562,
+      "graded": false
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 36.12291880809809,
+      "runs": 2,
+      "range_pct": 5.117549957300597,
+      "graded": true
+     }
+    ]
+   }
+  ]
+ }
+}

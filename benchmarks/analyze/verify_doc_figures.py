@@ -694,6 +694,15 @@ def main():
     # does not, this fails rather than letting a published page drift.
     ART = os.path.join(HERE, "..", "..", "docs", "articles")
 
+    # --- the published pages are built, not hand-written -------------------
+    # site/build.py --check rebuilds every page into memory and compares. If a
+    # published file was edited in place it differs from its source, and the
+    # shared head means such an edit reaches one page and not the other four.
+    import subprocess
+    bp = os.path.join(HERE, "..", "..", "site", "build.py")
+    rc = subprocess.run([sys.executable, bp, "--check"], capture_output=True, text=True)
+    ck("site, every published page matches its source", "0", rc.returncode)
+
     # --- the RCCL article: its figures are extracted from root-cause.md, so the
     # check is that the extraction still matches the document rather than that a
     # number matches a data file.
