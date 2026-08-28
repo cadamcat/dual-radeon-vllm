@@ -1272,6 +1272,32 @@ def main():
     ck("benchmarks README, a ledger row recomputes from its source", "1",
        1 if spot["values"] == raw else 0)
 
+    # --- the best-of charts: drawn from the ledger, and from nothing else ----
+    import gen_best_charts as gbc
+    chosen = gbc.pick(led)
+    ck("best charts, models drawn", "6", len(chosen))
+    want = {
+        "gemma-4-26B-A4B": ("2026-07-25", ()),
+        "Qwen3-8B": ("2026-07-25", ()),
+        "gemma-4-12B-it": ("2026-07-25", ()),
+        "gemma-4-31B-it": ("2026-07-25", ()),
+        "Muse-Glimmer-30B": ("2026-08-24", ("vllm#45916 split-KV", "window block-skip")),
+        "Qwen3.8-27B": ("2026-08-28", ("vllm#45916 split-KV",)),
+    }
+    ck("best charts, each model comes from the stack the rule picks", "6",
+       sum(1 for m, (d, p) in want.items()
+           if m in chosen and chosen[m][2][1] == d and chosen[m][2][4] == p))
+    ck("best charts, lines that need an unmerged patch", "2",
+       sum(1 for m in chosen if chosen[m][2][4]))
+    plotted = sum(1 for m in chosen for r in chosen[m][3] if r["chart_grade"])
+    ck("best charts, points plotted", "56", plotted)
+    for fn in ("decode-vs-context-best.svg", "decode-ms-per-token-best.svg"):
+        svg = open(os.path.join(HERE, "..", "..", "docs", "assets", fn)).read()
+        ck(f"best charts, {fn} carries every plotted point", "56",
+           svg.count("<circle "))
+        ck(f"best charts, {fn} draws no line across the Qwen3.8 gap", "1",
+           len([m for m in re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svg)]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
