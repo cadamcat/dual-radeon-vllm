@@ -1158,19 +1158,32 @@ def main():
     for tag, fn in (("A", "qwen38-027-depth.jsonl"), ("B", "qwen38-027-depth-b.jsonl")):
         for r in [json.loads(l) for l in open(os.path.join(HDIR, fn))]:
             q38[(tag, r["arm"], r["ctx"])] = r
+    extra8k = sorted(json.loads(l)["decode_tok_s"] for l in
+                     open(os.path.join(HDIR, "qwen38-8k-r3r4.jsonl")))
+    ck("hybrid-decode 6.6, two further passes at 8K", "2", len(extra8k))
+    ck("hybrid-decode 6.6, the third 8K pass", "42.41", extra8k[0])
+    ck("hybrid-decode 6.6, the fourth", "47.58", extra8k[1])
+    all8k = sorted([q38[("A", "splitkv", 8192)]["decode_tok_s"],
+                    q38[("B", "splitkv", 8192)]["decode_tok_s"]] + extra8k)
+    ck("hybrid-decode 6.6, the low mode", "41.3", (all8k[0] + all8k[1]) / 2)
+    ck("hybrid-decode 6.6, the high mode", "47.3", (all8k[2] + all8k[3]) / 2)
+    ck("hybrid-decode 6.6, the modes are apart by", "15",
+       100 * ((all8k[2] + all8k[3]) / (all8k[0] + all8k[1]) - 1), tol=0.05)
+    ck("hybrid-decode 6.6, averaging the four gives", "44.29", sum(all8k) / 4)
     ck("hybrid-decode 6.6, cells across both passes", "12", len(q38))
     q38tps = lambda t, a, c: q38[(t, a, c)]["decode_tok_s"]
     pooled = lambda a, c: (q38tps("A", a, c) + q38tps("B", a, c)) / 2
     for ctx, sA, sB, pA, pB, ratio in (
             (1024, "37.04", "37.76", "51.81", "51.43", "1.38"),
-            (8192, "12.57", "12.62", "47.02", "40.14", "3.46"),
+            (8192, "12.57", "12.62", "47.02", "40.14", "3.52"),
             (32768, "3.83", "3.81", "35.20", "37.05", "9.46")):
         ck(f"hybrid-decode 6.6, {ctx} stock A", sA, q38tps("A", "stock", ctx))
         ck(f"hybrid-decode 6.6, {ctx} stock B", sB, q38tps("B", "stock", ctx))
         ck(f"hybrid-decode 6.6, {ctx} splitkv A", pA, q38tps("A", "splitkv", ctx))
         ck(f"hybrid-decode 6.6, {ctx} splitkv B", pB, q38tps("B", "splitkv", ctx))
         ck(f"hybrid-decode 6.6, {ctx} pooled ratio", ratio,
-           pooled("splitkv", ctx) / pooled("stock", ctx))
+           (sum(all8k) / 4 if ctx == 8192 else pooled("splitkv", ctx))
+           / pooled("stock", ctx))
     ck("hybrid-decode 6.6, pooled 1K ms/tok stock", "26.7", 1000 / pooled("stock", 1024))
     ck("hybrid-decode 6.6, pooled 1K ms/tok with the PR", "19.4",
        1000 / pooled("splitkv", 1024))
@@ -1255,10 +1268,12 @@ def main():
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
        == open(os.path.join(HERE, "..", "ledger.jsonl")).read() else 0)
-    ck("benchmarks README, points that are not chart grade", "2",
+    ck("benchmarks README, points that are not chart grade", "1",
        sum(1 for r in led if not r["chart_grade"]))
-    ck("benchmarks README, and both are above the 6% cut", "2",
+    ck("benchmarks README, and it is above the 6% cut", "1",
        sum(1 for r in led if not r["chart_grade"] and r["range_pct"] > 6.0))
+    ck("benchmarks README, points a later session supersedes", "2",
+       sum(1 for r in led if r.get("superseded_values")))
     ck("benchmarks README, ledger range median", "0.12",
        med([r["range_pct"] for r in led if r["range_pct"] is not None]), tol=0.05)
     # a row must be recomputable from the file it names, not merely plausible
@@ -1290,13 +1305,25 @@ def main():
     ck("best charts, lines that need an unmerged patch", "2",
        sum(1 for m in chosen if chosen[m][2][4]))
     plotted = sum(1 for m in chosen for r in chosen[m][3] if r["chart_grade"])
-    ck("best charts, points plotted", "56", plotted)
-    for fn in ("decode-vs-context-best.svg", "decode-ms-per-token-best.svg"):
-        svg = open(os.path.join(HERE, "..", "..", "docs", "assets", fn)).read()
-        ck(f"best charts, {fn} carries every plotted point", "56",
-           svg.count("<circle "))
-        ck(f"best charts, {fn} draws no line across the Qwen3.8 gap", "1",
-           len([m for m in re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svg)]))
+    ck("best charts, points plotted", "57", plotted)
+    svgd = open(os.path.join(HERE, "..", "..", "docs", "assets",
+                             "decode-vs-context-best.svg")).read()
+    svgm = open(os.path.join(HERE, "..", "..", "docs", "assets",
+                             "decode-ms-per-token-best.svg")).read()
+    ck("best charts, decode chart carries every plotted point", "57",
+       svgd.count("<circle "))
+    # the ms chart adds the unpatched Qwen3.8 line back, for the contrast
+    ck("best charts, ms chart adds the contrast line's three points", "60",
+       svgm.count("<circle "))
+    # one Qwen3.8 element on the decode chart: its legend swatch, so the 8K gap
+    # is a gap. Four on the ms chart: two swatches and the contrast line's two
+    # segments, which is what it should be when that line has no gap.
+    ck("best charts, decode chart draws no line across the Qwen3.8 gap", "1",
+       len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgd)))
+    ck("best charts, ms chart draws the contrast line and both swatches", "4",
+       len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgm)))
+    ck("best charts, the gap note names the two modes", "1",
+       1 if "two modes, 41 and 47 tok/s" in svgd else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

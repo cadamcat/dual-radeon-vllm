@@ -1,0 +1,7 @@
+########## pass 3  splitkv ctx=8192  16:39:46 ##########
+exit=0 16:48:31
+RESULT arm=splitkv ctx=8192 decode_tok_s=47.58 t8=7.8 t64=9.0 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## pass 4  splitkv ctx=8192  16:48:31 ##########
+exit=0 16:57:41
+RESULT arm=splitkv ctx=8192 decode_tok_s=42.41 t8=8.0 t64=9.3 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+Q38_8K_DONE

@@ -73,7 +73,9 @@
 <circle cx="705.6" cy="165.7" r="3" fill="#3f8fd4"/>
 <circle cx="752.2" cy="171.9" r="3" fill="#3f8fd4"/>
 <line x1="79.1" y1="174.7" x2="191.2" y2="177.3" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
-<line x1="415.6" y1="181.9" x2="481.2" y2="183.9" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
+<line x1="191.2" y1="177.3" x2="303.4" y2="176.8" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
+<line x1="303.4" y1="176.8" x2="415.6" y2="181.5" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
+<line x1="415.6" y1="181.5" x2="481.2" y2="183.9" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
 <line x1="481.2" y1="183.9" x2="527.8" y2="188.9" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
 <line x1="527.8" y1="188.9" x2="593.4" y2="193.4" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
 <line x1="593.4" y1="193.4" x2="640.0" y2="198.7" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
@@ -82,7 +84,8 @@
 <line x1="705.6" y1="204.2" x2="752.2" y2="207.0" stroke="#2ea36a" stroke-width="2.4" stroke-linecap="round"/>
 <circle cx="79.1" cy="174.7" r="3" fill="#2ea36a"/>
 <circle cx="191.2" cy="177.3" r="3" fill="#2ea36a"/>
-<circle cx="415.6" cy="181.9" r="3" fill="#2ea36a"/>
+<circle cx="303.4" cy="176.8" r="3" fill="#2ea36a"/>
+<circle cx="415.6" cy="181.5" r="3" fill="#2ea36a"/>
 <circle cx="481.2" cy="183.9" r="3" fill="#2ea36a"/>
 <circle cx="527.8" cy="188.9" r="3" fill="#2ea36a"/>
 <circle cx="593.4" cy="193.4" r="3" fill="#2ea36a"/>
@@ -148,8 +151,8 @@
 <text x="441.0" y="378" font-size="11.5" fill="#8a8a8a">Qwen3.8-27B &#183; hybrid SSM</text>
 <text x="62" y="405" font-size="10" fill="#8a8a8a" opacity=".75">gemma-4-26B-A4B &#183; 2026-07-25 &#183; vLLM 0.23 &#183; ROCm 7.14</text>
 <text x="62" y="420" font-size="10" fill="#8a8a8a" opacity=".75">Qwen3-8B &#183; 2026-07-25 &#183; vLLM 0.23 &#183; ROCm 7.14</text>
-<text x="62" y="435" font-size="10" fill="#8a8a8a" opacity=".75">gemma-4-12B &#183; 2026-07-25 &#183; vLLM 0.23 &#183; ROCm 7.14 &#183; no point at 2K: passes differ >6%</text>
+<text x="62" y="435" font-size="10" fill="#8a8a8a" opacity=".75">gemma-4-12B &#183; 2026-07-25 &#183; vLLM 0.23 &#183; ROCm 7.14</text>
 <text x="62" y="450" font-size="10" fill="#8a8a8a" opacity=".75">Muse-Glimmer-30B &#183; 2026-08-24 &#183; vLLM 0.23.1.dev1 &#183; ROCm 7.14 &#183; needs vllm#45916, window</text>
 <text x="62" y="465" font-size="10" fill="#8a8a8a" opacity=".75">gemma-4-31B &#183; 2026-07-25 &#183; vLLM 0.23 &#183; ROCm 7.14</text>
-<text x="62" y="480" font-size="10" fill="#8a8a8a" opacity=".75">Qwen3.8-27B &#183; 2026-08-28 &#183; vLLM 0.27.1.dev5 &#183; ROCm 10.0 &#183; needs vllm#45916 &#183; no point at 8K: passes differ >6%</text>
+<text x="62" y="480" font-size="10" fill="#8a8a8a" opacity=".75">Qwen3.8-27B &#183; 2026-08-28 &#183; vLLM 0.27.1.dev5 &#183; ROCm 10.0 &#183; needs vllm#45916 &#183; no point at 8K: 4 passes in two modes, 41 and 47 tok/s</text>
 </svg>

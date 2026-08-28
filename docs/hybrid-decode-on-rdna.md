@@ -272,7 +272,7 @@ before it starts.
 | ctx | stock A / B | with #45916 A / B | pooled ratio |
 |---|---:|---:|---:|
 | 1 024 | 37.04 / 37.76 | 51.81 / 51.43 | **1.38x** |
-| 8 192 | 12.57 / 12.62 | 47.02 / 40.14 | **3.46x** |
+| 8 192 | 12.57 / 12.62 | 47.02 / 40.14 (+47.58, 42.41) | **3.52x** |
 | 32 768 | 3.83 / 3.81 | 35.20 / 37.05 | **9.46x** |
 
 Using the pooled figures, decode goes from 26.7 to 19.4 ms/token at 1K and
@@ -281,14 +281,22 @@ of context**, and what is retained from 1K to 32K from 10.2% to 70.0%.
 
 **The two arms are not equally stable, and that is worth more than the
 averages.** Across the two passes the stock arm moves 1.9%, 0.5% and 0.5%; the
-split-KV arm moves 0.7%, **14.6%** and 5.3%. The 8K cell is the outlier and it
-is not the split-count heuristic: `_num_splits_heuristic` is a pure function of
-batch size, KV heads, sequence length, block size and processor count, all
+split-KV arm moves 0.7%, **14.6%** and 5.3%.
+
+The 8K cell was then run twice more, and the extra passes did not converge it.
+Four values: 47.02, 40.14, 47.58, 42.41. Sorted, the largest gap between
+neighbours is bigger than half the total range and falls in the middle, so
+these are **two modes -- 41.3 and 47.3 tok/s, 15% apart -- rather than one
+noisy number**. Averaging them gives 44.29 and describes neither. That also
+rules out the reading that more passes would settle it: the range went from
+15.8% to 16.8% as they were added.
+
+It is not the split-count heuristic. `_num_splits_heuristic` is a pure function
+of batch size, KV heads, sequence length, block size and processor count, all
 fixed by the configuration, so it cannot return a different answer on a second
-run. The mechanism is not established here. What follows from it is a bound on
-use: **8 192 is not yet a chart-grade point for this arm**, and the 3.46x
-should be read as two measurements 14.6% apart rather than as a figure with
-three significant digits.
+run. The mechanism is not established here. What follows is a bound on use:
+**8 192 stays off the charts for this arm**, and the pooled 3.52x there is two
+clusters, not a figure with three significant digits.
 
 An earlier version of this section carried run A alone: 1.40x, 3.74x and 9.20x.
 Those are still run A's numbers and still in the repository; what changed is

@@ -47,6 +47,15 @@ COLOUR = {
 }
 ORDER = ["gemma-4-26B-A4B", "Qwen3-8B", "gemma-4-12B-it", "Muse-Glimmer-30B",
          "gemma-4-31B-it", "Qwen3.8-27B"]
+
+# One extra line, on the ms-per-token chart only. Drawing every model at its
+# best takes the hybrid-SSM collapse off that figure entirely, and the collapse
+# is what the figure is for -- "a linear-attention model should be flat" is an
+# argument you can only see against something that is not. So Qwen3.8-27B
+# appears there twice, in its own colour: solid for what a released vLLM gives
+# you, dashed for what vllm#45916 gives you. The decode chart does not carry it;
+# at 3.8 tok/s the contrast line would sit on the axis and add nothing.
+CONTRAST_MS = [("Qwen3.8-27B", "2026-08-28", ())]
 GREY = GRID = "#8a8a8a"
 PREFER_UNPATCHED_WITHIN = 0.02
 
@@ -84,6 +93,19 @@ def pick(rows):
                 and best[1] <= cand[1] * (1 + PREFER_UNPATCHED_WITHIN)):
             chosen[model] = cand
     return chosen
+
+
+def describe(row):
+    """Why a point is off the chart, in the form the numbers actually take."""
+    v = sorted(row["values"])
+    if len(v) < 3:
+        return f"{len(v)} passes, range {row['range_pct']:.0f}%"
+    gap, i = max((v[j + 1] - v[j], j) for j in range(len(v) - 1))
+    lo, hi = v[:i + 1], v[i + 1:]
+    if gap > (v[-1] - v[0]) / 2 and len(lo) > 1 and len(hi) > 1:
+        return (f"{len(v)} passes in two modes, "
+                f"{sum(lo)/len(lo):.0f} and {sum(hi)/len(hi):.0f} tok/s")
+    return f"{len(v)} passes, range {row['range_pct']:.0f}%"
 
 
 def nice_ticks(vmax):
@@ -189,25 +211,36 @@ def main():
             stack += f" &#183; needs {short}"
         note = f"{COLOUR[model][1].split(' &#183;')[0]} &#183; {stack}"
         if dropped:
-            note += (" &#183; no point at "
-                     + ", ".join(f"{d//1000}K" if d >= 1000 else str(d) for d in dropped)
-                     + ": passes differ >6%")
+            note += " &#183; no point at " + ", ".join(
+                f"{d//1000}K" if d >= 1000 else str(d) for d in dropped)
+            # name what the passes actually did rather than only that they
+            # disagreed: at 8K this one is two modes, not a wide scatter
+            bad = [p for p in pts if not p["chart_grade"]][0]
+            note += ": " + describe(bad)
         notes.append(note)
 
     mseries = [(m, [(x, 1000 / y, g) for x, y, g in pts], p) for m, pts, p in series]
+    mnotes = list(notes)
+    for model, date, patches in CONTRAST_MS:
+        grp = [r for r in led if r["model"] == model and r["tp"] == 2
+               and r["date"] == date and tuple(r["patches"]) == patches
+               and r["chart_grade"]]
+        if not grp:
+            continue
+        pts = sorted(((r["ctx"], 1000 / r["decode_tok_s"], False) for r in grp))
+        mseries.append((model, pts, bool(patches)))
+        r0 = grp[0]
+        mnotes.append(
+            f"{COLOUR[model][1].split(' &#183;')[0]} &#183; {r0['date']} &#183; vLLM "
+            f"{r0['vllm'].split('+')[0]} &#183; ROCm {r0['rocm']} &#183; unpatched, "
+            f"kept for the contrast")
     out = [
         build("decode-vs-context-best.svg", "Decode throughput vs context length",
               "one line per model, the best configuration measured here",
               series, 115, "decode tok/s", notes),
         build("decode-ms-per-token-best.svg", "Cost of one context token at decode time",
               "slope = ms added per token of context; a linear-attention model should be flat",
-              # 40, not the 250 the per-campaign chart needed: with each model
-              # drawn at its best the hybrid-SSM collapse is no longer on this
-              # figure -- 235 ms/token at 32K was the unpatched Qwen3.6. That
-              # contrast now lives in docs/hybrid-decode-on-rdna.md, which is
-              # the cost of asking this chart "what does the machine do?"
-              # instead of "what did that campaign measure?".
-              mseries, 40, "ms per generated token", notes),
+              mseries, 275, "ms per generated token", mnotes),
     ]
     for model in ORDER:
         if model in chosen:

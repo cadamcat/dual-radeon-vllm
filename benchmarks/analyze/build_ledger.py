@@ -72,11 +72,32 @@ CAMPAIGNS = [
 # without a patch, so the arm decides `patches` rather than the file does.
 PROBES = [
     dict(files=["hybrid-splitkv-027/qwen38-027-depth.jsonl",
-                "hybrid-splitkv-027/qwen38-027-depth-b.jsonl"],
+                "hybrid-splitkv-027/qwen38-027-depth-b.jsonl",
+                "hybrid-splitkv-027/qwen38-8k-r3r4.jsonl"],
          date="2026-08-28", vllm="0.27.1.dev5+gf46a9dfe2", rocm="10.0",
          kernel=None,
          arms={"stock": [], "splitkv": ["vllm#45916 split-KV"]}),
 ]
+
+
+SESSION_GAP_S = 3600  # two measurements ten hours apart are two sessions
+
+
+def latest_session(pairs):
+    """(ts, value) -> the last cluster of them, plus whatever it supersedes.
+
+    The July campaign re-ran two of gemma-4-12B's cells 10.4 hours later. Those
+    are a second measurement, not rounds three and four of the first: averaging
+    across them turned one bad reading at 2000 tokens into a 15.4% range that
+    described neither session. The later session's own two rounds agree to
+    0.85%.
+    """
+    pairs = sorted(pairs)
+    cut = 0
+    for i in range(1, len(pairs)):
+        if pairs[i][0] - pairs[i - 1][0] > SESSION_GAP_S:
+            cut = i
+    return [v for _, v in pairs[cut:]], [v for _, v in pairs[:cut]]
 
 
 def aggregate(values, **row):
@@ -106,12 +127,14 @@ def build():
             r = json.loads(line)
             if r.get("kind") != "decode" or not r.get("decode_tps"):
                 continue
-            by.setdefault((r["cfg"], r["target"]), []).append(r["decode_tps"])
-        for (cfg, target), vals in sorted(by.items()):
+            by.setdefault((r["cfg"], r["target"]), []).append((r["ts"], r["decode_tps"]))
+        for (cfg, target), pairs in sorted(by.items()):
             assert cfg in CFG, f"{c['file']}: unknown cfg {cfg}"
             name, quant, arch, tp = CFG[cfg]
+            vals, superseded = latest_session(pairs)
+            extra = {"superseded_values": sorted(superseded)} if superseded else {}
             rows.append(aggregate(
-                vals, model=name, quant=quant, arch=arch, tp=tp, ctx=target,
+                vals, **extra, model=name, quant=quant, arch=arch, tp=tp, ctx=target,
                 date=c["date"], vllm=c["vllm"], rocm=c["rocm"],
                 kernel=c["kernel"], patches=c["patches"],
                 harness="campaign-server", source=c["file"], cfg=cfg))
