@@ -725,6 +725,19 @@ def main():
     keys = [set(json.loads(block(pages[fn], "strings")).keys()) for fn in LANGS]
     ck("article, the strings tables have the same keys", "1",
        1 if keys[0] == keys[1] else 0)
+
+    # each page links to the other and marks itself current, so the switcher
+    # cannot end up pointing both buttons at the same file
+    for i, fn in enumerate(LANGS):
+        nav = re.findall(r'<a class="lang" href="([^"]+)" hreflang="([a-z]+)"'
+                         r'( aria-current="page")?>', pages[fn])
+        ck(f"article {fn}, both languages in the switcher", "2", len(nav))
+        ck(f"article {fn}, targets are the two pages", "1",
+           1 if sorted(h for h, _, _ in nav) == sorted(LANGS) else 0)
+        ck(f"article {fn}, exactly one is current", "1",
+           1 if sum(1 for _, _, c in nav if c) == 1 else 0)
+        ck(f"article {fn}, the current one is this page", "1",
+           1 if any(h == fn and c for h, _, c in nav) else 0)
     for k in sorted(keys[0]):
         ck(f"article, script uses string '{k}'", "1",
            1 if ("S." + k) in scr[0].group(0) else 0)

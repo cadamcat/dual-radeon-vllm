@@ -93,6 +93,12 @@
   .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
   .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
                   stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
   @media (max-width:640px){ .themebar { top:8px; right:8px; } }
 
   /* ---- masthead ---- */
@@ -221,7 +227,10 @@
 </style>
 </head>
 <body>
-<div class="themebar" role="group" aria-label="Colour theme">
+<nav class="themebar" aria-label="Language and colour theme">
+  <a class="lang" href="hybrid-ssm-collapse.html" hreflang="en" aria-current="page">EN</a>
+  <a class="lang" href="hybrid-ssm-collapse.zh.html" hreflang="zh">中</a>
+  <span class="sep" aria-hidden="true"></span>
   <button id="th-auto" aria-pressed="false" title="Match system">
     <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
   </button>
@@ -231,7 +240,7 @@
   <button id="th-dark" aria-pressed="false" title="Dark">
     <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
   </button>
-</div>
+</nav>
 <div class="wrap">
 
 <header class="top">
@@ -533,7 +542,6 @@ baseline is a different question with a different answer.</p>
   <p>Reported upstream as <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a>.
   The fix is <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> by @feiyehua, with the
   gfx11 widening by @thegoldenflow; this work contributed the gfx1100 end-to-end verification and the 0.27 A/B.</p>
-  <p><a href="hybrid-ssm-collapse.zh.html">中文版</a></p>
 </div>
 </div>
 
