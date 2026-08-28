@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dual-radeon-vllm · write-ups</title>
+<meta name="description" content="Long-form write-ups from a repository of measurements on 2x RX 7900 XT under ROCm and vLLM. Every figure is checked against the committed data it is drawn from.">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- index cards ---- */
+  .cards { display:grid; gap:1em; margin:1.6em 0; }
+  .card { display:block; background:var(--surface); border:1px solid var(--border);
+          border-radius:13px; padding:1.25em 1.4em; box-shadow:var(--shadow);
+          color:inherit; border-bottom:1px solid var(--border);
+          transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s; }
+  .card:hover { transform:translateY(-3px); border-color:var(--border-2);
+                box-shadow:0 2px 4px rgba(0,0,0,.06), 0 16px 40px rgba(0,0,0,.10); }
+  .card h3 { margin:.15em 0 .3em; font-size:1.24rem; letter-spacing:-.01em; }
+  .card p { margin:0; color:var(--text-2); font-size:.96rem; }
+  .card-date { font-family:var(--mono); font-size:.71rem; letter-spacing:.1em;
+               text-transform:uppercase; color:var(--accent); font-weight:700; }
+  .card-foot { display:flex; justify-content:space-between; align-items:center;
+               gap:1em; margin-top:1em; flex-wrap:wrap; }
+  .card-tags { display:flex; flex-wrap:wrap; gap:.4em; }
+  .card-tags span { font-family:var(--mono); font-size:.69rem; color:var(--text-dim);
+                    background:var(--surface-2); border:1px solid var(--border);
+                    border-radius:99px; padding:.2em .65em; }
+  .card-lang { font-family:var(--mono); font-size:.71rem; color:var(--text-dim); }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="Colour theme">
+  <button id="th-auto" aria-pressed="false" title="Match system">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="Light">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="Dark">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">dual-radeon-vllm · write-ups</div>
+  <h1>Two consumer Radeons,<br>measured</h1>
+  <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
+  (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
+  the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
+    <span class="chip"><a href="https://github.com/cadamcat/dual-radeon-vllm">repository</a></span>
+  </div>
+</header>
+
+<h2><span class="n">1</span>Articles</h2>
+
+<div class="cards" id="cards"></div>
+
+<h2><span class="n">2</span>How to read these</h2>
+
+<p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
+this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
+<code>7.0.0-30</code>, and a loader speed-up of 3.9× to 5.6× was withdrawn when page cache was properly
+controlled. Every article therefore closes with a section listing what has changed since, which is
+appended to rather than rewritten.</p>
+
+<p>Figures carry a provenance marker. <span class="prov yes">recomputable from repo</span> means
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+checks that value against its source file and fails non-zero if the two disagree — the same check that
+guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
+number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
+
+<p>The absolute rates are a floor rather than a benchmark of the hardware: this is a VFIO guest with no
+peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as the least favourable
+topology. The shapes transfer; the levels are the worst case.</p>
+
+<div class="foot-note">
+  <p>Source, raw data and the runners that produced it:
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">github.com/cadamcat/dual-radeon-vllm</a>.
+  Upstream reports and patches are linked from each article.</p>
+</div>
+</div>
+
+<script type="application/json" id="articles">{
+ "articles": [
+  {
+   "href": "articles/hybrid-ssm-collapse.html",
+   "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
+   "blurb": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
+   "measured": "measured 2026-07-25",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "hybrid SSM",
+    "paged attention",
+    "vllm#45916"
+   ]
+  }
+ ]
+}</script>
+<script>
+(function () {
+  "use strict";
+  var A = JSON.parse(document.getElementById("articles").textContent);
+  var root = document.documentElement, KEY = "hssm-theme";
+  var btns = { auto: document.getElementById("th-auto"),
+               light: document.getElementById("th-light"),
+               dark: document.getElementById("th-dark") };
+  function paint(mode) {
+    if (mode === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mode);
+    for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+  }
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+  paint(stored === "light" || stored === "dark" ? stored : "auto");
+  Object.keys(btns).forEach(function (k) {
+    btns[k].addEventListener("click", function () {
+      paint(k);
+      try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+      catch (e) { /* nothing to persist to */ }
+    });
+  });
+
+  var box = document.getElementById("cards");
+  A.articles.forEach(function (a, i) {
+    var el = document.createElement("a");
+    el.className = "card rv"; el.href = a.href;
+    el.innerHTML =
+      '<div class="card-date">' + a.measured + "</div>" +
+      "<h3>" + a.title + "</h3>" +
+      "<p>" + a.blurb + "</p>" +
+      '<div class="card-foot"><span class="card-tags">' +
+      a.tags.map(function (t) { return "<span>" + t + "</span>"; }).join("") +
+      '</span><span class="card-lang">' + a.langs.join(" · ") + "</span></div>";
+    box.appendChild(el);
+  });
+
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.15 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = (i * 70) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>
