@@ -272,9 +272,21 @@ bf16, 5.5e-04 fp16), so the mask zeroes padding without touching live data.
 Which kernel ran is counted by wrapping `ops.paged_attention_rocm`, not
 inferred from timing: 32 of 32 gqa=4 cells went through CK on both arms.
 
+Each cell also records a forced-CK column, which answers whether the fix is
+tied to the shape the gate admits today. Forced past the gate, the stock arm
+poisons **8** cells rather than 4: gqa=2 fails identically at 4090, 2048 NaN
+outputs, both dtypes, V-only and K+V. All 8 are clean on the patched arm, so
+the sanitisation is not specific to `gqa_ratio >= 3`. That bears on Stage 3,
+which measures what widening that same gate is worth: widening it admits gqa=2
+to this kernel, and this is the fault it would admit with it. The Triton
+column is clean in all 64 cells on both arms, `kv_load_mask` doing its job.
+
 Measured on vLLM `0.27.1.dev5+gf46a9dfe2`, ROCm 10.0, torch 2.12, 2x RX 7900 XT.
 Files: `probe_53856_027.py`, `53856-027-{stock,patched}.jsonl`,
 `build_53856.sh`, `53856-attn.diff`, `logs/v53856-*.log`.
+
+Reported to the PR author on request, 2026-08-28:
+[pull/53856#issuecomment-5451557090](https://github.com/vllm-project/vllm/pull/53856#issuecomment-5451557090).
 
 ## What this does not settle
 

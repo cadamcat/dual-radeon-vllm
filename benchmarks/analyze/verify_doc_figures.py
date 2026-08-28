@@ -1040,6 +1040,22 @@ def main():
        sum(1 for r in v53 if r["gqa_ratio"] == 4
            and r["as_shipped"].get("used_ck_kernel")))
 
+    # forced past the gate: the same fault at gqa=2, and the same fix. This is
+    # the bridge to Stage 3 -- widening the gate admits exactly these rows.
+    forced_bad = [r for r in v53 if not r["ck_forced"].get("all_finite", True)]
+    ck("50603 README, cells poisoned with CK forced", "8", len(forced_bad))
+    ck("50603 README, all of them on the stock arm", "1",
+       1 if all(r["arm"] == "stock" for r in forced_bad) else 0)
+    ck("50603 README, forced CK reaches gqa=2 as well", "2",
+       len({r["gqa_ratio"] for r in forced_bad}))
+    ck("50603 README, the gqa=2 rows NaN their whole output", "2048",
+       max(r["ck_forced"]["n_nan"] for r in forced_bad if r["gqa_ratio"] == 2))
+    ck("50603 README, and the patched arm is clean forced too", "0",
+       sum(1 for r in v53 if r["arm"] == "patched"
+           and not r["ck_forced"].get("all_finite", True)))
+    ck("50603 README, the Triton column is clean in all 64", "0",
+       sum(1 for r in v53 if not r["triton_forced"].get("all_finite", True)))
+
     # --- where the patch actually helps: the coverage sweep -----------------
     # The 0.27 pair measures one configuration and the patch loses there. The
     # sweep is what stops that from being read as "the patch is worthless".
