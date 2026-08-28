@@ -243,7 +243,20 @@ container: 372 measurements, nine configurations, six of them the July ones
 rerun as controls. Four reproduce within 0.25 %, one is too noisy to say, and one
 does not — which is discussed rather than dropped ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)).
 
-![decode throughput vs context length, patched](docs/assets/decode-vs-context-2026-08-24.svg)
+![decode throughput vs context length, best known configuration](docs/assets/decode-vs-context-best.svg)
+
+One line per model, each from whichever stack measured it best, with what that
+took written under the chart: solid needs nothing but a released vLLM, dashed
+needs a patch that is not merged. It is drawn from
+[`benchmarks/ledger.jsonl`](benchmarks/ledger.jsonl), which carries the date,
+vLLM, ROCm and patch list of every point.
+
+**The chart and the table below answer different questions, and Qwen3.8-27B is
+where that shows.** The table is one campaign, run on one afternoon on one
+stack; the chart is the best each model has been measured at. That model reads
+10.7 tok/s at 32 K in the table and 36.1 on the chart, and the difference is
+vLLM 0.27 with [#45916](https://github.com/vllm-project/vllm/pull/45916)
+applied ([the A/B](docs/hybrid-decode-on-rdna.md)).
 
 ### vLLM, tensor parallel — decode tok/s (2026-08-24, patched container)
 
@@ -259,7 +272,7 @@ chart and table — lives in [benchmarks.md](docs/benchmarks.md).
 | gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
 | **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
 | **gemma-4-31B-it** | w4a16 QAT dense | 42.8 | 36.6 | 29.3 | 🟢 the workhorse. 265 W × 2 synchronised |
-| **Qwen3.8-27B** | AWQ int4 (asymmetric), **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter. Slowest here — but that is the checkpoint, see below |
+| **Qwen3.8-27B** | AWQ int4 (asymmetric), **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter. Slowest in this campaign; on vLLM 0.27 with #45916 it is not — see the chart above |
 
 gemma-3-27b (44.8 / 34.6 / 22.1) is measured but not plotted: between 500 and
 4 000 it runs within two tok/s of both Muse-Glimmer and gemma-4-31B and the
@@ -294,18 +307,17 @@ to a repeatability check on the whole apparatus — is in
 
 ![single card vs dual card, patched](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
-**Why one architecture is unusable at long context.** Cost per generated token against
-context length. Four models sit flat along the bottom; the hybrid-SSM climbs a straight
-line: O(1) was promised, O(S) was measured.
+**Why one architecture was unusable at long context, and what fixed it.** Cost
+per generated token against context length. Five models sit flat along the
+bottom; Qwen3.8-27B is drawn twice in the same colour, because the contrast is
+the argument. Solid is what a released vLLM gives you — 261.9 ms per token at
+32 K, a straight climb where O(1) was promised. Dashed is the same model with
+[#45916](https://github.com/vllm-project/vllm/pull/45916): 27.7 ms, and flat.
 
-![cost of one context token at decode time](docs/assets/decode-ms-per-token.svg)
+![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
 
-And the same chart on the patched machine. **Its ceiling is 100 ms where the one
-above is 250**, because nothing here passes 94 — compare the slopes, not the
-heights. The line that used to climb off the top of the plot is on it now, and is
-still the steepest of the six at 0.390 µs against the dense band's 0.118–0.344:
-
-![cost of one context token at decode time, patched](docs/assets/decode-ms-per-token-2026-08-24.svg)
+The per-campaign versions of both charts, with every model pinned to one stack,
+are in [benchmarks.md](docs/benchmarks.md).
 
 **What eleven lines buy on a windowed model.** The sliding-window block skip
 changes nothing below each model's own window (1.00×, there is nothing to

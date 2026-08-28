@@ -24,6 +24,42 @@ Five models were chosen to isolate *architecture*, not size:
 
 ---
 
+## Where the machine stands, across every campaign
+
+Everything below this section is per-campaign: one software stack, one
+afternoon, every model pinned to it, which is what makes the controls in §6
+mean anything. That is the right frame for reading a campaign and the wrong one
+for the question most readers arrive with, so the two charts that answer *that*
+question come first.
+
+One line per model, each from whichever stack measured it best. Solid needs
+nothing but a released vLLM; dashed needs a patch that is not merged, named
+under the chart along with the date, vLLM and ROCm of every line. Both are
+drawn from [`../benchmarks/ledger.jsonl`](../benchmarks/ledger.jsonl) by
+[`gen_best_charts.py`](../benchmarks/analyze/gen_best_charts.py).
+
+![decode throughput vs context length, best known configuration](assets/decode-vs-context-best.svg)
+
+![cost of one context token at decode time, best known configuration](assets/decode-ms-per-token-best.svg)
+
+Three things about them are worth saying out loud.
+
+**Qwen3.8-27B is not the same line here as in §6.** There it is the 2026-08-24
+campaign at 10.68 tok/s at 32 K; here it is vLLM 0.27 with
+[#45916](https://github.com/vllm-project/vllm/pull/45916) at 36.12. Same model,
+same machine, different stack.
+
+**Its 8 K point came out in two modes.** Four passes gave 47.02, 40.14, 47.58
+and 42.41 — two clusters 15% apart rather than one noisy number, and adding
+passes widened the range instead of settling it. The charts plot the upper
+cluster and say so; the ledger still refuses to grade the point.
+
+**The ms-per-token chart draws that model twice**, in one colour, because the
+collapse is what the chart is for: solid is the released vLLM climbing to
+261.9 ms per token at 32 K, dashed is the same model at 27.7 and flat.
+
+---
+
 ## Decode
 
 ![decode throughput vs context length](assets/decode-vs-context.svg)

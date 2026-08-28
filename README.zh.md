@@ -53,13 +53,15 @@ plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因
 
 ![单卡对双卡,2026-08-24](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
-### 打上补丁之后(2026-08-24 第二次测量)
+### 这台机器目前能到多少
 
-同一台机器,容器加上 vllm#45916 的 split-KV 补丁(把它的架构门槛放宽到 RDNA3)和本仓库的滑窗跳块补丁,重测同一套阶梯:
+每个模型一条线,取的是它被测到的最好配置;线型说明代价:实线装上发行版 vLLM 就有,虚线需要一个还没合并的补丁,具体是哪个写在图下面。数据来自 [`benchmarks/ledger.jsonl`](benchmarks/ledger.jsonl),每个点都带着自己的日期、vLLM、ROCm 和补丁清单。
 
-![打补丁后的解码吞吐,2026-08-24](docs/assets/decode-vs-context-2026-08-24.svg)
+![这台机器的最佳解码吞吐](docs/assets/decode-vs-context-best.svg)
 
-hybrid SSM 的崩塌没有了:同架构的 Qwen3.8-27B 在 32K 从 4.2 提到 **10.7 tok/s**,斜率平了 12.4 倍。滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。这两个补丁上游都还没合并,复现脚本在 [patches/](patches/)。
+hybrid SSM 的崩塌没有了。Qwen3.8-27B 在 32K 上,发行版 vLLM 是 3.8 tok/s,加上 vllm#45916 是 **36.1 tok/s**,差 9.5 倍;它在 8K 那格四次运行分成两个模态(41 和 47 tok/s),图上画的是高的那个,图注写明了。滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。这两条虚线要的补丁上游都还没合并,复现脚本在 [patches/](patches/)。
+
+按 campaign 分的旧图(每张图里所有模型都钉在同一个软件栈上)仍在 [docs/benchmarks.md](docs/benchmarks.md)。
 
 滑窗跳块是本仓库自己的 11 行改动,收益曲线的形状本身就是机制证明:窗口以内 1.00×(没有块可跳),出了窗口单调上升,到 32K 是 2.75× 到 3.15×:
 

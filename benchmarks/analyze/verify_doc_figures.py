@@ -1331,6 +1331,43 @@ def main():
     ck("best charts, and the ledger still refuses to grade it", "0",
        1 if q8["chart_grade"] else 0)
 
+    # --- the front pages: what they embed, and the numbers they quote --------
+    ROOT = os.path.join(HERE, "..", "..")
+    rm = open(os.path.join(ROOT, "README.md")).read()
+    zh = open(os.path.join(ROOT, "README.zh.md")).read()
+    bm = open(os.path.join(ROOT, "docs", "benchmarks.md")).read()
+    for name, txt in (("README.md", rm), ("README.zh.md", zh)):
+        ck(f"{name} embeds the best-of decode chart", "1",
+           txt.count("decode-vs-context-best.svg"))
+        # the complaint that started the refactor: one figure, not two of it
+        ck(f"{name} no longer embeds a dated decode chart", "0",
+           txt.count("decode-vs-context-2026-08-24.svg")
+           + txt.count("assets/decode-vs-context.svg"))
+        ck(f"{name} no longer embeds two ms-per-token charts", "0",
+           txt.count("decode-ms-per-token-2026-08-24.svg")
+           + txt.count("assets/decode-ms-per-token.svg"))
+    ck("README.md embeds the best-of ms chart", "1",
+       rm.count("decode-ms-per-token-best.svg"))
+    ck("benchmarks.md keeps the per-campaign charts as the record", "2",
+       bm.count("assets/decode-vs-context.svg")
+       + bm.count("decode-vs-context-2026-08-24.svg"))
+    ck("benchmarks.md also carries both best-of charts", "2",
+       bm.count("decode-vs-context-best.svg") + bm.count("decode-ms-per-token-best.svg"))
+    # the two numbers the front page deliberately puts side by side
+    q32p = next(r for r in led if r["model"] == "Qwen3.8-27B" and r["ctx"] == 32768
+                and r["patches"])
+    q32s = next(r for r in led if r["model"] == "Qwen3.8-27B" and r["ctx"] == 32768
+                and not r["patches"])
+    ck("README, the chart's Qwen3.8 at 32K", "36.1", q32p["decode_tok_s"])
+    ck("README, the campaign table's Qwen3.8 at 32K", "10.68",
+       next(r["decode_tok_s"] for r in led if r["cfg"] == "D8-27B-tp2"
+            and r["ctx"] == 32000 and r["date"] == "2026-08-24"))
+    ck("README.zh, unpatched at 32K", "3.8", q32s["decode_tok_s"])
+    ck("README.zh, and the ratio between them", "9.5",
+       q32p["decode_tok_s"] / q32s["decode_tok_s"], tol=0.01)
+    ck("README, the solid ms line at 32K", "261.9", 1000 / q32s["decode_tok_s"])
+    ck("README, the dashed one", "27.7", 1000 / q32p["decode_tok_s"])
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
