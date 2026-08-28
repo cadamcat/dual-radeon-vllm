@@ -693,17 +693,44 @@ def main():
     # the repository, exactly like ledger.jsonl: if the data moves and the file
     # does not, this fails rather than letting a published page drift.
     ART = os.path.join(HERE, "..", "..", "docs", "articles")
-    art = open(os.path.join(ART, "hybrid-ssm-collapse.html"), encoding="utf-8").read()
-    m = re.search(r'<script type="application/json" id="figures">(.*?)</script>',
-                  art, re.S)
-    ck("article, figures block present", "1", 1 if m else 0)
-    A = json.loads(m.group(1))
+    LANGS = ["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"]
+    pages = {}
+    for fn in LANGS:
+        pages[fn] = open(os.path.join(ART, fn), encoding="utf-8").read()
+        # a published page that pulls a script or a font from elsewhere stops
+        # working the day that host does
+        ext = [u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', pages[fn])
+               if not u.startswith("https://github.com/")]
+        ck(f"article {fn}, no external assets", "0", len(ext))
 
-    # a published page that pulls a script or a font from elsewhere stops working
-    # the day that host does
-    ext = [u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', art)
-           if not u.startswith("https://github.com/")]
-    ck("article, no external assets", "0", len(ext))
+    def block(text, ident):
+        m = re.search(r'<script type="application/json" id="%s">(.*?)</script>' % ident,
+                      text, re.S)
+        return m.group(1) if m else None
+
+    # the two language versions are one article: the same measurements drawn by
+    # the same code, differing in prose and in the strings table only. If they
+    # ever diverge, one of them is quoting numbers nobody checked.
+    figs = [block(pages[fn], "figures") for fn in LANGS]
+    ck("article, both versions carry a figures block", "2",
+       sum(1 for f in figs if f))
+    ck("article, the two versions share one figures block", "1",
+       1 if figs[0] == figs[1] else 0)
+    scr = [re.search(r"<script>\n\(function \(\).*?\n</script>", pages[fn], re.S)
+           for fn in LANGS]
+    ck("article, the two versions share one script", "1",
+       1 if all(scr) and scr[0].group(0) == scr[1].group(0) else 0)
+    # every string the script prints must exist in both tables, or one version
+    # renders "undefined" where a label belongs
+    keys = [set(json.loads(block(pages[fn], "strings")).keys()) for fn in LANGS]
+    ck("article, the strings tables have the same keys", "1",
+       1 if keys[0] == keys[1] else 0)
+    for k in sorted(keys[0]):
+        ck(f"article, script uses string '{k}'", "1",
+           1 if ("S." + k) in scr[0].group(0) else 0)
+
+    art = pages[LANGS[0]]
+    A = json.loads(figs[0])
 
     # every series in fig1 and fig4 must still be exactly what the ledger holds
     led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
@@ -751,7 +778,9 @@ def main():
     ck("article, fig2 declares itself unreproducible", "1",
        0 if A["fig2"].get("reproducible_from_repo", True) else 1)
     ck("article, fig2 carries the marker on the page", "1",
-       1 if "raw trace not committed" in art else 0)
+       1 if "raw trace not committed" in pages[LANGS[0]] else 0)
+    ck("article, the Chinese version carries it too", "1",
+       1 if "原始 trace 未入库" in pages[LANGS[1]] else 0)
     adm = [r for r in g1c if r["gqa_ratio"] == 4]
     ck("50603 README, gqa4 is admitted by the shipped gate", "8",
        sum(1 for r in adm if r["gate_as_shipped"]))
