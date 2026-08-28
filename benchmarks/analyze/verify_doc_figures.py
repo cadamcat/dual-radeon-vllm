@@ -735,7 +735,9 @@ def main():
         ck(f"rccl article, {f} exists", "1",
            1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
 
-    LANGS = ["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"]
+    PAIRS = [["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"],
+             ["rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"]]
+    LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
         pages[fn] = open(os.path.join(ART, fn), encoding="utf-8").read()
@@ -753,39 +755,41 @@ def main():
     # the two language versions are one article: the same measurements drawn by
     # the same code, differing in prose and in the strings table only. If they
     # ever diverge, one of them is quoting numbers nobody checked.
-    figs = [block(pages[fn], "figures") for fn in LANGS]
-    ck("article, both versions carry a figures block", "2",
-       sum(1 for f in figs if f))
-    ck("article, the two versions share one figures block", "1",
-       1 if figs[0] == figs[1] else 0)
-    scr = [re.search(r"<script>\n\(function \(\).*?\n</script>", pages[fn], re.S)
-           for fn in LANGS]
-    ck("article, the two versions share one script", "1",
-       1 if all(scr) and scr[0].group(0) == scr[1].group(0) else 0)
-    # every string the script prints must exist in both tables, or one version
-    # renders "undefined" where a label belongs
-    keys = [set(json.loads(block(pages[fn], "strings")).keys()) for fn in LANGS]
-    ck("article, the strings tables have the same keys", "1",
-       1 if keys[0] == keys[1] else 0)
+    for pair in PAIRS:
+        tag = pair[0].replace(".html", "")
+        figs = [block(pages[fn], "figures") for fn in pair]
+        ck(f"article {tag}, both versions carry a figures block", "2",
+           sum(1 for f in figs if f))
+        ck(f"article {tag}, the two versions share one figures block", "1",
+           1 if figs[0] == figs[1] else 0)
+        scr = [re.search(r"<script>\n\(function \(\).*?\n</script>", pages[fn], re.S)
+               for fn in pair]
+        ck(f"article {tag}, the two versions share one script", "1",
+           1 if all(scr) and scr[0].group(0) == scr[1].group(0) else 0)
+        # every string the script prints must exist in both tables, or one
+        # version renders "undefined" where a label belongs
+        keys = [set(json.loads(block(pages[fn], "strings")).keys()) for fn in pair]
+        ck(f"article {tag}, the strings tables have the same keys", "1",
+           1 if keys[0] == keys[1] else 0)
+        for k in sorted(keys[0]):
+            ck(f"article {tag}, script uses string '{k}'", "1",
+               1 if ("S." + k) in scr[0].group(0) else 0)
 
-    # each page links to the other and marks itself current, so the switcher
-    # cannot end up pointing both buttons at the same file
-    for i, fn in enumerate(LANGS):
-        nav = re.findall(r'<a class="lang" href="([^"]+)" hreflang="([a-z]+)"'
-                         r'( aria-current="page")?>', pages[fn])
-        ck(f"article {fn}, both languages in the switcher", "2", len(nav))
-        ck(f"article {fn}, targets are the two pages", "1",
-           1 if sorted(h for h, _, _ in nav) == sorted(LANGS) else 0)
-        ck(f"article {fn}, exactly one is current", "1",
-           1 if sum(1 for _, _, c in nav if c) == 1 else 0)
-        ck(f"article {fn}, the current one is this page", "1",
-           1 if any(h == fn and c for h, _, c in nav) else 0)
-    for k in sorted(keys[0]):
-        ck(f"article, script uses string '{k}'", "1",
-           1 if ("S." + k) in scr[0].group(0) else 0)
+        # each page links to the other and marks itself current, so the switcher
+        # cannot end up pointing both buttons at the same file
+        for fn in pair:
+            nav = re.findall(r'<a class="lang" href="([^"]+)" hreflang="([a-z]+)"'
+                             r'( aria-current="page")?>', pages[fn])
+            ck(f"article {fn}, both languages in the switcher", "2", len(nav))
+            ck(f"article {fn}, targets are the two pages", "1",
+               1 if sorted(h for h, _, _ in nav) == sorted(pair) else 0)
+            ck(f"article {fn}, exactly one is current", "1",
+               1 if sum(1 for _, _, c in nav if c) == 1 else 0)
+            ck(f"article {fn}, the current one is this page", "1",
+               1 if any(h == fn and c for h, _, c in nav) else 0)
 
-    art = pages[LANGS[0]]
-    A = json.loads(figs[0])
+    art = pages[PAIRS[0][0]]
+    A = json.loads(block(art, "figures"))
 
     # every series in fig1 and fig4 must still be exactly what the ledger holds
     led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
@@ -835,7 +839,9 @@ def main():
     ck("article, fig2 carries the marker on the page", "1",
        1 if "raw trace not committed" in pages[LANGS[0]] else 0)
     ck("article, the Chinese version carries it too", "1",
-       1 if "原始 trace 未入库" in pages[LANGS[1]] else 0)
+       1 if "原始 trace 未入库" in pages["hybrid-ssm-collapse.zh.html"] else 0)
+    ck("rccl article, the Chinese version marks fig2 too", "1",
+       1 if "llvm-readelf 输出未入库" in pages["rccl-atomics-hostcall.zh.html"] else 0)
     adm = [r for r in g1c if r["gqa_ratio"] == 4]
     ck("50603 README, gqa4 is admitted by the shipped gate", "8",
        sum(1 for r in adm if r["gate_as_shipped"]))
