@@ -227,7 +227,11 @@ one is absent, which is the only available confirmation since nothing logs the
 choice.
 
 End to end, decode isolated from prefill. The two sides are separate runs, and
-not quite the same measurement either: "before" is the campaign, which generated
+not quite the same measurement either -- though the two harnesses were later
+calibrated against each other and agree to within 0.44%
+([`benchmarks/harness-calibration/`](../benchmarks/harness-calibration/)), so
+what follows is conservative for a different reason than this paragraph
+assumed: "before" is the campaign, which generated
 512 tokens and timed decode first token to last, averaged over two rounds;
 "after" differences a 64-token generation against an 8-token one at the same
 depth, once per depth with no repeat. The depths differ too, the "after" context

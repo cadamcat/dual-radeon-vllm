@@ -1192,6 +1192,46 @@ def main():
        100 * abs(q38[("stock", 1024)]["decode_tok_s"] - 37.31902014484255)
        / 37.31902014484255, tol=0.1)
 
+    # --- harness calibration: are the two decode harnesses the same thing? ---
+    CDIR = os.path.join(HERE, "..", "harness-calibration")
+    cal = {}
+    for i in (1, 2, 3, 4):
+        for line in open(os.path.join(CDIR, f"harness-cal-r{i}.jsonl")):
+            r = json.loads(line)
+            cal[(i, r["campaign_target"])] = r
+    ck("harness-cal README, rounds x depths", "12", len(cal))
+    camp = {500: (79.45, 79.49), 8000: (73.43, 73.29), 32000: (61.43, 61.34)}
+    aug = [json.loads(l) for l in open(os.path.join(HERE, "..",
+                                                    "results-2026-08-24.jsonl"))]
+    for tgt, pair in camp.items():
+        rows = [r["decode_tps"] for r in aug
+                if r["kind"] == "decode" and r["cfg"] == "B-8B-tp2"
+                and r["target"] == tgt]
+        ck(f"harness-cal README, campaign {tgt} is what it says", "1",
+           1 if sorted(rows) == sorted(pair) else 0)
+    conv = lambda t, k: (cal[(3, t)][k] + cal[(4, t)][k]) / 2
+    for tgt, claim64, claim512 in ((500, "-0.44", "-0.97"),
+                                   (8000, "-0.01", "-0.27"),
+                                   (32000, "-0.07", "-0.19")):
+        c = sum(camp[tgt]) / 2
+        ck(f"harness-cal README, {tgt} converged vs campaign", claim64,
+           100 * (conv(tgt, "tps_64") / c - 1))
+        ck(f"harness-cal README, {tgt} at the campaign's span", claim512,
+           100 * (conv(tgt, "tps_512") / c - 1))
+    for tgt, r1, r2 in ((500, "-30.7", "-5.1"), (8000, "-17.2", "-6.2"),
+                        (32000, "-9.2", "0.5")):
+        ck(f"harness-cal README, {tgt} first run reads", r1,
+           100 * (cal[(1, tgt)]["tps_64"] / conv(tgt, "tps_64") - 1))
+        ck(f"harness-cal README, {tgt} second run still reads", r2,
+           100 * (cal[(2, tgt)]["tps_64"] / conv(tgt, "tps_64") - 1))
+    spread = [100 * abs(cal[(3, t)]["tps_64"] - cal[(4, t)]["tps_64"])
+              / cal[(3, t)]["tps_64"] for t in camp]
+    ck("harness-cal README, converged run-to-run floor", "0.07", min(spread))
+    ck("harness-cal README, converged run-to-run ceiling", "0.36", max(spread))
+    ck("harness-cal README, depths are the campaign's own prompt_tokens", "3",
+       sum(1 for t in camp if cal[(3, t)]["prompt_tokens_got"]
+           == cal[(3, t)]["prompt_tokens_wanted"]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
