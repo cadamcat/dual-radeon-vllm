@@ -18,8 +18,11 @@
 >
 > That question — **on gfx1100, for an asymmetric checkpoint, is the patched
 > RDNA3 kernel faster than Hybrid?** — has since been measured on a 0.27.1.dev
-> image. **It is not: Hybrid is 5.9% faster.** See "What main actually does"
-> below. The patch in this directory should therefore not be proposed upstream.
+> image. On the configuration measured here, no: Hybrid is 5.9% faster. But
+> that configuration is one of three (out of twelve) where Hybrid competes at
+> all; on the other nine the patch is the difference between a native kernel
+> and either Triton or **nothing at all**. See "What main actually does" and
+> "Where the patch actually buys something" below.
 
 [vllm#50264](https://github.com/vllm-project/vllm/issues/50264) settled why
 `Qwen3.8-27B` *collapses* with context on this box, and
@@ -423,12 +426,18 @@ Same checkpoint, same prompt, same image, differing only by the three lines:
 kernel served the layers is recorded from inside the workers in each arm rather
 than assumed.
 
-**So the patch should not be proposed, and not because it fails.** It works,
-and it is slower than what `main` already does. It would also be actively
-harmful: `RDNA3W4A16LinearKernel` sits *ahead* of Hybrid in the ROCm priority
-list, so admitting `uint4` there takes asymmetric checkpoints away from Hybrid
-and hands them to the slower kernel. A merged version of this patch would cost
-users about 6%.
+**That measurement was first read as "the patch is a loss", which was too
+broad.** It is a loss *on this configuration*. Sweeping the asymmetric
+configuration space shows the patch is a loss on three of twelve and a gain on
+nine, and this checkpoint happens to sit in the losing three. See "Where the
+patch actually buys something" below.
+
+What does hold from this pair: on the configurations Hybrid accepts, admitting
+`uint4` into RDNA3 hands the layer to the slower of two working kernels,
+because `RDNA3W4A16LinearKernel` sits *ahead* of Hybrid in the ROCm priority
+list. The patch as written cannot tell those configurations apart from the ones
+where it is the only option, and that -- not the 6% -- is why it cannot be
+proposed in this form.
 
 That is the same conclusion @JartX argued for on
 [vllm#46186](https://github.com/vllm-project/vllm/pull/46186) from the gfx1151
@@ -440,6 +449,53 @@ gfx1100 case of it, for a checkpoint class that discussion has not covered.
 there, not the 11.41 measured here against Triton. The gap this directory is
 about was closed upstream by #40977, through a different kernel than the one it
 investigates.
+
+### Where the patch actually buys something
+
+The pair above compares one configuration: group_size 32, no act-order. Both
+kernels accept it, so the patch only decides *which* native kernel runs. That
+is not the whole space, because Hybrid refuses two things RDNA3 does not:
+
+| | Hybrid | RDNA3 with the patch |
+|---|---|---|
+| group_size | `[32, 64, 128]` only | any positive value that divides K |
+| act-order (`g_idx`) | rejected outright | supported, unless the input dim is TP-partitioned |
+
+Asking the registry across group size and act-order, asymmetric throughout,
+with and without the patch (`probe_coverage_gap.py`, `coverage-gap.json`; this
+is `can_implement` only, no kernel runs, so it says nothing about speed):
+
+| region | configs | what the patch does |
+|---|---:|---|
+| overlap | **3** | displaces Hybrid, 5.9% slower — g32/g64/g128 without act-order |
+| replaces Triton | **1** | g256 without act-order |
+| **nothing serves it today** | **8** | **turns "will not load" into "runs"** |
+
+The eight are the interesting ones. **Every asymmetric configuration with
+act-order currently has no kernel at all on gfx1100**: Hybrid rejects `g_idx`,
+Triton rejects `g_idx` too, Conch and Exllama do not apply, and
+`choose_mp_linear_kernel` raises `ValueError`. `desc_act=True` is a standard
+GPTQ quality option rather than an exotic setting. g512 without act-order is
+also unservable, since Triton's group sizes stop at 256.
+
+Verified numerically rather than left at the registry's word
+(`upstream-tests/test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_act_order`,
+`logs/tests-actorder.log`): a real `desc_act` permutation, fp16 and bf16,
+decode and prefill shapes, against an fp32 reference that indexes scales and
+zero points through `g_idx`. **4 failed before the patch, 4 passed after, and
+the full suite goes to 54 passed with no regression.**
+
+So the checkpoint this directory is built on -- AWQ, group_size 32, no
+act-order -- lands in the three-config losing region, which is why the first
+reading of the 0.27 pair was that the patch is worthless. It is worth
+something; just not for this checkpoint.
+
+**What would make it proposable** is a way to take only the nine. Three shapes,
+none of them measured here: narrow RDNA3's `uint4` acceptance to the cases
+Hybrid refuses (precise, but makes one kernel encode another's limits); move
+Hybrid ahead of RDNA3 in the priority list (untested for symmetric checkpoints,
+where RDNA3 may well be the faster one); or widen Hybrid instead, which is
+probably what upstream would want and is not our code to change.
 
 ### A memory difference, from the failures rather than the results
 
@@ -542,10 +598,12 @@ C++ change, **3.11x on the asymmetric checkpoint with output that matches the
 Triton control token for token**, and a control arm showing the third line is
 load-bearing rather than decorative.
 
-**It should still not be proposed.** On `main`, where Hybrid rather than Triton
-takes these checkpoints, the same patch is 5.9% *slower* than doing nothing, and
-because RDNA3 outranks Hybrid it would take the work away from the faster
-kernel. See "What main actually does" above. What follows below was written
+**It should still not be proposed in this form.** On `main`, where Hybrid
+rather than Triton takes the common checkpoints, the patch hands them to the
+slower of two working kernels. It cannot distinguish those from the nine
+configurations where it is the only option, including every asymmetric
+checkpoint with act-order, which today will not load at all. See "What main
+actually does" and "Where the patch actually buys something" above. What follows below was written
 before that was measured and is kept as the reasoning that led to the
 measurement.
 

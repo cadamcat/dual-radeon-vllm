@@ -34,6 +34,7 @@ from vllm.model_executor.layers.quantization.utils.quant_utils import (  # noqa:
 from vllm.model_executor.parameter import (  # noqa: E402
     GroupQuantScaleParameter,
     PackedvLLMParameter,
+    RowvLLMParameter,
 )
 from vllm.platforms.rocm import on_gfx1100  # noqa: E402
 from vllm.scalar_type import scalar_types  # noqa: E402
@@ -372,7 +373,8 @@ def _build_layer_asym(
     return layer
 
 
-def _run_kernel_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, group_size, bias, dtype):
+def _run_kernel_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, group_size, bias, dtype,
+                     g_idx=None):
     K, N = q_int4_kn.shape
     config = MPLinearLayerConfig(
         full_weight_shape=(K, N),
@@ -381,18 +383,23 @@ def _run_kernel_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, group_size, bias, dty
         act_type=dtype,
         group_size=group_size,
         zero_points=True,
-        has_g_idx=False,
+        has_g_idx=g_idx is not None,
     )
     ok, reason = RDNA3W4A16LinearKernel.can_implement(config)
     assert ok, f"can_implement rejected an asymmetric config: {reason}"
 
     layer = _build_layer_asym(q_int4_kn, scales_gn, zeros_gn, dtype)
+    if g_idx is not None:
+        layer.register_parameter(
+            "weight_g_idx",
+            RowvLLMParameter(data=g_idx.clone(), input_dim=0,
+                             weight_loader=lambda *a, **k: None))
     kernel = RDNA3W4A16LinearKernel(
         config,
         w_q_param_name="weight_packed",
         w_s_param_name="weight_scale",
         w_zp_param_name="weight_zero_point",
-        w_gidx_param_name=None,
+        w_gidx_param_name="weight_g_idx" if g_idx is not None else None,
     )
     kernel.process_weights_after_loading(layer)
     return kernel.apply_weights(layer, x_mk, bias=bias)
@@ -444,4 +451,55 @@ def test_rdna3_w4a16_asymmetric_zero_point_of_zero(dtype, M, dist_init):
 
     out = _run_kernel_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, G, None, dtype)
     ref = _reference_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, G, None)
+    _assert_close(out, ref, dtype)
+
+
+# ---------------------------------------------------------------------------
+# Asymmetric + act-order: the configuration nothing on gfx1100 can serve today
+# ---------------------------------------------------------------------------
+
+
+def _reference_asym_actorder(x_mk, q_int4_kn, scales_gn, zeros_gn, g_idx,
+                             group_size, bias):
+    """fp32 reference with act-order: row k of the weight uses group g_idx[k]."""
+    K, N = q_int4_kn.shape
+    s_full = scales_gn[g_idx].to(torch.float32)          # [K, N]
+    z_full = zeros_gn[g_idx].to(torch.float32)           # [K, N], v2: no +1
+    w_fp = (q_int4_kn.to(torch.float32) - z_full) * s_full
+    out = x_mk.to(torch.float32) @ w_fp
+    if bias is not None:
+        out = out + bias.to(torch.float32)
+    return out.to(x_mk.dtype)
+
+
+@gfx1100_only
+@pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16])
+@pytest.mark.parametrize("M,K,N,G", [(1, 512, 256, 128), (32, 512, 512, 64)],
+                         ids=["decode", "prefill"])
+def test_rdna3_w4a16_asymmetric_act_order(dtype, M, K, N, G, dist_init):
+    """An asymmetric checkpoint with activation reordering.
+
+    Hybrid rejects `has_g_idx` outright and Triton rejects it too, so on
+    gfx1100 this configuration currently has no kernel at all and the layer
+    fails to load. It is the case the type-gate change is actually worth
+    making, as distinct from the group-size-32/64/128 cases where Hybrid
+    already serves the layer and serves it faster.
+    """
+    set_random_seed(0)
+    groups = K // G
+    x_mk = (0.25 * torch.randn((M, K), device=device, dtype=torch.float32)).to(dtype)
+    q_int4_kn = torch.randint(0, 16, (K, N), device=device, dtype=torch.int32)
+    scales_gn = (
+        0.05 * torch.rand((groups, N), device=device, dtype=torch.float32) + 0.01
+    ).to(dtype)
+    zeros_gn = torch.randint(0, 16, (groups, N), device=device, dtype=torch.int32)
+    # a real desc_act permutation: each row assigned to some group, shuffled
+    g_idx = torch.arange(K, device=device, dtype=torch.int32) // G
+    g_idx = g_idx[torch.randperm(K, device=device)]
+
+    out = _run_kernel_asym(x_mk, q_int4_kn, scales_gn, zeros_gn, G, None, dtype,
+                           g_idx=g_idx)
+    ref = _reference_asym_actorder(x_mk, q_int4_kn, scales_gn, zeros_gn,
+                                   g_idx.long(), G, None)
+    assert out.shape == (M, N) and out.dtype == dtype
     _assert_close(out, ref, dtype)

@@ -1,0 +1,134 @@
+[
+ {
+  "group_size": 16,
+  "has_g_idx": false,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "Group size 16 not supported; supported: [32, 64, 128]",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 16,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 32,
+  "has_g_idx": false,
+  "stock_pick": "RDNAHybridW4A16LinearKernel",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": true,
+  "triton_accepts": true,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": null,
+  "region": "overlap: patch displaces Hybrid"
+ },
+ {
+  "group_size": 32,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 64,
+  "has_g_idx": false,
+  "stock_pick": "RDNAHybridW4A16LinearKernel",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": true,
+  "triton_accepts": true,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": null,
+  "region": "overlap: patch displaces Hybrid"
+ },
+ {
+  "group_size": 64,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 128,
+  "has_g_idx": false,
+  "stock_pick": "RDNAHybridW4A16LinearKernel",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": true,
+  "triton_accepts": true,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": null,
+  "region": "overlap: patch displaces Hybrid"
+ },
+ {
+  "group_size": 128,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 256,
+  "has_g_idx": false,
+  "stock_pick": "TritonW4A16LinearKernel",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": true,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "Group size 256 not supported; supported: [32, 64, 128]",
+  "region": "GAP: patch replaces Triton"
+ },
+ {
+  "group_size": 256,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 512,
+  "has_g_idx": false,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "Group size 512 not supported; supported: [32, 64, 128]",
+  "region": "GAP+: patch makes the layer loadable at all"
+ },
+ {
+  "group_size": 512,
+  "has_g_idx": true,
+  "stock_pick": "(none: layer would not load)",
+  "patched_pick": "RDNA3W4A16LinearKernel",
+  "hybrid_accepts": false,
+  "triton_accepts": false,
+  "rdna3_patched_accepts": true,
+  "hybrid_reason": "does not support g_idx reordering",
+  "region": "GAP+: patch makes the layer loadable at all"
+ }
+]

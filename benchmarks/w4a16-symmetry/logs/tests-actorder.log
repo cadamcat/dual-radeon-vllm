@@ -1,0 +1,13 @@
+### STOCK act-order
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_act_order[prefill-dtype0]
+FAILED test_rdna3_w4a16.py::test_rdna3_w4a16_asymmetric_act_order[prefill-dtype1]
+4 failed, 38 deselected, 14 warnings in 18.00s
+PATCH_APPLIED
+### PATCHED act-order
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 38 deselected, 14 warnings in 10.26s
+### PATCHED full
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+54 passed, 14 warnings in 23.45s

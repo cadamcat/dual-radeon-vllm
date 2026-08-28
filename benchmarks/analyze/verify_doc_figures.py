@@ -1040,6 +1040,37 @@ def main():
        sum(1 for r in v53 if r["gqa_ratio"] == 4
            and r["as_shipped"].get("used_ck_kernel")))
 
+    # --- where the patch actually helps: the coverage sweep -----------------
+    # The 0.27 pair measures one configuration and the patch loses there. The
+    # sweep is what stops that from being read as "the patch is worthless".
+    cg = json.load(open(os.path.join(WDIR, "coverage-gap.json")))
+    ck("w4a16 README, asymmetric configs swept", "12", len(cg))
+    ck("w4a16 README, configs where the patch displaces Hybrid", "3",
+       sum(1 for r in cg if r["region"].startswith("overlap")))
+    ck("w4a16 README, configs where it replaces Triton", "1",
+       sum(1 for r in cg if r["region"].startswith("GAP:")))
+    ck("w4a16 README, configs nothing serves today", "8",
+       sum(1 for r in cg if r["region"].startswith("GAP+")))
+    ck("w4a16 README, every act-order config is unserved today", "1",
+       1 if all(not r["hybrid_accepts"] and not r["triton_accepts"]
+                for r in cg if r["has_g_idx"]) else 0)
+    ck("w4a16 README, and the patch serves all of them", "1",
+       1 if all(r["rdna3_patched_accepts"] for r in cg if r["has_g_idx"]) else 0)
+    ck("w4a16 README, the measured checkpoint sits in the losing region", "1",
+       1 if next(r["region"] for r in cg
+                 if r["group_size"] == 32 and not r["has_g_idx"]
+                 ).startswith("overlap") else 0)
+
+    # the act-order case, verified numerically rather than by can_implement
+    ao = open(os.path.join(WDIR, "logs", "tests-actorder.log"),
+              errors="replace").read()
+    ck("w4a16 README, act-order fails before the patch", "4",
+       int(re.search(r"(\d+) failed", ao).group(1)))
+    ck("w4a16 README, act-order passes after it", "4",
+       int(re.findall(r"(\d+) passed", ao)[0]))
+    ck("w4a16 README, and the full suite has no regression", "54",
+       int(re.findall(r"(\d+) passed", ao)[-1]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
