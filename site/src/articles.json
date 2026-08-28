@@ -1,6 +1,21 @@
 {
  "articles": [
   {
+   "href": "articles/reporting-a-non-reproduction.html",
+   "title": "How to report a bug you cannot reproduce",
+   "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth something, and the third found that the reporter's own script counts failures on rank 0 only — demonstrated by injecting a one-sided fault rather than argued.",
+   "measured": "measured 2026-08-28",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "RCCL",
+    "negative result",
+    "ROCm#6565"
+   ]
+  },
+  {
    "href": "articles/gqa-gate-costs-nothing.html",
    "title": "A gate that costs 2 to 7 times and buys nothing",
    "blurb": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and the excluded band overlaps the admitted one on both.",

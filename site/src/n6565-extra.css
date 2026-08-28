@@ -1,0 +1,68 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  /* ---- the arm sweep ---- */
+  .arms { display:grid; grid-template-columns:max-content 1fr max-content max-content;
+          column-gap:1em; align-items:center; font-size:.86rem; }
+  .arms > div { padding:.45em 0; border-bottom:1px solid var(--border); }
+  .arms > div:nth-last-child(-n+4) { border-bottom:0; }
+  .arms .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .arms .a { font-family:var(--mono); font-size:.79rem; color:var(--text); }
+  .arms .e { font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+             overflow:hidden; text-overflow:ellipsis; }
+  .arms .r { font-family:var(--mono); font-size:.76rem; text-align:right;
+             font-variant-numeric:tabular-nums; color:var(--green); }
+  .arms .r.dim { color:var(--text-dim); }
+  @media (max-width:560px){ .arms { grid-template-columns:max-content 1fr max-content; }
+                            .arms .e { grid-column:1 / -1; padding-top:0; border-bottom:0; } }
+
+  .sweeps { display:grid; grid-template-columns:1fr 1fr; gap:.8em; margin-top:1.2em; }
+  .sw2 { border:1px solid var(--border); border-radius:11px; padding:.9em 1em;
+         background:var(--surface-2); }
+  .sw2.now { background:var(--green-bg);
+             border-color:color-mix(in srgb, var(--green) 30%, transparent); }
+  .sw2 h4 { margin:0 0 .2em; font-family:var(--mono); font-size:.71rem;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); }
+  .sw2.now h4 { color:var(--green); }
+  .sw2 .n { font-family:var(--mono); font-size:1.25rem; font-weight:800; color:var(--text); }
+  .sw2.now .n { color:var(--green); }
+  .sw2 .d { font-family:var(--mono); font-size:.69rem; color:var(--text-dim);
+            line-height:1.5; margin-top:.25em; }
+  @media (max-width:520px){ .sweeps { grid-template-columns:1fr; } }
+
+  /* ---- the machine contrast ---- */
+  .mach { display:grid; grid-template-columns:max-content 1fr 1fr; column-gap:1em;
+          font-size:.86rem; }
+  .mach > div { padding:.5em 0; border-bottom:1px solid var(--border); }
+  .mach > div:nth-last-child(-n+3) { border-bottom:0; }
+  .mach .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .mach .k { font-family:var(--mono); font-size:.74rem; color:var(--text-dim); }
+  .mach .v { color:var(--text-2); font-size:.83rem; }
+  .mach .v.same { color:var(--green); }
+  .mach .v code { font-size:.78em; }
+  @media (max-width:560px){ .mach { grid-template-columns:1fr; }
+                            .mach .k { padding-bottom:0; border-bottom:0; }
+                            .mach .v:first-of-type { border-bottom:0; padding-bottom:0; } }
+
+  /* ---- the blind spot ---- */
+  .bspot { display:grid; grid-template-columns:max-content 1fr max-content max-content;
+           column-gap:1em; align-items:center; font-size:.86rem; }
+  .bspot > div { padding:.55em 0; border-bottom:1px solid var(--border); }
+  .bspot > div:nth-last-child(-n+4) { border-bottom:0; }
+  .bspot .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+              text-transform:uppercase; color:var(--text-dim);
+              border-bottom:1px solid var(--border-2); }
+  .bspot .w { font-family:var(--mono); font-size:.76rem; color:var(--text); }
+  .bspot .s { font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .bspot .vd { font-family:var(--mono); font-size:.78rem; font-weight:700; }
+  .bspot .vd.blind { color:var(--red); }
+  .bspot .vd.saw { color:var(--green); }
+  .bspot .x { font-family:var(--mono); font-size:.74rem; color:var(--text-dim);
+              text-align:right; }
+  @media (max-width:560px){ .bspot { grid-template-columns:max-content 1fr max-content; }
+                            .bspot .s { grid-column:1 / -1; padding-top:0; border-bottom:0; } }

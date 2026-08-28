@@ -1,0 +1,251 @@
+{
+ "_what": "Every figure in reporting-a-non-reproduction.html. Arm tallies parsed from benchmarks/rccl-6565/logs/, the machine contrast extracted from that directory's README. Derived by site/src/genfig-6565.py.",
+ "fig1": {
+  "arms": [
+   {
+    "arm": "default",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "none",
+    "cross": {
+     "arm": "default",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "p2pdisable",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "NCCL_P2P_DISABLE=1",
+    "cross": {
+     "arm": "p2pdisable",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "prod",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0",
+    "cross": {
+     "arm": "prod",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "ch1",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN/MAX_NCHANNELS=1",
+    "cross": {
+     "arm": "ch1",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch4",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=4",
+    "cross": {
+     "arm": "ch4",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch8",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=8",
+    "cross": {
+     "arm": "ch8",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch16",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=16",
+    "cross": {
+     "arm": "ch16",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "shmoff",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "NCCL_SHM_DISABLE=1",
+    "cross": {
+     "arm": "shmoff",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   }
+  ],
+  "sweeps": [
+   {
+    "id": "rank0",
+    "date": "2026-08-27",
+    "script": "rccl_allgather_truth.py",
+    "verdict": "rank 0 only",
+    "total": 135,
+    "passed": 135,
+    "failed": 0,
+    "error": 0
+   },
+   {
+    "id": "allranks",
+    "date": "2026-08-28",
+    "script": "rccl_allgather_allranks.py",
+    "verdict": "every rank",
+    "total": 135,
+    "passed": 135,
+    "failed": 0,
+    "error": 0
+   }
+  ],
+  "same_arms_same_counts": true,
+  "cases_per_init": 12,
+  "reporter_md5": "bffbc297cad9f1956c8bb2b7e8a4bb0f",
+  "verbatim": true,
+  "default_channels": 2,
+  "rccl_version": "2.30.4-HEAD:2b22ab0"
+ },
+ "fig2": {
+  "header": [
+   "",
+   "BoJl4apa (#6565)",
+   "here"
+  ],
+  "rows": [
+   {
+    "axis": "GPUs",
+    "theirs": "2x Radeon Pro W7800 48G, gfx1100",
+    "ours": "2x RX 7900 XT, gfx1100",
+    "same": false
+   },
+   {
+    "axis": "platform",
+    "theirs": "bare metal",
+    "ours": "VFIO guest (Proxmox passthrough)",
+    "same": false
+   },
+   {
+    "axis": "kernel",
+    "theirs": "6.8.0-136",
+    "ours": "7.0.0-30",
+    "same": false
+   },
+   {
+    "axis": "ROCm / RCCL",
+    "theirs": "7.2.3 / 2.27.7 and 7.13 / 2.28.3",
+    "ours": "7.14 / 2.30.4-HEAD:2b22ab0",
+    "same": false
+   },
+   {
+    "axis": "PCIe atomics",
+    "theirs": "AtomicOpsCtl: ReqEn+",
+    "ours": "ReqEn+ (same)",
+    "same": true
+   },
+   {
+    "axis": "IOMMU",
+    "theirs": "tested with amd_iommu=off too",
+    "ours": "0 groups in guest (same effect)",
+    "same": true
+   },
+   {
+    "axis": "P2P",
+    "theirs": "selected, IPC, and 7000x slow (their #6576)",
+    "ours": "none; isAllDirectP2p 0, SHM",
+    "same": false
+   },
+   {
+    "axis": "link",
+    "theirs": "CPU-attached Gen4 x8/x8, separate root ports",
+    "ours": "cross-die, AtomicOpsCap: Routing-",
+    "same": false
+   }
+  ],
+  "same_rows": 2,
+  "atomic_complaints": 0,
+  "reqen": 2
+ },
+ "fig3": {
+  "ok": true,
+  "injections": 2,
+  "rows": [
+   {
+    "who": "reporter",
+    "script": "rccl_allgather_truth.py",
+    "verdict": "ALL CORRECT",
+    "exit": 0,
+    "saw_it": false
+   },
+   {
+    "who": "variant",
+    "script": "rccl_allgather_allranks.py",
+    "verdict": "1 FAILING CASES",
+    "exit": 1,
+    "saw_it": true
+   },
+   {
+    "who": "runner",
+    "script": "scripts/run6565_allranks.sh",
+    "verdict": "pass=0 fail=1 error=0",
+    "exit": 1,
+    "saw_it": true
+   }
+  ],
+  "reporter_said_all_correct": true,
+  "variant_counted_it": true,
+  "runner_exit": 1,
+  "md5_after": "bffbc297cad9f1956c8bb2b7e8a4bb0f",
+  "grep_defect": {
+   "reported_one_sided": 6,
+   "of": 20,
+   "cause": "grep -c counts lines, and both ranks often print on one"
+  }
+ }
+}

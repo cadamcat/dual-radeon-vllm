@@ -1,0 +1,363 @@
+<header class="top">
+  <div class="kicker">RCCL · ROCm · a negative result · measured on 2× RX 7900 XT</div>
+  <h1>How to report a bug<br>you cannot reproduce</h1>
+  <p class="lede">Someone reports deterministic silent corruption in a collective on two gfx1100 cards.
+  You have two gfx1100 cards. It does not happen. That is worth almost nothing on its own — and it can
+  be made worth something, by three things that have nothing to do with running the test more times.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
+    <span class="chip">RCCL <b>2.30.4</b> · ROCm 7.14</span>
+    <span class="chip">against <b>2× W7800</b> on bare metal</span>
+    <span class="chip">measured <b>2026-08-27</b> and <b>2026-08-28</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> reports
+  <code>all_gather</code> silently returning wrong data on two W7800s, root-caused to an init-time
+  8-byte copy whose payload is not in device memory when the synchronise returns. It reproduces
+  deterministically for them on RCCL 2.27.7 and 2.28.3. On this box at 2.30.4 it does not, across
+  <strong>135 cold communicator initialisations in eight configurations</strong>.</p>
+  <p>Three things make that mean something. <strong>A sweep that could have exposed it</strong>: their
+  mechanism is specific to the first of several concurrent init copies, this box builds two channels by
+  default, and the sweep drives that from one to sixteen and the transport from shared memory to
+  sockets. <strong>A stated contrast</strong>: the two machines differ on platform, kernel and RCCL
+  version, and agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left
+  for the reader to guess at. And <strong>an honest bound</strong> on what a clean run from someone
+  else's script can say.</p>
+  <p>The third turned out to be the interesting one. Their reproducer computes the corruption check on
+  every rank but counts failures only on rank 0, so <strong>corruption visible only on rank 1 would
+  print <code>ALL CORRECT</code></strong>. The negative result was therefore narrower than it had been
+  reported as. That was disclosed the same night, a cross-rank variant was written, all eight arms were
+  re-run through it, and the blind spot was <em>demonstrated on this hardware</em> by injecting a
+  one-sided fault rather than argued from the source.</p>
+</div>
+
+<h2><span class="n">1</span>Why a clean run usually says nothing</h2>
+
+<p>"It works here" is the least useful sentence on a bug tracker. It is compatible with the reporter
+being wrong, with the reporter being right about a configuration you did not run, and with your test
+being unable to see the fault at all. Turning it into something a maintainer can act on means answering
+three questions before pressing send: could this configuration have shown it, what exactly differs
+between the two machines, and what is the instrument blind to.</p>
+
+<p>The first is why the sweep is the load-bearing part. Their mechanism is not "collectives are
+broken": the <em>first-issued</em> copy, on channel 0, is the one lost, on both ranks, while channel 1's
+lands, and they report that a naive single-device version of the same
+allocate → memset → 8-byte async copy → synchronise → read sequence does not reproduce in 200 tries. So
+the concurrent multi-device init pattern is a necessary ingredient, and a run that never has several
+concurrent init copies is not a test of anything.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · eight configurations, twice
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="arms" id="arms"></div>
+    <div class="sweeps" id="sweeps"></div>
+    <div class="barunit" id="armnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Every arm runs the whole twelve-case reproducer under a fresh
+    <code>torchrun</code>, so each count is that many <em>cold</em> communicator initialisations rather
+    than repeats inside one process — their failure is deterministic, ours could have been
+    probabilistic, and a single pass is not evidence of absence. Tallies are parsed back out of the
+    committed logs rather than read from a summary file, so a stale summary cannot agree with prose the
+    logs contradict. The two panels are the same eight arms at the same counts, before and after the
+    verdict was made cross-rank.
+  </figcaption>
+</figure>
+
+<p>The channel sweep is what makes the negative admissible. This box builds two channels by default,
+which is exactly the shape their first-loses-second-lands observation needs; forcing one, four, eight
+and sixteen changes the number of concurrent init copies, and disabling shared memory moves the
+transport onto sockets. All of it stays correct.</p>
+
+<h2><span class="n">2</span>What differs, stated rather than left to the reader</h2>
+
+<p>A negative result is a claim about a cell in a space, and it is only useful if you say which cell.
+The rows that <em>agree</em> matter as much as the ones that differ: if this box were atomics-starved,
+or had no IOMMU where they had one, a maintainer could discount the whole thing in one line.</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · the two machines
+      <span class="prov src">derived from the directory's README</span></div>
+    <div class="mach" id="mach"></div>
+    <div class="barunit" id="machnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Extracted from the table in
+    <code>benchmarks/rccl-6565/README.md</code>, so the article cannot drift from the document behind
+    it. The atomics row is the one worth stating outright, because it is the axis this repository is
+    otherwise known for: since 2026-08-23 this guest advertises PCIe AtomicOp completer support, so it is
+    not an atomics-starved cell and does not differ from theirs there. The version and platform axes are
+    <strong>not separated</strong> by any of this, and the two runs that would separate them are named
+    in the source rather than hand-waved.
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>The bound, and then the demonstration</h2>
+
+<p>The first sweep used the reporter's script exactly as published — extracted from the issue body, not
+retyped, with its md5 quoted so anyone can confirm it. That is the property that makes a negative from
+it worth anything to them, and it is also what carried the defect in.</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">rccl_allgather_truth.py · the shape of it</span></div>
+<pre>bad_list = [...]        <span class="c"># computed on every rank</span>
+bad_into = [...]        <span class="c"># computed on every rank</span>
+<span class="k">if</span> rank == 0:           <span class="r"># and only rank 0 counts, or prints</span>
+    <span class="k">if</span> bad_list <span class="k">or</span> bad_into:
+        fail += 1
+</pre></div>
+
+<p>Corruption visible solely on rank 1 is computed, then discarded, and the run still prints
+<code>ALL CORRECT</code>. Since every one of the 135 passes was that script's verdict, the negative
+result was really <em>"no corruption observed on rank 0"</em>. That gap was written into the repository
+ten hours after the comment went out, before anyone asked.</p>
+
+<p>The fix is not to edit their script. Editing it, even to add a reduction, costs the one property that
+makes the result credible to them. So the original stays untouched and hashed, a variant was written
+alongside it, and both were run.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · one injected fault, three verdicts
+      <span class="prov cmd">check with scripts/blindspot_check.sh</span></div>
+    <div class="bspot" id="bspot"></div>
+    <div class="barunit" id="bsnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> One line is inserted after the corruption check in a <em>copy</em> of each script,
+    forcing it non-empty on rank 1 and only rank 1, in one of the twelve cases. The reporter's script
+    calls that run correct and exits zero. The variant counts it and exits one. Both originals are
+    untouched — the injection is applied to copies, and the reporter's script still hashes to the value
+    the directory quotes. This is the difference between saying a script has a blind spot and showing
+    what the blind spot does.
+  </figcaption>
+</figure>
+
+<p>Then the same eight arms at the same counts, through the variant: 135 of 135 again, correct on both
+ranks. The caveat is not restated more carefully — it is replaced by a result. And the two sweeps are
+checked to cover the same arms at the same counts, because a re-run over a different set would not
+replace anything.</p>
+
+<div class="note warn">
+  <span class="lbl">The check that miscounted, and why it is here</span>
+  The first version of the arm runner counted reporting ranks with <code>grep -c</code>, which counts
+  <em>lines</em>. The two ranks frequently print on one line, so it reported 6 of 20 runs as one-sided
+  when both ranks had in fact reported. No measurement was affected, because the verdict is all-reduced
+  inside the script itself — but this is the same class of mistake as the one the whole stage exists to
+  fix, and <strong>a check that miscounts is worse than no check</strong>. Counting occurrences instead
+  fixed it.
+</div>
+
+<h2><span class="n">4</span>The witness that did not come up</h2>
+
+<p>The plan had a second witness that does not go through PyTorch, using the reporter's other
+reproducer. <code>rccl-tests</code> builds cleanly against this container's toolchain, with gfx1100 code
+objects confirmed in both the benchmark and the verification object, and then every collective aborts on
+rank 1 at the data-initialisation kernel with <code>HIP failure: 'invalid device function'</code>. It
+fails identically with and without the verification pass, so it is not the verification kernels, and the
+clone is on the deprecated branch against RCCL 2.30.4.</p>
+
+<p>That is recorded as a limitation rather than dropped, and the unfiltered log is what is committed. An
+earlier attempt ran through a wrapper that parsed the output; the filter matched nothing and printed
+<code>FAILED</code> for every collective including one the PyTorch test passes 135 times over. That log
+is deliberately not kept — <strong>a wrong verdict line is worse to leave lying around than no
+log</strong> — and the raw re-run replaced it.</p>
+
+<h2><span class="n">5</span>What is not established</h2>
+
+<h3>Version against platform</h3>
+<p>This box differs from theirs on RCCL version <em>and</em> on platform, so a clean run here does not
+say which axis matters. Two runs would separate them and neither is ours to do cheaply: the reporter
+running 2.30.4 on their box, which is minutes for them since they already build from source; or this box
+running 2.28.3, which needs a 73 GB image against 40 GB free and would destroy container state in use
+for other work. Both are named in the source so the next person does not have to rediscover them.</p>
+
+<h3>What 135 cold inits bounds</h3>
+<p>It bounds the defect as not universal to gfx1100 plus RCCL, and as not appearing at 2.30.4 on this
+hardware under any transport or channel count tried. It does not bound the reporter's own configuration
+at all, and it cannot: their failure is deterministic on their machine.</p>
+
+<h3>The second witness</h3>
+<p>Only one reproducer ran. It is the reporter's own primary one, which is the right one to have, but a
+second independent path would have been better and did not build usefully here.</p>
+
+<h2><span class="n">6</span>What has changed since</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-08-27 · the bound was disclosed the same night</span>
+  The first comment reported 135 of 135 without the rank-0 qualifier. The gap was found and written into
+  the repository about ten hours later, before anyone raised it.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · the bound was replaced rather than restated</span>
+  The cross-rank variant was written, all eight arms were re-run at the same counts, and the result is
+  now correct on both ranks. The upstream comment was edited to carry the cross-rank column and the
+  injection check rather than leaving the original standing.
+</div>
+
+<div class="note">
+  <span class="lbl">Still open</span>
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> is open and nothing above
+  2.28.3 has been reported either way by anyone else. This is one contrast cell, offered as one.
+</div>
+
+<div class="foot-note">
+  <p><strong>Everything here.</strong> The reporter's script as published, the cross-rank variant, the
+  arm runners, the stage logs, the injection log and the machine fingerprint are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/rccl-6565/README.md"><code>benchmarks/rccl-6565/</code></a>.
+  The tallies on this page are parsed back out of those logs by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
+  which also checks that the second sweep covers the same arms at the same counts as the first.</p>
+  <p>Reported to <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a>, whose
+  reporter is @BoJl4apa. Why this machine is not atomics-starved is
+  <a href="rccl-atomics-hostcall.html">a different article</a>.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "armH": ["arm", "environment", "rank-0 verdict", "cross-rank"],
+ "armUnit": "each count is that many cold communicator initialisations, {c} cases each",
+ "armChan": "this box builds {n} channels by default · RCCL {v} · the reporter's script verbatim, md5 {m}",
+ "sweep0": "first sweep · {d}",
+ "sweep1": "second sweep · {d}",
+ "sweepVerdict": "verdict counted on {v}",
+ "sweepScript": "{s}",
+ "sweepSame": "same arms, same counts",
+ "machH": ["", "theirs", "here"],
+ "machNote": "{n} axes are the same on both machines · {c} PCIE-atomic complaints in dmesg, {r} GPUs advertising ReqEn+",
+ "bsH": ["", "script", "verdict", "exit"],
+ "bsNote": "one line injected into {n} copies · the originals are untouched and the reporter's still hashes to {m}",
+ "correct": "{p}/{n}"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* ---------- Figure 1: the arms, and the two sweeps ---------- */
+  (function () {
+    var box = document.getElementById("arms");
+    S.armH.forEach(function (h) { el(box, "h a", h); });
+    F.fig1.arms.forEach(function (a) {
+      el(box, "a rv", a.arm);
+      el(box, "e rv", esc(a.env));
+      el(box, "r rv", fmt(S.correct, { p: a.passed, n: a.n }));
+      el(box, "r rv", fmt(S.correct, { p: a.cross.passed, n: a.cross.n }));
+    });
+    var sw = document.getElementById("sweeps");
+    F.fig1.sweeps.forEach(function (s, i) {
+      var c = el(sw, "sw2 rv" + (i ? " now" : ""));
+      el(c, "", "<h4>" + fmt(i ? S.sweep1 : S.sweep0, { d: s.date }) + "</h4>");
+      el(c, "n", fmt(S.correct, { p: s.passed, n: s.total }));
+      el(c, "d", fmt(S.sweepVerdict, { v: s.verdict }) + "<br>" +
+         fmt(S.sweepScript, { s: s.script }) +
+         (i && F.fig1.same_arms_same_counts ? "<br>" + S.sweepSame : ""));
+    });
+    var n = el(document.getElementById("armnote"), "");
+    n.textContent = fmt(S.armUnit, { c: F.fig1.cases_per_init });
+    var m = el(document.getElementById("armnote"), "");
+    m.style.marginTop = ".5em";
+    m.textContent = fmt(S.armChan, { n: F.fig1.default_channels,
+                                     v: F.fig1.rccl_version, m: F.fig1.reporter_md5 });
+  })();
+
+  /* ---------- Figure 2: the two machines ---------- */
+  (function () {
+    var box = document.getElementById("mach");
+    var H = F.fig2.header;
+    S.machH.forEach(function (h, i) { el(box, "h " + (i ? "v" : "k"), h || H[0]); });
+    F.fig2.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.axis));
+      el(box, "v rv", esc(r.theirs));
+      el(box, "v rv" + (r.same ? " same" : ""), esc(r.ours));
+    });
+    document.getElementById("machnote").textContent = fmt(S.machNote, {
+      n: F.fig2.same_rows, c: F.fig2.atomic_complaints, r: F.fig2.reqen });
+  })();
+
+  /* ---------- Figure 3: the injected fault ---------- */
+  (function () {
+    var box = document.getElementById("bspot");
+    S.bsH.forEach(function (h) { el(box, "h w", h); });
+    F.fig3.rows.forEach(function (r) {
+      el(box, "w rv", r.who);
+      el(box, "s rv", esc(r.script));
+      el(box, "vd rv " + (r.saw_it ? "saw" : "blind"), esc(r.verdict));
+      el(box, "x rv", "exit " + r.exit);
+    });
+    document.getElementById("bsnote").textContent = fmt(S.bsNote, {
+      n: F.fig3.injections, m: F.fig3.md5_after });
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

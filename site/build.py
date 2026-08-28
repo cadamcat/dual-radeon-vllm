@@ -69,6 +69,7 @@ L_EN, L_ZH = "weight-loading-19x.html", "weight-loading-19x.zh.html"
 S_EN, S_ZH = "speculative-decoding-net-loss.html", "speculative-decoding-net-loss.zh.html"
 A_EN, A_ZH = "a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"
 Q_EN, Q_ZH = "gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"
+N_EN, N_ZH = "reporting-a-non-reproduction.html", "reporting-a-non-reproduction.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -200,7 +201,30 @@ if (D / "gqa-body-zh.html").exists():
                            "它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。",
                       out="articles/" + Q_ZH, nav=lang_nav("zh", Q_EN, Q_ZH), labels=ZH_LABELS))
 
+built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",
+                  extra_css="n6565-extra.css",
+                  title="How to report a bug you cannot reproduce",
+                  desc="135 clean communicator initialisations say almost nothing on their own. What "
+                       "makes a negative result usable: a sweep that could have exposed the defect, a "
+                       "stated contrast, and finding what your instrument is blind to.",
+                  out="articles/" + N_EN, nav=lang_nav("en", N_EN, N_ZH), labels=EN_LABELS))
+if (D / "n6565-body-zh.html").exists():
+    built.append(page("n6565-body-zh.html", lang="zh-CN", figures="figures-6565.json",
+                      extra_css="n6565-extra.css", script_from="n6565-body.html",
+                      title="怎么报告一个你复现不出来的 bug",
+                      desc="135 次干净的通信器初始化本身几乎什么也说明不了。"
+                           "让一个否定结论变得有用的三件事：一次本可以暴露它的"
+                           "扫描、把差异摆明，以及找出你的仪器看不见什么。",
+                      out="articles/" + N_ZH, nav=lang_nav("zh", N_EN, N_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + N_EN, "title": "How to report a bug you cannot reproduce",
+     "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth "
+              "something, and the third found that the reporter's own script counts failures on rank 0 "
+              "only \u2014 demonstrated by injecting a one-sided fault rather than argued.",
+     "measured": "measured 2026-08-28",
+     "langs": ["EN", "\u4e2d"] if (D / "n6565-body-zh.html").exists() else ["EN"],
+     "tags": ["RCCL", "negative result", "ROCm#6565"]},
     {"href": "articles/" + Q_EN, "title": "A gate that costs 2 to 7 times and buys nothing",
      "blurb": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is "
               "a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and "
@@ -296,7 +320,8 @@ for p in built:
     assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
-                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH)):
+                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH),
+                 (N_EN, N_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

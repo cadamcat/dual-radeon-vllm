@@ -1,0 +1,233 @@
+
+<header class="top">
+  <div class="kicker">RCCL · ROCm · 一个否定结论 · 实测于 2× RX 7900 XT</div>
+  <h1>怎么报告一个<br>你复现不出来的 bug</h1>
+  <p class="lede">有人报告说两张 gfx1100 上的某个集合通信会静默返回错误数据。你手上正好有两张 gfx1100。
+  它没发生。这句话本身几乎一文不值 —— 但它可以变得有价值，
+  靠的是三件与"多跑几遍"毫无关系的事。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · VFIO 直通</span>
+    <span class="chip">RCCL <b>2.30.4</b> · ROCm 7.14</span>
+    <span class="chip">对照 <b>2× W7800</b> 裸机</span>
+    <span class="chip">实测 <b>2026-08-27</b> 与 <b>2026-08-28</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> 报告两张 W7800 上
+  <code>all_gather</code> 会静默返回错数据，根因定位到初始化时的一次 8 字节拷贝 ——
+  同步返回时它的载荷还不在显存里。在他们那边，RCCL 2.27.7 和 2.28.3 上都能确定性复现。
+  在这台机器的 2.30.4 上不能，<strong>八种配置、135 次冷通信器初始化</strong>都正确。</p>
+  <p>让这句话有意义的是三件事。<strong>一次本可以暴露它的扫描</strong>：
+  他们的机理专门针对几个并发初始化拷贝里的第一个，而这台机器默认建两个通道，
+  扫描把这个数从 1 驱动到 16，并把传输从共享内存换到 socket。
+  <strong>把差异摆明</strong>：两台机器在平台、内核和 RCCL 版本上不同，
+  在 PCIe atomics 和 IOMMU 上相同 —— 那些显而易见的解释被点名，而不是留给读者去猜。
+  以及<strong>对"用别人的脚本跑出来的干净结果能说什么"给出诚实的界限</strong>。</p>
+  <p>第三件才是有意思的那件。他们的复现脚本在每个 rank 上都算了校验，
+  但只在 rank 0 上计数失败，所以<strong>只在 rank 1 上出现的损坏会打印
+  <code>ALL CORRECT</code></strong>。于是这个否定结论比它被报告出去时更窄。
+  这一点在当晚就被披露，随后写了一个跨 rank 的变体、八个 arm 全部重跑，
+  并且这个盲点是在这台硬件上<em>被演示出来</em>的 —— 注入一个单边故障，而不是从源码上讲道理。</p>
+</div>
+
+<h2><span class="n">1</span>为什么一次干净的运行通常什么也说明不了</h2>
+
+<p>"我这儿没问题"是 bug 追踪器上最没用的一句话。它同时兼容三种情况：报告者错了；
+报告者没错但你没跑到那个配置；以及你的测试根本看不见这个故障。
+要把它变成维护者能拿来用的东西，在按下发送之前得回答三个问题：
+这个配置本来有没有可能暴露它、两台机器到底哪里不同、以及你的仪器对什么是瞎的。</p>
+
+<p>第一个问题就是扫描之所以承重的原因。他们的机理不是"集合通信坏了"：
+丢的是<em>最先发出</em>的那次拷贝，在通道 0 上，两个 rank 都丢，而通道 1 的那次落地了；
+而且他们报告说，把同样的 分配 → memset → 8 字节异步拷贝 → 同步 → 读取
+序列写成一个朴素的单设备版本，200 次都复现不出来。
+所以并发的多设备初始化模式是必要成分，而一次从来没有几个并发初始化拷贝的运行，什么也没测到。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 八种配置，跑两遍
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="arms" id="arms"></div>
+    <div class="sweeps" id="sweeps"></div>
+    <div class="barunit" id="armnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 每个 arm 都在一个全新的 <code>torchrun</code> 下跑完整的十二个用例，
+    所以每个计数都是那么多次<em>冷</em>通信器初始化，而不是一个进程里的重复 ——
+    他们那边是确定性失败，我们这边本可能是概率性的，而一次通过不构成"不存在"的证据。
+    统计数是从入库日志里反解出来的，不是从一个汇总文件里读的，
+    这样一份过期的汇总就没法和日志相矛盾的正文互相印证。两块面板是同样八个 arm、同样的次数，
+    分别在判定改成跨 rank 之前和之后。
+  </figcaption>
+</figure>
+
+<p>通道扫描是让这个否定结论可被采信的部分。这台机器默认建两个通道，
+正是他们"第一个丢、第二个落地"那个观察所需要的形状；
+强制成 1、4、8、16 会改变并发初始化拷贝的数量，而关掉共享内存会把传输换到 socket。
+全部保持正确。</p>
+
+<h2><span class="n">2</span>把差异摆明，而不是留给读者</h2>
+
+<p>一个否定结论是关于某个空间里某一个格子的断言，只有说清是哪个格子它才有用。
+那些<em>相同</em>的行和不同的行一样重要：如果这台机器缺 atomics，
+或者他们有 IOMMU 而这边没有，维护者一句话就能把整件事打发掉。</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 两台机器
+      <span class="prov src">从该目录的 README 提取</span></div>
+    <div class="mach" id="mach"></div>
+    <div class="barunit" id="machnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 从 <code>benchmarks/rccl-6565/README.md</code> 的表里提取，
+    这样文章不会和它背后的文档漂开。atomics 那一行值得直说，
+    因为那正是这个仓库出名的那条轴：自 2026-08-23 起这台 guest 已经广播 PCIe AtomicOp
+    completer 支持，所以它不是一个缺 atomics 的格子，在这一点上与他们没有差别。
+    版本轴和平台轴<strong>没有被分开</strong>，而能分开它们的那两次运行在源文档里被点名，
+    不是含糊带过。
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>先给界限，再做演示</h2>
+
+<p>第一次扫描用的是报告者原样发布的脚本 —— 从 issue 正文里提取出来的，不是重敲的，
+并附上 md5 供任何人核对。正是这个性质让一个否定结论对他们有价值，
+而也正是它把那个缺陷一起带了进来。</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">rccl_allgather_truth.py · 它的形状</span></div>
+<pre>bad_list = [...]        <span class="c"># 每个 rank 都算</span>
+bad_into = [...]        <span class="c"># 每个 rank 都算</span>
+<span class="k">if</span> rank == 0:           <span class="r"># 但只有 rank 0 计数、只有它打印</span>
+    <span class="k">if</span> bad_list <span class="k">or</span> bad_into:
+        fail += 1
+</pre></div>
+
+<p>只在 rank 1 上出现的损坏被算了出来，然后被丢掉，而这次运行照样打印
+<code>ALL CORRECT</code>。既然那 135 次通过全都是这个脚本的判定，
+这个否定结论其实是<em>"在 rank 0 上没有观察到损坏"</em>。
+这个缺口在评论发出去十小时之后被写进了仓库，在任何人提出之前。</p>
+
+<p>解决办法不是去改他们的脚本。改它 —— 哪怕只是加一次归约 ——
+会损失掉让这个结论对他们可信的那个唯一性质。所以原件原样保留并留下哈希，
+在它旁边写一个变体，然后两个都跑。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 一个注入的故障，三种判定
+      <span class="prov cmd">可用 scripts/blindspot_check.sh 自行核对</span></div>
+    <div class="bspot" id="bspot"></div>
+    <div class="barunit" id="bsnote"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 在每个脚本的<em>副本</em>里，于校验之后插入一行，
+    在十二个用例中的一个上强制它在 rank 1、且只在 rank 1 上非空。
+    报告者的脚本判定这次运行正确并以 0 退出。变体把它计入并以 1 退出。
+    两个原件都没被动过 —— 注入施加在副本上，而报告者的脚本仍然哈希成该目录引用的那个值。
+    这就是"说某个脚本有盲点"和"展示这个盲点会造成什么"之间的差别。
+  </figcaption>
+</figure>
+
+<p>然后是同样八个 arm、同样次数，走那个变体：又是 135 之 135，两个 rank 都正确。
+那条注意事项不是被更小心地重述了一遍 —— 它被一个结果替换掉了。
+而且两次扫描被检查为覆盖同样的 arm、同样的次数，因为在另一组集合上重跑替换不了任何东西。</p>
+
+<div class="note warn">
+  <span class="lbl">那个数错了的检查，以及它为什么留在这里</span>
+  第一版 arm runner 用 <code>grep -c</code> 数有多少个 rank 报告过，而它数的是<em>行</em>。
+  两个 rank 经常打印在同一行上，于是它把 20 次运行里的 6 次报成单边，
+  而实际上两个 rank 都报了。没有任何测量受影响，因为判定是在脚本内部 all-reduce 的 ——
+  但这和这一整个阶段存在的理由属于同一类错误，而且
+  <strong>一个会数错的检查比没有检查更糟</strong>。改成数出现次数就好了。
+</div>
+
+<h2><span class="n">4</span>那个没能起来的第二证人</h2>
+
+<p>原计划里还有一个不经过 PyTorch 的第二证人，用的是报告者的另一个复现器。
+<code>rccl-tests</code> 对着这个容器的工具链干净地编出来了，benchmark 和验证目标文件里都确认有
+gfx1100 代码对象，然后每一个集合通信都在 rank 1 上于数据初始化 kernel 处以
+<code>HIP failure: 'invalid device function'</code> 中止。
+加不加验证那一遍都一样失败，所以不是验证 kernel 的问题；
+而那份克隆在的是对着 RCCL 2.30.4 的 deprecated 分支。</p>
+
+<p>这一点作为限制被记录下来，而不是删掉，而且入库的是未过滤的日志。
+更早的一次尝试是通过一个解析输出的包装器跑的；那个过滤器什么也没匹配上，
+于是给每一个集合通信都打印了 <code>FAILED</code>，包括 PyTorch 测试通过了 135 次的那一个。
+那份日志被故意没有保留 ——<strong>一行错误的判定留在那里，比没有日志更糟</strong>——
+取而代之的是原始重跑。</p>
+
+<h2><span class="n">5</span>没有被确立的部分</h2>
+
+<h3>版本轴对平台轴</h3>
+<p>这台机器和他们的在 RCCL 版本<em>以及</em>平台上都不同，
+所以这里一次干净的运行说不出是哪条轴起作用。有两次运行能把它们分开，而两次都不是我们能便宜做的：
+报告者在他们机器上跑 2.30.4 —— 他们本来就从源码构建，这对他们只是几分钟；
+或者这台机器跑 2.28.3 —— 那需要一个 73 GB 的镜像而这里只剩 40 GB，
+而且会毁掉其他工作正在用的容器状态。两者都在源文档里点了名，免得下一个人重新发现一遍。</p>
+
+<h3>135 次冷初始化框住了什么</h3>
+<p>它框住了：这个缺陷不是 gfx1100 加 RCCL 的普遍现象，而且在这台硬件的 2.30.4 上，
+在试过的任何传输和通道数下都不出现。它完全没有框住报告者自己的配置，而且也框不住：
+在他们的机器上那是确定性失败。</p>
+
+<h3>第二个证人</h3>
+<p>只有一个复现器真的跑起来了。它是报告者自己的主复现器，这是对的那一个，
+但有一条独立的第二路径会更好，而它在这里没能有用地构建起来。</p>
+
+<h2><span class="n">6</span>此后发生的变化</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-08-27 · 那条界限在当晚就披露了</span>
+  第一条评论报的是 135 之 135，没有带 rank-0 这个限定。这个缺口在大约十小时后被发现并写进仓库，
+  在任何人提出之前。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · 界限被替换掉，而不是被重述</span>
+  跨 rank 的变体写好了，八个 arm 以同样次数重跑，结果现在是两个 rank 都正确。
+  上游那条评论被编辑成带上跨 rank 那一列和注入检查，而不是把原文留在那里。
+</div>
+
+<div class="note">
+  <span class="lbl">仍然开着</span>
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> 开着，
+  而 2.28.3 之上的版本至今没有任何人报告过任一方向的结果。这里只是一个对照格子，也只当作一个来提供。
+</div>
+
+<div class="foot-note">
+  <p><strong>这里的一切。</strong>报告者原样发布的脚本、跨 rank 变体、arm runner、
+  各阶段日志、注入日志和机器指纹都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/rccl-6565/README.md"><code>benchmarks/rccl-6565/</code></a>。
+  本页的统计数由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从那些日志里反解出来，它同时还检查第二次扫描覆盖的是与第一次相同的 arm 和相同的次数。</p>
+  <p>已上报到 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a>，
+  报告者是 @BoJl4apa。这台机器为什么不缺 atomics，
+  是<a href="rccl-atomics-hostcall.zh.html">另一篇文章</a>。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "armH": ["arm", "环境变量", "rank-0 判定", "跨 rank"],
+ "armUnit": "每个计数都是那么多次冷通信器初始化，每次 {c} 个用例",
+ "armChan": "这台机器默认建 {n} 个通道 · RCCL {v} · 报告者的脚本原样，md5 {m}",
+ "sweep0": "第一次扫描 · {d}",
+ "sweep1": "第二次扫描 · {d}",
+ "sweepVerdict": "判定计在 {v}",
+ "sweepScript": "{s}",
+ "sweepSame": "同样的 arm，同样的次数",
+ "machH": ["", "他们", "这里"],
+ "machNote": "{n} 条轴在两台机器上相同 · dmesg 里 {c} 条 PCIE-atomic 抱怨，{r} 张 GPU 广播 ReqEn+",
+ "bsH": ["", "脚本", "判定", "退出码"],
+ "bsNote": "一行注入进 {n} 个副本 · 原件都没动，报告者那份仍然哈希成 {m}",
+ "correct": "{p}/{n}"
+}</script>
+__SCRIPT__
+</body>
+</html>

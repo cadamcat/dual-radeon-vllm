@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>怎么报告一个你复现不出来的 bug</title>
+<meta name="description" content="135 次干净的通信器初始化本身几乎什么也说明不了。让一个否定结论变得有用的三件事：一次本可以暴露它的扫描、把差异摆明，以及找出你的仪器看不见什么。">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  /* ---- the arm sweep ---- */
+  .arms { display:grid; grid-template-columns:max-content 1fr max-content max-content;
+          column-gap:1em; align-items:center; font-size:.86rem; }
+  .arms > div { padding:.45em 0; border-bottom:1px solid var(--border); }
+  .arms > div:nth-last-child(-n+4) { border-bottom:0; }
+  .arms .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .arms .a { font-family:var(--mono); font-size:.79rem; color:var(--text); }
+  .arms .e { font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+             overflow:hidden; text-overflow:ellipsis; }
+  .arms .r { font-family:var(--mono); font-size:.76rem; text-align:right;
+             font-variant-numeric:tabular-nums; color:var(--green); }
+  .arms .r.dim { color:var(--text-dim); }
+  @media (max-width:560px){ .arms { grid-template-columns:max-content 1fr max-content; }
+                            .arms .e { grid-column:1 / -1; padding-top:0; border-bottom:0; } }
+
+  .sweeps { display:grid; grid-template-columns:1fr 1fr; gap:.8em; margin-top:1.2em; }
+  .sw2 { border:1px solid var(--border); border-radius:11px; padding:.9em 1em;
+         background:var(--surface-2); }
+  .sw2.now { background:var(--green-bg);
+             border-color:color-mix(in srgb, var(--green) 30%, transparent); }
+  .sw2 h4 { margin:0 0 .2em; font-family:var(--mono); font-size:.71rem;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); }
+  .sw2.now h4 { color:var(--green); }
+  .sw2 .n { font-family:var(--mono); font-size:1.25rem; font-weight:800; color:var(--text); }
+  .sw2.now .n { color:var(--green); }
+  .sw2 .d { font-family:var(--mono); font-size:.69rem; color:var(--text-dim);
+            line-height:1.5; margin-top:.25em; }
+  @media (max-width:520px){ .sweeps { grid-template-columns:1fr; } }
+
+  /* ---- the machine contrast ---- */
+  .mach { display:grid; grid-template-columns:max-content 1fr 1fr; column-gap:1em;
+          font-size:.86rem; }
+  .mach > div { padding:.5em 0; border-bottom:1px solid var(--border); }
+  .mach > div:nth-last-child(-n+3) { border-bottom:0; }
+  .mach .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .mach .k { font-family:var(--mono); font-size:.74rem; color:var(--text-dim); }
+  .mach .v { color:var(--text-2); font-size:.83rem; }
+  .mach .v.same { color:var(--green); }
+  .mach .v code { font-size:.78em; }
+  @media (max-width:560px){ .mach { grid-template-columns:1fr; }
+                            .mach .k { padding-bottom:0; border-bottom:0; }
+                            .mach .v:first-of-type { border-bottom:0; padding-bottom:0; } }
+
+  /* ---- the blind spot ---- */
+  .bspot { display:grid; grid-template-columns:max-content 1fr max-content max-content;
+           column-gap:1em; align-items:center; font-size:.86rem; }
+  .bspot > div { padding:.55em 0; border-bottom:1px solid var(--border); }
+  .bspot > div:nth-last-child(-n+4) { border-bottom:0; }
+  .bspot .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+              text-transform:uppercase; color:var(--text-dim);
+              border-bottom:1px solid var(--border-2); }
+  .bspot .w { font-family:var(--mono); font-size:.76rem; color:var(--text); }
+  .bspot .s { font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .bspot .vd { font-family:var(--mono); font-size:.78rem; font-weight:700; }
+  .bspot .vd.blind { color:var(--red); }
+  .bspot .vd.saw { color:var(--green); }
+  .bspot .x { font-family:var(--mono); font-size:.74rem; color:var(--text-dim);
+              text-align:right; }
+  @media (max-width:560px){ .bspot { grid-template-columns:max-content 1fr max-content; }
+                            .bspot .s { grid-column:1 / -1; padding-top:0; border-bottom:0; } }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="语言与配色主题">
+  <a class="lang" href="reporting-a-non-reproduction.html" hreflang="en">EN</a>
+  <a class="lang" href="reporting-a-non-reproduction.zh.html" hreflang="zh" aria-current="page">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="跟随系统">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="浅色">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="深色">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">RCCL · ROCm · 一个否定结论 · 实测于 2× RX 7900 XT</div>
+  <h1>怎么报告一个<br>你复现不出来的 bug</h1>
+  <p class="lede">有人报告说两张 gfx1100 上的某个集合通信会静默返回错误数据。你手上正好有两张 gfx1100。
+  它没发生。这句话本身几乎一文不值 —— 但它可以变得有价值，
+  靠的是三件与"多跑几遍"毫无关系的事。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · VFIO 直通</span>
+    <span class="chip">RCCL <b>2.30.4</b> · ROCm 7.14</span>
+    <span class="chip">对照 <b>2× W7800</b> 裸机</span>
+    <span class="chip">实测 <b>2026-08-27</b> 与 <b>2026-08-28</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> 报告两张 W7800 上
+  <code>all_gather</code> 会静默返回错数据，根因定位到初始化时的一次 8 字节拷贝 ——
+  同步返回时它的载荷还不在显存里。在他们那边，RCCL 2.27.7 和 2.28.3 上都能确定性复现。
+  在这台机器的 2.30.4 上不能，<strong>八种配置、135 次冷通信器初始化</strong>都正确。</p>
+  <p>让这句话有意义的是三件事。<strong>一次本可以暴露它的扫描</strong>：
+  他们的机理专门针对几个并发初始化拷贝里的第一个，而这台机器默认建两个通道，
+  扫描把这个数从 1 驱动到 16，并把传输从共享内存换到 socket。
+  <strong>把差异摆明</strong>：两台机器在平台、内核和 RCCL 版本上不同，
+  在 PCIe atomics 和 IOMMU 上相同 —— 那些显而易见的解释被点名，而不是留给读者去猜。
+  以及<strong>对"用别人的脚本跑出来的干净结果能说什么"给出诚实的界限</strong>。</p>
+  <p>第三件才是有意思的那件。他们的复现脚本在每个 rank 上都算了校验，
+  但只在 rank 0 上计数失败，所以<strong>只在 rank 1 上出现的损坏会打印
+  <code>ALL CORRECT</code></strong>。于是这个否定结论比它被报告出去时更窄。
+  这一点在当晚就被披露，随后写了一个跨 rank 的变体、八个 arm 全部重跑，
+  并且这个盲点是在这台硬件上<em>被演示出来</em>的 —— 注入一个单边故障，而不是从源码上讲道理。</p>
+</div>
+
+<h2><span class="n">1</span>为什么一次干净的运行通常什么也说明不了</h2>
+
+<p>"我这儿没问题"是 bug 追踪器上最没用的一句话。它同时兼容三种情况：报告者错了；
+报告者没错但你没跑到那个配置；以及你的测试根本看不见这个故障。
+要把它变成维护者能拿来用的东西，在按下发送之前得回答三个问题：
+这个配置本来有没有可能暴露它、两台机器到底哪里不同、以及你的仪器对什么是瞎的。</p>
+
+<p>第一个问题就是扫描之所以承重的原因。他们的机理不是"集合通信坏了"：
+丢的是<em>最先发出</em>的那次拷贝，在通道 0 上，两个 rank 都丢，而通道 1 的那次落地了；
+而且他们报告说，把同样的 分配 → memset → 8 字节异步拷贝 → 同步 → 读取
+序列写成一个朴素的单设备版本，200 次都复现不出来。
+所以并发的多设备初始化模式是必要成分，而一次从来没有几个并发初始化拷贝的运行，什么也没测到。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 八种配置，跑两遍
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="arms" id="arms"></div>
+    <div class="sweeps" id="sweeps"></div>
+    <div class="barunit" id="armnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 每个 arm 都在一个全新的 <code>torchrun</code> 下跑完整的十二个用例，
+    所以每个计数都是那么多次<em>冷</em>通信器初始化，而不是一个进程里的重复 ——
+    他们那边是确定性失败，我们这边本可能是概率性的，而一次通过不构成"不存在"的证据。
+    统计数是从入库日志里反解出来的，不是从一个汇总文件里读的，
+    这样一份过期的汇总就没法和日志相矛盾的正文互相印证。两块面板是同样八个 arm、同样的次数，
+    分别在判定改成跨 rank 之前和之后。
+  </figcaption>
+</figure>
+
+<p>通道扫描是让这个否定结论可被采信的部分。这台机器默认建两个通道，
+正是他们"第一个丢、第二个落地"那个观察所需要的形状；
+强制成 1、4、8、16 会改变并发初始化拷贝的数量，而关掉共享内存会把传输换到 socket。
+全部保持正确。</p>
+
+<h2><span class="n">2</span>把差异摆明，而不是留给读者</h2>
+
+<p>一个否定结论是关于某个空间里某一个格子的断言，只有说清是哪个格子它才有用。
+那些<em>相同</em>的行和不同的行一样重要：如果这台机器缺 atomics，
+或者他们有 IOMMU 而这边没有，维护者一句话就能把整件事打发掉。</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 两台机器
+      <span class="prov src">从该目录的 README 提取</span></div>
+    <div class="mach" id="mach"></div>
+    <div class="barunit" id="machnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 从 <code>benchmarks/rccl-6565/README.md</code> 的表里提取，
+    这样文章不会和它背后的文档漂开。atomics 那一行值得直说，
+    因为那正是这个仓库出名的那条轴：自 2026-08-23 起这台 guest 已经广播 PCIe AtomicOp
+    completer 支持，所以它不是一个缺 atomics 的格子，在这一点上与他们没有差别。
+    版本轴和平台轴<strong>没有被分开</strong>，而能分开它们的那两次运行在源文档里被点名，
+    不是含糊带过。
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>先给界限，再做演示</h2>
+
+<p>第一次扫描用的是报告者原样发布的脚本 —— 从 issue 正文里提取出来的，不是重敲的，
+并附上 md5 供任何人核对。正是这个性质让一个否定结论对他们有价值，
+而也正是它把那个缺陷一起带了进来。</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">rccl_allgather_truth.py · 它的形状</span></div>
+<pre>bad_list = [...]        <span class="c"># 每个 rank 都算</span>
+bad_into = [...]        <span class="c"># 每个 rank 都算</span>
+<span class="k">if</span> rank == 0:           <span class="r"># 但只有 rank 0 计数、只有它打印</span>
+    <span class="k">if</span> bad_list <span class="k">or</span> bad_into:
+        fail += 1
+</pre></div>
+
+<p>只在 rank 1 上出现的损坏被算了出来，然后被丢掉，而这次运行照样打印
+<code>ALL CORRECT</code>。既然那 135 次通过全都是这个脚本的判定，
+这个否定结论其实是<em>"在 rank 0 上没有观察到损坏"</em>。
+这个缺口在评论发出去十小时之后被写进了仓库，在任何人提出之前。</p>
+
+<p>解决办法不是去改他们的脚本。改它 —— 哪怕只是加一次归约 ——
+会损失掉让这个结论对他们可信的那个唯一性质。所以原件原样保留并留下哈希，
+在它旁边写一个变体，然后两个都跑。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 一个注入的故障，三种判定
+      <span class="prov cmd">可用 scripts/blindspot_check.sh 自行核对</span></div>
+    <div class="bspot" id="bspot"></div>
+    <div class="barunit" id="bsnote"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 在每个脚本的<em>副本</em>里，于校验之后插入一行，
+    在十二个用例中的一个上强制它在 rank 1、且只在 rank 1 上非空。
+    报告者的脚本判定这次运行正确并以 0 退出。变体把它计入并以 1 退出。
+    两个原件都没被动过 —— 注入施加在副本上，而报告者的脚本仍然哈希成该目录引用的那个值。
+    这就是"说某个脚本有盲点"和"展示这个盲点会造成什么"之间的差别。
+  </figcaption>
+</figure>
+
+<p>然后是同样八个 arm、同样次数，走那个变体：又是 135 之 135，两个 rank 都正确。
+那条注意事项不是被更小心地重述了一遍 —— 它被一个结果替换掉了。
+而且两次扫描被检查为覆盖同样的 arm、同样的次数，因为在另一组集合上重跑替换不了任何东西。</p>
+
+<div class="note warn">
+  <span class="lbl">那个数错了的检查，以及它为什么留在这里</span>
+  第一版 arm runner 用 <code>grep -c</code> 数有多少个 rank 报告过，而它数的是<em>行</em>。
+  两个 rank 经常打印在同一行上，于是它把 20 次运行里的 6 次报成单边，
+  而实际上两个 rank 都报了。没有任何测量受影响，因为判定是在脚本内部 all-reduce 的 ——
+  但这和这一整个阶段存在的理由属于同一类错误，而且
+  <strong>一个会数错的检查比没有检查更糟</strong>。改成数出现次数就好了。
+</div>
+
+<h2><span class="n">4</span>那个没能起来的第二证人</h2>
+
+<p>原计划里还有一个不经过 PyTorch 的第二证人，用的是报告者的另一个复现器。
+<code>rccl-tests</code> 对着这个容器的工具链干净地编出来了，benchmark 和验证目标文件里都确认有
+gfx1100 代码对象，然后每一个集合通信都在 rank 1 上于数据初始化 kernel 处以
+<code>HIP failure: 'invalid device function'</code> 中止。
+加不加验证那一遍都一样失败，所以不是验证 kernel 的问题；
+而那份克隆在的是对着 RCCL 2.30.4 的 deprecated 分支。</p>
+
+<p>这一点作为限制被记录下来，而不是删掉，而且入库的是未过滤的日志。
+更早的一次尝试是通过一个解析输出的包装器跑的；那个过滤器什么也没匹配上，
+于是给每一个集合通信都打印了 <code>FAILED</code>，包括 PyTorch 测试通过了 135 次的那一个。
+那份日志被故意没有保留 ——<strong>一行错误的判定留在那里，比没有日志更糟</strong>——
+取而代之的是原始重跑。</p>
+
+<h2><span class="n">5</span>没有被确立的部分</h2>
+
+<h3>版本轴对平台轴</h3>
+<p>这台机器和他们的在 RCCL 版本<em>以及</em>平台上都不同，
+所以这里一次干净的运行说不出是哪条轴起作用。有两次运行能把它们分开，而两次都不是我们能便宜做的：
+报告者在他们机器上跑 2.30.4 —— 他们本来就从源码构建，这对他们只是几分钟；
+或者这台机器跑 2.28.3 —— 那需要一个 73 GB 的镜像而这里只剩 40 GB，
+而且会毁掉其他工作正在用的容器状态。两者都在源文档里点了名，免得下一个人重新发现一遍。</p>
+
+<h3>135 次冷初始化框住了什么</h3>
+<p>它框住了：这个缺陷不是 gfx1100 加 RCCL 的普遍现象，而且在这台硬件的 2.30.4 上，
+在试过的任何传输和通道数下都不出现。它完全没有框住报告者自己的配置，而且也框不住：
+在他们的机器上那是确定性失败。</p>
+
+<h3>第二个证人</h3>
+<p>只有一个复现器真的跑起来了。它是报告者自己的主复现器，这是对的那一个，
+但有一条独立的第二路径会更好，而它在这里没能有用地构建起来。</p>
+
+<h2><span class="n">6</span>此后发生的变化</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-08-27 · 那条界限在当晚就披露了</span>
+  第一条评论报的是 135 之 135，没有带 rank-0 这个限定。这个缺口在大约十小时后被发现并写进仓库，
+  在任何人提出之前。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · 界限被替换掉，而不是被重述</span>
+  跨 rank 的变体写好了，八个 arm 以同样次数重跑，结果现在是两个 rank 都正确。
+  上游那条评论被编辑成带上跨 rank 那一列和注入检查，而不是把原文留在那里。
+</div>
+
+<div class="note">
+  <span class="lbl">仍然开着</span>
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> 开着，
+  而 2.28.3 之上的版本至今没有任何人报告过任一方向的结果。这里只是一个对照格子，也只当作一个来提供。
+</div>
+
+<div class="foot-note">
+  <p><strong>这里的一切。</strong>报告者原样发布的脚本、跨 rank 变体、arm runner、
+  各阶段日志、注入日志和机器指纹都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/rccl-6565/README.md"><code>benchmarks/rccl-6565/</code></a>。
+  本页的统计数由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从那些日志里反解出来，它同时还检查第二次扫描覆盖的是与第一次相同的 arm 和相同的次数。</p>
+  <p>已上报到 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a>，
+  报告者是 @BoJl4apa。这台机器为什么不缺 atomics，
+  是<a href="rccl-atomics-hostcall.zh.html">另一篇文章</a>。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in reporting-a-non-reproduction.html. Arm tallies parsed from benchmarks/rccl-6565/logs/, the machine contrast extracted from that directory's README. Derived by site/src/genfig-6565.py.",
+ "fig1": {
+  "arms": [
+   {
+    "arm": "default",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "none",
+    "cross": {
+     "arm": "default",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "p2pdisable",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "NCCL_P2P_DISABLE=1",
+    "cross": {
+     "arm": "p2pdisable",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "prod",
+    "passed": 20,
+    "failed": 0,
+    "error": 0,
+    "n": 20,
+    "env": "NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0",
+    "cross": {
+     "arm": "prod",
+     "passed": 20,
+     "failed": 0,
+     "error": 0,
+     "n": 20
+    }
+   },
+   {
+    "arm": "ch1",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN/MAX_NCHANNELS=1",
+    "cross": {
+     "arm": "ch1",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch4",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=4",
+    "cross": {
+     "arm": "ch4",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch8",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=8",
+    "cross": {
+     "arm": "ch8",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "ch16",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "+ NCCL_MIN_NCHANNELS=16",
+    "cross": {
+     "arm": "ch16",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   },
+   {
+    "arm": "shmoff",
+    "passed": 15,
+    "failed": 0,
+    "error": 0,
+    "n": 15,
+    "env": "NCCL_SHM_DISABLE=1",
+    "cross": {
+     "arm": "shmoff",
+     "passed": 15,
+     "failed": 0,
+     "error": 0,
+     "n": 15
+    }
+   }
+  ],
+  "sweeps": [
+   {
+    "id": "rank0",
+    "date": "2026-08-27",
+    "script": "rccl_allgather_truth.py",
+    "verdict": "rank 0 only",
+    "total": 135,
+    "passed": 135,
+    "failed": 0,
+    "error": 0
+   },
+   {
+    "id": "allranks",
+    "date": "2026-08-28",
+    "script": "rccl_allgather_allranks.py",
+    "verdict": "every rank",
+    "total": 135,
+    "passed": 135,
+    "failed": 0,
+    "error": 0
+   }
+  ],
+  "same_arms_same_counts": true,
+  "cases_per_init": 12,
+  "reporter_md5": "bffbc297cad9f1956c8bb2b7e8a4bb0f",
+  "verbatim": true,
+  "default_channels": 2,
+  "rccl_version": "2.30.4-HEAD:2b22ab0"
+ },
+ "fig2": {
+  "header": [
+   "",
+   "BoJl4apa (#6565)",
+   "here"
+  ],
+  "rows": [
+   {
+    "axis": "GPUs",
+    "theirs": "2x Radeon Pro W7800 48G, gfx1100",
+    "ours": "2x RX 7900 XT, gfx1100",
+    "same": false
+   },
+   {
+    "axis": "platform",
+    "theirs": "bare metal",
+    "ours": "VFIO guest (Proxmox passthrough)",
+    "same": false
+   },
+   {
+    "axis": "kernel",
+    "theirs": "6.8.0-136",
+    "ours": "7.0.0-30",
+    "same": false
+   },
+   {
+    "axis": "ROCm / RCCL",
+    "theirs": "7.2.3 / 2.27.7 and 7.13 / 2.28.3",
+    "ours": "7.14 / 2.30.4-HEAD:2b22ab0",
+    "same": false
+   },
+   {
+    "axis": "PCIe atomics",
+    "theirs": "AtomicOpsCtl: ReqEn+",
+    "ours": "ReqEn+ (same)",
+    "same": true
+   },
+   {
+    "axis": "IOMMU",
+    "theirs": "tested with amd_iommu=off too",
+    "ours": "0 groups in guest (same effect)",
+    "same": true
+   },
+   {
+    "axis": "P2P",
+    "theirs": "selected, IPC, and 7000x slow (their #6576)",
+    "ours": "none; isAllDirectP2p 0, SHM",
+    "same": false
+   },
+   {
+    "axis": "link",
+    "theirs": "CPU-attached Gen4 x8/x8, separate root ports",
+    "ours": "cross-die, AtomicOpsCap: Routing-",
+    "same": false
+   }
+  ],
+  "same_rows": 2,
+  "atomic_complaints": 0,
+  "reqen": 2
+ },
+ "fig3": {
+  "ok": true,
+  "injections": 2,
+  "rows": [
+   {
+    "who": "reporter",
+    "script": "rccl_allgather_truth.py",
+    "verdict": "ALL CORRECT",
+    "exit": 0,
+    "saw_it": false
+   },
+   {
+    "who": "variant",
+    "script": "rccl_allgather_allranks.py",
+    "verdict": "1 FAILING CASES",
+    "exit": 1,
+    "saw_it": true
+   },
+   {
+    "who": "runner",
+    "script": "scripts/run6565_allranks.sh",
+    "verdict": "pass=0 fail=1 error=0",
+    "exit": 1,
+    "saw_it": true
+   }
+  ],
+  "reporter_said_all_correct": true,
+  "variant_counted_it": true,
+  "runner_exit": 1,
+  "md5_after": "bffbc297cad9f1956c8bb2b7e8a4bb0f",
+  "grep_defect": {
+   "reported_one_sided": 6,
+   "of": 20,
+   "cause": "grep -c counts lines, and both ranks often print on one"
+  }
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "armH": ["arm", "环境变量", "rank-0 判定", "跨 rank"],
+ "armUnit": "每个计数都是那么多次冷通信器初始化，每次 {c} 个用例",
+ "armChan": "这台机器默认建 {n} 个通道 · RCCL {v} · 报告者的脚本原样，md5 {m}",
+ "sweep0": "第一次扫描 · {d}",
+ "sweep1": "第二次扫描 · {d}",
+ "sweepVerdict": "判定计在 {v}",
+ "sweepScript": "{s}",
+ "sweepSame": "同样的 arm，同样的次数",
+ "machH": ["", "他们", "这里"],
+ "machNote": "{n} 条轴在两台机器上相同 · dmesg 里 {c} 条 PCIE-atomic 抱怨，{r} 张 GPU 广播 ReqEn+",
+ "bsH": ["", "脚本", "判定", "退出码"],
+ "bsNote": "一行注入进 {n} 个副本 · 原件都没动，报告者那份仍然哈希成 {m}",
+ "correct": "{p}/{n}"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* ---------- Figure 1: the arms, and the two sweeps ---------- */
+  (function () {
+    var box = document.getElementById("arms");
+    S.armH.forEach(function (h) { el(box, "h a", h); });
+    F.fig1.arms.forEach(function (a) {
+      el(box, "a rv", a.arm);
+      el(box, "e rv", esc(a.env));
+      el(box, "r rv", fmt(S.correct, { p: a.passed, n: a.n }));
+      el(box, "r rv", fmt(S.correct, { p: a.cross.passed, n: a.cross.n }));
+    });
+    var sw = document.getElementById("sweeps");
+    F.fig1.sweeps.forEach(function (s, i) {
+      var c = el(sw, "sw2 rv" + (i ? " now" : ""));
+      el(c, "", "<h4>" + fmt(i ? S.sweep1 : S.sweep0, { d: s.date }) + "</h4>");
+      el(c, "n", fmt(S.correct, { p: s.passed, n: s.total }));
+      el(c, "d", fmt(S.sweepVerdict, { v: s.verdict }) + "<br>" +
+         fmt(S.sweepScript, { s: s.script }) +
+         (i && F.fig1.same_arms_same_counts ? "<br>" + S.sweepSame : ""));
+    });
+    var n = el(document.getElementById("armnote"), "");
+    n.textContent = fmt(S.armUnit, { c: F.fig1.cases_per_init });
+    var m = el(document.getElementById("armnote"), "");
+    m.style.marginTop = ".5em";
+    m.textContent = fmt(S.armChan, { n: F.fig1.default_channels,
+                                     v: F.fig1.rccl_version, m: F.fig1.reporter_md5 });
+  })();
+
+  /* ---------- Figure 2: the two machines ---------- */
+  (function () {
+    var box = document.getElementById("mach");
+    var H = F.fig2.header;
+    S.machH.forEach(function (h, i) { el(box, "h " + (i ? "v" : "k"), h || H[0]); });
+    F.fig2.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.axis));
+      el(box, "v rv", esc(r.theirs));
+      el(box, "v rv" + (r.same ? " same" : ""), esc(r.ours));
+    });
+    document.getElementById("machnote").textContent = fmt(S.machNote, {
+      n: F.fig2.same_rows, c: F.fig2.atomic_complaints, r: F.fig2.reqen });
+  })();
+
+  /* ---------- Figure 3: the injected fault ---------- */
+  (function () {
+    var box = document.getElementById("bspot");
+    S.bsH.forEach(function (h) { el(box, "h w", h); });
+    F.fig3.rows.forEach(function (r) {
+      el(box, "w rv", r.who);
+      el(box, "s rv", esc(r.script));
+      el(box, "vd rv " + (r.saw_it ? "saw" : "blind"), esc(r.verdict));
+      el(box, "x rv", "exit " + r.exit);
+    });
+    document.getElementById("bsnote").textContent = fmt(S.bsNote, {
+      n: F.fig3.injections, m: F.fig3.md5_after });
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

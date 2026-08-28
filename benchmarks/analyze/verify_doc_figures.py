@@ -755,7 +755,9 @@ def main():
              ["speculative-decoding-net-loss.html",
               "speculative-decoding-net-loss.zh.html"],
              ["a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"],
-             ["gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"]]
+             ["gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"],
+             ["reporting-a-non-reproduction.html",
+              "reporting-a-non-reproduction.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -2592,6 +2594,120 @@ def main():
         for h in heads:
             ck(f"gqa article {fn}, carries '{h[:22]}'", "1",
                1 if h in pages[fn] else 0)
+
+    # --- reporting-a-non-reproduction.html -----------------------------------
+    # The tallies are already checked against the logs above; what this adds is
+    # that the article's figures block still equals them, that the machine
+    # contrast still matches the table it was extracted from, and that the
+    # honesty the article is about is present on both language pages.
+    NART = json.loads(block(pages["reporting-a-non-reproduction.html"], "figures"))
+    NDIR = os.path.join(HERE, "..", "rccl-6565")
+    nread = lambda *q: open(os.path.join(NDIR, *q), errors="replace").read()
+    NRE = r"=== arm=(\S+) RESULT pass=(\d+) fail=(\d+)(?: error=(\d+))? of (\d+)"
+    ntally = lambda txt: [{"arm": m.group(1), "passed": int(m.group(2)),
+                           "failed": int(m.group(3)), "error": int(m.group(4) or 0),
+                           "n": int(m.group(5))} for m in re.finditer(NRE, txt)]
+    nfirst = ntally(nread("logs", "stage1.log")) + ntally(nread("logs", "stage2a.log"))
+    nthird = ntally(nread("logs", "stage3-allranks.log"))
+    nby3 = {a["arm"]: a for a in nthird}
+
+    ck("6565 article, fig1 arms", "8", len(NART["fig1"]["arms"]))
+    ck("6565 article, fig1 arms match the logs", "8",
+       sum(1 for a, s in zip(NART["fig1"]["arms"], nfirst)
+           if a["arm"] == s["arm"] and a["passed"] == s["passed"]
+           and a["n"] == s["n"] and a["failed"] == s["failed"]
+           and a["cross"]["passed"] == nby3[a["arm"]]["passed"]
+           and a["cross"]["n"] == nby3[a["arm"]]["n"]))
+    ck("6565 article, fig1 every arm names its environment", "8",
+       sum(1 for a in NART["fig1"]["arms"] if a["env"]))
+    ck("6565 article, fig1 the channel sweep is present", "4",
+       sum(1 for a in NART["fig1"]["arms"] if a["arm"].startswith("ch")))
+    ck("6565 article, fig1 and so is the transport arm", "1",
+       sum(1 for a in NART["fig1"]["arms"] if a["arm"] == "shmoff"))
+    for s in NART["fig1"]["sweeps"]:
+        src = nfirst if s["id"] == "rank0" else nthird
+        ck(f'6565 article, fig1 {s["id"]} total', "135", s["total"])
+        ck(f'6565 article, fig1 {s["id"]} recomputes from the logs',
+           str(sum(a["n"] for a in src)), s["total"])
+        ck(f'6565 article, fig1 {s["id"]} all correct', str(s["total"]), s["passed"])
+        ck(f'6565 article, fig1 {s["id"]} no failures', "0", s["failed"])
+    ck("6565 article, fig1 the second sweep repeats the first's arms and counts", "1",
+       1 if NART["fig1"]["same_arms_same_counts"] else 0)
+    ck("6565 article, fig1 the box builds two channels", "2",
+       NART["fig1"]["default_channels"])
+    ck("6565 article, fig1 the reporter's script is verbatim", "1",
+       1 if NART["fig1"]["verbatim"] else 0)
+    ck("6565 article, fig1 and quotes the md5 the directory does", "1",
+       1 if NART["fig1"]["reporter_md5"] ==
+       hashlib.md5(open(os.path.join(NDIR, "rccl_allgather_truth.py"), "rb").read()
+                   ).hexdigest() else 0)
+
+    # fig2: extracted from the directory's own table, so it cannot drift
+    nmd = nread("README.md")
+    body = nmd.split("## The machine, against theirs", 1)[1]
+    nrows = []
+    for line in body.split("\n"):
+        if line.startswith("|") and not re.match(r"^\|[\s|:-]+\|$", line):
+            nrows.append([c.strip() for c in line.strip().strip("|").split("|")])
+        elif nrows and not line.startswith("|"):
+            break
+    nstrip = lambda s: re.sub(r"\s+", " ", re.sub(r"[*`]", "", s)).strip()
+    ck("6565 article, fig2 rows", str(len(nrows) - 1), len(NART["fig2"]["rows"]))
+    ck("6565 article, fig2 rows match the table", str(len(nrows) - 1),
+       sum(1 for a, s in zip(NART["fig2"]["rows"], nrows[1:])
+           if a["axis"] == nstrip(s[0]) and a["theirs"] == nstrip(s[1])
+           and a["ours"] == nstrip(s[2])))
+    # the rows that AGREE are what stop the negative being explained away
+    ck("6565 article, fig2 marks the axes that agree", "2", NART["fig2"]["same_rows"])
+    ck("6565 article, fig2 and that count is the rows themselves",
+       str(sum(1 for r in NART["fig2"]["rows"] if r["same"])),
+       NART["fig2"]["same_rows"])
+    ck("6565 article, fig2 atomics is one of them", "1",
+       sum(1 for r in NART["fig2"]["rows"] if "atomic" in r["axis"].lower() and r["same"]))
+    nenv = nread("logs", "environment.txt")
+    ck("6565 article, fig2 zero atomic complaints", "0",
+       NART["fig2"]["atomic_complaints"])
+    ck("6565 article, fig2 recomputes that from the fingerprint",
+       re.search(r"PCIE-atomic complaints: (\d+)", nenv).group(1),
+       NART["fig2"]["atomic_complaints"])
+    ck("6565 article, fig2 both GPUs advertise ReqEn+", "2", NART["fig2"]["reqen"])
+
+    # fig3: the injected one-sided fault, which is the article's centre
+    nbs = nread("logs", "blindspot-check.log")
+    ck("6565 article, fig3 the injection check passed", "1",
+       1 if NART["fig3"]["ok"] and "BLINDSPOT_CHECK_OK" in nbs else 0)
+    ck("6565 article, fig3 both scripts were injected", "2", NART["fig3"]["injections"])
+    ck("6565 article, fig3 the reporter's script called it correct", "1",
+       1 if NART["fig3"]["reporter_said_all_correct"] else 0)
+    ck("6565 article, fig3 the variant counted it", "1",
+       1 if NART["fig3"]["variant_counted_it"] else 0)
+    ck("6565 article, fig3 and the runner exited non-zero", "1",
+       NART["fig3"]["runner_exit"])
+    ck("6565 article, fig3 exactly one of the three is blind", "1",
+       sum(1 for r in NART["fig3"]["rows"] if not r["saw_it"]))
+    blind = [r["who"] for r in NART["fig3"]["rows"] if not r["saw_it"]]
+    ck("6565 article, fig3 and it is the reporter's", "1",
+       1 if blind == ["reporter"] else 0)
+    # the injection must not have touched the original
+    ck("6565 article, fig3 the reporter's script still hashes the same", "1",
+       1 if NART["fig3"]["md5_after"] == NART["fig1"]["reporter_md5"] else 0)
+    # the miscounting check, kept because it is the same class of mistake
+    ck("6565 article, fig3 records the runner's own counting defect", "1",
+       1 if NART["fig3"]["grep_defect"]["reported_one_sided"] == 6
+       and NART["fig3"]["grep_defect"]["of"] == 20 else 0)
+
+    for fn, heads, phrase in (
+            ("reporting-a-non-reproduction.html",
+             ("What is not established", "What has changed since"),
+             "no corruption observed on rank 0"),
+            ("reporting-a-non-reproduction.zh.html",
+             ("没有被确立的部分", "此后发生的变化"),
+             "在 rank 0 上没有观察到损坏")):
+        for h in heads:
+            ck(f"6565 article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+        ck(f"6565 article {fn}, states what the first sweep really showed", "1",
+           1 if phrase in " ".join(pages[fn].split()) else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
