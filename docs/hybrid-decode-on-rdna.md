@@ -263,17 +263,36 @@ separate runs at different depths with different generation lengths. Since
 then the 0.27.1.dev image arrived, and separately the W4A16 work measured this
 checkpoint at 37.32 tok/s on it — at one depth, 1 024. So the two figures that
 describe this model came from different stacks and neither covered the other's
-question. Re-run properly, both arms on 0.27, same checkpoint, same harness,
-one fresh container per cell, only the file swapped:
+question. Re-run properly, both arms on 0.27, same checkpoint, same harness, one
+fresh
+container per cell, only the file swapped. Twice: run A takes the arms
+stock-first at each depth, run B splitkv-first and discards a warm-up cell
+before it starts.
 
-| ctx | stock 0.27 | with #45916 | | stock ms/tok | with #45916 |
-|---|---:|---:|---:|---:|---:|
-| 1 024 | 37.04 | **51.81** | 1.40x | 27.0 | 19.3 |
-| 8 192 | 12.57 | **47.02** | 3.74x | 79.6 | 21.3 |
-| 32 768 | 3.83 | **35.20** | **9.20x** | 261.3 | **28.4** |
+| ctx | stock A / B | with #45916 A / B | pooled ratio |
+|---|---:|---:|---:|
+| 1 024 | 37.04 / 37.76 | 51.81 / 51.43 | **1.38x** |
+| 8 192 | 12.57 / 12.62 | 47.02 / 40.14 | **3.46x** |
+| 32 768 | 3.83 / 3.81 | 35.20 / 37.05 | **9.46x** |
 
-The decode slope goes from 7.380 to **0.287 ms per 1 000 tokens of context**, a
-25.7x reduction, and what is retained from 1K to 32K goes from 10.3% to 67.9%.
+Using the pooled figures, decode goes from 26.7 to 19.4 ms/token at 1K and
+from 261.9 to 27.7 at 32K, the slope from 7.408 to **0.262 ms per 1 000 tokens
+of context**, and what is retained from 1K to 32K from 10.2% to 70.0%.
+
+**The two arms are not equally stable, and that is worth more than the
+averages.** Across the two passes the stock arm moves 1.9%, 0.5% and 0.5%; the
+split-KV arm moves 0.7%, **14.6%** and 5.3%. The 8K cell is the outlier and it
+is not the split-count heuristic: `_num_splits_heuristic` is a pure function of
+batch size, KV heads, sequence length, block size and processor count, all
+fixed by the configuration, so it cannot return a different answer on a second
+run. The mechanism is not established here. What follows from it is a bound on
+use: **8 192 is not yet a chart-grade point for this arm**, and the 3.46x
+should be read as two measurements 14.6% apart rather than as a figure with
+three significant digits.
+
+An earlier version of this section carried run A alone: 1.40x, 3.74x and 9.20x.
+Those are still run A's numbers and still in the repository; what changed is
+that a single pass turned out not to be enough to quote for this arm.
 
 **The splitkv arm is the PR's code, not a port.** `gh pr diff 45916` applies to
 0.27's `chunked_prefill_paged_decode.py` with no rejected hunks; the resulting
@@ -285,17 +304,19 @@ now stands rather than by a local edit.
 
 Routing is recorded from inside the TP workers, keyed
 `(head_size, sliding_window, use_splitkv_decode)`, and reads `(256, 0, True)`
-on both ranks at all three depths. The recorder is installed before any vLLM
-import: doing it afterwards is what silently produced no records at all in the
-gqa-gate work on this same image.
+on both ranks at all three depths in both passes. The recorder is installed
+before any vLLM import: doing it afterwards is what silently produced no
+records at all in the gqa-gate work on this same image.
 
-Two comparisons worth keeping straight. The stock arm at 1 024 gives 37.04
-against the 37.32 measured by the W4A16 harness, 0.8% apart, which is the
-control that says these two measurements are talking about the same thing. And
-this table is **not** comparable to §6.5's: that one is 0.23.1 on ROCm 7.14 and
-reads 93.30 ms/tok at 32K where this reads 28.4, and it was a ratio across two
-checkpoints and two campaigns rather than an A/B. What the two agree on is the
-direction and the shape.
+Two comparisons worth keeping straight. Run B's discarded warm-up cell gives
+37.0398 against run A's first measured cell at 37.0397, which is what says run
+A was not penalised for being first — the cold-machine effect that cost the
+harness calibration three runs does not reach a method that pays a multi-minute
+engine initialisation before it times anything. And this table is **not**
+comparable to §6.5's: that one is 0.23.1 on ROCm 7.14 and reads 93.30 ms/tok at
+32K where this reads 27.7, and it was a ratio across two checkpoints and two
+campaigns rather than an A/B. What the two agree on is the direction and the
+shape.
 
 Raw rows, the probe, the diff applied and the routing records:
 [`benchmarks/hybrid-splitkv-027/`](../benchmarks/hybrid-splitkv-027/).

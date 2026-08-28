@@ -1152,45 +1152,60 @@ def main():
     ck("w4a16 README, and the full suite has no regression", "54",
        int(re.findall(r"(\d+) passed", ao)[-1]))
 
-    # --- hybrid-decode-on-rdna §6.6: vllm#45916 on 0.27, controlled A/B ------
+    # --- hybrid-decode-on-rdna §6.6: vllm#45916 on 0.27, two passes ---------
     HDIR = os.path.join(HERE, "..", "hybrid-splitkv-027")
     q38 = {}
-    for r in [json.loads(l) for l in
-              open(os.path.join(HDIR, "qwen38-027-depth.jsonl"))]:
-        q38[(r["arm"], r["ctx"])] = r
-    ck("hybrid-decode 6.6, cells", "6", len(q38))
-    for ctx, stock, split, ratio in ((1024, "37.04", "51.81", "1.40"),
-                                     (8192, "12.57", "47.02", "3.74"),
-                                     (32768, "3.83", "35.20", "9.20")):
-        s_tps = q38[("stock", ctx)]["decode_tok_s"]
-        p_tps = q38[("splitkv", ctx)]["decode_tok_s"]
-        ck(f"hybrid-decode 6.6, {ctx} stock", stock, s_tps)
-        ck(f"hybrid-decode 6.6, {ctx} with the PR", split, p_tps)
-        ck(f"hybrid-decode 6.6, {ctx} ratio", ratio, p_tps / s_tps)
-        ck(f"hybrid-decode 6.6, {ctx} stock ms/tok",
-           {1024: "27.0", 8192: "79.6", 32768: "261.3"}[ctx], 1000 / s_tps)
-        ck(f"hybrid-decode 6.6, {ctx} PR ms/tok",
-           {1024: "19.3", 8192: "21.3", 32768: "28.4"}[ctx], 1000 / p_tps)
-    for arm, claim in (("stock", "7.380"), ("splitkv", "0.287")):
-        lo = 1000 / q38[(arm, 1024)]["decode_tok_s"]
-        hi = 1000 / q38[(arm, 32768)]["decode_tok_s"]
-        ck(f"hybrid-decode 6.6, {arm} slope per 1K ctx", claim,
+    for tag, fn in (("A", "qwen38-027-depth.jsonl"), ("B", "qwen38-027-depth-b.jsonl")):
+        for r in [json.loads(l) for l in open(os.path.join(HDIR, fn))]:
+            q38[(tag, r["arm"], r["ctx"])] = r
+    ck("hybrid-decode 6.6, cells across both passes", "12", len(q38))
+    q38tps = lambda t, a, c: q38[(t, a, c)]["decode_tok_s"]
+    pooled = lambda a, c: (q38tps("A", a, c) + q38tps("B", a, c)) / 2
+    for ctx, sA, sB, pA, pB, ratio in (
+            (1024, "37.04", "37.76", "51.81", "51.43", "1.38"),
+            (8192, "12.57", "12.62", "47.02", "40.14", "3.46"),
+            (32768, "3.83", "3.81", "35.20", "37.05", "9.46")):
+        ck(f"hybrid-decode 6.6, {ctx} stock A", sA, q38tps("A", "stock", ctx))
+        ck(f"hybrid-decode 6.6, {ctx} stock B", sB, q38tps("B", "stock", ctx))
+        ck(f"hybrid-decode 6.6, {ctx} splitkv A", pA, q38tps("A", "splitkv", ctx))
+        ck(f"hybrid-decode 6.6, {ctx} splitkv B", pB, q38tps("B", "splitkv", ctx))
+        ck(f"hybrid-decode 6.6, {ctx} pooled ratio", ratio,
+           pooled("splitkv", ctx) / pooled("stock", ctx))
+    ck("hybrid-decode 6.6, pooled 1K ms/tok stock", "26.7", 1000 / pooled("stock", 1024))
+    ck("hybrid-decode 6.6, pooled 1K ms/tok with the PR", "19.4",
+       1000 / pooled("splitkv", 1024))
+    ck("hybrid-decode 6.6, pooled 32K ms/tok stock", "261.9",
+       1000 / pooled("stock", 32768))
+    ck("hybrid-decode 6.6, pooled 32K ms/tok with the PR", "27.7",
+       1000 / pooled("splitkv", 32768))
+    for arm, claim in (("stock", "7.408"), ("splitkv", "0.262")):
+        lo, hi = 1000 / pooled(arm, 1024), 1000 / pooled(arm, 32768)
+        ck(f"hybrid-decode 6.6, pooled {arm} slope per 1K ctx", claim,
            (hi - lo) / ((32768 - 1024) / 1000))
-    for arm, claim in (("stock", "10.3"), ("splitkv", "67.9")):
-        ck(f"hybrid-decode 6.6, {arm} retained at 32K", claim,
-           100 * q38[(arm, 32768)]["decode_tok_s"] / q38[(arm, 1024)]["decode_tok_s"])
-    ck("hybrid-decode 6.6, splitkv really ran, both ranks x3 depths", "6",
-       sum(1 for c in (1024, 8192, 32768)
-           for r in q38[("splitkv", c)]["routes"] if "(256, 0, True)" in r))
+    for arm, claim in (("stock", "10.2"), ("splitkv", "70.0")):
+        ck(f"hybrid-decode 6.6, pooled {arm} retained at 32K", claim,
+           100 * pooled(arm, 32768) / pooled(arm, 1024))
+    # the spread between passes, which is the part that bounds how it may be used
+    for arm, claims in (("stock", ("1.9", "0.5", "0.5")),
+                        ("splitkv", ("0.7", "14.6", "5.3"))):
+        for ctx, claim in zip((1024, 8192, 32768), claims):
+            ck(f"hybrid-decode 6.6, {arm} A-vs-B spread at {ctx}", claim,
+               100 * abs(q38tps("B", arm, ctx) - q38tps("A", arm, ctx)) / q38tps("A", arm, ctx))
+    ck("hybrid-decode 6.6, splitkv really ran, both ranks x3 depths x2 passes", "12",
+       sum(1 for t in ("A", "B") for c in (1024, 8192, 32768)
+           for r in q38[(t, "splitkv", c)]["routes"] if "(256, 0, True)" in r))
     ck("hybrid-decode 6.6, and never on the stock arm", "0",
-       sum(len(q38[("stock", c)]["routes"]) for c in (1024, 8192, 32768)))
+       sum(len(q38[(t, "stock", c)]["routes"])
+           for t in ("A", "B") for c in (1024, 8192, 32768)))
+    warm = json.loads(open(os.path.join(HDIR, "qwen38-warmup-discard.jsonl")).read())
+    ck("hybrid-decode 6.6, the discarded warm-up cell", "37.0398",
+       warm["decode_tok_s"])
+    ck("hybrid-decode 6.6, against run A's first measured cell", "37.0397",
+       q38tps("A", "stock", 1024))
     prov = json.load(open(os.path.join(HDIR, "provenance.json")))
     ck("hybrid-decode 6.6, the patched file is 1083 lines", "1083",
        prov["cppd_lines_patched"])
     ck("hybrid-decode 6.6, against 493 stock", "493", prov["cppd_lines_stock"])
-    ck("hybrid-decode 6.6, control against the W4A16 harness", "0.8",
-       100 * abs(q38[("stock", 1024)]["decode_tok_s"] - 37.31902014484255)
-       / 37.31902014484255, tol=0.1)
 
     # --- harness calibration: are the two decode harnesses the same thing? ---
     CDIR = os.path.join(HERE, "..", "harness-calibration")

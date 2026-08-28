@@ -8,5 +8,20 @@
  "cppd_lines_stock": 493,
  "cppd_lines_patched": 1083,
  "diff_md5": "273fef16795396fe9b142712f3bf359f",
- "note": "The probe asserts both md5s at runtime, so an arm that silently failed to swap the file aborts instead of measuring the other arm twice."
+ "note": "The probe asserts both md5s at runtime, so an arm that silently failed to swap the file aborts instead of measuring the other arm twice.",
+ "runs": {
+  "A": {
+   "file": "qwen38-027-depth.jsonl",
+   "order": "stock first at each depth",
+   "warmup_cell": null,
+   "note": "single pass; its numbers are what docs 6.6 first carried"
+  },
+  "B": {
+   "file": "qwen38-027-depth-b.jsonl",
+   "order": "splitkv first at each depth",
+   "warmup_cell": "qwen38-warmup-discard.jsonl, stock@1024, discarded",
+   "note": "the warm-up cell reads 37.0398 against run A's first cell 37.0397, which is why run A is not treated as cold"
+  }
+ },
+ "route_file_caveat": "run B's recorder wrote to the same route38-<arm>-<ctx>.txt paths as run A, so the host copies now hold both passes' lines. The committed routes/ directory is run A's two lines per depth; run B's are identical in content and are recorded in its jsonl rows."
 }

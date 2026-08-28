@@ -1,0 +1,22 @@
+########## cell 0, DISCARDED warm-up  15:14:17 ##########
+exit=0 15:22:55
+RESULT arm=stock ctx=1024 decode_tok_s=37.04 t8=1.0 t64=2.5 routes=[]
+########## B arm=splitkv ctx=1024  15:22:55 ##########
+exit=0 15:31:50
+RESULT arm=splitkv ctx=1024 decode_tok_s=51.43 t8=1.0 t64=2.1 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## B arm=stock ctx=1024  15:31:50 ##########
+exit=0 15:40:38
+RESULT arm=stock ctx=1024 decode_tok_s=37.76 t8=1.0 t64=2.5 routes=[]
+########## B arm=splitkv ctx=8192  15:40:38 ##########
+exit=0 15:49:53
+RESULT arm=splitkv ctx=8192 decode_tok_s=40.14 t8=7.5 t64=8.9 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## B arm=stock ctx=8192  15:49:53 ##########
+exit=0 15:59:13
+RESULT arm=stock ctx=8192 decode_tok_s=12.62 t8=7.9 t64=12.3 routes=[]
+########## B arm=splitkv ctx=32768  15:59:13 ##########
+exit=0 16:10:00
+RESULT arm=splitkv ctx=32768 decode_tok_s=37.05 t8=33.1 t64=34.6 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## B arm=stock ctx=32768  16:10:00 ##########
+exit=0 16:20:44
+RESULT arm=stock ctx=32768 decode_tok_s=3.81 t8=34.6 t64=49.3 routes=[]
+Q38_DEPTH_B_DONE

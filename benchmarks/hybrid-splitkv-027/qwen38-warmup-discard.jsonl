@@ -1,0 +1,1 @@
+{"arm": "stock", "ctx": 1024, "model": "/data/incoming/Qwen3.8-27B-AWQ-INT4", "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827", "max_num_seqs": 16, "decode_tok_s": 37.03983262761679, "t8": 1.0156223773956299, "t64": 2.52750825881958, "routes": [], "sample_text": " hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello"}
