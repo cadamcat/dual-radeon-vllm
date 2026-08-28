@@ -3,8 +3,7 @@
 import json, sys, os
 
 import os
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.environ.get("BENCH_RESULTS") or os.path.join(_HERE, "..", "results.jsonl")
+from paths import RESULTS
 
 
 RES = RESULTS

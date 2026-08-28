@@ -2,8 +2,7 @@
 """analyze.py — derived metrics across configs: TP2/TP1 speedup, MBU, cross-model view."""
 import json, os, glob
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.environ.get("BENCH_RESULTS") or os.path.join(_HERE, "..", "results.jsonl")
+from paths import RESULTS
 # The per-token weight-traffic section reads safetensors headers, so it only works
 # on a machine that holds the models; point MODELS_DIR at them (default: the server path).
 MODELS_DIR = os.environ.get("MODELS_DIR", "/data/incoming")
@@ -63,10 +62,6 @@ for m, (t1, t2) in {"8B BF16": ("B-8B-tp1", "B-8B-tp2"),
 
 print("\n### per-token weight traffic (from checkpoint headers)")
 import struct
-
-import os
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.environ.get("BENCH_RESULTS") or os.path.join(_HERE, "..", "results.jsonl")
 
 if not os.path.isdir(MODELS_DIR):
     print(f"  (skipped: MODELS_DIR={MODELS_DIR} not present — this section reads safetensors")

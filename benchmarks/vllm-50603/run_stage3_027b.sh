@@ -5,6 +5,7 @@
 # on the widened arm every time. Flipping the order puts that drift on the
 # other arm; an effect that survives both orders is not drift.
 set -u
+fail=0   # cells that came back non-zero
 cd /data/50603
 [ -e stage3-027b.jsonl ] && { echo "REFUSING: stage3-027b.jsonl already exists"; exit 2; }
 IMG=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0
@@ -15,8 +16,11 @@ for ctx in 1024 8192 32768; do
       --group-add video --ipc host --shm-size 16g -v /data:/data -v /data/50603:/work \
       -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint bash "$IMG" \
       /work/stage3_027b.sh "$arm" "$ctx" > "/data/50603/cell027b-$arm-$ctx.log" 2>&1
-    echo "exit=$? $(date -u +%H:%M:%S)"
+    rc=$?; fail=$((fail + (rc != 0)))
+    echo "exit=$rc $(date -u +%H:%M:%S)"
     grep -aE "ARM=|RESULT|Error|AssertionError|Traceback" "/data/50603/cell027b-$arm-$ctx.log" | tail -4
   done
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "STAGE3_027B_FAILED cells=$fail"; exit 1; }
 echo STAGE3_027B_DONE

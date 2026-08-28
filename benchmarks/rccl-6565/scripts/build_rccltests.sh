@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build the reporter's Reproducer 1 (rccl-tests) inside our container image.
 # Compile only, no GPU needed, so this can run while the GPU arms are busy.
-set -eu
+set -eu -o pipefail   # `make ... | tail` hid make's status from set -e
 SDD=/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel
 SDL=/opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib
 export PATH=$SDD/bin:$SDD/llvm/bin:$PATH
@@ -14,5 +14,5 @@ cd rccl-tests
 git log --oneline -1 | sed 's/^/rccl-tests commit: /'
 make MPI=0 HIP_HOME=$SDD RCCL_HOME=$SDL NCCL_HOME=$SDL GPU_TARGETS=gfx1100 -j"$(nproc)" 2>&1 | tail -25
 echo "--- built binaries ---"
-ls -la build/ 2>/dev/null | head -20
+ls -la build/ 2>/dev/null | head -20 || true   # informational
 echo "BUILD_DONE"

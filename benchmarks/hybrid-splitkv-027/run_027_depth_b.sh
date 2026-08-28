@@ -10,6 +10,7 @@
 # max_model_len = ctx + 512 per cell -- because changing it would cost the
 # comparison.
 set -u
+fail=0   # cells that came back non-zero
 cd /data/50603
 [ -e qwen38-027-depth-b.jsonl ] && { echo "REFUSING: output exists"; exit 2; }
 rm -f route38b-*.txt route38b-*.txt.err qwen38-warmup-discard.jsonl
@@ -20,7 +21,8 @@ run_cell () {  # arm ctx out tag
     --group-add video --ipc host --shm-size 16g -v /data:/data -v /data/50603:/work \
     -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint bash "$IMG" \
     -c "python -u /work/probe_027_depth.py $1 $2 $3" > "/data/50603/q38b-$4.log" 2>&1
-  echo "exit=$? $(date -u +%H:%M:%S)"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc $(date -u +%H:%M:%S)"
   grep -aE "RESULT|AssertionError|Traceback" "/data/50603/q38b-$4.log" | tail -3
 }
 
@@ -33,4 +35,6 @@ for ctx in 1024 8192 32768; do
     run_cell "$arm" "$ctx" /work/qwen38-027-depth-b.jsonl "$arm-$ctx"
   done
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "Q38_DEPTH_B_FAILED cells=$fail"; exit 1; }
 echo Q38_DEPTH_B_DONE

@@ -7,7 +7,7 @@ set -eu
 IMG=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0
 sudo docker run --rm --name build53856 -v /data/50603:/work \
   --entrypoint bash "$IMG" -c '
-set -eux
+set -eux -o pipefail   # every build step here is piped into tail
 cd /app/vllm
 git apply /work/53856-attn.diff
 grep -c mask_v_cache_padding csrc/rocm/attention.cu

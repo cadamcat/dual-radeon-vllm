@@ -5,8 +5,7 @@ model it should be ~0. Also reports prefill flatness (SSM's expected win)."""
 import json
 
 import os
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.environ.get("BENCH_RESULTS") or os.path.join(_HERE, "..", "results.jsonl")
+from paths import RESULTS
 
 
 rows = [json.loads(l) for l in open(RESULTS) if l.strip()]
@@ -33,6 +32,10 @@ for c in ORDER:
     if c not in dec:
         continue
     S = sorted(dec[c])
+    if len(S) < 2:
+        # a slope needs two depths; BENCH_TARGETS can leave a config with one
+        print(f"{c:>18} | only one depth measured ({S[0]}), no slope")
+        continue
     lo, hi = S[0], S[-1]
     d_lo = sum(dec[c][lo]) / len(dec[c][lo])
     d_hi = sum(dec[c][hi]) / len(dec[c][hi])

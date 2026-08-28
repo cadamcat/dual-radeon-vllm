@@ -15,6 +15,7 @@ anything in [4.15, 4.25], 0.391 admits [0.3905, 0.3915]. That is what quoting a
 rounded number means, and it is a tighter test than a percentage for the large
 figures and a looser one for the small. Pass an explicit tol= to override.
 """
+import glob
 import hashlib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -1373,6 +1374,115 @@ def main():
        q32p["decode_tok_s"] / q32s["decode_tok_s"], tol=0.01)
     ck("README, the solid ms line at 32K", "261.9", 1000 / q32s["decode_tok_s"])
     ck("README, the dashed one", "27.7", 1000 / q32p["decode_tok_s"])
+
+    # --- the ROCm and CUDA probes must keep sharing their reference ---------
+    # These two files are 61% identical and an audit called for merging them.
+    # They are deliberately not merged: each was verified on different hardware
+    # and the halves that differ (run_arm, timed, main) are the point of having
+    # both. What must not drift is the half that makes them comparable -- the
+    # input construction, the fp32 reference and the scorer. A guard is the
+    # protection merging would have given, without touching code verified on
+    # two machines.
+    def _top_level(path):
+        src = open(path).read()
+        out, cur, name = {}, [], None
+        for line in src.split("\n"):
+            m = re.match(r"^def (\w+)\(", line)
+            if m or (line and not line[0].isspace() and cur):
+                if name:
+                    out[name] = "\n".join(cur).rstrip()
+                name, cur = (m.group(1) if m else None), ([line] if m else [])
+            elif name is not None:
+                cur.append(line)
+            k = re.match(r"^([A-Z_]+(?:, ?[A-Z_]+)*) = (.+)$", line)
+            if k:
+                # the value, not the trailing comment: the two files annotate
+                # the same constants differently and that is not divergence
+                val = k.group(2).split("#")[0].strip() if '"' not in k.group(2) \
+                    else k.group(2)
+                out["const:" + k.group(1).replace(" ", "")] = val
+        if name:
+            out[name] = "\n".join(cur).rstrip()
+        return out
+
+    rocm = _top_level(os.path.join(GDIR, "probe_50603.py"))
+    cuda = _top_level(os.path.join(GDIR, "probe_50603_cuda.py"))
+    shared = ["build", "reference", "score",
+              "const:HEAD_SIZE", "const:BLOCK_SIZE", "const:DTYPE",
+              "const:SHAPES", "const:CTX_LENS", "const:WARMUP,ITERS"]
+    ck("50603 probes, shared pieces present in both files", str(len(shared)),
+       sum(1 for k in shared if k in rocm and k in cuda))
+    ck("50603 probes, and identical in both", str(len(shared)),
+       sum(1 for k in shared if rocm.get(k) is not None and rocm.get(k) == cuda.get(k)))
+    # the halves that are supposed to differ still do, so the guard is not
+    # passing because someone made the two files the same
+    ck("50603 probes, the arm-specific halves still differ", "3",
+       sum(1 for k in ("run_arm", "timed", "main")
+           if rocm.get(k) != cuda.get(k)))
+
+    # --- invariants the audit found stated in three places and checked in none
+    ROOTD = os.path.join(HERE, "..", "..")
+    read = lambda *r: open(os.path.join(ROOTD, *r)).read()
+
+    # the prompt ladder. cut_prompts.py generates it; analyze.py and
+    # gen_charts.py restate it, and a target added to the generator and not
+    # copied into both would be silently dropped from every table and chart
+    ladders = {}
+    for f in ("benchmarks/prompts/cut_prompts.py", "benchmarks/analyze/analyze.py",
+              "benchmarks/analyze/gen_charts.py"):
+        m = re.search(r"^TARGETS = (\[[\d, ]+\])$", read(f), re.M)
+        ladders[f] = eval(m.group(1)) if m else None
+    ck("prompt ladder, restated in three files", "3",
+       sum(1 for v in ladders.values() if v))
+    ck("prompt ladder, and all three agree", "1",
+       1 if len({tuple(v or ()) for v in ladders.values()}) == 1 else 0)
+    manifest_targets = set()
+    for mf in sorted(glob.glob(os.path.join(ROOTD, "benchmarks/prompts/manifest-*.json"))):
+        manifest_targets |= {e["target"] for e in json.load(open(mf))}
+    ck("prompt ladder, and matches the committed manifests", "1",
+       1 if set(ladders["benchmarks/prompts/cut_prompts.py"] or []) == manifest_targets
+       else 0)
+
+    # every configuration the runner can produce must be known to the ledger,
+    # which asserts on an unknown cfg rather than skipping it
+    runner_ids = set(re.findall(r'dict\(id="([\w-]+)"', read("benchmarks/bench_runner.py")))
+    ledger_ids = set(re.findall(r'^\s+"([\w.-]+)":\s+\("',
+                                read("benchmarks/analyze/build_ledger.py"), re.M))
+    ck("every runner configuration is known to the ledger", "0",
+       len(runner_ids - ledger_ids))
+
+    # a deliberate divergence, kept deliberate. probe_w4a16_fix.py is the script
+    # that produced w4a16-fix.jsonl and keys the zero-point convention on
+    # c.zero_points; the unit tests later showed that is the wrong key for GPTQ,
+    # so apply_patch.py and the upstream diff use has_bias(). Reconciling them
+    # by editing apply_patch.py would make the patch wrong and nothing would say so
+    ck("the W4A16 installer keys on has_bias", "1",
+       1 if "not c.weight_type.has_bias()" in
+       read("benchmarks/w4a16-symmetry/apply_patch.py") else 0)
+    ck("and the as-run probe still keys on zero_points", "1",
+       1 if "c.zero_points)" in
+       read("benchmarks/w4a16-symmetry/probe_w4a16_fix.py") else 0)
+
+    # both chart generators carry their own palette, keyed differently -- one by
+    # cfg id, one by model name. A model drawn in two colours across two figures
+    # on one page reads as two models, so the overlap has to agree
+    gc = read("benchmarks/analyze/gen_charts.py")
+    gb = read("benchmarks/analyze/gen_best_charts.py")
+    by_cfg = dict(re.findall(r'"([\w.-]+)":\s+\("(#[0-9a-f]{6})"', gc))
+    by_model = dict(re.findall(r'"([\w.-]+)": \("(#[0-9a-f]{6})"', gb))
+    same_model = {"E-26B-tp2": "gemma-4-26B-A4B", "B-8B-tp2": "Qwen3-8B",
+                  "A-12B-tp2": "gemma-4-12B-it", "C-31B-tp2": "gemma-4-31B-it",
+                  "D8-27B-tp2": "Qwen3.8-27B", "G-30B-tp2": "Muse-Glimmer-30B"}
+    ck("both chart generators agree on every shared model colour", "6",
+       sum(1 for cfg, model in same_model.items()
+           if by_cfg.get(cfg) and by_cfg.get(cfg) == by_model.get(model)))
+
+    # the 53856 pair, same reasoning as the 50603 pair above
+    r8 = _top_level(os.path.join(GDIR, "probe_53856.py"))
+    r8b = _top_level(os.path.join(GDIR, "probe_53856_027.py"))
+    ck("53856 probes, shared reference and dispatch identical", "3",
+       sum(1 for k in ("reference", "run", "_counting_ck")
+           if r8.get(k) is not None and r8.get(k) == r8b.get(k)))
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

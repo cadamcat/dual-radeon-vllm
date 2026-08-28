@@ -2,6 +2,7 @@
 # One asymmetric checkpoint, two kernels. The patched arm may fail outright --
 # that is a result, not an accident, so keep going and let the log hold it.
 set -u
+fail=0   # cells that came back non-zero
 IMG=rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0
 for arm in stock patched; do
   echo "########## arm=$arm  $(date -u +%H:%M:%S) ##########"
@@ -10,8 +11,11 @@ for arm in stock patched; do
     -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint python "$IMG" \
     -u /work/probe_w4a16_forced.py "$arm" /work/w4a16-forced.jsonl \
     > "/data/50603/forced-$arm.log" 2>&1
-  echo "exit=$? arm=$arm"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc arm=$arm"
   grep -aE "^PATCH|^ARM=|^RESULT|^ANSWER|^KERNELS|^FORCED_CELL_DONE|Error|Traceback|assert" \
     "/data/50603/forced-$arm.log" | tail -8
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "FORCED_FAILED cells=$fail"; exit 1; }
 echo FORCED_DONE

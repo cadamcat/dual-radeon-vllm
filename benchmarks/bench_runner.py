@@ -103,7 +103,11 @@ def done_keys():
                 # A BENCH_TARGETS subset writes config_complete too, so treating it
                 # as "this configuration is finished" made a later full run skip
                 # everything it had not measured.
-                ks.add(("cfg", j["cfg"], tuple(j.get("targets") or ())))
+                # the mml travels with the record: a capacity-limited run
+                # measured a shorter ladder on purpose and has to be judged
+                # against the ladder IT could reach, not the global one
+                ks.add(("cfg", j["cfg"], tuple(j.get("targets") or ()),
+                        j.get("mml")))
             elif j.get("kind") in ("prefill", "decode"):
                 ks.add((j["cfg"], j["target"], j["kind"], j["round"]))
     return ks
@@ -256,17 +260,39 @@ def points_for(cfg, mml):
 class ConfigAborted(Exception):
     pass
 
-def run_cfg(cfg, done, util=None, attempt=1):
-    cid = cfg["id"]
+def resume_state(cfg, done):
+    """(complete, have, expected, capped) for cfg, from its completion record.
+
+    `expected` is the ladder the earlier run could actually reach. Judging a
+    configuration against the GLOBAL MML instead was a bug: one whose KV pool
+    forced a retreat to, say, 12K measures a shorter ladder by design, so
+    `want <= have` never held, and every resume re-measured the whole thing
+    while logging targets as "missing" that it can never have. The completion
+    record carries the mml it ran at, so the comparison is made there.
+
+    Returns (None, ...) for complete when no record exists.
+    """
     want = {t for t, _ in points_for(cfg, MML)}
     for key in done:
-        if key[0] == "cfg" and key[1] == cid:
-            have = set(key[2]) if key[2] else want
-            if want <= have:
-                log(f"{cid}: already complete, skip"); return
-            log(f"{cid}: previous run covered {sorted(have)}, "
-                f"missing {sorted(want - have)} — re-running the configuration")
-            break
+        if key[0] != "cfg" or key[1] != cfg["id"]:
+            continue
+        have = set(key[2]) if key[2] else want
+        # records written before the mml was stored fall back to the global one
+        ran_mml = key[3] if len(key) > 3 and key[3] else MML
+        expected = {t for t, _ in points_for(cfg, ran_mml)}
+        return expected <= have, have, expected, ran_mml < MML
+    return None, want, want, False
+
+
+def run_cfg(cfg, done, util=None, attempt=1):
+    cid = cfg["id"]
+    complete, have, expected, capped = resume_state(cfg, done)
+    if complete is True:
+        note = f" (capacity-limited to {sorted(expected)[-1]})" if capped else ""
+        log(f"{cid}: already complete, skip{note}"); return
+    if complete is False:
+        log(f"{cid}: previous run covered {sorted(have)}, "
+            f"missing {sorted(expected - have)} — re-running the configuration")
     if util is None:
         util = cfg.get("util", DEFAULT_UTIL)
     mml = MML; txt = None

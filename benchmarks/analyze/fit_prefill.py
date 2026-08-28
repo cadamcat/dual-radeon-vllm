@@ -3,8 +3,7 @@
 import json, sys
 
 import os
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.environ.get("BENCH_RESULTS") or os.path.join(_HERE, "..", "results.jsonl")
+from paths import RESULTS
 
 
 cfg = sys.argv[1] if len(sys.argv) > 1 else "B-8B-tp2"

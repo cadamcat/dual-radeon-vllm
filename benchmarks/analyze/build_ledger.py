@@ -174,6 +174,9 @@ def main():
     if a.spread:
         sp = sorted(r["range_pct"] for r in rows if r["range_pct"] is not None)
         print(f"{len(sp)} points with more than one run")
+        if not sp:
+            print("  no point has a second run, so there is no spread to show")
+            return 0
         for q in (50, 75, 90, 95, 99, 100):
             print(f"  p{q:<3} {sp[min(len(sp) - 1, int(len(sp) * q / 100))]:6.2f}%")
         print("  worst ten:")

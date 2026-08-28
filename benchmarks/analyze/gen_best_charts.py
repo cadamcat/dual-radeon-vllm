@@ -33,6 +33,8 @@ import json
 import math
 import os
 
+from chartlib import nice_ticks
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "docs", "assets")
 LEDGER = os.path.join(HERE, "..", "ledger.jsonl")
@@ -138,17 +140,6 @@ def describe(row):
 
 PLOT_H = 520  # was 206, which left six of the seven ms-per-token lines inside
               # a twentieth of the axis
-
-
-def nice_ticks(vmax, step=None):
-    """Gridlines. A step can be forced when the default would be too coarse for
-    a tall plot -- 4-6 bands is right for a 206px axis and far too few for 520."""
-    if step:
-        return [i * step for i in range(int(vmax // step) + 1)]
-    for step in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000):
-        if 4 <= vmax / step <= 6:
-            return [i * step for i in range(int(vmax // step) + 1)]
-    return [0, vmax]
 
 
 NOTE_CHARS = 128  # (762 - 62) px at 10px, about 0.5 px per character

@@ -26,6 +26,8 @@ lines read as one. benchmarks.md quotes its numbers in prose instead.
 """
 import argparse, json, math, os
 
+from chartlib import nice_ticks
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "docs", "assets")
 
@@ -77,15 +79,6 @@ for r in rows:
 D = lambda c, t: sum(dec[c][t]) / len(dec[c][t]) if c in dec and t in dec[c] else None
 P = lambda c, t: max(pre[c][t]) if c in pre and t in pre[c] else None
 TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
-
-
-def nice_ticks(vmax):
-    """0..vmax in 4-6 steps of a round size. Reproduces the hand-picked ticks the
-    2026-07-25 charts used, and keeps working when a ceiling is changed."""
-    for step in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000):
-        if 4 <= vmax / step <= 6:
-            return [i * step for i in range(int(vmax // step) + 1)]
-    return [0, vmax]
 
 
 def build(fn, title, sub, series, vmax, ylab, ncol=2):

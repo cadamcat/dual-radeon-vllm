@@ -128,9 +128,16 @@ a reduction, would cost the one property that makes a negative result from it
 worth anything to the reporter. So this is recorded as a bound on the claim
 instead.
 
-What would tighten it: a separate cross-rank variant that all-reduces the
-failure count before deciding, run over the same arms. Not done here; the
-result above should be read with the rank-0 caveat until it is.
+The variant that tightens it now exists as
+`rccl_allgather_allranks.py`, added 2026-08-28: same twelve cases, same
+construction, but every rank prints its own verdict and the failure count is
+all-reduced before anything is decided, so a one-sided failure cannot read as
+`ALL CORRECT`. It also exits non-zero, which the original does not.
+
+**It has not been run.** The 135/135 above is still the original script's
+verdict and still carries the rank-0 caveat; nothing in this document has been
+re-measured. Running the new variant over the same arms is what would replace
+the caveat with a result.
 
 The first attempt at this ran through a wrapper that filtered the output and
 printed a parsed verdict; the filter matched nothing and reported `FAILED` for
@@ -141,6 +148,7 @@ around than no log. `logs/stage2b-raw.log` is the unfiltered re-run.
 ## Files
 
 - `rccl_allgather_truth.py` — the reporter's script, verbatim from the issue
+- `rccl_allgather_allranks.py` — the cross-rank variant, not yet run
 - `scripts/` — the arm runners and stage drivers actually used
 - `logs/stage1.log` — three transport arms, RCCL version banner, topology dump
 - `logs/stage2a.log` — channel sweep and `NCCL_SHM_DISABLE=1`

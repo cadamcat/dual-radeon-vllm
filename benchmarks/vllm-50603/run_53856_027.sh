@@ -2,6 +2,7 @@
 # Two arms: the image as shipped, and the same image with the PR's _rocm_C.
 # The stock arm must reproduce the NaN; a clean patched arm alone proves nothing.
 set -u
+fail=0   # cells that came back non-zero
 IMG=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0
 for arm in stock patched; do
   echo "########## arm=$arm  $(date -u +%H:%M:%S) ##########"
@@ -14,7 +15,10 @@ for arm in stock patched; do
     --group-add video --ipc host --shm-size 8g -v /data/50603:/work -w /work \
     --entrypoint bash "$IMG" -c "$PRE python -u /work/probe_53856_027.py $arm /work/53856-027-$arm.jsonl" \
     > "/data/50603/v53856-$arm.log" 2>&1
-  echo "exit=$? arm=$arm"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc arm=$arm"
   grep -aE "^device=|PROBE_DONE|Traceback|Error" "/data/50603/v53856-$arm.log" | tail -3
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "V53856_FAILED cells=$fail"; exit 1; }
 echo V53856_DONE

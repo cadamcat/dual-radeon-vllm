@@ -212,7 +212,12 @@ def main():
     else:
         print("NOTE: drift above 1 % suggests a different tokenizer revision or a re-issued\n"
               "      source text — worth checking before comparing against our numbers.")
+        return 1
+    return 1 if alt_drift else 0
 
 
 if __name__ == "__main__":
-    main()
+    # main() returns a status and it used to be thrown away, so --check-only
+    # exited 0 on tokenizer drift, on alt-tokenizer divergence, and on drift
+    # above the 1% threshold it prints a NOTE about
+    sys.exit(main())

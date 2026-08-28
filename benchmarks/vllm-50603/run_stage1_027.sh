@@ -5,6 +5,7 @@
 # The probe is byte-identical to the one that produced the 0.23.1 rows, so the
 # two sweeps are directly comparable. Two rounds, to see the noise.
 set -u
+fail=0   # cells that came back non-zero
 IMG=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0
 for r in 1 2; do
   echo "########## round $r  $(date -u +%H:%M:%S) ##########"
@@ -12,7 +13,10 @@ for r in 1 2; do
     --group-add video --ipc host --shm-size 8g -v /data/50603:/work -w /work \
     --entrypoint bash "$IMG" -c "python -u /work/probe_50603.py /work/stage1-027-r$r.jsonl" \
     > "/data/50603/s1-027-r$r.log" 2>&1
-  echo "exit=$? round=$r $(date -u +%H:%M:%S)"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc round=$r $(date -u +%H:%M:%S)"
   tail -2 "/data/50603/s1-027-r$r.log"
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "S1_027_FAILED cells=$fail"; exit 1; }
 echo S1_027_DONE

@@ -7,6 +7,7 @@
 # and this method was shown not to need it -- run B's discarded warm-up read
 # 37.0398 against run A's first measured cell at 37.0397.
 set -u
+fail=0   # cells that came back non-zero
 cd /data/50603
 [ -e qwen38-8k-r3r4.jsonl ] && { echo "REFUSING: output exists"; exit 2; }
 mv -f route38-splitkv-8192.txt route38-splitkv-8192.AB.txt 2>/dev/null
@@ -18,7 +19,10 @@ for r in 3 4; do
     -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint bash "$IMG" \
     -c "python -u /work/probe_027_depth.py splitkv 8192 /work/qwen38-8k-r3r4.jsonl" \
     > "/data/50603/q38-r$r-8192.log" 2>&1
-  echo "exit=$? $(date -u +%H:%M:%S)"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc $(date -u +%H:%M:%S)"
   grep -aE "RESULT|AssertionError|Traceback" "/data/50603/q38-r$r-8192.log" | tail -2
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "Q38_8K_FAILED cells=$fail"; exit 1; }
 echo Q38_8K_DONE

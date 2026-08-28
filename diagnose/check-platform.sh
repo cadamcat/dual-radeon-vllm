@@ -34,7 +34,11 @@ if command -v dmesg >/dev/null 2>&1; then
   elif dmesg 2>/dev/null | grep -qi "amdgpu"; then
     say "   no 'atomic ops is not supported' line found for amdgpu."
     say ">> atomics are probably available (or the message scrolled out of the ring buffer)."
-    verdict_atomics="present"
+    # not finding a message is not the same as finding that the path works, and
+    # this branch says so itself. It used to set "present", which made the final
+    # verdict exit 0 with "probably not affected" on a machine whose dmesg had
+    # simply wrapped. Only positive topology evidence below promotes this.
+    verdict_atomics="present-weak"
   else
     say "   no amdgpu lines visible (need root, or the buffer wrapped)."
     say "   retry with: sudo dmesg | grep -i 'atomic ops'"
@@ -136,6 +140,10 @@ if command -v lspci >/dev/null 2>&1; then
       else
         say "     >> the path can carry AtomicOps: root port completes them and every"
         say "        switch in between routes them."
+        # positive evidence, so it may promote the weak dmesg reading -- but a
+        # second GPU already found broken must not be overwritten by a first
+        # one that is fine
+        [ "$verdict_atomics" = "absent" ] || verdict_atomics="present"
       fi
     done
     say "   note: QEMU advertises completer support on an emulated root port"
@@ -221,6 +229,13 @@ elif [ "$verdict_atomics" = "absent" ] && [ "$verdict_hostcall" = "none" ]; then
 elif [ "$verdict_atomics" = "present" ]; then
   say "Probably not affected: your platform appears to route AtomicOps."
   exit 0
+elif [ "$verdict_atomics" = "present-weak" ]; then
+  say "INCONCLUSIVE — dmesg carried no 'atomic ops is not supported' line, but that"
+  say "is absence of evidence: the buffer may have wrapped, and no lspci topology"
+  say "reading confirmed the path. Settle it with the runtime probe, which needs"
+  say "neither root nor lspci:"
+  say "  hipcc --offload-arch=gfx1100 -O2 hipgate3.cpp -o hipgate3 && ./hipgate3"
+  exit 2
 else
   say "INCONCLUSIVE — run hipgate3.cpp, it needs neither root nor lspci:"
   say "  hipcc --offload-arch=gfx1100 -O2 hipgate3.cpp -o hipgate3 && ./hipgate3"

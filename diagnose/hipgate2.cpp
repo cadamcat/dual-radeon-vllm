@@ -9,7 +9,9 @@ __global__ void k_lds(float* p, int n, int smemBytes) {
   int i = threadIdx.x;
   if (i < smemBytes) dyn[i] = (char)i;      // touch dynamic LDS
   __syncthreads();
-  if (i == 0 && p) p[0] = dyn[n % (smemBytes ? smemBytes : 1)];
+  // smemBytes == 0 is the baseline arm, and there is no dynamic LDS to read
+  // there: the old `n % (smemBytes ? smemBytes : 1)` still indexed dyn[0].
+  if (i == 0 && p) p[0] = smemBytes ? (float)dyn[n % smemBytes] : 0.0f;
 }
 
 int main() {

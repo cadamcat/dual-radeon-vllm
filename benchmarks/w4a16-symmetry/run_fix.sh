@@ -3,6 +3,7 @@
 # layout_only  = changes 1 and 2, use_v2_format left at False. The control that
 #                shows step 3 is load-bearing rather than decorative.
 set -u
+fail=0   # cells that came back non-zero
 IMG=rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0
 for arm in fixed layout_only; do
   echo "########## arm=$arm  $(date -u +%H:%M:%S) ##########"
@@ -11,8 +12,11 @@ for arm in fixed layout_only; do
     -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint python "$IMG" \
     -u /work/probe_w4a16_fix.py "$arm" /work/w4a16-fix.jsonl \
     > "/data/50603/fix-$arm.log" 2>&1
-  echo "exit=$? arm=$arm"
+  rc=$?; fail=$((fail + (rc != 0)))
+  echo "exit=$rc arm=$arm"
   grep -aE "^PATCH|^RESULT|^ANSWER|^KERNELS|^FIX_CELL_DONE|Error|Traceback|assert" \
     "/data/50603/fix-$arm.log" | tail -6
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "FIX_FAILED cells=$fail"; exit 1; }
 echo FIX_DONE

@@ -2,6 +2,7 @@
 # Qwen3.8-27B on 0.27, stock against vllm#45916, three depths. One fresh
 # container per cell so the file swap cannot leak between arms.
 set -u
+fail=0   # cells that came back non-zero
 cd /data/50603
 [ -e qwen38-027-depth.jsonl ] && { echo "REFUSING: output already exists"; exit 2; }
 rm -f route38-*.txt route38-*.txt.err
@@ -14,9 +15,12 @@ for ctx in 1024 8192 32768; do
       -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint bash "$IMG" \
       -c "python -u /work/probe_027_depth.py $arm $ctx /work/qwen38-027-depth.jsonl" \
       > "/data/50603/q38-$arm-$ctx.log" 2>&1
-    echo "exit=$? $(date -u +%H:%M:%S)"
+    rc=$?; fail=$((fail + (rc != 0)))
+    echo "exit=$rc $(date -u +%H:%M:%S)"
     grep -aE "^ARM=|RESULT|RECORDER_ERRORS|AssertionError|Traceback|Error" \
       "/data/50603/q38-$arm-$ctx.log" | tail -5
   done
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "Q38_DEPTH_FAILED cells=$fail"; exit 1; }
 echo Q38_DEPTH_DONE

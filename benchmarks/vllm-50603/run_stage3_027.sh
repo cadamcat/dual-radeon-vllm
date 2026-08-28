@@ -4,6 +4,7 @@
 # probe appends, and its route files append too, so the 0.23.1 route records
 # are moved aside first rather than written into.
 set -u
+fail=0   # cells that came back non-zero
 cd /data/50603
 mkdir -p routes-023
 for f in route-stock-*.txt route-widened-*.txt; do
@@ -18,7 +19,8 @@ for ctx in 1024 8192 32768; do
       --group-add video --ipc host --shm-size 16g -v /data:/data -v /data/50603:/work \
       -e NCCL_P2P_DISABLE=1 -e HSA_ENABLE_SDMA=0 --entrypoint bash "$IMG" \
       /work/stage3_027.sh "$arm" "$ctx" > "/data/50603/cell027-$arm-$ctx.log" 2>&1
-    echo "exit=$? $(date -u +%H:%M:%S)"
+    rc=$?; fail=$((fail + (rc != 0)))
+    echo "exit=$rc $(date -u +%H:%M:%S)"
     grep -aE "ARM=|RESULT|SAMPLE|Error|AssertionError|Traceback" "/data/50603/cell027-$arm-$ctx.log" | tail -6
   done
 done
@@ -26,4 +28,6 @@ mkdir -p routes-027
 for f in route-stock-*.txt route-widened-*.txt; do
   [ -e "$f" ] && mv "$f" routes-027/
 done
+# a DONE marker that a poller greps for must not appear when a cell failed
+[ "$fail" -eq 0 ] || { echo "STAGE3_027_FAILED cells=$fail"; exit 1; }
 echo STAGE3_027_DONE
