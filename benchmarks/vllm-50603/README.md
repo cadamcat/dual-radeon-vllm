@@ -363,6 +363,11 @@ Files: `stage1-027-r{1,2}.jsonl`, `stage3-027.jsonl`, `stage3-027b.jsonl`,
 `run_route_027.sh`, `logs/s1-027-*.log`, `logs/s3-027*-driver.log`,
 `logs/r027-driver.log`, `logs/stage3-027-routes/`.
 
+Proposed upstream on 2026-08-28 as
+[vllm#54210](https://github.com/vllm-project/vllm/pull/54210), one line in the
+gfx11 branch of `use_rocm_custom_paged_attention`. The PR body carries the
+tables above; this directory carries the rows they are computed from.
+
 ## What this does not settle
 
 Symptom B is not explained. We do not have the reporter's model
