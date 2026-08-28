@@ -693,6 +693,48 @@ def main():
     # the repository, exactly like ledger.jsonl: if the data moves and the file
     # does not, this fails rather than letting a published page drift.
     ART = os.path.join(HERE, "..", "..", "docs", "articles")
+
+    # --- the RCCL article: its figures are extracted from root-cause.md, so the
+    # check is that the extraction still matches the document rather than that a
+    # number matches a data file.
+    rc = open(os.path.join(HERE, "..", "..", "docs", "root-cause.md"),
+              encoding="utf-8").read()
+    rart = open(os.path.join(ART, "rccl-atomics-hostcall.html"), encoding="utf-8").read()
+    RF = json.loads(re.search(
+        r'<script type="application/json" id="figures">(.*?)</script>', rart, re.S).group(1))
+
+    def md_table(heading):
+        body = rc.split(heading, 1)[1]
+        rows = []
+        for line in body.split("\n"):
+            if line.startswith("|") and not re.match(r"^\|[\s|:-]+\|$", line):
+                rows.append([c.strip() for c in line.strip().strip("|").split("|")])
+            elif rows and not line.startswith("|"):
+                break
+        return rows[1:]
+
+    ck("rccl article, chain links match the document", str(len(md_table("## 1. The causal chain"))),
+       len(RF["chain"]))
+    ck("rccl article, shipped-library rows match",
+       str(len(md_table("## 2. Why downgrading appears to work"))), len(RF["shipped"]))
+    ruled = md_table("## 3. What was ruled out")
+    ck("rccl article, hypotheses match the document", str(len(ruled)), len(RF["ruled_out"]))
+    ck("rccl article, hypotheses tested", "13", RF["counts"]["hypotheses_total"])
+    ck("rccl article, eliminated", "12", RF["counts"]["hypotheses_eliminated"])
+    ck("rccl article, exactly one root cause", "1", RF["counts"]["hypotheses_confirmed"])
+    # the two shipped builds that carry no hostcall are the two that work
+    zero = [r for r in RF["shipped"] if r["hostcall"] == "0"]
+    ck("rccl article, the hostcall-free builds are the working ones", str(len(zero)),
+       sum(1 for r in zero if "works" in r["behaviour"]))
+    ck("rccl article, no external assets", "0",
+       len([u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', rart)
+            if not u.startswith("https://github.com/")]))
+    # every artifact the article tells the reader to run must exist
+    for f in ("diagnose/hipgate3.cpp", "diagnose/check-platform.sh",
+              "docs/root-cause.md", "docs/vfio-atomics.md"):
+        ck(f"rccl article, {f} exists", "1",
+           1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
+
     LANGS = ["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"]
     pages = {}
     for fn in LANGS:

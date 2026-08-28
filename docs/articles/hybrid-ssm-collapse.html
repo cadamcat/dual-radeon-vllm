@@ -82,7 +82,11 @@
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
   .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
               background:color-mix(in srgb, var(--surface) 88%, transparent);
               border:1px solid var(--border); border-radius:99px; padding:4px;
               box-shadow:var(--shadow); backdrop-filter:blur(10px); }
@@ -99,6 +103,7 @@
                     color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
   .themebar .lang:hover { color:var(--text-2); }
   .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
   @media (max-width:640px){ .themebar { top:8px; right:8px; } }
 
   /* ---- masthead ---- */
@@ -1225,6 +1230,13 @@ baseline is a different question with a different answer.</p>
     var stored = null;
     try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
     paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
     Object.keys(btns).forEach(function (k) {
       btns[k].addEventListener("click", function () {
         paint(k);
