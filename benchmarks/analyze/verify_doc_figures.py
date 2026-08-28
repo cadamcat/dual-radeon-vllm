@@ -686,6 +686,72 @@ def main():
     ck("50603 README, stage 4 decode rows are all max_seqlen_q=1", "0",
        sum(1 for r in ga | gb
            if eval(r)[3] == "q>1" and eval(r)[0] not in (2, 2048)))
+
+    # --- docs/articles/*.html ------------------------------------------------
+    # Each article embeds the figures it draws as JSON so a single self-contained
+    # file can still be checked against the data. The article is a projection of
+    # the repository, exactly like ledger.jsonl: if the data moves and the file
+    # does not, this fails rather than letting a published page drift.
+    ART = os.path.join(HERE, "..", "..", "docs", "articles")
+    art = open(os.path.join(ART, "hybrid-ssm-collapse.html"), encoding="utf-8").read()
+    m = re.search(r'<script type="application/json" id="figures">(.*?)</script>',
+                  art, re.S)
+    ck("article, figures block present", "1", 1 if m else 0)
+    A = json.loads(m.group(1))
+
+    # a published page that pulls a script or a font from elsewhere stops working
+    # the day that host does
+    ext = [u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', art)
+           if not u.startswith("https://github.com/")]
+    ck("article, no external assets", "0", len(ext))
+
+    # every series in fig1 and fig4 must still be exactly what the ledger holds
+    led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
+
+    def ledger_rows(s):
+        return sorted(
+            (r for r in led
+             if r["model"] == s["model"] and r["quant"] == s["quant"]
+             and r["arch"] == s["arch"] and r["tp"] == s["tp"]
+             and r["vllm"] == s["vllm"] and r["patches"] == s["patches"]
+             and r["harness"] == s["harness"] and r["date"] == s["date"]),
+            key=lambda r: r["ctx"])
+
+    for fig in ("fig1", "fig4"):
+        for s_ in A[fig]["series"]:
+            rows = ledger_rows(s_)
+            tag = f'{fig} {s_["model"]} {"+".join(s_["patches"]) or "stock"}'
+            ck(f"article, {tag} point count", str(len(rows)), len(s_["points"]))
+            same = len(rows) == len(s_["points"]) and all(
+                r["ctx"] == p["ctx"] and abs(r["decode_tok_s"] - p["tok_s"]) < 1e-9
+                and r["runs"] == p["runs"]
+                and abs(r["range_pct"] - p["range_pct"]) < 1e-9
+                and r["chart_grade"] == p["graded"]
+                for r, p in zip(rows, s_["points"]))
+            ck(f"article, {tag} matches the ledger", "1", 1 if same else 0)
+
+    ck("article, fig1 is the five-architecture campaign", "5", len(A["fig1"]["series"]))
+    ck("article, fig4 is both arms of the A/B", "2", len(A["fig4"]["series"]))
+
+    # the slope figure is derived, so it is checked against the same helper the
+    # rest of this file uses rather than against the ledger's 2-dp rates
+    ck("article, fig3 hybrid slope", A["fig3"]["vllm_hybrid_slope_us"],
+       slope_us(jul, "D-27B-tp2"))
+    ck("article, fig3 hybrid retention", A["fig3"]["vllm_hybrid_retained_pct"],
+       retained(jul, "D-27B-tp2"))
+    for be in ("rocm", "vulkan"):
+        raw = json.load(open(os.path.join(HERE, "..", f"llamacpp-depth-sweep-{be}.json")))
+        pts = [(r["n_depth"], r["avg_ts"]) for r in raw]
+        got = (1000 / pts[-1][1] - 1000 / pts[0][1]) / (pts[-1][0] - pts[0][0]) * 1000
+        ck(f"article, fig3 llama.cpp {be} slope", A["fig3"]["llamacpp"][be]["slope_us"], got)
+        ck(f"article, fig3 llama.cpp {be} points", str(len(raw)),
+           len(A["fig3"]["llamacpp"][be]["points"]))
+
+    # the one figure that cannot be recomputed says so, in the data and on the page
+    ck("article, fig2 declares itself unreproducible", "1",
+       0 if A["fig2"].get("reproducible_from_repo", True) else 1)
+    ck("article, fig2 carries the marker on the page", "1",
+       1 if "raw trace not committed" in art else 0)
     adm = [r for r in g1c if r["gqa_ratio"] == 4]
     ck("50603 README, gqa4 is admitted by the shipped gate", "8",
        sum(1 for r in adm if r["gate_as_shipped"]))

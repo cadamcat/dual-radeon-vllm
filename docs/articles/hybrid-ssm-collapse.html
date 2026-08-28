@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A hybrid-SSM model that decodes slower the longer you talk to it</title>
+<meta name="description" content="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream fix, measured.">
+<style>
+  :root {
+    --bg:#faf8f3; --bg-grad:radial-gradient(1200px 600px at 78% -8%, #f0ead9 0%, rgba(240,234,217,0) 60%);
+    --surface:#ffffff; --surface-2:#f3efe6; --surface-3:#ece7db;
+    --border:#e2dccd; --border-2:#d3ccb9;
+    --text:#211e18; --text-2:#57513f; --text-dim:#857c66;
+    --accent:#b07a12; --accent-2:#8a5e08;
+    --red:#b93b28; --red-bg:#f8e7e2; --green:#1f7a44; --green-bg:#e2f1e6;
+    --blue:#1f6497; --blue-bg:#e2edf5; --purple:#6b4bb0;
+    --code-bg:#1b1a16; --code-bg-2:#26241d; --code-text:#e9e3d4; --code-dim:#9b937f;
+    --shadow:0 1px 2px rgba(40,32,10,.05), 0 8px 30px rgba(40,32,10,.06);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --s1:#b93b28; --s2:#1f6497; --s3:#1f7a44; --s4:#6b4bb0; --s5:#b07a12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#100f0b; --bg-grad:radial-gradient(1200px 620px at 80% -10%, #241d0e 0%, rgba(36,29,14,0) 62%);
+      --surface:#191712; --surface-2:#201d16; --surface-3:#2a271d;
+      --border:#322e23; --border-2:#423d2e;
+      --text:#ece6d6; --text-2:#b8b09b; --text-dim:#8a8271;
+      --accent:#e2ac45; --accent-2:#f0c268;
+      --red:#e8735a; --red-bg:#33201b; --green:#5cbe83; --green-bg:#16281d;
+      --blue:#5aa6dd; --blue-bg:#142430; --purple:#a488e6;
+      --code-bg:#0c0b08; --code-bg-2:#16150f; --code-text:#e5dfce; --code-dim:#877f6b;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.35);
+      --s1:#e8735a; --s2:#5aa6dd; --s3:#5cbe83; --s4:#a488e6; --s5:#e2ac45;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.75; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.02em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.2em 0 .2em; letter-spacing:-.01em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.5em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.1em 0 .1em; }
+  p { margin:.85em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.87em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.12rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.2em; padding-bottom:1.6em; }
+  .kicker { font-family:var(--mono); font-size:.76rem; letter-spacing:.14em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.4em; }
+  .chip { font-family:var(--mono); font-size:.74rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.3em .8em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:10px; padding:1.3em 1.5em; box-shadow:var(--shadow); margin:2em 0; }
+  .abstract h3 { margin:0 0 .3em; font-size:.8rem; font-family:var(--mono); letter-spacing:.12em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.55em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
+          padding:1em 1.2em; margin:1.6em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 30%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 30%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.35em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code ---- */
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.83rem; line-height:1.65;
+        border:1px solid var(--border-2); box-shadow:var(--shadow); margin:1.5em 0; }
+  pre .c { color:var(--code-dim); }
+  pre .k { color:#e2ac45; } pre .r { color:#e8735a; } pre .g { color:#5cbe83; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.6em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.55em .7em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.76rem; letter-spacing:.05em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.4em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+            padding:1.2em 1.3em 1em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:.9em; line-height:1.6; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.74rem; letter-spacing:.12em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:.9em; }
+  .prov { display:inline-block; font-family:var(--mono); font-size:.68rem; padding:.1em .5em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); margin-left:.5em;
+          vertical-align:.12em; }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 40%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 40%, transparent); }
+
+  /* legend */
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.45em; font-size:.8rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.32em .8em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.42;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.78rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.7em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s, r .18s; cursor:pointer; }
+  .dim { opacity:.13; }
+  .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.55; padding:.55em .75em;
+         border-radius:7px; opacity:0; transition:opacity .14s; z-index:50; max-width:260px;
+         box-shadow:0 8px 26px rgba(0,0,0,.32); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* bars */
+  .bar { transition:width .8s cubic-bezier(.22,1,.36,1); }
+  .barrow { display:grid; grid-template-columns:minmax(120px,auto) 1fr auto; gap:.7em;
+            align-items:center; margin:.5em 0; font-size:.88rem; }
+  .barrow .lab { font-family:var(--mono); font-size:.79rem; color:var(--text-2); }
+  .bartrack { background:var(--surface-3); border-radius:99px; height:19px; overflow:hidden; }
+  .barfill { height:100%; border-radius:99px; width:0; transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .barval { font-family:var(--mono); font-size:.82rem; font-variant-numeric:tabular-nums;
+            color:var(--text); font-weight:700; }
+
+  /* reveal */
+  .rv { opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot { margin-top:4em; padding-top:1.6em; border-top:1px solid var(--border);
+          font-size:.88rem; color:var(--text-dim); }
+  .foot a { color:var(--accent-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
+  <h1>A hybrid-SSM model that decodes<br>slower the longer you talk to it</h1>
+  <p class="lede">Linear attention is supposed to make long context cheap. On this machine
+  <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
+  dense 8B on the same afternoon keeps 77 % of its short-context rate. The 48 linear-attention
+  layers are not the problem. The 16 that are left are.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">vLLM <b>0.23.1.dev1</b> · ROCm 7.14</span>
+    <span class="chip">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
+    <span class="chip">campaign <b>2026-07-25</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>A hybrid Mamba/gated-delta-net checkpoint loses <strong>65 % of its decode rate</strong> between
+  500 and 32 000 tokens of context under vLLM on RDNA3, a curve four to forty times steeper than any
+  dense model measured on the same machine in the same campaign.</p>
+  <p>A kernel-level profile puts essentially all of the growth in one place: <code>kernel_paged_attention_2d</code>,
+  the Triton fallback serving the model's 16 full-attention layers, whose per-call cost grows 28.3× while
+  every other kernel in the step is flat or slightly cheaper. The linear-attention layers deliver what
+  the architecture promises.</p>
+  <p>The fallback is taken because the ROCm custom paged-attention kernel is unreachable for this model
+  three conditions over, and it is slow <em>on this model in particular</em> because 4 KV heads at batch 1
+  leave the kernel almost nothing to parallelise over. Two independent signals agree: per-card power
+  <em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than narrower.</p>
+  <p>The same checkpoint under llama.cpp on the same machine and the same day holds a slope 28× shallower,
+  which rules out the driver and the hardware. An upstream fix exists and is measured here twice, most
+  recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>. One cell of that A/B is
+  bimodal and is reported as such.</p>
+</div>
+
+<h2><span class="n">1</span>What was measured, and how</h2>
+
+<p>Everything in §2 comes from one campaign: one software stack, one afternoon, every model pinned to it.
+292 decode and prefill measurements across five architectures and eleven context lengths. Each cell is
+served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
+512-token outputs, and is the mean of two rounds.</p>
+
+<p>Rates are reported with the spread of their own rounds rather than a standard deviation. At two to four
+rounds per cell a standard deviation is a number with more precision than the sample supports; the range
+as a fraction of the mean says the same thing without implying a distribution. Every point in Figure 1
+carries its round count and that range, visible on hover.</p>
+
+<div class="note">
+  <span class="lbl">On reading the absolute values</span>
+  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen
+  deliberately as the least favourable topology. The <em>shapes</em> in this article transfer; the absolute
+  rates are a floor, not a benchmark of the hardware.
+</div>
+
+<h2><span class="n">2</span>The observation</h2>
+
+<p>Five architectures, eleven depths, one campaign. Four of the five decline gently with context in the way
+a KV cache makes inevitable. The fifth does something else.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · decode rate against context <span class="prov yes">recomputable from repo</span></div>
+    <div class="hint">click a model to add or remove its line · hover a point for round count and spread</div>
+    <div class="legend" id="view1"></div>
+    <div class="legend" id="lg1"></div>
+    <svg class="chart" id="c1" viewBox="0 0 760 400" role="img" aria-label="Decode rate against context length for five model architectures"></svg>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode tok/s against context length, 2026-07-25 campaign, TP=2, stock vLLM 0.23.1.dev1.
+    Two lines are lit by default: <code>Qwen3.6-27B</code>, the hybrid-SSM checkpoint this article is about,
+    and <code>Qwen3-8B</code>, the dense control. The other three are one click away. Retention from 500 to
+    32 000 tokens: 8B <b>77.2 %</b>, 12B <b>69.9 %</b>, 26B MoE <b>67.5 %</b>, 31B <b>68.4 %</b>,
+    hybrid-SSM <b>35.1 %</b>. Source: <code>benchmarks/ledger.jsonl</code>.
+  </figcaption>
+</figure>
+
+<p>The hybrid model is the slowest in absolute terms at every depth, which by parameter count it should not
+be, and it is also the only one whose curve bends downward instead of flattening. Retention is the cleaner
+statistic: every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
+This one keeps <strong>35.1 %</strong>.</p>
+
+<p>Expressed as a slope — decode microseconds added per token of context — the campaign gives
+<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. That is a
+factor of 41, and it is the number the rest of this article is about.</p>
+
+<h2><span class="n">3</span>Attribution: one kernel, not the architecture</h2>
+
+<p>A torch profile at two depths, with CUDA graphs left on and kernel calls attributed to the engine step
+whose window they fall in, so that chunked-prefill calls are not mixed into the decode figures.</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · per-call GPU time, 1 K against 32 K <span class="prov no">raw trace not committed</span></div>
+    <div id="bars2"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Per-call GPU time on rank 0, logarithmic. Call counts are identical at the two
+    depths — 528 for the linear-attention kernels (48 layers × 11 steps), 176 for paged attention
+    (16 × 11) — so these are per-call costs, not more work being issued. Unlike the other figures here,
+    the raw profile output is <b>not</b> in the repository; these four rows are transcribed from the
+    write-up and cannot be recomputed from committed data.
+  </figcaption>
+</figure>
+
+<p>The 48 gated-delta-net layers cost the same at 32 K as at 1 K — 0.95× — which is what linear attention
+promises and what this implementation delivers. The quantised GEMM is likewise flat. One kernel moves, and
+it moves by <strong>28.3×</strong>.</p>
+
+<p>The arithmetic closes. At 16 calls per step, paged attention goes from 5.71 ms/step to 161.5 ms/step,
+up 155.8 ms. The decode step itself, measured from the CUDA-graph replay, goes from 85.85 ms to 236.9 ms,
+up 151 ms. <strong>The paged-attention growth accounts for the entire decode slowdown</strong>; every other
+kernel is flat or slightly faster at the longer context.</p>
+
+<h2><span class="n">4</span>Why the fallback is taken</h2>
+
+<p>The 16 full-attention layers land on Triton because ROCm's custom paged-attention kernel declines them.
+The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code>
+requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
+
+<pre><span class="c"># this model, measured rather than assumed</span>
+head_dim              = <span class="r">256</span>          <span class="c"># needs 128</span>
+cache_config.block_size = <span class="r">784</span>        <span class="c"># = 16 × 49, needs 16</span>
+is_pow2(784)          = <span class="r">False</span>        <span class="c"># disqualifies use_custom on its own path</span>
+gqa_ratio             = <span class="g">6</span>            <span class="c"># this one passes</span>
+</pre>
+
+<p><strong>No single condition is the blocker.</strong> Calling the gate directly with counterfactuals:
+forcing <code>head_size</code> to 128 still returns <code>False</code>; forcing <code>block_size</code> to
+16 still returns <code>False</code>; and <code>chunked_prefill_paged_decode.py</code> fails
+<code>use_custom</code> on <code>is_pow2</code> independently. The custom kernel is unreachable here three
+times over, which is why making the fallback fast is the only path that helps this class of model.</p>
+
+<div class="note warn">
+  <span class="lbl">The obvious fix does not work</span>
+  Relaxing the <code>head_size</code> check moves the failure rather than removing it.
+  <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> in <code>csrc/rocm/attention.cu</code> dispatches only
+  <code>case 64</code> and <code>case 128</code> and <code>TORCH_CHECK</code>s on anything else. The
+  condition is the kernel's actual limit, not conservative gating.
+</div>
+
+<h2><span class="n">5</span>Why the fallback is slow <em>on this model</em></h2>
+
+<p>Dense models on the same machine take the same Triton path and do not degrade like this. The difference
+is how much parallelism the kernel has to work with at decode, where the batch is 1.</p>
+
+<div class="tbl"><table>
+  <thead><tr><th>model</th><th class="n">KV heads</th><th class="n">query heads</th><th class="n">GQA</th><th class="n">µs per context token</th></tr></thead>
+  <tbody>
+    <tr><td>Qwen3-8B, BF16 dense</td><td class="n">8</td><td class="n">32</td><td class="n">4:1</td><td class="n">0.118</td></tr>
+    <tr><td>gemma-4-31B, w4a16 dense</td><td class="n">16</td><td class="n">32</td><td class="n">2:1</td><td class="n">0.339</td></tr>
+    <tr><td><strong>Qwen3.6-27B, hybrid</strong></td><td class="n"><strong>4</strong></td><td class="n">24</td><td class="n">6:1</td><td class="n"><strong>4.840</strong></td></tr>
+  </tbody>
+</table></div>
+
+<p>With 4 KV heads and a batch of 1 there is very little for the kernel to spread across the card's 84 CUs.
+Two independent signals agree that this is occupancy rather than work:</p>
+
+<h3>Power falls as context grows</h3>
+<p>265 W + 265 W at 518 tokens, 232 W + 227 W at 24 K. No other model in the sweep loses power with depth;
+the others climb toward 265 W and stay there, and this is the only one that comes back down. The starting
+values differ — at 518 tokens the 8B is at 245 W, the 12B at 206 W, the 26B MoE at 193 W — so the contrast
+that matters is the direction, not the level. Idle silicon, not saturated silicon.</p>
+
+<h3>Normalising by KV traffic widens the gap</h3>
+<p>Only 16 of the 64 layers carry a KV cache at all, and the GQA ratio is aggressive, so this model reads
+the <em>least</em> KV of the three: 64 KiB per token against 144 KiB for Qwen3-8B and 160 KiB for
+gemma-4-31B. Per KiB read it is <strong>92×</strong> the cost of Qwen3-8B and <strong>36×</strong> that of
+gemma-4-31B. It cannot be that this model is simply heavier.</p>
+
+<h2><span class="n">6</span>Control: the same model under a different engine</h2>
+
+<p>Same machine, same day, same checkpoint family, only the inference engine changed. If the collapse were
+the driver, the GPU, or the topology, it would appear here too.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · decode slope, microseconds per token of context <span class="prov yes">recomputable from repo</span></div>
+    <div id="bars3"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Lower is flatter. The shaded band is the range the dense models under vLLM produce on
+    this machine, 0.118 to 0.339 µs. llama.cpp runs Q4_K_M where vLLM runs AWQ-INT4, so absolute throughput
+    is not comparable across engines — only the slope is. The ROCm backend uses the same userspace vLLM
+    does. Sources: <code>benchmarks/llamacpp-depth-sweep-{rocm,vulkan}.json</code>,
+    <code>benchmarks/results.jsonl</code>.
+  </figcaption>
+</figure>
+
+<p>llama.cpp's slope lands <em>inside</em> the band the dense models produce under vLLM. Two independent
+sources therefore agree on what a normal slope looks like on this hardware, and this one configuration sits
+an order of magnitude outside it.</p>
+
+<div class="note">
+  <span class="lbl">One disturbed point, stated rather than dropped</span>
+  The ROCm 16 384 point came out at 21.35 tok/s with a standard deviation of 2.635 against 0.06–0.09
+  everywhere else, and the deeper 24 576 point is faster. That single measurement was disturbed and should
+  not be read on its own. It is kept in the figure because removing inconvenient points quietly is worse
+  than showing one.
+</div>
+
+<p>Prefill, meanwhile, behaves as the architecture promises: throughput <em>improves</em> with length,
+805 → 880 tok/s from 500 to 32 K, while dense models lose 8–44 % over the same range. It is decode that
+inverts.</p>
+
+<h2><span class="n">7</span>The fix, measured twice</h2>
+
+<p>The upstream fix is <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a>, which adds a
+split-KV decode kernel to the Triton fallback: instead of one workgroup per (sequence, KV head) walking the
+whole context, the KV range is split across more workgroups and reduced afterwards. That is exactly the
+parallelism this model was short of.</p>
+
+<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K, single differencing runs at slightly
+different depths — and then properly, as a controlled A/B on the 0.27 image, both arms on one stack and one
+harness, one fresh container per cell, only the kernel file swapped, run twice with the arm order reversed.</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · controlled A/B on vLLM 0.27 <span class="prov yes">recomputable from repo</span></div>
+    <div class="hint">click a bar group to switch between rate and milliseconds per token</div>
+    <div id="ab4"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>, TP=2, vLLM 0.27.1.dev5, offline 64-vs-8 differencing.
+    <b>Different model and different stack from Figure 1</b> — see the caveat below. Routing was recorded
+    from inside the TP workers, not inferred: <code>(head_size 256, sliding_window 0, use_splitkv True)</code>
+    on both ranks at every depth in both passes, and both file md5s are asserted at runtime so an arm that
+    silently failed to swap would abort rather than measure the other arm twice.
+    Source: <code>benchmarks/hybrid-splitkv-027/</code>.
+  </figcaption>
+</figure>
+
+<p>Pooled across both passes: <strong>1.38× at 1 K, 3.52× at 8 K, 9.46× at 32 K</strong>. Decode goes from
+261.9 to 27.7 ms per token at 32 K, the slope from 7.408 to <strong>0.262 ms per 1 000 tokens of
+context</strong>, and retention from 1 K to 32 K from 10.2 % to 70.0 %. The collapse is gone.</p>
+
+<h2><span class="n">8</span>What is not established</h2>
+
+<p>Four things, because a result that only lists its successes is not a measurement.</p>
+
+<h3>One cell of the A/B is bimodal</h3>
+<p>At 8 192 tokens the patched arm gave 47.02, 40.14, 47.58 and 42.41 tok/s over four passes. Sorted, the
+largest gap between neighbours is bigger than half the total range and falls in the middle: these are
+<strong>two modes about 15 % apart</strong>, not one noisy number. Adding the third and fourth passes made
+the range <em>wider</em>, 15.8 % to 16.8 %, not narrower. It is not the split-count heuristic, which is a
+pure function of inputs the configuration fixes. No mechanism is established. The 3.52× quoted above is the
+mean of all four and describes neither cluster.</p>
+
+<h3>Figure 4 is a different model on a different stack</h3>
+<p>Figure 1 is <code>Qwen3.6-27B</code> on 0.23.1; Figure 4 is <code>Qwen3.8-27B</code> on 0.27. On the
+newer stack this checkpoint also picks a different W4A16 linear kernel, worth roughly 3× on its own and
+nothing to do with attention. <strong>The absolute levels in the two figures are not comparable</strong>;
+the ratios and the shape are.</p>
+
+<h3>One machine</h3>
+<p>Single box, single vendor, batch 1 throughout. The occupancy argument predicts that the collapse should
+soften as batch size rises, and that is untested here.</p>
+
+<h3>What the fix does not fix</h3>
+<p>Paged attention falls from about 68 % of the decode step to 11 %. The remainder is dominated by the
+quantised GEMM, roughly 77 % of a decode step at short context. The <em>slope</em> is resolved; the
+baseline is a different question with a different answer.</p>
+
+<h2><span class="n">9</span>What has changed since</h2>
+
+<p>This article is a dated record, not standing advice. Two things have moved since the measurements above.</p>
+
+<div class="note ok">
+  <span class="lbl">2026-08-10 · the gate no longer needs widening</span>
+  The July verification widened <code>on_gfx12x()</code> to <code>on_gfx1x()</code> locally so that gfx11
+  could reach the new kernel. That change was merged into vllm#45916's own branch on 2026-08-10, so the PR
+  now admits RDNA3 as it stands and nothing local is required.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-28 · the baseline question is answered</span>
+  The July write-up closed on "the slope is resolved; the baseline is a separate question". The 0.27 A/B in
+  Figure 4 answers it: at 32 K the model now decodes at 36.1 tok/s against the 4.2 the original campaign
+  measured, and the residual slope sits inside the band this machine's dense models produce rather than
+  27 % above it.
+</div>
+
+<div class="foot">
+  <p><strong>Data and reproduction.</strong> Every figure marked <span class="prov yes">recomputable from repo</span>
+  is checked against its source file by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
+  which fails non-zero if the prose and the data disagree. The full chapter behind this article, including the
+  parts that were wrong first, is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/hybrid-decode-on-rdna.md">docs/hybrid-decode-on-rdna.md</a>.
+  Raw rows: <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl">ledger.jsonl</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/hybrid-splitkv-027">hybrid-splitkv-027</a> ·
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">repository</a>.</p>
+  <p>Reported upstream as <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a>.
+  The fix is <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> by @feiyehua, with the
+  gfx11 widening by @thegoldenflow; this work contributed the gfx1100 end-to-end verification and the 0.27 A/B.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in hybrid-ssm-collapse.html. Checked against the data files by benchmarks/analyze/verify_doc_figures.py; edit the data, not this.",
+ "fig1": {
+  "caption_source": "benchmarks/ledger.jsonl",
+  "series": [
+   {
+    "model": "Qwen3-8B",
+    "quant": "bf16",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 79.58500000000001,
+      "runs": 2,
+      "range_pct": 0.012565181881014156,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 78.50999999999999,
+      "runs": 2,
+      "range_pct": 0.02547446185198831,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 77.13499999999999,
+      "runs": 2,
+      "range_pct": 0.01296428339924174,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 75.69999999999999,
+      "runs": 2,
+      "range_pct": 0.026420079260232526,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 74.63,
+      "runs": 2,
+      "range_pct": 0.0803966233418227,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 73.32,
+      "runs": 2,
+      "range_pct": 0.16366612111291648,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 71.175,
+      "runs": 2,
+      "range_pct": 0.04214963119072868,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 68.82,
+      "runs": 2,
+      "range_pct": 0.11624527753559764,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 66.9,
+      "runs": 2,
+      "range_pct": 0.05979073243648168,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.91,
+      "runs": 2,
+      "range_pct": 0.21568325373594296,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 61.44,
+      "runs": 2,
+      "range_pct": 0.03255208333333842,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.6-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 12.120000000000001,
+      "runs": 2,
+      "range_pct": 1.155115511551145,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 11.649999999999999,
+      "runs": 2,
+      "range_pct": 0.5150214592274721,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 10.99,
+      "runs": 2,
+      "range_pct": 0.18198362147406347,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 10.03,
+      "runs": 2,
+      "range_pct": 0.19940179461614732,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 9.27,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 8.53,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 7.24,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 6.345000000000001,
+      "runs": 2,
+      "range_pct": 0.7880220646178064,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 5.67,
+      "runs": 2,
+      "range_pct": 1.058201058201067,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 5.08,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 4.25,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.905,
+      "runs": 2,
+      "range_pct": 1.3187546949336435,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.474999999999994,
+      "runs": 2,
+      "range_pct": 1.1115861479264622,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 58.75,
+      "runs": 2,
+      "range_pct": 0.851063829787234,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 56.09,
+      "runs": 2,
+      "range_pct": 1.1766803351756172,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.745000000000005,
+      "runs": 2,
+      "range_pct": 1.296922093341859,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 51.97,
+      "runs": 2,
+      "range_pct": 3.502020396382529,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.46,
+      "runs": 2,
+      "range_pct": 0.040436716538609016,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 46.504999999999995,
+      "runs": 2,
+      "range_pct": 2.6018707665842404,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.504999999999995,
+      "runs": 2,
+      "range_pct": 1.7750814515222992,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.45,
+      "runs": 2,
+      "range_pct": 1.1967779056386723,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.885,
+      "runs": 2,
+      "range_pct": 2.3158648680911993,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "quant": "int4",
+    "arch": "MoE, 128 experts",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.82,
+      "runs": 2,
+      "range_pct": 0.01854943424225192,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.935,
+      "runs": 2,
+      "range_pct": 0.2548732713456327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.31,
+      "runs": 2,
+      "range_pct": 0.13421531972006573,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 100.21000000000001,
+      "runs": 2,
+      "range_pct": 0.059874264045492516,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 96.28999999999999,
+      "runs": 2,
+      "range_pct": 0.04154117769239408,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.57499999999999,
+      "runs": 2,
+      "range_pct": 0.594112881447472,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.36500000000001,
+      "runs": 2,
+      "range_pct": 0.011316697787591371,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.495,
+      "runs": 2,
+      "range_pct": 0.035930295227260475,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 79.19,
+      "runs": 2,
+      "range_pct": 0.025255714105311303,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 76.075,
+      "runs": 2,
+      "range_pct": 0.2760433782451633,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.795,
+      "runs": 2,
+      "range_pct": 0.28848135174120193,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-07-25",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 43.155,
+      "runs": 2,
+      "range_pct": 0.20855057351408507,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.99,
+      "runs": 2,
+      "range_pct": 0.14289116456299658,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 41.04,
+      "runs": 2,
+      "range_pct": 0.19493177387913815,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 39.765,
+      "runs": 2,
+      "range_pct": 0.1760342009304672,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 38.269999999999996,
+      "runs": 2,
+      "range_pct": 0.2090410243010332,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 36.864999999999995,
+      "runs": 2,
+      "range_pct": 0.027126000271254613,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 35.26,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 33.629999999999995,
+      "runs": 2,
+      "range_pct": 0.05947071067500188,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 32.025000000000006,
+      "runs": 2,
+      "range_pct": 0.031225604996090582,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 30.979999999999997,
+      "runs": 2,
+      "range_pct": 0.06455777921239372,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 29.54,
+      "runs": 2,
+      "range_pct": 0.06770480704129848,
+      "graded": true
+     }
+    ]
+   }
+  ]
+ },
+ "fig2": {
+  "caption_source": "torch profile, raw output not committed",
+  "reproducible_from_repo": false,
+  "kernels": [
+   {
+    "name": "fused_recurrent_gated_delta_rule_packed_decode",
+    "layers": "48 linear",
+    "us_1k": 8.466,
+    "us_32k": 8.038
+   },
+   {
+    "name": "_causal_conv1d_update_kernel",
+    "layers": "48 linear",
+    "us_1k": 2.26,
+    "us_32k": 2.139
+   },
+   {
+    "name": "triton_w4a16_gemm_kernel",
+    "layers": "all",
+    "us_1k": 275.792,
+    "us_32k": 251.447
+   },
+   {
+    "name": "kernel_paged_attention_2d",
+    "layers": "16 full",
+    "us_1k": 356.664,
+    "us_32k": 10095.188
+   }
+  ]
+ },
+ "fig3": {
+  "vllm_hybrid_slope_us": 4.84,
+  "vllm_hybrid_retained_pct": 35.1,
+  "llamacpp": {
+   "rocm": {
+    "points": [
+     {
+      "depth": 512,
+      "tok_s": 24.89,
+      "stddev_ts": 0.091
+     },
+     {
+      "depth": 4096,
+      "tok_s": 24.56,
+      "stddev_ts": 0.073
+     },
+     {
+      "depth": 8192,
+      "tok_s": 24.17,
+      "stddev_ts": 0.059
+     },
+     {
+      "depth": 16384,
+      "tok_s": 21.35,
+      "stddev_ts": 2.635
+     },
+     {
+      "depth": 24576,
+      "tok_s": 22.48,
+      "stddev_ts": 0.058
+     },
+     {
+      "depth": 32768,
+      "tok_s": 21.84,
+      "stddev_ts": 0.055
+     }
+    ],
+    "slope_us": 0.174
+   },
+   "vulkan": {
+    "points": [
+     {
+      "depth": 512,
+      "tok_s": 28.61,
+      "stddev_ts": 0.037
+     },
+     {
+      "depth": 4096,
+      "tok_s": 28.27,
+      "stddev_ts": 0.069
+     },
+     {
+      "depth": 8192,
+      "tok_s": 27.79,
+      "stddev_ts": 0.043
+     },
+     {
+      "depth": 16384,
+      "tok_s": 27.04,
+      "stddev_ts": 0.046
+     },
+     {
+      "depth": 24576,
+      "tok_s": 26.43,
+      "stddev_ts": 0.098
+     },
+     {
+      "depth": 32768,
+      "tok_s": 26.04,
+      "stddev_ts": 0.023
+     }
+    ],
+    "slope_us": 0.107
+   }
+  },
+  "dense_band_us": [
+   0.118,
+   0.339
+  ]
+ },
+ "fig4": {
+  "caption_source": "benchmarks/hybrid-splitkv-027/",
+  "series": [
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 37.39875627347579,
+      "runs": 2,
+      "range_pct": 1.9200038719770232,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 12.596368059421426,
+      "runs": 2,
+      "range_pct": 0.4537609679547572,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 3.8181059977723963,
+      "runs": 2,
+      "range_pct": 0.495587815857265,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 51.61950396234055,
+      "runs": 2,
+      "range_pct": 0.7207002092390873,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 44.286645291258964,
+      "runs": 4,
+      "range_pct": 16.793271375671562,
+      "graded": false
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 36.12291880809809,
+      "runs": 2,
+      "range_pct": 5.117549957300597,
+      "graded": true
+     }
+    ]
+   }
+  ]
+ }
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var COL = ["--s1", "--s2", "--s3", "--s4", "--s5"];
+  var cv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var tip = document.getElementById("tip");
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 270 > window.innerWidth) x = e.clientX - 270;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+
+  /* ---------- Figure 1: decode vs context ---------- */
+  var W = 760, H = 400, M = { t: 14, r: 16, b: 44, l: 58 };
+  var s1 = F.fig1.series;
+  var lit = s1.map(function (s) { return /Qwen3\.6-27B|Qwen3-8B/.test(s.model); });
+  // absolute rates put the collapse at 4 % of an axis the MoE stretches to 108,
+  // which hides the one thing this figure is for. Retention is the same data
+  // with each series divided by its own shortest-context point.
+  var mode1 = 0;   // 0 = tok/s, 1 = % of own 500-token rate
+
+  var svg = document.getElementById("c1");
+  var NS = "http://www.w3.org/2000/svg";
+  function el(n, a) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); return e; }
+
+  var allCtx = [];
+  s1.forEach(function (s) { s.points.forEach(function (p) { allCtx.push(p.ctx); }); });
+  var xmin = Math.min.apply(null, allCtx), xmax = Math.max.apply(null, allCtx);
+  var X = function (v) { return M.l + (v - xmin) / (xmax - xmin) * (W - M.l - M.r); };
+  function yval(s, p) { return mode1 ? p.tok_s / s.points[0].tok_s * 100 : p.tok_s; }
+
+  var paths = [], dots = [];
+  function draw(animate) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    paths = []; dots = [];
+    var ymax = 0;
+    s1.forEach(function (s) { s.points.forEach(function (p) { ymax = Math.max(ymax, yval(s, p)); }); });
+    ymax *= 1.06;
+    var Y = function (v) { return H - M.b - v / ymax * (H - M.t - M.b); };
+    var ticks = mode1 ? [0, 25, 50, 75, 100] : [0, 20, 40, 60, 80, 100];
+
+    var g = el("g", { "class": "grid" });
+    ticks.forEach(function (v) {
+      if (v > ymax) return;
+      g.appendChild(el("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+    });
+    svg.appendChild(g);
+
+    var ax = el("g", { "class": "axis" });
+    ticks.forEach(function (v) {
+      if (v > ymax) return;
+      var t = el("text", { x: M.l - 9, y: Y(v) + 3.5, "text-anchor": "end" });
+      t.textContent = mode1 ? v + "%" : v; ax.appendChild(t);
+    });
+    [500, 8000, 16000, 24000, 32000].forEach(function (v) {
+      var t = el("text", { x: X(v), y: H - M.b + 19, "text-anchor": "middle" });
+      t.textContent = v >= 1000 ? (v / 1000) + "K" : v; ax.appendChild(t);
+    });
+    var xt = el("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle", "class": "ttl" });
+    xt.textContent = "context length (tokens)"; ax.appendChild(xt);
+    var yt = el("text", { x: -(H - M.b + M.t) / 2, y: 15, "text-anchor": "middle", "class": "ttl",
+                          transform: "rotate(-90)" });
+    yt.textContent = mode1 ? "retained, % of own 500-token rate" : "decode tok/s";
+    ax.appendChild(yt);
+    svg.appendChild(ax);
+
+    s1.forEach(function (s, i) {
+      var c = cv(COL[i % COL.length]);
+      var d = s.points.map(function (p, j) {
+        return (j ? "L" : "M") + X(p.ctx) + " " + Y(yval(s, p));
+      }).join(" ");
+      var path = el("path", { "class": "ln", d: d, stroke: c });
+      svg.appendChild(path); paths.push(path);
+      var dg = [];
+      s.points.forEach(function (p) {
+        var dot = el("circle", { "class": "dot", cx: X(p.ctx), cy: Y(yval(s, p)),
+                                 r: p.graded ? 3.6 : 4.4, fill: p.graded ? c : "none",
+                                 stroke: c, "stroke-width": 2 });
+        dot.addEventListener("mouseenter", function (e) {
+          showTip(e, '<span class="hd">' + s.model + "</span><br>" +
+            p.ctx.toLocaleString() + " tokens &middot; <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
+            (mode1 ? " &middot; " + yval(s, p).toFixed(1) + "% retained" : "") + "<br>" +
+            '<span class="sub">' + p.runs + " run" + (p.runs > 1 ? "s" : "") +
+            " &middot; range " + p.range_pct.toFixed(2) + "%" +
+            (p.graded ? "" : " &middot; ungraded") + "</span>");
+        });
+        dot.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+        dot.addEventListener("mouseleave", hideTip);
+        svg.appendChild(dot); dg.push(dot);
+      });
+      dots.push(dg);
+    });
+    apply();
+    if (animate) drawIn();
+  }
+
+  function apply() {
+    paths.forEach(function (p, i) { p.classList.toggle("dim", !lit[i]); });
+    dots.forEach(function (dg, i) {
+      dg.forEach(function (d) { d.classList.toggle("dim", !lit[i]); });
+    });
+  }
+
+  function drawIn() {
+    if (reduce) return;
+    paths.forEach(function (p) {
+      var L = p.getTotalLength();
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = "stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)";
+      p.style.strokeDashoffset = "0";
+    });
+    dots.forEach(function (dg) {
+      dg.forEach(function (d, j) {
+        d.style.opacity = "0";
+        setTimeout(function () { d.style.opacity = ""; }, 340 + j * 50);
+      });
+    });
+  }
+
+  var vbox = document.getElementById("view1");
+  [["decode tok/s", 0], ["retained %", 1]].forEach(function (o) {
+    var b = document.createElement("button");
+    b.className = "lg" + (o[1] === mode1 ? " on" : "");
+    b.style.setProperty("--c", cv("--accent"));
+    if (o[1] === mode1) b.style.color = cv("--accent");
+    b.textContent = o[0];
+    b.addEventListener("click", function () {
+      if (mode1 === o[1]) return;
+      mode1 = o[1];
+      vbox.querySelectorAll(".lg").forEach(function (x, k) {
+        x.classList.toggle("on", k === mode1);
+        x.style.color = k === mode1 ? cv("--accent") : "";
+      });
+      draw(true);
+    });
+    vbox.appendChild(b);
+  });
+
+  var lgbox = document.getElementById("lg1");
+  s1.forEach(function (s, i) {
+    var c = cv(COL[i % COL.length]);
+    var b = document.createElement("button");
+    b.className = "lg" + (lit[i] ? " on" : "");
+    b.style.setProperty("--c", c);
+    if (lit[i]) b.style.color = c;
+    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
+    b.addEventListener("click", function () {
+      lit[i] = !lit[i];
+      b.classList.toggle("on", lit[i]);
+      b.style.color = lit[i] ? c : "";
+      apply();
+    });
+    lgbox.appendChild(b);
+  });
+
+  draw(false);
+
+  /* ---------- Figure 2: per-call kernel cost ---------- */
+  (function () {
+    var box = document.getElementById("bars2"), ks = F.fig2.kernels;
+    var max = Math.max.apply(null, ks.map(function (k) { return k.us_32k; }));
+    var lg = function (v) { return Math.log10(v + 1) / Math.log10(max + 1) * 100; };
+    ks.forEach(function (k, i) {
+      var moved = k.us_32k / k.us_1k;
+      var c = moved > 2 ? cv("--red") : cv("--text-dim");
+      ["us_1k", "us_32k"].forEach(function (f, n) {
+        var row = document.createElement("div");
+        row.className = "barrow";
+        row.innerHTML =
+          '<div class="lab">' + (n ? "" : "<code>" + k.name.replace(/_/g, "_<wbr>") + "</code><br>") +
+          '<span style="opacity:.75">' + (n ? "32 K" : "1 K") + "</span></div>" +
+          '<div class="bartrack"><div class="barfill" data-w="' + lg(k[f]) + '" style="background:' +
+          (n ? c : cv("--border-2")) + '"></div></div>' +
+          '<div class="barval">' + k[f].toLocaleString(undefined, { minimumFractionDigits: 3 }) + " µs</div>";
+        box.appendChild(row);
+      });
+      var note = document.createElement("div");
+      note.style.cssText = "font-family:var(--mono);font-size:.76rem;margin:-.2em 0 1.1em 0;color:" +
+        (moved > 2 ? cv("--red") : cv("--green"));
+      note.textContent = "  " + (moved > 2 ? "▲ " : "") + moved.toFixed(2) + "× · " + k.layers;
+      box.appendChild(note);
+    });
+  })();
+
+  /* ---------- Figure 3: slopes ---------- */
+  (function () {
+    var box = document.getElementById("bars3"), f = F.fig3;
+    var rows = [
+      { lab: "vLLM · hybrid-SSM", v: f.vllm_hybrid_slope_us, c: cv("--red") },
+      { lab: "llama.cpp · ROCm", v: f.llamacpp.rocm.slope_us, c: cv("--blue") },
+      { lab: "llama.cpp · Vulkan", v: f.llamacpp.vulkan.slope_us, c: cv("--green") },
+      { lab: "vLLM · dense band", v: f.dense_band_us[1], c: cv("--text-dim"), band: f.dense_band_us }
+    ];
+    var max = Math.max.apply(null, rows.map(function (r) { return r.v; }));
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "barrow";
+      row.innerHTML = '<div class="lab">' + r.lab + "</div>" +
+        '<div class="bartrack"><div class="barfill" data-w="' + (r.v / max * 100) +
+        '" style="background:' + r.c + (r.band ? ";opacity:.5" : "") + '"></div></div>' +
+        '<div class="barval">' + (r.band ? r.band[0] + "–" + r.band[1] : r.v.toFixed(3)) + "</div>";
+      box.appendChild(row);
+    });
+    var u = document.createElement("div");
+    u.style.cssText = "font-family:var(--mono);font-size:.76rem;color:var(--text-dim);margin-top:.5em";
+    u.textContent = "µs of decode time added per token of context · lower is flatter";
+    box.appendChild(u);
+  })();
+
+  /* ---------- Figure 4: the A/B ---------- */
+  (function () {
+    var box = document.getElementById("ab4"), ss = F.fig4.series;
+    var stock = ss.filter(function (s) { return !s.patches.length; })[0];
+    var patch = ss.filter(function (s) { return s.patches.length; })[0];
+    var mode = 0;  // 0 = tok/s, 1 = ms/token
+    function val(p) { return mode ? 1000 / p.tok_s : p.tok_s; }
+    function render(animate) {
+      box.innerHTML = "";
+      var max = 0;
+      stock.points.forEach(function (p, i) {
+        max = Math.max(max, val(p), val(patch.points[i]));
+      });
+      stock.points.forEach(function (p, i) {
+        var q = patch.points[i], ratio = q.tok_s / p.tok_s;
+        var head = document.createElement("div");
+        head.style.cssText = "font-family:var(--mono);font-size:.8rem;color:var(--text-2);margin:.9em 0 .2em";
+        head.innerHTML = p.ctx.toLocaleString() + " tokens <b style='color:" + cv("--accent") + "'>" +
+          ratio.toFixed(2) + "×</b>";
+        box.appendChild(head);
+        [[p, "stock 0.27", cv("--text-dim")], [q, "with #45916", cv("--green")]].forEach(function (a) {
+          var row = document.createElement("div");
+          row.className = "barrow";
+          row.innerHTML = '<div class="lab">' + a[1] + "</div>" +
+            '<div class="bartrack"><div class="barfill" data-w="' + (val(a[0]) / max * 100) +
+            '" style="background:' + a[2] + '"></div></div>' +
+            '<div class="barval">' + val(a[0]).toFixed(mode ? 1 : 2) +
+            (mode ? " ms" : " tok/s") + "</div>";
+          box.appendChild(row);
+          if (a[0].runs > 2 || a[0].range_pct > 6) {
+            var w = document.createElement("div");
+            w.style.cssText = "font-family:var(--mono);font-size:.74rem;color:" + cv("--red") + ";margin:-.3em 0 .2em";
+            w.textContent = "  " + a[0].runs + " runs, range " + a[0].range_pct.toFixed(1) +
+              "% — bimodal, see §8";
+            box.appendChild(w);
+          }
+        });
+      });
+      var t = document.createElement("div");
+      t.style.cssText = "font-family:var(--mono);font-size:.76rem;color:var(--text-dim);margin-top:.8em";
+      t.textContent = "showing " + (mode ? "milliseconds per token" : "decode tok/s") + " · click to switch";
+      box.appendChild(t);
+      if (animate) grow(box);
+    }
+    box.addEventListener("click", function () { mode = 1 - mode; render(true); });
+    render(false);
+    box.__render = render;
+  })();
+
+  /* ---------- animation ---------- */
+  function grow(scope) {
+    var bars = (scope || document).querySelectorAll(".barfill");
+    for (var i = 0; i < bars.length; i++) {
+      (function (b, n) {
+        b.style.width = "0";
+        setTimeout(function () { b.style.width = b.getAttribute("data-w") + "%"; }, reduce ? 0 : 60 + n * 55);
+      })(bars[i], i);
+    }
+  }
+
+  if (reduce) {
+    document.querySelectorAll(".rv").forEach(function (e) { e.classList.add("in"); });
+    grow();
+  } else {
+    var seen = {};
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting || seen[en.target.id]) return;
+        seen[en.target.id] = 1;
+        en.target.classList.add("in");
+        if (en.target.id === "fig1") setTimeout(drawIn, 180);
+        else grow(en.target);
+      });
+    }, { threshold: 0.18 });
+    document.querySelectorAll(".rv").forEach(function (e) { io.observe(e); });
+  }
+})();
+</script>
+</body>
+</html>
