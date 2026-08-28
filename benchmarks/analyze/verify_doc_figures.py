@@ -746,7 +746,8 @@ def main():
 
     PAIRS = [["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"],
              ["rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"],
-             ["w4a16-two-problems.html", "w4a16-two-problems.zh.html"]]
+             ["w4a16-two-problems.html", "w4a16-two-problems.zh.html"],
+             ["moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -1859,6 +1860,139 @@ def main():
     ck("53856 probes, shared reference and dispatch identical", "3",
        sum(1 for k in ("reference", "run", "_counting_ck")
            if r8.get(k) is not None and r8.get(k) == r8b.get(k)))
+
+    # --- moe-written-off-by-eager.html --------------------------------------
+    # The compiled side is recomputed from results.jsonl. The eager side has no
+    # committed raw output and is extracted from docs/benchmarks.md, so what is
+    # checked there is that the extraction still matches the document.
+    MART = json.loads(block(pages["moe-written-off-by-eager.html"], "figures"))
+    jrows = [json.loads(l) for l in open(JULY)]
+    jmeta = [r for r in jrows if r.get("kind") == "model_meta"]
+    jdec = [r for r in jrows if r.get("kind") == "decode"]
+
+    # fig1: the ranking, and the one bar that is not recomputable
+    ck("moe article, fig1 bars", "5", len(MART["fig1"]["bars"]))
+    ck("moe article, fig1 bars match the campaign", "5",
+       sum(1 for b in MART["fig1"]["bars"]
+           if abs(b["tok_s"] - tps(jul, b["cfg"], 500)) < 1e-9
+           and b["runs"] == len(jul[b["cfg"]][500]["tps"])))
+    ck("moe article, fig1 the MoE leads", "1",
+       1 if MART["fig1"]["bars"][0]["cfg"] == "E-26B-tp2" else 0)
+    ck("moe article, fig1 the eager bar declares itself unreproducible", "1",
+       0 if MART["fig1"]["eager"].get("reproducible_from_repo", True) else 1)
+    # ...and it still says what the document says, rather than a number of ours
+    bmt = open(os.path.join(HERE, "..", "..", "docs", "benchmarks.md"),
+               encoding="utf-8").read()
+    moe_sec = bmt.split("## 1. The MoE was written off because nobody waited", 1)[1]
+    ck("moe article, fig1 eager rate matches the document",
+       re.search(r"~([\d.]+) tok/s", moe_sec).group(1), MART["fig1"]["eager"]["tok_s"])
+    ck("moe article, fig1 12B eager rate matches the document",
+       re.search(r"a flat ([\d.]+) tok/s", moe_sec).group(1), MART["fig1"]["eager_12b"])
+    ck("moe article, fig1 eager is this far below compiled", "7.2",
+       MART["fig1"]["ratio"])
+    ck("moe article, fig1 and the 12B's is", "3.8", MART["fig1"]["ratio_12b"])
+
+    # fig2: every engine start the campaign recorded, in order
+    ck("moe article, fig2 starts", str(len(jmeta)), len(MART["fig2"]["starts"]))
+    ck("moe article, fig2 starts match model_meta", str(len(jmeta)),
+       sum(1 for s, m in zip(MART["fig2"]["starts"], jmeta)
+           if s["cfg"] == m["cfg"]
+           and abs(s["init_engine_s"] - float(m["init_engine_s"])) < 1e-9
+           and abs(s["model_load_s"] - float(m["model_load_s"])) < 1e-9))
+    ck("moe article, fig2 starts over 20 minutes", "2", len(MART["fig2"]["over_20min"]))
+    ck("moe article, fig2 and neither was ever restarted", "2",
+       len(MART["fig2"]["no_warm_start_for"]))
+    ck("moe article, fig2 the slowest start", "1569.01",
+       MART["fig2"]["slowest"]["init_engine_s"])
+    ck("moe article, fig2 and it is the MoE", "1",
+       1 if MART["fig2"]["slowest"]["cfg"] == "E-26B-tp2" else 0)
+    ck("moe article, fig2 the only repeat is cold 59.67", "59.67",
+       MART["fig2"]["repeat"]["cold"])
+    ck("moe article, fig2 against warm 33.36", "33.36", MART["fig2"]["repeat"]["warm"])
+    ck("moe article, fig2 the repeat is not one of the slow ones", "1",
+       1 if MART["fig2"]["repeat"]["cfg"] not in MART["fig2"]["over_20min"] else 0)
+    # what rules the loader out: on both slow starts the weights are a rounding
+    # error, which is the figure's whole claim about where the time goes
+    share = {s["cfg"]: s["load_share_pct"] for s in MART["fig2"]["starts"]}
+    for cfg, claim in (("A-12B-tp2", "0.36"), ("E-26B-tp2", "3.43")):
+        ck(f"moe article, fig2 weight-loading share {cfg}", claim, share.get(cfg, -1))
+
+    # fig3: the two phenomena eager produced, against 22 committed rows
+    moe_dec = [r for r in jdec if r["cfg"] == "E-26B-tp2"]
+    ck("moe article, fig3 rows", str(len(moe_dec)), MART["fig3"]["rows"])
+    ck("moe article, fig3 depths", "11", len(MART["fig3"]["points"]))
+    asym = [abs(r["p1_max"] - r["p2_max"]) / max(r["p1_max"], r["p2_max"]) * 100.0
+            for r in moe_dec]
+    ck("moe article, fig3 worst card-to-card gap", "2.26", MART["fig3"]["worst_asym_pct"])
+    ck("moe article, fig3 recomputes that gap", repr(max(asym)),
+       MART["fig3"]["worst_asym_pct"], tol=1e-12)
+    ck("moe article, fig3 median gap", "0.75", MART["fig3"]["median_asym_pct"])
+    ck("moe article, fig3 VRAM is equal on both cards everywhere", "1",
+       1 if MART["fig3"]["vram_equal_everywhere"]
+       and all(r["v1_g"] == r["v2_g"] for r in moe_dec) else 0)
+    ck("moe article, fig3 retention at 32K", repr(retained(jul, "E-26B-tp2")),
+       MART["fig3"]["retained_pct"], tol=1e-12)
+    ck("moe article, fig3 the run is not context-independent", "1",
+       1 if MART["fig3"]["retained_pct"] < 90 else 0)
+    ck("moe article, fig3 eager power matches the document", "1",
+       1 if all(str(w) + " W" in moe_sec for w in MART["fig3"]["eager_power"]["w"])
+       else 0)
+    ck("moe article, fig3 the eager row declares itself unreproducible", "1",
+       0 if MART["fig3"]["eager_power"].get("reproducible_from_repo", True) else 1)
+    ck("moe article, fig3 eager gap", "50.4", MART["fig3"]["eager_power"]["asym_pct"])
+    # the comparison only means anything if the two are far apart in kind
+    ck("moe article, fig3 the eager gap is an order above the measured one", "1",
+       1 if MART["fig3"]["eager_power"]["asym_pct"]
+       > 10 * MART["fig3"]["worst_asym_pct"] else 0)
+
+    # the compile figures the documents quote must be the ones results.jsonl
+    # holds. Three of them were wrong until 2026-08-29, in three files, and
+    # nothing checked them, which is why they are pinned here.
+    meta_by = {}
+    for m in jmeta:
+        meta_by.setdefault(m["cfg"], []).append(float(m["init_engine_s"]))
+    an = open(os.path.join(HERE, "..", "..", "docs", "architecture-notes.md"),
+              encoding="utf-8").read()
+    rmd = open(os.path.join(HERE, "..", "..", "README.md"), encoding="utf-8").read()
+    ck("arch-notes, the MoE engine init it quotes", "1",
+       1 if f'{meta_by["E-26B-tp2"][0]:.2f}' in an else 0)
+    ck("arch-notes, the 12B TP=2 engine init it quotes", "1",
+       1 if f'{meta_by["A-12B-tp2"][0]:.2f}' in an else 0)
+    ck("arch-notes, and the TP=1 starts it contrasts them with", "2",
+       sum(1 for v in meta_by["A-12B-tp1"] if f"{v:.2f}" in an))
+    ck("README, the MoE engine init it quotes", "1",
+       1 if f'{round(meta_by["E-26B-tp2"][0]):.0f} s' in rmd else 0)
+    ck("README, the 12B one, and at the right TP", "1",
+       1 if f'{round(meta_by["A-12B-tp2"][0]):.0f} s' in rmd and "at **TP=2**" in rmd
+       else 0)
+    # A withdrawn claim stays in the document -- that is the point of dating a
+    # correction -- but only ever quoted. If one of these turns up asserted
+    # again, it is outside every pair of quotation marks and this fails.
+    def unquoted(txt, phrase):
+        spans = [m.span() for m in re.finditer(r'"[^"]{0,400}"', txt, re.S)]
+        return sum(1 for m in re.finditer(re.escape(phrase), txt)
+                   if not any(a < m.start() and m.end() <= b for a, b in spans))
+    for name, txt, phrase in (
+            ("arch-notes", an, "a warm start is seconds"),
+            ("benchmarks.md", bmt, "cold, 33 s warm")):
+        ck(f"{name}, the unmeasured warm-start claim appears only quoted", "0",
+           unquoted(txt, phrase))
+
+    # both language versions carry the two sections the house style requires
+    for fn, heads in (("moe-written-off-by-eager.html",
+                       ("What is not established", "What has changed since")),
+                      ("moe-written-off-by-eager.zh.html",
+                       ("没有被确立的部分", "此后发生的变化"))):
+        for h in heads:
+            ck(f"moe article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+    # and both say that the number the verdict came from is the uncommitted one
+    for fn, phrase in (("moe-written-off-by-eager.html",
+                        "The eager numbers are not in this repository"),
+                       ("moe-written-off-by-eager.zh.html",
+                        "eager 那些数字不在这个仓库里")):
+        ck(f"moe article {fn}, discloses the eager provenance", "1",
+           1 if phrase in pages[fn] else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

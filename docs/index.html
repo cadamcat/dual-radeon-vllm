@@ -310,6 +310,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">{
  "articles": [
   {
+   "href": "articles/moe-written-off-by-eager.html",
+   "title": "The fastest model here was written off at 15 tok/s",
+   "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
+   "measured": "measured 2026-07-25",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "MoE",
+    "torch.compile",
+    "vllm#53892"
+   ]
+  },
+  {
    "href": "articles/w4a16-two-problems.html",
    "title": "Twelve tokens a second was two problems",
    "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",

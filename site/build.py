@@ -64,6 +64,7 @@ IDX_LABELS = ("Colour theme", "Match system", "Light", "Dark")
 H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"
 R_EN, R_ZH = "rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"
 W_EN, W_ZH = "w4a16-two-problems.html", "w4a16-two-problems.zh.html"
+M_EN, M_ZH = "moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -115,7 +116,30 @@ if (D / "w4a16-body-zh.html").exists():
                            "别人做的。",
                       out="articles/" + W_ZH, nav=lang_nav("zh", W_EN, W_ZH), labels=ZH_LABELS))
 
+built.append(page("moe-body.html", lang="en", figures="figures-moe.json",
+                  extra_css="moe-extra.css",
+                  title="The fastest model here was written off at 15 tok/s",
+                  desc="A 128-expert MoE recorded at 15 tok/s under --enforce-eager decodes at 107.8 "
+                       "compiled. The flag also fabricated an asymmetric power draw and a "
+                       "context-independent rate, both read as architecture.",
+                  out="articles/" + M_EN, nav=lang_nav("en", M_EN, M_ZH), labels=EN_LABELS))
+if (D / "moe-body-zh.html").exists():
+    built.append(page("moe-body-zh.html", lang="zh-CN", figures="figures-moe.json",
+                      extra_css="moe-extra.css", script_from="moe-body.html",
+                      title="全机最快的模型曾被 15 tok/s 判死刑",
+                      desc="一个 128 专家的 MoE 在 --enforce-eager 下记作 15 "
+                           "tok/s，编译之后是 107.8。这个开关还伪造了功耗左右"
+                           "不对称和吞吐与上下文无关两个现象，都被当成了架构结论。",
+                      out="articles/" + M_ZH, nav=lang_nav("zh", M_EN, M_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + M_EN, "title": "The fastest model here was written off at 15 tok/s",
+     "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced "
+              "into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, "
+              "and the flag had invented two qualitative findings on the way.",
+     "measured": "measured 2026-07-25",
+     "langs": ["EN", "\u4e2d"] if (D / "moe-body-zh.html").exists() else ["EN"],
+     "tags": ["MoE", "torch.compile", "vllm#53892"]},
     {"href": "articles/" + W_EN, "title": "Twelve tokens a second was two problems",
      "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x "
               "at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one "
@@ -169,7 +193,7 @@ for p in built:
            if not u.startswith("https://github.com")]
     assert not ext, f"{p.name} pulls external assets: {ext}"
 # the language pairs must agree on the parts that are not prose
-for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH)):
+for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

@@ -118,9 +118,18 @@ independent of context, with power bouncing between the cards". Compiled, it is
 
 > **`--enforce-eager` costs 3.8–7.2× on this stack.** It also fabricates
 > qualitative artefacts — asymmetric power, context-independence — that invite
-> wrong architectural conclusions. Compilation output is **cached** (12B: 1538 s
-> cold, 33 s warm), so it is a one-off per (model, parallelism) pair.
+> wrong architectural conclusions.
 > **Do not draw architecture conclusions from eager numbers.**
+
+> **Corrected 2026-08-29.** The paragraph above used to add that compilation
+> output is "**cached** (12B: 1538 s cold, 33 s warm), so it is a one-off per
+> (model, parallelism) pair". That pair does not exist: 1537.92 s is the 12B at
+> **TP=2** and 33.36 s is the same model at **TP=1**, whose own cold start was
+> 59.67 s. Compile caching is real upstream, but this campaign never restarted
+> either of the two configurations that took more than twenty minutes, so its
+> warm cost is unmeasured here. Every engine start is now pinned by
+> `verify_doc_figures.py`, and
+> [the article](articles/moe-written-off-by-eager.html) states the limit.
 
 ---
 

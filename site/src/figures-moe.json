@@ -1,0 +1,271 @@
+{
+ "_what": "Every figure in moe-written-off-by-eager.html. The compiled side is recomputed from benchmarks/results.jsonl; the eager side is extracted from docs/benchmarks.md, which is the only record of it. Derived by site/src/genfig-moe.py.",
+ "fig1": {
+  "bars": [
+   {
+    "cfg": "E-26B-tp2",
+    "model": "gemma-4-26B-A4B",
+    "arch": "MoE, 128 experts",
+    "tok_s": 107.82,
+    "runs": 2,
+    "ntok": 520.0
+   },
+   {
+    "cfg": "B-8B-tp2",
+    "model": "Qwen3-8B",
+    "arch": "dense",
+    "tok_s": 79.58500000000001,
+    "runs": 2,
+    "ntok": 512.0
+   },
+   {
+    "cfg": "A-12B-tp2",
+    "model": "gemma-4-12B-it",
+    "arch": "dense",
+    "tok_s": 59.905,
+    "runs": 2,
+    "ntok": 494.0
+   },
+   {
+    "cfg": "C-31B-tp2",
+    "model": "gemma-4-31B-it",
+    "arch": "dense",
+    "tok_s": 43.155,
+    "runs": 2,
+    "ntok": 494.0
+   },
+   {
+    "cfg": "D-27B-tp2",
+    "model": "Qwen3.6-27B",
+    "arch": "hybrid SSM",
+    "tok_s": 12.120000000000001,
+    "runs": 2,
+    "ntok": 518.0
+   }
+  ],
+  "eager": {
+   "tok_s": 15.0,
+   "reproducible_from_repo": false,
+   "source": "docs/benchmarks.md §1"
+  },
+  "ratio": 7.188,
+  "ratio_12b": 3.7914556962025316,
+  "eager_12b": 15.8
+ },
+ "fig2": {
+  "starts": [
+   {
+    "cfg": "B-8B-tp2",
+    "nth": 1,
+    "init_engine_s": 97.42,
+    "model_load_s": 29.183824,
+    "tp": 2,
+    "model": "Qwen3-8B",
+    "load_share_pct": 29.956707041675223
+   },
+   {
+    "cfg": "B-8B-tp1",
+    "nth": 1,
+    "init_engine_s": 59.43,
+    "model_load_s": 8.041846,
+    "tp": 1,
+    "model": "Qwen3-8B",
+    "load_share_pct": 13.531627124347972
+   },
+   {
+    "cfg": "A-12B-tp1",
+    "nth": 1,
+    "init_engine_s": 59.67,
+    "model_load_s": 4.388251,
+    "tp": 1,
+    "model": "gemma-4-12B-it",
+    "load_share_pct": 7.3541997653762365
+   },
+   {
+    "cfg": "A-12B-tp1",
+    "nth": 2,
+    "init_engine_s": 33.36,
+    "model_load_s": 3.294337,
+    "tp": 1,
+    "model": "gemma-4-12B-it",
+    "load_share_pct": 9.875110911270983
+   },
+   {
+    "cfg": "A-12B-tp2",
+    "nth": 1,
+    "init_engine_s": 1537.92,
+    "model_load_s": 5.495337,
+    "tp": 2,
+    "model": "gemma-4-12B-it",
+    "load_share_pct": 0.35732268258426964
+   },
+   {
+    "cfg": "C-31B-tp2",
+    "nth": 1,
+    "init_engine_s": 226.66,
+    "model_load_s": 42.173357,
+    "tp": 2,
+    "model": "gemma-4-31B-it",
+    "load_share_pct": 18.606440042354187
+   },
+   {
+    "cfg": "D-27B-tp2",
+    "nth": 1,
+    "init_engine_s": 503.52,
+    "model_load_s": 28.733272,
+    "tp": 2,
+    "model": "Qwen3.6-27B",
+    "load_share_pct": 5.706480775341595
+   },
+   {
+    "cfg": "E-26B-tp2",
+    "nth": 1,
+    "init_engine_s": 1569.01,
+    "model_load_s": 53.893494,
+    "tp": 2,
+    "model": "gemma-4-26B-A4B",
+    "load_share_pct": 3.4348725629537094
+   }
+  ],
+  "slowest": {
+   "cfg": "E-26B-tp2",
+   "nth": 1,
+   "init_engine_s": 1569.01,
+   "model_load_s": 53.893494,
+   "tp": 2,
+   "model": "gemma-4-26B-A4B",
+   "load_share_pct": 3.4348725629537094
+  },
+  "over_20min": [
+   "A-12B-tp2",
+   "E-26B-tp2"
+  ],
+  "repeat": {
+   "cfg": "A-12B-tp1",
+   "cold": 59.67,
+   "warm": 33.36,
+   "ratio": 1.7886690647482015
+  },
+  "no_warm_start_for": [
+   "A-12B-tp2",
+   "E-26B-tp2"
+  ]
+ },
+ "fig3": {
+  "points": [
+   {
+    "ctx": 500,
+    "tok_s": 107.82,
+    "p1": 194,
+    "p2": 195,
+    "runs": 2,
+    "asym_pct": 0.5128205128205128,
+    "vram_equal": true
+   },
+   {
+    "ctx": 1000,
+    "tok_s": 105.935,
+    "p1": 197,
+    "p2": 199,
+    "runs": 2,
+    "asym_pct": 1.0050251256281406,
+    "vram_equal": true
+   },
+   {
+    "ctx": 2000,
+    "tok_s": 104.31,
+    "p1": 200,
+    "p2": 202,
+    "runs": 2,
+    "asym_pct": 0.9900990099009901,
+    "vram_equal": true
+   },
+   {
+    "ctx": 4000,
+    "tok_s": 100.21000000000001,
+    "p1": 226,
+    "p2": 228,
+    "runs": 2,
+    "asym_pct": 0.8771929824561403,
+    "vram_equal": true
+   },
+   {
+    "ctx": 6000,
+    "tok_s": 96.28999999999999,
+    "p1": 266,
+    "p2": 264,
+    "runs": 2,
+    "asym_pct": 0.7518796992481203,
+    "vram_equal": true
+   },
+   {
+    "ctx": 8000,
+    "tok_s": 92.57499999999999,
+    "p1": 214,
+    "p2": 215,
+    "runs": 2,
+    "asym_pct": 0.46511627906976744,
+    "vram_equal": true
+   },
+   {
+    "ctx": 12000,
+    "tok_s": 88.36500000000001,
+    "p1": 278,
+    "p2": 272,
+    "runs": 2,
+    "asym_pct": 2.158273381294964,
+    "vram_equal": true
+   },
+   {
+    "ctx": 16000,
+    "tok_s": 83.495,
+    "p1": 265,
+    "p2": 263,
+    "runs": 2,
+    "asym_pct": 0.7547169811320755,
+    "vram_equal": true
+   },
+   {
+    "ctx": 20000,
+    "tok_s": 79.19,
+    "p1": 267,
+    "p2": 266,
+    "runs": 2,
+    "asym_pct": 0.37453183520599254,
+    "vram_equal": true
+   },
+   {
+    "ctx": 24000,
+    "tok_s": 76.075,
+    "p1": 266,
+    "p2": 266,
+    "runs": 2,
+    "asym_pct": 0.0,
+    "vram_equal": true
+   },
+   {
+    "ctx": 32000,
+    "tok_s": 72.795,
+    "p1": 269,
+    "p2": 267,
+    "runs": 2,
+    "asym_pct": 0.7434944237918215,
+    "vram_equal": true
+   }
+  ],
+  "rows": 22,
+  "worst_asym_pct": 2.2556390977443606,
+  "median_asym_pct": 0.7518796992481203,
+  "vram_equal_everywhere": true,
+  "retained_pct": 67.51530328324986,
+  "eager_power": {
+   "w": [
+    131,
+    65
+   ],
+   "reproducible_from_repo": false,
+   "asym_pct": 50.38167938931297,
+   "source": "docs/benchmarks.md §1"
+  }
+ }
+}

@@ -166,7 +166,10 @@ verdict propagated into this document. It was wrong. Once compiled:
 | decode at 32 K context | **72.8 tok/s** |
 | power | **193 W / 192 W** at the 107.8 tok/s point; it only reaches 265 W / 265 W from 12 K on, where decode is 88 tok/s |
 | concurrency | 9.50× (313 631 KV tokens) |
-| compile cost | 26 min once, then **cached** (a warm start is seconds) |
+| compile cost | `init_engine_s` **1569 s** once *(corrected 2026-08-29:
+this row used to add "then cached, a warm start is seconds". The campaign
+never started this configuration a second time, so the warm cost is
+unmeasured here — see below)* |
 
 **Why the compile is so slow — and the one-line lever.** It is host-side
 Inductor/Triton codegen, not GPU autotune (off by default) and not graph capture
@@ -179,9 +182,27 @@ os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = "1"
 unconditionally in `env_override.py:105` (an assignment, not `setdefault`, so an
 external export will not override it). Verified still present in vLLM 0.23:
 importing vllm leaves `torch._inductor.config.compile_threads == 1`. **Every
-compile in our benchmark campaign was single-threaded** — 23 min for a 12B dense
-graph, 26 min for the 128-expert MoE. Patching that value is the single biggest
-lever on a slow host; a faster CPU only buys its single-core ratio.
+compile in our benchmark campaign was single-threaded** — `init_engine_s`
+**1537.92 s** for the 12B dense graph at TP=2 and **1569.01 s** for the
+128-expert MoE, the two slowest of the campaign's eight engine starts. Patching
+that value is the single biggest lever on a slow host; a faster CPU only buys
+its single-core ratio.
+
+> **Corrected 2026-08-29.** These read "23 min for a 12B dense graph, 26 min for
+> the 128-expert MoE", and `README.md` had the 12B at 24 min *at TP=1*. Neither
+> matched `results.jsonl`: the 12B's long start is at **TP=2**, and its TP=1
+> starts took 59.67 s and 33.36 s. `init_engine_s` is also engine
+> initialisation rather than compile time — it covers loading, profiling, KV
+> allocation, compile and capture — so these are upper bounds on the compile.
+> Weight loading is 0.36 % of the 12B's start and 3.43 % of the MoE's, which is
+> what rules the loader out. Every engine start in the campaign is now pinned by
+> `verify_doc_figures.py`.
+>
+> The same correction retires the "then cached, a warm start is seconds" claim
+> above. The campaign's only repeated start is `A-12B-tp1`, 59.67 s cold and
+> 33.36 s warm — a configuration that never took a minute either way. Neither
+> 25-minute start was ever repeated here, so the warm cost of the expensive
+> case is not measured in this repository.
 
 **Path 2, eager — runs, and badly misleads.** `--enforce-eager` starts in 39 s and
 decodes at **~15 tok/s**. That is **7.2× below** the compiled figure, because every

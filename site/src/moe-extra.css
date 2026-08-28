@@ -1,0 +1,54 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  /* figure 1 and 2 both label a model and a stack, which does not fit the
+     104px the shared grid falls back to on a narrow screen */
+  #rank, #inits { --labw:140px; }
+  #art { --labw:122px; }
+  /* a start is named by model AND parallelism, which does not fit one line at
+     that width -- wrap it rather than lose half the identity to an ellipsis */
+  #inits .lab { white-space:normal; line-height:1.3; }
+  @media (max-width:420px){ #rank, #inits { --labw:112px; } }
+
+  /* ---- a bar whose number is not in the repository ---- */
+  /* striped rather than merely red: the reader should register "this one is
+     different in kind" before reading the caption */
+  .ghost { background-image:repeating-linear-gradient(135deg,
+             color-mix(in srgb, var(--red) 62%, transparent) 0 7px,
+             color-mix(in srgb, var(--red) 24%, transparent) 7px 14px); }
+  .bars .lab.ghost-l { color:var(--red); background:none; }
+  .bars .val.ghost-v { color:var(--red); }
+  .bars .seg2 { display:flex; height:100%; width:100%; }
+  .bars .seg2 span { height:100%; display:block; width:0;
+                     transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .seg2 .load { background:var(--s2); }
+  .bars .seg2 .rest { background:var(--s5); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+
+  /* ---- figure 3: two cards on one axis ---- */
+  .bars .ptrack { position:relative; background:var(--surface-3); border-radius:99px;
+                  height:20px; }
+  .bars .ptrack .tick { position:absolute; top:2px; bottom:2px; width:4px;
+                        border-radius:2px; transform:translateX(-2px);
+                        opacity:0; transition:opacity .5s, left 1s cubic-bezier(.22,1,.36,1); }
+  .bars .ptrack .tick.a { background:var(--s2); }
+  .bars .ptrack .tick.b { background:var(--s3); }
+  .bars .ptrack.eager .tick.a, .bars .ptrack.eager .tick.b { background:var(--red); }
+  /* the connector between the two cards. Neutral by default: a red sliver on
+     every compiled row would read as a fault where there is none */
+  .bars .ptrack .span { position:absolute; top:8px; height:4px; border-radius:2px;
+                        background:var(--border-2); opacity:0; transition:opacity .5s; }
+  .bars .ptrack.eager .span { background:color-mix(in srgb, var(--red) 55%, transparent); }
+  .bars .ptrack.lit .tick, .bars .ptrack.lit .span { opacity:1; }
+  .bars .row-eager .lab { color:var(--red); }
+
+  /* ---- the one line, and what upstream says about it ---- */
+  .why { display:grid; grid-template-columns:max-content 1fr; gap:.5em 1.1em;
+         font-size:.88rem; margin:1.4em 0 0; }
+  .why dt { font-family:var(--mono); font-size:.74rem; color:var(--accent);
+            letter-spacing:.06em; text-transform:uppercase; padding-top:.25em; }
+  .why dd { margin:0; color:var(--text-2); }
+  @media (max-width:560px){ .why { grid-template-columns:1fr; gap:.2em 0; }
+                            .why dd { margin-bottom:.7em; } }

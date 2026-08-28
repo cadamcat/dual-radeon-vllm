@@ -1,0 +1,527 @@
+<header class="top">
+  <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900 XT</div>
+  <h1>The fastest model here<br>was written off at 15 tok/s</h1>
+  <p class="lede">An earlier probe gave <code>torch.compile</code> twenty minutes, ran out of patience,
+  added <code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went
+  into this repository's own documents. The compile needs twenty-six minutes. Compiled, the same model
+  is the fastest of five architectures measured on this machine.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip"><b>gemma-4-26B-A4B</b> · 128 experts</span>
+    <span class="chip">Zen 1 host · <b>8 cores</b></span>
+    <span class="chip">measured <b>2026-07-25</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>Compiled, a 128-expert MoE decodes at <strong>107.82 tok/s</strong> at 500 tokens of context and
+  72.80 at 32000, ahead of every dense model measured here including ones with more parameters. Under
+  <code>--enforce-eager</code> the same model was recorded at about 15, and that number is what the
+  verdict was written from.</p>
+  <p>The cost of not using eager is one engine start of <strong>1569 seconds</strong>, of which 54 is
+  loading weights. It is single-threaded on an eight-core host because <code>vllm/env_override.py</code>
+  assigns <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> on import — a plain assignment, so exporting
+  the variable yourself does nothing.</p>
+  <p><strong>The 7.2× is not the damage.</strong> Eager also produced two qualitative phenomena that
+  were read as properties of the architecture: a 131 W / 65 W split between the cards, taken as expert
+  imbalance, and a decode rate independent of context, taken as a hybrid-like advantage. Compiled, the
+  22 measured rows are symmetric to within <strong>2.26 %</strong> with identical VRAM on both cards,
+  and the rate falls by a third across the context ladder.</p>
+  <p>Both wrong conclusions were published in this repository before they were withdrawn. The
+  contribution here is two lines upstream —
+  <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> — which keep the default of
+  one thread and let a deliberate override through.</p>
+</div>
+
+<h2><span class="n">1</span>What is being measured</h2>
+
+<p>One campaign, 2026-07-25, seven engine starts and 146 timed generations across five models and two
+parallelism settings. Decode rate is reported by the server over a generation of several hundred tokens
+after a warm-up; each cell is the mean of two rounds. Board power is sampled during each generation and
+recorded per card as the maximum seen in that window, alongside per-card VRAM.</p>
+
+<p><strong><code>init_engine_s</code> is engine initialisation, not compile time.</strong> It covers
+loading weights, profiling, allocating the KV cache, <code>torch.compile</code> and graph capture. The
+weight-loading share is recorded separately, which is what lets Figure 2 show that on the two slow
+starts it is not where the time goes. Nothing here isolates Inductor's own share of the remainder.</p>
+
+<div class="note warn">
+  <span class="lbl">The eager numbers are not in this repository</span>
+  Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
+  measurements are not: they come from an earlier probe whose raw output was never committed, and they
+  survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that document
+  rather than restating them, so the two cannot drift apart, but extraction is not the same as
+  recomputation and the figures say so where it applies. The number that decided an architecture verdict
+  is the one with the weakest provenance in this article.
+</div>
+
+<h2><span class="n">2</span>The verdict that got published</h2>
+
+<p>The probe recorded the model as <em>"torch.compile did not finish in 20 minutes → impractical →
+forced <code>--enforce-eager</code> → ~15 tok/s"</em>, plus <em>"severely asymmetric power draw
+(131 W / 65 W), the MoE fails to load both cards evenly"</em>. It was filed under architectures held
+back by ROCm, and the repository's architecture table read "mediocre, ~15 tok/s" for months.</p>
+
+<p>Nothing about that reasoning is unusual. A compile that has not finished in twenty minutes looks
+like a compile that is not going to finish, and eager is the documented way past it. The step that does
+not survive is the one after: treating what eager then reports as a measurement of the architecture.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · where each architecture ranks at 500 tokens of context
+      <span class="prov yes">recomputable from repo</span>
+      <span class="prov no">eager bar not committed</span></div>
+    <div class="bars" id="rank"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode rate at the shortest rung of the ladder, mean of two rounds, from
+    <code>benchmarks/results.jsonl</code>. The striped bar is the same model under
+    <code>--enforce-eager</code>; it is drawn differently because it is the one number on this page that
+    cannot be recomputed from the repository. Sorted, the MoE appears at both ends of the same list. The
+    hybrid-SSM entry at the bottom is a
+    <a href="w4a16-two-problems.html">different story with two causes of its own</a> and is here only to
+    place the ladder.
+  </figcaption>
+</figure>
+
+<p>The 12B dense model repeated the mistake independently. An earlier context sweep used
+<code>--enforce-eager</code> to dodge the same compile wall and produced "a flat 15.8 tok/s, independent
+of context, with power bouncing between the cards". Compiled it is 59.91, and the flatness is gone.</p>
+
+<h2><span class="n">3</span>Where twenty-six minutes goes</h2>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · every engine start in the campaign
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="inits"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> All eight starts, in the order they ran. Two of them exceed twenty minutes and the
+    other six are under two, and on those two the weight-loading share is 3.4 % and 0.4 % of the total.
+    Whatever is expensive, it is not the model coming off disk. The one repeated configuration is the
+    12B at TP=1, started twice eight minutes apart: 59.67 s then 33.36 s. That is the only
+    cold-against-warm pair the campaign contains, and it is not one of the two slow ones.
+  </figcaption>
+</figure>
+
+<p>The reason it is one core is a single line, run on every <code>import vllm</code>:</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/env_override.py:105 · still this on main, checked 2026-08-29</span></div>
+<pre>os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = <span class="k">"1"</span>
+</pre></div>
+
+<p>It is an assignment rather than a <code>setdefault</code>, so a value exported in the environment is
+overwritten before Inductor reads it. Importing vLLM leaves
+<code>torch._inductor.config.compile_threads == 1</code> whatever the caller asked for. Inductor's own
+default would be one worker per core.</p>
+
+<div class="note">
+  <span class="lbl">The default itself is not the problem</span>
+  Single-threaded compilation is deliberate upstream, for reasons recorded in
+  <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>: compile subprocesses
+  interact badly with debuggers and with some launch paths. Changing that default is a different
+  argument from the one made here. What is being reported is narrower — that the mechanism gives the
+  operator no way to opt out, and that this is almost certainly not intended, since a plain assignment
+  is what a <code>setdefault</code> looks like when nobody has needed the override yet.
+</div>
+
+<h2><span class="n">4</span>The two things eager invented</h2>
+
+<p>A 7.2× throughput loss is a bad measurement and a reader can discount it. The harder failure is that
+eager produced two <em>qualitative</em> results, each of which reads as a fact about the model rather
+than about the flag.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · both fabricated phenomena, against the compiled run
+      <span class="prov yes">recomputable from repo</span>
+      <span class="prov no">eager row not committed</span></div>
+    <div class="legend" id="v3"></div>
+    <div class="bars" id="art"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Board power per card at each rung, compiled, from the same 22 rows as Figure 1's
+    MoE bar; the two ticks are the two cards on a common 0–300 W axis. They sit on top of each other at
+    every depth, worst case 2.26 % apart, and VRAM is identical on both cards in every row. The red row
+    is the eager report the imbalance conclusion was drawn from, at 50.4 % apart. The second view is the
+    same run's decode rate, which falls to 67.5 % of its short-context value — eager's flat line was the
+    flag, not the architecture.
+  </figcaption>
+</figure>
+
+<p>The power reading had an explanation ready, and it was wrong. Under pure tensor parallelism vLLM
+keeps <em>all</em> experts on <em>every</em> GPU and shards each expert's weights along the intermediate
+dimension, so compute is symmetric whatever the router does. Routing imbalance is a property of expert
+parallelism, which is not what was running. The asymmetry disappearing under compilation is what
+confirms it: nothing about the experts changed.</p>
+
+<h2><span class="n">5</span>What was sent upstream</h2>
+
+<p>Two lines, and they do not touch the default:</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm#53892 · 2 insertions, 1 deletion, 1 file</span></div>
+<pre><span class="r">-os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = "1"</span>
+<span class="g">+os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "1")</span>
+</pre></div>
+
+<dl class="why">
+  <dt>reported</dt>
+  <dd><a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a>, 2026-08-26, labelled
+  <code>rocm</code>: an exported <code>TORCHINDUCTOR_COMPILE_THREADS</code> is silently overwritten.</dd>
+  <dt>proposed</dt>
+  <dd><a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>, same day. The default of
+  one is kept; only a deliberate export gets through.</dd>
+  <dt>verified</dt>
+  <dd>On the ROCm 7.14 / vLLM 0.23 image, importing <code>vllm.env_override</code> with the variable
+  exported to 8 leaves <code>compile_threads == 8</code>; unset, it is 1 as before. Unpatched, the first
+  case comes back clobbered.</dd>
+</dl>
+
+<h2><span class="n">6</span>What is not established</h2>
+
+<h3>That the compile output is usefully cached</h3>
+<p>The advice that goes with a 26-minute compile is "once, then cached", and this campaign does not
+support it. The only repeated start is the 12B at TP=1, where the cold side is 59.67 s and the warm side
+33.36 s — a 1.79× saving on a start that was never the problem. Neither of the two configurations that
+took more than twenty minutes was ever started a second time here, so the warm cost of the expensive
+case is unmeasured. Compile caching is real and documented upstream; what is missing is a measurement of
+it on this host.</p>
+
+<h3>How much of the 1569 s is Inductor</h3>
+<p><code>init_engine_s</code> covers loading, profiling, KV allocation, compilation and graph capture.
+Weight loading is separated out and is small. The rest is not decomposed, so "the compile takes 26
+minutes" is shorthand for "engine init takes 26 minutes and it is not the weights".</p>
+
+<h3>The eager side of every comparison</h3>
+<p>The eager rates and the 131 W / 65 W reading were not recorded to a committed file. They are quoted
+from the document that carries them, and a re-run under <code>--enforce-eager</code> would be needed to
+put them on the same footing as everything else here. The direction is not in doubt; the exact ratio is
+one significant figure at best.</p>
+
+<h3>One host, and it is a slow one</h3>
+<p>A Zen 1 Threadripper with eight cores available to the container. The compile-thread argument scales
+with core count, and on a machine with many fast cores the same change is worth proportionally more.
+Nothing here measures the patched build's compile time, because the patch is upstream's to take.</p>
+
+<h2><span class="n">7</span>What has changed since</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-07-25 · the verdict was reversed in place</span>
+  With the startup timeout raised the compile finished, and the architecture table went from
+  "🟡 mediocre, ~15 tok/s" to "🟢 fastest measured here". The revision is dated in
+  <code>docs/architecture-notes.md</code> rather than written over the original, because the earlier
+  entry is the point.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · reported and proposed upstream</span>
+  <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>. As of 2026-08-29 both are
+  open; the PR is mergeable and waiting on review, and line 105 on <code>main</code> is still the plain
+  assignment.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · three numbers in this repository did not match its own data</span>
+  Writing this article checked the compile figures against <code>results.jsonl</code> for the first
+  time. The 12B's compile was quoted as 23 minutes in one document and as 24 minutes at TP=1 in another;
+  the committed value is <strong>1537.92 s at TP=2</strong>, and TP=1 took 59.67 s. The "1538 s cold,
+  33 s warm" pair put a TP=2 cold start next to a TP=1 warm one. All three are corrected and dated in
+  place, and <code>verify_doc_figures.py</code> now pins every engine-start time in the campaign so they
+  cannot drift back.
+</div>
+
+<div class="foot-note">
+  <p><strong>The data.</strong> The campaign is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>
+  — one line per timed generation, carrying decode rate, per-card power and per-card VRAM, plus a
+  <code>model_meta</code> line per engine start. The figures here are recomputed from it by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>;
+  the eager row is extracted from
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">docs/benchmarks.md §1</a>.</p>
+  <p>Upstream: <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>. The reasons the default is
+  one thread are in <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "eagerTag": "eager",
+ "compiledTag": "compiled",
+ "f1unit": "decode tok/s at 500 tokens of context · two rounds per bar",
+ "f1eagerNote": "{n}× below the same model compiled · not recomputable from the repository",
+ "f2unit": "seconds to engine ready · {a} · {b}",
+ "f2load": "weight loading",
+ "f2rest": "compile, capture, the rest",
+ "f2warm": "the campaign's only repeat: {cold}s cold, {warm}s warm, and at TP=1",
+ "f2none": "no second start was ever recorded for either configuration over 20 minutes",
+ "viewPower": "power per card",
+ "viewRate": "decode vs context",
+ "f3unit": "board power per card, watts, common 0–300 W axis",
+ "f3rateUnit": "decode tok/s · the same run, the same 22 rows",
+ "f3worst": "worst card-to-card gap {w}%, median {m}% · VRAM identical on both cards in every row",
+ "f3eager": "eager, reported",
+ "f3retain": "retains {r}% of its 500-token rate at 32K",
+ "ctxTok": "{n} tokens",
+ "ctxK": "{n}K",
+ "runs": "runs",
+ "start": "start",
+ "tp": "TP={n}",
+ "unitS": " s",
+ "unitW": " W"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  // 500 and 1000 both round to "1K", which put two rows under one label
+  function ctxLab(n) {
+    return n < 1000 ? String(n) : fmt(S.ctxK, { n: Math.round(n / 1000) });
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+
+  /* ---------- Figure 1: the ranking, with the eager bar in its place ------- */
+  (function () {
+    var box = document.getElementById("rank");
+    var rows = F.fig1.bars.map(function (b) {
+      return { lab: b.model, sub: b.arch, v: b.tok_s, runs: b.runs, ghost: false,
+               ntok: b.ntok, moe: b.cfg === "E-26B-tp2" };
+    });
+    var moe = F.fig1.bars.filter(function (b) { return b.cfg === "E-26B-tp2"; })[0];
+    rows.push({ lab: moe.model, sub: S.eagerTag, v: F.fig1.eager.tok_s,
+                ghost: true, moe: true });
+    rows.sort(function (a, b) { return b.v - a.v; });
+    var max = rows[0].v;
+    rows.forEach(function (r) {
+      el(box, "lab rv" + (r.ghost ? " ghost-l" : ""), r.lab);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;transition:width 1s cubic-bezier(.22,1,.36,1);" +
+        (r.ghost ? "" : "background:var(--s" + (r.moe ? "3" : "2") + ")");
+      if (r.ghost) f.className = "ghost";
+      tr.appendChild(f);
+      grow(f, r.v / max * 100);
+      el(box, "val rv" + (r.ghost ? " ghost-v" : ""),
+         r.v.toFixed(2) + (r.ghost ? " " + S.eagerTag : ""));
+      hover(tr, '<span class="hd">' + r.lab + "</span><br>" +
+        (r.ghost ? S.eagerTag : r.sub + " · " + S.compiledTag) + "<br><b>" +
+        r.v.toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
+        (r.ghost ? F.fig1.eager.source
+                 : r.runs + " " + S.runs + " · " +
+                   fmt(S.ctxTok, { n: Math.round(r.ntok) })) + "</span>");
+    });
+    var u = el(box, "barunit", S.f1unit);
+    u.style.gridColumn = "1 / -1";
+    var g = el(box, "barunit", fmt(S.f1eagerNote, { n: F.fig1.ratio.toFixed(1) }));
+    g.style.gridColumn = "1 / -1";
+    g.style.color = "var(--red)";
+  })();
+
+  /* ---------- Figure 2: every engine start ---------- */
+  (function () {
+    var box = document.getElementById("inits");
+    var S2 = F.fig2.starts, max = Math.max.apply(null, S2.map(function (s) {
+      return s.init_engine_s; }));
+    S2.forEach(function (s) {
+      var name = s.model + " · " + fmt(S.tp, { n: s.tp }) +
+                 (s.nth > 1 ? " #" + s.nth : "");
+      el(box, "lab rv", name);
+      var tr = el(box, "track rv");
+      var seg = el(tr, "seg2");
+      var a = document.createElement("span"); a.className = "load";
+      var b = document.createElement("span"); b.className = "rest";
+      seg.appendChild(a); seg.appendChild(b);
+      grow(a, s.model_load_s / max * 100);
+      grow(b, (s.init_engine_s - s.model_load_s) / max * 100);
+      el(box, "val rv", s.init_engine_s.toFixed(0) + S.unitS);
+      hover(tr, '<span class="hd">' + name + "</span><br>" +
+        s.init_engine_s.toFixed(2) + " s " + S.start + "<br>" +
+        '<span class="sub">' + s.model_load_s.toFixed(2) + " s " + S.f2load + " · " +
+        (s.model_load_s / s.init_engine_s * 100).toFixed(1) + "%</span>");
+    });
+    var u = el(box, "barunit", "");
+    u.style.gridColumn = "1 / -1";
+    u.innerHTML = fmt(S.f2unit, {
+      a: '<span class="swatch" style="background:var(--s2)"></span>' + S.f2load,
+      b: '<span class="swatch" style="background:var(--s5)"></span>' + S.f2rest });
+    var w = el(box, "barunit", fmt(S.f2warm, {
+      cold: F.fig2.repeat.cold.toFixed(2), warm: F.fig2.repeat.warm.toFixed(2) }));
+    w.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", S.f2none);
+    n.style.gridColumn = "1 / -1";
+    n.style.color = "var(--red)";
+  })();
+
+  /* ---------- Figure 3: the two fabricated phenomena ---------- */
+  (function () {
+    var box = document.getElementById("art"), vbox = document.getElementById("v3");
+    var mode = 0, first = true;                   /* 0 = power, 1 = rate */
+    var P = F.fig3.points;
+    var WMAX = 300;
+    var rmax = Math.max.apply(null, P.map(function (p) { return p.tok_s; }));
+
+    function draw() {
+      box.innerHTML = "";
+      if (mode) {
+        P.forEach(function (p) {
+          el(box, "lab rv", ctxLab(p.ctx));
+          var tr = el(box, "track rv");
+          var f = document.createElement("span");
+          f.style.cssText = "display:block;height:100%;width:0;background:var(--s3);" +
+            "transition:width 1s cubic-bezier(.22,1,.36,1)";
+          tr.appendChild(f);
+          grow(f, p.tok_s / rmax * 100);
+          el(box, "val rv", p.tok_s.toFixed(2));
+          hover(tr, '<span class="hd">' + ctxLab(p.ctx) +
+            "</span><br><b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+            '<span class="sub">' + p.runs + " " + S.runs + "</span>");
+        });
+        var ru = el(box, "barunit", S.f3rateUnit);
+        ru.style.gridColumn = "1 / -1";
+        var rr = el(box, "barunit", fmt(S.f3retain,
+                                        { r: F.fig3.retained_pct.toFixed(1) }));
+        rr.style.gridColumn = "1 / -1";
+        rr.style.color = "var(--text-2)";
+      } else {
+        var rows = P.map(function (p) {
+          return { lab: ctxLab(p.ctx), a: p.p1, b: p.p2, asym: p.asym_pct,
+                   runs: p.runs, eager: false };
+        });
+        rows.push({ lab: S.f3eager, a: F.fig3.eager_power.w[0],
+                    b: F.fig3.eager_power.w[1],
+                    asym: F.fig3.eager_power.asym_pct, eager: true });
+        rows.forEach(function (r) {
+          el(box, "lab rv" + (r.eager ? " row-eager" : ""), r.lab);
+          var tr = el(box, "ptrack rv" + (r.eager ? " eager" : ""));
+          var sp = el(tr, "span");
+          var lo = Math.min(r.a, r.b), hi = Math.max(r.a, r.b);
+          sp.style.left = (lo / WMAX * 100) + "%";
+          sp.style.width = ((hi - lo) / WMAX * 100) + "%";
+          var ta = el(tr, "tick a"), tb = el(tr, "tick b");
+          ta.style.left = (r.a / WMAX * 100) + "%";
+          tb.style.left = (r.b / WMAX * 100) + "%";
+          requestAnimationFrame(function () { tr.classList.add("lit"); });
+          el(box, "val rv" + (r.eager ? " ghost-v" : ""), r.a + " / " + r.b);
+          hover(tr, '<span class="hd">' + r.lab + "</span><br>" +
+            r.a + S.unitW + " / " + r.b + S.unitW + " · " + r.asym.toFixed(2) + "%<br>" +
+            '<span class="sub">' + (r.eager ? F.fig3.eager_power.source
+                                            : r.runs + " " + S.runs) + "</span>");
+        });
+        var u = el(box, "barunit", S.f3unit);
+        u.style.gridColumn = "1 / -1";
+        var w = el(box, "barunit", fmt(S.f3worst, {
+          w: F.fig3.worst_asym_pct.toFixed(2), m: F.fig3.median_asym_pct.toFixed(2) }));
+        w.style.gridColumn = "1 / -1";
+        w.style.color = "var(--text-2)";
+      }
+      // the reveal observer only ever sees the rows built on the first pass
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewPower, 0], [S.viewRate, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>
