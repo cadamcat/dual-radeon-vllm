@@ -551,6 +551,41 @@ def main():
     ck("6565 README, the deprecated rccl-tests branch", "1",
        1 if "develop_deprecated:40b1b17" in raw else 0)
 
+    # Stage 3, 2026-08-28: the same eight arms through the cross-rank variant,
+    # which is what replaced the rank-0 caveat on the 135/135 with a result.
+    s3 = open(os.path.join(RDIR, "logs", "stage3-allranks.log")).read()
+    a3 = [{"arm": m.group(1), "passed": int(m.group(2)), "failed": int(m.group(3)),
+           "error": int(m.group(4) or 0), "n": int(m.group(5))}
+          for m in re.finditer(
+              r"=== arm=(\S+) RESULT pass=(\d+) fail=(\d+)(?: error=(\d+))? of (\d+)", s3)]
+    ck("6565 README, stage 3 arms", "8", len(a3))
+    ck("6565 README, stage 3 cold inits", "135", sum(a["n"] for a in a3))
+    ck("6565 README, stage 3 correct on every rank", "135", sum(a["passed"] for a in a3))
+    ck("6565 README, stage 3 failures", "0", sum(a["failed"] for a in a3))
+    ck("6565 README, stage 3 errors", "0", sum(a["error"] for a in a3))
+    # same arms, same counts as stages 1 and 2A, or the two sweeps are not
+    # comparable and the second does not replace the caveat on the first
+    ck("6565 README, stage 3 repeats the same arms at the same counts", "1",
+       1 if sorted((a["arm"], a["n"]) for a in a3)
+       == sorted((a["arm"], a["n"]) for a in arms) else 0)
+    ck("6565 README, stage 3 ran the cross-rank script", "8",
+       s3.count("script=/work/rccl_allgather_allranks.py"))
+
+    # The deliberate breakage: corruption only rank 1 detects is invisible to the
+    # reporter's script and fatal to the variant. Without this the stage-3 result
+    # is just another clean run.
+    bs = open(os.path.join(RDIR, "logs", "blindspot-check.log")).read()
+    ck("6565 README, blind-spot check passed", "1",
+       1 if "BLINDSPOT_CHECK_OK" in bs else 0)
+    ck("6565 README, injection applied to both scripts", "2",
+       bs.count("injected into "))
+    ck("6565 README, the reporter's script reported ALL CORRECT under it", "1",
+       1 if re.search(r"==> ALL CORRECT\s*\n\s*exit=0", bs) else 0)
+    ck("6565 README, the variant tallied it as one failure", "1",
+       1 if "RESULT pass=0 fail=1 error=0 of 1" in bs else 0)
+    ck("6565 README, and the arm runner exited non-zero", "1",
+       1 if "runner exit=1" in bs else 0)
+
     # --- vllm#50603 gfx11 gate (benchmarks/vllm-50603/) ---------------------
     # Chain: the three committed probe JSONLs -> the tables that README quotes.
     GDIR = os.path.join(HERE, "..", "vllm-50603")

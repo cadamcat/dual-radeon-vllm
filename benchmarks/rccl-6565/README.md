@@ -13,7 +13,15 @@ They measured it on **RCCL 2.27.7 (ROCm 7.2.3)** and **2.28.3 (ROCm 7.13)**,
 
 This directory is a second dual-gfx1100 machine at **RCCL 2.30.4 / ROCm 7.14**.
 **135 of 135 cold communicator initialisations across eight configurations are
-correct.** We do not reproduce it.
+correct on every rank.** We do not reproduce it.
+
+Read that sentence with its history. The first sweep, on 2026-08-27, used the
+reporter's script, whose verdict counts failures on rank 0 only; what it
+established was narrower than what it was reported as, and the gap was
+[disclosed here](#a-limitation-of-the-reporters-script-disclosed-2026-08-27) the
+same night. The 135 above were re-run on 2026-08-28 through a cross-rank variant
+that all-reduces the count before deciding anything. The bound is gone rather
+than merely stated.
 
 ## What was run
 
@@ -39,7 +47,15 @@ cold `ncclCommInitRank` each time. A single pass is not evidence of absence.
 | 2A | `ch16` | `+ MIN_NCHANNELS=16` | 15 | 15/15 correct |
 | 2A | `shmoff` | `NCCL_SHM_DISABLE=1` | 15 | 15/15 correct |
 
-Totals recomputed from the logs by `../analyze/verify_doc_figures.py`.
+Stage 3 re-runs every one of those eight arms at the same counts through
+`rccl_allgather_allranks.py`, and every arm comes back
+`pass=N fail=0 error=0` again: **135 of 135, correct on both ranks**
+(`logs/stage3-allranks.log`).
+
+Totals for both sweeps recomputed from the logs by
+`../analyze/verify_doc_figures.py`, which also checks that stage 3 covers the
+same arms at the same counts — a re-run over a different set would not replace
+the caveat on the first.
 
 ## Why the channel sweep is the load-bearing part
 
@@ -134,10 +150,36 @@ construction, but every rank prints its own verdict and the failure count is
 all-reduced before anything is decided, so a one-sided failure cannot read as
 `ALL CORRECT`. It also exits non-zero, which the original does not.
 
-**It has not been run.** The 135/135 above is still the original script's
-verdict and still carries the rank-0 caveat; nothing in this document has been
-re-measured. Running the new variant over the same arms is what would replace
-the caveat with a result.
+**Run on 2026-08-28, and the negative result holds.** Same eight arms, same
+cold-init counts, 135 in total: `pass=N fail=0 error=0` on every arm, so the
+result is now "correct on both ranks" rather than "no corruption observed on
+rank 0". `logs/stage3-allranks.log`, `scripts/stage3_allranks.sh`, and the arm
+runner `scripts/run6565_allranks.sh`, which requires the printed verdict and the
+exit status to agree and both ranks to have reported their own count before it
+records a pass.
+
+**The blind spot is demonstrated rather than argued.**
+`scripts/blindspot_check.sh` inserts one line after the `bad_list` computation
+in a copy of each script, forcing it non-empty on rank 1 and only rank 1 in one
+of the twelve cases, and runs both:
+
+```
+  reporter's script, rank-1-only fault:   ==> ALL CORRECT      exit 0
+  cross-rank variant, same fault:         ==> 1 FAILING CASES  exit 1
+  through the arm runner:                 pass=0 fail=1 error=0, exit 1
+```
+
+Both originals are untouched; the injection is applied to copies under `/tmp`
+inside the container, and the reporter's script still hashes to
+`bffbc297cad9f1956c8bb2b7e8a4bb0f`. `logs/blindspot-check.log`.
+
+One defect in the first attempt at the arm runner is worth recording, because it
+is the same class of mistake as the one this stage exists to fix. It counted
+ranks with `grep -c`, which counts *lines*; the two ranks' prints frequently land
+on one line, so it reported 6 of 20 runs as one-sided when both ranks had in fact
+reported. Counting occurrences instead fixed it. No measurement was affected —
+the verdict is all-reduced inside the script — but a check that miscounts is
+worse than no check.
 
 The first attempt at this ran through a wrapper that filtered the output and
 printed a parsed verdict; the filter matched nothing and reported `FAILED` for
@@ -148,10 +190,13 @@ around than no log. `logs/stage2b-raw.log` is the unfiltered re-run.
 ## Files
 
 - `rccl_allgather_truth.py` — the reporter's script, verbatim from the issue
-- `rccl_allgather_allranks.py` — the cross-rank variant, not yet run
+- `rccl_allgather_allranks.py` — the cross-rank variant, run in stage 3
 - `scripts/` — the arm runners and stage drivers actually used
 - `logs/stage1.log` — three transport arms, RCCL version banner, topology dump
 - `logs/stage2a.log` — channel sweep and `NCCL_SHM_DISABLE=1`
 - `logs/stage2b-raw.log` — the rccl-tests attempt, unfiltered
+- `logs/stage3-allranks.log` — the same eight arms through the cross-rank variant
+- `logs/blindspot-check.log` — the injected one-sided fault, and what each script
+  makes of it
 - `logs/environment.txt` — machine fingerprint at capture time
 - `results.json` — the per-arm tallies parsed back out of the logs

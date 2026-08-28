@@ -1,0 +1,33 @@
+########## stack, and which librccl is loaded ##########
+RCCL version : 2.30.4-HEAD:2b22ab0
+Librccl path : /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1
+/opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1.0  symlink->librccl.so.1
+/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/librccl.so.1  48fda13868ea868140ca2cd6af54eb76
+
+=== arm=default  env:   N=20  script=/work/rccl_allgather_allranks.py ===
+=== arm=default RESULT pass=20 fail=0 error=0 of 20 ===
+
+=== arm=p2pdisable  env: NCCL_P2P_DISABLE=1  N=20  script=/work/rccl_allgather_allranks.py ===
+=== arm=p2pdisable RESULT pass=20 fail=0 error=0 of 20 ===
+
+=== arm=prod  env: NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0  N=20  script=/work/rccl_allgather_allranks.py ===
+=== arm=prod RESULT pass=20 fail=0 error=0 of 20 ===
+
+=== arm=ch1  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=1 NCCL_MAX_NCHANNELS=1  N=15  script=/work/rccl_allgather_allranks.py ===
+=== arm=ch1 RESULT pass=15 fail=0 error=0 of 15 ===
+
+=== arm=ch4  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=4  N=15  script=/work/rccl_allgather_allranks.py ===
+=== arm=ch4 RESULT pass=15 fail=0 error=0 of 15 ===
+
+=== arm=ch8  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=8  N=15  script=/work/rccl_allgather_allranks.py ===
+=== arm=ch8 RESULT pass=15 fail=0 error=0 of 15 ===
+
+=== arm=ch16  env: NCCL_P2P_DISABLE=1 NCCL_MIN_NCHANNELS=16  N=15  script=/work/rccl_allgather_allranks.py ===
+=== arm=ch16 RESULT pass=15 fail=0 error=0 of 15 ===
+
+=== arm=shmoff  env: NCCL_SHM_DISABLE=1  N=15  script=/work/rccl_allgather_allranks.py ===
+=== arm=shmoff RESULT pass=15 fail=0 error=0 of 15 ===
+
+STAGE3_ALLRANKS_DONE
+container_exit=0

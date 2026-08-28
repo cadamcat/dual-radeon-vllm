@@ -1,0 +1,21 @@
+injected into /tmp/bs_truth.py after line 22
+injected into /tmp/bs_allranks.py after line 38
+--- reporter's script, with rank-1-only corruption injected ---
+      bfloat16  n=64    all_gather=OK                     all_gather_into_tensor=OK 
+      bfloat16  n=4096  all_gather=OK                     all_gather_into_tensor=OK 
+    
+      ==> ALL CORRECT
+    exit=0
+--- cross-rank variant, same injection ---
+      host      : 745ae1aef2bc
+      rank      : 1 (local_rank: 1)
+      exitcode  : 1 (pid: 80)
+      error_file: <N/A>
+      traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+    ============================================================
+    exit=1
+--- and once through the arm runner, which is what the sweep actually uses ---
+      run 1: >>> 1 FAILING CASES (exit 1) <<<
+    === arm=gatecheck RESULT pass=0 fail=1 error=0 of 1 ===
+    runner exit=1
+BLINDSPOT_CHECK_OK  one-sided corruption: truth=ALL CORRECT/exit 0, allranks=FAILING/exit 1
