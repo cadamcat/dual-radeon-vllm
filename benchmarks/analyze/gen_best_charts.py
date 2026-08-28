@@ -136,7 +136,15 @@ def describe(row):
     return f"{len(row['values'])} passes, range {row['range_pct']:.0f}%"
 
 
-def nice_ticks(vmax):
+PLOT_H = 520  # was 206, which left six of the seven ms-per-token lines inside
+              # a twentieth of the axis
+
+
+def nice_ticks(vmax, step=None):
+    """Gridlines. A step can be forced when the default would be too coarse for
+    a tall plot -- 4-6 bands is right for a 206px axis and far too few for 520."""
+    if step:
+        return [i * step for i in range(int(vmax // step) + 1)]
     for step in (1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000):
         if 4 <= vmax / step <= 6:
             return [i * step for i in range(int(vmax // step) + 1)]
@@ -163,16 +171,37 @@ def wrap_notes(notes):
     return out
 
 
-def build(fn, title, sub, series, vmax, ylab, notes):
+def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
+    """bands = [(lo, hi, step, height_px), ...] top to bottom, for a broken axis.
+
+    One band is the ordinary case. Two exist because the ms-per-token chart has
+    to reach 261.9 for the unpatched line while six of its seven series live
+    between 9 and 34: on one linear axis that leaves the six inside a tenth of
+    the plot no matter how tall it is made. Each band gets its own scale and its
+    own gridlines, series are drawn once per band and clipped to it, and the gap
+    between them carries a break mark so the discontinuity is visible.
+    """
     notes = wrap_notes(notes)
-    ticks = nice_ticks(vmax)
     rows_legend = math.ceil(len(series) / 2)
     W = 780
-    H = 352 + rows_legend * 19 + len(notes) * 15
-    L, R, T, B = 62, 762, 76, 282
+    L, R, T = 62, 762, 76
+    if bands is None:
+        bands = [(0, vmax, step, PLOT_H)]
+    GAPPX = 14
+    B = T + sum(b[3] for b in bands) + GAPPX * (len(bands) - 1)
+    H = B + 70 + rows_legend * 19 + len(notes) * 15
     xm = lambda s: L + (math.log10(s) - math.log10(450)) / (
         math.log10(34000) - math.log10(450)) * (R - L)
-    ym = lambda v: T + (1 - v / vmax) * (B - T)
+
+    # top-of-band y for each band, and a mapper that knows which band it is in
+    tops, y = [], T
+    for lo, hi, st, h in bands:
+        tops.append(y)
+        y += h + GAPPX
+    def ym_band(i, v):
+        lo, hi, st, h = bands[i]
+        return tops[i] + (1 - (v - lo) / (hi - lo)) * h
+    ym = lambda v: ym_band(len(bands) - 1, v)
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" '
          f'height="{H}" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,'
          f'Helvetica,Arial,sans-serif">',
@@ -181,12 +210,20 @@ def build(fn, title, sub, series, vmax, ylab, notes):
          f'<text x="{L}" y="58" font-size="10.5" fill="{GREY}" opacity=".7">'
          f'2x RX 7900 XT &#183; TP=2 &#183; solid: released vLLM, no patch &#183; '
          f'dashed: needs an unmerged patch, named below</text>']
-    for tv in ticks:
-        y = ym(tv)
-        o.append(f'<line x1="{L}" y1="{y:.1f}" x2="{R}" y2="{y:.1f}" stroke="{GRID}" '
-                 f'stroke-width="1" opacity=".28"/>')
-        o.append(f'<text x="{L-8}" y="{y+4:.1f}" font-size="10.5" fill="{GREY}" '
-                 f'text-anchor="end">{tv:g}</text>')
+    for i, (lo, hi, st, h) in enumerate(bands):
+        for tv in nice_ticks(hi, st):
+            if tv < lo or tv > hi:
+                continue
+            y = ym_band(i, tv)
+            o.append(f'<line x1="{L}" y1="{y:.1f}" x2="{R}" y2="{y:.1f}" stroke="{GRID}" '
+                     f'stroke-width="1" opacity=".28"/>')
+            o.append(f'<text x="{L-8}" y="{y+4:.1f}" font-size="10.5" fill="{GREY}" '
+                     f'text-anchor="end">{tv:g}</text>')
+        if i:  # the break between this band and the one above it
+            yb = tops[i] - GAPPX / 2
+            for dx in (0, 6):
+                o.append(f'<line x1="{L-6+dx}" y1="{yb+5}" x2="{L+2+dx}" y2="{yb-5}" '
+                         f'stroke="{GREY}" stroke-width="1.4"/>')
     for s in [500, 1000, 2000, 4000, 8000, 16000, 32000]:
         x = xm(s)
         o.append(f'<line x1="{x:.1f}" y1="{B}" x2="{x:.1f}" y2="{B+5}" stroke="{GRID}" '
@@ -198,21 +235,36 @@ def build(fn, title, sub, series, vmax, ylab, notes):
     o.append(f'<text x="{(L+R)/2:.0f}" y="{B+37}" font-size="11" fill="{GREY}" '
              f'text-anchor="middle">context length (tokens, log scale)</text>')
 
-    for model, pts, patched in series:
-        col = COLOUR[model][0]
-        dash = ' stroke-dasharray="7 4"' if patched else ""
-        # a gap is a gap: consecutive points only join if nothing was dropped
-        # between them, so a missing cell reads as missing rather than as a line
-        for i in range(len(pts) - 1):
-            x0, y0, gap = pts[i]
-            x1, y1, _ = pts[i + 1]
-            if gap:
+    o.append("<defs>")
+    for i, (lo, hi, st, h) in enumerate(bands):
+        o.append(f'<clipPath id="b{i}"><rect x="{L}" y="{tops[i]}" width="{R-L}" '
+                 f'height="{h}"/></clipPath>')
+    o.append("</defs>")
+    for bi in range(len(bands)):
+        o.append(f'<g clip-path="url(#b{bi})">')
+        lo, hi = bands[bi][0], bands[bi][1]
+        for model, pts, patched in series:
+            vals = [v for _, v, _ in pts]
+            # a series that cannot reach this band is not drawn into it, so the
+            # file carries no marks that only the clip path is hiding
+            if max(vals) < lo or min(vals) > hi:
                 continue
-            o.append(f'<line x1="{xm(x0):.1f}" y1="{ym(y0):.1f}" x2="{xm(x1):.1f}" '
-                     f'y2="{ym(y1):.1f}" stroke="{col}" stroke-width="2.4" '
-                     f'stroke-linecap="round"{dash}/>')
-        for x, y, _ in pts:
-            o.append(f'<circle cx="{xm(x):.1f}" cy="{ym(y):.1f}" r="3" fill="{col}"/>')
+            col = COLOUR[model][0]
+            dash = ' stroke-dasharray="7 4"' if patched else ""
+            # a gap is a gap: consecutive points only join if nothing was
+            # dropped between them, so a missing cell reads as missing
+            for i in range(len(pts) - 1):
+                x0, y0, gap = pts[i]
+                x1, y1, _ = pts[i + 1]
+                if gap:
+                    continue
+                o.append(f'<line x1="{xm(x0):.1f}" y1="{ym_band(bi, y0):.1f}" '
+                         f'x2="{xm(x1):.1f}" y2="{ym_band(bi, y1):.1f}" stroke="{col}" '
+                         f'stroke-width="2.4" stroke-linecap="round"{dash}/>')
+            for x, y, _ in pts:
+                o.append(f'<circle cx="{xm(x):.1f}" cy="{ym_band(bi, y):.1f}" r="3" '
+                         f'fill="{col}"/>')
+        o.append("</g>")
 
     for i, (model, _, patched) in enumerate(series):
         col, lab = COLOUR[model]
@@ -293,10 +345,15 @@ def main():
     out = [
         build("decode-vs-context-best.svg", "Decode throughput vs context length",
               "one line per model, the best configuration measured here",
-              series, 115, "decode tok/s", notes),
+              series, 115, "decode tok/s", notes, step=10),
         build("decode-ms-per-token-best.svg", "Cost of one context token at decode time",
               "slope = ms added per token of context; a linear-attention model should be flat",
-              mseries, 275, "ms per generated token", mnotes),
+              mseries, 275, "ms per generated token", mnotes,
+              # broken axis: 0-40 in fives across 400px carries the six flat
+              # series, 40-275 in fifties across 110px carries the one that
+              # climbs. On a single linear scale the six sit inside a tenth of
+              # the plot however tall it is drawn.
+              bands=[(40, 275, 50, 110), (0, 40, 5, 400)]),
     ]
     for model in ORDER:
         if model in chosen:

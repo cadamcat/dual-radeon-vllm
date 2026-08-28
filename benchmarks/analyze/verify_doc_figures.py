@@ -1313,11 +1313,17 @@ def main():
     # 57 graded plus the bimodal 8K point plotted at its upper cluster
     ck("best charts, decode chart carries every point it draws", "58",
        svgd.count("<circle "))
-    ck("best charts, ms chart adds the contrast line's three points", "61",
+    # the ms chart has a broken axis, so the one series that crosses the break
+    # is drawn in both bands: 61 points plus the three of it that reach the top
+    ck("best charts, ms chart adds the contrast line's three points", "64",
        svgm.count("<circle "))
+    ck("best charts, ms chart has two bands and the decode chart one", "3",
+       svgm.count("<clipPath") + svgd.count("<clipPath"))
+    ck("best charts, the ms axis carries a break mark", "2",
+       len(re.findall(r'<line x1="(?:56|62)" y1="[\d.]+\.0" x2="(?:64|70)"', svgm)))
     ck("best charts, the Qwen3.8 line is now unbroken", "3",
        len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgd)))
-    ck("best charts, and on the ms chart with its contrast line", "6",
+    ck("best charts, and on the ms chart with its contrast line", "8",
        len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgm)))
     # the footnote wraps, so read the text back the way a reader sees it
     flat = " ".join(re.findall(r">([^<]*)</text>", svgd))
