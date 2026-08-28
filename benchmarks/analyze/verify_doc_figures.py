@@ -1305,25 +1305,31 @@ def main():
     ck("best charts, lines that need an unmerged patch", "2",
        sum(1 for m in chosen if chosen[m][2][4]))
     plotted = sum(1 for m in chosen for r in chosen[m][3] if r["chart_grade"])
-    ck("best charts, points plotted", "57", plotted)
+    ck("best charts, points the ledger grades", "57", plotted)
     svgd = open(os.path.join(HERE, "..", "..", "docs", "assets",
                              "decode-vs-context-best.svg")).read()
     svgm = open(os.path.join(HERE, "..", "..", "docs", "assets",
                              "decode-ms-per-token-best.svg")).read()
-    ck("best charts, decode chart carries every plotted point", "57",
+    # 57 graded plus the bimodal 8K point plotted at its upper cluster
+    ck("best charts, decode chart carries every point it draws", "58",
        svgd.count("<circle "))
-    # the ms chart adds the unpatched Qwen3.8 line back, for the contrast
-    ck("best charts, ms chart adds the contrast line's three points", "60",
+    ck("best charts, ms chart adds the contrast line's three points", "61",
        svgm.count("<circle "))
-    # one Qwen3.8 element on the decode chart: its legend swatch, so the 8K gap
-    # is a gap. Four on the ms chart: two swatches and the contrast line's two
-    # segments, which is what it should be when that line has no gap.
-    ck("best charts, decode chart draws no line across the Qwen3.8 gap", "1",
+    ck("best charts, the Qwen3.8 line is now unbroken", "3",
        len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgd)))
-    ck("best charts, ms chart draws the contrast line and both swatches", "4",
+    ck("best charts, and on the ms chart with its contrast line", "6",
        len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgm)))
-    ck("best charts, the gap note names the two modes", "1",
-       1 if "two modes, 41 and 47 tok/s" in svgd else 0)
+    # the footnote wraps, so read the text back the way a reader sees it
+    flat = " ".join(re.findall(r">([^<]*)</text>", svgd))
+    ck("best charts, the note says which mode was plotted", "1",
+       1 if "two modes, 41 and 47 tok/s; plotted at the upper one" in flat else 0)
+    # the plotted 8K value is the upper cluster's mean, read back off the SVG
+    q8 = next(r for r in led if r["model"] == "Qwen3.8-27B" and r["ctx"] == 8192
+              and r["patches"])
+    hi = sorted(q8["values"])[2:]
+    ck("best charts, the plotted 8K value", "47.30", sum(hi) / len(hi))
+    ck("best charts, and the ledger still refuses to grade it", "0",
+       1 if q8["chart_grade"] else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

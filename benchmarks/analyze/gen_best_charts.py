@@ -59,6 +59,18 @@ CONTRAST_MS = [("Qwen3.8-27B", "2026-08-28", ())]
 GREY = GRID = "#8a8a8a"
 PREFER_UNPATCHED_WITHIN = 0.02
 
+# What to do with a point the ledger will not grade because it came out in two
+# modes rather than one. "drop" leaves a hole, which is the conservative
+# reading; "high" plots the upper cluster's mean, which is what this repository
+# shows, with the footnote saying so.
+#
+# The cost is stated because it is real: the plotted value is one the machine
+# reaches on roughly half its passes, and a reader who does not read the note
+# below the chart will take it as the number. The ledger is unchanged -- that
+# point is still chart_grade false there -- so this is a presentation choice
+# living in the presentation layer, not a claim about the data.
+BIMODAL = "high"
+
 
 def pick(rows):
     """One series per model: the best stack, unpatched preferred at a tie."""
@@ -95,17 +107,33 @@ def pick(rows):
     return chosen
 
 
-def describe(row):
-    """Why a point is off the chart, in the form the numbers actually take."""
+def modes(row):
+    """(low, high) cluster means if the passes came out in two modes, else None.
+
+    Two modes means the largest gap between sorted neighbours is more than half
+    the total range and has at least two passes on each side -- which is what
+    separates "it landed in two places" from "it was noisy".
+    """
     v = sorted(row["values"])
-    if len(v) < 3:
-        return f"{len(v)} passes, range {row['range_pct']:.0f}%"
+    if len(v) < 4:
+        return None
     gap, i = max((v[j + 1] - v[j], j) for j in range(len(v) - 1))
     lo, hi = v[:i + 1], v[i + 1:]
     if gap > (v[-1] - v[0]) / 2 and len(lo) > 1 and len(hi) > 1:
-        return (f"{len(v)} passes in two modes, "
-                f"{sum(lo)/len(lo):.0f} and {sum(hi)/len(hi):.0f} tok/s")
-    return f"{len(v)} passes, range {row['range_pct']:.0f}%"
+        return sum(lo) / len(lo), sum(hi) / len(hi)
+    return None
+
+
+def describe(row):
+    """Why a point is annotated, in the form the numbers actually take."""
+    m = modes(row)
+    if m:
+        lo, hi = m
+        if BIMODAL == "high":
+            return (f"{len(row['values'])} passes in two modes, {lo:.0f} and "
+                    f"{hi:.0f} tok/s; plotted at the upper one")
+        return f"{len(row['values'])} passes in two modes, {lo:.0f} and {hi:.0f} tok/s"
+    return f"{len(row['values'])} passes, range {row['range_pct']:.0f}%"
 
 
 def nice_ticks(vmax):
@@ -115,7 +143,28 @@ def nice_ticks(vmax):
     return [0, vmax]
 
 
+NOTE_CHARS = 128  # (762 - 62) px at 10px, about 0.5 px per character
+
+
+def wrap_notes(notes):
+    """Footnotes are one line each until they are not; 700px is the budget."""
+    out = []
+    for n in notes:
+        words, line = n.split(" "), ""
+        for w in words:
+            trial = f"{line} {w}".strip()
+            # entities render as one glyph, so measure what a reader sees
+            if len(trial.replace("&#183;", ".")) > NOTE_CHARS and line:
+                out.append(line)
+                line = "    " + w
+            else:
+                line = trial
+        out.append(line)
+    return out
+
+
 def build(fn, title, sub, series, vmax, ylab, notes):
+    notes = wrap_notes(notes)
     ticks = nice_ticks(vmax)
     rows_legend = math.ceil(len(series) / 2)
     W = 780
@@ -192,8 +241,18 @@ def main():
         if model not in chosen:
             continue
         _, _, key, pts = chosen[model]
-        graded = sorted([p for p in pts if p["chart_grade"]], key=lambda p: p["ctx"])
-        dropped = sorted(p["ctx"] for p in pts if not p["chart_grade"])
+        graded = [p for p in pts if p["chart_grade"]]
+        annotated = [p for p in pts if not p["chart_grade"]]
+        filled = []
+        if BIMODAL == "high":
+            for p in annotated:
+                m = modes(p)
+                if m:
+                    q = dict(p, decode_tok_s=m[1])
+                    graded.append(q)
+                    filled.append(p["ctx"])
+        graded.sort(key=lambda p: p["ctx"])
+        dropped = sorted(p["ctx"] for p in annotated if p["ctx"] not in filled)
         # third element marks "a gap starts here", so build() can skip the join
         marked = []
         for i, p in enumerate(graded):
@@ -210,13 +269,10 @@ def main():
             short = ", ".join(x.split(" ")[0] for x in key[4])
             stack += f" &#183; needs {short}"
         note = f"{COLOUR[model][1].split(' &#183;')[0]} &#183; {stack}"
-        if dropped:
-            note += " &#183; no point at " + ", ".join(
-                f"{d//1000}K" if d >= 1000 else str(d) for d in dropped)
-            # name what the passes actually did rather than only that they
-            # disagreed: at 8K this one is two modes, not a wide scatter
-            bad = [p for p in pts if not p["chart_grade"]][0]
-            note += ": " + describe(bad)
+        for p in annotated:
+            where = f"{p['ctx']//1000}K" if p["ctx"] >= 1000 else str(p["ctx"])
+            verb = "at" if p["ctx"] in filled else "no point at"
+            note += f" &#183; {verb} {where}: " + describe(p)
         notes.append(note)
 
     mseries = [(m, [(x, 1000 / y, g) for x, y, g in pts], p) for m, pts, p in series]

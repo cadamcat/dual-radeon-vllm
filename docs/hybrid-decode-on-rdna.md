@@ -294,9 +294,15 @@ rules out the reading that more passes would settle it: the range went from
 It is not the split-count heuristic. `_num_splits_heuristic` is a pure function
 of batch size, KV heads, sequence length, block size and processor count, all
 fixed by the configuration, so it cannot return a different answer on a second
-run. The mechanism is not established here. What follows is a bound on use:
-**8 192 stays off the charts for this arm**, and the pooled 3.52x there is two
-clusters, not a figure with three significant digits.
+run. The mechanism is not established here.
+
+What follows is a bound on use. The charts plot 8 192 at **47.3**, the upper
+cluster's mean, and say so under the figure; the ledger still refuses to grade
+the point. That is a deliberate choice with a cost: the plotted value is one
+this machine reaches on about half its passes, and a reader who skips the note
+will take it as the number. The alternative was a hole in the line. The pooled
+3.52x quoted above is a different thing again -- the mean of all four -- and it
+describes neither cluster.
 
 An earlier version of this section carried run A alone: 1.40x, 3.74x and 9.20x.
 Those are still run A's numbers and still in the repository; what changed is
