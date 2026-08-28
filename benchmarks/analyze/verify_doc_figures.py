@@ -1152,6 +1152,46 @@ def main():
     ck("w4a16 README, and the full suite has no regression", "54",
        int(re.findall(r"(\d+) passed", ao)[-1]))
 
+    # --- hybrid-decode-on-rdna §6.6: vllm#45916 on 0.27, controlled A/B ------
+    HDIR = os.path.join(HERE, "..", "hybrid-splitkv-027")
+    q38 = {}
+    for r in [json.loads(l) for l in
+              open(os.path.join(HDIR, "qwen38-027-depth.jsonl"))]:
+        q38[(r["arm"], r["ctx"])] = r
+    ck("hybrid-decode 6.6, cells", "6", len(q38))
+    for ctx, stock, split, ratio in ((1024, "37.04", "51.81", "1.40"),
+                                     (8192, "12.57", "47.02", "3.74"),
+                                     (32768, "3.83", "35.20", "9.20")):
+        s_tps = q38[("stock", ctx)]["decode_tok_s"]
+        p_tps = q38[("splitkv", ctx)]["decode_tok_s"]
+        ck(f"hybrid-decode 6.6, {ctx} stock", stock, s_tps)
+        ck(f"hybrid-decode 6.6, {ctx} with the PR", split, p_tps)
+        ck(f"hybrid-decode 6.6, {ctx} ratio", ratio, p_tps / s_tps)
+        ck(f"hybrid-decode 6.6, {ctx} stock ms/tok",
+           {1024: "27.0", 8192: "79.6", 32768: "261.3"}[ctx], 1000 / s_tps)
+        ck(f"hybrid-decode 6.6, {ctx} PR ms/tok",
+           {1024: "19.3", 8192: "21.3", 32768: "28.4"}[ctx], 1000 / p_tps)
+    for arm, claim in (("stock", "7.380"), ("splitkv", "0.287")):
+        lo = 1000 / q38[(arm, 1024)]["decode_tok_s"]
+        hi = 1000 / q38[(arm, 32768)]["decode_tok_s"]
+        ck(f"hybrid-decode 6.6, {arm} slope per 1K ctx", claim,
+           (hi - lo) / ((32768 - 1024) / 1000))
+    for arm, claim in (("stock", "10.3"), ("splitkv", "67.9")):
+        ck(f"hybrid-decode 6.6, {arm} retained at 32K", claim,
+           100 * q38[(arm, 32768)]["decode_tok_s"] / q38[(arm, 1024)]["decode_tok_s"])
+    ck("hybrid-decode 6.6, splitkv really ran, both ranks x3 depths", "6",
+       sum(1 for c in (1024, 8192, 32768)
+           for r in q38[("splitkv", c)]["routes"] if "(256, 0, True)" in r))
+    ck("hybrid-decode 6.6, and never on the stock arm", "0",
+       sum(len(q38[("stock", c)]["routes"]) for c in (1024, 8192, 32768)))
+    prov = json.load(open(os.path.join(HDIR, "provenance.json")))
+    ck("hybrid-decode 6.6, the patched file is 1083 lines", "1083",
+       prov["cppd_lines_patched"])
+    ck("hybrid-decode 6.6, against 493 stock", "493", prov["cppd_lines_stock"])
+    ck("hybrid-decode 6.6, control against the W4A16 harness", "0.8",
+       100 * abs(q38[("stock", 1024)]["decode_tok_s"] - 37.31902014484255)
+       / 37.31902014484255, tol=0.1)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

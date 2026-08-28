@@ -1,0 +1,12 @@
+{
+ "what": "vllm#45916's split-KV decode applied to the 0.27 image and measured against it, same checkpoint, same harness, three depths.",
+ "why": "The 10.72 tok/s figure for this PR is 0.23.1-era; the 37.32 for this checkpoint is 0.27 at one depth. Nothing covered both.",
+ "patch_source": "gh pr diff 45916 (vllm-project/vllm), applied with patch -p1, no rejected hunks",
+ "pr_head_sha": "2d08f7f889131f97ce1874872bce01ae7cd3b631",
+ "cppd_md5_stock_0_27": "86f68d47c7bdc390ced4c6d0c18025fa",
+ "cppd_md5_after_patch": "84c6d4f9b2dfe2714b3a8f43ee832b02",
+ "cppd_lines_stock": 493,
+ "cppd_lines_patched": 1083,
+ "diff_md5": "273fef16795396fe9b142712f3bf359f",
+ "note": "The probe asserts both md5s at runtime, so an arm that silently failed to swap the file aborts instead of measuring the other arm twice."
+}

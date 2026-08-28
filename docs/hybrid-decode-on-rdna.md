@@ -252,6 +252,50 @@ about is gone.**
 Output quality holds: greedy decode at 21 012 tokens of context returns a correct,
 coherent answer, so the split kernel's index arithmetic is sound at our block size.
 
+## 6.6 The same PR, re-measured on 0.27 — and this time as a controlled A/B
+
+§6.5 is a 0.23.1-era result, and §6.5 says so itself: its two sides are
+separate runs at different depths with different generation lengths. Since
+then the 0.27.1.dev image arrived, and separately the W4A16 work measured this
+checkpoint at 37.32 tok/s on it — at one depth, 1 024. So the two figures that
+describe this model came from different stacks and neither covered the other's
+question. Re-run properly, both arms on 0.27, same checkpoint, same harness,
+one fresh container per cell, only the file swapped:
+
+| ctx | stock 0.27 | with #45916 | | stock ms/tok | with #45916 |
+|---|---:|---:|---:|---:|---:|
+| 1 024 | 37.04 | **51.81** | 1.40x | 27.0 | 19.3 |
+| 8 192 | 12.57 | **47.02** | 3.74x | 79.6 | 21.3 |
+| 32 768 | 3.83 | **35.20** | **9.20x** | 261.3 | **28.4** |
+
+The decode slope goes from 7.380 to **0.287 ms per 1 000 tokens of context**, a
+25.7x reduction, and what is retained from 1K to 32K goes from 10.3% to 67.9%.
+
+**The splitkv arm is the PR's code, not a port.** `gh pr diff 45916` applies to
+0.27's `chunked_prefill_paged_decode.py` with no rejected hunks; the resulting
+file is shipped in whole and both md5s are asserted at runtime, so an arm that
+silently failed to swap would abort rather than measure the other arm twice.
+The gate in that file is already `on_gfx1x()` — @thegoldenflow's widening was
+merged into the PR branch on 2026-08-10, so gfx1100 is admitted by the PR as it
+now stands rather than by a local edit.
+
+Routing is recorded from inside the TP workers, keyed
+`(head_size, sliding_window, use_splitkv_decode)`, and reads `(256, 0, True)`
+on both ranks at all three depths. The recorder is installed before any vLLM
+import: doing it afterwards is what silently produced no records at all in the
+gqa-gate work on this same image.
+
+Two comparisons worth keeping straight. The stock arm at 1 024 gives 37.04
+against the 37.32 measured by the W4A16 harness, 0.8% apart, which is the
+control that says these two measurements are talking about the same thing. And
+this table is **not** comparable to §6.5's: that one is 0.23.1 on ROCm 7.14 and
+reads 93.30 ms/tok at 32K where this reads 28.4, and it was a ratio across two
+checkpoints and two campaigns rather than an A/B. What the two agree on is the
+direction and the shape.
+
+Raw rows, the probe, the diff applied and the routing records:
+[`benchmarks/hybrid-splitkv-027/`](../benchmarks/hybrid-splitkv-027/).
+
 ### Two things the verification corrected
 
 **Our KV block size is 784, measured** — `cache_config.block_size`, 16 × 49. §2

@@ -1,0 +1,26 @@
+########## arm=stock ctx=1024  13:31:10 ##########
+exit=0 13:39:45
+ARM=stock ctx=1024 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=stock ctx=1024 decode_tok_s=37.04 t8=1.0 t64=2.5 routes=[]
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x741993ae6fad in /opt/python/lib/python3.14/site-packages/torch/lib/libc10.so)
+########## arm=splitkv ctx=1024  13:39:45 ##########
+exit=0 13:48:20
+ARM=splitkv ctx=1024 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=splitkv ctx=1024 decode_tok_s=51.81 t8=1.0 t64=2.0 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## arm=stock ctx=8192  13:48:20 ##########
+exit=0 13:57:37
+ARM=stock ctx=8192 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=stock ctx=8192 decode_tok_s=12.57 t8=7.9 t64=12.3 routes=[]
+########## arm=splitkv ctx=8192  13:57:37 ##########
+exit=0 14:06:55
+ARM=splitkv ctx=8192 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=splitkv ctx=8192 decode_tok_s=47.02 t8=7.4 t64=8.6 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+########## arm=stock ctx=32768  14:06:55 ##########
+exit=0 14:17:52
+ARM=stock ctx=32768 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=stock ctx=32768 decode_tok_s=3.83 t8=34.5 t64=49.1 routes=[]
+########## arm=splitkv ctx=32768  14:17:52 ##########
+exit=0 14:28:26
+ARM=splitkv ctx=32768 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 max_num_seqs=16
+RESULT arm=splitkv ctx=32768 decode_tok_s=35.20 t8=32.9 t64=34.5 routes=['pid=138 (256, 0, True)', 'pid=139 (256, 0, True)']
+Q38_DEPTH_DONE
