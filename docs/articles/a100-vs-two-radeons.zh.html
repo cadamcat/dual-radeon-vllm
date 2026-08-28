@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>两张消费级 Radeon 对一张 A100</title>
+<meta name="description" content="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，而两端都关于张量并行，不关于硅片本身。">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #adv, #ret, #econ, #util { --labw:150px; }
+  @media (max-width:480px){ #adv, #ret, #econ, #util { --labw:112px; } }
+
+  /* ---- a track with reference marks on it ---- */
+  /* the interesting comparison is not against zero, it is against the ratio of
+     nominal bandwidths, so that number has to be visible in the track */
+  .bars .rtrack { position:relative; background:var(--surface-3); border-radius:99px;
+                  height:20px; overflow:hidden; }
+  .bars .rtrack .fill { position:absolute; left:0; top:0; bottom:0; width:0;
+                        transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .rtrack .mark { position:absolute; top:0; bottom:0; width:2px; z-index:3; }
+  .bars .rtrack .mark.par { background:var(--border-2); }
+  .bars .rtrack .mark.nom { background:var(--accent);
+                            box-shadow:0 0 0 1px color-mix(in srgb, var(--bg) 60%, transparent); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+  .swatch.line { width:3px; height:11px; border-radius:1px; }
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+
+  /* ---- the workgroup arithmetic, two cards ---- */
+  .wgs { display:grid; grid-template-columns:1fr 1fr; gap:.9em; margin:1.3em 0 0; }
+  .wgcard { border:1px solid var(--border); border-radius:11px; padding:.9em 1.05em;
+            background:var(--surface-2); }
+  .wgcard.thin { background:var(--red-bg);
+                 border-color:color-mix(in srgb, var(--red) 28%, transparent); }
+  .wgcard h4 { margin:0 0 .25em; font-family:var(--mono); font-size:.73rem;
+               letter-spacing:.07em; text-transform:uppercase; color:var(--text-dim); }
+  .wgcard.thin h4 { color:var(--red); }
+  .wgcard .n { font-family:var(--mono); font-size:1.4rem; font-weight:800;
+               color:var(--text); }
+  .wgcard.thin .n { color:var(--red); }
+  .wgcard .u { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  @media (max-width:520px){ .wgs { grid-template-columns:1fr; } }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="语言与配色主题">
+  <a class="lang" href="a100-vs-two-radeons.html" hreflang="en">EN</a>
+  <a class="lang" href="a100-vs-two-radeons.zh.html" hreflang="zh" aria-current="page">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="跟随系统">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="浅色">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="深色">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">RDNA3 · CUDA · 张量并行 · 2× RX 7900 XT 对一张 A100 80G</div>
+  <h1>两张消费级 Radeon<br>对一张 A100</h1>
+  <p class="lede">同一个 31B 模型的 batch-1 解码，两边各走自己那条健康路径：A100 在 1K 上下文领先
+  1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，
+  两端的成因不同，而且都不是价格差。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">一张 <b>A100-SXM4-80GB</b> · TP=1</span>
+    <span class="chip"><b>gemma-4-31B</b> w4a16 · 开着 MTP</span>
+    <span class="chip">实测 <b>2026-08-26</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>batch-1 解码是带宽受限的，而两边的标称上限比价格接近得多：两张 800 GB/s 对一张 2.0 TB/s 是
+  <strong>1.27×</strong>。实测的领先幅度在 8K 和 16K 上<em>低于</em>这个数，在两端高于它。</p>
+  <p><strong>短端付的税是张量并行。</strong>那里每一步的时间足够短，TP=2 那个固定的 all-reduce
+  下限占掉可见的一块；而单卡不做这件事，也就不付这笔钱。长端 KV 扫描占主导，实到带宽的差距被放大；
+  Radeon 在这个模型上跑到自身 800 GB/s 的 63 %。</p>
+  <p>同一张表还能读出两件事，两件都关于张量并行，而不关于任何一个厂商。
+  <strong>被饿着的那条注意力路径，被切开之后饿得更厉害</strong>：它的 2D launch grid
+  是每个 KV head 一个 workgroup，所以两张卡各看到 8 个，单卡看到 16 个，
+  而从 1K 到 30–32K 的保留率是 <strong>15.8 % 对 33.6 %</strong>。以及
+  <strong>投机的经济性被侵蚀</strong>：每一次草稿步仍然要付同一个 all-reduce 下限，
+  所以投机相对不投机的净收益是<strong>这边 +7.5 %，那边 +39.2 %</strong>。</p>
+  <p>这里没有覆盖的是 A100 完胜的地盘。prefill 和批量吞吐是计算受限的，
+  而那边的对手是已经只跑到标称峰值约 37 % 的 RDNA3 WMMA。那里该预期的是倍数，不是百分比。</p>
+</div>
+
+<h2><span class="n">1</span>比的是什么</h2>
+
+<p>同一个 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>，同一个官方 MTP 助手，
+<code>num_speculative_tokens: 1</code>，batch 1，greedy，解码用 64 token 生成减 8 token
+生成的差分隔离出来。两个平台上注意力后端都是 <code>TRITON_ATTN</code> ——
+这个模型 head 维度不齐，只要 FA4 不可用就会被强制走它，gfx1100 和 A100 都是这种情况。</p>
+
+<div class="note warn">
+  <span class="lbl">两边都在自己的健康路径上，而这需要一个补丁</span>
+  两列都让投机走 3D flash-decoding 路径，而原版 vLLM 在<em>任一</em>平台上都拒绝这么做 ——
+  那是<a href="speculative-decoding-net-loss.zh.html">另一篇文章</a>的主题。
+  拿两边的原版配置去比，比的会是同一个 bug 的两个实例。这里用的机制是
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 的，
+  以相同方式移植到两套栈上。
+</div>
+
+<p><strong>两边都是每格一次运行。</strong>这些是探测不是 campaign：单进程，没有格内采样。
+Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 token，
+所以只有那一对不是精确对齐的，图上标了出来。这里第三位数字的差别没有和噪声分开。</p>
+
+<h2><span class="n">2</span>差距，以及它的形状</h2>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 一张 A100 领先多少，按上下文长度
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="adv"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> Radeon 那一列是
+    <code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>；A100 那一列是
+    <code>benchmarks/cuda-a100/45450-validation/</code> 里的分腿日志。
+    灰色标记是持平，琥珀色那个是标称显存带宽之比，2039 对 2 × 800 GB/s。
+    在两者之间的 8K 和 16K 上，实测领先幅度比单看带宽上限该给的还要<em>小</em>。
+    最后一行是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧最长的一条腿；其余每一行都精确对齐。
+  </figcaption>
+</figure>
+
+<p>16K 上只差 14 %，这个数字值得停一下。它不是说两套硬件等价 —— 它是关于某一个工况的陈述：
+单流解码、一个模型、中等长度上下文、两边各在自己现有的最佳路径上。
+换到 prefill 或换到批量，这两台机器就不接近了。</p>
+
+<h2><span class="n">3</span>付代价的是切分，不是硅片</h2>
+
+<p>2D 注意力路径 —— 也就是原版 vLLM 下投机会掉进去的那条 —— 每个 KV head 启动一个 workgroup。
+这个模型有 16 个。单卡上一个 rank 看到全部；切到两张卡上，每个 rank 看到八个。
+于是被饿着的那条路径被并行度饿得加倍厉害，表现出来就是保留率：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 2D 路径从 1K 到 30–32K 保住了多少
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="ret"></div>
+    <div class="wgs" id="wgs"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 两个平台上都是原版 vLLM 开投机，所以两边都在 2D 路径上。
+    下面两张卡片是 batch 1 下的 launch grid
+    <code>(total_num_q_blocks, num_kv_heads)</code>：workgroup 数是 KV head
+    怎么切的性质，不是厂商的性质。同一次塌陷、同一个 kernel，在两张卡上大约两倍的伤害。
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>它同样侵蚀投机</h2>
+
+<p>MTP 草稿模型只有四层宽，所以多出来的那次前向很便宜。不便宜的是：每一次草稿步仍然是一步，
+而 TP=2 下的一步无论挂着多大的模型，都要付那个 all-reduce 下限。
+这个下限不随草稿模型变小，所以让投机划算的那笔账，在两张卡上比在一张卡上更难算平。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 投机走上健康路径之后值多少
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="econ"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 投机对不投机，两边都走 3D 路径，各取该平台测过的最长深度。
+    不投机的基线来自不同的文件 —— 这边是 <code>splitkv-31b-stock.json</code>，
+    那边是后端矩阵里被强制默认的那一列 —— 而且都是单次运行。
+    这里比的是<em>收益</em>，不是速率本身。
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>两张卡实际跑到了多少</h2>
+
+<p>标称之比假定两边都跑满上限，而两边都没有。从七月那次 campaign 重算实到带宽 ——
+解码速率乘以每张 GPU 每 token 搬的权重字节，除以 800 GB/s ——
+这个对比里的模型落在 63 %：</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 解码时每张卡实到的显存带宽
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="util"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> 速率取自 <code>benchmarks/results.jsonl</code> 在 500 token 上下文、TP=2 下的值，
+    每张 GPU 每 token 的字节数取自
+    <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md §3</a>。
+    两个效应都真实可见：同样的量化下更大的模型实到更高，而 BF16 那个还要更高。
+    <strong>A100 那边没有测过对应的数字</strong>，
+    所以图 1 里的对比在那一侧是对着标称上限，在这一侧是对着实到值。
+  </figcaption>
+</figure>
+
+<h2><span class="n">6</span>没有被确立的部分</h2>
+
+<h3>单流解码之外的一切</h3>
+<p>prefill 和批量吞吐是计算受限的，这里完全没有测。这台硬件上 prefill 只跑到标称 FP16
+峰值的约 37 %，而 A100 的 tensor core 是另一个量级的东西。那里诚实的预期是倍数而非百分比，
+而且那是预期，不是测量。</p>
+
+<h3>A100 自己的实到带宽</h3>
+<p>图 4 只有 Radeon 这边，没有对应的一半。图 1 里那个 1.27× 是两个规格书数字的比值，
+读者应当把它当成"单靠带宽差能解释的上界"，而不是任何一侧被拿去对照过的预测。</p>
+
+<h3>每边一个模型、一套栈，每格一次运行</h3>
+<p>两个不同的 vLLM 版本，因为每一侧跑的都是它今天真正在跑的那套；
+两个不同的运行环境，其中一个是租来的 Colab VM，会话之间的方差没有量化。
+这个对比的 campaign 级版本没有做过。</p>
+
+<h3>为什么最小值在 16K</h3>
+<p>这个 U 只是被描述了，谷底没有被解释。短端由固定的每步开销主导、长端由 KV 扫描主导，
+和这里每一个测量都一致；但两者究竟在哪里交叉没有定位，而且只测了四个深度。</p>
+
+<h2><span class="n">7</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · 这个对比才变得可能</span>
+  在 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
+  的机制被移植到两套栈之前，两个平台在投机下都卡在 2D 路径上，
+  那样的对比测的会是一个共同的 bug。图 2 就是那个对比的样子 ——
+  留着它，是因为它本身就是关于张量并行的发现，而不是一个该丢掉的假象。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 这里引用的实到带宽是另一个模型的</span>
+  <code>README.md</code> 里这一段引用的实到带宽是 38 %。那是 12B 的数字；
+  这个对比里的模型是 31B，它跑到 <strong>62.8 %</strong>。已就地更正并标注日期，
+  三个实到带宽数字现在都由 <code>verify_doc_figures.py</code> 从 campaign 速率重算，
+  而不是照抄。
+</div>
+
+<div class="foot-note">
+  <p><strong>数据。</strong>Radeon 这边的阶梯在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
+  A100 的分腿、日志以及让两边可比的那次移植在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>；
+  图 4 背后的七月 campaign 是
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>。
+  本页每一张图都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从这些文件重算。</p>
+  <p>为什么两边都需要一个补丁才值得比，见<a href="speculative-decoding-net-loss.zh.html">上一篇</a>。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in a100-vs-two-radeons.html. Derived from benchmarks/speculative-decoding/, benchmarks/cuda-a100/ and benchmarks/results.jsonl by site/src/genfig-a100.py.",
+ "fig1": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "a100_ctx": 1024,
+    "radeons": 74.89,
+    "a100": 110.71,
+    "advantage": 1.47830150887969,
+    "matched": true
+   },
+   {
+    "ctx": 8192,
+    "a100_ctx": 8192,
+    "radeons": 63.25,
+    "a100": 75.63,
+    "advantage": 1.1957312252964427,
+    "matched": true
+   },
+   {
+    "ctx": 16384,
+    "a100_ctx": 16384,
+    "radeons": 63.09,
+    "a100": 72.13,
+    "advantage": 1.1432873672531303,
+    "matched": true
+   },
+   {
+    "ctx": 32768,
+    "a100_ctx": 30000,
+    "radeons": 32.57,
+    "a100": 61.03,
+    "advantage": 1.8738102548357385,
+    "matched": false
+   }
+  ],
+  "nominal_ratio": 1.274375,
+  "nominal": {
+   "radeons_gb_s": 1600.0,
+   "a100_gb_s": 2039.0
+  },
+  "runs_per_cell": 1,
+  "min_advantage": 1.1432873672531303,
+  "min_at": 16384,
+  "u_shaped": true,
+  "below_nominal": [
+   8192,
+   16384
+  ]
+ },
+ "fig2": {
+  "retention": [
+   {
+    "who": "radeons",
+    "short": 55.84,
+    "long": 8.81,
+    "short_ctx": 1024,
+    "long_ctx": 32768,
+    "pct": 15.777220630372494,
+    "source": "benchmarks/speculative-decoding/mtp-31b-stock45450.json"
+   },
+   {
+    "who": "a100",
+    "short": 88.67,
+    "long": 29.75,
+    "short_ctx": 1024,
+    "long_ctx": 30000,
+    "pct": 33.55137024923875,
+    "source": "benchmarks/cuda-a100/45450-validation/logs/"
+   }
+  ],
+  "kv_heads": {
+   "model_total": 16,
+   "radeons_per_rank": 8,
+   "a100_per_rank": 16
+  },
+  "grid": "(total_num_q_blocks, num_kv_heads)",
+  "ratio": 2.1265703912797864
+ },
+ "fig3": {
+  "cases": [
+   {
+    "who": "radeons",
+    "ctx": 32768,
+    "nospec": 30.31,
+    "spec": 32.57,
+    "gain_pct": 7.456285054437495
+   },
+   {
+    "who": "a100",
+    "ctx": 30000,
+    "nospec": 43.85,
+    "spec": 61.03,
+    "gain_pct": 39.179019384264535
+   }
+  ],
+  "why": "every draft step pays the all-reduce floor, which does not shrink with the drafter",
+  "ratio": 5.2544959183055555
+ },
+ "bandwidth": {
+  "rows": [
+   {
+    "cfg": "B-8B-tp2",
+    "model": "Qwen3-8B BF16",
+    "gib_per_token": 7.01,
+    "tok_s": 79.58500000000001,
+    "gb_s": 599.0307388719104,
+    "pct": 74.8788423589888
+   },
+   {
+    "cfg": "C-31B-tp2",
+    "model": "gemma-4-31B w4a16",
+    "gib_per_token": 10.84,
+    "tok_s": 43.155,
+    "gb_s": 502.2966400155648,
+    "pct": 62.7870800019456
+   },
+   {
+    "cfg": "A-12B-tp2",
+    "model": "gemma-4-12B w4a16",
+    "gib_per_token": 4.78,
+    "tok_s": 59.905,
+    "gb_s": 307.4615689609216,
+    "pct": 38.4326961201152
+   }
+  ],
+  "peak_gb_s": 800.0,
+  "subject": "C-31B-tp2",
+  "subject_pct": 62.7870800019456
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "viewAdv": "A100 领先多少",
+ "viewRate": "解码 tok/s",
+ "radeons": "2× RX 7900 XT",
+ "a100": "一张 A100 80G",
+ "ctxK": "{n}K",
+ "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
+ "f1rateUnit": "解码 tok/s，开着 MTP，两边都走 3D 路径",
+ "f1par": "持平", "f1nom": "标称带宽之比",
+ "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",
+ "f1unmatched": "对 A100 的 {n}K，那是它最长的一条腿",
+ "retUnit": "占同平台自己 1K 速率的百分比，2D 路径，开着投机",
+ "retNote": "同一个 kernel、同一次塌陷，在两张卡上厉害 {r} 倍",
+ "wgSplit": "每 rank 8 个 KV head，TP=2",
+ "wgWhole": "16 个 KV head，一个 rank",
+ "wgUnit": "batch 1 下的 workgroup 数",
+ "econUnit": "打开投机所得的百分比，各取该平台最长的深度",
+ "econNote": "在一张卡上比在两张卡上值 {r} 倍",
+ "utilUnit": "解码时每张卡实到 800 GB/s 的百分比，TP=2",
+ "utilSubject": "这个对比里的模型跑到 {p}%",
+ "gib": "{n} GiB/token",
+ "runs": "一次运行",
+ "pct": " %"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+  function swatch(v, line) {
+    return '<span class="swatch' + (line ? " line" : "") +
+           '" style="background:var(' + v + ')"></span>';
+  }
+  var kctx = function (n) {
+    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+  };
+  /* a plain bar, plus the reference marks the comparison is actually against */
+  function refbar(box, label, value, max, colour, marks, tipHtml) {
+    el(box, "lab rv", label);
+    var tr = el(box, "rtrack rv");
+    var f = el(tr, "fill");
+    f.style.background = "var(" + colour + ")";
+    grow(f, Math.min(100, value / max * 100));
+    (marks || []).forEach(function (m) {
+      var k = el(tr, "mark " + m.cls);
+      k.style.left = (m.at / max * 100) + "%";
+      k.title = m.title || "";
+    });
+    if (tipHtml) hover(tr, tipHtml);
+    return tr;
+  }
+
+  /* ---------- Figure 1: the advantage, against two reference marks -------- */
+  (function () {
+    var box = document.getElementById("adv"), vbox = document.getElementById("v1");
+    var mode = 0, first = true;                 /* 0 = advantage, 1 = rates */
+    var R = F.fig1.rows;
+    var amax = Math.max.apply(null, R.map(function (r) { return r.advantage; })) * 1.06;
+    var rmax = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.radeons, r.a100); }));
+    function tipFor(r) {
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
+        S.radeons + " <b>" + r.radeons.toFixed(2) + "</b> tok/s<br>" +
+        S.a100 + " <b>" + r.a100.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + r.advantage.toFixed(3) + "× · " + S.runs +
+        (r.matched ? "" : "<br>" + fmt(S.f1unmatched,
+                                       { n: Math.round(r.a100_ctx / 1000) })) +
+        "</span>";
+    }
+    function draw() {
+      box.innerHTML = "";
+      R.forEach(function (r) {
+        if (mode) {
+          el(box, "grp", kctx(r.ctx) + (r.matched ? "" :
+             ' <span class="tagline">· ' +
+             fmt(S.f1unmatched, { n: Math.round(r.a100_ctx / 1000) }) + "</span>"));
+          [[S.radeons, r.radeons, "--s1"], [S.a100, r.a100, "--s2"]].forEach(function (a) {
+            el(box, "lab rv", a[0]);
+            var tr = el(box, "track rv");
+            var f = document.createElement("span");
+            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+            tr.appendChild(f);
+            grow(f, a[1] / rmax * 100);
+            el(box, "val rv", a[1].toFixed(2));
+            hover(tr, tipFor(r));
+          });
+        } else {
+          refbar(box, kctx(r.ctx) + (r.matched ? "" : " *"), r.advantage, amax, "--s2",
+                 [{ at: 1, cls: "par", title: S.f1par },
+                  { at: F.fig1.nominal_ratio, cls: "nom", title: S.f1nom }],
+                 tipFor(r));
+          el(box, "val rv", r.advantage.toFixed(2) + "×");
+        }
+      });
+      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
+      u.style.gridColumn = "1 / -1";
+      if (!mode) {
+        var m = el(box, "barunit", "");
+        m.style.gridColumn = "1 / -1";
+        m.innerHTML = swatch("--border-2", true) + S.f1par + " &nbsp; " +
+          swatch("--accent", true) + S.f1nom;
+        var n = el(box, "barunit", fmt(S.f1nomNote, {
+          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
+          d: F.fig1.below_nominal.map(kctx).join(" and ") }));
+        n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+      }
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- Figure 2: retention, and the workgroup arithmetic ---------- */
+  (function () {
+    var box = document.getElementById("ret");
+    var max = Math.max.apply(null, F.fig2.retention.map(function (r) { return r.pct; })) * 1.1;
+    F.fig2.retention.forEach(function (r) {
+      var who = r.who === "a100" ? S.a100 : S.radeons;
+      el(box, "lab rv", who);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (r.who === "a100" ? "--s2" : "--s1") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, r.pct / max * 100);
+      el(box, "val rv", r.pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + who + "</span><br>" +
+        kctx(r.short_ctx) + " <b>" + r.short.toFixed(2) + "</b> tok/s<br>" +
+        kctx(r.long_ctx) + " <b>" + r.long.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + r.source + "</span>");
+    });
+    var u = el(box, "barunit", S.retUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.retNote, { r: F.fig2.ratio.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+
+    var w = document.getElementById("wgs");
+    [[S.wgSplit, F.fig2.kv_heads.radeons_per_rank, true],
+     [S.wgWhole, F.fig2.kv_heads.a100_per_rank, false]].forEach(function (c) {
+      var card = el(w, "wgcard rv" + (c[2] ? " thin" : ""));
+      el(card, "", "<h4>" + c[0] + "</h4>");
+      el(card, "n", String(c[1]));
+      el(card, "u", S.wgUnit);
+    });
+  })();
+
+  /* ---------- Figure 3: speculation's economics ---------- */
+  (function () {
+    var box = document.getElementById("econ");
+    var max = Math.max.apply(null, F.fig3.cases.map(function (c) {
+      return c.gain_pct; })) * 1.1;
+    F.fig3.cases.forEach(function (c) {
+      var who = c.who === "a100" ? S.a100 : S.radeons;
+      el(box, "lab rv", who);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (c.who === "a100" ? "--s2" : "--s1") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, c.gain_pct / max * 100);
+      el(box, "val rv", "+" + c.gain_pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + who + " · " + kctx(c.ctx) + "</span><br>" +
+        "no speculation <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+        "with MTP <b>" + c.spec.toFixed(2) + "</b> tok/s");
+    });
+    var u = el(box, "barunit", S.econUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.econNote, { r: F.fig3.ratio.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- Figure 4: realized bandwidth ---------- */
+  (function () {
+    var box = document.getElementById("util");
+    F.bandwidth.rows.forEach(function (r) {
+      var subject = r.cfg === F.bandwidth.subject;
+      el(box, "lab rv", r.model);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (subject ? "--s1" : "--s2") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, r.pct);
+      el(box, "val rv", r.pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + r.model + "</span><br>" +
+        r.tok_s.toFixed(2) + " tok/s · " + fmt(S.gib, { n: r.gib_per_token }) + "<br>" +
+        "<b>" + Math.round(r.gb_s) + "</b> GB/s of " + F.bandwidth.peak_gb_s);
+    });
+    var u = el(box, "barunit", S.utilUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.utilSubject, {
+      p: F.bandwidth.subject_pct.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

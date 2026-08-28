@@ -753,7 +753,8 @@ def main():
              ["moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"],
              ["weight-loading-19x.html", "weight-loading-19x.zh.html"],
              ["speculative-decoding-net-loss.html",
-              "speculative-decoding-net-loss.zh.html"]]
+              "speculative-decoding-net-loss.zh.html"],
+             ["a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -767,6 +768,12 @@ def main():
         hosts = {u.split("/")[2] for u in
                  re.findall(r'<a [^>]*href="(https?://[^"]+)"', pages[fn])}
         ck(f"article {fn}, links only to known hosts", "0", len(hosts - LINK_HOSTS))
+
+    # A Cyrillic word once survived into a Chinese draft. It reads as CJK at a
+    # glance and nothing here would have caught it.
+    for fn in LANGS:
+        ck(f"article {fn}, no stray Cyrillic", "0",
+           len(re.findall(r"[\u0400-\u04ff]", pages[fn])))
 
     def block(text, ident):
         m = re.search(r'<script type="application/json" id="%s">(.*?)</script>' % ident,
@@ -2311,6 +2318,110 @@ def main():
         for h in heads:
             ck(f"spec article {fn}, carries '{h[:22]}'", "1",
                1 if h in pages[fn] else 0)
+
+    # --- a100-vs-two-radeons.html --------------------------------------------
+    # Both columns are already checked against their sources above; what this
+    # adds is that the article's own figures block still equals them, and the
+    # bandwidth utilisation it quotes is recomputed rather than transcribed.
+    AART = json.loads(block(pages["a100-vs-two-radeons.html"], "figures"))
+    # load the ladders here rather than reuse names bound a thousand lines up,
+    # which is how this block first picked up a different `st`
+    ADIR = os.path.join(HERE, "..", "speculative-decoding")
+    aladder = lambda fn: {r["depth"]: r["tok_per_s"] for r in
+                          json.load(open(os.path.join(ADIR, fn)))["rows"]}
+    p45 = aladder("mtp-31b-p45450.json")
+    s45 = aladder("mtp-31b-stock45450.json")
+    ns45 = aladder("splitkv-31b-stock.json")
+
+    ck("a100 article, fig1 rows", "4", len(AART["fig1"]["rows"]))
+    A100_LEGS = {1024: "D1K.log", 8192: "D8K.log", 16384: "D16K.log", 32768: "D30.log"}
+    ck("a100 article, fig1 rows match both sources", "4",
+       sum(1 for r in AART["fig1"]["rows"]
+           if abs(r["radeons"] - p45[r["ctx"]]) < 1e-9
+           and abs(r["a100"] - leg_result(A100_LEGS[r["ctx"]])) < 1e-9
+           and abs(r["advantage"] - r["a100"] / r["radeons"]) < 1e-9))
+    ck("a100 article, fig1 the nominal ratio", "1.274",
+       AART["fig1"]["nominal_ratio"], tol=1e-3)
+    ck("a100 article, fig1 and the ceilings it comes from", "1",
+       1 if AART["fig1"]["nominal"]["radeons_gb_s"] == 1600.0
+       and AART["fig1"]["nominal"]["a100_gb_s"] == 2039.0 else 0)
+    ck("a100 article, fig1 the gap is U-shaped", "1",
+       1 if AART["fig1"]["u_shaped"] else 0)
+    ck("a100 article, fig1 its minimum", "1.14", AART["fig1"]["min_advantage"])
+    ck("a100 article, fig1 and where it sits", "16384", AART["fig1"]["min_at"])
+    ck("a100 article, fig1 rungs below the nominal ratio", "2",
+       len(AART["fig1"]["below_nominal"]))
+    # the one pair that is not matched has to be marked as such
+    ck("a100 article, fig1 marks the unmatched pair", "1",
+       sum(1 for r in AART["fig1"]["rows"] if not r["matched"]))
+    unmatched = [r["ctx"] for r in AART["fig1"]["rows"] if not r["matched"]]
+    ck("a100 article, fig1 and it is the longest one", "1",
+       1 if unmatched == [32768] else 0)
+
+    # fig2: the 2D retention pair, and the arithmetic behind it
+    r2 = {r["who"]: r for r in AART["fig2"]["retention"]}
+    ck("a100 article, fig2 Radeons retain", "15.8", r2["radeons"]["pct"])
+    ck("a100 article, fig2 the A100 retains", "33.6", r2["a100"]["pct"])
+    ck("a100 article, fig2 Radeons recompute from the stock ladder",
+       repr(s45[32768] / s45[1024] * 100.0), r2["radeons"]["pct"], tol=1e-12)
+    ck("a100 article, fig2 and the A100 from its legs",
+       repr(leg_result("C30.log") / leg_result("C1K.log") * 100.0),
+       r2["a100"]["pct"], tol=1e-12)
+    ck("a100 article, fig2 twice as hard on two cards", "2.1", AART["fig2"]["ratio"])
+    ck("a100 article, fig2 the KV heads split in half", "1",
+       1 if AART["fig2"]["kv_heads"]["radeons_per_rank"] * 2
+       == AART["fig2"]["kv_heads"]["model_total"]
+       == AART["fig2"]["kv_heads"]["a100_per_rank"] else 0)
+
+    # fig3: speculation's economics
+    e3 = {c["who"]: c for c in AART["fig3"]["cases"]}
+    ck("a100 article, fig3 gain here", "7.5", e3["radeons"]["gain_pct"])
+    ck("a100 article, fig3 gain there", "39.2", e3["a100"]["gain_pct"])
+    ck("a100 article, fig3 the Radeon baseline is the no-speculation ladder",
+       repr(ns45[32768]), e3["radeons"]["nospec"], tol=0)
+    amat = json.load(open(os.path.join(HERE, "..", "cuda-a100",
+                                      "gemma4-mtp-backend-matrix.json")))
+    ck("a100 article, fig3 the A100 baseline is the forced-default column",
+       repr(amat["decode_tok_s"]["30000"]["triton_forced"]["nospec"]),
+       e3["a100"]["nospec"], tol=0)
+    ck("a100 article, fig3 the ratio between them", "5.25",
+       AART["fig3"]["ratio"])
+
+    # fig4: realized bandwidth, recomputed from the campaign rather than quoted
+    GIBGB = 1024 ** 3 / 1e9
+    WANT = {"B-8B-tp2": 7.01, "C-31B-tp2": 10.84, "A-12B-tp2": 4.78}
+    ck("a100 article, fig4 rows", "3", len(AART["bandwidth"]["rows"]))
+    ck("a100 article, fig4 rows recompute from the campaign", "3",
+       sum(1 for r in AART["bandwidth"]["rows"]
+           if abs(r["tok_s"] - tps(jul, r["cfg"], 500)) < 1e-9
+           and r["gib_per_token"] == WANT[r["cfg"]]
+           and abs(r["pct"] - WANT[r["cfg"]] * GIBGB * r["tok_s"] / 8.0) < 1e-9))
+    ck("a100 article, fig4 the 8B", "74.9",
+       next(r["pct"] for r in AART["bandwidth"]["rows"] if r["cfg"] == "B-8B-tp2"))
+    ck("a100 article, fig4 the 31B, which is this comparison's model", "62.8",
+       AART["bandwidth"]["subject_pct"])
+    ck("a100 article, fig4 the 12B", "38.4",
+       next(r["pct"] for r in AART["bandwidth"]["rows"] if r["cfg"] == "A-12B-tp2"))
+    # the README quoted the 12B's number for the 31B's comparison until 2026-08-29
+    ck("README, the utilisation it cites is this comparison's model", "1",
+       1 if "reach 63 % of their 800 GB/s" in rm else 0)
+    ck("README, and the correction says which number it replaced", "1",
+       1 if "this cited 38 %, which is the 12B" in rm else 0)
+
+    for fn, heads in (("a100-vs-two-radeons.html",
+                       ("What is not established", "What has changed since")),
+                      ("a100-vs-two-radeons.zh.html",
+                       ("没有被确立的部分", "此后发生的变化"))):
+        for h in heads:
+            ck(f"a100 article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+    # the figure whose counterpart was never measured has to say so
+    for fn, phrase in (("a100-vs-two-radeons.html",
+                        "No equivalent figure was measured on the\n    A100"),
+                       ("a100-vs-two-radeons.zh.html",
+                        "A100 那边没有测过对应的数字")):
+        ck(f"a100 article {fn}, says the A100 side of fig4 is missing", "1",
+           1 if phrase.replace("\n    ", " ") in " ".join(pages[fn].split()) else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

@@ -1,0 +1,132 @@
+{
+ "_what": "Every figure in a100-vs-two-radeons.html. Derived from benchmarks/speculative-decoding/, benchmarks/cuda-a100/ and benchmarks/results.jsonl by site/src/genfig-a100.py.",
+ "fig1": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "a100_ctx": 1024,
+    "radeons": 74.89,
+    "a100": 110.71,
+    "advantage": 1.47830150887969,
+    "matched": true
+   },
+   {
+    "ctx": 8192,
+    "a100_ctx": 8192,
+    "radeons": 63.25,
+    "a100": 75.63,
+    "advantage": 1.1957312252964427,
+    "matched": true
+   },
+   {
+    "ctx": 16384,
+    "a100_ctx": 16384,
+    "radeons": 63.09,
+    "a100": 72.13,
+    "advantage": 1.1432873672531303,
+    "matched": true
+   },
+   {
+    "ctx": 32768,
+    "a100_ctx": 30000,
+    "radeons": 32.57,
+    "a100": 61.03,
+    "advantage": 1.8738102548357385,
+    "matched": false
+   }
+  ],
+  "nominal_ratio": 1.274375,
+  "nominal": {
+   "radeons_gb_s": 1600.0,
+   "a100_gb_s": 2039.0
+  },
+  "runs_per_cell": 1,
+  "min_advantage": 1.1432873672531303,
+  "min_at": 16384,
+  "u_shaped": true,
+  "below_nominal": [
+   8192,
+   16384
+  ]
+ },
+ "fig2": {
+  "retention": [
+   {
+    "who": "radeons",
+    "short": 55.84,
+    "long": 8.81,
+    "short_ctx": 1024,
+    "long_ctx": 32768,
+    "pct": 15.777220630372494,
+    "source": "benchmarks/speculative-decoding/mtp-31b-stock45450.json"
+   },
+   {
+    "who": "a100",
+    "short": 88.67,
+    "long": 29.75,
+    "short_ctx": 1024,
+    "long_ctx": 30000,
+    "pct": 33.55137024923875,
+    "source": "benchmarks/cuda-a100/45450-validation/logs/"
+   }
+  ],
+  "kv_heads": {
+   "model_total": 16,
+   "radeons_per_rank": 8,
+   "a100_per_rank": 16
+  },
+  "grid": "(total_num_q_blocks, num_kv_heads)",
+  "ratio": 2.1265703912797864
+ },
+ "fig3": {
+  "cases": [
+   {
+    "who": "radeons",
+    "ctx": 32768,
+    "nospec": 30.31,
+    "spec": 32.57,
+    "gain_pct": 7.456285054437495
+   },
+   {
+    "who": "a100",
+    "ctx": 30000,
+    "nospec": 43.85,
+    "spec": 61.03,
+    "gain_pct": 39.179019384264535
+   }
+  ],
+  "why": "every draft step pays the all-reduce floor, which does not shrink with the drafter",
+  "ratio": 5.2544959183055555
+ },
+ "bandwidth": {
+  "rows": [
+   {
+    "cfg": "B-8B-tp2",
+    "model": "Qwen3-8B BF16",
+    "gib_per_token": 7.01,
+    "tok_s": 79.58500000000001,
+    "gb_s": 599.0307388719104,
+    "pct": 74.8788423589888
+   },
+   {
+    "cfg": "C-31B-tp2",
+    "model": "gemma-4-31B w4a16",
+    "gib_per_token": 10.84,
+    "tok_s": 43.155,
+    "gb_s": 502.2966400155648,
+    "pct": 62.7870800019456
+   },
+   {
+    "cfg": "A-12B-tp2",
+    "model": "gemma-4-12B w4a16",
+    "gib_per_token": 4.78,
+    "tok_s": 59.905,
+    "gb_s": 307.4615689609216,
+    "pct": 38.4326961201152
+   }
+  ],
+  "peak_gb_s": 800.0,
+  "subject": "C-31B-tp2",
+  "subject_pct": 62.7870800019456
+ }
+}

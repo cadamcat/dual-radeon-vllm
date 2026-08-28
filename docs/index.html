@@ -310,6 +310,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">{
  "articles": [
   {
+   "href": "articles/a100-vs-two-radeons.html",
+   "title": "Two consumer Radeons against one A100",
+   "blurb": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",
+   "measured": "measured 2026-08-26",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "A100",
+    "tensor parallelism",
+    "bandwidth"
+   ]
+  },
+  {
    "href": "articles/speculative-decoding-net-loss.html",
    "title": "One boolean costs 71% on a Radeon and 61% on an A100",
    "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and 70.8% slower at 32K. One clause in an or chain reads speculation's second query row as \"not decode\" and gives up 120 of 128 workgroups.",

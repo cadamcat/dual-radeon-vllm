@@ -396,8 +396,13 @@ time is short and TP=2's fixed all-reduce floor weighs heaviest — the
 single A100 pays no such tax. In the middle the two nearly converge:
 fourteen percent apart at 16K, on hardware an order of magnitude apart
 in price. Past 16K the KV scan dominates and the difference in realized
-bandwidth (the Radeons' decode utilization measures 38 % here)
+bandwidth (the Radeons reach 63 % of their 800 GB/s on this model)
 compounds again.
+*(Corrected 2026-08-29: this cited 38 %, which is the 12B's utilisation,
+not this comparison's 31B. Recomputed from `results.jsonl` and the
+per-GPU bytes/token in [benchmarks.md §3](docs/benchmarks.md), the 31B at
+TP=2 reaches 62.8 %. All three utilisation figures are now pinned by
+`verify_doc_figures.py`.)*
 
 Two more readings from the same table:
 

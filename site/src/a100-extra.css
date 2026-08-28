@@ -1,0 +1,40 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #adv, #ret, #econ, #util { --labw:150px; }
+  @media (max-width:480px){ #adv, #ret, #econ, #util { --labw:112px; } }
+
+  /* ---- a track with reference marks on it ---- */
+  /* the interesting comparison is not against zero, it is against the ratio of
+     nominal bandwidths, so that number has to be visible in the track */
+  .bars .rtrack { position:relative; background:var(--surface-3); border-radius:99px;
+                  height:20px; overflow:hidden; }
+  .bars .rtrack .fill { position:absolute; left:0; top:0; bottom:0; width:0;
+                        transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .rtrack .mark { position:absolute; top:0; bottom:0; width:2px; z-index:3; }
+  .bars .rtrack .mark.par { background:var(--border-2); }
+  .bars .rtrack .mark.nom { background:var(--accent);
+                            box-shadow:0 0 0 1px color-mix(in srgb, var(--bg) 60%, transparent); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+  .swatch.line { width:3px; height:11px; border-radius:1px; }
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+
+  /* ---- the workgroup arithmetic, two cards ---- */
+  .wgs { display:grid; grid-template-columns:1fr 1fr; gap:.9em; margin:1.3em 0 0; }
+  .wgcard { border:1px solid var(--border); border-radius:11px; padding:.9em 1.05em;
+            background:var(--surface-2); }
+  .wgcard.thin { background:var(--red-bg);
+                 border-color:color-mix(in srgb, var(--red) 28%, transparent); }
+  .wgcard h4 { margin:0 0 .25em; font-family:var(--mono); font-size:.73rem;
+               letter-spacing:.07em; text-transform:uppercase; color:var(--text-dim); }
+  .wgcard.thin h4 { color:var(--red); }
+  .wgcard .n { font-family:var(--mono); font-size:1.4rem; font-weight:800;
+               color:var(--text); }
+  .wgcard.thin .n { color:var(--red); }
+  .wgcard .u { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  @media (max-width:520px){ .wgs { grid-template-columns:1fr; } }

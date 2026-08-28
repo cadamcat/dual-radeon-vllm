@@ -67,6 +67,7 @@ W_EN, W_ZH = "w4a16-two-problems.html", "w4a16-two-problems.zh.html"
 M_EN, M_ZH = "moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"
 L_EN, L_ZH = "weight-loading-19x.html", "weight-loading-19x.zh.html"
 S_EN, S_ZH = "speculative-decoding-net-loss.html", "speculative-decoding-net-loss.zh.html"
+A_EN, A_ZH = "a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -166,7 +167,30 @@ if (D / "spec-body-zh.html").exists():
                            "kernel 从 128 个 workgroup 降到 8 个。两个厂商都测了。",
                       out="articles/" + S_ZH, nav=lang_nav("zh", S_EN, S_ZH), labels=ZH_LABELS))
 
+built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
+                  extra_css="a100-extra.css",
+                  title="Two consumer Radeons against one A100",
+                  desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
+                       "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
+                       "parallelism rather than about the silicon.",
+                  out="articles/" + A_EN, nav=lang_nav("en", A_EN, A_ZH), labels=EN_LABELS))
+if (D / "a100-body-zh.html").exists():
+    built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
+                      extra_css="a100-extra.css", script_from="a100-body.html",
+                      title="两张消费级 Radeon 对一张 A100",
+                      desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
+                           "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
+                           "而两端都关于张量并行，不关于硅片本身。",
+                      out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + A_EN, "title": "Two consumer Radeons against one A100",
+     "blurb": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, "
+              "1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about "
+              "splitting the work across two cards.",
+     "measured": "measured 2026-08-26",
+     "langs": ["EN", "\u4e2d"] if (D / "a100-body-zh.html").exists() else ["EN"],
+     "tags": ["A100", "tensor parallelism", "bandwidth"]},
     {"href": "articles/" + S_EN, "title": "One boolean costs 71% on a Radeon and 61% on an A100",
      "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and "
               "70.8% slower at 32K. One clause in an or chain reads speculation's second query row as "
@@ -248,7 +272,7 @@ for p in built:
     assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
-                 (L_EN, L_ZH), (S_EN, S_ZH)):
+                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

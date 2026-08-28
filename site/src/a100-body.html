@@ -1,0 +1,496 @@
+<header class="top">
+  <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against one A100 80G</div>
+  <h1>Two consumer Radeons<br>against one A100</h1>
+  <p class="lede">On batch-1 decode of the same 31B model, on each platform's own healthy path, the
+  A100 is 1.48× ahead at 1K of context, <strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The
+  gap is U-shaped, the two ends have different causes, and neither of them is the price difference.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">one <b>A100-SXM4-80GB</b> · TP=1</span>
+    <span class="chip"><b>gemma-4-31B</b> w4a16 · MTP on</span>
+    <span class="chip">measured <b>2026-08-26</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>Batch-1 decode is bandwidth-bound, and the nominal ceilings are closer than the price is: two
+  cards at 800 GB/s against one at 2.0 TB/s is <strong>1.27×</strong>. The measured advantage sits
+  <em>below</em> that at 8K and 16K and above it at both ends.</p>
+  <p><strong>At the short end the tax is tensor parallelism.</strong> The step time is small enough that
+  TP=2's fixed all-reduce floor is a visible fraction of it, and the single card pays nothing for
+  something it does not do. At the long end the KV scan dominates and realized bandwidth compounds; the
+  Radeons reach 63 % of their 800 GB/s on this model.</p>
+  <p>Two further readings come out of the same table, and both are about tensor parallelism rather than
+  about either vendor. <strong>The starved attention path starves harder when split</strong>: its 2D
+  launch grid is one workgroup per KV head, so two cards see 8 each against the single card's 16, and
+  retention from 1K to 30–32K is <strong>15.8 % against 33.6 %</strong>. And
+  <strong>speculation's economics erode</strong>: every draft step pays the same all-reduce floor, so
+  the net win over no speculation is <strong>+7.5 % here against +39.2 %</strong> there.</p>
+  <p>What this does not cover is where the A100 wins outright. Prefill and batched throughput are
+  compute-bound, and there the comparison is against RDNA3 WMMA that already realizes about 37 % of
+  nominal peak. Expect multiples, not percentages.</p>
+</div>
+
+<h2><span class="n">1</span>What is being compared</h2>
+
+<p>The same checkpoint, <code>gemma-4-31B-it-qat-w4a16-ct</code>, with the same official MTP assistant
+at <code>num_speculative_tokens: 1</code>, batch 1, greedy, decode isolated by differencing a 64-token
+generation against an 8-token one. On both platforms the attention backend is
+<code>TRITON_ATTN</code> — this model's heterogeneous head dimensions force it whenever FA4 is
+unavailable, which is true of gfx1100 and of an A100 alike.</p>
+
+<div class="note warn">
+  <span class="lbl">Each side is on its healthy path, and that took a patch</span>
+  Both columns run speculation through the 3D flash-decoding path, which stock vLLM refuses under
+  speculation on <em>either</em> platform — the subject of
+  <a href="speculative-decoding-net-loss.html">a separate article</a>. Comparing the stock configurations
+  instead would be comparing two instances of the same bug. The mechanism is
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s, ported identically to both
+  stacks.
+</div>
+
+<p><strong>One run per cell on both sides.</strong> These are probes, not campaigns: single processes,
+no within-cell samples. The Radeons' rungs are powers of two and the A100's longest leg is 30 000
+tokens, so that pair is the only one not matched exactly, and the figure says which. Third-digit
+differences here are not separated from noise.</p>
+
+<h2><span class="n">2</span>The gap, and the shape of it</h2>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · how far ahead one A100 is, by context length
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="adv"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> The Radeon column is
+    <code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>; the A100 column is the leg logs in
+    <code>benchmarks/cuda-a100/45450-validation/</code>. The grey mark is parity and the amber one is the
+    ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Between them, at 8K and 16K, the
+    measured advantage is <em>smaller</em> than the bandwidth ceilings alone would predict. The last row
+    compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has; every
+    other row is matched exactly.
+  </figcaption>
+</figure>
+
+<p>Fourteen per cent apart at 16K is the number worth sitting with. It is not a claim that the hardware
+is equivalent — it is a claim about one regime: single-stream decode, one model, mid-length context,
+each side on its best available path. Move to prefill or to batch and the same two machines are not
+close.</p>
+
+<h2><span class="n">3</span>The split is what costs, not the silicon</h2>
+
+<p>The 2D attention path — the one speculation falls into on stock vLLM — launches one workgroup per KV
+head. This model has 16. On one card a rank sees all of them; split across two, each rank sees eight.
+The starved path is therefore starved twice as hard by the parallelism, and it shows up as retention:</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · what the 2D path keeps, from 1K out to 30–32K
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="ret"></div>
+    <div class="wgs" id="wgs"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Stock vLLM under speculation on both platforms, so both are on the 2D path. The
+    cards below are the launch grid <code>(total_num_q_blocks, num_kv_heads)</code> at batch 1: the
+    workgroup count is a property of how the KV heads are split, not of the vendor. The same collapse,
+    the same kernel, and about twice the damage on two cards.
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>And it erodes speculation too</h2>
+
+<p>The MTP drafter is four layers wide, so the extra forward pass is cheap. What is not cheap is that
+every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the model
+attached to it costs. The floor does not shrink with the drafter, so the arithmetic that makes
+speculation worth having is worse on two cards than on one.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · what speculation is worth once it is on the healthy path
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="econ"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Speculation against no speculation, both through the 3D path, at each platform's
+    longest measured depth. The no-speculation baselines come from different files —
+    <code>splitkv-31b-stock.json</code> here, the backend matrix's forced-default column there — and both
+    are single runs. What is being compared is the <em>gain</em>, not the rates.
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>What the cards actually realize</h2>
+
+<p>The nominal ratio assumes both sides reach their ceiling, and neither does. Recomputing realized
+bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
+against 800 GB/s — puts this comparison's model at 63 %:</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · realized memory bandwidth at decode, per card
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="util"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context, TP=2,
+    against the per-GPU bytes per token stated in
+    <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md §3</a>.
+    Two effects are visible and both are real: at equal quantisation the larger model reaches higher
+    utilisation, and the BF16 model is higher still. <strong>No equivalent figure was measured on the
+    A100</strong>, so the comparison in Figure 1 is against a nominal ceiling on that side and a realized
+    one on this side.
+  </figcaption>
+</figure>
+
+<h2><span class="n">6</span>What is not established</h2>
+
+<h3>Anything outside single-stream decode</h3>
+<p>Prefill and batched throughput are compute-bound and are not measured here at all. On this hardware
+prefill saturates at about 37 % of nominal FP16 peak, and the A100's tensor cores are a different class
+of thing. The honest expectation there is multiples rather than percentages, and it is an expectation,
+not a measurement.</p>
+
+<h3>The A100's own realized bandwidth</h3>
+<p>Figure 4 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 1 is a ratio of
+datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
+can explain, not as a prediction either side was measured against.</p>
+
+<h3>One model, one stack per side, one run per cell</h3>
+<p>Two different vLLM versions, because each side runs the stack it actually runs; two different
+operating environments, one of them a rented Colab VM whose cross-session variance is unquantified. The
+campaign-grade version of this comparison has not been run.</p>
+
+<h3>Why 16K is the minimum</h3>
+<p>The U is described, not explained at its bottom. That the short end is dominated by a fixed
+per-step cost and the long end by the KV scan is consistent with every measurement here, but where
+exactly the two cross was not located, and only four depths were measured.</p>
+
+<h2><span class="n">7</span>What has changed since</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · the comparison became possible</span>
+  Before <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s mechanism was ported
+  to both stacks, both platforms were stuck on the 2D path under speculation and the comparison would
+  have measured a shared bug. Figure 2 is what that comparison looks like, kept because it is the finding
+  about tensor parallelism rather than an artefact to discard.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · the utilisation figure quoted here was the wrong model's</span>
+  This comparison's paragraph in <code>README.md</code> cited 38 % realized bandwidth. That is the 12B's
+  number; the model in this comparison is the 31B, which reaches <strong>62.8 %</strong>. Corrected and
+  dated in place, and all three utilisation figures are now recomputed by
+  <code>verify_doc_figures.py</code> from the campaign rates rather than quoted.
+</div>
+
+<div class="foot-note">
+  <p><strong>The data.</strong> The Radeon ladders are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
+  the A100 legs, their logs and the port that made both sides comparable are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>;
+  the July campaign behind Figure 4 is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>.
+  Every figure here is recomputed from those files by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
+  <p>Why both sides needed a patch to be worth comparing is
+  <a href="speculative-decoding-net-loss.html">the previous article</a>.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "viewAdv": "how far ahead the A100 is",
+ "viewRate": "decode tok/s",
+ "radeons": "2× RX 7900 XT",
+ "a100": "one A100 80G",
+ "ctxK": "{n}K",
+ "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · one run per cell",
+ "f1rateUnit": "decode tok/s, MTP on, both through the 3D path",
+ "f1par": "parity", "f1nom": "nominal bandwidth ratio",
+ "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · the measured advantage is under it at {d}",
+ "f1unmatched": "against the A100 at {n}K, its longest leg",
+ "retUnit": "per cent of the same platform's own 1K rate, 2D path, speculation on",
+ "retNote": "the same kernel and the same collapse, {r}× harder on two cards",
+ "wgSplit": "8 KV heads per rank, TP=2",
+ "wgWhole": "16 KV heads, one rank",
+ "wgUnit": "workgroups at batch 1",
+ "econUnit": "per cent gained by turning speculation on, at each platform's longest depth",
+ "econNote": "{r}× more worth having on one card than on two",
+ "utilUnit": "per cent of 800 GB/s realized at decode, per card, TP=2",
+ "utilSubject": "the model in this comparison reaches {p}%",
+ "gib": "{n} GiB/token",
+ "runs": "one run",
+ "pct": " %"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+  function swatch(v, line) {
+    return '<span class="swatch' + (line ? " line" : "") +
+           '" style="background:var(' + v + ')"></span>';
+  }
+  var kctx = function (n) {
+    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+  };
+  /* a plain bar, plus the reference marks the comparison is actually against */
+  function refbar(box, label, value, max, colour, marks, tipHtml) {
+    el(box, "lab rv", label);
+    var tr = el(box, "rtrack rv");
+    var f = el(tr, "fill");
+    f.style.background = "var(" + colour + ")";
+    grow(f, Math.min(100, value / max * 100));
+    (marks || []).forEach(function (m) {
+      var k = el(tr, "mark " + m.cls);
+      k.style.left = (m.at / max * 100) + "%";
+      k.title = m.title || "";
+    });
+    if (tipHtml) hover(tr, tipHtml);
+    return tr;
+  }
+
+  /* ---------- Figure 1: the advantage, against two reference marks -------- */
+  (function () {
+    var box = document.getElementById("adv"), vbox = document.getElementById("v1");
+    var mode = 0, first = true;                 /* 0 = advantage, 1 = rates */
+    var R = F.fig1.rows;
+    var amax = Math.max.apply(null, R.map(function (r) { return r.advantage; })) * 1.06;
+    var rmax = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.radeons, r.a100); }));
+    function tipFor(r) {
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
+        S.radeons + " <b>" + r.radeons.toFixed(2) + "</b> tok/s<br>" +
+        S.a100 + " <b>" + r.a100.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + r.advantage.toFixed(3) + "× · " + S.runs +
+        (r.matched ? "" : "<br>" + fmt(S.f1unmatched,
+                                       { n: Math.round(r.a100_ctx / 1000) })) +
+        "</span>";
+    }
+    function draw() {
+      box.innerHTML = "";
+      R.forEach(function (r) {
+        if (mode) {
+          el(box, "grp", kctx(r.ctx) + (r.matched ? "" :
+             ' <span class="tagline">· ' +
+             fmt(S.f1unmatched, { n: Math.round(r.a100_ctx / 1000) }) + "</span>"));
+          [[S.radeons, r.radeons, "--s1"], [S.a100, r.a100, "--s2"]].forEach(function (a) {
+            el(box, "lab rv", a[0]);
+            var tr = el(box, "track rv");
+            var f = document.createElement("span");
+            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+            tr.appendChild(f);
+            grow(f, a[1] / rmax * 100);
+            el(box, "val rv", a[1].toFixed(2));
+            hover(tr, tipFor(r));
+          });
+        } else {
+          refbar(box, kctx(r.ctx) + (r.matched ? "" : " *"), r.advantage, amax, "--s2",
+                 [{ at: 1, cls: "par", title: S.f1par },
+                  { at: F.fig1.nominal_ratio, cls: "nom", title: S.f1nom }],
+                 tipFor(r));
+          el(box, "val rv", r.advantage.toFixed(2) + "×");
+        }
+      });
+      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
+      u.style.gridColumn = "1 / -1";
+      if (!mode) {
+        var m = el(box, "barunit", "");
+        m.style.gridColumn = "1 / -1";
+        m.innerHTML = swatch("--border-2", true) + S.f1par + " &nbsp; " +
+          swatch("--accent", true) + S.f1nom;
+        var n = el(box, "barunit", fmt(S.f1nomNote, {
+          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
+          d: F.fig1.below_nominal.map(kctx).join(" and ") }));
+        n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+      }
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- Figure 2: retention, and the workgroup arithmetic ---------- */
+  (function () {
+    var box = document.getElementById("ret");
+    var max = Math.max.apply(null, F.fig2.retention.map(function (r) { return r.pct; })) * 1.1;
+    F.fig2.retention.forEach(function (r) {
+      var who = r.who === "a100" ? S.a100 : S.radeons;
+      el(box, "lab rv", who);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (r.who === "a100" ? "--s2" : "--s1") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, r.pct / max * 100);
+      el(box, "val rv", r.pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + who + "</span><br>" +
+        kctx(r.short_ctx) + " <b>" + r.short.toFixed(2) + "</b> tok/s<br>" +
+        kctx(r.long_ctx) + " <b>" + r.long.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + r.source + "</span>");
+    });
+    var u = el(box, "barunit", S.retUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.retNote, { r: F.fig2.ratio.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+
+    var w = document.getElementById("wgs");
+    [[S.wgSplit, F.fig2.kv_heads.radeons_per_rank, true],
+     [S.wgWhole, F.fig2.kv_heads.a100_per_rank, false]].forEach(function (c) {
+      var card = el(w, "wgcard rv" + (c[2] ? " thin" : ""));
+      el(card, "", "<h4>" + c[0] + "</h4>");
+      el(card, "n", String(c[1]));
+      el(card, "u", S.wgUnit);
+    });
+  })();
+
+  /* ---------- Figure 3: speculation's economics ---------- */
+  (function () {
+    var box = document.getElementById("econ");
+    var max = Math.max.apply(null, F.fig3.cases.map(function (c) {
+      return c.gain_pct; })) * 1.1;
+    F.fig3.cases.forEach(function (c) {
+      var who = c.who === "a100" ? S.a100 : S.radeons;
+      el(box, "lab rv", who);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (c.who === "a100" ? "--s2" : "--s1") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, c.gain_pct / max * 100);
+      el(box, "val rv", "+" + c.gain_pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + who + " · " + kctx(c.ctx) + "</span><br>" +
+        "no speculation <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+        "with MTP <b>" + c.spec.toFixed(2) + "</b> tok/s");
+    });
+    var u = el(box, "barunit", S.econUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.econNote, { r: F.fig3.ratio.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- Figure 4: realized bandwidth ---------- */
+  (function () {
+    var box = document.getElementById("util");
+    F.bandwidth.rows.forEach(function (r) {
+      var subject = r.cfg === F.bandwidth.subject;
+      el(box, "lab rv", r.model);
+      var tr = el(box, "track rv");
+      var f = document.createElement("span");
+      f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+        (subject ? "--s1" : "--s2") +
+        ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+      tr.appendChild(f);
+      grow(f, r.pct);
+      el(box, "val rv", r.pct.toFixed(1) + S.pct);
+      hover(tr, '<span class="hd">' + r.model + "</span><br>" +
+        r.tok_s.toFixed(2) + " tok/s · " + fmt(S.gib, { n: r.gib_per_token }) + "<br>" +
+        "<b>" + Math.round(r.gb_s) + "</b> GB/s of " + F.bandwidth.peak_gb_s);
+    });
+    var u = el(box, "barunit", S.utilUnit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.utilSubject, {
+      p: F.bandwidth.subject_pct.toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>
