@@ -747,6 +747,13 @@ part of what this section is for — not because it is current.*
 
 A 9.56 GiB file at disk speed would take ~6.4 s. It takes 328 s.
 
+> **Unit note, added 2026-08-29.** This table's rates are MiB/s labelled MB/s.
+> Against the 1.5 GB/s above, its own two rows give **19× and 52×**, not the
+> 19–48× in this section's heading, which divided by a decimal-MB rate. The
+> heading is left as written because two other documents cite that band; the
+> derivation is here. Nothing downstream depends on which of 48 and 52 is used:
+> both halves of the answer below are measured directly.
+
 **Disproven:**
 
 - ❌ **Disk throughput** — 1.5 GB/s measured directly on the same file.

@@ -1,0 +1,608 @@
+{
+ "_what": "Every figure in weight-loading-19x.html. fig1 from benchmarks/hmm-kernel-three-states.json, fig2 and fig3 from benchmarks/loader-flag-kernel-30.json; the opening question is extracted from docs/open-questions.md, which is the only record of it. Derived by site/src/genfig-loader.py.",
+ "opening": {
+  "disk_gb_s": 1.5,
+  "rows": [
+   {
+    "model": "Qwen3-8B",
+    "seconds": 206,
+    "mb_s": 77,
+    "times_slower": 19.48051948051948
+   },
+   {
+    "model": "gemma-4-12B",
+    "seconds": 328,
+    "mb_s": 29,
+    "times_slower": 51.724137931034484
+   }
+  ],
+  "reproducible_from_repo": false,
+  "source": "docs/open-questions.md §8, historical record, 2026-07-24",
+  "range": [
+   19.48051948051948,
+   51.724137931034484
+  ]
+ },
+ "fig1": {
+  "states": [
+   {
+    "kernel": "7.0.0-28-generic",
+    "amdgpu": "stock, as shipped",
+    "date": "2026-07-28",
+    "shipped": true,
+    "cases": [
+     {
+      "key": "r_p_resident",
+      "mapping": "r--p",
+      "resident": true,
+      "ms": 3.0,
+      "runs": 1,
+      "values": [
+       3.0
+      ]
+     },
+     {
+      "key": "rw_p_not_resident",
+      "mapping": "rw-p",
+      "resident": false,
+      "ms": 14.5,
+      "runs": 1,
+      "values": [
+       14.5
+      ]
+     },
+     {
+      "key": "rw_p_resident",
+      "mapping": "rw-p",
+      "resident": true,
+      "ms": 16019.6,
+      "runs": 5,
+      "values": [
+       16019.7,
+       16019.6,
+       16019.1,
+       16019.7,
+       16019.0
+      ]
+     }
+    ]
+   },
+   {
+    "kernel": "7.0.0-28-generic",
+    "amdgpu": "rebuilt from Ubuntu's -28 source with 342981fff328 applied, nothing else changed",
+    "date": "2026-07-28",
+    "shipped": false,
+    "cases": [
+     {
+      "key": "r_p_resident",
+      "mapping": "r--p",
+      "resident": true,
+      "ms": 3.0,
+      "runs": 1,
+      "values": [
+       3.0
+      ]
+     },
+     {
+      "key": "rw_p_not_resident",
+      "mapping": "rw-p",
+      "resident": false,
+      "ms": 14.6,
+      "runs": 1,
+      "values": [
+       14.6
+      ]
+     },
+     {
+      "key": "rw_p_resident",
+      "mapping": "rw-p",
+      "resident": true,
+      "ms": 17.0,
+      "runs": 3,
+      "values": [
+       17.0,
+       17.0,
+       17.0
+      ]
+     }
+    ]
+   },
+   {
+    "kernel": "7.0.0-30.30~24.04.1",
+    "amdgpu": "stock, as shipped by Canonical in noble-updates and noble-security",
+    "date": "2026-08-23",
+    "shipped": true,
+    "cases": [
+     {
+      "key": "r_p_resident",
+      "mapping": "r--p",
+      "resident": true,
+      "ms": 3.2,
+      "runs": 1,
+      "values": [
+       3.2
+      ]
+     },
+     {
+      "key": "rw_p_not_resident",
+      "mapping": "rw-p",
+      "resident": false,
+      "ms": 13.1,
+      "runs": 1,
+      "values": [
+       13.1
+      ]
+     },
+     {
+      "key": "rw_p_resident",
+      "mapping": "rw-p",
+      "resident": true,
+      "ms": 15.3,
+      "runs": 1,
+      "values": [
+       15.3
+      ]
+     }
+    ]
+   }
+  ],
+  "unit": "milliseconds",
+  "what": "diagnose/repro-mmap-prot.hip.cpp, 32 MiB per copy, gfx1100, VFIO guest. Host-to-device copy time by source mapping, across three kernel states. The bug is the rw-p resident row.",
+  "timeout_ms": 1000,
+  "stock28": 16019.6,
+  "reverted": 17.0,
+  "shipped30": 15.3,
+  "windows": 16.0196,
+  "residual_ms": 19.600000000000364,
+  "fix_factor": 1047.0326797385621,
+  "writable_penalty_30": 4.78125
+ },
+ "fig2": {
+  "groups": [
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "warm",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 4.96,
+      "min_s": 4.39,
+      "max_s": 5.24,
+      "n": 5,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "eager",
+      "median_s": 10.23,
+      "min_s": 10.0,
+      "max_s": 10.57,
+      "n": 3,
+      "vs_baseline": 0.4848484848484848
+     },
+     {
+      "mode": "flag",
+      "median_s": 2.51,
+      "min_s": 2.46,
+      "max_s": 2.69,
+      "n": 5,
+      "vs_baseline": 1.9760956175298807
+     },
+     {
+      "mode": "pread",
+      "median_s": 4.79,
+      "min_s": 4.31,
+      "max_s": 5.26,
+      "n": 2,
+      "vs_baseline": 1.0354906054279749
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "cold",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 8.15,
+      "min_s": 7.91,
+      "max_s": 8.66,
+      "n": 5,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "eager",
+      "median_s": 11.46,
+      "min_s": 11.4,
+      "max_s": 12.36,
+      "n": 3,
+      "vs_baseline": 0.7111692844677138
+     },
+     {
+      "mode": "flag",
+      "median_s": 4.71,
+      "min_s": 4.68,
+      "max_s": 4.88,
+      "n": 5,
+      "vs_baseline": 1.7303609341825903
+     },
+     {
+      "mode": "pread",
+      "median_s": 7.16,
+      "min_s": 7.09,
+      "max_s": 7.23,
+      "n": 2,
+      "vs_baseline": 1.1382681564245811
+     }
+    ]
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "warm",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 6.78,
+      "min_s": 6.48,
+      "max_s": 7.69,
+      "n": 5,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "eager",
+      "median_s": 15.93,
+      "min_s": 15.64,
+      "max_s": 18.9,
+      "n": 3,
+      "vs_baseline": 0.4256120527306968
+     },
+     {
+      "mode": "flag",
+      "median_s": 4.49,
+      "min_s": 4.41,
+      "max_s": 4.52,
+      "n": 5,
+      "vs_baseline": 1.510022271714922
+     },
+     {
+      "mode": "pread",
+      "median_s": 10.48,
+      "min_s": 10.13,
+      "max_s": 10.82,
+      "n": 2,
+      "vs_baseline": 0.6469465648854962
+     }
+    ]
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "cold",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 13.36,
+      "min_s": 11.97,
+      "max_s": 14.76,
+      "n": 5,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "eager",
+      "median_s": 18.26,
+      "min_s": 17.52,
+      "max_s": 19.42,
+      "n": 3,
+      "vs_baseline": 0.7316538882803942
+     },
+     {
+      "mode": "flag",
+      "median_s": 7.43,
+      "min_s": 7.23,
+      "max_s": 7.66,
+      "n": 5,
+      "vs_baseline": 1.7981157469717362
+     },
+     {
+      "mode": "pread",
+      "median_s": 13.03,
+      "min_s": 12.11,
+      "max_s": 13.95,
+      "n": 2,
+      "vs_baseline": 1.0253261703760552
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-31B-w4a16",
+    "cache": "cold",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 88.52,
+      "min_s": 88.16,
+      "max_s": 98.62,
+      "n": 3,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "flag",
+      "median_s": 11.75,
+      "min_s": 11.43,
+      "max_s": 12.13,
+      "n": 3,
+      "vs_baseline": 7.533617021276595
+     },
+     {
+      "mode": "pread",
+      "median_s": 17.08,
+      "min_s": 17.08,
+      "max_s": 17.08,
+      "n": 1,
+      "vs_baseline": 5.182669789227167
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-26B-A4B-MoE",
+    "cache": "cold",
+    "cells": [
+     {
+      "mode": "baseline",
+      "median_s": 19.17,
+      "min_s": 18.37,
+      "max_s": 19.97,
+      "n": 2,
+      "vs_baseline": 1.0
+     },
+     {
+      "mode": "flag",
+      "median_s": 19.95,
+      "min_s": 19.8,
+      "max_s": 20.1,
+      "n": 2,
+      "vs_baseline": 0.9609022556390978
+     },
+     {
+      "mode": "pread",
+      "median_s": 15.87,
+      "min_s": 15.8,
+      "max_s": 15.94,
+      "n": 2,
+      "vs_baseline": 1.2079395085066165
+     }
+    ]
+   }
+  ],
+  "modes": [
+   "baseline",
+   "eager",
+   "flag",
+   "pread"
+  ],
+  "storage": "ext4 on /dev/sdb, 1931-2114 MiB/s cold sequential read, measured the same session",
+  "ram_gib": 23.4,
+  "kernel": "7.0.0-30.30~24.04.1 (#30~24.04.1-Ubuntu SMP, built 2026-08-07)",
+  "best_flag": 7.533617021276595,
+  "worst_flag": 0.9609022556390978,
+  "moe_flag": 0.9609022556390978,
+  "end_to_end": [
+   {
+    "cache": "cold",
+    "mode": "baseline",
+    "reps": [
+     7.32,
+     7.9
+    ],
+    "mean_s": 7.61
+   },
+   {
+    "cache": "cold",
+    "mode": "flag",
+    "reps": [
+     4.93,
+     5.11
+    ],
+    "mean_s": 5.02
+   },
+   {
+    "cache": "warm",
+    "mode": "baseline",
+    "reps": [
+     4.59,
+     4.6
+    ],
+    "mean_s": 4.595
+   },
+   {
+    "cache": "warm",
+    "mode": "flag",
+    "reps": [
+     2.55,
+     2.58
+    ],
+    "mean_s": 2.565
+   }
+  ],
+  "e2e_vs_harness": [
+   {
+    "cache": "warm",
+    "served": 1.7914230019493176,
+    "harness": 1.9760956175298807,
+    "harness_optimistic_pct": 10.308710750035788
+   },
+   {
+    "cache": "cold",
+    "served": 1.51593625498008,
+    "harness": 1.7303609341825903,
+    "harness_optimistic_pct": 14.1447028856321
+   }
+  ]
+ },
+ "fig3": {
+  "rows": [
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "warm",
+    "mode": "baseline",
+    "anon": 10226,
+    "file": 578,
+    "peak_gib": 10.78
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "warm",
+    "mode": "flag",
+    "anon": 802,
+    "file": 10039,
+    "peak_gib": 10.85
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "warm",
+    "mode": "pread",
+    "anon": 802,
+    "file": 463,
+    "peak_gib": 3.12
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "warm",
+    "mode": "baseline",
+    "anon": 4535,
+    "file": 462,
+    "peak_gib": 4.94
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "warm",
+    "mode": "flag",
+    "anon": 878,
+    "file": 4232,
+    "peak_gib": 4.97
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "warm",
+    "mode": "pread",
+    "anon": 869,
+    "file": 463,
+    "peak_gib": 2.39
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "cold",
+    "mode": "baseline",
+    "anon": 10226,
+    "file": 578,
+    "peak_gib": 10.78
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "cold",
+    "mode": "flag",
+    "anon": 802,
+    "file": 10039,
+    "peak_gib": 10.85
+   },
+   {
+    "model": "gemma-4-12B-w4a16",
+    "cache": "cold",
+    "mode": "pread",
+    "anon": 802,
+    "file": 462,
+    "peak_gib": 3.12
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "cold",
+    "mode": "baseline",
+    "anon": 4535,
+    "file": 462,
+    "peak_gib": 4.94
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "cold",
+    "mode": "flag",
+    "anon": 870,
+    "file": 4231,
+    "peak_gib": 4.97
+   },
+   {
+    "model": "Qwen3-8B",
+    "cache": "cold",
+    "mode": "pread",
+    "anon": 869,
+    "file": 463,
+    "peak_gib": 2.39
+   },
+   {
+    "model": "gemma-4-31B-w4a16",
+    "cache": "cold",
+    "mode": "baseline",
+    "anon": 21390,
+    "file": 782,
+    "peak_gib": 21.74
+   },
+   {
+    "model": "gemma-4-31B-w4a16",
+    "cache": "cold",
+    "mode": "flag",
+    "anon": 843,
+    "file": 21479,
+    "peak_gib": 21.77
+   },
+   {
+    "model": "gemma-4-31B-w4a16",
+    "cache": "cold",
+    "mode": "pread",
+    "anon": 845,
+    "file": 462,
+    "peak_gib": 3.85
+   },
+   {
+    "model": "gemma-4-26B-A4B-MoE",
+    "cache": "cold",
+    "mode": "baseline",
+    "anon": 2552,
+    "file": 4996,
+    "peak_gib": 6.23
+   },
+   {
+    "model": "gemma-4-26B-A4B-MoE",
+    "cache": "cold",
+    "mode": "flag",
+    "anon": 791,
+    "file": 5571,
+    "peak_gib": 6.24
+   },
+   {
+    "model": "gemma-4-26B-A4B-MoE",
+    "cache": "cold",
+    "mode": "pread",
+    "anon": 800,
+    "file": 462,
+    "peak_gib": 2.61
+   }
+  ],
+  "swap": {
+   "model": "gemma-4-31B-w4a16",
+   "baseline": [
+    21390,
+    782
+   ],
+   "flag": [
+    843,
+    21479
+   ]
+  },
+  "sharded": 4535,
+  "pread_peak_gib": [
+   3.12,
+   2.39,
+   3.12,
+   2.39,
+   3.85,
+   2.61
+  ]
+ }
+}

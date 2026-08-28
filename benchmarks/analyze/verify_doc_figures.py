@@ -735,28 +735,36 @@ def main():
     zero = [r for r in RF["shipped"] if r["hostcall"] == "0"]
     ck("rccl article, the hostcall-free builds are the working ones", str(len(zero)),
        sum(1 for r in zero if "works" in r["behaviour"]))
-    ck("rccl article, no external assets", "0",
-       len([u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', rart)
-            if not u.startswith("https://github.com/")]))
+    ck("rccl article, loads no external asset", "0",
+       len(re.findall(r'\ssrc="(https?://[^"]+)"', rart)
+           + re.findall(r'<link[^>]+href="(https?://[^"]+)"', rart)))
     # every artifact the article tells the reader to run must exist
     for f in ("diagnose/hipgate3.cpp", "diagnose/check-platform.sh",
               "docs/root-cause.md", "docs/vfio-atomics.md"):
         ck(f"rccl article, {f} exists", "1",
            1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
 
+    # every host an article may link to. Assets are separate and must be
+    # local; the per-page check below keeps the two apart.
+    LINK_HOSTS = {"github.com", "bugs.launchpad.net"}
     PAIRS = [["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"],
              ["rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"],
              ["w4a16-two-problems.html", "w4a16-two-problems.zh.html"],
-             ["moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"]]
+             ["moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"],
+             ["weight-loading-19x.html", "weight-loading-19x.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
         pages[fn] = open(os.path.join(ART, fn), encoding="utf-8").read()
         # a published page that pulls a script or a font from elsewhere stops
-        # working the day that host does
-        ext = [u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', pages[fn])
-               if not u.startswith("https://github.com/")]
-        ck(f"article {fn}, no external assets", "0", len(ext))
+        # working the day that host does. Hyperlinks are not assets: an article
+        # cites the trackers it was reported to, so those are held to a list.
+        assets = (re.findall(r'\ssrc="(https?://[^"]+)"', pages[fn])
+                  + re.findall(r'<link[^>]+href="(https?://[^"]+)"', pages[fn]))
+        ck(f"article {fn}, loads no external asset", "0", len(assets))
+        hosts = {u.split("/")[2] for u in
+                 re.findall(r'<a [^>]*href="(https?://[^"]+)"', pages[fn])}
+        ck(f"article {fn}, links only to known hosts", "0", len(hosts - LINK_HOSTS))
 
     def block(text, ident):
         m = re.search(r'<script type="application/json" id="%s">(.*?)</script>' % ident,
@@ -1993,6 +2001,167 @@ def main():
                         "eager 那些数字不在这个仓库里")):
         ck(f"moe article {fn}, discloses the eager provenance", "1",
            1 if phrase in pages[fn] else 0)
+
+    # --- weight-loading-19x.html ---------------------------------------------
+    # Two committed data files behind three figures, plus one opening pair that
+    # has no data file at all and is extracted from the document that carries it.
+    LART = json.loads(block(pages["weight-loading-19x.html"], "figures"))
+    hmm = json.load(open(os.path.join(HERE, "..", "hmm-kernel-three-states.json")))
+    lflag = json.load(open(os.path.join(HERE, "..", "loader-flag-kernel-30.json")))
+    oq = open(os.path.join(HERE, "..", "..", "docs", "open-questions.md"),
+              encoding="utf-8").read()
+
+    # the opening question: extracted, not measured, and it has to say so
+    ck("loader article, opening declares itself unreproducible", "1",
+       0 if LART["opening"].get("reproducible_from_repo", True) else 1)
+    hist = oq.split("**Measured on the verified configuration (2026-07-24):**", 1)[1]
+    ck("loader article, opening disk rate matches the document",
+       re.search(r"read \(`dd iflag=direct`\) \| ([\d.]+) GB/s", hist).group(1),
+       LART["opening"]["disk_gb_s"])
+    doc_rates = [int(m) for m in re.findall(r"\*\*(\d+) MB/s\*\*", hist)]
+    ck("loader article, opening rows match the document", "2",
+       sum(1 for r in LART["opening"]["rows"] if r["mb_s"] in doc_rates))
+    for r in LART["opening"]["rows"]:
+        ck(f'loader article, opening {r["model"]} ratio',
+           repr(LART["opening"]["disk_gb_s"] * 1000.0 / r["mb_s"]),
+           r["times_slower"], tol=1e-12)
+    # the section heading says 19-48x; the table's own figures give 19-52x, and
+    # the document now carries the unit note that says so. If either moves,
+    # this is what notices.
+    ck("loader article, and the band the numbers actually give", "52",
+       max(r["times_slower"] for r in LART["opening"]["rows"]), tol=0.01)
+    ck("open-questions, the unit note is present", "1",
+       1 if "its own two rows give **19\u00d7 and 52\u00d7**" in oq else 0)
+
+    # fig1: three kernel states, three mapping cases, one file
+    ck("loader article, fig1 states", "3", len(LART["fig1"]["states"]))
+    med = lambda v: sorted(v)[len(v) // 2] if isinstance(v, list) else float(v)
+    for st, src in zip(LART["fig1"]["states"], hmm["states"]):
+        ck(f'loader article, fig1 {src["kernel"]} {src["date"]} cases', "3",
+           len(st["cases"]))
+        same = all(abs(c["ms"] - med(src[c["key"]])) < 1e-9 for c in st["cases"])
+        ck(f'loader article, fig1 {src["kernel"]} {src["date"]} matches its source',
+           "1", 1 if same and st["kernel"] == src["kernel"] else 0)
+    ck("loader article, fig1 stock -28", "16019.6", LART["fig1"]["stock28"])
+    ck("loader article, fig1 with the missing commit", "17.0", LART["fig1"]["reverted"])
+    ck("loader article, fig1 as Canonical ships it", "15.3", LART["fig1"]["shipped30"])
+    ck("loader article, fig1 factor between the ends", "1047",
+       LART["fig1"]["fix_factor"], tol=5e-4)
+    # the arithmetic that identified the mechanism: whole timeout windows
+    ck("loader article, fig1 timeout", "1000", LART["fig1"]["timeout_ms"])
+    ck("loader article, fig1 windows", "16.0196", LART["fig1"]["windows"])
+    ck("loader article, fig1 residual work", "19.6", LART["fig1"]["residual_ms"])
+    ck("loader article, fig1 the residual is smaller than one window", "1",
+       1 if LART["fig1"]["residual_ms"] < LART["fig1"]["timeout_ms"] else 0)
+    # the two control cases must NOT move, or the figure proves nothing
+    ro = [c["ms"] for st in LART["fig1"]["states"] for c in st["cases"]
+          if c["key"] == "r_p_resident"]
+    nr = [c["ms"] for st in LART["fig1"]["states"] for c in st["cases"]
+          if c["key"] == "rw_p_not_resident"]
+    ck("loader article, fig1 the read-only control stays put", "1",
+       1 if max(ro) / min(ro) < 1.2 else 0)
+    ck("loader article, fig1 and so does the not-resident one", "1",
+       1 if max(nr) / min(nr) < 1.2 else 0)
+    ck("loader article, fig1 the writable penalty that survives", "4.8",
+       LART["fig1"]["writable_penalty_30"])
+
+    # fig2: what the permanent half costs end to end
+    med_by = {(r["model"], r["cache"], r["mode"]): r for r in lflag["medians_seconds"]}
+    cells = [(g, c) for g in LART["fig2"]["groups"] for c in g["cells"]]
+    ck("loader article, fig2 cells", str(len(lflag["medians_seconds"])), len(cells))
+    ck("loader article, fig2 cells match their medians", str(len(cells)),
+       sum(1 for g, c in cells
+           if (g["model"], g["cache"], c["mode"]) in med_by
+           and med_by[(g["model"], g["cache"], c["mode"])]["median_s"] == c["median_s"]
+           and med_by[(g["model"], g["cache"], c["mode"])]["n"] == c["n"]))
+    ck("loader article, fig2 every ratio is against its own baseline", str(len(cells)),
+       sum(1 for g, c in cells
+           if abs(c["vs_baseline"]
+                  - med_by[(g["model"], g["cache"], "baseline")]["median_s"]
+                  / c["median_s"]) < 1e-9))
+    ck("loader article, fig2 the flag at its best", "7.53", LART["fig2"]["best_flag"])
+    ck("loader article, fig2 and at its worst", "0.96", LART["fig2"]["worst_flag"])
+    ck("loader article, fig2 the worst case is the MoE", "1",
+       1 if abs(LART["fig2"]["moe_flag"] - LART["fig2"]["worst_flag"]) < 1e-9 else 0)
+    ck("loader article, fig2 and it is a loss", "1",
+       1 if LART["fig2"]["moe_flag"] < 1 else 0)
+    # the band the withdrawn 3.9-5.6x was replaced by, for the cells that fit
+    fits = [c["vs_baseline"] for g, c in cells if c["mode"] == "flag"
+            and "31B" not in g["model"] and "MoE" not in g["model"]]
+    ck("loader article, fig2 the in-RAM band, low", "1.51", min(fits))
+    ck("loader article, fig2 the in-RAM band, high", "1.98", max(fits))
+    ck("loader article, fig2 no cell reaches the withdrawn 3.9x", "0",
+       sum(1 for v in fits if v >= 3.9))
+    # the end-to-end control: a real server start, not the isolated harness
+    ck("loader article, fig2 end-to-end pairs", "4", len(LART["fig2"]["end_to_end"]))
+    e2e_raw = {}
+    for r in lflag["end_to_end_loading_weights_took_seconds"]:
+        e2e_raw.setdefault((r["cache"], r["mode"]), []).append(r["loading_weights_took_s"])
+    e2e = {(r["cache"], r["mode"]): r["mean_s"] for r in LART["fig2"]["end_to_end"]}
+    ck("loader article, fig2 end-to-end means match the file", "4",
+       sum(1 for k, v in e2e.items() if abs(v - sum(e2e_raw[k]) / len(e2e_raw[k])) < 1e-9))
+    for row, claim in zip(LART["fig2"]["e2e_vs_harness"], ("1.79", "1.52")):
+        cache = row["cache"]
+        ck(f"loader article, fig2 the {cache} server start", claim,
+           e2e[(cache, "baseline")] / e2e[(cache, "flag")])
+        ck(f"loader article, fig2 and the {cache} figure the article quotes", claim,
+           row["served"])
+        harness = [c["vs_baseline"] for g, c in cells
+                   if g["model"] == "gemma-4-12B-w4a16" and g["cache"] == cache
+                   and c["mode"] == "flag"][0]
+        ck(f"loader article, fig2 the {cache} harness it is compared with",
+           repr(harness), row["harness"], tol=1e-12)
+    # the direction matters more than the size: the isolated harness must not be
+    # pessimistic, or it would be flattering the flag by understating the baseline
+    ck("loader article, fig2 the harness is the optimistic one, both caches", "2",
+       sum(1 for r in LART["fig2"]["e2e_vs_harness"]
+           if 0 < r["harness_optimistic_pct"] < 20))
+
+    # fig3: the mechanism, in the resident set
+    rss_by = {(r["model"], r["cache"], r["mode"]): r
+              for r in lflag["resident_set_split_mib"]}
+    ck("loader article, fig3 rows", str(len(lflag["resident_set_split_mib"])),
+       len(LART["fig3"]["rows"]))
+    ck("loader article, fig3 rows match their source", str(len(LART["fig3"]["rows"])),
+       sum(1 for r in LART["fig3"]["rows"]
+           if (r["model"], r["cache"], r["mode"]) in rss_by
+           and rss_by[(r["model"], r["cache"], r["mode"])]["peak_rss_anon_mib"] == r["anon"]
+           and rss_by[(r["model"], r["cache"], r["mode"])]["peak_rss_file_mib"] == r["file"]))
+    sw = LART["fig3"]["swap"]
+    ck("loader article, fig3 the 31B default is anonymous", "21390", sw["baseline"][0])
+    ck("loader article, fig3 against file-backed", "782", sw["baseline"][1])
+    ck("loader article, fig3 and the clone swaps them", "1",
+       1 if sw["flag"][0] < sw["baseline"][1] * 1.2
+       and sw["flag"][1] > sw["baseline"][0] else 0)
+    ck("loader article, fig3 sharding bounds the anonymous peak", "4535",
+       LART["fig3"]["sharded"])
+    ck("loader article, fig3 and that is about one shard of five", "1",
+       1 if LART["fig3"]["sharded"] < sw["baseline"][0] / 4 else 0)
+    npread = sum(1 for r in LART["fig3"]["rows"] if r["mode"] == "pread")
+    ck("loader article, fig3 pread never maps the file", str(npread),
+       sum(1 for r in LART["fig3"]["rows"] if r["mode"] == "pread" and r["file"] < 500))
+    ck("loader article, fig3 and there are that many pread rows", "6", npread)
+
+    # the house-style sections, and the disclosure that the opening pair is not
+    # recomputable, in both languages
+    for fn, heads, phrase in (
+            ("weight-loading-19x.html",
+             ("What is not established", "What has changed since"),
+             "Where that pair of numbers comes from"),
+            ("weight-loading-19x.zh.html",
+             ("没有被确立的部分", "此后发生的变化"),
+             "这两个数字是从哪来的")):
+        for h in heads:
+            ck(f"loader article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+        ck(f"loader article {fn}, discloses the opening's provenance", "1",
+           1 if phrase in pages[fn] else 0)
+    # the reproducers the article tells the reader to run must exist
+    for f in ("benchmarks/repro-mmap-prot.py", "benchmarks/repro-mmap-prot.hip.cpp",
+              "benchmarks/hmm-kernel-three-states.json",
+              "benchmarks/loader-flag-kernel-30.json"):
+        ck(f"loader article, {f} exists", "1",
+           1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

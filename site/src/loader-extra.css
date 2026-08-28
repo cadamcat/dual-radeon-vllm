@@ -1,0 +1,47 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #states { --labw:170px; }
+  #load, #rss { --labw:150px; }
+  @media (max-width:480px){ #states { --labw:120px; } #load, #rss { --labw:112px; } }
+
+  /* ---- figure 1: a log axis, because the subject spans four decades ---- */
+  /* 3 ms and 16 000 ms in one figure is not a linear chart: on a shared linear
+     axis the two control rows are invisible and the fix looks like nothing */
+  .logax { position:relative; height:16px; margin:.2em 0 .8em; grid-column:2 / -1; }
+  .logax i { position:absolute; top:0; bottom:6px; width:1px; background:var(--border); }
+  .logax b { position:absolute; top:2px; transform:translateX(-50%);
+             font-family:var(--mono); font-size:.66rem; color:var(--text-dim);
+             font-weight:400; white-space:nowrap; }
+  .bars .stock { background:var(--s1); }
+  .bars .rebuilt { background:var(--s4); }
+  .bars .shipped { background:var(--s3); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+
+  /* ---- figure 3: two kinds of resident memory in one track ---- */
+  .bars .split { display:flex; height:100%; width:100%; }
+  .bars .split span { height:100%; display:block; width:0;
+                      transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .split .anon { background:var(--s1); }
+  .bars .split .file { background:var(--s2); }
+
+  /* ---- the kernel chain, three hops in one window ---- */
+  .hops { counter-reset:hop; margin:1.6em 0; }
+  .hop { display:grid; grid-template-columns:26px 1fr; gap:.9em; align-items:start;
+         padding:.75em 0; border-bottom:1px solid var(--border); }
+  .hop:last-child { border-bottom:0; }
+  .hop .n { counter-increment:hop; width:24px; height:24px; border-radius:99px;
+            display:grid; place-items:center; background:var(--surface-3);
+            color:var(--accent); font-family:var(--mono); font-size:.72rem;
+            font-weight:800; }
+  .hop .n::before { content:counter(hop); }
+  .hop .where { font-family:var(--mono); font-size:.73rem; color:var(--text-dim);
+                display:block; margin-bottom:.15em; }
+  .hop .what { color:var(--text-2); font-size:.92rem; }
+  .hop code { font-size:.8em; }

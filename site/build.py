@@ -65,6 +65,7 @@ H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"
 R_EN, R_ZH = "rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"
 W_EN, W_ZH = "w4a16-two-problems.html", "w4a16-two-problems.zh.html"
 M_EN, M_ZH = "moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"
+L_EN, L_ZH = "weight-loading-19x.html", "weight-loading-19x.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -132,7 +133,30 @@ if (D / "moe-body-zh.html").exists():
                            "不对称和吞吐与上下文无关两个现象，都被当成了架构结论。",
                       out="articles/" + M_ZH, nav=lang_nav("zh", M_EN, M_ZH), labels=ZH_LABELS))
 
+built.append(page("loader-body.html", lang="en", figures="figures-loader.json",
+                  extra_css="loader-extra.css",
+                  title="Loading weights was slower than the disk, twice over",
+                  desc="A permission read off the VMA makes every host-to-device copy break "
+                       "copy-on-write, and a split kernel backport turned each occurrence into a "
+                       "one-second timeout. Two effects, one reproducer, three kernel states.",
+                  out="articles/" + L_EN, nav=lang_nav("en", L_EN, L_ZH), labels=EN_LABELS))
+if (D / "loader-body-zh.html").exists():
+    built.append(page("loader-body-zh.html", lang="zh-CN", figures="figures-loader.json",
+                      extra_css="loader-extra.css", script_from="loader-body.html",
+                      title="加载权重比磁盘还慢，而且慢了两次",
+                      desc="从 VMA 取权限让每次 host→device 拷贝都破坏 "
+                           "copy-on-write；而一个被拆开的内核 backport 把每一次"
+                           "触发都变成一秒的超时。两个效应，一个复现器，三种内核状态。",
+                      out="articles/" + L_ZH, nav=lang_nav("zh", L_EN, L_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + L_EN, "title": "Loading weights was slower than the disk, twice over",
+     "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the "
+              "mapping is writable, and that breaks copy-on-write on every resident page. On one "
+              "distro kernel each occurrence also cost a full second.",
+     "measured": "measured 2026-08-23",
+     "langs": ["EN", "\u4e2d"] if (D / "loader-body-zh.html").exists() else ["EN"],
+     "tags": ["HMM", "copy-on-write", "ROCm#6523"]},
     {"href": "articles/" + M_EN, "title": "The fastest model here was written off at 15 tok/s",
      "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced "
               "into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, "
@@ -186,14 +210,21 @@ if CHECK:
 for p in built:
     print(f"  {str(p.relative_to(OUT)):40s} {p.stat().st_size:,} bytes")
 
-# no page may reach outside the repository for an asset
+# no page may LOAD anything from outside the repository. A hyperlink is not an
+# asset -- the articles cite trackers other than GitHub, and those are held to
+# an allowlist instead, so a stray link still cannot creep in unnoticed.
+LINK_HOSTS = {"github.com", "bugs.launchpad.net"}
 for p in built:
     t = p.read_text()
-    ext = [u for u in re.findall(r'(?:src|href)="(https?://[^"]+)"', t)
-           if not u.startswith("https://github.com")]
-    assert not ext, f"{p.name} pulls external assets: {ext}"
+    assets = (re.findall(r'\ssrc="(https?://[^"]+)"', t)
+              + re.findall(r'<link[^>]+href="(https?://[^"]+)"', t))
+    assert not assets, f"{p.name} loads external assets: {assets}"
+    hosts = {u.split("/")[2] for u in
+             re.findall(r'<a [^>]*href="(https?://[^"]+)"', t)}
+    assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
 # the language pairs must agree on the parts that are not prose
-for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH)):
+for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
+                 (L_EN, L_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue
@@ -204,4 +235,4 @@ for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH)):
     sb = re.search(r"<script>\n\(function \(\).*?\n</script>", tb, re.S).group(0)
     assert sa == sb, f"{en}/{zh} scripts diverged"
     print(f"  {en} / {zh}: figures block and script identical")
-print("  no page pulls an external asset")
+print(f"  no page loads an external asset; links stay within {sorted(LINK_HOSTS)}")

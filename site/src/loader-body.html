@@ -1,0 +1,598 @@
+<header class="top">
+  <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div>
+  <h1>Loading weights was slower<br>than the disk, twice over</h1>
+  <p class="lede">A 9.56 GiB checkpoint that the disk hands over in about six seconds took
+  <strong>328</strong>. Two independent things were responsible: a permission bug that makes the GPU ask
+  for write access it does not need, confirmed by AMD down to a kernel line and still present today; and
+  a distro backport that turned every occurrence of it into a whole second, proven by revert and fixed
+  by Canonical five weeks later.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
+    <span class="chip">Ubuntu <b>7.0.0-28</b> → <b>-30</b></span>
+    <span class="chip">ROCm 7.14 · safetensors 0.8.0</span>
+    <span class="chip">measured <b>2026-07-28</b> and <b>2026-08-23</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>The first effect is a <strong>permission taken from the wrong place</strong>. A host-to-device copy
+  only reads its source, but KFD derives the access it requests from the VMA's flags, so a mapping that
+  carries <code>VM_WRITE</code> makes <code>hmm_range_fault()</code> ask for write and break
+  copy-on-write on every resident page. PyTorch maps safetensors checkpoints writable because a storage
+  must be mutable, so this is the path every framework takes. AMD confirmed it and named the line. It is
+  worth <strong>4.8×</strong> on the kernel shipping today.</p>
+  <p>The second was a backport. Ubuntu's <code>7.0.0-28</code> took
+  <code>c08972f55594</code> without its follow-up <code>342981fff328</code>, leaving a retry loop that
+  spins for the full <code>HMM_RANGE_DEFAULT_TIMEOUT</code>. Every timing lands on an integer multiple
+  of 1000 ms: a 32 MiB copy took <strong>16 019.6 ms</strong>, which is sixteen windows plus 19.6 ms of
+  real work. Rebuilding <code>amdgpu.ko</code> with the missing commit as its only change gives
+  <strong>17.0 ms</strong>. Canonical shipped it in <code>-30</code> on 2026-08-20 and the same
+  reproducer now returns 15.3.</p>
+  <p>The pair explains itself: breaking copy-on-write is what advances the notifier sequence, so the
+  permission bug is the trigger and the missing commit turned each trigger into a full second. A
+  read-only mapping never invalidates and never enters the retry.</p>
+  <p><strong>One of this repository's own numbers did not survive.</strong> The 3.9× to 5.6× published
+  with <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> came from a run with no
+  control over page cache. Re-measured with cache controlled per cell it is 1.5× to 2.0× while the
+  checkpoint fits in RAM, 7.5× when it does not, and <strong>slightly negative</strong> on a
+  128-expert MoE.</p>
+</div>
+
+<h2><span class="n">1</span>The question, and what it was worth asking from</h2>
+
+<p>The opening measurement is the weakest one in this article and it is the reason for all the rest, so
+it goes first with its provenance attached. On 2026-07-24, with the disk measured at 1.5 GB/s by
+<code>dd iflag=direct</code> on the same file, a 15.6 GiB BF16 checkpoint loaded at 77 MB/s and a
+9.56 GiB w4a16 one at 29. Nineteen and fifty-two times slower than the medium it came off.</p>
+
+<div class="note warn">
+  <span class="lbl">Where that pair of numbers comes from</span>
+  Those two rows are from the historical part of <code>docs/open-questions.md</code> §8 and have no
+  committed data file. They set the question; they establish nothing. Everything from
+  <a href="#fig1">Figure 1</a> on is measured against a committed file and can be recomputed. The
+  section heading in that document says 19–48× rather than 19–52× because it divided by a
+  decimal-megabyte rate while the table quotes MiB/s — noted there, and irrelevant to the answer, which
+  is measured directly rather than inferred from a ratio.
+</div>
+
+<p>The first attempt at a cause was wrong and is worth stating because it shaped the method that
+followed. This repository published <em>"the source is a file-backed mmap page, and ROCm does not take
+the pinned-staging path for those"</em>. A dependency-free reproducer disproved it: a plain
+<code>mmap</code> of a warm file copies at full speed, and eight variables — anonymous against
+file-backed, faulted against not, fresh range per copy, overlayfs against ext4, fresh device allocation
+per copy, a 1–256 MiB size sweep, page-unaligned starts, dtype — all failed to trigger anything. After
+that the bar for a second cause was that a stranger could run it.</p>
+
+<h2><span class="n">2</span>The variable that does trigger it</h2>
+
+<p>Two mappings of the same file, in one process, while safetensors holds a checkpoint open:</p>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">/proc/self/maps</span></div>
+<pre>75d757200000-75d845520000 <span class="r">rw-p</span> ... model-00001-of-00005.safetensors   <span class="c">&lt;- safetensors</span>
+75d468a00000-75d556d20000 <span class="g">r--p</span> ... model-00001-of-00005.safetensors   <span class="c">&lt;- ours</span>
+</pre></div>
+
+<p>A read-only checkpoint mapped <code>MAP_PRIVATE</code> and <strong>writable</strong>. Isolating that
+one variable — same file, same bytes, plain <code>mmap</code> and <code>torch.frombuffer</code>, no
+safetensors and no vLLM — reproduces the whole thing in thirty lines. Adding a second dimension, whether
+the CPU has touched the mapping before the copy, produces three regimes rather than two, and real loads
+sit in the third.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · one reproducer, three kernel states
+      <span class="prov yes">recomputable from repo</span>
+      <span class="prov cmd">check with repro-mmap-prot.hip.cpp</span></div>
+    <div class="bars" id="states"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> 32 MiB per copy, log axis, from
+    <code>benchmarks/hmm-kernel-three-states.json</code>. Only the third case moves. The middle state is
+    a module built from Ubuntu's own <code>-28</code> source with <code>342981fff328</code> as its only
+    change and swapped into the running kernel — it is what proved the cause, and it is not a kernel
+    anyone ships. The third is what Canonical ships now, measured on the same machine with the same
+    binary, re-run the same day before upgrading so the upgrade is the only variable. The two control
+    rows stay inside their own range across all three: 3.0 to 3.2 ms, and 14.5 down to 13.1.
+  </figcaption>
+</figure>
+
+<p>16 019.6 ms is not a bandwidth figure and it is not noise. It is sixteen 1000 ms
+<code>HMM_RANGE_DEFAULT_TIMEOUT</code> windows plus 19.6 ms of real work, and the sub-millisecond
+reproducibility that looked like a fixed per-page cost is a <code>jiffies</code> timeout. Once you can
+read the number that way the rest follows: the flat one-second gap between two filesystems is one extra
+retry, and per-tensor timings of 1005, 1042 and 1522 ms are one, one and one-and-a-half windows.</p>
+
+<h2><span class="n">3</span>Why a read asks for write</h2>
+
+<p>AMD confirmed the mechanism on
+<a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> and named the site. The chain is three
+hops in the upstream tree:</p>
+
+<div class="hops" id="hops"></div>
+
+<p><strong>The permission is taken from the VMA rather than from what the GPU is about to do with the
+range.</strong> A host-to-device copy only reads its source. Because the VMA carries
+<code>VM_WRITE</code>, KFD asks <code>hmm_range_fault()</code> for write access, which breaks
+copy-on-write on every resident page. That is the permanent half, it is on every kernel measured here,
+and the line predates all of them.</p>
+
+<p>It also explains the three regimes without any extra assumption. Pages the CPU has not touched are
+not copy-on-write shared yet, so the not-resident case never pays for the break. And it joins the two
+halves: breaking copy-on-write is what advances the notifier sequence, so a read-only mapping never
+invalidates, never gets <code>-EBUSY</code>, and never enters the futile retry that
+<code>c08972f55594</code> left behind.</p>
+
+<div class="note">
+  <span class="lbl">The writable mapping is not safetensors' doing</span>
+  safetensors maps read-only — <code>map_copy_read_only</code>, and <code>framework="np"</code> yields
+  <code>r--p</code>. Its PyTorch path does not use that mapping at all: it calls
+  <code>torch.UntypedStorage.from_file(filename, shared=False, nbytes=size)</code>, and PyTorch maps the
+  file writable because a torch storage must be mutable. Every tensor any framework loads from a
+  safetensors checkpoint on the PyTorch path is backed by <code>rw-p</code>.
+</div>
+
+<h2><span class="n">4</span>What the split commit cost, and who fixed it</h2>
+
+<p><code>342981fff328</code> carries neither a <code>Fixes:</code> tag nor
+<code>Cc: stable@vger.kernel.org</code>, so it was never queued for the stable trees, while
+<code>c08972f55594</code> reached <code>-28</code>. A fix that is not tagged does not follow the commit
+it repairs. That makes this an upstream tagging gap rather than a distro packaging slip, and any series
+tracking 7.0.y that took the first commit was in the same state.</p>
+
+<p>Four configurations, one reproducer, and only one of them was slow: the same guest on
+<code>7.0.0-28</code> at sixteen seconds, the same guest on <code>7.0.0-14</code> at 18.6 to 20.2 ms,
+<code>6.8.0-136</code> at 22.1 to 26.0, and bare metal on a Proxmox <code>7.0.14</code> build at 24.1 to
+28.6. <strong>The first two rows are the ones that matter</strong>: same guest, same ROCm userspace, same
+container image, same reproducer, only the kernel ABI swapped. Passthrough is not the ingredient, which
+was the leading suspicion here and at AMD.</p>
+
+<div class="note ok">
+  <span class="lbl">This report did not cause the fix</span>
+  <code>linux-hwe-7.0</code> went to <code>7.0.0-30.30~24.04.1</code> in noble-updates and
+  noble-security on 2026-08-20, carrying <code>drm/amdgpu: drop retry loop in
+  amdgpu_hmm_range_get_pages</code>. The Launchpad bug asking for exactly that backport is still
+  <code>New</code> and untriaged, so the commit came through the ordinary stable route. The remedy on
+  24.04 is now an upgrade, and the rebuilt module in Figure 1 is evidence rather than advice.
+</div>
+
+<h2><span class="n">5</span>What the permanent half is worth</h2>
+
+<p>With the second effect gone, the first is measurable end to end for the first time. Four checkpoints,
+four load paths, page cache controlled per cell — every cell preceded either by
+<code>drop_caches</code> or by <code>drop_caches</code> plus a full read of the checkpoint — and each
+cell a fresh process.</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · four load paths on the kernel Canonical ships
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v2"></div>
+    <div class="bars" id="load"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Medians from <code>benchmarks/loader-flag-kernel-30.json</code>, 89 cells on
+    <code>7.0.0-30</code>. The default view is the ratio against each cell's own baseline, because the
+    absolute seconds are dominated by one cell and the question is what each path is worth. Hover any bar
+    for the median, its range and how many processes it is over. <code>clone</code> is
+    <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a>'s flag;
+    <code>eager</code> is vLLM's shipped <code>--safetensors-load-strategy eager</code>;
+    <code>pread</code> is safetensors 0.8.0's <code>backend="pread"</code>, which never maps the file at
+    all.
+  </figcaption>
+</figure>
+
+<p><strong>The isolated harness is the optimistic one, by 10 to 14 %.</strong> A real
+<code>vllm serve</code> start on the 12B, reading the loader's own <code>Loading weights took</code>
+line, gives <strong>1.79×</strong> warm and <strong>1.52×</strong> cold where the harness above says
+1.98 and 1.73. The absolute seconds track closely, which is what makes the harness usable at all; the
+ratio does not, because a server start carries work the harness does not. Take the ratios in Figure 2 as
+the upper end of what the flag is worth.</p>
+
+<p>Three things in that figure are worth saying out loud. The <strong>31B cold</strong> cell is 7.5×
+because a 21.67 GiB checkpoint against 23.4 GiB of RAM does not merely lose copy-on-write, it drives the
+loader into swap. The <strong>MoE</strong> cell is the counterexample: almost nothing in a checkpoint of
+35 743 mostly small tensors is large enough to pay the copy-on-write cost, so the extra host copy is
+pure overhead and the flag is slightly worse than doing nothing. And <code>pread</code>, which shipped
+in safetensors 0.8.0 and is named only in the release notes, is slower than the clone everywhere except
+the MoE, where it wins.</p>
+
+<h2><span class="n">6</span>The mechanism, in the resident set</h2>
+
+<p>Why the penalty is not a constant ratio is visible directly rather than by inference, once the
+resident set is sampled <em>during</em> the load. safetensors unmaps a shard the moment the iterator
+leaves it, so an end-of-loop sample sees an empty process; the first attempt at this measured nothing
+and was discarded.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · anonymous against file-backed, at peak
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="rss"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> <code>RssAnon</code> and <code>RssFile</code> sampled every 64 tensors. On the 31B
+    the default path peaks at 21 390 MiB anonymous against 782 file-backed; with the clone the two swap
+    places. Breaking copy-on-write converts the checkpoint into private dirty memory, which is no longer
+    evictable — that is why a checkpoint which is a large fraction of host RAM behaves differently from
+    one that is not. Sharding bounds it: Qwen3-8B is the same 15.26 GiB in five shards and peaks at
+    4 535 MiB, roughly one shard. <code>pread</code> never maps the file, so it carries neither.
+  </figcaption>
+</figure>
+
+<h2><span class="n">7</span>What is not established</h2>
+
+<h3>Why the July baselines do not reproduce</h3>
+<p>Replaying the 2026-07-28 ordering on <code>-30</code> with no cache control gives an 8B baseline of
+13.87 s against the 36.4 s reported then, and 126.61 s for the 31B against a timeout past 900 s. Page
+cache is therefore not the whole explanation. Two things changed between the sessions: the kernel state,
+and this guest's PCIe atomics, off in July and on now. The 32 MiB reproducer moved only 17.0 to 15.3 ms
+across the same change, so the per-copy path is not where the difference lives, and nothing here says
+where it does. The July table is superseded rather than reconciled.</p>
+
+<h3>One machine, and it is a guest</h3>
+<p>Everything here is one VFIO guest, gfx1100, ext4. A bare-metal Ubuntu <code>-28</code> was closed by
+someone else — @shineday999 reported an RX 7900 XTX on ROCm 7.2.1 with no virtualisation, same pathology
+and the same integer window counts — but a module as <em>Canonical</em> ships it on bare metal is still
+untested, since both of us ran either a self-built module or a userspace workaround. CDNA is untested,
+and nothing here says what any of this is worth on a host whose RAM dwarfs the checkpoint.</p>
+
+<h3>Residency per tensor</h3>
+<p>The window count is <code>resident_bytes / 2 MiB</code>, established from the reproducer at 32 and
+256 MiB and confirmed independently on another board. That an 8 MiB and a 96 MiB tensor both come out at
+one window follows from it — they are barely resident when the copy starts, since nothing reads them
+first — but residency per tensor was never sampled to check that step directly.</p>
+
+<h3>A 17× asymmetry between the two ranks</h3>
+<p>A single load showed roughly 190 ms per ioctl on one rank against 11 ms on the other. It could not be
+reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, and it is unexplained.</p>
+
+<h2><span class="n">8</span>What has changed since</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-08-23 · the flag's headline number was withdrawn</span>
+  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> published a flat 3.9× to 5.6×
+  and called that magnitude permanent. It came from a run with no control over page cache which loaded
+  three models in sequence, so every cell inherited its predecessor's. Re-measured with cache controlled
+  per cell it is 1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not. The PR also
+  said cloning was faster in every configuration measured and that defaulting it on looked sensible; the
+  MoE checkpoint in Figure 2 is the counterexample, and that sentence has to go.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-20 · Canonical shipped the missing commit</span>
+  <code>7.0.0-30.30~24.04.1</code>, in noble-updates and noble-security. The one-second windows are
+  gone: 16 019.3 ms before the upgrade and 15.3 after, on the same machine and the same reproducer
+  binary the same day. <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> carries the
+  measurement.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-07-30 · the bare-metal gap was closed by a stranger</span>
+  This report could not test a non-virtualised machine. @shineday999 ran one — RX 7900 XTX, ROCm 7.2.1,
+  <code>7.0.0-28</code>, no virtualisation — and reported the same pathology with the same integer
+  window counts, then followed up with a per-tensor breakdown at four independent runs landing on four
+  integer windows. Two ROCm versions agreeing also says the userspace version is not the variable.
+</div>
+
+<div class="note">
+  <span class="lbl">Still open</span>
+  The writable-mapping penalty itself is untouched by any of this and is worth 4.8× on <code>-30</code>.
+  <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> is open;
+  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> is open and needs its headline
+  number replaced with the measured band above. <code>ROC_FORCE_STAGED_D2H</code> would sidestep the
+  copy entirely, but @ashetaia-amd states that the long-term fix taken in ROCm/rocm-systems#6676 does not
+  help this copy path, so it is not the remedy to wait for.
+</div>
+
+<div class="foot-note">
+  <p><strong>Run it yourself.</strong> The reproducer is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.py"><code>benchmarks/repro-mmap-prot.py</code></a>,
+  and for machines with no PyTorch,
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.hip.cpp"><code>repro-mmap-prot.hip.cpp</code></a>.
+  Figure 1 is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/hmm-kernel-three-states.json"><code>hmm-kernel-three-states.json</code></a>;
+  Figures 2 and 3 are
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/loader-flag-kernel-30.json"><code>loader-flag-kernel-30.json</code></a>,
+  89 cells with their per-cell page-cache state. The full investigation, including the cause this
+  repository got wrong first, is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>.</p>
+  <p>Reported as <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a>, where @ashetaia-amd
+  confirmed the copy-on-write trigger and named <code>kfd_svm.c</code>, and @shineday999 contributed the
+  bare-metal reproduction; and to Ubuntu as
+  <a href="https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985">LP#2161985</a>.
+  <code>342981fff328</code> is Honglei Huang's patch, reviewed by Christian König, committed by Alex
+  Deucher; <code>c08972f55594</code> is Christian König's, signed off by Alex Deucher.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "caseRO": "r--p, resident",
+ "caseNR": "rw-p, not resident",
+ "caseBad": "rw-p, resident",
+ "stock28": "-28 as shipped",
+ "rebuilt": "-28 + 342981fff328",
+ "shipped30": "-30 as shipped",
+ "f1unit": "milliseconds per 32 MiB host-to-device copy · log axis",
+ "f1note": "{n} windows of {t} ms plus {r} ms of real work · {f}× between the first row and the last",
+ "f1keep": "the writable mapping still costs {w}× on -30, and nothing here addresses it",
+ "viewRatio": "× against the same cell's baseline",
+ "viewSeconds": "seconds, log axis",
+ "modeBaseline": "vLLM as shipped",
+ "modeEager": "eager",
+ "modeFlag": "clone",
+ "modePread": "pread",
+ "warm": "warm cache", "cold": "cold cache",
+ "f2unit": "median of a fresh process per cell · higher is better",
+ "f2secUnit": "seconds to copy every tensor to the device · log axis",
+ "f2range": "range", "f2n": "{n} processes",
+ "f3anon": "RssAnon", "f3file": "RssFile",
+ "f3unit": "peak resident set during the load, MiB · {a} · {b}",
+ "f3swap": "on the 31B the two swap places: {ba} / {bf} becomes {fa} / {ff}",
+ "hops": [
+  ["drivers/gpu/drm/amd/amdkfd/kfd_svm.c:1777",
+   "inside <code>svm_range_validate_and_map</code>: <code>readonly = !(vma-&gt;vm_flags &amp; VM_WRITE)</code> — the access mode is read off the mapping, not off what the copy will do"],
+  ["drivers/gpu/drm/amd/amdkfd/kfd_svm.c:1807",
+   "it is passed on: <code>amdgpu_hmm_range_get_pages(&amp;prange-&gt;notifier, addr, npages, readonly, owner, range)</code>"],
+  ["drivers/gpu/drm/amd/amdgpu/amdgpu_hmm.c:188",
+   "<code>if (!readonly) hmm_range-&gt;default_flags |= HMM_PFN_REQ_WRITE;</code> — and asking for write breaks copy-on-write on every resident page"]
+ ],
+ "ms": " ms", "s": " s"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+  function swatch(v) { return '<span class="swatch" style="background:var(' + v + ')"></span>'; }
+  /* a log axis over [lo, hi] decades, as a percentage of the track */
+  function logpos(v, lo, hi) {
+    var l = Math.log(Math.max(v, lo)) / Math.LN10;
+    return Math.max(1.5, (l - lo) / (hi - lo) * 100);
+  }
+  function logaxis(box, lo, hi, unit) {
+    var ax = el(box, "logax");
+    for (var d = lo; d <= hi; d++) {
+      var x = (d - lo) / (hi - lo) * 100;
+      var i = document.createElement("i"); i.style.left = x + "%"; ax.appendChild(i);
+      var b = document.createElement("b"); b.style.left = x + "%";
+      // the end labels would hang off the track otherwise
+      if (d === lo) b.style.transform = "translateX(0)";
+      if (d === hi) b.style.transform = "translateX(-100%)";
+      // only the first tick carries the unit: at six decades the last two
+      // labels collide otherwise
+      b.textContent = (Math.pow(10, d) >= 1000 ? Math.pow(10, d) / 1000 + "k"
+                                               : String(Math.pow(10, d)))
+                      + (d === lo ? unit : "");
+      ax.appendChild(b);
+    }
+    return ax;
+  }
+
+  /* ---------- Figure 1: three kernel states, three mapping cases ---------- */
+  (function () {
+    var box = document.getElementById("states");
+    var LO = 0, HI = 5;                       /* 1 ms .. 100 s */
+    var CASE = [["r_p_resident", S.caseRO], ["rw_p_not_resident", S.caseNR],
+                ["rw_p_resident", S.caseBad]];
+    var CLS = ["stock", "rebuilt", "shipped"];
+    var NAME = [S.stock28, S.rebuilt, S.shipped30];
+    CASE.forEach(function (c) {
+      el(box, "grp", c[1]);
+      F.fig1.states.forEach(function (st, i) {
+        var cell = st.cases.filter(function (x) { return x.key === c[0]; })[0];
+        el(box, "lab rv", NAME[i]);
+        var tr = el(box, "track rv");
+        var f = document.createElement("span");
+        f.className = CLS[i];
+        f.style.cssText = "display:block;height:100%;width:0;" +
+          "transition:width 1s cubic-bezier(.22,1,.36,1)";
+        tr.appendChild(f);
+        grow(f, logpos(cell.ms, LO, HI));
+        el(box, "val rv", cell.ms.toFixed(1) + S.ms);
+        hover(tr, '<span class="hd">' + NAME[i] + "</span><br>" + c[1] + "<br><b>" +
+          cell.ms.toFixed(1) + "</b> ms<br><span class=\"sub\">" + st.kernel + " · " +
+          st.amdgpu + "<br>" + st.date + " · " + cell.values.length + "×</span>");
+      });
+    });
+    logaxis(box, LO, HI, S.ms);
+    var u = el(box, "barunit", S.f1unit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.f1note, {
+      n: Math.floor(F.fig1.windows), t: F.fig1.timeout_ms,
+      r: F.fig1.residual_ms.toFixed(1), f: Math.round(F.fig1.fix_factor) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+    var k = el(box, "barunit", fmt(S.f1keep, {
+      w: F.fig1.writable_penalty_30.toFixed(1) }));
+    k.style.gridColumn = "1 / -1"; k.style.color = "var(--red)";
+  })();
+
+  /* ---------- the three kernel hops ---------- */
+  (function () {
+    var box = document.getElementById("hops");
+    S.hops.forEach(function (h) {
+      var row = el(box, "hop rv");
+      el(row, "n");
+      var b = el(row, "");
+      el(b, "where", h[0]);
+      el(b, "what", h[1]);
+    });
+  })();
+
+  /* ---------- Figure 2: four load paths ---------- */
+  (function () {
+    var box = document.getElementById("load"), vbox = document.getElementById("v2");
+    var mode = 0, first = true;               /* 0 = ratio, 1 = seconds */
+    var LABEL = { baseline: S.modeBaseline, eager: S.modeEager,
+                  flag: S.modeFlag, pread: S.modePread };
+    var COLOUR = { baseline: "--s1", eager: "--s5", flag: "--s3", pread: "--s2" };
+    var maxr = 0;
+    F.fig2.groups.forEach(function (g) {
+      g.cells.forEach(function (c) { maxr = Math.max(maxr, c.vs_baseline); });
+    });
+    function draw() {
+      box.innerHTML = "";
+      F.fig2.groups.forEach(function (g) {
+        el(box, "grp", g.model + ' <span class="tagline">· ' +
+           (g.cache === "warm" ? S.warm : S.cold) + "</span>");
+        g.cells.forEach(function (c) {
+          el(box, "lab rv", LABEL[c.mode]);
+          var tr = el(box, "track rv");
+          var f = document.createElement("span");
+          f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+            COLOUR[c.mode] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+          tr.appendChild(f);
+          grow(f, mode ? logpos(c.median_s, 0, 2) : c.vs_baseline / maxr * 100);
+          el(box, "val rv", mode ? c.median_s.toFixed(2) + S.s
+                                 : c.vs_baseline.toFixed(2) + "×");
+          hover(tr, '<span class="hd">' + g.model + " · " +
+            (g.cache === "warm" ? S.warm : S.cold) + "</span><br>" + LABEL[c.mode] +
+            " · <b>" + c.median_s.toFixed(2) + "</b> s · " + c.vs_baseline.toFixed(2) +
+            "×<br><span class=\"sub\">" + S.f2range + " " + c.min_s + "–" + c.max_s +
+            " s · " + fmt(S.f2n, { n: c.n }) + "</span>");
+        });
+      });
+      if (mode) logaxis(box, 0, 2, S.s);
+      var u = el(box, "barunit", mode ? S.f2secUnit : S.f2unit);
+      u.style.gridColumn = "1 / -1";
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewRatio, 0], [S.viewSeconds, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- Figure 3: the resident-set split ---------- */
+  (function () {
+    var box = document.getElementById("rss");
+    var LABEL = { baseline: S.modeBaseline, flag: S.modeFlag, pread: S.modePread };
+    var max = 0, seen = {};
+    F.fig3.rows.forEach(function (r) { max = Math.max(max, r.anon + r.file); });
+    F.fig3.rows.forEach(function (r) {
+      var key = r.model + " " + r.cache;
+      if (!seen[key]) {
+        seen[key] = 1;
+        el(box, "grp", r.model + ' <span class="tagline">· ' +
+           (r.cache === "warm" ? S.warm : S.cold) + "</span>");
+      }
+      el(box, "lab rv", LABEL[r.mode]);
+      var tr = el(box, "track rv");
+      var sp = el(tr, "split");
+      var a = document.createElement("span"); a.className = "anon";
+      var b = document.createElement("span"); b.className = "file";
+      sp.appendChild(a); sp.appendChild(b);
+      grow(a, r.anon / max * 100);
+      grow(b, r.file / max * 100);
+      el(box, "val rv", (r.anon + r.file).toLocaleString());
+      hover(tr, '<span class="hd">' + r.model + " · " + LABEL[r.mode] + "</span><br>" +
+        S.f3anon + " <b>" + r.anon.toLocaleString() + "</b> MiB<br>" +
+        S.f3file + " <b>" + r.file.toLocaleString() + "</b> MiB<br>" +
+        '<span class="sub">peak ' + r.peak_gib + " GiB</span>");
+    });
+    var u = el(box, "barunit", fmt(S.f3unit, {
+      a: swatch("--s1") + S.f3anon, b: swatch("--s2") + S.f3file }));
+    u.style.gridColumn = "1 / -1";
+    var s = el(box, "barunit", fmt(S.f3swap, {
+      ba: F.fig3.swap.baseline[0].toLocaleString(),
+      bf: F.fig3.swap.baseline[1].toLocaleString(),
+      fa: F.fig3.swap.flag[0].toLocaleString(),
+      ff: F.fig3.swap.flag[1].toLocaleString() }));
+    s.style.gridColumn = "1 / -1"; s.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

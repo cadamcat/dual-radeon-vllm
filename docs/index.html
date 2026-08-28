@@ -310,6 +310,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">{
  "articles": [
   {
+   "href": "articles/weight-loading-19x.html",
+   "title": "Loading weights was slower than the disk, twice over",
+   "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",
+   "measured": "measured 2026-08-23",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "HMM",
+    "copy-on-write",
+    "ROCm#6523"
+   ]
+  },
+  {
    "href": "articles/moe-written-off-by-eager.html",
    "title": "The fastest model here was written off at 15 tok/s",
    "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
