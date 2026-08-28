@@ -661,6 +661,31 @@ def main():
     # stage 1c: gfx11 runtime evidence for vllm#53856's V-cache padding fix
     g1c = [json.loads(l) for l in open(os.path.join(GDIR, "stage1c-53856-vcache.jsonl"))]
     ck("50603 README, stage1c cells", "16", len(g1c))
+
+    # Stage 4: MRv2 reaches the builder and the guard vllm#53930 warns about.
+    m4 = [json.loads(l) for l in open(os.path.join(GDIR, "mrv2-spec.jsonl"))]
+    ran = [r for r in m4 if r.get("engine_error") is None]
+    ck("50603 README, stage 4 cells that ran an engine", "2", len(ran))
+    by = {r["arm"]: r for r in ran}
+    ck("50603 README, stage 4 has both arms", "2", len(by))
+    ck("50603 README, V1 arm constructed the V1 runner", "1",
+       1 if by.get("v1", {}).get("runner_constructed") == ["RUNNER_V1"] else 0)
+    ck("50603 README, V2 arm constructed the V2 runner", "1",
+       1 if by.get("v2", {}).get("runner_constructed") == ["RUNNER_V2"] else 0)
+    # the load-bearing one: the function #53930 patches runs under MRv2
+    ck("50603 README, the builder ran under MRv2", "1",
+       1 if by.get("v2", {}).get("builder_init") == ["nospec"] else 0)
+    ga = set(by["v1"]["guard_rows"])
+    gb = set(by["v2"]["guard_rows"])
+    ck("50603 README, stage 4 V1 guard rows", "36", len(ga))
+    ck("50603 README, stage 4 V2 guard rows", "37", len(gb))
+    ck("50603 README, stage 4 rows shared by both arms", "36", len(ga & gb))
+    ck("50603 README, stage 4 rows only V1 has", "0", len(ga - gb))
+    # no q>1 row at decode without speculation: the only ones are prefill, and
+    # the single unattributed MRv2 capture row
+    ck("50603 README, stage 4 decode rows are all max_seqlen_q=1", "0",
+       sum(1 for r in ga | gb
+           if eval(r)[3] == "q>1" and eval(r)[0] not in (2, 2048)))
     adm = [r for r in g1c if r["gqa_ratio"] == 4]
     ck("50603 README, gqa4 is admitted by the shipped gate", "8",
        sum(1 for r in adm if r["gate_as_shipped"]))

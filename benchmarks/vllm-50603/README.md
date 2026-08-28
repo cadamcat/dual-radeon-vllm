@@ -215,6 +215,84 @@ fresh-allocation garbage; #53856 attributes it to sleep mode and allocator
 behaviour. This probe injects it deliberately and only measures what the kernel
 then does.
 
+## Stage 4: does Model Runner V2 reach the guard vllm#53930 warns about?
+
+@njhill labelled [vllm#53930](https://github.com/vllm-project/vllm/pull/53930)
+`mrv1-only` on 2026-08-28 — "applies only to Model Runner V1 (not applicable to
+Model Runner V2)". That PR adds a `warning_once` to
+`TritonAttentionMetadataBuilder.__init__` saying speculative decoding forces
+decode onto the 2D path. If the label is right as stated, the warning would be
+dead code under MRv2.
+
+Reading `main` says the opposite, and every link in the chain is shared:
+
+| step | where | runner-specific? |
+|---|---|---|
+| `max_query_len = max(scheduler_output.num_scheduled_tokens.values())` | MRv2 `worker/gpu/model_runner.py`, V1 `worker/gpu_model_runner.py` | same expression in both |
+| `CommonAttentionMetadata(max_query_len=...)` | MRv2 `worker/gpu/attn_utils.py` | no |
+| `builder_cls = self.backend.get_builder_cls()` | `worker/utils.py`, `AttentionGroup` | shared by both |
+| `max_seqlen_q = attn_metadata.max_query_len` | `v1/attention/backends/triton_attn.py` | one copy |
+| `use_3d = not (... or max_seqlen_q > 1 ...)` | `v1/attention/ops/triton_unified_attention.py` | under `ops/`, neither runner owns it |
+
+`probe_mrv2_spec.py` tests the part of that which can be tested here. Both
+runners, one fresh container each, `Qwen3-8B` with `TRITON_ATTN` forced so the
+guard is certain to be exercised, TP=2, routing only and no timing. Three things
+are recorded from inside the worker processes, all injected before any vllm
+import because 0.27's workers inherit the parent's already-imported modules:
+which runner class was constructed, whether the builder ran, and every distinct
+`(max_seqlen_q, num_seqs, use_3d)` with each disqualifying clause separately.
+
+| | V1 arm | V2 arm |
+|---|---|---|
+| runner constructed | `RUNNER_V1` | **`RUNNER_V2`** |
+| `TritonAttentionMetadataBuilder.__init__` ran | yes | **yes** |
+| distinct guard rows | 36 | 37 |
+| rows identical to the other arm | 36 | 36 |
+
+**MRv2 starts on gfx1100, constructs the builder vllm#53930 patches, and reaches
+the same guard by the same route.** So the label read literally — that the PR
+does not apply to MRv2 — is not what this hardware shows. The one row MRv2 has
+and V1 does not is `(max_seqlen_q=2, num_seqs=256, use_3d=False)` with no
+speculative config anywhere in the run; the recorder does not tag the calling
+phase, so what produces it is not established here.
+
+**What this does not show, and it is the half the label turns on.** Whether
+speculation makes decode carry `max_seqlen_q > 1` under MRv2 is not measured.
+`gemma-4-31B` plus its MTP assistant is the configuration the PR is about, and
+it does not configure on this image at all — see below — and no other checkpoint
+here carries an MTP head, while MRv2 does not support `ngram`. The only `q>1`
+rows above are the prefill step, which the guard excludes by design. That half
+rests on the code read, where `max_query_len` comes from the shared scheduler
+output in both runners.
+
+Also worth stating: this image's MRv2 predates the fused multi-step draft
+decoding in `docs/design/model_runner_v2.md` — `draft_decode_metadata` appears
+nowhere in the installed tree — so this describes MRv2 as of 0.27.1.dev5, not
+as of current `main`.
+
+### gemma-4-31B does not configure on the 0.27 image
+
+Found while setting the above up, and unrelated to model runners. On
+`rocm/vllm:rocm10.0.0...vllm_0.27.0`, `gemma-4-31B-it-qat-w4a16-ct` raises
+before any engine starts:
+
+```
+AmbiguousGlobalPerLayerAttributeError: 'head_dim' is a per-layer attribute
+and may vary across layers.
+```
+
+Four cells: both runners, with and without `speculative_config`, all four
+identical. So it is not the speculative path, which is where I first put it. The
+error suggests `allow_global_per_layer_attribute_access=True`; that is
+deliberately not used here, since it makes code that assumes a homogeneous model
+read a global value from a heterogeneous one, which is what the message itself
+warns against. Every 0.27 result in this repository was measured on
+`Qwen3.8-27B` or `gemma-3-27b`; gemma-4-31B had never been run on this image.
+It runs on the 0.23.1 image and on 0.28.0 on CUDA.
+
+Files: `probe_mrv2_spec.py`, `run_mrv2_spec.sh`, `mrv2-spec.jsonl`,
+`logs/mrv2-v{1,2}-nospec.log`.
+
 ## Stage 1d: runtime validation of vllm#53856 at its current head, on request
 
 Stage 1c showed the fault on gfx1100 against the shipped kernel. The PR author
