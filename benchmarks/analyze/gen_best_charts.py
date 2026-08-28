@@ -50,14 +50,11 @@ COLOUR = {
 ORDER = ["gemma-4-26B-A4B", "Qwen3-8B", "gemma-4-12B-it", "Muse-Glimmer-30B",
          "gemma-4-31B-it", "Qwen3.8-27B"]
 
-# One extra line, on the ms-per-token chart only. Drawing every model at its
-# best takes the hybrid-SSM collapse off that figure entirely, and the collapse
-# is what the figure is for -- "a linear-attention model should be flat" is an
-# argument you can only see against something that is not. So Qwen3.8-27B
-# appears there twice, in its own colour: solid for what a released vLLM gives
-# you, dashed for what vllm#45916 gives you. The decode chart does not carry it;
-# at 3.8 tok/s the contrast line would sit on the axis and add nothing.
-CONTRAST_MS = [("Qwen3.8-27B", "2026-08-28", ())]
+# The hybrid-SSM collapse used to be drawn as a second Qwen3.8 line on the
+# ms-per-token chart. It has its own figure now: one model whose axis has to
+# reach 262 ms flattened every other line into the bottom tenth of that chart,
+# and the comparison reads better on its own anyway. See collapse_chart().
+COLLAPSE = ("Qwen3.8-27B", "2026-08-28")
 GREY = GRID = "#8a8a8a"
 PREFER_UNPATCHED_WITHIN = 0.02
 
@@ -138,8 +135,8 @@ def describe(row):
     return f"{len(row['values'])} passes, range {row['range_pct']:.0f}%"
 
 
-PLOT_H = 520  # was 206, which left six of the seven ms-per-token lines inside
-              # a twentieth of the axis
+PLOT_H = 400  # 206 was too cramped to separate the lines, 520 too tall for the
+              # data to fill; the ceilings below give each chart its headroom
 
 
 NOTE_CHARS = 128  # (762 - 62) px at 10px, about 0.5 px per character
@@ -234,7 +231,8 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
     for bi in range(len(bands)):
         o.append(f'<g clip-path="url(#b{bi})">')
         lo, hi = bands[bi][0], bands[bi][1]
-        for model, pts, patched in series:
+        for entry in series:
+            model, pts, patched = entry[0], entry[1], entry[2]
             vals = [v for _, v, _ in pts]
             # a series that cannot reach this band is not drawn into it, so the
             # file carries no marks that only the clip path is hiding
@@ -257,8 +255,11 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
                          f'fill="{col}"/>')
         o.append("</g>")
 
-    for i, (model, _, patched) in enumerate(series):
+    for i, entry in enumerate(series):
+        model, patched = entry[0], entry[2]
         col, lab = COLOUR[model]
+        if len(entry) > 3 and entry[3]:      # a chart may name its own series
+            lab = entry[3]
         cx = L + (i % 2) * ((R - L) / 2)
         cy = B + 58 + (i // 2) * 19
         dash = ' stroke-dasharray="7 4"' if patched else ""
@@ -273,6 +274,46 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
     o.append("</svg>")
     open(os.path.join(OUT, fn), "w").write("\n".join(o))
     return fn
+
+
+def collapse_chart(led):
+    """The hybrid-SSM collapse and its fix, on their own axis.
+
+    One model, two lines, and the only figure in this directory where both arms
+    of a patch appear: solid is a released vLLM, dashed is the same machine with
+    vllm#45916. It is separate because its axis has to reach 262 ms, and sharing
+    that axis with models that live between 9 and 34 flattened all of them.
+    """
+    model, date = COLLAPSE
+    series, notes = [], []
+    for patches, label in ((), "released vLLM 0.27"), (("vllm#45916 split-KV",),
+                                                       "with vllm#45916"):
+        grp = sorted((r for r in led if r["model"] == model and r["tp"] == 2
+                      and r["date"] == date and tuple(r["patches"]) == patches),
+                     key=lambda r: r["ctx"])
+        pts = []
+        for r in grp:
+            v = r["decode_tok_s"]
+            if not r["chart_grade"]:
+                m = modes(r)
+                if not (m and BIMODAL == "high"):
+                    continue
+                v = m[1]
+            pts.append((r["ctx"], 1000 / v, False))
+        series.append((model, pts, bool(patches),
+                       f"{model.split('-27B')[0]}-27B &#183; {label}"))
+        r0 = grp[0]
+        note = (f"{label} &#183; {r0['date']} &#183; vLLM {r0['vllm'].split('+')[0]} "
+                f"&#183; ROCm {r0['rocm']}")
+        bad = [r for r in grp if not r["chart_grade"]]
+        if bad:
+            note += " &#183; at 8K: " + describe(bad[0])
+        notes.append(note)
+    return build("hybrid-ssm-collapse.svg",
+                 "The hybrid-SSM collapse, and what closes it",
+                 "the same model and machine either side of one patch; "
+                 "a linear-attention model should be flat",
+                 series, 275, "ms per generated token", notes, step=25)
 
 
 def main():
@@ -320,36 +361,23 @@ def main():
 
     mseries = [(m, [(x, 1000 / y, g) for x, y, g in pts], p) for m, pts, p in series]
     mnotes = list(notes)
-    for model, date, patches in CONTRAST_MS:
-        grp = [r for r in led if r["model"] == model and r["tp"] == 2
-               and r["date"] == date and tuple(r["patches"]) == patches
-               and r["chart_grade"]]
-        if not grp:
-            continue
-        pts = sorted(((r["ctx"], 1000 / r["decode_tok_s"], False) for r in grp))
-        mseries.append((model, pts, bool(patches)))
-        r0 = grp[0]
-        mnotes.append(
-            f"{COLOUR[model][1].split(' &#183;')[0]} &#183; {r0['date']} &#183; vLLM "
-            f"{r0['vllm'].split('+')[0]} &#183; ROCm {r0['rocm']} &#183; unpatched, "
-            f"kept for the contrast")
     out = [
         build("decode-vs-context-best.svg", "Decode throughput vs context length",
               "one line per model, the best configuration measured here",
-              series, 115, "decode tok/s", notes, step=10),
+              # 150, not 115: the fastest line reaches 107.8 and sat against
+              # the top of the frame with nothing above it
+              series, 150, "decode tok/s", notes, step=10),
         build("decode-ms-per-token-best.svg", "Cost of one context token at decode time",
-              "slope = ms added per token of context; a linear-attention model should be flat",
-              mseries, 275, "ms per generated token", mnotes,
-              # broken axis: 0-40 in fives across 400px carries the six flat
-              # series, 40-275 in fifties across 110px carries the one that
-              # climbs. On a single linear scale the six sit inside a tenth of
-              # the plot however tall it is drawn.
-              bands=[(40, 275, 50, 110), (0, 40, 5, 400)]),
+              "slope = ms added per token of context, each model at its best configuration",
+              # every line here is now a patched-machine line, so the axis
+              # stops at 40 and the broken axis the collapse needed is gone
+              mseries, 40, "ms per generated token", mnotes, step=5),
     ]
     for model in ORDER:
         if model in chosen:
             k = chosen[model][2]
             print(f"  {model:<18} <- {k[1]} vllm {k[2]} {list(k[4]) or 'stock'}")
+    out.append(collapse_chart(led))
     for f in out:
         print("wrote", f)
 

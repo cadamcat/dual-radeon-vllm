@@ -1314,29 +1314,35 @@ def main():
     # 57 graded plus the bimodal 8K point plotted at its upper cluster
     ck("best charts, decode chart carries every point it draws", "58",
        svgd.count("<circle "))
-    # the ms chart has a broken axis, so the one series that crosses the break
-    # is drawn in both bands: 61 points plus the three of it that reach the top
-    ck("best charts, ms chart adds the contrast line's three points", "64",
-       svgm.count("<circle "))
-    ck("best charts, ms chart has two bands and the decode chart one", "3",
-       svgm.count("<clipPath") + svgd.count("<clipPath"))
-    ck("best charts, the ms axis carries a break mark", "2",
-       len(re.findall(r'<line x1="(?:56|62)" y1="[\d.]+\.0" x2="(?:64|70)"', svgm)))
-    ck("best charts, the Qwen3.8 line is now unbroken", "3",
-       len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgd)))
-    ck("best charts, and on the ms chart with its contrast line", "8",
-       len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgm)))
-    # the footnote wraps, so read the text back the way a reader sees it
-    flat = " ".join(re.findall(r">([^<]*)</text>", svgd))
+    ck("best charts, and so does the cost chart", "58", svgm.count("<circle "))
+    ck("best charts, the Qwen3.8 line is unbroken on both", "6",
+       len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgd))
+       + len(re.findall(r'<line [^>]*stroke="#e05c48"[^>]*/>', svgm)))
     ck("best charts, the note says which mode was plotted", "1",
-       1 if "two modes, 41 and 47 tok/s; plotted at the upper one" in flat else 0)
-    # the plotted 8K value is the upper cluster's mean, read back off the SVG
+       1 if "two modes, 41 and 47 tok/s; plotted at the upper one" in
+       " ".join(re.findall(r">([^<]*)</text>", svgd)) else 0)
     q8 = next(r for r in led if r["model"] == "Qwen3.8-27B" and r["ctx"] == 8192
               and r["patches"])
     hi = sorted(q8["values"])[2:]
     ck("best charts, the plotted 8K value", "47.30", sum(hi) / len(hi))
     ck("best charts, and the ledger still refuses to grade it", "0",
        1 if q8["chart_grade"] else 0)
+
+    # the collapse has its own figure now: one model, two arms, one patch apart
+    svgc = open(os.path.join(HERE, "..", "..", "docs", "assets",
+                             "hybrid-ssm-collapse.svg")).read()
+    ck("collapse chart, three depths on each arm", "6", svgc.count("<circle "))
+    flatc = " ".join(re.findall(r">([^<]*)</text>", svgc))
+    ck("collapse chart, the legend names both arms", "2",
+       sum(1 for lab in ("released vLLM 0.27", "with vllm#45916") if lab in flatc))
+    ck("collapse chart, and it is the only figure carrying the unpatched arm", "0",
+       svgm.count("unpatched"))
+    # the cost chart must not quietly get the collapse back: its ceiling is what
+    # keeps the other six readable
+    ck("cost chart ceiling stays at 40", "1",
+       1 if re.search(r'text-anchor="end">40</text>', svgm) else 0)
+    ck("collapse chart ceiling reaches 275", "1",
+       1 if re.search(r'text-anchor="end">275</text>', svgc) else 0)
 
     # --- the front pages: what they embed, and the numbers they quote --------
     ROOT = os.path.join(HERE, "..", "..")
@@ -1355,6 +1361,9 @@ def main():
            + txt.count("assets/decode-ms-per-token.svg"))
     ck("README.md embeds the best-of ms chart", "1",
        rm.count("decode-ms-per-token-best.svg"))
+    for name, txt in (("README.md", rm), ("README.zh.md", zh), ("benchmarks.md", bm)):
+        ck(f"{name} embeds the collapse chart", "1",
+           txt.count("hybrid-ssm-collapse.svg"))
     ck("benchmarks.md keeps the per-campaign charts as the record", "2",
        bm.count("assets/decode-vs-context.svg")
        + bm.count("decode-vs-context-2026-08-24.svg"))

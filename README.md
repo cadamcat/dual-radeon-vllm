@@ -307,17 +307,31 @@ to a repeatability check on the whole apparatus — is in
 
 ![single card vs dual card, patched](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
-**Why one architecture was unusable at long context, and what fixed it.** Cost
-per generated token against context length. Five models sit flat along the
-bottom; Qwen3.8-27B is drawn twice in the same colour, because the contrast is
-the argument. Solid is what a released vLLM gives you — 261.9 ms per token at
-32 K, a straight climb where O(1) was promised. Dashed is the same model with
-[#45916](https://github.com/vllm-project/vllm/pull/45916): 27.7 ms, and flat.
+**What one context token costs at decode time.** The slope is the number that
+matters: it is milliseconds added per token of context, so a flat line is a
+model whose decode does not care how long the conversation is. Every line here
+is that model at its best known configuration.
 
 ![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
 
-The per-campaign versions of both charts, with every model pinned to one stack,
-are in [benchmarks.md](docs/benchmarks.md).
+**The one architecture that was unusable at long context, and what closes it.**
+Qwen3.8-27B is a hybrid SSM: 48 linear-attention layers that promise O(1) per
+token, and 16 full-attention layers that do not. On a released vLLM the full
+layers dominate and the cost climbs a straight line to **261.9 ms per token at
+32 K**. The same model on the same machine with
+[#45916](https://github.com/vllm-project/vllm/pull/45916) applied is **27.7 ms
+and flat** — 9.5× at 32 K, and the slope falls from 7.41 to 0.26 ms per
+thousand tokens of context. That PR is not merged.
+
+![the hybrid-SSM collapse and what closes it](docs/assets/hybrid-ssm-collapse.svg)
+
+Both arms are two passes on one stack with the arm order reversed, and the
+routing is recorded from inside the TP workers rather than inferred; the 8 K
+point came out in two modes and the chart says so. Method and raw rows:
+[hybrid-decode-on-rdna.md §6.6](docs/hybrid-decode-on-rdna.md).
+
+The per-campaign versions of the first two charts, with every model pinned to
+one stack, are in [benchmarks.md](docs/benchmarks.md).
 
 **What eleven lines buy on a windowed model.** The sliding-window block skip
 changes nothing below each model's own window (1.00×, there is nothing to

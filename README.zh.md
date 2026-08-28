@@ -59,7 +59,11 @@ plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因
 
 ![这台机器的最佳解码吞吐](docs/assets/decode-vs-context-best.svg)
 
-hybrid SSM 的崩塌没有了。Qwen3.8-27B 在 32K 上,发行版 vLLM 是 3.8 tok/s,加上 vllm#45916 是 **36.1 tok/s**,差 9.5 倍;它在 8K 那格四次运行分成两个模态(41 和 47 tok/s),图上画的是高的那个,图注写明了。滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。这两条虚线要的补丁上游都还没合并,复现脚本在 [patches/](patches/)。
+滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。图上的虚线要的补丁上游都还没合并,复现脚本在 [patches/](patches/)。
+
+hybrid SSM 的崩塌单独一张图。同一个模型、同一台机器,只差一个补丁:发行版 vLLM 在 32K 上每 token 要 **261.9 ms** 且随上下文直线上升,加上 vllm#45916 是 **27.7 ms** 且是平的 —— 9.5 倍,斜率从 7.41 降到 0.26 ms/千 token。两臂各跑两轮且顺序反转,路由从 TP worker 内部记录;8K 那格四次运行分成两个模态,图注写明了画的是高的那个。
+
+![hybrid SSM 的崩塌与修复](docs/assets/hybrid-ssm-collapse.svg)
 
 按 campaign 分的旧图(每张图里所有模型都钉在同一个软件栈上)仍在 [docs/benchmarks.md](docs/benchmarks.md)。
 

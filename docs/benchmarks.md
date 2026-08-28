@@ -42,6 +42,8 @@ drawn from [`../benchmarks/ledger.jsonl`](../benchmarks/ledger.jsonl) by
 
 ![cost of one context token at decode time, best known configuration](assets/decode-ms-per-token-best.svg)
 
+![the hybrid-SSM collapse and what closes it](assets/hybrid-ssm-collapse.svg)
+
 Three things about them are worth saying out loud.
 
 **Qwen3.8-27B is not the same line here as in §6.** There it is the 2026-08-24
@@ -54,9 +56,11 @@ and 42.41 — two clusters 15% apart rather than one noisy number, and adding
 passes widened the range instead of settling it. The charts plot the upper
 cluster and say so; the ledger still refuses to grade the point.
 
-**The ms-per-token chart draws that model twice**, in one colour, because the
-collapse is what the chart is for: solid is the released vLLM climbing to
-261.9 ms per token at 32 K, dashed is the same model at 27.7 and flat.
+**The collapse has its own figure.** It used to be a second Qwen3.8 line on the
+cost-per-token chart, but an axis that has to reach 261.9 ms flattens six
+series that live between 9 and 34 into the bottom tenth of it. Split out, both
+read: the cost chart carries each model at its best, and the collapse chart
+carries one model either side of one patch.
 
 ---
 
