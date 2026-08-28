@@ -1247,6 +1247,31 @@ def main():
        sum(1 for t in camp if cal[(3, t)]["prompt_tokens_got"]
            == cal[(3, t)]["prompt_tokens_wanted"]))
 
+    # --- the ledger is a projection, so check it still projects --------------
+    sys.path.insert(0, HERE)
+    import build_ledger
+    led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
+    ck("benchmarks README, ledger rows", "170", len(led))
+    ck("benchmarks README, ledger still matches its sources", "1",
+       1 if build_ledger.dump(build_ledger.build())
+       == open(os.path.join(HERE, "..", "ledger.jsonl")).read() else 0)
+    ck("benchmarks README, points that are not chart grade", "2",
+       sum(1 for r in led if not r["chart_grade"]))
+    ck("benchmarks README, and both are above the 6% cut", "2",
+       sum(1 for r in led if not r["chart_grade"] and r["range_pct"] > 6.0))
+    ck("benchmarks README, ledger range median", "0.12",
+       med([r["range_pct"] for r in led if r["range_pct"] is not None]), tol=0.05)
+    # a row must be recomputable from the file it names, not merely plausible
+    spot = next(r for r in led if r["cfg"] == "B-8B-tp2" and r["ctx"] == 32000
+                and r["date"] == "2026-08-24")
+    raw = sorted(r["decode_tps"] for r in
+                 [json.loads(l) for l in
+                  open(os.path.join(HERE, "..", "results-2026-08-24.jsonl"))]
+                 if r.get("kind") == "decode" and r.get("cfg") == "B-8B-tp2"
+                 and r.get("target") == 32000)
+    ck("benchmarks README, a ledger row recomputes from its source", "1",
+       1 if spot["values"] == raw else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
