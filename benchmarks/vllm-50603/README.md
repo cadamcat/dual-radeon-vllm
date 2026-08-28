@@ -288,6 +288,81 @@ Files: `probe_53856_027.py`, `53856-027-{stock,patched}.jsonl`,
 Reported to the PR author on request, 2026-08-28:
 [pull/53856#issuecomment-5451557090](https://github.com/vllm-project/vllm/pull/53856#issuecomment-5451557090).
 
+## Stage 4: the same two questions, re-asked on 0.27
+
+Everything above was measured on the 0.23.1 container. That is a premise, not a
+constant, and this repository has already been wrong twice this week by reading
+a 0.23.1 result as a statement about `main`. Both stages were therefore re-run
+on `rocm/vllm:rocm10.0.0_..._vllm_0.27.0` (0.27.1.dev5+gf46a9dfe2, torch 2.12,
+ROCm 10.0). The probes are byte-identical to the ones that produced the 0.23.1
+rows, so the two sweeps compare directly.
+
+**Kernel level, `probe_50603.py`, 30 cells twice.** No cell has CK slower than
+Triton, at any ratio:
+
+| gqa_ratio | gate | 0.23.1 | **0.27** |
+|---:|:--|:--|:--|
+| 1 | excluded | 2.06-4.83x | **2.03-4.09x** |
+| 2 | excluded | 1.84-7.28x | **1.70-6.05x** |
+| 3 | admitted | 2.40-7.23x | 2.20-6.05x |
+| 4 | admitted | 2.35-7.40x | 2.35-6.04x |
+
+The excluded band and the admitted band overlap on both versions, which is the
+whole argument: `>= 3` does not separate a region where CK wins from one where
+it loses. 0.27 is uniformly a little lower because the Triton fallback got
+faster (32K, the 32/16 shape: 2.584 -> 2.231 ms), not because CK got
+slower. Round to
+round the spread is at most 5.8% and usually under 3%, and the numerical
+columns are unchanged: 20 of 30 cells are bit-identical across versions and the
+other ten move in the fourth significant digit, on the Triton side too.
+
+**End to end, `probe_stage3.py`, run twice with the arms in opposite orders.**
+Run A measured stock before widened at every context, so any drift over the
+forty minutes would land on the widened arm each time; run B reverses that.
+
+| ctx | A | B | pooled | 0.23.1 |
+|---|---:|---:|---:|---:|
+| 1024 | 1.026x | 1.023x | **1.024x** | 1.027x |
+| 8192 | 1.065x | 1.103x | **1.084x** | 1.118x |
+| 32768 | 1.168x | 1.167x | **1.167x** | 1.194x |
+
+Same arm, same context, across the two passes: 0.0-0.7% apart in five of six
+cells and 2.8% in the sixth. The 1024 gain is small but it is not noise; it
+reproduces in both orders at a repeatability an order of magnitude tighter than
+the effect.
+
+**The routing proof needed its own run, and the reason is worth recording.**
+Stage 3's recorder writes from inside the TP workers by rewriting
+`chunked_prefill_paged_decode.py` before the engine starts. On 0.27 it produced
+nothing. The diagnosis is in the line numbers: the worker logged the fallback
+warning at `chunked_prefill_paged_decode.py:419`, which is where that warning
+sits in the **pristine** file, while the file on disk in that same container had
+it at 433 after the 13-line insert. **The workers ran unmodified bytecode even
+though the file on disk was modified.** Either they inherited the parent's
+already-imported module or they loaded a stale `.pyc`; the evidence here does
+not separate those, and `route_027.py` closes both by editing before any vLLM
+import and clearing `__pycache__`.
+
+`rocm.py` is not affected by this, which is why the timing cells stand:
+`probe_stage3.py` reloads that module explicitly after editing it, so the
+patched module is the one the workers get. Re-run standalone, the routing comes
+out the same shape as on 0.23.1, on both ranks:
+
+| layer | stock | widened |
+|---|---|---|
+| full attention, `window=0` | `use_custom=False` | `use_custom=True` |
+| sliding, `window=1023` | `use_custom=False` | `use_custom=False` |
+
+Recorded as `(gqa_ratio, head_size, block_size, sliding_window, use_custom)`, so
+those layers arrive at 128 and 16 and fail on `gqa_ratio` alone -- the same
+conclusion Stage 3 reached on 0.23.1, now established on the version that
+`main` actually resembles.
+
+Files: `stage1-027-r{1,2}.jsonl`, `stage3-027.jsonl`, `stage3-027b.jsonl`,
+`route-027.jsonl`, `route_027.py`, `run_stage1_027.sh`, `run_stage3_027{,b}.sh`,
+`run_route_027.sh`, `logs/s1-027-*.log`, `logs/s3-027*-driver.log`,
+`logs/r027-driver.log`, `logs/stage3-027-routes/`.
+
 ## What this does not settle
 
 Symptom B is not explained. We do not have the reporter's model
@@ -302,6 +377,7 @@ TP>1 are all untested here.
 - `probe_50603b.py` — Stage 1b, the NaN-tail positive control
 - `probe_53856.py` — Stage 1c, gfx11 runtime evidence for vllm#53856
 - `probe_stage3.py` + `diag_route2.py` — Stage 3, end-to-end and the worker-side routing proof
+- `route_027.py` — Stage 4's routing proof, edited in before any vLLM import
 - `probe_50603_cuda.py` + `kernel_lifted.py` — Stage 2, same kernel text on CUDA
 - `setup_50603.py` — the CUDA-side install, with the kernel hash assertion
 - `stage*.jsonl` — every measured cell; `logs/` — the runs that produced them

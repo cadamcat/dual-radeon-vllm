@@ -1,0 +1,37 @@
+preserved route-stock-1024.txt
+preserved route-stock-32768.txt
+preserved route-stock-8192.txt
+preserved route-widened-1024.txt
+preserved route-widened-32768.txt
+preserved route-widened-8192.txt
+########## arm=stock ctx=1024  11:02:42 ##########
+exit=0 11:08:48
+ARM=stock ctx=1024 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=43.75 t8=0.2 t64=1.5 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=widened ctx=1024  11:08:48 ##########
+exit=0 11:14:13
+ARM=widened ctx=1024 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=44.87 t8=0.2 t64=1.4 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=stock ctx=8192  11:14:13 ##########
+exit=0 11:19:44
+ARM=stock ctx=8192 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=23.39 t8=0.5 t64=2.8 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=widened ctx=8192  11:19:44 ##########
+exit=0 11:25:18
+ARM=widened ctx=8192 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=24.91 t8=0.4 t64=2.6 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=stock ctx=32768  11:25:18 ##########
+exit=0 11:31:26
+ARM=stock ctx=32768 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=8.50 t8=1.1 t64=7.6 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+########## arm=widened ctx=32768  11:31:26 ##########
+exit=0 11:37:43
+ARM=widened ctx=32768 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=9.94 t8=0.9 t64=6.6 routes=NONE
+SAMPLE:  hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hello hel
+STAGE3_027_DONE

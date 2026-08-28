@@ -1056,6 +1056,71 @@ def main():
     ck("50603 README, the Triton column is clean in all 64", "0",
        sum(1 for r in v53 if not r["triton_forced"].get("all_finite", True)))
 
+    # --- stage 4: both stages re-asked on 0.27 ------------------------------
+    # 0.23.1 is a premise, not a constant. Every figure in that section is
+    # recomputed here from the 0.27 rows rather than carried over.
+    s1a = [json.loads(l) for l in open(os.path.join(GDIR, "stage1-027-r1.jsonl"))]
+    s1b = [json.loads(l) for l in open(os.path.join(GDIR, "stage1-027-r2.jsonl"))]
+    ck("50603 README, stage4 kernel cells per round", "30", len(s1a))
+    ck("50603 README, and the same grid twice", "30", len(s1b))
+    spd = lambda r: r["triton"]["median_ms"] / r["ck"]["median_ms"]
+    ck("50603 README, stage4 cells where CK is slower", "0",
+       sum(1 for r in s1a + s1b if spd(r) < 1.0))
+    for gqa, lo, hi in ((1, "2.03", "4.09"), (2, "1.70", "6.05"),
+                        (3, "2.20", "6.05"), (4, "2.35", "6.04")):
+        band = [spd(r) for r in s1a + s1b if r["gqa_ratio"] == gqa]
+        ck(f"50603 README, stage4 gqa={gqa} floor", lo, min(band))
+        ck(f"50603 README, stage4 gqa={gqa} ceiling", hi, max(band))
+    kk = lambda r: (r["gqa_ratio"], r["num_heads"], r["ctx_len"])
+    A1 = {kk(r): r for r in s1a}
+    ck("50603 README, stage4 round-to-round spread at most", "5.8",
+       100 * max(abs(spd(A1[kk(r)]) - spd(r)) / spd(A1[kk(r)]) for r in s1b),
+       tol=0.02)
+    g1 = {kk(r): r for r in
+          [json.loads(l) for l in open(os.path.join(GDIR,
+                                                    "stage1-rocm-paths.jsonl"))]}
+    ck("50603 README, stage4 cells bit-identical across versions", "20",
+       sum(1 for r in s1a
+           if abs(g1[kk(r)]["ck"]["max_rel_err"] - r["ck"]["max_rel_err"]) < 1e-12))
+    ck("50603 README, stage4 Triton 32K gqa=2 on 0.23.1", "2.584",
+       g1[(2, 32, 32768)]["triton"]["median_ms"])
+    ck("50603 README, and on 0.27", "2.231", A1[(2, 32, 32768)]["triton"]["median_ms"])
+
+    # end to end, two passes with the arms in opposite orders
+    e3 = {}
+    for tag, fn in (("A", "stage3-027.jsonl"), ("B", "stage3-027b.jsonl")):
+        for r in [json.loads(l) for l in open(os.path.join(GDIR, fn))]:
+            e3[(tag, r["arm"], r["ctx"])] = r["decode_tok_s"]
+    ratio = lambda tag, ctx: e3[(tag, "widened", ctx)] / e3[(tag, "stock", ctx)]
+    for ctx, a, b, pooled in ((1024, "1.026", "1.023", "1.024"),
+                              (8192, "1.065", "1.103", "1.084"),
+                              (32768, "1.168", "1.167", "1.167")):
+        ck(f"50603 README, stage4 e2e {ctx} run A", a, ratio("A", ctx))
+        ck(f"50603 README, stage4 e2e {ctx} run B", b, ratio("B", ctx))
+        ck(f"50603 README, stage4 e2e {ctx} pooled", pooled,
+           (ratio("A", ctx) + ratio("B", ctx)) / 2)
+    reps = sorted(100 * abs(e3[("A", arm, ctx)] - e3[("B", arm, ctx)])
+                  / e3[("A", arm, ctx)]
+                  for arm in ("stock", "widened") for ctx in (1024, 8192, 32768))
+    ck("50603 README, stage4 five of six cells within", "0.7", reps[4], tol=0.15)
+    ck("50603 README, and the sixth at", "2.8", reps[5], tol=0.02)
+
+    # the routing proof, which needed its own run on 0.27
+    rt = {r["arm"]: r for r in [json.loads(l) for l in
+                                open(os.path.join(GDIR, "route-027.jsonl"))]}
+    full = lambda arm, flag: [x for x in rt[arm]["routes"]
+                              if "(2, 128, 16, 0, %s)" % flag in x]
+    slide = lambda arm, flag: [x for x in rt[arm]["routes"]
+                               if "(2, 128, 16, 1023, %s)" % flag in x]
+    ck("50603 README, stage4 stock leaves full attention on Triton", "2",
+       len(full("stock", "False")))
+    ck("50603 README, stage4 widened moves it to CK on both ranks", "2",
+       len(full("widened", "True")))
+    ck("50603 README, stage4 sliding layers stay put in both arms", "4",
+       len(slide("stock", "False")) + len(slide("widened", "False")))
+    ck("50603 README, stage4 the widened gate really is widened", "1",
+       1 if rt["widened"]["gate_gqa2"] and not rt["stock"]["gate_gqa2"] else 0)
+
     # --- where the patch actually helps: the coverage sweep -----------------
     # The 0.27 pair measures one configuration and the patch loses there. The
     # sweep is what stops that from being read as "the patch is worthless".

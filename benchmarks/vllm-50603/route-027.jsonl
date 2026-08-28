@@ -1,0 +1,2 @@
+{"arm": "stock", "ctx": 1024, "gate_gqa2": false, "routes": ["pid=94 (2, 128, 16, 0, False)", "pid=94 (2, 128, 16, 1023, False)", "pid=95 (2, 128, 16, 0, False)", "pid=95 (2, 128, 16, 1023, False)"]}
+{"arm": "widened", "ctx": 1024, "gate_gqa2": true, "routes": ["pid=94 (2, 128, 16, 0, True)", "pid=94 (2, 128, 16, 1023, False)", "pid=95 (2, 128, 16, 0, True)", "pid=95 (2, 128, 16, 1023, False)"]}

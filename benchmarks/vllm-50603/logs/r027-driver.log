@@ -1,0 +1,9 @@
+########## route arm=stock  11:38:05 ##########
+exit=0 11:43:26
+ARM=stock ctx=1024 gate(gqa=2)=False multiproc=(default)
+ROUTES(stock,1024) n=4
+########## route arm=widened  11:43:26 ##########
+exit=0 11:49:02
+ARM=widened ctx=1024 gate(gqa=2)=True multiproc=(default)
+ROUTES(widened,1024) n=4
+ROUTE_027_DONE

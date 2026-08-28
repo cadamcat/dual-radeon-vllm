@@ -1,0 +1,9 @@
+########## round 1  10:55:09 ##########
+exit=0 round=1 10:55:29
+gqa=2 (32/16) ctx=32768  gated_in=False | triton rel=3.19e-03 rms=5.81e-04 ulp=81.8 2.231ms | ck rel=3.68e-03 rms=7.14e-04 ulp=135.1 0.917ms
+PROBE_DONE
+########## round 2  10:55:29 ##########
+exit=0 round=2 10:55:48
+gqa=2 (32/16) ctx=32768  gated_in=False | triton rel=3.19e-03 rms=5.81e-04 ulp=81.8 2.249ms | ck rel=3.68e-03 rms=7.14e-04 ulp=135.1 0.923ms
+PROBE_DONE
+S1_027_DONE

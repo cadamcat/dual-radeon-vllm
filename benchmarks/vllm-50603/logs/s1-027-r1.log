@@ -1,0 +1,38 @@
+device=AMD Radeon RX 7900 XT torch=2.12.0+rocm10.0.0
+gate as shipped, for reference:
+   use_rocm_custom_paged_attention(gqa_ratio=1) = False
+   use_rocm_custom_paged_attention(gqa_ratio=2) = False
+   use_rocm_custom_paged_attention(gqa_ratio=3) = True
+   use_rocm_custom_paged_attention(gqa_ratio=4) = True
+WARNING 08-28 10:55:15 [chunked_prefill_paged_decode.py:419] Cannot use ROCm custom paged attention kernel, falling back to Triton implementation.
+gqa=1 (8/8) ctx=1024   gated_in=False | triton rel=2.83e-03 rms=5.41e-04 ulp=71.6 0.437ms | ck rel=3.70e-03 rms=7.05e-04 ulp=103.0 0.214ms
+gqa=1 (8/8) ctx=2048   gated_in=False | triton rel=2.40e-03 rms=5.86e-04 ulp=83.6 0.421ms | ck rel=3.33e-03 rms=7.55e-04 ulp=106.4 0.207ms
+gqa=1 (8/8) ctx=4096   gated_in=False | triton rel=3.18e-03 rms=5.80e-04 ulp=114.5 0.572ms | ck rel=3.01e-03 rms=7.35e-04 ulp=64.7 0.213ms
+gqa=1 (8/8) ctx=8192   gated_in=False | triton rel=2.77e-03 rms=6.32e-04 ulp=78.3 0.815ms | ck rel=3.80e-03 rms=8.03e-04 ulp=196.6 0.358ms
+gqa=1 (8/8) ctx=16384  gated_in=False | triton rel=3.10e-03 rms=6.33e-04 ulp=122.0 1.259ms | ck rel=3.40e-03 rms=7.84e-04 ulp=127.1 0.353ms
+gqa=1 (8/8) ctx=32768  gated_in=False | triton rel=2.79e-03 rms=6.68e-04 ulp=120.8 2.186ms | ck rel=3.25e-03 rms=8.16e-04 ulp=219.0 0.535ms
+gqa=2 (8/4) ctx=1024   gated_in=False | triton rel=2.54e-03 rms=5.01e-04 ulp=165.8 0.431ms | ck rel=3.30e-03 rms=6.57e-04 ulp=190.3 0.193ms
+gqa=2 (8/4) ctx=2048   gated_in=False | triton rel=2.71e-03 rms=5.66e-04 ulp=123.7 0.488ms | ck rel=3.00e-03 rms=7.14e-04 ulp=157.2 0.192ms
+gqa=2 (8/4) ctx=4096   gated_in=False | triton rel=2.72e-03 rms=5.44e-04 ulp=80.2 0.598ms | ck rel=3.38e-03 rms=6.81e-04 ulp=101.4 0.196ms
+gqa=2 (8/4) ctx=8192   gated_in=False | triton rel=2.76e-03 rms=4.72e-04 ulp=88.5 0.891ms | ck rel=2.99e-03 rms=6.07e-04 ulp=132.8 0.250ms
+gqa=2 (8/4) ctx=16384  gated_in=False | triton rel=2.87e-03 rms=6.41e-04 ulp=77.3 1.234ms | ck rel=3.28e-03 rms=8.02e-04 ulp=112.6 0.225ms
+gqa=2 (8/4) ctx=32768  gated_in=False | triton rel=2.94e-03 rms=6.24e-04 ulp=81.7 2.193ms | ck rel=3.30e-03 rms=7.70e-04 ulp=85.2 0.369ms
+gqa=3 (12/4) ctx=1024   gated_in=True  | triton rel=2.62e-03 rms=4.75e-04 ulp=72.1 0.438ms | ck rel=3.13e-03 rms=6.18e-04 ulp=149.0 0.190ms
+gqa=3 (12/4) ctx=2048   gated_in=True  | triton rel=3.37e-03 rms=5.57e-04 ulp=123.7 0.490ms | ck rel=3.96e-03 rms=7.14e-04 ulp=166.5 0.195ms
+gqa=3 (12/4) ctx=4096   gated_in=True  | triton rel=2.77e-03 rms=5.49e-04 ulp=78.2 0.580ms | ck rel=3.28e-03 rms=6.94e-04 ulp=58.5 0.204ms
+gqa=3 (12/4) ctx=8192   gated_in=True  | triton rel=3.34e-03 rms=5.89e-04 ulp=102.3 0.729ms | ck rel=3.78e-03 rms=7.46e-04 ulp=100.0 0.203ms
+gqa=3 (12/4) ctx=16384  gated_in=True  | triton rel=3.11e-03 rms=6.67e-04 ulp=76.8 1.152ms | ck rel=4.11e-03 rms=8.35e-04 ulp=244.8 0.207ms
+gqa=3 (12/4) ctx=32768  gated_in=True  | triton rel=2.67e-03 rms=5.20e-04 ulp=55.6 2.191ms | ck rel=3.42e-03 rms=6.34e-04 ulp=78.6 0.363ms
+gqa=4 (16/4) ctx=1024   gated_in=True  | triton rel=2.73e-03 rms=5.40e-04 ulp=94.8 0.434ms | ck rel=3.60e-03 rms=6.99e-04 ulp=133.6 0.185ms
+gqa=4 (16/4) ctx=2048   gated_in=True  | triton rel=2.66e-03 rms=5.30e-04 ulp=123.7 0.463ms | ck rel=3.67e-03 rms=6.66e-04 ulp=174.2 0.193ms
+gqa=4 (16/4) ctx=4096   gated_in=True  | triton rel=2.94e-03 rms=5.58e-04 ulp=170.6 0.547ms | ck rel=4.62e-03 rms=7.08e-04 ulp=134.2 0.195ms
+gqa=4 (16/4) ctx=8192   gated_in=True  | triton rel=2.66e-03 rms=5.02e-04 ulp=75.5 0.734ms | ck rel=2.91e-03 rms=6.31e-04 ulp=180.2 0.208ms
+gqa=4 (16/4) ctx=16384  gated_in=True  | triton rel=2.89e-03 rms=5.38e-04 ulp=146.4 1.162ms | ck rel=2.89e-03 rms=6.70e-04 ulp=131.1 0.200ms
+gqa=4 (16/4) ctx=32768  gated_in=True  | triton rel=2.58e-03 rms=6.27e-04 ulp=86.1 2.198ms | ck rel=4.71e-03 rms=7.75e-04 ulp=248.2 0.364ms
+gqa=2 (32/16) ctx=1024   gated_in=False | triton rel=2.57e-03 rms=4.54e-04 ulp=88.5 0.463ms | ck rel=3.56e-03 rms=5.88e-04 ulp=109.5 0.237ms
+gqa=2 (32/16) ctx=2048   gated_in=False | triton rel=2.12e-03 rms=4.63e-04 ulp=142.7 0.454ms | ck rel=3.70e-03 rms=5.98e-04 ulp=152.5 0.215ms
+gqa=2 (32/16) ctx=4096   gated_in=False | triton rel=3.14e-03 rms=5.94e-04 ulp=128.1 0.612ms | ck rel=4.63e-03 rms=7.53e-04 ulp=389.3 0.359ms
+gqa=2 (32/16) ctx=8192   gated_in=False | triton rel=3.11e-03 rms=5.35e-04 ulp=122.9 0.933ms | ck rel=4.14e-03 rms=6.70e-04 ulp=165.1 0.541ms
+gqa=2 (32/16) ctx=16384  gated_in=False | triton rel=2.23e-03 rms=4.83e-04 ulp=95.8 1.280ms | ck rel=3.50e-03 rms=6.03e-04 ulp=117.5 0.545ms
+gqa=2 (32/16) ctx=32768  gated_in=False | triton rel=3.19e-03 rms=5.81e-04 ulp=81.8 2.231ms | ck rel=3.68e-03 rms=7.14e-04 ulp=135.1 0.917ms
+PROBE_DONE

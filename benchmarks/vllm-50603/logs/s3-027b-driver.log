@@ -1,0 +1,25 @@
+########## B arm=widened ctx=1024  11:54:48 ##########
+exit=0 12:00:05
+ARM=widened ctx=1024 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=44.99 t8=0.2 t64=1.4 routes=NONE
+########## B arm=stock ctx=1024  12:00:05 ##########
+exit=0 12:05:43
+ARM=stock ctx=1024 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=43.98 t8=0.2 t64=1.5 routes=NONE
+########## B arm=widened ctx=8192  12:05:43 ##########
+exit=0 12:11:05
+ARM=widened ctx=8192 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=25.07 t8=0.4 t64=2.6 routes=NONE
+########## B arm=stock ctx=8192  12:11:05 ##########
+exit=0 12:16:36
+ARM=stock ctx=8192 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=22.73 t8=0.4 t64=2.9 routes=NONE
+########## B arm=widened ctx=32768  12:16:36 ##########
+exit=0 12:22:53
+ARM=widened ctx=32768 patched=True gate(gqa=2)=True
+RESULT decode_tok_s=9.94 t8=0.9 t64=6.6 routes=NONE
+########## B arm=stock ctx=32768  12:22:53 ##########
+exit=0 12:28:47
+ARM=stock ctx=32768 patched=False gate(gqa=2)=False
+RESULT decode_tok_s=8.52 t8=1.1 t64=7.6 routes=NONE
+STAGE3_027B_DONE
