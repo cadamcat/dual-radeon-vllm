@@ -1,6 +1,21 @@
 {
  "articles": [
   {
+   "href": "articles/speculative-decoding-net-loss.html",
+   "title": "One boolean costs 71% on a Radeon and 61% on an A100",
+   "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and 70.8% slower at 32K. One clause in an or chain reads speculation's second query row as \"not decode\" and gives up 120 of 128 workgroups.",
+   "measured": "measured 2026-08-26",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "speculative decoding",
+    "Triton attention",
+    "vllm#45450"
+   ]
+  },
+  {
    "href": "articles/weight-loading-19x.html",
    "title": "Loading weights was slower than the disk, twice over",
    "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",

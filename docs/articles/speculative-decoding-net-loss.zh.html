@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%</title>
+<meta name="description" content="投机解码在 1K 上下文是 +36.9%，在 32K 上是 -70.8%，因为 max_seqlen_q > 1 把 Triton 注意力 kernel 从 128 个 workgroup 降到 8 个。两个厂商都测了。">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #ladder, #recover { --labw:132px; }
+  #sweep, #vendor { --labw:158px; }
+  @media (max-width:480px){ #ladder, #recover { --labw:104px; }
+                            #sweep, #vendor { --labw:118px; } }
+
+  /* ---- a bar that can go either way, because the finding changes sign ---- */
+  .bars .dtrack { position:relative; background:var(--surface-3); border-radius:99px;
+                  height:20px; overflow:hidden; }
+  .bars .dtrack .zero { position:absolute; top:0; bottom:0; width:1px;
+                        background:var(--border-2); z-index:2; }
+  .bars .dtrack .fill { position:absolute; top:0; bottom:0; width:0;
+                        transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .dtrack .fill.pos { background:var(--s3); }
+  .bars .dtrack .fill.neg { background:var(--s1); }
+  .bars .dtrack .ref { position:absolute; top:1px; bottom:1px; width:2px;
+                       background:var(--text-dim); z-index:3; opacity:.75; }
+  .bars .val.pos { color:var(--green); }
+  .bars .val.neg { color:var(--red); }
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+
+  /* ---- the two launch grids, side by side ---- */
+  .grids { display:grid; grid-template-columns:1fr 1fr; gap:.9em; margin:1.6em 0; }
+  .gcard { border:1px solid var(--border); border-radius:11px; padding:1em 1.1em;
+           background:var(--surface-2); }
+  .gcard.win { background:var(--green-bg);
+               border-color:color-mix(in srgb, var(--green) 30%, transparent); }
+  .gcard h4 { margin:0 0 .3em; font-family:var(--mono); font-size:.76rem;
+              letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); }
+  .gcard.win h4 { color:var(--green); }
+  .gcard .g { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+              word-break:break-word; }
+  .gcard .wg { font-family:var(--mono); font-size:1.5rem; font-weight:800;
+               color:var(--text); margin-top:.35em; }
+  .gcard.win .wg { color:var(--green); }
+  .gcard .wgu { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  @media (max-width:520px){ .grids { grid-template-columns:1fr; } }
+
+  /* ---- the per-call distribution, which is not a mean ---- */
+  .dist { display:grid; grid-template-columns:max-content 1fr 1fr max-content;
+          column-gap:1.1em; align-items:center; font-size:.86rem; margin-top:.4em; }
+  .dist > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .dist > div:nth-last-child(-n+4) { border-bottom:0; }
+  .dist .h { font-family:var(--mono); font-size:.72rem; letter-spacing:.06em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .dist .k { font-family:var(--mono); font-size:.76rem; color:var(--text-dim); }
+  .dist .a, .dist .b, .dist .r { font-family:var(--mono);
+                                 font-variant-numeric:tabular-nums; }
+  .dist .r { text-align:right; color:var(--text-2); }
+  .dist .big .r { color:var(--red); font-weight:800; }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="语言与配色主题">
+  <a class="lang" href="speculative-decoding-net-loss.html" hreflang="en">EN</a>
+  <a class="lang" href="speculative-decoding-net-loss.zh.html" hreflang="zh" aria-current="page">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="跟随系统">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="浅色">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="深色">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">RDNA3 · CUDA · 投机解码 · 实测于 2× RX 7900 XT 与一张 A100</div>
+  <h1>一个布尔值，在 Radeon 上是 71 %，<br>在 A100 上是 61 %</h1>
+  <p class="lede">打开 vLLM 自己文档里写明支持的 MTP 助手，<code>gemma-4-31B</code>
+  在 1K 上下文下解码<em>快</em> 36.9 %，在 32K 下<em>慢</em> 70.8 %。原因不是草稿模型、不是硬件、
+  也不是接受率：投机把 <code>max_seqlen_q</code> 设成 2，而某个 <code>or</code>
+  链里的一句把这读成"这不是 decode"，于是 kernel 从 128 个 workgroup 掉到 8 个。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">以及一张 <b>A100 80G</b> · CUDA</span>
+    <span class="chip"><b>gemma-4-31B</b> + 官方 MTP 助手</span>
+    <span class="chip">实测 <b>2026-08-01</b> 与 <b>2026-08-26</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>vLLM 的文档把这个助手列为支持，并给出命令行，完全没提上下文长度。在四个深度上测下来，
+  效果是<strong>单调的，而且会变号</strong>：+36.9 %、−14.0 %、−32.4 %、−70.8 %。到 8K 就已经是净亏。</p>
+  <p>门是 Triton unified-attention 后端 <code>use_3d</code> 条件里的
+  <code>max_seqlen_q &gt; 1</code>。3D kernel 把长 KV 序列切成段并行归约；
+  投机多出来的那一行 query 让它失去资格，于是 launch grid 从
+  <strong>1 × 8 × 16 变成 1 × 8</strong>。那一句上的注释说的是"这一批里有 prefill 请求"，
+  但真正的约束是缓冲区形状：段缓冲按序列分配、按 token 索引，只有在一行 query 时两者才重合。</p>
+  <p><strong>三个看起来更像的解释都被测过并否掉了。</strong>不是 KV head 太少：这个模型有 16 个，
+  不开投机时好好的。不是多出来的那行 query：直接调 kernel，从一行到两行在 32K 上一个构造下花
+  <strong>0.08 %</strong>，另一个构造下 0.16 %。不是分块参数：把上游给 Blackwell
+  调的那组常量移过来，反而慢 8.7 %。</p>
+  <p>这个论断说的是一个 kernel，不是一个厂商，所以它预言：任何被路由到同一个 kernel 的 CUDA
+  机器都会出现同样的塌陷，而没有这道门的后端不会。一张租来的 A100 把两条都测了：
+  在被强制的默认路径上 <strong>30K −28.2 %、50K −61.1 %</strong>，换到 FlashInfer 塌陷消失。
+  两条预言都成立。</p>
+</div>
+
+<h2><span class="n">1</span>这条阶梯长什么样</h2>
+
+<p><code>gemma-4-31B-it-qat-w4a16-ct</code>，TP=2，batch 1，greedy，官方的
+<code>gemma-4-31B-it-assistant</code>，<code>num_speculative_tokens: 1</code>。
+解码用同一深度下 64 token 生成减 8 token 生成的差分，与 prefill 分开。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 投机在各个上下文长度上值多少
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="ladder"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 取自 <code>benchmarks/speculative-decoding/</code>。四个深度上单调，
+    而且在 1K 与 8K 之间穿过零 —— <strong>这个交叉点没有测出来</strong>。
+    把鼠标停在任意一条上可以看到两个速率。MTP 那一臂在五周之后作为另一次对比的 stock
+    基线又测了一遍：三个长深度重现到 <strong>0.45 %</strong>，1K 差 6.0 % ——
+    也就是说，承载这个结论的那一端，正是重现得最好的那一端。
+  </figcaption>
+</figure>
+
+<p>vLLM 自己的计数器在 32K 上是 <code>Mean acceptance length: 1.12</code>，78 个草稿接受 9 个。
+反推 1K 的加速意味着那里接受率大约 0.46，所以接受率也随深度下降。
+这确实是一笔真实开销 —— 一个被拒的草稿仍然付了助手的一次前向和目标模型的一次验证 ——
+但在助手只有四层宽的情况下，它撑不起 −70.8 %。第 5 节给出撑得起的那个。</p>
+
+<h2><span class="n">2</span>那一句</h2>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/v1/attention/ops/triton_unified_attention.py</span></div>
+<pre>use_3d = <span class="k">not</span> (
+    seq_threshold_3D <span class="k">is None</span>
+    <span class="k">or</span> ...
+    <span class="k">or</span> <span class="r">max_seqlen_q &gt; 1</span>          <span class="c"># 投机让它变成 2</span>
+    <span class="k">or</span> num_seqs &gt; seq_threshold_3D
+    <span class="k">or</span> is_batch_invariant
+)
+</pre></div>
+
+<p>这一句决定的是：kernel 被允许用掉这块 GPU 的多少。</p>
+
+<div class="grids" id="grids"></div>
+
+<p>那一句上的注释说的是"这一批里至少有一个 prefill 请求"。真正的约束不是这个，
+而这一点很重要，因为它决定了真正的修复长什么样。段缓冲分配成
+<code>[seq_threshold_3D, num_heads_q, segments, headdim]</code> —— 按<em>序列</em>；
+索引成 <code>segm_output[token, head, segm_idx, :]</code> —— 按<em>token</em>。
+一行 query 时两者重合；两行时缓冲区会越界，于是这道门把它排除掉，
+而 <code>max_seqlen_q &gt; 1</code> 顺带把投机和 prefill 一起抓走了，因为它分不出这两者。</p>
+
+<h2><span class="n">3</span>只剩一个解释的那个对照</h2>
+
+<p>最直觉的读法是：两行 query 本来就是更多的工作。用这个模型的形状直接调
+<code>unified_attention</code>，不加载模型也不开投机，扫 query 行数：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 同一个 kernel，只改 query 行数，不加载模型
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="sweep"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 每一条是两行 query 相对同一次扫描自己那个一行的时间，单位百分比；
+    两个独立构造，分别跑的。8K 和 32K 上，从一行到两行在两个构造里都是免费的。
+    1K 上反而<em>更快</em>，39 % 和 34 %，因为在那里退回 2D kernel 已经不再付出代价，
+    却省下了分段的开销 —— 这也是为什么这道门并不荒唐，只是太粗。
+    <strong>两个构造在 16K 上不一致</strong>，−0.3 % 对 −10.4 %，
+    而动的是那个一行的格子，它是每组里最先测的；那里两行、四行、八行三个格子在两个构造之间只差 2.2 %。
+    在 32K，也就是结论所在的深度，连一行的格子都只差 0.2 %。构造之间的绝对水平在 8K 上最多差 9 %，
+    所以这里每一条都是同一次扫描内部的比值。把鼠标停上去可以看到四个 query 长度。
+  </figcaption>
+</figure>
+
+<p>另外两个解释也测过并否掉了。<strong>KV head 太少</strong>：
+<a href="hybrid-ssm-collapse.zh.html">混合 SSM 那篇</a>里的塌陷来自只有 4 个 KV head，
+而这个模型有 16 个，不开投机时没问题。<strong>分块参数</strong>：上游有一段
+<code>tuned_large_head</code>，条件是 <code>head_size == 256 and max_seqlen_q &gt; 1</code>，
+被限定在 Blackwell 上，其余条件这台机器全都满足；把它的 <code>BLOCK_M = 32</code>
+移过来，32K 反而慢了 8.7 %。</p>
+
+<div class="note">
+  <span class="lbl">用均值就看不见这件事
+  <span class="prov no">原始 trace 未入库</span></span>
+  32K 上 <code>kernel_unified_attention</code> 的单次调用耗时，来自留在测试机上的 torch-profiler
+  trace；入库的是汇总和 trace 文件名，所以这是本页唯一一个无法重算的块：
+  <div class="dist" id="dist"></div>
+  大多数调用几乎不动，少数爆炸。这是这个模型交替式注意力的结果：
+  滑动窗口层看到的 KV 很短，不在乎；全局层要扫完整的 32K，完全失去了分段。
+  报那个 9.2× 的均值，两个群体哪个都没描述到。<code>hipGraphLaunch</code> 从 63 变成 324，
+  所以图重放是好的 —— 之所以查它，是因为它是最显眼的嫌疑对象。
+</div>
+
+<h2><span class="n">4</span>另一个厂商</h2>
+
+<p>一个关于 kernel 的论断，会对它没被测过的硬件做出预言。如果塌陷就是 3D 掉到 2D，
+那么任何被路由到同一个 kernel 的 CUDA 机器都该出现它，并随上下文加深；
+而没有这道门的后端不该出现。<code>gemma-4</code> 的 head 维度不齐，
+所以只要 FA4 不可用，vLLM 就强制走 <code>TRITON_ATTN</code> —— 而 A100 没有 FA4。
+于是这个预言只要花一小时的租用时间就能测。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 同一个模型在一张 A100 80G 上
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="vendor"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 取自 <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>，
+    vLLM 0.28.0，<strong>每格一次运行</strong> —— 是一次探测，不是一次 campaign。
+    灰色标记是这台机器 32K 上的 −70.8 %，用作比例尺。在被强制的默认路径上，
+    MTP 是随深度加深的净亏；在 FlashInfer 上，同一个 MTP 在 30K 上是正的，
+    而 50K 上残留的 −8.7 % 是草稿模型的经济性问题，不是那种病理性掉落。
+    30K 的两个 FlashInfer 数字来自软件栈相同的两台不同 Colab VM；
+    这里其他每一个比值都在同一个会话内计算，而 50K 那四个格子全部来自同一个会话。
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>把投机放回 3D 路径之后值多少</h2>
+
+<p>手工把缓冲区加宽、把阈值抬到 2，32K 上从 8.85 恢复到 32.42 —— 投机终于赢过了不投机。
+但那不是修复：它没法表达"投机的两行 query，但不要 prefill 的四千行"；
+而且在 30K 提示下 greedy 输出从第 35 个 token 起与 stock 分叉，三个可能的成因当时没有分开。</p>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 六月就开着、
+卡在冲突上，而它正是那一节要的形状：门变成
+<code>max_seqlen_q &gt; decode_query_len</code>，prefill 仍被排除，段缓冲按 token 分配。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 同一条阶梯，走 vllm#45450 的准入
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="recover"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> stock 对该 PR 的机制，两边都开着 MTP，同一台机器同一次会话。
+    对照图 1 里的不投机基线，投机在试过的每个深度上都是净正的。
+    手工加宽那次实验在 32K 上落在该 PR 自己数字的 0.5 % 以内，
+    这正是说明两者在做同一件事的证据。
+  </figcaption>
+</figure>
+
+<p>分叉那个问题也了结了。kernel 层的定输入对比，18 个用例，显示两条路径各自逐位确定，
+而两者最多相差一个 bf16 ULP —— 在一行 query 下也是如此，而一行正是今天线上跑的行为，
+两行、四行同样。第 35 个 token 的分叉是既有的 2D/3D 归约顺序重结合，
+batch size 在生产里本来就会切换它，不是这次准入带来的缺陷。</p>
+
+<h2><span class="n">6</span>谁报了什么</h2>
+
+<p>同样的 3D 掉 2D 最早由别人报出：
+<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a>，2026-07-09，
+在一张 B200 上跑同一架构的另一种量化。那份报告的触发条件是同一条 <code>or</code>
+链里的另一句 —— <code>num_seqs &gt; seq_threshold_3D</code>，一个 batch 大小阈值 ——
+它提议的修复从 SM 数推导这个阈值。<strong>那个修复够不到这里这个触发条件</strong>：
+<code>max_seqlen_q &gt; 1</code> 与那个阈值无关，所以无论阈值怎么算，投机照样掉到 2D。
+这里新的是第二个触发条件、它不同的成因，以及 RDNA3 上的实测。</p>
+
+<p>2026-08-01 贴到了那个 thread，2026-08-26 贴到了
+<a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a> ——
+CUDA 侧一份同模型同症状的报告。那位报告者确认显式选 FlashInfer 可以绕开它，
+这与机理吻合：塌陷是这个 Triton kernel 特有的，而显式指定后端就绕过了那次强制。
+ROCm 上没有 FlashInfer，所以在这台硬件上办法仍然是按深度决定开不开。</p>
+
+<h2><span class="n">7</span>没有被确立的部分</h2>
+
+<h3>交叉点</h3>
+<p>在 1K 与 8K 之间某处，没有测。A100 那侧也有同样的缺口：测了 30K 和 50K，
+而 MTP 在 FlashInfer 上何时不再划算，只框出了范围，没有定位。</p>
+
+<h3>重复</h3>
+<p>ROCm 这条阶梯每格一个进程。MTP 那一臂后来发现有第二次独立运行，隔了五周，
+三个长深度一致到 0.45 % —— 但不投机那一臂一次也没有，而且接受率没有逐格记录。
+A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有量化。</p>
+
+<h3>采样</h3>
+<p>这里的一切都是 <code>temperature=0</code>，也就是草稿与目标最容易一致的情形。
+采样应当降低接受率、让投机更不划算，但两个厂商上都没有测。</p>
+
+<h3>每边一个模型</h3>
+<p>gfx1100、TP=2、一台没有 P2P 的 VFIO guest、一个 checkpoint；以及一张 A100、一张卡、
+一个 checkpoint。机理是一个关于共享 kernel 的源码级论断，
+支撑它的是两台机器给出一致结果，而不是其中任何一次单独的测量。</p>
+
+<h2><span class="n">8</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · 找到了修复，并在两个厂商上验证</span>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 六月就开着，
+  独立地收敛到了同一个处方。它的准入机制在同一天于两台机器上验证：
+  A100 上 k ∈ {1, 2, 4} 输出逐位一致、稳定约 2×，以及这里图 4 的那条阶梯。
+  A100 那一半已贴到该 PR。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · 分叉问题已关闭</span>
+  第 5 节里那三个没分开的成因分开了：18 个定输入 kernel 对比，每条路径逐位确定，
+  两者在每个 query 长度上都在一个 bf16 ULP 之内，包括今天线上跑的那个长度。
+  手工加宽那次实验里看起来像正确性风险的东西，是 batch size 本来就会切换的归约顺序重结合。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "没有重复"这句说过头了</span>
+  <code>docs/speculative-decoding-on-rdna.md</code> §1 说这份文档里每个数字都是单次运行、
+  没有任何进程级重复。MTP 那一臂是有的：vllm#45450 对比里的 stock 基线就是同一配置的再一次测量，
+  在 8K、16K、32K 上一致到 0.45 %。文档现在这么写了，
+  <code>verify_doc_figures.py</code> 也把这个差值钉住了。
+</div>
+
+<div class="note">
+  <span class="lbl">仍然开着</span>
+  截至 2026-08-29，<a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
+  仍然开着并且有冲突，<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a>
+  及其提议的修复也一样。在其中之一落地之前，这台硬件上的实用建议没有变：
+  短提示打开助手，到 8K 就关掉 —— 那里它已经是净亏。
+</div>
+
+<div class="foot-note">
+  <p><strong>数据。</strong>ROCm 的两条阶梯、直接调 kernel 的扫描和正确性用例在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
+  A100 的矩阵、日志和完整配方 —— 包括在 vLLM 0.28 上显式指定 FlashInfer
+  所需的那个多模态上限条件 —— 在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/README.md"><code>benchmarks/cuda-a100/</code></a>。
+  完整的写作在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/speculative-decoding-on-rdna.md">speculative-decoding-on-rdna.md</a>。
+  上面那份单次调用分布来自留在测试机上的 torch-profiler trace，每个约 2 MB；
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/trace-unified-attention.json"><code>trace-unified-attention.json</code></a>
+  里是从它们导出的内容和 trace 文件名，那张表也据此做了标记。</p>
+  <p>助手是 <code>google/gemma-4-31B-it-assistant</code>，0.90 GiB，未设访问限制。
+  它的 <code>head_dim</code> 与 <code>global_head_dim</code> 和目标模型一致，
+  这正是两者能共用一份 KV cache 的原因。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in speculative-decoding-net-loss.html. Derived from benchmarks/speculative-decoding/ and benchmarks/cuda-a100/ by site/src/genfig-spec.py; edit the data, not this file.",
+ "fig1": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "nospec": 43.42,
+    "mtp": 59.43,
+    "delta_pct": 36.87240902809765,
+    "mtp_repeat": 55.84,
+    "repeat_spread_pct": 6.0407201749957835
+   },
+   {
+    "ctx": 8192,
+    "nospec": 37.97,
+    "mtp": 32.64,
+    "delta_pct": -14.037397945746633,
+    "mtp_repeat": 32.76,
+    "repeat_spread_pct": 0.3676470588235281
+   },
+   {
+    "ctx": 16384,
+    "nospec": 35.28,
+    "mtp": 23.86,
+    "delta_pct": -32.36961451247166,
+    "mtp_repeat": 23.82,
+    "repeat_spread_pct": 0.16764459346185756
+   },
+   {
+    "ctx": 32768,
+    "nospec": 30.31,
+    "mtp": 8.85,
+    "delta_pct": -70.80171560541075,
+    "mtp_repeat": 8.81,
+    "repeat_spread_pct": 0.4519774011299327
+   }
+  ],
+  "source": {
+   "nospec": "splitkv-31b-stock.json",
+   "mtp": "mtp-31b-mtp.json",
+   "repeat": "mtp-31b-stock45450.json"
+  },
+  "best": 36.87240902809765,
+  "worst": -70.80171560541075,
+  "monotonic": true,
+  "repeat_worst_long_pct": 0.4519774011299327,
+  "repeat_1k_pct": 6.0407201749957835
+ },
+ "fig2": {
+  "sweeps": [
+   {
+    "id": "A",
+    "file": "kbench-0.json",
+    "rows": [
+     {
+      "kv": 1024,
+      "us": [
+       289.226,
+       175.998,
+       173.817,
+       177.656
+      ]
+     },
+     {
+      "kv": 8192,
+      "us": [
+       1276.323,
+       1271.128,
+       1274.281,
+       1257.322
+      ]
+     },
+     {
+      "kv": 16384,
+      "us": [
+       2491.698,
+       2483.462,
+       2470.891,
+       2521.494
+      ]
+     },
+     {
+      "kv": 32768,
+      "us": [
+       5045.258,
+       5053.459,
+       5053.318,
+       5112.792
+      ]
+     }
+    ]
+   },
+   {
+    "id": "B",
+    "file": "kbench2-0.json",
+    "rows": [
+     {
+      "kv": 1024,
+      "us": [
+       274.029,
+       180.833,
+       179.421,
+       181.613
+      ]
+     },
+     {
+      "kv": 8192,
+      "us": [
+       1362.147,
+       1361.703,
+       1357.723,
+       1374.519
+      ]
+     },
+     {
+      "kv": 16384,
+      "us": [
+       2818.453,
+       2524.79,
+       2525.92,
+       2550.242
+      ]
+     },
+     {
+      "kv": 32768,
+      "us": [
+       5035.968,
+       5039.768,
+       5047.387,
+       5102.21
+      ]
+     }
+    ]
+   }
+  ],
+  "q_lens": [
+   1,
+   2,
+   4,
+   8
+  ],
+  "q1_to_q2_32k_pct": [
+   0.16254867441862775,
+   0.07545719114974148
+  ],
+  "between_constructions_pct": [
+   {
+    "kv": 1024,
+    "q1": 5.25436855607726,
+    "q2plus_max": 3.224080498455262,
+    "within_A": -39.14862425922981,
+    "within_B": -34.00953913636878
+   },
+   {
+    "kv": 8192,
+    "q1": 6.724316650252304,
+    "q2plus_max": 9.321160371010784,
+    "within_A": -0.40702862833312814,
+    "within_B": -0.032595600915319434
+   },
+   {
+    "kv": 16384,
+    "q1": 13.113748134806059,
+    "q2plus_max": 2.22709136097059,
+    "within_A": -0.3305376494262102,
+    "within_B": -10.41929739470554
+   },
+   {
+    "kv": 32768,
+    "q1": 0.1841332990304978,
+    "q2plus_max": 0.2709233418139889,
+    "within_A": 0.16254867441862775,
+    "within_B": 0.07545719114974148
+   }
+  ],
+  "constructions_agree_at_32k_pct": 0.1841332990304978,
+  "worst_within_disagreement_pct": 10.08875974527933,
+  "worst_across_q_32k_pct": [
+   1.338563855406405,
+   1.3153776989845989
+  ],
+  "grids": {
+   "2d": [
+    1,
+    8
+   ],
+   "3d": [
+    1,
+    8,
+    16
+   ]
+  },
+  "workgroups": {
+   "2d": 8,
+   "3d": 128
+  }
+ },
+ "fig3": {
+  "cells": [
+   {
+    "ctx": 30000,
+    "backend": "triton_forced",
+    "label": "TRITON_ATTN, forced",
+    "mtp": 31.5,
+    "nospec": 43.85,
+    "delta_pct": -28.16419612314709,
+    "session": "A"
+   },
+   {
+    "ctx": 30000,
+    "backend": "flashinfer_explicit",
+    "label": "FLASHINFER, explicit",
+    "mtp": 62.43,
+    "nospec": 47.42,
+    "delta_pct": 31.65331083930831,
+    "session": "A/B"
+   },
+   {
+    "ctx": 30000,
+    "backend": "auto_selector_47547",
+    "label": "auto, mixed",
+    "mtp": 66.09,
+    "nospec": 48.95,
+    "delta_pct": 35.01532175689479,
+    "session": "B"
+   },
+   {
+    "ctx": 50000,
+    "backend": "triton_forced",
+    "label": "TRITON_ATTN, forced",
+    "mtp": 15.75,
+    "nospec": 40.47,
+    "delta_pct": -61.08228317272053,
+    "session": "B"
+   },
+   {
+    "ctx": 50000,
+    "backend": "flashinfer_explicit",
+    "label": "FLASHINFER, explicit",
+    "mtp": 41.35,
+    "nospec": 45.27,
+    "delta_pct": -8.659156174066718,
+    "session": "B"
+   }
+  ],
+  "machine": "NVIDIA A100-SXM4-80GB (Colab), single card",
+  "vllm": "0.28.0 (PyPI wheel)",
+  "measured": "2026-08-26",
+  "rocm_reference_pct": -70.8,
+  "sessions_caveat": "Sessions A and B are different Colab VMs with the identical software stack. No configuration ran on both, so cross-session variance is unquantified; every ratio quoted above except the two 30K FlashInfer/auto comparisons is computed within one session. The 50K quartet - the headline - is entirely session B.",
+  "runs_per_cell": 1
+ },
+ "fig4": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "stock": 55.84,
+    "ported": 74.89,
+    "ratio": 1.3411532951289398
+   },
+   {
+    "ctx": 8192,
+    "stock": 32.76,
+    "ported": 63.25,
+    "ratio": 1.9307081807081807
+   },
+   {
+    "ctx": 16384,
+    "stock": 23.82,
+    "ported": 63.09,
+    "ratio": 2.6486146095717884
+   },
+   {
+    "ctx": 32768,
+    "stock": 8.81,
+    "ported": 32.57,
+    "ratio": 3.6969353007945513
+   }
+  ],
+  "hand_forced_32k": 32.42,
+  "hand_vs_ported_pct": 0.4605465151980348,
+  "nospec_32k": 30.31,
+  "net_positive_everywhere": true,
+  "correctness": {
+   "cases": 18,
+   "deterministic": 18,
+   "wrote_3d": 18,
+   "max_abs_diff": 0.0009765625,
+   "bf16_ulp_at_1": 0.00390625
+  }
+ },
+ "profile": {
+  "reproducible_from_repo": false,
+  "source": "benchmarks/speculative-decoding/trace-unified-attention.json",
+  "note": "kernel_unified_attention per-call device time, rank 0, gemma-4-31B-it-qat-w4a16-ct, TP=2, 32768-token context. Derived from torch-profiler traces kept on the test machine (prof-31b/ and prof-mtp-31b/, ~2 MB gz each, not in this repo).",
+  "runs": {
+   "no-speculation": {
+    "calls": 3780,
+    "median_us": 106.6,
+    "p75_us": 108.7,
+    "max_us": 647.4,
+    "mean_us": 192.7,
+    "hip_graph_launch": 63
+   },
+   "mtp": {
+    "calls": 3456,
+    "median_us": 126.9,
+    "p75_us": 132.1,
+    "max_us": 9950.3,
+    "mean_us": 1770.3,
+    "hip_graph_launch": 324
+   }
+  },
+  "ratios": {
+   "median_us": 1.1904315196998125,
+   "p75_us": 1.2152713891444342,
+   "max_us": 15.369632375656472,
+   "mean_us": 9.18681888946549
+  }
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "viewDelta": "打开投机之后的变化",
+ "viewRate": "解码 tok/s",
+ "nospec": "不投机",
+ "mtp": "MTP",
+ "ctxK": "{n}K",
+ "f1unit": "百分比，同深度下 MTP 对不投机 · 每条轨道里的那道竖线是零",
+ "f1rateUnit": "解码 tok/s · 每格一个进程",
+ "f1repeat": "MTP 那一臂五周后重测：1K 差 {a}%，8K–32K 在 {b}% 以内",
+ "f1cross": "四个深度上单调，并在 1K 与 8K 之间穿过零",
+ "grid2d": "2D，投机拿到的",
+ "grid3d": "3D，长上下文解码需要的",
+ "gridUnit": "个 workgroup",
+ "sweepA": "构造 A", "sweepB": "构造 B",
+ "f2unit": "两行 query 对一行，同一次扫描内，百分比",
+ "f2note": "32K 上差 {a}% 和 {b}% · 四个 query 长度之间的散布不超过 {c}%",
+ "qlen": "q={n}",
+ "f3unit": "百分比，同后端同深度下 MTP 对不投机",
+ "f3ref": "这台机器在 32K",
+ "f3note": "{g} · vLLM {v} · 每格一次运行",
+ "stock": "stock", "ported": "带 #45450",
+ "f4unit": "开着 MTP 的解码 tok/s，{a} 对 {b}",
+ "f4note": "手工加宽那次实验在 32K 上是 {h}，与该 PR 自己的数字差 {p}%",
+ "f4correct": "{n} 个定输入 kernel 用例，全部逐位确定，两条路径相差不超过一个 bf16 ULP",
+ "distStat": "统计量", "distNo": "不投机", "distMtp": "MTP", "distRatio": "倍数",
+ "distMedian": "中位数", "distP75": "p75", "distMax": "最大", "distMean": "均值",
+ "distCalls": "{n} 次调用",
+ "us": " µs", "pct": " %"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+  // the ROCm ladder is powers of two and the A100 matrix is round decimals;
+  // dividing everything by 1000 turned 32768 into "33K"
+  var kctx = function (n) {
+    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+  };
+
+  /* A track with zero in it, because these findings change sign. `span` is the
+     half-range in per cent, so zero sits at span/(2*span) of the width. */
+  function diverging(box, label, value, span, opts) {
+    opts = opts || {};
+    el(box, "lab rv", label);
+    var tr = el(box, "dtrack rv");
+    var z = el(tr, "zero");
+    z.style.left = "50%";
+    var f = el(tr, "fill " + (value >= 0 ? "pos" : "neg"));
+    if (value >= 0) f.style.left = "50%"; else f.style.right = "50%";
+    grow(f, Math.min(50, Math.abs(value) / span * 50));
+    if (opts.ref !== undefined) {
+      var r = el(tr, "ref");
+      r.style.left = (50 + opts.ref / span * 50) + "%";
+      r.title = opts.refLabel || "";
+    }
+    el(box, "val rv " + (value >= 0 ? "pos" : "neg"),
+       (value >= 0 ? "+" : "") + value.toFixed(1) + S.pct);
+    if (opts.tip) hover(tr, opts.tip);
+    return tr;
+  }
+
+  /* ---------- Figure 1: the ladder ---------- */
+  (function () {
+    var box = document.getElementById("ladder"), vbox = document.getElementById("v1");
+    var mode = 0, first = true;                 /* 0 = delta, 1 = rates */
+    var R = F.fig1.rows;
+    var span = Math.max.apply(null, R.map(function (r) {
+      return Math.abs(r.delta_pct); })) * 1.05;
+    var rmax = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.nospec, r.mtp); }));
+    function tipFor(r) {
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
+        S.nospec + " <b>" + r.nospec.toFixed(2) + "</b> tok/s<br>" +
+        S.mtp + " <b>" + r.mtp.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + S.mtp + " again: " + r.mtp_repeat.toFixed(2) +
+        " (" + r.repeat_spread_pct.toFixed(2) + "%)</span>";
+    }
+    function draw() {
+      box.innerHTML = "";
+      R.forEach(function (r) {
+        if (mode) {
+          [[S.nospec, r.nospec, "--s2"], [S.mtp, r.mtp, "--s1"]].forEach(function (a, i) {
+            if (i === 0) el(box, "grp", kctx(r.ctx));
+            el(box, "lab rv", a[0]);
+            var tr = el(box, "track rv");
+            var f = document.createElement("span");
+            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+            tr.appendChild(f);
+            grow(f, a[1] / rmax * 100);
+            el(box, "val rv", a[1].toFixed(2));
+            hover(tr, tipFor(r));
+          });
+        } else {
+          diverging(box, kctx(r.ctx), r.delta_pct, span, { tip: tipFor(r) });
+        }
+      });
+      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
+      u.style.gridColumn = "1 / -1";
+      if (!mode) {
+        var c = el(box, "barunit", S.f1cross);
+        c.style.gridColumn = "1 / -1"; c.style.color = "var(--text-2)";
+      }
+      var rp = el(box, "barunit", fmt(S.f1repeat, {
+        a: F.fig1.repeat_1k_pct.toFixed(1),
+        b: F.fig1.repeat_worst_long_pct.toFixed(2) }));
+      rp.style.gridColumn = "1 / -1";
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewDelta, 0], [S.viewRate, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- the two launch grids ---------- */
+  (function () {
+    var box = document.getElementById("grids");
+    [["2d", S.grid2d, false], ["3d", S.grid3d, true]].forEach(function (g) {
+      var c = el(box, "gcard rv" + (g[2] ? " win" : ""));
+      el(c, "", "<h4>" + g[1] + "</h4>");
+      el(c, "g", F.fig2.grids[g[0]].join(" × "));
+      el(c, "wg", String(F.fig2.workgroups[g[0]]));
+      el(c, "wgu", S.gridUnit);
+    });
+  })();
+
+  /* ---------- Figure 2: query rows, no model ---------- */
+  (function () {
+    var box = document.getElementById("sweep");
+    var pcts = [];
+    F.fig2.sweeps.forEach(function (s) {
+      s.rows.forEach(function (r) {
+        pcts.push((r.us[1] / r.us[0] - 1) * 100.0);
+      });
+    });
+    var span = Math.max.apply(null, pcts.map(Math.abs)) * 1.08;
+    F.fig2.sweeps[0].rows.forEach(function (_, i) {
+      var kv = F.fig2.sweeps[0].rows[i].kv;
+      el(box, "grp", kctx(kv) + ' <span class="tagline">· KV</span>');
+      F.fig2.sweeps.forEach(function (s) {
+        var r = s.rows[i];
+        var v = (r.us[1] / r.us[0] - 1) * 100.0;
+        diverging(box, s.id === "A" ? S.sweepA : S.sweepB, v, span, {
+          tip: '<span class="hd">' + kctx(kv) + " KV · " + s.file + "</span><br>" +
+            F.fig2.q_lens.map(function (q, j) {
+              return fmt(S.qlen, { n: q }) + " <b>" + r.us[j].toFixed(1) + "</b> µs";
+            }).join("<br>") });
+      });
+    });
+    var u = el(box, "barunit", S.f2unit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.f2note, {
+      a: F.fig2.q1_to_q2_32k_pct[0].toFixed(2),
+      b: F.fig2.q1_to_q2_32k_pct[1].toFixed(2),
+      c: Math.max.apply(null, F.fig2.worst_across_q_32k_pct).toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- the per-call distribution ---------- */
+  (function () {
+    var box = document.getElementById("dist");
+    var P = F.profile;
+    el(box, "k h", S.distStat);
+    el(box, "a h", S.distNo + " · " +
+       fmt(S.distCalls, { n: P.runs["no-speculation"].calls }));
+    el(box, "b h", S.distMtp + " · " + fmt(S.distCalls, { n: P.runs.mtp.calls }));
+    el(box, "r h", S.distRatio);
+    [["median_us", S.distMedian], ["p75_us", S.distP75],
+     ["max_us", S.distMax], ["mean_us", S.distMean]].forEach(function (k) {
+      var big = P.ratios[k[0]] > 5;
+      var row = [el(box, "k" + (big ? " big" : ""), k[1]),
+                 el(box, "a", P.runs["no-speculation"][k[0]].toFixed(1) + S.us),
+                 el(box, "b", P.runs.mtp[k[0]].toFixed(1) + S.us),
+                 el(box, "r", P.ratios[k[0]].toFixed(1) + "×")];
+      if (big) row.forEach(function (d) { d.classList.add("big"); });
+    });
+  })();
+
+  /* ---------- Figure 3: the A100 ---------- */
+  (function () {
+    var box = document.getElementById("vendor");
+    var C = F.fig3.cells;
+    var span = Math.max(Math.abs(F.fig3.rocm_reference_pct),
+                        Math.max.apply(null, C.map(function (c) {
+                          return Math.abs(c.delta_pct); }))) * 1.06;
+    var seen = {};
+    C.forEach(function (c) {
+      if (!seen[c.ctx]) {
+        seen[c.ctx] = 1;
+        el(box, "grp", kctx(c.ctx) + ' <span class="tagline">· A100</span>');
+      }
+      diverging(box, c.label, c.delta_pct, span, {
+        ref: c.backend === "triton_forced" ? F.fig3.rocm_reference_pct : undefined,
+        refLabel: S.f3ref,
+        tip: '<span class="hd">' + c.label + " · " + kctx(c.ctx) + "</span><br>" +
+          S.nospec + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+          S.mtp + " <b>" + c.mtp.toFixed(2) + "</b> tok/s<br>" +
+          '<span class="sub">session ' + c.session + "</span>" });
+    });
+    var u = el(box, "barunit", S.f3unit);
+    u.style.gridColumn = "1 / -1";
+    var r = el(box, "barunit", "");
+    r.style.gridColumn = "1 / -1";
+    r.innerHTML = '<span class="swatch" style="background:var(--text-dim)"></span>' +
+      S.f3ref + " " + F.fig3.rocm_reference_pct.toFixed(1) + " %";
+    var n = el(box, "barunit", fmt(S.f3note, {
+      g: F.fig3.machine, v: F.fig3.vllm }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- Figure 4: with the admission ---------- */
+  (function () {
+    var box = document.getElementById("recover");
+    var R = F.fig4.rows;
+    var max = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.stock, r.ported); }));
+    R.forEach(function (r) {
+      el(box, "grp", kctx(r.ctx) + ' <span class="tagline">· ' +
+         r.ratio.toFixed(2) + "×</span>");
+      [[S.stock, r.stock, "--s1"], [S.ported, r.ported, "--s3"]].forEach(function (a) {
+        el(box, "lab rv", a[0]);
+        var tr = el(box, "track rv");
+        var f = document.createElement("span");
+        f.style.cssText = "display:block;height:100%;width:0;background:var(" + a[2] +
+          ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+        tr.appendChild(f);
+        grow(f, a[1] / max * 100);
+        el(box, "val rv", a[1].toFixed(2));
+        hover(tr, '<span class="hd">' + kctx(r.ctx) + "</span><br>" + a[0] +
+          " <b>" + a[1].toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
+          r.ratio.toFixed(2) + "× between them</span>");
+      });
+    });
+    var u = el(box, "barunit", fmt(S.f4unit, { a: S.stock, b: S.ported }));
+    u.style.gridColumn = "1 / -1";
+    var h = el(box, "barunit", fmt(S.f4note, {
+      h: F.fig4.hand_forced_32k.toFixed(2),
+      p: F.fig4.hand_vs_ported_pct.toFixed(1) }));
+    h.style.gridColumn = "1 / -1"; h.style.color = "var(--text-2)";
+    var c = el(box, "barunit", fmt(S.f4correct, { n: F.fig4.correctness.cases }));
+    c.style.gridColumn = "1 / -1";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

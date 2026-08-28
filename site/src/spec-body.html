@@ -1,0 +1,625 @@
+<header class="top">
+  <div class="kicker">RDNA3 · CUDA · speculative decoding · measured on 2× RX 7900 XT and one A100</div>
+  <h1>One boolean costs 71 %<br>on a Radeon and 61 % on an A100</h1>
+  <p class="lede">Turning on vLLM's own documented MTP assistant makes <code>gemma-4-31B</code> decode
+  36.9 % <em>faster</em> at 1K of context and 70.8 % <em>slower</em> at 32K. The cause is not the
+  drafter, not the hardware and not the acceptance rate: speculation sets <code>max_seqlen_q = 2</code>,
+  and one clause in an <code>or</code> chain reads that as "this is not decode" and drops the kernel from
+  128 workgroups to 8.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">and one <b>A100 80G</b> · CUDA</span>
+    <span class="chip"><b>gemma-4-31B</b> + official MTP assistant</span>
+    <span class="chip">measured <b>2026-08-01</b> and <b>2026-08-26</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>vLLM documents this assistant as supported and gives a command line with no mention of context
+  length. Measured across four depths the effect is <strong>monotonic and changes sign</strong>: +36.9 %,
+  −14.0 %, −32.4 %, −70.8 %. By 8K it is already a net loss.</p>
+  <p>The gate is <code>max_seqlen_q &gt; 1</code> in the Triton unified-attention backend's
+  <code>use_3d</code> condition. The 3D kernel splits a long KV sequence into segments and reduces them
+  in parallel; speculation's second query row disqualifies it, and the launch grid goes from
+  <strong>1 × 8 × 16 to 1 × 8</strong>. The comment on that clause says the batch includes a prefill
+  request, but the binding constraint is buffer shape: the segment buffer is allocated per sequence and
+  indexed per token, which coincide only at one query row.</p>
+  <p><strong>Three explanations that look better were measured and dropped.</strong> Not KV-head
+  starvation: this model has 16 heads and is fine without speculation. Not the extra query row: calling
+  the kernel directly, going from one row to two costs <strong>0.08 %</strong> at 32K in one construction
+  and 0.16 % in a second. Not the tiling constants: porting upstream's Blackwell-tuned block made it
+  8.7 % slower.</p>
+  <p>The claim is about a kernel, not about a vendor, so it predicts the same collapse on any CUDA
+  machine routed onto the same kernel and its absence on a backend without the guard. A rented A100
+  tested both: <strong>−28.2 % at 30K and −61.1 % at 50K</strong> on the forced default, and the
+  collapse gone on FlashInfer. Both predictions held.</p>
+</div>
+
+<h2><span class="n">1</span>What the ladder looks like</h2>
+
+<p><code>gemma-4-31B-it-qat-w4a16-ct</code>, TP=2, batch 1, greedy, the official
+<code>gemma-4-31B-it-assistant</code> at <code>num_speculative_tokens: 1</code>. Decode is isolated from
+prefill by differencing a 64-token generation against an 8-token one at the same depth.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · what speculation is worth, by context length
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="ladder"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four depths,
+    and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>. Hover any bar
+    for both rates. The MTP arm was measured a second time five weeks later, as the stock baseline of a
+    different comparison: the three long depths reproduce to <strong>0.45 %</strong> and 1K differs by
+    6.0 %, so the end of the ladder that carries the finding is the end that repeats best.
+  </figcaption>
+</figure>
+
+<p>vLLM's own counter at 32K reads <code>Mean acceptance length: 1.12</code>, 9 accepted of 78 drafted.
+Back-solving the 1K speedup implies roughly 0.46 acceptance there, so acceptance degrades with depth
+too. That is a real cost — a rejected draft has still paid for the assistant's forward pass and the
+target's verification — but it cannot account for −70.8 % when the assistant is four layers wide.
+Section 5 shows what can.</p>
+
+<h2><span class="n">2</span>The clause</h2>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/v1/attention/ops/triton_unified_attention.py</span></div>
+<pre>use_3d = <span class="k">not</span> (
+    seq_threshold_3D <span class="k">is None</span>
+    <span class="k">or</span> ...
+    <span class="k">or</span> <span class="r">max_seqlen_q &gt; 1</span>          <span class="c"># speculation makes this 2</span>
+    <span class="k">or</span> num_seqs &gt; seq_threshold_3D
+    <span class="k">or</span> is_batch_invariant
+)
+</pre></div>
+
+<p>What that clause decides is how much of the GPU the kernel is allowed to use:</p>
+
+<div class="grids" id="grids"></div>
+
+<p>The comment on the clause says the batch includes at least one prefill request. The binding
+constraint is different, and it matters because it says what a real fix looks like. The segment buffer
+is allocated as <code>[seq_threshold_3D, num_heads_q, segments, headdim]</code> — per <em>sequence</em> —
+and indexed as <code>segm_output[token, head, segm_idx, :]</code> — per <em>token</em>. At one query row
+those coincide. At two the buffer would overflow, so the guard excludes it, and
+<code>max_seqlen_q &gt; 1</code> catches speculation along with prefill because it cannot tell them
+apart.</p>
+
+<h2><span class="n">3</span>The control that leaves one explanation</h2>
+
+<p>The obvious reading is that two query rows are simply more work. Calling
+<code>unified_attention</code> directly with this model's shapes, no model and no speculation, and
+sweeping the number of query rows:</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · query rows against the same kernel, no model
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="sweep"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Each bar is the time at two query rows against the same sweep's own one-row time, in
+    per cent; two independent constructions, run separately. At 8K and 32K going from one row to two is
+    free in both. At 1K it is <em>faster</em>, by 39 % and 34 %, because that is where dropping to the 2D
+    kernel stops costing anything and starts saving the segmentation overhead — which is why the gate is
+    not absurd, only too coarse. <strong>The two disagree at 16K</strong>, −0.3 % against −10.4 %, and
+    the cell that moves is the one-row cell, which is measured first in each group; the two-, four- and
+    eight-row cells agree between constructions to 2.2 % there. At 32K, the depth the finding is about,
+    even the one-row cells agree to 0.2 %. Absolute levels differ between constructions by up to 9 % at
+    8K, which is why every bar here is a within-sweep ratio. Hover for all four query lengths.
+  </figcaption>
+</figure>
+
+<p>Two more explanations were tested and dropped. <strong>KV-head starvation</strong>: the collapse in
+<a href="hybrid-ssm-collapse.html">the hybrid-SSM article</a> comes from having 4 KV heads, but this
+model has 16 and is fine without speculation. <strong>Tiling</strong>: upstream carries a
+<code>tuned_large_head</code> block for <code>head_size == 256 and max_seqlen_q &gt; 1</code>, gated to
+Blackwell, with every other condition matching this hardware; porting its <code>BLOCK_M = 32</code> made
+32K 8.7 % slower.</p>
+
+<div class="note">
+  <span class="lbl">The mean would have hidden this
+  <span class="prov no">raw traces not committed</span></span>
+  Per-call time of <code>kernel_unified_attention</code> at 32K, from torch-profiler traces that stay on
+  the test machine; what is committed is the summary and the trace filenames, so this is the one block on
+  the page that cannot be recomputed:
+  <div class="dist" id="dist"></div>
+  Most calls barely move and a minority explode. That is this model's alternating attention: the
+  sliding-window layers see a short KV and do not care, the global layers scan the full 32K and lose the
+  segmentation entirely. Quoting the 9.2× mean would describe neither population.
+  <code>hipGraphLaunch</code> goes 63 to 324, so graph replay is intact — checked because it is the
+  obvious suspect.
+</div>
+
+<h2><span class="n">4</span>The other vendor</h2>
+
+<p>A claim about a kernel makes a prediction about hardware it was not measured on. If the collapse is
+the 3D-to-2D drop, then any CUDA machine routed onto the same kernel should show it, deepening with
+context, and a backend without the guard should not. <code>gemma-4</code> has heterogeneous head
+dimensions, so vLLM forces <code>TRITON_ATTN</code> whenever FA4 is unavailable — and an A100 has no
+FA4. That makes the prediction testable for the price of an hour of rented time.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · the same model on one A100 80G
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="vendor"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> From <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>, vLLM 0.28.0,
+    <strong>one run per cell</strong> — a probe, not a campaign. The grey mark is this machine's −70.8 %
+    at 32K, for scale. On the forced default MTP is a net loss that deepens with depth; on FlashInfer the
+    same MTP is positive at 30K, and the residual −8.7 % at 50K is drafter economics rather than the
+    pathological drop. The two 30K FlashInfer figures come from different Colab VMs with an identical
+    stack; every other ratio here is computed within one session, and the 50K quartet is entirely one
+    session.
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>What the path is worth once speculation is let back in</h2>
+
+<p>Widening the buffers by hand and raising the cutoff recovers 32.42 tok/s at 32K against 8.85 — and
+speculation finally beats no speculation. That was not a fix: it cannot express "speculation's two query
+rows but not prefill's four thousand", and greedy output at a 30K prompt diverged from stock at token
+35, with three possible causes unseparated.</p>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>, open since June and stalled
+with merge conflicts, is the shape that section asked for: the gate becomes
+<code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded, and the segment buffers are
+sized per token.</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · the same ladder through vllm#45450's admission
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="recover"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> Stock against the PR's mechanism, both with MTP on, same machine and session.
+    Speculation is net-positive at every depth tried, against the no-speculation baseline in Figure 1.
+    The hand-widened experiment lands 0.5 % from the PR's own number at 32K, which is what says the two
+    are doing the same thing.
+  </figcaption>
+</figure>
+
+<p>The divergence question is settled too. A fixed-input comparison at the kernel level, 18 cases, shows
+each path individually bit-deterministic and the two differing by at most one bf16 ULP — at one query
+row, which is today's shipped behaviour, exactly as at two and four. The token-35 divergence was the
+pre-existing 2D/3D reduction-order reassociation that batch size already toggles in production, not a
+defect of the admission.</p>
+
+<h2><span class="n">6</span>Who reported what</h2>
+
+<p>The same 3D-to-2D drop was reported first, in
+<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a> on 2026-07-09, on a single
+B200 running the same architecture in a different quantisation. That report's trigger is a different
+clause in the same <code>or</code> chain — <code>num_seqs &gt; seq_threshold_3D</code>, a batch-size
+threshold — and its proposed fix derives that threshold from SM count.
+<strong>That fix does not reach this trigger</strong>: <code>max_seqlen_q &gt; 1</code> is independent of
+the threshold, so speculation keeps falling to 2D however the threshold is computed. What is new here is
+the second trigger, its different cause, and measurements on RDNA3.</p>
+
+<p>It was posted to that thread on 2026-08-01, and on 2026-08-26 to
+<a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of the
+same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer sidesteps
+it, which fits: the collapse is specific to this Triton kernel and an explicit backend choice bypasses
+the forcing. ROCm has no FlashInfer, so on this hardware the remedy is still to gate speculation by
+depth.</p>
+
+<h2><span class="n">7</span>What is not established</h2>
+
+<h3>The crossover</h3>
+<p>Somewhere between 1K and 8K, not measured. The same gap exists on the A100 side, where 30K and 50K
+were measured and where MTP stops paying on FlashInfer was bracketed rather than located.</p>
+
+<h3>Replication</h3>
+<p>The ROCm ladder is one process per cell. The MTP arm turns out to have a second, independent run
+five weeks later, and the three long depths agree to 0.45 % — but the no-speculation arm has none, and
+acceptance rate was not captured per cell. The A100 matrix is also one run per cell, across two VMs
+whose cross-session variance is unquantified.</p>
+
+<h3>Sampling</h3>
+<p>Everything here is <code>temperature=0</code>, where draft and target agree most often. Sampling
+should lower acceptance and make speculation worse, but that was not measured on either vendor.</p>
+
+<h3>One model on each side</h3>
+<p>gfx1100, TP=2, a VFIO guest without peer-to-peer, one checkpoint; and one A100, one card, one
+checkpoint. The mechanism is a source-level claim about a shared kernel, and the two machines agreeing
+is what supports it, not either measurement alone.</p>
+
+<h2><span class="n">8</span>What has changed since</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · the fix was found, and validated on both vendors</span>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> had been open since June and
+  independently converged on the same prescription. Its admission mechanism was validated the same day
+  on both machines: bit-exact greedy output and a stable ~2× at k ∈ {1, 2, 4} on the A100, and the
+  ladder in Figure 4 here. The A100 half was posted to the PR.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · the divergence question was closed</span>
+  Section 5's three unseparated causes are separated: 18 fixed-input kernel comparisons, each path
+  bit-deterministic, the two within one bf16 ULP at every query length including the one that ships
+  today. What looked like a correctness risk in the hand-widened experiment was reduction-order
+  reassociation that batch size already toggles.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · the "no replicates" statement was too strong</span>
+  <code>docs/speculative-decoding-on-rdna.md</code> §1 said every figure in it is a single run with no
+  process replicates. The MTP arm has one: the stock baseline of the vllm#45450 comparison is the same
+  configuration measured again, and it agrees to 0.45 % at 8K, 16K and 32K. The document now says so, and
+  <code>verify_doc_figures.py</code> pins the spread.
+</div>
+
+<div class="note">
+  <span class="lbl">Still open</span>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> was still open and conflicted
+  as of 2026-08-29, as were <a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a>
+  and its proposed fix. Until one of them lands, the practical advice on this hardware is unchanged: turn
+  the assistant on for short prompts and off by 8K, where it is already a net loss.
+</div>
+
+<div class="foot-note">
+  <p><strong>The data.</strong> The ROCm ladders, the direct kernel sweeps and the correctness cases are
+  in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
+  the A100 matrix, its logs and the exact recipe — including the multimodal-limits condition an explicit
+  FlashInfer override needs on vLLM 0.28 — are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/README.md"><code>benchmarks/cuda-a100/</code></a>.
+  The full write-up is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/speculative-decoding-on-rdna.md">speculative-decoding-on-rdna.md</a>.
+  The per-call distribution above is derived from torch-profiler traces that stay on the test machine at
+  about 2 MB each;
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/trace-unified-attention.json"><code>trace-unified-attention.json</code></a>
+  carries what was derived from them and the trace filenames, and that figure is marked accordingly.</p>
+  <p>The assistant is <code>google/gemma-4-31B-it-assistant</code>, 0.90 GiB and not gated. Its
+  <code>head_dim</code> and <code>global_head_dim</code> match the target, which is what lets the two
+  share a KV cache.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "viewDelta": "change from turning speculation on",
+ "viewRate": "decode tok/s",
+ "nospec": "no speculation",
+ "mtp": "MTP",
+ "ctxK": "{n}K",
+ "f1unit": "per cent, MTP against no speculation at the same depth · zero is the mark in each track",
+ "f1rateUnit": "decode tok/s · one process per cell",
+ "f1repeat": "the MTP arm re-measured five weeks later: 1K differs {a}%, 8K–32K within {b}%",
+ "f1cross": "monotonic across four depths, and it crosses zero between 1K and 8K",
+ "grid2d": "2D, what speculation gets",
+ "grid3d": "3D, what decode needs",
+ "gridUnit": "workgroups",
+ "sweepA": "construction A", "sweepB": "construction B",
+ "f2unit": "two query rows against one, same sweep, per cent",
+ "f2note": "at 32K the difference is {a}% and {b}% · across all four query lengths the spread is under {c}%",
+ "qlen": "q={n}",
+ "f3unit": "per cent, MTP against no speculation on the same backend and depth",
+ "f3ref": "this machine at 32K",
+ "f3note": "{g} · vLLM {v} · one run per cell",
+ "stock": "stock", "ported": "with #45450",
+ "f4unit": "decode tok/s with MTP on, {a} against {b}",
+ "f4note": "the hand-widened experiment reached {h} at 32K, {p}% from the PR's own number",
+ "f4correct": "{n} fixed-input kernel cases, all bit-deterministic, the two paths within one bf16 ULP",
+ "distStat": "statistic", "distNo": "no speculation", "distMtp": "MTP", "distRatio": "ratio",
+ "distMedian": "median", "distP75": "p75", "distMax": "max", "distMean": "mean",
+ "distCalls": "{n} calls",
+ "us": " µs", "pct": " %"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.opacity = "1";
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.opacity = "0"; }
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function hover(node, html) {
+    node.addEventListener("mouseenter", function (e) { showTip(e, html); });
+    node.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
+    node.addEventListener("mouseleave", hideTip);
+  }
+  function grow(node, pct) {
+    if (reduce) { node.style.width = pct + "%"; return; }
+    requestAnimationFrame(function () { node.style.width = pct + "%"; });
+  }
+  // the ROCm ladder is powers of two and the A100 matrix is round decimals;
+  // dividing everything by 1000 turned 32768 into "33K"
+  var kctx = function (n) {
+    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+  };
+
+  /* A track with zero in it, because these findings change sign. `span` is the
+     half-range in per cent, so zero sits at span/(2*span) of the width. */
+  function diverging(box, label, value, span, opts) {
+    opts = opts || {};
+    el(box, "lab rv", label);
+    var tr = el(box, "dtrack rv");
+    var z = el(tr, "zero");
+    z.style.left = "50%";
+    var f = el(tr, "fill " + (value >= 0 ? "pos" : "neg"));
+    if (value >= 0) f.style.left = "50%"; else f.style.right = "50%";
+    grow(f, Math.min(50, Math.abs(value) / span * 50));
+    if (opts.ref !== undefined) {
+      var r = el(tr, "ref");
+      r.style.left = (50 + opts.ref / span * 50) + "%";
+      r.title = opts.refLabel || "";
+    }
+    el(box, "val rv " + (value >= 0 ? "pos" : "neg"),
+       (value >= 0 ? "+" : "") + value.toFixed(1) + S.pct);
+    if (opts.tip) hover(tr, opts.tip);
+    return tr;
+  }
+
+  /* ---------- Figure 1: the ladder ---------- */
+  (function () {
+    var box = document.getElementById("ladder"), vbox = document.getElementById("v1");
+    var mode = 0, first = true;                 /* 0 = delta, 1 = rates */
+    var R = F.fig1.rows;
+    var span = Math.max.apply(null, R.map(function (r) {
+      return Math.abs(r.delta_pct); })) * 1.05;
+    var rmax = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.nospec, r.mtp); }));
+    function tipFor(r) {
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
+        S.nospec + " <b>" + r.nospec.toFixed(2) + "</b> tok/s<br>" +
+        S.mtp + " <b>" + r.mtp.toFixed(2) + "</b> tok/s<br>" +
+        '<span class="sub">' + S.mtp + " again: " + r.mtp_repeat.toFixed(2) +
+        " (" + r.repeat_spread_pct.toFixed(2) + "%)</span>";
+    }
+    function draw() {
+      box.innerHTML = "";
+      R.forEach(function (r) {
+        if (mode) {
+          [[S.nospec, r.nospec, "--s2"], [S.mtp, r.mtp, "--s1"]].forEach(function (a, i) {
+            if (i === 0) el(box, "grp", kctx(r.ctx));
+            el(box, "lab rv", a[0]);
+            var tr = el(box, "track rv");
+            var f = document.createElement("span");
+            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
+              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+            tr.appendChild(f);
+            grow(f, a[1] / rmax * 100);
+            el(box, "val rv", a[1].toFixed(2));
+            hover(tr, tipFor(r));
+          });
+        } else {
+          diverging(box, kctx(r.ctx), r.delta_pct, span, { tip: tipFor(r) });
+        }
+      });
+      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
+      u.style.gridColumn = "1 / -1";
+      if (!mode) {
+        var c = el(box, "barunit", S.f1cross);
+        c.style.gridColumn = "1 / -1"; c.style.color = "var(--text-2)";
+      }
+      var rp = el(box, "barunit", fmt(S.f1repeat, {
+        a: F.fig1.repeat_1k_pct.toFixed(1),
+        b: F.fig1.repeat_worst_long_pct.toFixed(2) }));
+      rp.style.gridColumn = "1 / -1";
+      if (!first) {
+        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
+                                     function (e) { e.classList.add("in"); });
+      }
+      first = false;
+    }
+    [[S.viewDelta, 0], [S.viewRate, 1]].forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (o[1] === mode ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.addEventListener("click", function () {
+        mode = o[1];
+        Array.prototype.forEach.call(vbox.children, function (x, k) {
+          x.classList.toggle("on", k === i); });
+        draw();
+      });
+      vbox.appendChild(b);
+    });
+    draw();
+  })();
+
+  /* ---------- the two launch grids ---------- */
+  (function () {
+    var box = document.getElementById("grids");
+    [["2d", S.grid2d, false], ["3d", S.grid3d, true]].forEach(function (g) {
+      var c = el(box, "gcard rv" + (g[2] ? " win" : ""));
+      el(c, "", "<h4>" + g[1] + "</h4>");
+      el(c, "g", F.fig2.grids[g[0]].join(" × "));
+      el(c, "wg", String(F.fig2.workgroups[g[0]]));
+      el(c, "wgu", S.gridUnit);
+    });
+  })();
+
+  /* ---------- Figure 2: query rows, no model ---------- */
+  (function () {
+    var box = document.getElementById("sweep");
+    var pcts = [];
+    F.fig2.sweeps.forEach(function (s) {
+      s.rows.forEach(function (r) {
+        pcts.push((r.us[1] / r.us[0] - 1) * 100.0);
+      });
+    });
+    var span = Math.max.apply(null, pcts.map(Math.abs)) * 1.08;
+    F.fig2.sweeps[0].rows.forEach(function (_, i) {
+      var kv = F.fig2.sweeps[0].rows[i].kv;
+      el(box, "grp", kctx(kv) + ' <span class="tagline">· KV</span>');
+      F.fig2.sweeps.forEach(function (s) {
+        var r = s.rows[i];
+        var v = (r.us[1] / r.us[0] - 1) * 100.0;
+        diverging(box, s.id === "A" ? S.sweepA : S.sweepB, v, span, {
+          tip: '<span class="hd">' + kctx(kv) + " KV · " + s.file + "</span><br>" +
+            F.fig2.q_lens.map(function (q, j) {
+              return fmt(S.qlen, { n: q }) + " <b>" + r.us[j].toFixed(1) + "</b> µs";
+            }).join("<br>") });
+      });
+    });
+    var u = el(box, "barunit", S.f2unit);
+    u.style.gridColumn = "1 / -1";
+    var n = el(box, "barunit", fmt(S.f2note, {
+      a: F.fig2.q1_to_q2_32k_pct[0].toFixed(2),
+      b: F.fig2.q1_to_q2_32k_pct[1].toFixed(2),
+      c: Math.max.apply(null, F.fig2.worst_across_q_32k_pct).toFixed(1) }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- the per-call distribution ---------- */
+  (function () {
+    var box = document.getElementById("dist");
+    var P = F.profile;
+    el(box, "k h", S.distStat);
+    el(box, "a h", S.distNo + " · " +
+       fmt(S.distCalls, { n: P.runs["no-speculation"].calls }));
+    el(box, "b h", S.distMtp + " · " + fmt(S.distCalls, { n: P.runs.mtp.calls }));
+    el(box, "r h", S.distRatio);
+    [["median_us", S.distMedian], ["p75_us", S.distP75],
+     ["max_us", S.distMax], ["mean_us", S.distMean]].forEach(function (k) {
+      var big = P.ratios[k[0]] > 5;
+      var row = [el(box, "k" + (big ? " big" : ""), k[1]),
+                 el(box, "a", P.runs["no-speculation"][k[0]].toFixed(1) + S.us),
+                 el(box, "b", P.runs.mtp[k[0]].toFixed(1) + S.us),
+                 el(box, "r", P.ratios[k[0]].toFixed(1) + "×")];
+      if (big) row.forEach(function (d) { d.classList.add("big"); });
+    });
+  })();
+
+  /* ---------- Figure 3: the A100 ---------- */
+  (function () {
+    var box = document.getElementById("vendor");
+    var C = F.fig3.cells;
+    var span = Math.max(Math.abs(F.fig3.rocm_reference_pct),
+                        Math.max.apply(null, C.map(function (c) {
+                          return Math.abs(c.delta_pct); }))) * 1.06;
+    var seen = {};
+    C.forEach(function (c) {
+      if (!seen[c.ctx]) {
+        seen[c.ctx] = 1;
+        el(box, "grp", kctx(c.ctx) + ' <span class="tagline">· A100</span>');
+      }
+      diverging(box, c.label, c.delta_pct, span, {
+        ref: c.backend === "triton_forced" ? F.fig3.rocm_reference_pct : undefined,
+        refLabel: S.f3ref,
+        tip: '<span class="hd">' + c.label + " · " + kctx(c.ctx) + "</span><br>" +
+          S.nospec + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+          S.mtp + " <b>" + c.mtp.toFixed(2) + "</b> tok/s<br>" +
+          '<span class="sub">session ' + c.session + "</span>" });
+    });
+    var u = el(box, "barunit", S.f3unit);
+    u.style.gridColumn = "1 / -1";
+    var r = el(box, "barunit", "");
+    r.style.gridColumn = "1 / -1";
+    r.innerHTML = '<span class="swatch" style="background:var(--text-dim)"></span>' +
+      S.f3ref + " " + F.fig3.rocm_reference_pct.toFixed(1) + " %";
+    var n = el(box, "barunit", fmt(S.f3note, {
+      g: F.fig3.machine, v: F.fig3.vllm }));
+    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+  })();
+
+  /* ---------- Figure 4: with the admission ---------- */
+  (function () {
+    var box = document.getElementById("recover");
+    var R = F.fig4.rows;
+    var max = Math.max.apply(null, R.map(function (r) {
+      return Math.max(r.stock, r.ported); }));
+    R.forEach(function (r) {
+      el(box, "grp", kctx(r.ctx) + ' <span class="tagline">· ' +
+         r.ratio.toFixed(2) + "×</span>");
+      [[S.stock, r.stock, "--s1"], [S.ported, r.ported, "--s3"]].forEach(function (a) {
+        el(box, "lab rv", a[0]);
+        var tr = el(box, "track rv");
+        var f = document.createElement("span");
+        f.style.cssText = "display:block;height:100%;width:0;background:var(" + a[2] +
+          ");transition:width 1s cubic-bezier(.22,1,.36,1)";
+        tr.appendChild(f);
+        grow(f, a[1] / max * 100);
+        el(box, "val rv", a[1].toFixed(2));
+        hover(tr, '<span class="hd">' + kctx(r.ctx) + "</span><br>" + a[0] +
+          " <b>" + a[1].toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
+          r.ratio.toFixed(2) + "× between them</span>");
+      });
+    });
+    var u = el(box, "barunit", fmt(S.f4unit, { a: S.stock, b: S.ported }));
+    u.style.gridColumn = "1 / -1";
+    var h = el(box, "barunit", fmt(S.f4note, {
+      h: F.fig4.hand_forced_32k.toFixed(2),
+      p: F.fig4.hand_vs_ported_pct.toFixed(1) }));
+    h.style.gridColumn = "1 / -1"; h.style.color = "var(--text-2)";
+    var c = el(box, "barunit", fmt(S.f4correct, { n: F.fig4.correctness.cases }));
+    c.style.gridColumn = "1 / -1";
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

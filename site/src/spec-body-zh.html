@@ -1,0 +1,303 @@
+
+<header class="top">
+  <div class="kicker">RDNA3 · CUDA · 投机解码 · 实测于 2× RX 7900 XT 与一张 A100</div>
+  <h1>一个布尔值，在 Radeon 上是 71 %，<br>在 A100 上是 61 %</h1>
+  <p class="lede">打开 vLLM 自己文档里写明支持的 MTP 助手，<code>gemma-4-31B</code>
+  在 1K 上下文下解码<em>快</em> 36.9 %，在 32K 下<em>慢</em> 70.8 %。原因不是草稿模型、不是硬件、
+  也不是接受率：投机把 <code>max_seqlen_q</code> 设成 2，而某个 <code>or</code>
+  链里的一句把这读成"这不是 decode"，于是 kernel 从 128 个 workgroup 掉到 8 个。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip">以及一张 <b>A100 80G</b> · CUDA</span>
+    <span class="chip"><b>gemma-4-31B</b> + 官方 MTP 助手</span>
+    <span class="chip">实测 <b>2026-08-01</b> 与 <b>2026-08-26</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>vLLM 的文档把这个助手列为支持，并给出命令行，完全没提上下文长度。在四个深度上测下来，
+  效果是<strong>单调的，而且会变号</strong>：+36.9 %、−14.0 %、−32.4 %、−70.8 %。到 8K 就已经是净亏。</p>
+  <p>门是 Triton unified-attention 后端 <code>use_3d</code> 条件里的
+  <code>max_seqlen_q &gt; 1</code>。3D kernel 把长 KV 序列切成段并行归约；
+  投机多出来的那一行 query 让它失去资格，于是 launch grid 从
+  <strong>1 × 8 × 16 变成 1 × 8</strong>。那一句上的注释说的是"这一批里有 prefill 请求"，
+  但真正的约束是缓冲区形状：段缓冲按序列分配、按 token 索引，只有在一行 query 时两者才重合。</p>
+  <p><strong>三个看起来更像的解释都被测过并否掉了。</strong>不是 KV head 太少：这个模型有 16 个，
+  不开投机时好好的。不是多出来的那行 query：直接调 kernel，从一行到两行在 32K 上一个构造下花
+  <strong>0.08 %</strong>，另一个构造下 0.16 %。不是分块参数：把上游给 Blackwell
+  调的那组常量移过来，反而慢 8.7 %。</p>
+  <p>这个论断说的是一个 kernel，不是一个厂商，所以它预言：任何被路由到同一个 kernel 的 CUDA
+  机器都会出现同样的塌陷，而没有这道门的后端不会。一张租来的 A100 把两条都测了：
+  在被强制的默认路径上 <strong>30K −28.2 %、50K −61.1 %</strong>，换到 FlashInfer 塌陷消失。
+  两条预言都成立。</p>
+</div>
+
+<h2><span class="n">1</span>这条阶梯长什么样</h2>
+
+<p><code>gemma-4-31B-it-qat-w4a16-ct</code>，TP=2，batch 1，greedy，官方的
+<code>gemma-4-31B-it-assistant</code>，<code>num_speculative_tokens: 1</code>。
+解码用同一深度下 64 token 生成减 8 token 生成的差分，与 prefill 分开。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 投机在各个上下文长度上值多少
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="ladder"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 取自 <code>benchmarks/speculative-decoding/</code>。四个深度上单调，
+    而且在 1K 与 8K 之间穿过零 —— <strong>这个交叉点没有测出来</strong>。
+    把鼠标停在任意一条上可以看到两个速率。MTP 那一臂在五周之后作为另一次对比的 stock
+    基线又测了一遍：三个长深度重现到 <strong>0.45 %</strong>，1K 差 6.0 % ——
+    也就是说，承载这个结论的那一端，正是重现得最好的那一端。
+  </figcaption>
+</figure>
+
+<p>vLLM 自己的计数器在 32K 上是 <code>Mean acceptance length: 1.12</code>，78 个草稿接受 9 个。
+反推 1K 的加速意味着那里接受率大约 0.46，所以接受率也随深度下降。
+这确实是一笔真实开销 —— 一个被拒的草稿仍然付了助手的一次前向和目标模型的一次验证 ——
+但在助手只有四层宽的情况下，它撑不起 −70.8 %。第 5 节给出撑得起的那个。</p>
+
+<h2><span class="n">2</span>那一句</h2>
+
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">vllm/v1/attention/ops/triton_unified_attention.py</span></div>
+<pre>use_3d = <span class="k">not</span> (
+    seq_threshold_3D <span class="k">is None</span>
+    <span class="k">or</span> ...
+    <span class="k">or</span> <span class="r">max_seqlen_q &gt; 1</span>          <span class="c"># 投机让它变成 2</span>
+    <span class="k">or</span> num_seqs &gt; seq_threshold_3D
+    <span class="k">or</span> is_batch_invariant
+)
+</pre></div>
+
+<p>这一句决定的是：kernel 被允许用掉这块 GPU 的多少。</p>
+
+<div class="grids" id="grids"></div>
+
+<p>那一句上的注释说的是"这一批里至少有一个 prefill 请求"。真正的约束不是这个，
+而这一点很重要，因为它决定了真正的修复长什么样。段缓冲分配成
+<code>[seq_threshold_3D, num_heads_q, segments, headdim]</code> —— 按<em>序列</em>；
+索引成 <code>segm_output[token, head, segm_idx, :]</code> —— 按<em>token</em>。
+一行 query 时两者重合；两行时缓冲区会越界，于是这道门把它排除掉，
+而 <code>max_seqlen_q &gt; 1</code> 顺带把投机和 prefill 一起抓走了，因为它分不出这两者。</p>
+
+<h2><span class="n">3</span>只剩一个解释的那个对照</h2>
+
+<p>最直觉的读法是：两行 query 本来就是更多的工作。用这个模型的形状直接调
+<code>unified_attention</code>，不加载模型也不开投机，扫 query 行数：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 同一个 kernel，只改 query 行数，不加载模型
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="sweep"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 每一条是两行 query 相对同一次扫描自己那个一行的时间，单位百分比；
+    两个独立构造，分别跑的。8K 和 32K 上，从一行到两行在两个构造里都是免费的。
+    1K 上反而<em>更快</em>，39 % 和 34 %，因为在那里退回 2D kernel 已经不再付出代价，
+    却省下了分段的开销 —— 这也是为什么这道门并不荒唐，只是太粗。
+    <strong>两个构造在 16K 上不一致</strong>，−0.3 % 对 −10.4 %，
+    而动的是那个一行的格子，它是每组里最先测的；那里两行、四行、八行三个格子在两个构造之间只差 2.2 %。
+    在 32K，也就是结论所在的深度，连一行的格子都只差 0.2 %。构造之间的绝对水平在 8K 上最多差 9 %，
+    所以这里每一条都是同一次扫描内部的比值。把鼠标停上去可以看到四个 query 长度。
+  </figcaption>
+</figure>
+
+<p>另外两个解释也测过并否掉了。<strong>KV head 太少</strong>：
+<a href="hybrid-ssm-collapse.zh.html">混合 SSM 那篇</a>里的塌陷来自只有 4 个 KV head，
+而这个模型有 16 个，不开投机时没问题。<strong>分块参数</strong>：上游有一段
+<code>tuned_large_head</code>，条件是 <code>head_size == 256 and max_seqlen_q &gt; 1</code>，
+被限定在 Blackwell 上，其余条件这台机器全都满足；把它的 <code>BLOCK_M = 32</code>
+移过来，32K 反而慢了 8.7 %。</p>
+
+<div class="note">
+  <span class="lbl">用均值就看不见这件事
+  <span class="prov no">原始 trace 未入库</span></span>
+  32K 上 <code>kernel_unified_attention</code> 的单次调用耗时，来自留在测试机上的 torch-profiler
+  trace；入库的是汇总和 trace 文件名，所以这是本页唯一一个无法重算的块：
+  <div class="dist" id="dist"></div>
+  大多数调用几乎不动，少数爆炸。这是这个模型交替式注意力的结果：
+  滑动窗口层看到的 KV 很短，不在乎；全局层要扫完整的 32K，完全失去了分段。
+  报那个 9.2× 的均值，两个群体哪个都没描述到。<code>hipGraphLaunch</code> 从 63 变成 324，
+  所以图重放是好的 —— 之所以查它，是因为它是最显眼的嫌疑对象。
+</div>
+
+<h2><span class="n">4</span>另一个厂商</h2>
+
+<p>一个关于 kernel 的论断，会对它没被测过的硬件做出预言。如果塌陷就是 3D 掉到 2D，
+那么任何被路由到同一个 kernel 的 CUDA 机器都该出现它，并随上下文加深；
+而没有这道门的后端不该出现。<code>gemma-4</code> 的 head 维度不齐，
+所以只要 FA4 不可用，vLLM 就强制走 <code>TRITON_ATTN</code> —— 而 A100 没有 FA4。
+于是这个预言只要花一小时的租用时间就能测。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 同一个模型在一张 A100 80G 上
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="vendor"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 取自 <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>，
+    vLLM 0.28.0，<strong>每格一次运行</strong> —— 是一次探测，不是一次 campaign。
+    灰色标记是这台机器 32K 上的 −70.8 %，用作比例尺。在被强制的默认路径上，
+    MTP 是随深度加深的净亏；在 FlashInfer 上，同一个 MTP 在 30K 上是正的，
+    而 50K 上残留的 −8.7 % 是草稿模型的经济性问题，不是那种病理性掉落。
+    30K 的两个 FlashInfer 数字来自软件栈相同的两台不同 Colab VM；
+    这里其他每一个比值都在同一个会话内计算，而 50K 那四个格子全部来自同一个会话。
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>把投机放回 3D 路径之后值多少</h2>
+
+<p>手工把缓冲区加宽、把阈值抬到 2，32K 上从 8.85 恢复到 32.42 —— 投机终于赢过了不投机。
+但那不是修复：它没法表达"投机的两行 query，但不要 prefill 的四千行"；
+而且在 30K 提示下 greedy 输出从第 35 个 token 起与 stock 分叉，三个可能的成因当时没有分开。</p>
+
+<p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 六月就开着、
+卡在冲突上，而它正是那一节要的形状：门变成
+<code>max_seqlen_q &gt; decode_query_len</code>，prefill 仍被排除，段缓冲按 token 分配。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 同一条阶梯，走 vllm#45450 的准入
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="bars" id="recover"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> stock 对该 PR 的机制，两边都开着 MTP，同一台机器同一次会话。
+    对照图 1 里的不投机基线，投机在试过的每个深度上都是净正的。
+    手工加宽那次实验在 32K 上落在该 PR 自己数字的 0.5 % 以内，
+    这正是说明两者在做同一件事的证据。
+  </figcaption>
+</figure>
+
+<p>分叉那个问题也了结了。kernel 层的定输入对比，18 个用例，显示两条路径各自逐位确定，
+而两者最多相差一个 bf16 ULP —— 在一行 query 下也是如此，而一行正是今天线上跑的行为，
+两行、四行同样。第 35 个 token 的分叉是既有的 2D/3D 归约顺序重结合，
+batch size 在生产里本来就会切换它，不是这次准入带来的缺陷。</p>
+
+<h2><span class="n">6</span>谁报了什么</h2>
+
+<p>同样的 3D 掉 2D 最早由别人报出：
+<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a>，2026-07-09，
+在一张 B200 上跑同一架构的另一种量化。那份报告的触发条件是同一条 <code>or</code>
+链里的另一句 —— <code>num_seqs &gt; seq_threshold_3D</code>，一个 batch 大小阈值 ——
+它提议的修复从 SM 数推导这个阈值。<strong>那个修复够不到这里这个触发条件</strong>：
+<code>max_seqlen_q &gt; 1</code> 与那个阈值无关，所以无论阈值怎么算，投机照样掉到 2D。
+这里新的是第二个触发条件、它不同的成因，以及 RDNA3 上的实测。</p>
+
+<p>2026-08-01 贴到了那个 thread，2026-08-26 贴到了
+<a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a> ——
+CUDA 侧一份同模型同症状的报告。那位报告者确认显式选 FlashInfer 可以绕开它，
+这与机理吻合：塌陷是这个 Triton kernel 特有的，而显式指定后端就绕过了那次强制。
+ROCm 上没有 FlashInfer，所以在这台硬件上办法仍然是按深度决定开不开。</p>
+
+<h2><span class="n">7</span>没有被确立的部分</h2>
+
+<h3>交叉点</h3>
+<p>在 1K 与 8K 之间某处，没有测。A100 那侧也有同样的缺口：测了 30K 和 50K，
+而 MTP 在 FlashInfer 上何时不再划算，只框出了范围，没有定位。</p>
+
+<h3>重复</h3>
+<p>ROCm 这条阶梯每格一个进程。MTP 那一臂后来发现有第二次独立运行，隔了五周，
+三个长深度一致到 0.45 % —— 但不投机那一臂一次也没有，而且接受率没有逐格记录。
+A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有量化。</p>
+
+<h3>采样</h3>
+<p>这里的一切都是 <code>temperature=0</code>，也就是草稿与目标最容易一致的情形。
+采样应当降低接受率、让投机更不划算，但两个厂商上都没有测。</p>
+
+<h3>每边一个模型</h3>
+<p>gfx1100、TP=2、一台没有 P2P 的 VFIO guest、一个 checkpoint；以及一张 A100、一张卡、
+一个 checkpoint。机理是一个关于共享 kernel 的源码级论断，
+支撑它的是两台机器给出一致结果，而不是其中任何一次单独的测量。</p>
+
+<h2><span class="n">8</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · 找到了修复，并在两个厂商上验证</span>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 六月就开着，
+  独立地收敛到了同一个处方。它的准入机制在同一天于两台机器上验证：
+  A100 上 k ∈ {1, 2, 4} 输出逐位一致、稳定约 2×，以及这里图 4 的那条阶梯。
+  A100 那一半已贴到该 PR。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-26 · 分叉问题已关闭</span>
+  第 5 节里那三个没分开的成因分开了：18 个定输入 kernel 对比，每条路径逐位确定，
+  两者在每个 query 长度上都在一个 bf16 ULP 之内，包括今天线上跑的那个长度。
+  手工加宽那次实验里看起来像正确性风险的东西，是 batch size 本来就会切换的归约顺序重结合。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "没有重复"这句说过头了</span>
+  <code>docs/speculative-decoding-on-rdna.md</code> §1 说这份文档里每个数字都是单次运行、
+  没有任何进程级重复。MTP 那一臂是有的：vllm#45450 对比里的 stock 基线就是同一配置的再一次测量，
+  在 8K、16K、32K 上一致到 0.45 %。文档现在这么写了，
+  <code>verify_doc_figures.py</code> 也把这个差值钉住了。
+</div>
+
+<div class="note">
+  <span class="lbl">仍然开着</span>
+  截至 2026-08-29，<a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
+  仍然开着并且有冲突，<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a>
+  及其提议的修复也一样。在其中之一落地之前，这台硬件上的实用建议没有变：
+  短提示打开助手，到 8K 就关掉 —— 那里它已经是净亏。
+</div>
+
+<div class="foot-note">
+  <p><strong>数据。</strong>ROCm 的两条阶梯、直接调 kernel 的扫描和正确性用例在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
+  A100 的矩阵、日志和完整配方 —— 包括在 vLLM 0.28 上显式指定 FlashInfer
+  所需的那个多模态上限条件 —— 在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/README.md"><code>benchmarks/cuda-a100/</code></a>。
+  完整的写作在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/speculative-decoding-on-rdna.md">speculative-decoding-on-rdna.md</a>。
+  上面那份单次调用分布来自留在测试机上的 torch-profiler trace，每个约 2 MB；
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/trace-unified-attention.json"><code>trace-unified-attention.json</code></a>
+  里是从它们导出的内容和 trace 文件名，那张表也据此做了标记。</p>
+  <p>助手是 <code>google/gemma-4-31B-it-assistant</code>，0.90 GiB，未设访问限制。
+  它的 <code>head_dim</code> 与 <code>global_head_dim</code> 和目标模型一致，
+  这正是两者能共用一份 KV cache 的原因。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "viewDelta": "打开投机之后的变化",
+ "viewRate": "解码 tok/s",
+ "nospec": "不投机",
+ "mtp": "MTP",
+ "ctxK": "{n}K",
+ "f1unit": "百分比，同深度下 MTP 对不投机 · 每条轨道里的那道竖线是零",
+ "f1rateUnit": "解码 tok/s · 每格一个进程",
+ "f1repeat": "MTP 那一臂五周后重测：1K 差 {a}%，8K–32K 在 {b}% 以内",
+ "f1cross": "四个深度上单调，并在 1K 与 8K 之间穿过零",
+ "grid2d": "2D，投机拿到的",
+ "grid3d": "3D，长上下文解码需要的",
+ "gridUnit": "个 workgroup",
+ "sweepA": "构造 A", "sweepB": "构造 B",
+ "f2unit": "两行 query 对一行，同一次扫描内，百分比",
+ "f2note": "32K 上差 {a}% 和 {b}% · 四个 query 长度之间的散布不超过 {c}%",
+ "qlen": "q={n}",
+ "f3unit": "百分比，同后端同深度下 MTP 对不投机",
+ "f3ref": "这台机器在 32K",
+ "f3note": "{g} · vLLM {v} · 每格一次运行",
+ "stock": "stock", "ported": "带 #45450",
+ "f4unit": "开着 MTP 的解码 tok/s，{a} 对 {b}",
+ "f4note": "手工加宽那次实验在 32K 上是 {h}，与该 PR 自己的数字差 {p}%",
+ "f4correct": "{n} 个定输入 kernel 用例，全部逐位确定，两条路径相差不超过一个 bf16 ULP",
+ "distStat": "统计量", "distNo": "不投机", "distMtp": "MTP", "distRatio": "倍数",
+ "distMedian": "中位数", "distP75": "p75", "distMax": "最大", "distMean": "均值",
+ "distCalls": "{n} 次调用",
+ "us": " µs", "pct": " %"
+}</script>
+__SCRIPT__
+</body>
+</html>

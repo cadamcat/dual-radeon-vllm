@@ -66,6 +66,7 @@ R_EN, R_ZH = "rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"
 W_EN, W_ZH = "w4a16-two-problems.html", "w4a16-two-problems.zh.html"
 M_EN, M_ZH = "moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"
 L_EN, L_ZH = "weight-loading-19x.html", "weight-loading-19x.zh.html"
+S_EN, S_ZH = "speculative-decoding-net-loss.html", "speculative-decoding-net-loss.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -149,7 +150,30 @@ if (D / "loader-body-zh.html").exists():
                            "触发都变成一秒的超时。两个效应，一个复现器，三种内核状态。",
                       out="articles/" + L_ZH, nav=lang_nav("zh", L_EN, L_ZH), labels=ZH_LABELS))
 
+built.append(page("spec-body.html", lang="en", figures="figures-spec.json",
+                  extra_css="spec-extra.css",
+                  title="One boolean costs 71% on a Radeon and 61% on an A100",
+                  desc="Speculative decoding is +36.9% at 1K of context and -70.8% at 32K, because "
+                       "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8. "
+                       "Measured on two vendors.",
+                  out="articles/" + S_EN, nav=lang_nav("en", S_EN, S_ZH), labels=EN_LABELS))
+if (D / "spec-body-zh.html").exists():
+    built.append(page("spec-body-zh.html", lang="zh-CN", figures="figures-spec.json",
+                      extra_css="spec-extra.css", script_from="spec-body.html",
+                      title="一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%",
+                      desc="投机解码在 1K 上下文是 +36.9%，在 32K 上是 "
+                           "-70.8%，因为 max_seqlen_q > 1 把 Triton 注意力 "
+                           "kernel 从 128 个 workgroup 降到 8 个。两个厂商都测了。",
+                      out="articles/" + S_ZH, nav=lang_nav("zh", S_EN, S_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + S_EN, "title": "One boolean costs 71% on a Radeon and 61% on an A100",
+     "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and "
+              "70.8% slower at 32K. One clause in an or chain reads speculation's second query row as "
+              "\"not decode\" and gives up 120 of 128 workgroups.",
+     "measured": "measured 2026-08-26",
+     "langs": ["EN", "\u4e2d"] if (D / "spec-body-zh.html").exists() else ["EN"],
+     "tags": ["speculative decoding", "Triton attention", "vllm#45450"]},
     {"href": "articles/" + L_EN, "title": "Loading weights was slower than the disk, twice over",
      "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the "
               "mapping is writable, and that breaks copy-on-write on every resident page. On one "
@@ -224,7 +248,7 @@ for p in built:
     assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
-                 (L_EN, L_ZH)):
+                 (L_EN, L_ZH), (S_EN, S_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

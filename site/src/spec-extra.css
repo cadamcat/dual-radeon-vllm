@@ -1,0 +1,59 @@
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  #ladder, #recover { --labw:132px; }
+  #sweep, #vendor { --labw:158px; }
+  @media (max-width:480px){ #ladder, #recover { --labw:104px; }
+                            #sweep, #vendor { --labw:118px; } }
+
+  /* ---- a bar that can go either way, because the finding changes sign ---- */
+  .bars .dtrack { position:relative; background:var(--surface-3); border-radius:99px;
+                  height:20px; overflow:hidden; }
+  .bars .dtrack .zero { position:absolute; top:0; bottom:0; width:1px;
+                        background:var(--border-2); z-index:2; }
+  .bars .dtrack .fill { position:absolute; top:0; bottom:0; width:0;
+                        transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .dtrack .fill.pos { background:var(--s3); }
+  .bars .dtrack .fill.neg { background:var(--s1); }
+  .bars .dtrack .ref { position:absolute; top:1px; bottom:1px; width:2px;
+                       background:var(--text-dim); z-index:3; opacity:.75; }
+  .bars .val.pos { color:var(--green); }
+  .bars .val.neg { color:var(--red); }
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
+            vertical-align:baseline; margin-right:.35em; }
+
+  /* ---- the two launch grids, side by side ---- */
+  .grids { display:grid; grid-template-columns:1fr 1fr; gap:.9em; margin:1.6em 0; }
+  .gcard { border:1px solid var(--border); border-radius:11px; padding:1em 1.1em;
+           background:var(--surface-2); }
+  .gcard.win { background:var(--green-bg);
+               border-color:color-mix(in srgb, var(--green) 30%, transparent); }
+  .gcard h4 { margin:0 0 .3em; font-family:var(--mono); font-size:.76rem;
+              letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); }
+  .gcard.win h4 { color:var(--green); }
+  .gcard .g { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+              word-break:break-word; }
+  .gcard .wg { font-family:var(--mono); font-size:1.5rem; font-weight:800;
+               color:var(--text); margin-top:.35em; }
+  .gcard.win .wg { color:var(--green); }
+  .gcard .wgu { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  @media (max-width:520px){ .grids { grid-template-columns:1fr; } }
+
+  /* ---- the per-call distribution, which is not a mean ---- */
+  .dist { display:grid; grid-template-columns:max-content 1fr 1fr max-content;
+          column-gap:1.1em; align-items:center; font-size:.86rem; margin-top:.4em; }
+  .dist > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .dist > div:nth-last-child(-n+4) { border-bottom:0; }
+  .dist .h { font-family:var(--mono); font-size:.72rem; letter-spacing:.06em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .dist .k { font-family:var(--mono); font-size:.76rem; color:var(--text-dim); }
+  .dist .a, .dist .b, .dist .r { font-family:var(--mono);
+                                 font-variant-numeric:tabular-nums; }
+  .dist .r { text-align:right; color:var(--text-2); }
+  .dist .big .r { color:var(--red); font-weight:800; }

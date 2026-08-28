@@ -1,0 +1,321 @@
+{
+ "_what": "Every figure in speculative-decoding-net-loss.html. Derived from benchmarks/speculative-decoding/ and benchmarks/cuda-a100/ by site/src/genfig-spec.py; edit the data, not this file.",
+ "fig1": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "nospec": 43.42,
+    "mtp": 59.43,
+    "delta_pct": 36.87240902809765,
+    "mtp_repeat": 55.84,
+    "repeat_spread_pct": 6.0407201749957835
+   },
+   {
+    "ctx": 8192,
+    "nospec": 37.97,
+    "mtp": 32.64,
+    "delta_pct": -14.037397945746633,
+    "mtp_repeat": 32.76,
+    "repeat_spread_pct": 0.3676470588235281
+   },
+   {
+    "ctx": 16384,
+    "nospec": 35.28,
+    "mtp": 23.86,
+    "delta_pct": -32.36961451247166,
+    "mtp_repeat": 23.82,
+    "repeat_spread_pct": 0.16764459346185756
+   },
+   {
+    "ctx": 32768,
+    "nospec": 30.31,
+    "mtp": 8.85,
+    "delta_pct": -70.80171560541075,
+    "mtp_repeat": 8.81,
+    "repeat_spread_pct": 0.4519774011299327
+   }
+  ],
+  "source": {
+   "nospec": "splitkv-31b-stock.json",
+   "mtp": "mtp-31b-mtp.json",
+   "repeat": "mtp-31b-stock45450.json"
+  },
+  "best": 36.87240902809765,
+  "worst": -70.80171560541075,
+  "monotonic": true,
+  "repeat_worst_long_pct": 0.4519774011299327,
+  "repeat_1k_pct": 6.0407201749957835
+ },
+ "fig2": {
+  "sweeps": [
+   {
+    "id": "A",
+    "file": "kbench-0.json",
+    "rows": [
+     {
+      "kv": 1024,
+      "us": [
+       289.226,
+       175.998,
+       173.817,
+       177.656
+      ]
+     },
+     {
+      "kv": 8192,
+      "us": [
+       1276.323,
+       1271.128,
+       1274.281,
+       1257.322
+      ]
+     },
+     {
+      "kv": 16384,
+      "us": [
+       2491.698,
+       2483.462,
+       2470.891,
+       2521.494
+      ]
+     },
+     {
+      "kv": 32768,
+      "us": [
+       5045.258,
+       5053.459,
+       5053.318,
+       5112.792
+      ]
+     }
+    ]
+   },
+   {
+    "id": "B",
+    "file": "kbench2-0.json",
+    "rows": [
+     {
+      "kv": 1024,
+      "us": [
+       274.029,
+       180.833,
+       179.421,
+       181.613
+      ]
+     },
+     {
+      "kv": 8192,
+      "us": [
+       1362.147,
+       1361.703,
+       1357.723,
+       1374.519
+      ]
+     },
+     {
+      "kv": 16384,
+      "us": [
+       2818.453,
+       2524.79,
+       2525.92,
+       2550.242
+      ]
+     },
+     {
+      "kv": 32768,
+      "us": [
+       5035.968,
+       5039.768,
+       5047.387,
+       5102.21
+      ]
+     }
+    ]
+   }
+  ],
+  "q_lens": [
+   1,
+   2,
+   4,
+   8
+  ],
+  "q1_to_q2_32k_pct": [
+   0.16254867441862775,
+   0.07545719114974148
+  ],
+  "between_constructions_pct": [
+   {
+    "kv": 1024,
+    "q1": 5.25436855607726,
+    "q2plus_max": 3.224080498455262,
+    "within_A": -39.14862425922981,
+    "within_B": -34.00953913636878
+   },
+   {
+    "kv": 8192,
+    "q1": 6.724316650252304,
+    "q2plus_max": 9.321160371010784,
+    "within_A": -0.40702862833312814,
+    "within_B": -0.032595600915319434
+   },
+   {
+    "kv": 16384,
+    "q1": 13.113748134806059,
+    "q2plus_max": 2.22709136097059,
+    "within_A": -0.3305376494262102,
+    "within_B": -10.41929739470554
+   },
+   {
+    "kv": 32768,
+    "q1": 0.1841332990304978,
+    "q2plus_max": 0.2709233418139889,
+    "within_A": 0.16254867441862775,
+    "within_B": 0.07545719114974148
+   }
+  ],
+  "constructions_agree_at_32k_pct": 0.1841332990304978,
+  "worst_within_disagreement_pct": 10.08875974527933,
+  "worst_across_q_32k_pct": [
+   1.338563855406405,
+   1.3153776989845989
+  ],
+  "grids": {
+   "2d": [
+    1,
+    8
+   ],
+   "3d": [
+    1,
+    8,
+    16
+   ]
+  },
+  "workgroups": {
+   "2d": 8,
+   "3d": 128
+  }
+ },
+ "fig3": {
+  "cells": [
+   {
+    "ctx": 30000,
+    "backend": "triton_forced",
+    "label": "TRITON_ATTN, forced",
+    "mtp": 31.5,
+    "nospec": 43.85,
+    "delta_pct": -28.16419612314709,
+    "session": "A"
+   },
+   {
+    "ctx": 30000,
+    "backend": "flashinfer_explicit",
+    "label": "FLASHINFER, explicit",
+    "mtp": 62.43,
+    "nospec": 47.42,
+    "delta_pct": 31.65331083930831,
+    "session": "A/B"
+   },
+   {
+    "ctx": 30000,
+    "backend": "auto_selector_47547",
+    "label": "auto, mixed",
+    "mtp": 66.09,
+    "nospec": 48.95,
+    "delta_pct": 35.01532175689479,
+    "session": "B"
+   },
+   {
+    "ctx": 50000,
+    "backend": "triton_forced",
+    "label": "TRITON_ATTN, forced",
+    "mtp": 15.75,
+    "nospec": 40.47,
+    "delta_pct": -61.08228317272053,
+    "session": "B"
+   },
+   {
+    "ctx": 50000,
+    "backend": "flashinfer_explicit",
+    "label": "FLASHINFER, explicit",
+    "mtp": 41.35,
+    "nospec": 45.27,
+    "delta_pct": -8.659156174066718,
+    "session": "B"
+   }
+  ],
+  "machine": "NVIDIA A100-SXM4-80GB (Colab), single card",
+  "vllm": "0.28.0 (PyPI wheel)",
+  "measured": "2026-08-26",
+  "rocm_reference_pct": -70.8,
+  "sessions_caveat": "Sessions A and B are different Colab VMs with the identical software stack. No configuration ran on both, so cross-session variance is unquantified; every ratio quoted above except the two 30K FlashInfer/auto comparisons is computed within one session. The 50K quartet - the headline - is entirely session B.",
+  "runs_per_cell": 1
+ },
+ "fig4": {
+  "rows": [
+   {
+    "ctx": 1024,
+    "stock": 55.84,
+    "ported": 74.89,
+    "ratio": 1.3411532951289398
+   },
+   {
+    "ctx": 8192,
+    "stock": 32.76,
+    "ported": 63.25,
+    "ratio": 1.9307081807081807
+   },
+   {
+    "ctx": 16384,
+    "stock": 23.82,
+    "ported": 63.09,
+    "ratio": 2.6486146095717884
+   },
+   {
+    "ctx": 32768,
+    "stock": 8.81,
+    "ported": 32.57,
+    "ratio": 3.6969353007945513
+   }
+  ],
+  "hand_forced_32k": 32.42,
+  "hand_vs_ported_pct": 0.4605465151980348,
+  "nospec_32k": 30.31,
+  "net_positive_everywhere": true,
+  "correctness": {
+   "cases": 18,
+   "deterministic": 18,
+   "wrote_3d": 18,
+   "max_abs_diff": 0.0009765625,
+   "bf16_ulp_at_1": 0.00390625
+  }
+ },
+ "profile": {
+  "reproducible_from_repo": false,
+  "source": "benchmarks/speculative-decoding/trace-unified-attention.json",
+  "note": "kernel_unified_attention per-call device time, rank 0, gemma-4-31B-it-qat-w4a16-ct, TP=2, 32768-token context. Derived from torch-profiler traces kept on the test machine (prof-31b/ and prof-mtp-31b/, ~2 MB gz each, not in this repo).",
+  "runs": {
+   "no-speculation": {
+    "calls": 3780,
+    "median_us": 106.6,
+    "p75_us": 108.7,
+    "max_us": 647.4,
+    "mean_us": 192.7,
+    "hip_graph_launch": 63
+   },
+   "mtp": {
+    "calls": 3456,
+    "median_us": 126.9,
+    "p75_us": 132.1,
+    "max_us": 9950.3,
+    "mean_us": 1770.3,
+    "hip_graph_launch": 324
+   }
+  },
+  "ratios": {
+   "median_us": 1.1904315196998125,
+   "p75_us": 1.2152713891444342,
+   "max_us": 15.369632375656472,
+   "mean_us": 9.18681888946549
+  }
+ }
+}

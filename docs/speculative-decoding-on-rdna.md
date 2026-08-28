@@ -14,13 +14,19 @@ decode depends on.
   it costs more than it ever gave.
 - The crossover was not located. It lies between 1K and 8K.
 
-**One measurement per cell.** Every figure in this document is a single run;
-there are no process replicates and no within-cell samples, and acceptance rate
-was not captured. The direction is monotonic across four depths and the
-end-points are far apart, which is why the shape is stated as a finding, but the
-individual ratios are not separated from run-to-run noise the way the decode
-campaigns are. Two independent processes per cell would settle it and have not
-been run.
+**One measurement per cell**, with one exception. Every figure in this document
+is a single run; there are no within-cell samples, and acceptance rate was not
+captured. The direction is monotonic across four depths and the end-points are
+far apart, which is why the shape is stated as a finding, but the individual
+ratios are not separated from run-to-run noise the way the decode campaigns are.
+
+> **Corrected 2026-08-29.** This paragraph said there were no process replicates
+> at all. The MTP arm has one: `mtp-31b-stock45450.json` is the same
+> configuration measured again on 2026-08-26 as the stock baseline of the §5
+> comparison, and against `mtp-31b-mtp.json` it agrees to **0.45 % at 8 K, 16 K
+> and 32 K** and differs by 6.0 % at 1 K. So the end of the ladder that carries
+> the finding is the end that reproduces; the no-speculation arm still has no
+> replicate.
 
 ---
 

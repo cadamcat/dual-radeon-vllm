@@ -751,7 +751,9 @@ def main():
              ["rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"],
              ["w4a16-two-problems.html", "w4a16-two-problems.zh.html"],
              ["moe-written-off-by-eager.html", "moe-written-off-by-eager.zh.html"],
-             ["weight-loading-19x.html", "weight-loading-19x.zh.html"]]
+             ["weight-loading-19x.html", "weight-loading-19x.zh.html"],
+             ["speculative-decoding-net-loss.html",
+              "speculative-decoding-net-loss.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -2162,6 +2164,153 @@ def main():
               "benchmarks/loader-flag-kernel-30.json"):
         ck(f"loader article, {f} exists", "1",
            1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
+
+    # --- speculative-decoding-net-loss.html ----------------------------------
+    # Four committed sources behind four figures, plus a profiler summary whose
+    # traces are not in the repository and which has to say so.
+    PART = json.loads(block(pages["speculative-decoding-net-loss.html"], "figures"))
+    SP = os.path.join(HERE, "..", "speculative-decoding")
+    lad = lambda fn: {r["depth"]: r["tok_per_s"] for r in
+                      json.load(open(os.path.join(SP, fn)))["rows"]}
+    ns, mt, mt2 = (lad("splitkv-31b-stock.json"), lad("mtp-31b-mtp.json"),
+                   lad("mtp-31b-stock45450.json"))
+
+    # fig1: the ladder, its sign change, and the replicate it turns out to have
+    ck("spec article, fig1 rows", "4", len(PART["fig1"]["rows"]))
+    ck("spec article, fig1 rows match their files", "4",
+       sum(1 for r in PART["fig1"]["rows"]
+           if abs(r["nospec"] - ns[r["ctx"]]) < 1e-9
+           and abs(r["mtp"] - mt[r["ctx"]]) < 1e-9
+           and abs(r["mtp_repeat"] - mt2[r["ctx"]]) < 1e-9))
+    for r in PART["fig1"]["rows"]:
+        ck(f'spec article, fig1 {r["ctx"]} delta',
+           repr((mt[r["ctx"]] / ns[r["ctx"]] - 1) * 100.0), r["delta_pct"], tol=1e-12)
+    ck("spec article, fig1 best", "36.9", PART["fig1"]["best"])
+    ck("spec article, fig1 worst", "-70.8", PART["fig1"]["worst"])
+    ck("spec article, fig1 is monotonic", "1", 1 if PART["fig1"]["monotonic"] else 0)
+    ck("spec article, fig1 changes sign", "1",
+       1 if PART["fig1"]["best"] > 0 > PART["fig1"]["worst"] else 0)
+    # the claim the article makes about which end of the ladder reproduces
+    ck("spec article, fig1 the long depths repeat to", "0.45",
+       PART["fig1"]["repeat_worst_long_pct"])
+    ck("spec article, fig1 and 1K does not", "6.0", PART["fig1"]["repeat_1k_pct"])
+    ck("spec article, fig1 the repeat is worst where the finding is not", "1",
+       1 if PART["fig1"]["repeat_1k_pct"] > 5 * PART["fig1"]["repeat_worst_long_pct"]
+       else 0)
+    sd = open(os.path.join(HERE, "..", "..", "docs",
+                           "speculative-decoding-on-rdna.md"), encoding="utf-8").read()
+    ck("spec doc, the replicate correction is present", "1",
+       1 if "Corrected 2026-08-29" in sd and "mtp-31b-stock45450.json" in sd else 0)
+    ck("spec doc, and it no longer claims there are none", "0",
+       len(re.findall(r"there are no process replicates", sd)))
+
+    # fig2: two independent constructions of the same sweep
+    kb = {t_: {(r["kv_len"], r["q_len"]): r["us"]
+               for r in json.load(open(os.path.join(SP, fn)))}
+          for t_, fn in (("A", "kbench-0.json"), ("B", "kbench2-0.json"))}
+    ck("spec article, fig2 sweeps", "2", len(PART["fig2"]["sweeps"]))
+    ck("spec article, fig2 sweeps match their files", "2",
+       sum(1 for s in PART["fig2"]["sweeps"]
+           if all(abs(row["us"][j] - kb[s["id"]][(row["kv"], q)]) < 1e-9
+                  for row in s["rows"] for j, q in enumerate(PART["fig2"]["q_lens"]))))
+    for i, tag in enumerate(("A", "B")):
+        ck(f"spec article, fig2 32K one row to two, construction {tag}",
+           repr((kb[tag][(32768, 2)] / kb[tag][(32768, 1)] - 1) * 100.0),
+           PART["fig2"]["q1_to_q2_32k_pct"][i], tol=1e-12)
+    ck("spec article, fig2 that is under a per cent in both", "2",
+       sum(1 for v in PART["fig2"]["q1_to_q2_32k_pct"] if abs(v) < 1.0))
+    ck("spec article, fig2 the launch grids", "8", PART["fig2"]["workgroups"]["2d"])
+    ck("spec article, fig2 against", "128", PART["fig2"]["workgroups"]["3d"])
+    ck("spec article, fig2 which is what the clause gives up", "16",
+       PART["fig2"]["workgroups"]["3d"] // PART["fig2"]["workgroups"]["2d"])
+    # where the two constructions disagree, which the caption states rather than
+    # averaging away
+    bc = {r["kv"]: r for r in PART["fig2"]["between_constructions_pct"]}
+    ck("spec article, fig2 the constructions agree at 32K", "0.18", bc[32768]["q1"])
+    ck("spec article, fig2 and disagree most at 16K", "10.1",
+       PART["fig2"]["worst_within_disagreement_pct"])
+    ck("spec article, fig2 the 16K disagreement is in the one-row cell", "1",
+       1 if bc[16384]["q1"] > 4 * bc[16384]["q2plus_max"] else 0)
+    ck("spec article, fig2 the 16K two-row-and-up cells agree to", "2.23",
+       bc[16384]["q2plus_max"])
+
+    # fig3: the other vendor
+    mat = json.load(open(os.path.join(HERE, "..", "cuda-a100",
+                                      "gemma4-mtp-backend-matrix.json")))
+    ck("spec article, fig3 cells", "5", len(PART["fig3"]["cells"]))
+    ck("spec article, fig3 cells match the matrix", "5",
+       sum(1 for c in PART["fig3"]["cells"]
+           if mat["decode_tok_s"][str(c["ctx"])][c["backend"]]["mtp"] == c["mtp"]
+           and mat["decode_tok_s"][str(c["ctx"])][c["backend"]]["nospec"] == c["nospec"]
+           and abs(c["delta_pct"] - (c["mtp"] / c["nospec"] - 1) * 100.0) < 1e-9))
+    tri = {c["ctx"]: c["delta_pct"] for c in PART["fig3"]["cells"]
+           if c["backend"] == "triton_forced"}
+    ck("spec article, fig3 forced default at 30K", "-28.2", tri[30000])
+    ck("spec article, fig3 and at 50K", "-61.1", tri[50000])
+    ck("spec article, fig3 it deepens with depth", "1",
+       1 if tri[50000] < tri[30000] < 0 else 0)
+    heal = [c["delta_pct"] for c in PART["fig3"]["cells"]
+            if c["backend"] != "triton_forced" and c["ctx"] == 30000]
+    ck("spec article, fig3 both healthy backends are positive at 30K", "2",
+       sum(1 for v in heal if v > 0))
+    ck("spec article, fig3 the ROCm reference it is drawn against", "-70.8",
+       PART["fig3"]["rocm_reference_pct"])
+    ck("spec article, fig3 says how many runs a cell is", "1",
+       PART["fig3"]["runs_per_cell"])
+
+    # fig4: what the admission is worth, and that it is the same thing
+    stk, prt = lad("mtp-31b-stock45450.json"), lad("mtp-31b-p45450.json")
+    ck("spec article, fig4 rows", "4", len(PART["fig4"]["rows"]))
+    ck("spec article, fig4 rows match their files", "4",
+       sum(1 for r in PART["fig4"]["rows"]
+           if abs(r["stock"] - stk[r["ctx"]]) < 1e-9
+           and abs(r["ported"] - prt[r["ctx"]]) < 1e-9
+           and abs(r["ratio"] - prt[r["ctx"]] / stk[r["ctx"]]) < 1e-9))
+    ck("spec article, fig4 at 32K", "3.70",
+       [r["ratio"] for r in PART["fig4"]["rows"] if r["ctx"] == 32768][0])
+    ck("spec article, fig4 the hand-widened experiment", "32.42",
+       PART["fig4"]["hand_forced_32k"])
+    ck("spec article, fig4 lands this close to the PR", "0.5",
+       PART["fig4"]["hand_vs_ported_pct"])
+    ck("spec article, fig4 net positive at every depth tried", "1",
+       1 if PART["fig4"]["net_positive_everywhere"] else 0)
+    kc2 = json.load(open(os.path.join(SP, "kcorrect-45450.json")))
+    ck("spec article, fig4 correctness cases", str(len(kc2)),
+       PART["fig4"]["correctness"]["cases"])
+    ck("spec article, fig4 all deterministic", str(len(kc2)),
+       PART["fig4"]["correctness"]["deterministic"])
+    ck("spec article, fig4 and within one bf16 ulp", "1",
+       1 if PART["fig4"]["correctness"]["max_abs_diff"]
+       <= PART["fig4"]["correctness"]["bf16_ulp_at_1"] else 0)
+
+    # the profiler block: derived from traces that are not here, and it says so
+    ck("spec article, the profile declares itself unreproducible", "1",
+       0 if PART["profile"].get("reproducible_from_repo", True) else 1)
+    trj = json.load(open(os.path.join(SP, "trace-unified-attention.json")))
+    ck("spec article, the profile matches its summary file", "2",
+       sum(1 for k in ("no-speculation", "mtp")
+           if all(PART["profile"]["runs"][k][s] == trj["runs"][k][s]
+                  for s in ("calls", "median_us", "p75_us", "max_us", "mean_us"))))
+    ck("spec article, the profile's median ratio", "1.2",
+       PART["profile"]["ratios"]["median_us"])
+    ck("spec article, and its max ratio", "15.4", PART["profile"]["ratios"]["max_us"])
+    ck("spec article, the mean is the misleading one", "1",
+       1 if PART["profile"]["ratios"]["mean_us"]
+       > 5 * PART["profile"]["ratios"]["median_us"] else 0)
+    for fn, marker in (("speculative-decoding-net-loss.html",
+                        "raw traces not committed"),
+                       ("speculative-decoding-net-loss.zh.html",
+                        "\u539f\u59cb trace \u672a\u5165\u5e93")):
+        ck(f"spec article {fn}, marks the profile block", "1",
+           1 if marker in pages[fn] else 0)
+
+    for fn, heads in (("speculative-decoding-net-loss.html",
+                       ("What is not established", "What has changed since")),
+                      ("speculative-decoding-net-loss.zh.html",
+                       ("没有被确立的部分", "此后发生的变化"))):
+        for h in heads:
+            ck(f"spec article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
