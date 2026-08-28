@@ -6,125 +6,171 @@
 <title>A hybrid-SSM model that decodes slower the longer you talk to it</title>
 <meta name="description" content="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream fix, measured.">
 <style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
   :root {
-    --bg:#faf8f3; --bg-grad:radial-gradient(1200px 600px at 78% -8%, #f0ead9 0%, rgba(240,234,217,0) 60%);
-    --surface:#ffffff; --surface-2:#f3efe6; --surface-3:#ece7db;
-    --border:#e2dccd; --border-2:#d3ccb9;
-    --text:#211e18; --text-2:#57513f; --text-dim:#857c66;
-    --accent:#b07a12; --accent-2:#8a5e08;
-    --red:#b93b28; --red-bg:#f8e7e2; --green:#1f7a44; --green-bg:#e2f1e6;
-    --blue:#1f6497; --blue-bg:#e2edf5; --purple:#6b4bb0;
-    --code-bg:#1b1a16; --code-bg-2:#26241d; --code-text:#e9e3d4; --code-dim:#9b937f;
-    --shadow:0 1px 2px rgba(40,32,10,.05), 0 8px 30px rgba(40,32,10,.06);
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
     --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
-    --s1:#b93b28; --s2:#1f6497; --s3:#1f7a44; --s4:#6b4bb0; --s5:#b07a12;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg:#100f0b; --bg-grad:radial-gradient(1200px 620px at 80% -10%, #241d0e 0%, rgba(36,29,14,0) 62%);
-      --surface:#191712; --surface-2:#201d16; --surface-3:#2a271d;
-      --border:#322e23; --border-2:#423d2e;
-      --text:#ece6d6; --text-2:#b8b09b; --text-dim:#8a8271;
-      --accent:#e2ac45; --accent-2:#f0c268;
-      --red:#e8735a; --red-bg:#33201b; --green:#5cbe83; --green-bg:#16281d;
-      --blue:#5aa6dd; --blue-bg:#142430; --purple:#a488e6;
-      --code-bg:#0c0b08; --code-bg-2:#16150f; --code-text:#e5dfce; --code-dim:#877f6b;
-      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.35);
-      --s1:#e8735a; --s2:#5aa6dd; --s3:#5cbe83; --s4:#a488e6; --s5:#e2ac45;
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
     }
   }
-  * { box-sizing: border-box; }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
   body {
     margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
-    color:var(--text); font-family:var(--sans); line-height:1.75; font-size:17px;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
   }
   .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
   @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
   a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
   a:hover { border-bottom-color:var(--accent); }
   h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
-  h1 { font-size:2.45rem; letter-spacing:-.02em; margin:.2em 0 .3em; }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
   @media (max-width:640px){ h1{font-size:1.85rem;} }
-  h2 { font-size:1.6rem; margin:3.2em 0 .2em; letter-spacing:-.01em; }
-  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.5em; font-weight:800; }
-  h3 { font-size:1.16rem; margin:2.1em 0 .1em; }
-  p { margin:.85em 0; }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
   strong { color:var(--text); font-weight:700; }
-  code { font-family:var(--mono); font-size:.87em; background:var(--surface-3);
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
-  .lede { font-size:1.12rem; color:var(--text-2); margin:1.1em 0 0; }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
 
   /* ---- masthead ---- */
-  .top { border-bottom:1px solid var(--border); margin-bottom:2.2em; padding-bottom:1.6em; }
-  .kicker { font-family:var(--mono); font-size:.76rem; letter-spacing:.14em; text-transform:uppercase;
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
             color:var(--accent); font-weight:700; }
-  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.4em; }
-  .chip { font-family:var(--mono); font-size:.74rem; background:var(--surface-2);
-          border:1px solid var(--border); border-radius:99px; padding:.3em .8em; color:var(--text-2); }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
   .chip b { color:var(--text); font-weight:700; }
 
   /* ---- abstract ---- */
   .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
-              border-radius:10px; padding:1.3em 1.5em; box-shadow:var(--shadow); margin:2em 0; }
-  .abstract h3 { margin:0 0 .3em; font-size:.8rem; font-family:var(--mono); letter-spacing:.12em;
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
                  text-transform:uppercase; color:var(--accent); }
-  .abstract p { margin:.55em 0; color:var(--text-2); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
   .abstract p:first-of-type { color:var(--text); }
 
   /* ---- callouts ---- */
-  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
-          padding:1em 1.2em; margin:1.6em 0; font-size:.96rem; color:var(--text-2); }
-  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 30%, transparent); }
-  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 30%, transparent); }
-  .note .lbl { font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
-               font-weight:700; display:block; margin-bottom:.35em; }
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
   .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
   .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
 
-  /* ---- code ---- */
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
   pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
-        overflow-x:auto; font-family:var(--mono); font-size:.83rem; line-height:1.65;
-        border:1px solid var(--border-2); box-shadow:var(--shadow); margin:1.5em 0; }
-  pre .c { color:var(--code-dim); }
-  pre .k { color:#e2ac45; } pre .r { color:#e8735a; } pre .g { color:#5cbe83; }
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
 
   /* ---- tables ---- */
-  .tbl { overflow-x:auto; margin:1.6em 0; }
+  .tbl { overflow-x:auto; margin:1.8em 0; }
   table { border-collapse:collapse; width:100%; font-size:.92rem; }
-  th,td { padding:.55em .7em; border-bottom:1px solid var(--border); text-align:left; }
-  th { font-family:var(--mono); font-size:.76rem; letter-spacing:.05em; text-transform:uppercase;
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
        color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
   td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
   tbody tr:hover { background:var(--surface-2); }
 
   /* ---- figures ---- */
-  figure { margin:2.4em 0; }
-  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:12px;
-            padding:1.2em 1.3em 1em; box-shadow:var(--shadow); }
-  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:.9em; line-height:1.6; }
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
   figcaption b { color:var(--text-2); }
-  .figtitle { font-family:var(--mono); font-size:.74rem; letter-spacing:.12em; text-transform:uppercase;
-              color:var(--accent); font-weight:700; margin-bottom:.9em; }
-  .prov { display:inline-block; font-family:var(--mono); font-size:.68rem; padding:.1em .5em;
-          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); margin-left:.5em;
-          vertical-align:.12em; }
-  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 40%, transparent); }
-  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 40%, transparent); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
 
-  /* legend */
   .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
-  .lg { display:inline-flex; align-items:center; gap:.45em; font-size:.8rem; font-family:var(--mono);
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
         background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
-        padding:.32em .8em; cursor:pointer; color:var(--text-dim); user-select:none;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
         transition:color .25s, border-color .25s, background .25s, transform .18s; }
   .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
-  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.42;
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
             transition:opacity .25s, box-shadow .25s; }
   .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
   .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
-  .hint { font-size:.78rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.7em; }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
 
   svg.chart { width:100%; height:auto; display:block; overflow:visible; }
   .grid line { stroke:var(--border); stroke-width:1; }
@@ -132,41 +178,59 @@
   .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
   .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
         transition:opacity .3s, stroke-width .3s; }
-  .dot { transition:opacity .3s, r .18s; cursor:pointer; }
-  .dim { opacity:.13; }
-  .dim.ln { stroke-width:1.6; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
-         font-family:var(--mono); font-size:.74rem; line-height:1.55; padding:.55em .75em;
-         border-radius:7px; opacity:0; transition:opacity .14s; z-index:50; max-width:260px;
-         box-shadow:0 8px 26px rgba(0,0,0,.32); }
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
   .tip .hd { color:var(--accent-2); font-weight:700; }
   .tip .sub { color:var(--code-dim); }
 
-  /* bars */
-  .bar { transition:width .8s cubic-bezier(.22,1,.36,1); }
-  .barrow { display:grid; grid-template-columns:minmax(120px,auto) 1fr auto; gap:.7em;
-            align-items:center; margin:.5em 0; font-size:.88rem; }
-  .barrow .lab { font-family:var(--mono); font-size:.79rem; color:var(--text-2); }
-  .bartrack { background:var(--surface-3); border-radius:99px; height:19px; overflow:hidden; }
-  .barfill { height:100%; border-radius:99px; width:0; transition:width 1s cubic-bezier(.22,1,.36,1); }
-  .barval { font-family:var(--mono); font-size:.82rem; font-variant-numeric:tabular-nums;
-            color:var(--text); font-weight:700; }
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
 
-  /* reveal */
-  .rv { opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
 
-  .foot { margin-top:4em; padding-top:1.6em; border-top:1px solid var(--border);
-          font-size:.88rem; color:var(--text-dim); }
-  .foot a { color:var(--accent-2); }
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
 
   @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
     *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
     .rv { opacity:1; transform:none; }
   }
 </style>
 </head>
 <body>
+<div class="themebar" role="group" aria-label="Colour theme">
+  <button id="th-auto" aria-pressed="false" title="Match system">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="Light">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="Dark">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</div>
 <div class="wrap">
 
 <header class="top">
@@ -261,7 +325,7 @@ whose window they fall in, so that chunked-prefill calls are not mixed into the 
 <figure class="rv" id="fig2">
   <div class="figbox">
     <div class="figtitle">Figure 2 · per-call GPU time, 1 K against 32 K <span class="prov no">raw trace not committed</span></div>
-    <div id="bars2"></div>
+    <div class="bars" id="bars2" style="--labw:210px"></div>
   </div>
   <figcaption>
     <b>Figure 2.</b> Per-call GPU time on rank 0, logarithmic. Call counts are identical at the two
@@ -287,18 +351,24 @@ kernel is flat or slightly faster at the longer context.</p>
 The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code>
 requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
 
-<pre><span class="c"># this model, measured rather than assumed</span>
-head_dim              = <span class="r">256</span>          <span class="c"># needs 128</span>
-cache_config.block_size = <span class="r">784</span>        <span class="c"># = 16 × 49, needs 16</span>
-is_pow2(784)          = <span class="r">False</span>        <span class="c"># disqualifies use_custom on its own path</span>
-gqa_ratio             = <span class="g">6</span>            <span class="c"># this one passes</span>
-</pre>
+<div class="codewin">
+  <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
+    <span class="t">use_rocm_custom_paged_attention · counterfactuals</span></div>
+<pre><span class="c"># measured on the running engine, not read off the config</span>
+head_dim                = <span class="r">256</span>       <span class="c"># gate wants 128</span>
+cache_config.block_size = <span class="r">784</span>       <span class="c"># = 16 x 49, gate wants 16</span>
+is_pow2(784)            = <span class="r">False</span>     <span class="c"># fails use_custom on its own path</span>
+gqa_ratio               = <span class="g">6</span>         <span class="c"># this one passes</span>
 
-<p><strong>No single condition is the blocker.</strong> Calling the gate directly with counterfactuals:
-forcing <code>head_size</code> to 128 still returns <code>False</code>; forcing <code>block_size</code> to
-16 still returns <code>False</code>; and <code>chunked_prefill_paged_decode.py</code> fails
-<code>use_custom</code> on <code>is_pow2</code> independently. The custom kernel is unreachable here three
-times over, which is why making the fallback fast is the only path that helps this class of model.</p>
+<span class="c"># forcing either failing condition on its own is still not enough</span>
+use_rocm_custom_paged_attention(head_size=<span class="k">128</span>)   -> <span class="r">False</span>
+use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span class="r">False</span>
+</pre></div>
+
+<p><strong>No single condition is the blocker.</strong> Relaxing either failing condition on its own
+leaves the gate closed, and <code>chunked_prefill_paged_decode.py</code> fails <code>use_custom</code> on
+<code>is_pow2</code> independently of both. The custom kernel is unreachable here three times over, which
+is why making the fallback fast is the only path that helps this class of model.</p>
 
 <div class="note warn">
   <span class="lbl">The obvious fix does not work</span>
@@ -345,7 +415,7 @@ the driver, the GPU, or the topology, it would appear here too.</p>
 <figure class="rv" id="fig3">
   <div class="figbox">
     <div class="figtitle">Figure 3 · decode slope, microseconds per token of context <span class="prov yes">recomputable from repo</span></div>
-    <div id="bars3"></div>
+    <div class="bars" id="bars3" style="--labw:158px"></div>
   </div>
   <figcaption>
     <b>Figure 3.</b> Lower is flatter. The shaded band is the range the dense models under vLLM produce on
@@ -387,7 +457,7 @@ harness, one fresh container per cell, only the kernel file swapped, run twice w
   <div class="figbox">
     <div class="figtitle">Figure 4 · controlled A/B on vLLM 0.27 <span class="prov yes">recomputable from repo</span></div>
     <div class="hint">click a bar group to switch between rate and milliseconds per token</div>
-    <div id="ab4"></div>
+    <div class="bars" id="ab4" style="--labw:128px"></div>
   </div>
   <figcaption>
     <b>Figure 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>, TP=2, vLLM 0.27.1.dev5, offline 64-vs-8 differencing.
@@ -1107,30 +1177,58 @@ baseline is a different question with a different answer.</p>
   "use strict";
   var F = JSON.parse(document.getElementById("figures").textContent);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var COL = ["--s1", "--s2", "--s3", "--s4", "--s5"];
-  var cv = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var SER = ["--s1", "--s2", "--s3", "--s4", "--s5"];
   var tip = document.getElementById("tip");
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
 
   function showTip(e, html) {
     tip.innerHTML = html; tip.style.opacity = "1";
     var x = e.clientX + 14, y = e.clientY + 14;
-    if (x + 270 > window.innerWidth) x = e.clientX - 270;
+    if (x + 280 > window.innerWidth) x = e.clientX - 280;
+    if (y + 90 > window.innerHeight) y = e.clientY - 90;
     tip.style.left = x + "px"; tip.style.top = y + "px";
   }
   function hideTip() { tip.style.opacity = "0"; }
 
-  /* ---------- Figure 1: decode vs context ---------- */
-  var W = 760, H = 400, M = { t: 14, r: 16, b: 44, l: 58 };
+  /* Colours are written as var(--sN) rather than resolved at build time, so a
+     theme switch repaints every line and bar without redrawing anything. */
+  function svgEl(n, attrs, style) {
+    var e = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (style) e.setAttribute("style", style);
+    return e;
+  }
+
+  /* ---------- Figure 1 ---------- */
+  var W = 760, H = 400, M = { t: 14, r: 16, b: 46, l: 62 };
   var s1 = F.fig1.series;
   var lit = s1.map(function (s) { return /Qwen3\.6-27B|Qwen3-8B/.test(s.model); });
   // absolute rates put the collapse at 4 % of an axis the MoE stretches to 108,
-  // which hides the one thing this figure is for. Retention is the same data
-  // with each series divided by its own shortest-context point.
-  var mode1 = 0;   // 0 = tok/s, 1 = % of own 500-token rate
-
+  // which hides the one thing this figure is for
+  var mode1 = 0;
   var svg = document.getElementById("c1");
-  var NS = "http://www.w3.org/2000/svg";
-  function el(n, a) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); return e; }
 
   var allCtx = [];
   s1.forEach(function (s) { s.points.forEach(function (p) { allCtx.push(p.ctx); }); });
@@ -1148,43 +1246,42 @@ baseline is a different question with a different answer.</p>
     var Y = function (v) { return H - M.b - v / ymax * (H - M.t - M.b); };
     var ticks = mode1 ? [0, 25, 50, 75, 100] : [0, 20, 40, 60, 80, 100];
 
-    var g = el("g", { "class": "grid" });
+    var g = svgEl("g", { "class": "grid" });
     ticks.forEach(function (v) {
       if (v > ymax) return;
-      g.appendChild(el("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+      g.appendChild(svgEl("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
     });
     svg.appendChild(g);
 
-    var ax = el("g", { "class": "axis" });
+    var ax = svgEl("g", { "class": "axis" });
     ticks.forEach(function (v) {
       if (v > ymax) return;
-      var t = el("text", { x: M.l - 9, y: Y(v) + 3.5, "text-anchor": "end" });
+      var t = svgEl("text", { x: M.l - 10, y: Y(v) + 3.5, "text-anchor": "end" });
       t.textContent = mode1 ? v + "%" : v; ax.appendChild(t);
     });
     [500, 8000, 16000, 24000, 32000].forEach(function (v) {
-      var t = el("text", { x: X(v), y: H - M.b + 19, "text-anchor": "middle" });
+      var t = svgEl("text", { x: X(v), y: H - M.b + 20, "text-anchor": "middle" });
       t.textContent = v >= 1000 ? (v / 1000) + "K" : v; ax.appendChild(t);
     });
-    var xt = el("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle", "class": "ttl" });
+    var xt = svgEl("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle", "class": "ttl" });
     xt.textContent = "context length (tokens)"; ax.appendChild(xt);
-    var yt = el("text", { x: -(H - M.b + M.t) / 2, y: 15, "text-anchor": "middle", "class": "ttl",
-                          transform: "rotate(-90)" });
+    var yt = svgEl("text", { x: -(H - M.b + M.t) / 2, y: 16, "text-anchor": "middle", "class": "ttl",
+                             transform: "rotate(-90)" });
     yt.textContent = mode1 ? "retained, % of own 500-token rate" : "decode tok/s";
-    ax.appendChild(yt);
-    svg.appendChild(ax);
+    ax.appendChild(yt); svg.appendChild(ax);
 
     s1.forEach(function (s, i) {
-      var c = cv(COL[i % COL.length]);
+      var c = "var(" + SER[i % SER.length] + ")";
       var d = s.points.map(function (p, j) {
         return (j ? "L" : "M") + X(p.ctx) + " " + Y(yval(s, p));
       }).join(" ");
-      var path = el("path", { "class": "ln", d: d, stroke: c });
+      var path = svgEl("path", { "class": "ln", d: d }, "stroke:" + c);
       svg.appendChild(path); paths.push(path);
       var dg = [];
       s.points.forEach(function (p) {
-        var dot = el("circle", { "class": "dot", cx: X(p.ctx), cy: Y(yval(s, p)),
-                                 r: p.graded ? 3.6 : 4.4, fill: p.graded ? c : "none",
-                                 stroke: c, "stroke-width": 2 });
+        var dot = svgEl("circle", { "class": "dot", cx: X(p.ctx), cy: Y(yval(s, p)),
+                                    r: p.graded ? 3.6 : 4.4 },
+                        "stroke:" + c + ";stroke-width:2;fill:" + (p.graded ? c : "var(--surface)"));
         dot.addEventListener("mouseenter", function (e) {
           showTip(e, '<span class="hd">' + s.model + "</span><br>" +
             p.ctx.toLocaleString() + " tokens &middot; <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
@@ -1202,14 +1299,10 @@ baseline is a different question with a different answer.</p>
     apply();
     if (animate) drawIn();
   }
-
   function apply() {
     paths.forEach(function (p, i) { p.classList.toggle("dim", !lit[i]); });
-    dots.forEach(function (dg, i) {
-      dg.forEach(function (d) { d.classList.toggle("dim", !lit[i]); });
-    });
+    dots.forEach(function (dg, i) { dg.forEach(function (d) { d.classList.toggle("dim", !lit[i]); }); });
   }
-
   function drawIn() {
     if (reduce) return;
     paths.forEach(function (p) {
@@ -1231,16 +1324,12 @@ baseline is a different question with a different answer.</p>
   [["decode tok/s", 0], ["retained %", 1]].forEach(function (o) {
     var b = document.createElement("button");
     b.className = "lg" + (o[1] === mode1 ? " on" : "");
-    b.style.setProperty("--c", cv("--accent"));
-    if (o[1] === mode1) b.style.color = cv("--accent");
+    b.style.setProperty("--c", "var(--accent)");
     b.textContent = o[0];
     b.addEventListener("click", function () {
       if (mode1 === o[1]) return;
       mode1 = o[1];
-      vbox.querySelectorAll(".lg").forEach(function (x, k) {
-        x.classList.toggle("on", k === mode1);
-        x.style.color = k === mode1 ? cv("--accent") : "";
-      });
+      Array.prototype.forEach.call(vbox.children, function (x, k) { x.classList.toggle("on", k === mode1); });
       draw(true);
     });
     vbox.appendChild(b);
@@ -1248,137 +1337,111 @@ baseline is a different question with a different answer.</p>
 
   var lgbox = document.getElementById("lg1");
   s1.forEach(function (s, i) {
-    var c = cv(COL[i % COL.length]);
+    var c = "var(" + SER[i % SER.length] + ")";
     var b = document.createElement("button");
     b.className = "lg" + (lit[i] ? " on" : "");
     b.style.setProperty("--c", c);
-    if (lit[i]) b.style.color = c;
     b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
     b.addEventListener("click", function () {
-      lit[i] = !lit[i];
-      b.classList.toggle("on", lit[i]);
-      b.style.color = lit[i] ? c : "";
-      apply();
+      lit[i] = !lit[i]; b.classList.toggle("on", lit[i]); apply();
     });
     lgbox.appendChild(b);
   });
-
   draw(false);
 
-  /* ---------- Figure 2: per-call kernel cost ---------- */
+  /* ---------- bar helper: one grid, so every track shares a left edge ---------- */
+  function row(box, label, pct, colour, value) {
+    var l = document.createElement("div"); l.className = "lab"; l.textContent = label;
+    var t = document.createElement("div"); t.className = "track";
+    var f = document.createElement("div"); f.className = "fill";
+    f.setAttribute("data-w", pct); f.style.background = colour; t.appendChild(f);
+    var v = document.createElement("div"); v.className = "val"; v.textContent = value;
+    box.appendChild(l); box.appendChild(t); box.appendChild(v);
+  }
+  function span(box, cls, text, colour) {
+    var d = document.createElement("div"); d.className = cls; d.innerHTML = text;
+    if (colour) d.style.color = colour; box.appendChild(d);
+  }
+
+  /* ---------- Figure 2 ---------- */
   (function () {
     var box = document.getElementById("bars2"), ks = F.fig2.kernels;
     var max = Math.max.apply(null, ks.map(function (k) { return k.us_32k; }));
     var lg = function (v) { return Math.log10(v + 1) / Math.log10(max + 1) * 100; };
-    ks.forEach(function (k, i) {
-      var moved = k.us_32k / k.us_1k;
-      var c = moved > 2 ? cv("--red") : cv("--text-dim");
-      ["us_1k", "us_32k"].forEach(function (f, n) {
-        var row = document.createElement("div");
-        row.className = "barrow";
-        row.innerHTML =
-          '<div class="lab">' + (n ? "" : "<code>" + k.name.replace(/_/g, "_<wbr>") + "</code><br>") +
-          '<span style="opacity:.75">' + (n ? "32 K" : "1 K") + "</span></div>" +
-          '<div class="bartrack"><div class="barfill" data-w="' + lg(k[f]) + '" style="background:' +
-          (n ? c : cv("--border-2")) + '"></div></div>' +
-          '<div class="barval">' + k[f].toLocaleString(undefined, { minimumFractionDigits: 3 }) + " µs</div>";
-        box.appendChild(row);
-      });
-      var note = document.createElement("div");
-      note.style.cssText = "font-family:var(--mono);font-size:.76rem;margin:-.2em 0 1.1em 0;color:" +
-        (moved > 2 ? cv("--red") : cv("--green"));
-      note.textContent = "  " + (moved > 2 ? "▲ " : "") + moved.toFixed(2) + "× · " + k.layers;
-      box.appendChild(note);
+    ks.forEach(function (k) {
+      var moved = k.us_32k / k.us_1k, hot = moved > 2;
+      span(box, "head", "<code>" + k.name + "</code> &middot; " + k.layers);
+      row(box, "1 K", lg(k.us_1k), "var(--border-2)", k.us_1k.toFixed(3) + " µs");
+      row(box, "32 K", lg(k.us_32k), hot ? "var(--red)" : "var(--text-dim)",
+          k.us_32k.toLocaleString(undefined, { minimumFractionDigits: 3 }) + " µs");
+      span(box, "foot", (hot ? "▲ " : "") + moved.toFixed(2) + "×",
+           hot ? "var(--red)" : "var(--green)");
     });
+    span(box, "barunit", "per-call GPU time, log scale · rank 0");
   })();
 
-  /* ---------- Figure 3: slopes ---------- */
+  /* ---------- Figure 3 ---------- */
   (function () {
     var box = document.getElementById("bars3"), f = F.fig3;
     var rows = [
-      { lab: "vLLM · hybrid-SSM", v: f.vllm_hybrid_slope_us, c: cv("--red") },
-      { lab: "llama.cpp · ROCm", v: f.llamacpp.rocm.slope_us, c: cv("--blue") },
-      { lab: "llama.cpp · Vulkan", v: f.llamacpp.vulkan.slope_us, c: cv("--green") },
-      { lab: "vLLM · dense band", v: f.dense_band_us[1], c: cv("--text-dim"), band: f.dense_band_us }
+      ["vLLM · hybrid-SSM", f.vllm_hybrid_slope_us, "var(--red)", null],
+      ["llama.cpp · ROCm", f.llamacpp.rocm.slope_us, "var(--s2)", null],
+      ["llama.cpp · Vulkan", f.llamacpp.vulkan.slope_us, "var(--s3)", null],
+      ["vLLM · dense band", f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
     ];
-    var max = Math.max.apply(null, rows.map(function (r) { return r.v; }));
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
     rows.forEach(function (r) {
-      var row = document.createElement("div");
-      row.className = "barrow";
-      row.innerHTML = '<div class="lab">' + r.lab + "</div>" +
-        '<div class="bartrack"><div class="barfill" data-w="' + (r.v / max * 100) +
-        '" style="background:' + r.c + (r.band ? ";opacity:.5" : "") + '"></div></div>' +
-        '<div class="barval">' + (r.band ? r.band[0] + "–" + r.band[1] : r.v.toFixed(3)) + "</div>";
-      box.appendChild(row);
+      row(box, r[0], r[1] / max * 100, r[2],
+          r[3] ? r[3][0] + "–" + r[3][1] : r[1].toFixed(3));
     });
-    var u = document.createElement("div");
-    u.style.cssText = "font-family:var(--mono);font-size:.76rem;color:var(--text-dim);margin-top:.5em";
-    u.textContent = "µs of decode time added per token of context · lower is flatter";
-    box.appendChild(u);
+    span(box, "barunit", "microseconds of decode time added per token of context · lower is flatter");
   })();
 
-  /* ---------- Figure 4: the A/B ---------- */
+  /* ---------- Figure 4 ---------- */
   (function () {
     var box = document.getElementById("ab4"), ss = F.fig4.series;
     var stock = ss.filter(function (s) { return !s.patches.length; })[0];
     var patch = ss.filter(function (s) { return s.patches.length; })[0];
-    var mode = 0;  // 0 = tok/s, 1 = ms/token
+    var mode = 0;
     function val(p) { return mode ? 1000 / p.tok_s : p.tok_s; }
     function render(animate) {
       box.innerHTML = "";
       var max = 0;
+      stock.points.forEach(function (p, i) { max = Math.max(max, val(p), val(patch.points[i])); });
       stock.points.forEach(function (p, i) {
-        max = Math.max(max, val(p), val(patch.points[i]));
-      });
-      stock.points.forEach(function (p, i) {
-        var q = patch.points[i], ratio = q.tok_s / p.tok_s;
-        var head = document.createElement("div");
-        head.style.cssText = "font-family:var(--mono);font-size:.8rem;color:var(--text-2);margin:.9em 0 .2em";
-        head.innerHTML = p.ctx.toLocaleString() + " tokens <b style='color:" + cv("--accent") + "'>" +
-          ratio.toFixed(2) + "×</b>";
-        box.appendChild(head);
-        [[p, "stock 0.27", cv("--text-dim")], [q, "with #45916", cv("--green")]].forEach(function (a) {
-          var row = document.createElement("div");
-          row.className = "barrow";
-          row.innerHTML = '<div class="lab">' + a[1] + "</div>" +
-            '<div class="bartrack"><div class="barfill" data-w="' + (val(a[0]) / max * 100) +
-            '" style="background:' + a[2] + '"></div></div>' +
-            '<div class="barval">' + val(a[0]).toFixed(mode ? 1 : 2) +
-            (mode ? " ms" : " tok/s") + "</div>";
-          box.appendChild(row);
+        var q = patch.points[i];
+        span(box, "head", p.ctx.toLocaleString() + " tokens &nbsp;<b style='color:var(--accent)'>" +
+             (q.tok_s / p.tok_s).toFixed(2) + "×</b>");
+        [[p, "stock 0.27", "var(--text-dim)"], [q, "with #45916", "var(--green)"]].forEach(function (a) {
+          row(box, a[1], val(a[0]) / max * 100, a[2],
+              val(a[0]).toFixed(mode ? 1 : 2) + (mode ? " ms" : " tok/s"));
           if (a[0].runs > 2 || a[0].range_pct > 6) {
-            var w = document.createElement("div");
-            w.style.cssText = "font-family:var(--mono);font-size:.74rem;color:" + cv("--red") + ";margin:-.3em 0 .2em";
-            w.textContent = "  " + a[0].runs + " runs, range " + a[0].range_pct.toFixed(1) +
-              "% — bimodal, see §8";
-            box.appendChild(w);
+            span(box, "foot", a[0].runs + " runs, range " + a[0].range_pct.toFixed(1) +
+                 "% — bimodal, see §8", "var(--red)");
           }
         });
       });
-      var t = document.createElement("div");
-      t.style.cssText = "font-family:var(--mono);font-size:.76rem;color:var(--text-dim);margin-top:.8em";
-      t.textContent = "showing " + (mode ? "milliseconds per token" : "decode tok/s") + " · click to switch";
-      box.appendChild(t);
+      span(box, "barunit", "showing " + (mode ? "milliseconds per token" : "decode tok/s") +
+           " · click to switch");
       if (animate) grow(box);
     }
     box.addEventListener("click", function () { mode = 1 - mode; render(true); });
     render(false);
-    box.__render = render;
   })();
 
-  /* ---------- animation ---------- */
+  /* ---------- reveal ---------- */
   function grow(scope) {
-    var bars = (scope || document).querySelectorAll(".barfill");
+    var bars = (scope || document).querySelectorAll(".fill");
     for (var i = 0; i < bars.length; i++) {
       (function (b, n) {
         b.style.width = "0";
-        setTimeout(function () { b.style.width = b.getAttribute("data-w") + "%"; }, reduce ? 0 : 60 + n * 55);
+        setTimeout(function () { b.style.width = b.getAttribute("data-w") + "%"; },
+                   reduce ? 0 : 60 + n * 50);
       })(bars[i], i);
     }
   }
-
   if (reduce) {
-    document.querySelectorAll(".rv").forEach(function (e) { e.classList.add("in"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
     grow();
   } else {
     var seen = {};
@@ -1390,8 +1453,8 @@ baseline is a different question with a different answer.</p>
         if (en.target.id === "fig1") setTimeout(drawIn, 180);
         else grow(en.target);
       });
-    }, { threshold: 0.18 });
-    document.querySelectorAll(".rv").forEach(function (e) { io.observe(e); });
+    }, { threshold: 0.16 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { io.observe(e); });
   }
 })();
 </script>
