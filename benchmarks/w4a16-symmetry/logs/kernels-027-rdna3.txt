@@ -1,0 +1,2 @@
+pid=139 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, True) 
+pid=138 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, True) 

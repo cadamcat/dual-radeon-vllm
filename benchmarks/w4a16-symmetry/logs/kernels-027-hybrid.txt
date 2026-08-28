@@ -1,0 +1,4 @@
+pid=138 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc
+pid=138 ('RDNAHybridW4A16LinearKernel', 'uint4', 32, True, True) 
+pid=139 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc
+pid=139 ('RDNAHybridW4A16LinearKernel', 'uint4', 32, True, True) 

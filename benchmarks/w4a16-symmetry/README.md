@@ -16,11 +16,10 @@
 > transposed zero-point layout, `use_v2_format`, and the `has_bias()` regression
 > — all of which are still true of that kernel on `main`.
 >
-> What is now open, and is the interesting question: **on gfx1100, for an
-> asymmetric checkpoint, is the patched RDNA3 kernel faster than Hybrid?** Not
-> measured. Hybrid did not exist in the container used here.
-> [vllm#46186](https://github.com/vllm-project/vllm/pull/46186) is arguing about
-> exactly this trade-off for gfx1151 without gfx1100 AWQ numbers.
+> That question — **on gfx1100, for an asymmetric checkpoint, is the patched
+> RDNA3 kernel faster than Hybrid?** — has since been measured on a 0.27.1.dev
+> image. **It is not: Hybrid is 5.9% faster.** See "What main actually does"
+> below. The patch in this directory should therefore not be proposed upstream.
 
 [vllm#50264](https://github.com/vllm-project/vllm/issues/50264) settled why
 `Qwen3.8-27B` *collapses* with context on this box, and
@@ -395,6 +394,81 @@ end-to-end result above is unaffected — on `uint4` both keys agree — but the
 patch as first written would have been wrong for a checkpoint format this
 directory never tested.
 
+## What main actually does, measured: Hybrid, and it wins
+
+Everything above runs on 0.23.1.dev, where the fallback is Triton. On `main`
+the fallback is `RDNAHybridW4A16LinearKernel` (#40977, 2026-07-14), so the
+question that decides whether any of this is worth proposing upstream is not
+"RDNA3 against Triton" but **"RDNA3 against Hybrid"**. That needs both kernels
+in one place, which needs a build that has them.
+
+`rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0`, which
+reports itself as **0.27.1.dev5+gf46a9dfe2**, ROCm 10.0, torch 2.12. Verified
+before measuring (`probe_027_precheck.py`, `precheck-027.json`): `on_gfx1100`
+true, **both** `gptq_gemm_rdna3` and `wvSplitK_int4_g` present, registry
+`[RDNA3, RDNAHybrid, Triton, Conch, Exllama]`, the AWQ parameters selecting
+Hybrid and the symmetric ones selecting RDNA3. That check exists because the
+tag carries no `_rdna` suffix and `q_gemm_rdna3.cu` is only compiled when
+gfx1100 is in `VLLM_GPU_ARCHES`; a missing RDNA3 kernel would have looked like
+a result.
+
+Same checkpoint, same prompt, same image, differing only by the three lines:
+
+| arm | serving kernel | decode | mean logprob | answer |
+|---|---|---:|---:|---|
+| hybrid | `RDNAHybridW4A16LinearKernel` | **37.32** | -0.1864 | correct |
+| rdna3 | `RDNA3W4A16LinearKernel` (patched) | 35.22 | -0.1786 | identical to hybrid |
+
+**Hybrid is 1.0595x faster.** Both arms produce the same 64 tokens, and which
+kernel served the layers is recorded from inside the workers in each arm rather
+than assumed.
+
+**So the patch should not be proposed, and not because it fails.** It works,
+and it is slower than what `main` already does. It would also be actively
+harmful: `RDNA3W4A16LinearKernel` sits *ahead* of Hybrid in the ROCm priority
+list, so admitting `uint4` there takes asymmetric checkpoints away from Hybrid
+and hands them to the slower kernel. A merged version of this patch would cost
+users about 6%.
+
+That is the same conclusion @JartX argued for on
+[vllm#46186](https://github.com/vllm-project/vllm/pull/46186) from the gfx1151
+side — "widening the RDNA3 kernel across gfx11 puts it ahead of Hybrid and
+quietly displaces the kernel you tuned for that part". These numbers are the
+gfx1100 case of it, for a checkpoint class that discussion has not covered.
+
+**The original problem is also gone on main.** This checkpoint decodes at 37.32
+there, not the 11.41 measured here against Triton. The gap this directory is
+about was closed upstream by #40977, through a different kernel than the one it
+investigates.
+
+### A memory difference, from the failures rather than the results
+
+The first attempt at this pair died on both arms during graph capture, and the
+two error messages did not agree:
+
+| arm | Mamba cache blocks left at `gpu_memory_utilization=0.92` |
+|---|---:|
+| hybrid | **23** |
+| rdna3 | **76** |
+
+Hybrid is faster and holds substantially more memory while doing it, which its
+`process_weights_after_loading` explains: it unpacks and repacks the weights.
+On a tighter memory budget that trade could invert. Not explored.
+
+That also forced `max_num_seqs` down from 128 to 16 for this pair. Pinning it
+identically on both arms was already the rule here; what this adds is that the
+pinned *value* is per-stack, not a constant — the same model leaves 214 blocks
+free on 0.23.1 and 23 on 0.27.1. Cross-version absolute numbers were never
+comparable and are less so now: different ROCm, different vLLM, different
+`max_num_seqs`. Only hybrid-against-rdna3 within this run is meaningful.
+
+### The patch is still correct, and was re-verified here
+
+The upstream test cases pass on this image too: before the patch 2 + 14
+failures, after it 12 + 38 passes, same as on 0.23.1. So the three lines are
+right on both vLLM generations; they are simply pointed at a kernel that is no
+longer the best available one for this input.
+
 ## What this means for the campaign
 
 The 2026-08-24 campaign contains a natural control that was not read as one.
@@ -468,7 +542,14 @@ C++ change, **3.11x on the asymmetric checkpoint with output that matches the
 Triton control token for token**, and a control arm showing the third line is
 load-bearing rather than decorative.
 
-What it still needs before it is a pull request. Only gfx1100 was tested, and
+**It should still not be proposed.** On `main`, where Hybrid rather than Triton
+takes these checkpoints, the same patch is 5.9% *slower* than doing nothing, and
+because RDNA3 outranks Hybrid it would take the work away from the faster
+kernel. See "What main actually does" above. What follows below was written
+before that was measured and is kept as the reasoning that led to the
+measurement.
+
+What it would have needed before it could be a pull request. Only gfx1100 was tested, and
 only one model, one group size and TP=2; the `partition_scales` and
 channel-wise (`PackedColumnParameter`, which carries no `input_dim`) paths are
 untouched here and the permute assumes the group-quantized layout. Only bf16
@@ -489,6 +570,8 @@ kernel already wants and therefore cannot fail.
 - `check_permute.py` — whether vLLM's existing layout tool can do the fix
 - `probe_w4a16_fix.py` + `run_fix.sh` — the three-line fix and its control arm
 - `zp_values.py` — the checkpoint's actual zero-point distribution
+- `probe_027_precheck.py` + `probe_027_ab.py` — the 0.27.1 image check and
+  the Hybrid-vs-patched-RDNA3 pair; `precheck-027.json`, `w4a16-027.jsonl`
 - `upstream-tests/` + `apply_patch.py` + `run_tests.sh` — the test cases
   proposed upstream, and the before/after run that validates them
 - `dl_sym.py`, `verify_ckpt_sha.py` — how the symmetric checkpoint was fetched,

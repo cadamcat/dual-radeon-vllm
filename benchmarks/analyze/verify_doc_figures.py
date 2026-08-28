@@ -982,6 +982,36 @@ def main():
     ck("w4a16, no cell has an empty kernel record", "0",
        sum(1 for r in all_recorded if not r["kernels"].strip()))
 
+    # --- 0.27.1: what main actually does with this checkpoint ---------------
+    # The comparison that decides whether the three-line patch is worth
+    # proposing. It is not: Hybrid wins, and RDNA3 outranks Hybrid, so the
+    # patch would hand the work to the slower kernel.
+    a27 = {r["arm"]: r for r in (json.loads(l) for l in
+                                 open(os.path.join(WDIR, "w4a16-027.jsonl")))}
+    ck("w4a16 README, 0.27 arms", "2", len(a27))
+    ck("w4a16 README, 0.27 hybrid tok/s", "37.32", a27["hybrid"]["decode_tok_s"])
+    ck("w4a16 README, 0.27 patched rdna3 tok/s", "35.22",
+       a27["rdna3"]["decode_tok_s"])
+    ck("w4a16 README, Hybrid is faster by", "1.0595",
+       a27["hybrid"]["decode_tok_s"] / a27["rdna3"]["decode_tok_s"], tol=1e-3)
+    ck("w4a16 README, both 0.27 arms answer identically", "1",
+       1 if a27["hybrid"]["answer"].strip() == a27["rdna3"]["answer"].strip() else 0)
+    ck("w4a16 README, each 0.27 arm ran the kernel it claims", "2",
+       sum(1 for r in a27.values() if r["expected_kernel_selected"]))
+    ck("w4a16 README, and both arms used the same max_num_seqs", "1",
+       1 if len({r["max_num_seqs"] for r in a27.values()}) == 1 else 0)
+
+    # the image was checked before it was trusted: no _rdna suffix, and
+    # q_gemm_rdna3.cu only builds when gfx1100 is in VLLM_GPU_ARCHES
+    pre = json.load(open(os.path.join(WDIR, "precheck-027.json")))
+    ck("w4a16 README, 0.27 image serves gfx1100", "1", 1 if pre["on_gfx1100"] else 0)
+    ck("w4a16 README, and carries both kernels' ops", "2",
+       int(pre["op:gptq_gemm_rdna3"]) + int(pre["op:wvSplitK_int4_g"]))
+    ck("w4a16 README, on 0.27 an AWQ checkpoint lands on Hybrid", "1",
+       1 if pre["awq_selected"] == "RDNAHybridW4A16LinearKernel" else 0)
+    ck("w4a16 README, and a symmetric one still lands on RDNA3", "1",
+       1 if pre["sym_selected"] == "RDNA3W4A16LinearKernel" else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

@@ -1,0 +1,51 @@
+{
+ "vllm_version": "0.27.1.dev5+gf46a9dfe2.d20260827",
+ "torch_version": "2.12.0+rocm10.0.0",
+ "hip_version": "7.15.26333",
+ "device_count": 2,
+ "device_name": "AMD Radeon RX 7900 XT",
+ "on_gfx1100": true,
+ "on_gfx1x": true,
+ "on_gfx1151": false,
+ "on_gfx12x": false,
+ "op:gptq_gemm_rdna3": true,
+ "op:wvSplitK_int4_g": true,
+ "registry": [
+  "RDNA3W4A16LinearKernel",
+  "RDNAHybridW4A16LinearKernel",
+  "TritonW4A16LinearKernel",
+  "ConchLinearKernel",
+  "ExllamaLinearKernel"
+ ],
+ "has_rdna3": true,
+ "has_hybrid": true,
+ "awq_verdicts": [
+  {
+   "kernel": "RDNA3W4A16LinearKernel",
+   "ok": false,
+   "reason": "Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [ScalarType.uint4b8]"
+  },
+  {
+   "kernel": "RDNAHybridW4A16LinearKernel",
+   "ok": true,
+   "reason": null
+  },
+  {
+   "kernel": "TritonW4A16LinearKernel",
+   "ok": true,
+   "reason": null
+  },
+  {
+   "kernel": "ConchLinearKernel",
+   "ok": false,
+   "reason": "Group size (32) not supported by ConchLinearKernel, supported group sizes are: [-1, 128]"
+  },
+  {
+   "kernel": "ExllamaLinearKernel",
+   "ok": false,
+   "reason": "Exllama only supports float16 activations"
+  }
+ ],
+ "awq_selected": "RDNAHybridW4A16LinearKernel",
+ "sym_selected": "RDNA3W4A16LinearKernel"
+}

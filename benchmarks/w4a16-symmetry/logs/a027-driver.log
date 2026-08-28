@@ -1,0 +1,16 @@
+########## arm=hybrid  03:04:41 ##########
+exit=0 arm=hybrid
+ARM=hybrid vllm=0.27.1.dev5+gf46a9dfe2.d20260827 model=/data/incoming/Qwen3.8-27B-AWQ-INT4
+RESULT decode_tok_s=37.32 mean_logprob=-0.1864 expected_kernel_selected=True
+ANSWER '\n\nThe capital city of France is Paris. The River Seine runs through the city, dividing it into the Left Bank and the Right Bank.'
+KERNELS pid=138 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=138 ('RDNAHybridW4A16LinearKernel', 'uint4', 32, True, True)  | pid=139 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, False) Quant type (uint4) not supported by RDNA3 W4A16 kernel; supported: [Sc | pid=139 ('RDNAHybridW4A16LinearKernel', 'uint4', 32, True, True) 
+CELL_DONE
+########## arm=rdna3  03:13:33 ##########
+exit=0 arm=rdna3
+ARM=rdna3 vllm=0.27.1.dev5+gf46a9dfe2.d20260827 model=/data/incoming/Qwen3.8-27B-AWQ-INT4
+PATCH applied: all three anchors matched on 0.27.0
+RESULT decode_tok_s=35.22 mean_logprob=-0.1786 expected_kernel_selected=True
+ANSWER '\n\nThe capital city of France is Paris. The River Seine runs through the city, dividing it into the Left Bank and the Right Bank.'
+KERNELS pid=138 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, True)  | pid=139 ('RDNA3W4A16LinearKernel', 'uint4', 32, True, True) 
+CELL_DONE
+A027_DONE
