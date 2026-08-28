@@ -1,0 +1,150 @@
+diff --git a/csrc/rocm/attention.cu b/csrc/rocm/attention.cu
+index 5ca55fe3b9ea..cebb71b7b323 100644
+--- a/csrc/rocm/attention.cu
++++ b/csrc/rocm/attention.cu
+@@ -59,6 +59,26 @@ enum class MFMAType {
+   Fp4 = 2,
+ };
+ 
++// Score masking is insufficient for unwritten V padding: 0 * NaN is NaN.
++template <typename cache_t, typename Vec>
++__device__ __forceinline__ void mask_v_cache_padding(Vec& values,
++                                                     const int first_token_idx,
++                                                     const int seq_len) {
++  constexpr int NUM_ELEMS = sizeof(Vec) / sizeof(cache_t);
++  if (first_token_idx + NUM_ELEMS <= seq_len) {
++    return;
++  }
++  if (first_token_idx >= seq_len) {
++    values = Vec{};
++    return;
++  }
++  cache_t* values_ptr = reinterpret_cast<cache_t*>(&values);
++#pragma unroll
++  for (int i = 0; i < NUM_ELEMS; i++) {
++    values_ptr[i] = first_token_idx + i < seq_len ? values_ptr[i] : cache_t{};
++  }
++}
++
+ #if defined(__HIP__GFX9__)
+ 
+   #define GCN_MFMA_INSTR1 __builtin_amdgcn_mfma_f32_16x16x4f32
+@@ -578,6 +598,26 @@ __launch_bounds__(NUM_THREADS, 5) void paged_attention_ll4mi_QKV_mfma16_kernel(
+     }
+   }
+ 
++  if (partition_start_token_idx + T_PAR_SIZE > seq_len) {
++  #pragma unroll
++    for (int vhe_depth = 0; vhe_depth < VHELOOP; vhe_depth++) {
++  #pragma unroll
++      for (int vtoken_depth = 0; vtoken_depth < VTLOOP; vtoken_depth++) {
++  #pragma unroll
++        for (int vfetch_depth = 0; vfetch_depth < VTLANELOOP; vfetch_depth++) {
++          const int vglobal_fetch_start =
++              partition_start_token_idx +
++              vtoken_depth * VTOKENS_PER_LANE * ROWS_PER_WARP +
++              rowid * VTOKENS_PER_LANE +
++              vfetch_depth * CONTIGUOUS_KV_ELEMS_16B_LOAD;
++          mask_v_cache_padding<cache_t>(
++              Vlocal[vtoken_depth][vhe_depth][vfetch_depth],
++              vglobal_fetch_start, seq_len);
++        }
++      }
++    }
++  }
++
+   // calculate post qk mfma scale
+   float scale2 = scale;
+   if constexpr (KV_DTYPE != vllm::Fp8KVCacheDataType::kAuto) {
+@@ -1120,6 +1160,21 @@ __launch_bounds__(NUM_THREADS) void paged_attention_ll4mi_QKV_mfma4_kernel(
+           }
+         }
+       }
++      if (partition_start_token_idx + partition_size > seq_len) {
++  #pragma unroll
++        for (int h = 0; h < VHELOOP; h++) {
++  #pragma unroll
++          for (int b = 0; b < VBLOCKS; b++) {
++  #pragma unroll
++            for (int d = 0; d < BLOCK_SIZE / 8; d++) {
++              const int vglobal_fetch_start =
++                  warp_start_token_idx + b * BLOCK_SIZE + d * 8;
++              mask_v_cache_padding<cache_t>(Vlocal[h][b * BLOCK_SIZE / 8 + d],
++                                            vglobal_fetch_start, seq_len);
++            }
++          }
++        }
++      }
+     }  // if constexpr (KV_DTYPE == vllm::Fp8KVCacheDataType::kAuto)
+     // fetch vcache in fp8 case
+     else {  // if constexpr (KV_DTYPE != vllm::Fp8KVCacheDataType::kAuto)
+@@ -1142,6 +1197,21 @@ __launch_bounds__(NUM_THREADS) void paged_attention_ll4mi_QKV_mfma4_kernel(
+           }
+         }
+       }
++      if (partition_start_token_idx + partition_size > seq_len) {
++  #pragma unroll
++        for (int h = 0; h < VHELOOP; h++) {
++  #pragma unroll
++          for (int b = 0; b < VBLOCKS; b++) {
++  #pragma unroll
++            for (int d = 0; d < BLOCK_SIZE / 8; d++) {
++              const int vglobal_fetch_start =
++                  warp_start_token_idx + b * BLOCK_SIZE + d * 8;
++              mask_v_cache_padding<cache_t>(Vlocalb8[h][b * BLOCK_SIZE / 8 + d],
++                                            vglobal_fetch_start, seq_len);
++            }
++          }
++        }
++      }
+     }
+ 
+   #define QK_mfma(x)                                             \
+@@ -1963,6 +2033,23 @@ __launch_bounds__(NUM_THREADS, 3) void paged_attention_ll4mi_QKV_mfma16_kernel(
+     }
+   }
+ 
++  if (partition_start_token_idx + T_PAR_SIZE > seq_len) {
++    for (int vhe_depth = 0; vhe_depth < VHELOOP; vhe_depth++) {
++      for (int vtoken_depth = 0; vtoken_depth < VTLOOP; vtoken_depth++) {
++        for (int vfetch_depth = 0; vfetch_depth < VTLANELOOP; vfetch_depth++) {
++          const int vglobal_fetch_start =
++              partition_start_token_idx +
++              vtoken_depth * VTOKENS_PER_LANE * ROWS_PER_WARP +
++              vfetch_depth * CONTIGUOUS_KV_ELEMS_16B_LOAD;
++          mask_v_cache_padding<cache_t>(
++              Vlocal[vtoken_depth][vhe_depth][vfetch_depth / 2]
++                  .xy[vfetch_depth % 2],
++              vglobal_fetch_start, seq_len);
++        }
++      }
++    }
++  }
++
+   floatx8 dout[TLOOP];
+   // qk wmma
+   for (int token_depth = 0; token_depth < TLOOP; token_depth++) {
+@@ -2741,6 +2828,23 @@ __launch_bounds__(NUM_THREADS, 3) void paged_attention_ll4mi_QKV_mfma16_kernel(
+     }
+   }
+ 
++  if (partition_start_token_idx + T_PAR_SIZE > seq_len) {
++    for (int vhe_depth = 0; vhe_depth < VHELOOP; vhe_depth++) {
++      for (int vtoken_depth = 0; vtoken_depth < VTLOOP; vtoken_depth++) {
++        for (int vfetch_depth = 0; vfetch_depth < VTLANELOOP; vfetch_depth++) {
++          const int vglobal_fetch_start =
++              partition_start_token_idx +
++              vtoken_depth * VTOKENS_PER_LANE * ROWS_PER_WARP +
++              rowid * VTOKENS_PER_LANE +
++              vfetch_depth * CONTIGUOUS_KV_ELEMS_16B_LOAD;
++          mask_v_cache_padding<cache_t>(
++              Vlocal[vtoken_depth][vhe_depth][vfetch_depth],
++              vglobal_fetch_start, seq_len);
++        }
++      }
++    }
++  }
++
+   floatx8 dout[TLOOP];
+   // qk wmma
+   for (int token_depth = 0; token_depth < TLOOP; token_depth++) {

@@ -1012,6 +1012,34 @@ def main():
     ck("w4a16 README, and a symmetric one still lands on RDNA3", "1",
        1 if pre["sym_selected"] == "RDNA3W4A16LinearKernel" else 0)
 
+    # --- stage 1d: runtime validation of vllm#53856's fix on gfx1100 --------
+    v53 = []
+    for arm in ("stock", "patched"):
+        v53 += [json.loads(l) for l in
+                open(os.path.join(GDIR, f"53856-027-{arm}.jsonl"))]
+    ck("50603 README, stage1d rows", "64", len(v53))
+    ck("50603 README, stage1d rows per arm", "32",
+       sum(1 for r in v53 if r["arm"] == "stock"))
+    poisoned = [r for r in v53 if not r["as_shipped"].get("all_finite", True)]
+    ck("50603 README, cells poisoned on the stock arm", "4", len(poisoned))
+    ck("50603 README, and none on the patched arm", "1",
+       1 if all(r["arm"] == "stock" for r in poisoned) else 0)
+    ck("50603 README, the fix breaks nothing new", "0",
+       sum(1 for r in v53 if r["arm"] == "patched"
+           and not r["as_shipped"].get("all_finite", True)))
+    # the pattern, which is what identifies the fix as the right shape
+    ck("50603 README, stage1d poison is V-side only", "1",
+       1 if all(r["poison"] in ("v_only", "both") for r in poisoned) else 0)
+    ck("50603 README, only the straddling length", "1",
+       1 if all(r["ctx_len"] == 4090 for r in poisoned) else 0)
+    ck("50603 README, only the gate-admitted ratio", "1",
+       1 if all(r["gqa_ratio"] == 4 for r in poisoned) else 0)
+    ck("50603 README, both dtypes reproduce it", "2",
+       len({r["dtype"] for r in poisoned}))
+    ck("50603 README, stage1d gqa4 cells really ran CK", "32",
+       sum(1 for r in v53 if r["gqa_ratio"] == 4
+           and r["as_shipped"].get("used_ck_kernel")))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

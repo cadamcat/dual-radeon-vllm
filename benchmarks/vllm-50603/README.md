@@ -215,6 +215,67 @@ fresh-allocation garbage; #53856 attributes it to sleep mode and allocator
 behaviour. This probe injects it deliberately and only measures what the kernel
 then does.
 
+## Stage 1d: runtime validation of vllm#53856 at its current head, on request
+
+Stage 1c showed the fault on gfx1100 against the shipped kernel. The PR author
+then asked for the other half: validation of **the fix**, at head
+`f9bdfc886727c2590a8fbd0f82131a770383d05b`, on hardware they do not have.
+Their nodes are MI350X (gfx950), where they had already run an `auto`-dtype NaN
+matrix to 96 passes; what was missing was gfx11.
+
+Building it needs a C++ rebuild, which turned out to be cheap here for three
+reasons: the PR's two gfx11 hunks sit inside `#elif defined(__GFX11__)` (the
+other four are gfx9, and the `mfma` names are misleading -- that block uses
+wmma); the 0.27.1.dev5 image ships its own source at `/app/vllm` at the same
+commit its `_rocm_C` was built from, so the ABI matches; and
+`csrc/rocm/attention.cu` has not changed upstream since 2026-07-31, so the PR's
+diff against its own base applies to that tree unchanged. Compiled for gfx1100
+only, `build_53856.sh`.
+
+Same probe as Stage 1c with FP16 added alongside BF16, run twice: once on the
+image as shipped, once with the rebuilt `_rocm_C`. **Both arms are needed** --
+a clean patched arm proves nothing unless the stock arm reproduces the fault.
+
+64 rows, 32 per arm (2 dtypes x 2 gqa ratios x 4 poison modes x 2 lengths):
+
+| | |
+|---|---:|
+| cells poisoned on the stock arm | **4** |
+| of those, fixed by the PR | **4** |
+| cells the PR newly breaks | **0** |
+| gqa=4 cells that really ran the CK kernel | **32 / 32** |
+
+The four are exactly the shape the fix is aimed at:
+
+| dtype | gqa | poison | ctx | tail | stock | patched |
+|---|---:|---|---:|---:|---|---|
+| bf16 | 4 | v_only | 4090 | 6 | **NaN x4096** | ok, rel 3.1e-03 |
+| bf16 | 4 | both | 4090 | 6 | **NaN x4096** | ok, rel 3.1e-03 |
+| fp16 | 4 | v_only | 4090 | 6 | **NaN x4096** | ok, rel 5.5e-04 |
+| fp16 | 4 | both | 4090 | 6 | **NaN x4096** | ok, rel 5.5e-04 |
+
+Everything else is clean on both arms, and the pattern is the discriminating
+part rather than the pass count:
+
+- **K-only never poisons**, on either arm. The logit mask already covers K, so
+  a fix that sanitised K as well would be treating a symptom that is not there.
+- **only the straddling length**. 4096 fills the final tile exactly and is
+  clean; 4090 leaves 6 unwritten slots and is not.
+- **only gqa=4**. gqa=2 is excluded by the gfx11 gate, so both arms bypass CK
+  entirely there. That is what makes this the path stock gfx11 actually takes
+  rather than a forced one.
+- **BF16 and FP16 behave identically**, reproducing and then fixing alike.
+
+Post-fix relative error matches the un-poisoned baseline to the digit (3.1e-03
+bf16, 5.5e-04 fp16), so the mask zeroes padding without touching live data.
+
+Which kernel ran is counted by wrapping `ops.paged_attention_rocm`, not
+inferred from timing: 32 of 32 gqa=4 cells went through CK on both arms.
+
+Measured on vLLM `0.27.1.dev5+gf46a9dfe2`, ROCm 10.0, torch 2.12, 2x RX 7900 XT.
+Files: `probe_53856_027.py`, `53856-027-{stock,patched}.jsonl`,
+`build_53856.sh`, `53856-attn.diff`, `logs/v53856-*.log`.
+
 ## What this does not settle
 
 Symptom B is not explained. We do not have the reporter's model

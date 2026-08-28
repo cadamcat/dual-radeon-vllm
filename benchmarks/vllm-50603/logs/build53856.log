@@ -1,0 +1,71 @@
++ cd /app/vllm
++ git apply /work/53856-attn.diff
++ grep -c mask_v_cache_padding csrc/rocm/attention.cu
+6
++ export PYTORCH_ROCM_ARCH=gfx1100
++ PYTORCH_ROCM_ARCH=gfx1100
++ export VLLM_TARGET_DEVICE=rocm
++ VLLM_TARGET_DEVICE=rocm
+++ python -c 'import torch;print(torch.utils.cmake_prefix_path)'
++ TORCH_CMAKE=/opt/python/lib/python3.14/site-packages/torch/share/cmake
++ tail -25
+++ command -v python
++ cmake -S . -B /tmp/b -GNinja -DVLLM_TARGET_DEVICE=rocm -DVLLM_PYTHON_EXECUTABLE=/opt/python/bin/python -DCMAKE_PREFIX_PATH=/opt/python/lib/python3.14/site-packages/torch/share/cmake -DCMAKE_BUILD_TYPE=Release
+CMake Warning at /opt/python/lib/python3.14/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  library kineto not found.
+Call Stack (most recent call first):
+  /opt/python/lib/python3.14/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:119 (append_torchlib_if_found)
+  CMakeLists.txt:112 (find_package)
+
+
+-- Found Torch: /opt/python/lib/python3.14/site-packages/torch/lib/libtorch.so
+CMake Warning at CMakeLists.txt:207 (message):
+  Pytorch version >= 2.13.0 expected for ROCm build, saw 2.12.0 instead.
+
+
+-- HIP supported arches: gfx906;gfx908;gfx90a;gfx942;gfx950;gfx1250;gfx1030;gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151;gfx1152;gfx1153;gfx1200;gfx1201
+-- FetchContent base directory: /tmp/b/_deps
+-- Enabling cumem allocator extension.
+-- Found libamdhip64 at /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so
+-- Enabling C extension.
+-- Enabling C_stable extension.
+-- Enabling MoE C_stable extension.
+-- Building skinny_gemms for archs: gfx1100
+-- [triton_kernels] Fetch from https://github.com/ROCm/triton.git:0f380657dbf3ee86eb57558ff71df24f03b5d4e7
+-- [triton_kernels] triton_kernels is available at /tmp/b/_deps/triton_kernels-src/python/triton_kernels/triton_kernels/
+-- Configuring done (698.8s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/b
++ tail -25
+++ nproc
++ cmake --build /tmp/b --target _rocm_C -j8
+/tmp/b/csrc/rocm/moe_q_gemm_rdna3.hip
+[2/9] Building CXX object CMakeFiles/_rocm_C.dir/csrc/rocm/torch_bindings.cpp.o
+[3/9] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/moe_q_gemm_rdna3.hip.o
+[4/9] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/q_gemm_rdna3.hip.o
+[5/9] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/q_gemm_rdna3_wmma.hip.o
+/tmp/b/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: warning: first argument in call to '__builtin_memcpy' is a pointer to non-trivially copyable type 'bf162_t' (aka '__hip_bfloat162') [-Wnontrivial-memcall]
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+/tmp/b/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: note: explicitly cast the pointer to silence this warning
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+      |                      (void*)
+1 warning generated when compiling for gfx1100.
+/tmp/b/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: warning: first argument in call to '__builtin_memcpy' is a pointer to non-trivially copyable type 'bf162_t' (aka '__hip_bfloat162') [-Wnontrivial-memcall]
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+/tmp/b/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: note: explicitly cast the pointer to silence this warning
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+      |                      (void*)
+1 warning generated when compiling for host.
+[6/9] Building HIP object CMakeFiles/_rocm_C_skinny.dir/csrc/rocm/skinny_gemms.hip.o
+[7/9] Building HIP object CMakeFiles/_rocm_C_skinny.dir/csrc/rocm/skinny_gemms_int4.hip.o
+[8/9] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/attention.hip.o
+[9/9] Linking HIP shared module _rocm_C.abi3.so
++ find /tmp/b -name '_rocm_C*.so' -exec cp -v '{}' /work/rocm_C_53856.so ';'
+'/tmp/b/_rocm_C.abi3.so' -> '/work/rocm_C_53856.so'
++ ls -la /work/rocm_C_53856.so
+-rwxr-xr-x 1 root root 53559832 Aug 28 06:01 /work/rocm_C_53856.so
+BUILD53856_DONE

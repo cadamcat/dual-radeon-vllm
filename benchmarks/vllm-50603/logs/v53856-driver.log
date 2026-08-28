@@ -1,0 +1,9 @@
+########## arm=stock  06:05:11 ##########
+exit=0 arm=stock
+device=AMD Radeon RX 7900 XT vllm=0.27.1.dev5+gf46a9dfe2.d20260827
+PROBE_DONE
+########## arm=patched  06:05:25 ##########
+exit=0 arm=patched
+device=AMD Radeon RX 7900 XT vllm=0.27.1.dev5+gf46a9dfe2.d20260827
+PROBE_DONE
+V53856_DONE

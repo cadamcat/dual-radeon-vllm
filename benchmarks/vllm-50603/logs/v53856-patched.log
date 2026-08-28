@@ -1,0 +1,44 @@
+device=AMD Radeon RX 7900 XT vllm=0.27.1.dev5+gf46a9dfe2.d20260827
+
+--- bfloat16 gqa_ratio=4 (16/4) gate_as_shipped=True ---
+WARNING 08-28 06:05:32 [chunked_prefill_paged_decode.py:419] Cannot use ROCm custom paged attention kernel, falling back to Triton implementation.
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=3.0e-03     | ck_forced ok rel=3.0e-03     | triton ok rel=2.9e-03
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=True) ok rel=3.1e-03     | ck_forced ok rel=3.1e-03     | triton ok rel=2.9e-03
+
+--- bfloat16 gqa_ratio=2 (8/4) gate_as_shipped=False ---
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.7e-03     | ck_forced ok rel=3.4e-03     | triton ok rel=2.7e-03
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.0e-03     | ck_forced ok rel=3.6e-03     | triton ok rel=3.0e-03
+
+--- float16 gqa_ratio=4 (16/4) gate_as_shipped=True ---
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=4.0e-04     | ck_forced ok rel=4.0e-04     | triton ok rel=3.7e-04
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=True) ok rel=5.5e-04     | ck_forced ok rel=5.5e-04     | triton ok rel=4.4e-04
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=4.0e-04     | ck_forced ok rel=4.0e-04     | triton ok rel=3.7e-04
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=True) ok rel=5.5e-04     | ck_forced ok rel=5.5e-04     | triton ok rel=4.4e-04
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=True) ok rel=4.0e-04     | ck_forced ok rel=4.0e-04     | triton ok rel=3.7e-04
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=True) ok rel=5.5e-04     | ck_forced ok rel=5.5e-04     | triton ok rel=4.4e-04
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=True) ok rel=4.0e-04     | ck_forced ok rel=4.0e-04     | triton ok rel=3.7e-04
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=True) ok rel=5.5e-04     | ck_forced ok rel=5.5e-04     | triton ok rel=4.4e-04
+
+--- float16 gqa_ratio=2 (8/4) gate_as_shipped=False ---
+  poison=none    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.8e-04     | ck_forced ok rel=3.7e-04     | triton ok rel=2.8e-04
+  poison=none    ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.4e-04     | ck_forced ok rel=3.6e-04     | triton ok rel=3.4e-04
+  poison=k_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.8e-04     | ck_forced ok rel=3.7e-04     | triton ok rel=2.8e-04
+  poison=k_only  ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.4e-04     | ck_forced ok rel=3.6e-04     | triton ok rel=3.4e-04
+  poison=v_only  ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.8e-04     | ck_forced ok rel=3.7e-04     | triton ok rel=2.8e-04
+  poison=v_only  ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.4e-04     | ck_forced ok rel=3.6e-04     | triton ok rel=3.4e-04
+  poison=both    ctx=4096  tail=0  | as_shipped(ck=False) ok rel=2.8e-04     | ck_forced ok rel=3.7e-04     | triton ok rel=2.8e-04
+  poison=both    ctx=4090  tail=6  | as_shipped(ck=False) ok rel=3.4e-04     | ck_forced ok rel=3.6e-04     | triton ok rel=3.4e-04
+
+PROBE_DONE
