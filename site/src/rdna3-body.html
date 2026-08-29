@@ -32,9 +32,9 @@ __CHIPS__
 
 <h2><span class="n">1</span>Sorting eight findings by what they are actually about</h2>
 
-<p>Every row below is a separate article, and every number beside it is recomputed from the file that
-article draws. The classification is the only thing here that is a judgement, so it comes with the
-evidence that puts each row where it is.</p>
+<p>Every row below is a separate article, and every number beside it is recomputed from the file
+that article draws on. The classification is the only thing here that is a judgement, so it comes
+with the evidence that puts each row where it is.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -113,9 +113,9 @@ architecture axis, alongside the gate above.</p>
 </div>
 
 <p>A fifth is worth naming separately because it is about the shape of the machine rather than the
-chip: the 2D attention path launches one workgroup per KV head, so splitting a model across two cards
-halves them, and the starved path starves twice as hard. That is a cost of tensor parallelism, and a
-single card of any vendor running the same kernel does not pay it.
+chip: the 2D attention path launches one workgroup per KV head, so splitting a model across two
+cards halves the KV heads, and the starved path starves twice as hard. That is a cost of tensor
+parallelism, and a single card of any vendor running the same kernel does not pay it.
 <a href="a100-vs-two-radeons.html">The article</a>.</p>
 
 <h2><span class="n">4</span>What the hardware turned out to be for</h2>
@@ -158,10 +158,9 @@ RDNA3 story.</p>
 Whether any of it holds on RDNA4 is not measured; the architecture notes say the ecosystem gap extends
 there, and that sentence is a reading of supported-hardware lists rather than a measurement.</p>
 
-<h3>Whether the gaps are closing</h3>
-<p>One pull request merged during this work and closed half of one finding. That is one data point about
-direction and it is not a trend. Nothing here measures how quickly gfx11 support has moved, only where
-it stood.</p>
+<h3>Whether the gaps are closing</h3> <p>One pull request merged during this work and closed half of
+one finding. That is one data point about direction, but it is not a trend. Nothing here measures
+how quickly gfx11 support has moved, only where it stood.</p>
 
 <h2><span class="n">6</span>What has changed since</h2>
 

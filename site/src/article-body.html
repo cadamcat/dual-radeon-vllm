@@ -173,8 +173,8 @@ gemma-4-31B. It cannot be that this model is simply heavier.</p>
 
 <h2><span class="n">6</span>Control: the same model under a different engine</h2>
 
-<p>Same machine, same day, same checkpoint family, only the inference engine changed. If the collapse were
-the driver, the GPU, or the topology, it would appear here too.</p>
+<p>Same machine, same day, same checkpoint family, only the inference engine changed. If the
+collapse were in the driver, the GPU, or the topology, it would appear here too.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -190,9 +190,9 @@ the driver, the GPU, or the topology, it would appear here too.</p>
   </figcaption>
 </figure>
 
-<p>llama.cpp's slope lands <em>inside</em> the band the dense models produce under vLLM. Two independent
-sources therefore agree on what a normal slope looks like on this hardware, and this one configuration sits
-an order of magnitude outside it.</p>
+<p>llama.cpp's slope lands <em>inside</em> the band the dense models produce under vLLM. Two
+independent sources therefore agree on what a normal slope looks like on this hardware, but this one
+configuration sits an order of magnitude outside it.</p>
 
 <div class="note">
   <span class="lbl">One disturbed point, stated rather than dropped</span>
@@ -213,9 +213,10 @@ split-KV decode kernel to the Triton fallback: instead of one workgroup per (seq
 whole context, the KV range is split across more workgroups and reduced afterwards. That is exactly the
 parallelism this model was short of.</p>
 
-<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K, single differencing runs at slightly
-different depths — and then properly, as a controlled A/B on the 0.27 image, both arms on one stack and one
-harness, one fresh container per cell, only the kernel file swapped, run twice with the arm order reversed.</p>
+<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K, single differencing runs at
+slightly different depths. Then properly, as a controlled A/B on the 0.27 image: both arms on one
+stack and one harness, one fresh container per cell, only the kernel file swapped, run twice with
+the arm order reversed.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -241,13 +242,13 @@ context</strong>, and retention from 1 K to 32 K from 10.2 % to 70.0 %. The coll
 
 <p>Four things, because a result that only lists its successes is not a measurement.</p>
 
-<h3>One cell of the A/B is bimodal</h3>
-<p>At 8 192 tokens the patched arm gave 47.02, 40.14, 47.58 and 42.41 tok/s over four passes. Sorted, the
-largest gap between neighbours is bigger than half the total range and falls in the middle: these are
-<strong>two modes about 15 % apart</strong>, not one noisy number. Adding the third and fourth passes made
-the range <em>wider</em>, 15.8 % to 16.8 %, not narrower. It is not the split-count heuristic, which is a
-pure function of inputs the configuration fixes. No mechanism is established. The 3.52× quoted above is the
-mean of all four and describes neither cluster.</p>
+<h3>One cell of the A/B is bimodal</h3> <p>At 8 192 tokens the patched arm gave 47.02, 40.14, 47.58
+and 42.41 tok/s over four passes. Sorted, the largest gap between neighbours is bigger than half the
+total range and falls in the middle: these are <strong>two modes about 15 % apart</strong>, not one
+noisy number. Adding the third and fourth passes made the range <em>wider</em>, 15.8 % to 16.8 %,
+not narrower. The cause is not the split-count heuristic, which is a pure function of inputs the
+configuration fixes. No mechanism is established. The 3.52× quoted above is the mean of all four and
+describes neither cluster.</p>
 
 <h3>Figure 4 is a different model on a different stack</h3>
 <p>Figure 1 is <code>Qwen3.6-27B</code> on 0.23.1; Figure 4 is <code>Qwen3.8-27B</code> on 0.27. On the

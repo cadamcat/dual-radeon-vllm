@@ -36,11 +36,11 @@ __CHIPS__
 用多出来的 56 个除以多出来的时间。这样可以把 prefill 和首 token 的开销从一个本该描述稳态解码的数字里剔掉。
 每个格子都在原版镜像上起一个全新容器，先跑一次预热生成并丢弃。</p>
 
-<p>预热不是仪式，它是有理由的。每个格子恰好 JIT 编译四个 Triton kernel，两臂上这四个都落在预热里，
+<p>预热不是走过场，它有它的理由。每个格子恰好 JIT 编译四个 Triton kernel，两臂上这四个都落在预热里，
 所以两次计时调用都不带编译。这一点是从容器日志里核过的，不是假定的；而且两臂都核过，
 免得某一侧被编译时间抬高。</p>
 
-<p><strong>究竟是哪个 kernel 服务了这些层，是从 worker 内部记录的。</strong>在
+<p><strong>这些层究竟走的是哪个 kernel，是从 worker 内部记下来的。</strong>在
 <code>--tensor-parallel-size 2</code> 下线性层是在 spawn 出来的进程里构造的，
 在父进程里打的 monkeypatch 在那边什么也看不到。所以 <code>choose_mp_linear_kernel</code>
 是在引擎启动前直接改在磁盘上的，每个 rank 各写各的判定。本文每个格子都带两个不同的 pid；
@@ -94,7 +94,7 @@ __CHIPS__
 
 <p>自 <a href="https://github.com/vllm-project/vllm/pull/41394">vllm#41394</a> 起，
 vLLM 就有了 gfx1100 上的原生 W4A16 kernel，注册在 compressed-tensors 用的同一条混合精度路径上，
-它自己的 docstring 写着"在 ROCm-RDNA3 路径上注册在 Triton kernel 之前"。决定谁能走到它的是一行：</p>
+它自己的 docstring 写着"在 ROCm-RDNA3 路径上注册在 Triton kernel 之前"。能不能走到它，由一行代码决定：</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -135,7 +135,7 @@ SELECTED  TritonW4A16LinearKernel
   </figcaption>
 </figure>
 
-<p>两臂之间另外两处差异必须被实测排掉，而不是靠讲道理排掉。<strong>group size</strong>，32 对 128：
+<p>两臂之间另外两处差异必须实测排掉，不能靠讲道理排掉。<strong>group size</strong>，32 对 128：
 没有任何 checkpoint 能把它与对称性分开，所以这次 A/B 分不开；但 <code>can_implement</code>
 的源码里根本没有 group-size-128 这个条件，上面四个角也忽略它，而这台机器上最快的模型就是 group 32。
 <strong>哪些层被量化</strong>：两边的 <code>ignore</code> 列表不同，所以量化线性层是从各自的

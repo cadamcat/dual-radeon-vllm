@@ -83,23 +83,16 @@ cell. One is <code>symmetric: false</code>, the other <code>symmetric: true</cod
 attention term grows underneath both arms. That is a prediction the ratio on its own cannot make, and
 it is the reason this figure defaults to milliseconds rather than to the larger-looking multiple.</p>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · a flat cost under a growing one
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v1"></div>
-    <div class="bars" id="dec"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> Six cells, one per arm per depth, from
-    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>. In the millisecond view the orange block is
-    the difference between the arms and is drawn to the same scale in all three rows, which is the
-    argument: it does not grow. The ratio view is the same six numbers read the way a headline reads
-    them. <strong>One container start per cell</strong>, so no run-to-run range is quoted here; the one
-    repeat this experiment has moves the symmetric arm by at most 1.31 % across container starts, so the
-    8.2 % spread in the penalty is larger than the noise floor but the same order as it.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · a flat cost
+under a growing one <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v1"></div> <div class="bars" id="dec"></div> </div> <figcaption> <b>Figure
+1.</b> Six cells, one per arm per depth, from <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>.
+In the millisecond view the orange block is the difference between the arms and is drawn to the same
+scale in all three rows, which is the argument: it does not grow. The ratio view is the same six
+numbers read the way a headline reads them. <strong>One container start per cell</strong>, so no
+run-to-run range is quoted here. The one repeat this experiment has moves the symmetric arm by at
+most 1.31 % across container starts, so the 8.2 % spread in the penalty is larger than the noise
+floor but the same order as it. </figcaption> </figure>
 
 <h2><span class="n">4</span>Why one of them gets a native kernel</h2>
 
@@ -159,12 +152,12 @@ W4A16 GEMM, so it cannot be what makes that arm faster.</p>
 
 <h2><span class="n">5</span>The other term</h2>
 
-<p>The flat block is the whole of the difference between the arms, and it is nowhere near the whole of
-the decode step. At 32K both arms spend most of a step inside
-<code>kernel_paged_attention_2d</code>, whose per-call cost grows by a factor of 28 between 1K and 32K
-while every other kernel in the profile stays flat. That is the second problem, it is not about
-quantization at all, and it has
-<a href="hybrid-ssm-collapse.html">its own article and its own fix</a>.</p>
+<p>The flat block is the whole of the difference between the arms, but it is nowhere near the whole
+of the decode step. At 32K both arms spend most of a step inside
+<code>kernel_paged_attention_2d</code>, whose per-call cost grows by a factor of 28 between 1K and
+32K while every other kernel in the profile stays flat. That is the second problem, it is not about
+quantization at all, and it has <a href="hybrid-ssm-collapse.html">its own article and its own
+fix</a>.</p>
 
 <p>The two terms are why neither headline number was ever a good summary. At 1K the packaging penalty is
 essentially the entire gap; at 32K it is a rounding error next to attention. A single ratio quoted
@@ -301,24 +294,19 @@ by at most 1.31 %. The 0.27 arms in Figure 3 carry two runs each and their own r
   narrowed to match.
 </div>
 
-<div class="note ok">
-  <span class="lbl">2026-08-28 · the campaign's architecture claim was corrected in place</span>
-  The 3.64× between two 27B models was attributed to architecture and is confounded with packaging. The
-  affected statements in <code>README.md</code>, <code>docs/benchmarks.md</code> and
-  <code>docs/architecture-notes.md</code> were corrected and dated, and
-  <code>docs/open-questions.md</code> §9 is marked answered. What survives untouched: every slope
-  conclusion, and the ordering among the four models that are all on their best kernel path.
-</div>
+<div class="note ok"> <span class="lbl">2026-08-28 · the campaign's architecture claim was corrected
+in place</span> The 3.64× between two 27B models was attributed to architecture, but is confounded
+with packaging. The affected statements in <code>README.md</code>, <code>docs/benchmarks.md</code>
+and <code>docs/architecture-notes.md</code> were corrected and dated, and
+<code>docs/open-questions.md</code> §9 is marked answered. What survives untouched: every slope
+conclusion, and the ordering among the four models that are all on their best kernel path. </div>
 
-<div class="note warn">
-  <span class="lbl">Writing the tests changed the patch</span>
-  The first version keyed the zero-point convention on <code>c.zero_points</code>. That passed the
-  end-to-end run and broke ten existing cases, because a GPTQ checkpoint stores zero points explicitly
-  and still uses the v1 "+1" offset. The right key is
-  <code>not c.weight_type.has_bias()</code>. Keying on <code>zero_points</code> would have silently
-  mis-dequantized every asymmetric GPTQ checkpoint on RDNA3 while passing the run that was supposed to
-  validate it.
-</div>
+<div class="note warn"> <span class="lbl">Writing the tests changed the patch</span> The first
+version keyed the zero-point convention on <code>c.zero_points</code>. That passed the end-to-end
+run but broke ten existing cases, because a GPTQ checkpoint stores zero points explicitly and still
+uses the v1 "+1" offset. The right key is <code>not c.weight_type.has_bias()</code>. Keying on
+<code>zero_points</code> would have silently mis-dequantized every asymmetric GPTQ checkpoint on
+RDNA3 while passing the run that was supposed to validate it. </div>
 
 <div class="foot-note">
   <p><strong>The data behind every figure.</strong> The A/B, the forced-kernel run, the three-line fix

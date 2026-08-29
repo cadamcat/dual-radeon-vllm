@@ -432,22 +432,15 @@ reason it is that model:</p>
 <code>prompt_tokens</code> rather than the nominal targets, so the two sides sit at the same context
 instead of merely near it.</p>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · the campaign's number against the probe's
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="agree" id="agree"></div>
-    <div class="barunit" id="agreenote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> The campaign column is the mean of its two committed rounds for this model on
-    2026-08-24; the probe column is the mean of the third and fourth calibration runs, which is where it
-    converges. The last column repeats the comparison with the probe generating 512 tokens instead of
-    56, which is the campaign's own span: it moves the numbers by at most a further 0.5 point, so the
-    span is not where any difference lives, and neither is the server, the streaming, or the sampling
-    temperature.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · the campaign's
+number against the probe's <span class="prov yes">recomputable from repo</span></div>
+<div class="agree" id="agree"></div> <div class="barunit" id="agreenote"></div> </div> <figcaption>
+<b>Figure 1.</b> The campaign column is the mean of its two committed rounds for this model on
+2026-08-24; the probe column is the mean of the third and fourth calibration runs, which is where it
+converges. The last column repeats the comparison with the probe generating 512 tokens instead of
+56, which is the campaign's own span. It moves the numbers by at most a further 0.5 point, so the
+span is not where any difference lives, and neither is the server, the streaming, or the sampling
+temperature. </figcaption> </figure>
 
 <h2><span class="n">2</span>The three runs that cost, and what they bought</h2>
 
@@ -550,21 +543,15 @@ mean something, and that is where the argument gets concrete, because one cell h
 <p>The obvious way to check that a kernel change is harmless is to compare generated tokens before and
 after. On this machine that measures the machine rather than the change.</p>
 
-<figure class="rv" id="fig6">
-  <div class="figbox">
-    <div class="figtitle">Figure 6 · greedy decoding is not reproducible on this box
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="agree" id="nondet"></div>
-    <div class="barunit" id="ndnote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 6.</b> Greedy, temperature zero, a warm-up generation of the same prompt at the same depth
-    before the measured one, and no code differing between the runs of a cell. It varies across
-    processes and inside one process, symmetrically between the two kernel states, so the change under
-    test is not the cause. The kernel itself is not either: fixed-input cases run in separate processes
-    agree bit for bit. Whatever varies is above the kernel, in the engine, and it is not identified.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig6"> <div class="figbox"> <div class="figtitle">Figure 6 · greedy decoding
+is not reproducible on this box <span class="prov yes">recomputable from repo</span></div>
+<div class="agree" id="nondet"></div> <div class="barunit" id="ndnote"></div> </div> <figcaption>
+<b>Figure 6.</b> Greedy, temperature zero, a warm-up generation of the same prompt at the same depth
+before the measured one, and no code differing between the runs of a cell. It varies across
+processes and inside one process, symmetrically between the two kernel states, so the change under
+test is not the cause. The kernel itself is not the cause either: fixed-input cases run in separate
+processes agree bit for bit. Whatever varies is above the kernel, in the engine, and it is not
+identified. </figcaption> </figure>
 
 <p>So numerical claims in this repository are made against an fp32 reference on fixed inputs, and
 end-to-end changes are argued from rates and from routing recorded inside the workers. Comparing token
@@ -578,10 +565,10 @@ this box.</p>
 generation, it is not confined to the first depth, and it converges by the third run. Whether it is the
 host, the driver, the container or something else was not isolated.</p>
 
-<h3>Whether the harnesses agree on other models</h3>
-<p>The calibration is one model, chosen precisely because no other variable in this repository can touch
-it. That makes the comparison clean and makes it narrow: a model on a different kernel path could differ
-between the two harnesses for reasons this says nothing about.</p>
+<h3>Whether the harnesses agree on other models</h3> <p>The calibration is one model, chosen
+precisely because no other variable in this repository can touch it. That makes the comparison clean
+and makes it narrow: a model on a different kernel path could differ between the two harnesses for
+reasons this calibration says nothing about.</p>
 
 <h3>The two controls that missed</h3>
 <p>Two of six configurations moved by about 0.8 % between campaigns, and one of those is the subject of
@@ -610,23 +597,22 @@ reproducible. TP=1 is untested, and the source is above the kernel but not furth
   tail, so it cannot go stale unnoticed again.
 </div>
 
-<div class="foot-note">
-  <p><strong>Run it yourself.</strong> The calibration probe and its four rounds are in
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/harness-calibration/README.md"><code>benchmarks/harness-calibration/</code></a>;
-  the ledger and the rule that builds it are
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl"><code>ledger.jsonl</code></a>
-  and
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/build_ledger.py"><code>build_ledger.py</code></a>,
-  which fails if the committed projection no longer matches its sources; the nondeterminism record is
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/gfx1100-greedy-nondeterminism.json"><code>gfx1100-greedy-nondeterminism.json</code></a>.
-  Every figure here is recomputed from those files by
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
-  <p>The nondeterminism was posted to
-  <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>, which reports the same
-  symptom from the same Triton fallback but says a warm-up call fixes it — every measurement here already
-  had one and still varied, so either that remedy does not generalise or this is a second defect.</p>
-</div>
-</div>
+<div class="foot-note"> <p><strong>Run it yourself.</strong> The calibration probe and its four
+rounds are in
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/harness-calibration/README.md"><code>benchmarks/harness-calibration/</code></a>;
+the ledger and the rule that builds it are
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl"><code>ledger.jsonl</code></a>
+and
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/build_ledger.py"><code>build_ledger.py</code></a>,
+which fails if the committed projection no longer matches its sources; the nondeterminism record is
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/gfx1100-greedy-nondeterminism.json"><code>gfx1100-greedy-nondeterminism.json</code></a>.
+Every figure here is recomputed from those files by
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
+<p>The nondeterminism was posted to
+<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>, which reports the same
+symptom from the same Triton fallback but says a warm-up call fixes it. Every measurement here
+already had one and still varied, so either that remedy does not generalise or this is a second
+defect.</p> </div> </div>
 
 <div class="tip" id="tip"></div>
 <script type="application/json" id="figures">{

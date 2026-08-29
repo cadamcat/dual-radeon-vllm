@@ -10,27 +10,24 @@ __CHIPS__
   </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> reports
-  <code>all_gather</code> silently returning wrong data on two W7800s, root-caused to an init-time
-  8-byte copy whose payload is not in device memory when the synchronise returns. It reproduces
-  deterministically for them on RCCL 2.27.7 and 2.28.3. On this box at 2.30.4 it does not, across
-  <strong>135 cold communicator initialisations in eight configurations</strong>.</p>
-  <p>Three things make that mean something. <strong>A sweep that could have exposed it</strong>: their
-  mechanism is specific to the first of several concurrent init copies, this box builds two channels by
-  default, and the sweep drives that from one to sixteen and the transport from shared memory to
-  sockets. <strong>A stated contrast</strong>: the two machines differ on platform, kernel and RCCL
-  version, and agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left
-  for the reader to guess at. And <strong>an honest bound</strong> on what a clean run from someone
-  else's script can say.</p>
-  <p>The third turned out to be the interesting one. Their reproducer computes the corruption check on
-  every rank but counts failures only on rank 0, so <strong>corruption visible only on rank 1 would
-  print <code>ALL CORRECT</code></strong>. The negative result was therefore narrower than it had been
-  reported as. That was disclosed the same night, a cross-rank variant was written, all eight arms were
-  re-run through it, and the blind spot was <em>demonstrated on this hardware</em> by injecting a
-  one-sided fault rather than argued from the source.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3>
+<p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> reports
+<code>all_gather</code> silently returning wrong data on two W7800s, root-caused to an init-time
+8-byte copy whose payload is not in device memory when the synchronise returns. It reproduces
+deterministically for them on RCCL 2.27.7 and 2.28.3. On this box at 2.30.4 it does not, across
+<strong>135 cold communicator initialisations in eight configurations</strong>.</p> <p>Three things
+make that mean something. <strong>A sweep that could have exposed it</strong>: their mechanism is
+specific to the first of several concurrent init copies, this box builds two channels by default,
+and the sweep drives that from one to sixteen and the transport from shared memory to sockets.
+<strong>A stated contrast</strong>: the two machines differ on platform, kernel and RCCL version,
+but agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left for the
+reader to guess at. And <strong>an honest bound</strong> on what a clean run from someone else's
+script can say.</p> <p>The third turned out to be the interesting one. Their reproducer computes the
+corruption check on every rank but counts failures only on rank 0, so <strong>corruption visible
+only on rank 1 would print <code>ALL CORRECT</code></strong>. The negative result was therefore
+narrower than it had been reported as. That was disclosed the same night, a cross-rank variant was
+written, all eight arms were re-run through it, and the blind spot was <em>demonstrated on this
+hardware</em> by injecting a one-sided fault rather than argued from the source.</p> </div>
 
 <h2><span class="n">1</span>Why a clean run usually says nothing</h2>
 
@@ -41,11 +38,11 @@ three questions before pressing send: could this configuration have shown it, wh
 between the two machines, and what is the instrument blind to.</p>
 
 <p>The first is why the sweep is the load-bearing part. Their mechanism is not "collectives are
-broken": the <em>first-issued</em> copy, on channel 0, is the one lost, on both ranks, while channel 1's
-lands, and they report that a naive single-device version of the same
-allocate → memset → 8-byte async copy → synchronise → read sequence does not reproduce in 200 tries. So
-the concurrent multi-device init pattern is a necessary ingredient, and a run that never has several
-concurrent init copies is not a test of anything.</p>
+broken": the <em>first-issued</em> copy, on channel 0, is the one lost, on both ranks, while channel
+1's lands. They report that a naive single-device version of the same allocate → memset → 8-byte
+async copy → synchronise → read sequence does not reproduce in 200 tries. So the concurrent
+multi-device init pattern is a necessary ingredient, and a run that never has several concurrent
+init copies is not a test of anything.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -169,12 +166,12 @@ log</strong> — and the raw re-run replaced it.</p>
 
 <h2><span class="n">5</span>What is not established</h2>
 
-<h3>Version against platform</h3>
-<p>This box differs from theirs on RCCL version <em>and</em> on platform, so a clean run here does not
-say which axis matters. Two runs would separate them and neither is ours to do cheaply: the reporter
-running 2.30.4 on their box, which is minutes for them since they already build from source; or this box
-running 2.28.3, which needs a 73 GB image against 40 GB free and would destroy container state in use
-for other work. Both are named in the source so the next person does not have to rediscover them.</p>
+<h3>Version against platform</h3> <p>This box differs from theirs on RCCL version <em>and</em> on
+platform, so a clean run here does not say which axis matters. Two runs would separate them and
+neither is ours to do cheaply. The reporter running 2.30.4 on their box is minutes for them, since
+they already build from source; this box running 2.28.3 needs a 73 GB image against 40 GB free and
+would destroy container state in use for other work. Both are named in the source so the next person
+does not have to rediscover them.</p>
 
 <h3>What 135 cold inits bounds</h3>
 <p>It bounds the defect as not universal to gfx1100 plus RCCL, and as not appearing at 2.30.4 on this

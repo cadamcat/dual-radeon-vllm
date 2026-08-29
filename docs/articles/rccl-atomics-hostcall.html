@@ -406,24 +406,21 @@ addEventListener("DOMContentLoaded", function () {
   </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>On a machine without PCIe AtomicOps, every RCCL collective fails at dispatch with
-  <code>hipErrorIllegalState</code>. The cause is <strong>four layers below RCCL</strong>: since
-  ROCm 7.2 the shipped device kernels declare a hostcall buffer, ROCr can only build one when the GPU
-  has atomics, and without it the dispatch is refused before any collective runs.</p>
-  <p>The chain reduces to <strong>thirty lines of HIP</strong> that use neither RCCL, PyTorch nor vLLM:
-  two kernels with an identical launch path, one of which calls device <code>printf</code>. The plain
-  one passes; the one needing hostcall fails with the production error.</p>
-  <p>Twelve competing explanations were tested and eliminated, including two this project believed
-  and published before disproving them: that it was an RCCL version regression, and that the ROCm
-  runtime was gating kernel submission in guests.</p>
-  <p>The remedy this repository first verified is a rebuild of RCCL with <code>NDEBUG</code> reaching
-  the device compile. The remedy that matters more was found later: on a passthrough guest the missing
-  capability is usually <strong>self-inflicted by one line of VM configuration</strong>. QEMU advertises
-  AtomicOp completer support automatically, and declines only when the card is handed over as a
-  multifunction device — which is the Proxmox default.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3> <p>On a machine without PCIe AtomicOps, every RCCL
+collective fails at dispatch with <code>hipErrorIllegalState</code>. The cause is <strong>four
+layers below RCCL</strong>: since ROCm 7.2 the shipped device kernels declare a hostcall buffer,
+ROCr can only build one when the GPU has atomics, and without it the dispatch is refused before any
+collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong> that use neither
+RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which calls device
+<code>printf</code>. The plain one passes; the one needing hostcall fails with the production
+error.</p> <p>Twelve competing explanations were tested and eliminated, including two this project
+believed and published before disproving them: that it was an RCCL version regression, and that the
+ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository first
+verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix that
+matters more was found later: on a passthrough guest the missing capability is usually
+<strong>self-inflicted by one line of VM configuration</strong>. QEMU advertises AtomicOp completer
+support automatically, and declines only when the card is handed over as a multifunction device —
+which is the Proxmox default.</p> </div>
 
 <h2><span class="n">1</span>The failure, and where it sends you</h2>
 
@@ -548,11 +545,11 @@ should not have to re-run them, and because two of them were ours.</p>
 pass, which removes the <code>assert()</code> that pulls hostcall in. That works, and for a while it was
 the whole answer.</p>
 
-<p>It is the wrong first move for a virtual machine. QEMU already knows how to advertise AtomicOp
-completer support on an emulated root port — <code>vfio_pci_enable_rp_atomics()</code> has done it
-automatically since v8.1.0 — and it gives up under a short list of conditions, one of which is that the
-device is passed as multifunction. Proxmox's default <code>hostpciX</code> form hands the GPU over
-together with its audio function, which takes exactly that branch.</p>
+<p>A rebuild is the wrong first move for a virtual machine. QEMU already knows how to advertise
+AtomicOp completer support on an emulated root port — <code>vfio_pci_enable_rp_atomics()</code> has
+done it automatically since v8.1.0 — and it gives up under a short list of conditions, one of which
+is that the device is passed as multifunction. Proxmox's default <code>hostpciX</code> form hands
+the GPU over together with its audio function, which takes exactly that branch.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -623,14 +620,12 @@ inference, but its consequences on other boards are not measured here.</p>
   the box that was this repository's counterexample on the atomics axis no longer is one.
 </div>
 
-<div class="note ok">
-  <span class="lbl">2026-08-28 · the severity claim was narrowed</span>
-  This report originally said every QEMU root port declines completer support regardless of what sits
-  behind it, and concluded that any VFIO passthrough guest is affected, virtualised Instinct included.
-  That is wrong for a single-function passthrough. The upstream issue body and the comment it cites were
-  both corrected; the claim now reads that a passthrough Instinct is affected when passed multifunction
-  and not when passed as a single function.
-</div>
+<div class="note ok"> <span class="lbl">2026-08-28 · the severity claim was narrowed</span> This
+report originally said every QEMU root port declines completer support regardless of what sits
+behind it, and concluded that any VFIO passthrough guest is affected, virtualised Instinct included.
+That is wrong for a single-function passthrough. The upstream issue body and the comment it cites
+were both corrected; the claim now reads that a passthrough Instinct is affected when passed as
+multifunction and not when passed as a single function. </div>
 
 <div class="foot-note">
   <p><strong>Reproduce it yourself.</strong> The thirty-line gate is

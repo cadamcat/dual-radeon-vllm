@@ -11,27 +11,23 @@ __CHIPS__
   </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>Compiled, a 128-expert MoE decodes at <strong>107.82 tok/s</strong> at 500 tokens of context and
-  72.80 at 32000, ahead of every dense model measured here including ones with more parameters. Under
-  <code>--enforce-eager</code> the same model was recorded at about 15, and that number is what the
-  verdict was written from.</p>
-  <p>The cost of not using eager is one engine start of <strong>1569 seconds</strong>, of which 54 is
-  loading weights. It is single-threaded on an eight-core host because <code>vllm/env_override.py</code>
-  assigns <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> on import — a plain assignment, so exporting
-  the variable yourself does nothing.</p>
-  <p><strong>The 7.2× is not the damage.</strong> Eager also produced two qualitative phenomena that
-  were read as properties of the architecture: a 131 W / 65 W split between the cards, taken as expert
-  imbalance, and a decode rate independent of context, taken as a hybrid-like advantage. Compiled, the
-  22 measured rows are symmetric to within <strong>2.26 %</strong> with identical VRAM on both cards,
-  and the rate falls by a third across the context ladder.</p>
-  <p>Both wrong conclusions were published in this repository before they were withdrawn. The
-  contribution here is two lines upstream —
-  <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
-  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> — which keep the default of
-  one thread and let a deliberate override through.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3> <p>Compiled, a 128-expert MoE decodes at <strong>107.82
+tok/s</strong> at 500 tokens of context and 72.80 at 32000, ahead of every dense model measured here
+including ones with more parameters. Under <code>--enforce-eager</code> the same model was recorded
+at about 15, and that number is what the verdict was written from.</p> <p>The cost of not using
+eager is one engine start of <strong>1569 seconds</strong>, of which 54 is loading weights.
+Compilation is single-threaded on an eight-core host because <code>vllm/env_override.py</code>
+assigns <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> on import — a plain assignment, so
+exporting the variable yourself does nothing.</p> <p><strong>The 7.2× is not the damage.</strong>
+Eager also produced two qualitative phenomena that were read as properties of the architecture: a
+131 W / 65 W split between the cards, taken as expert imbalance, and a decode rate independent of
+context, taken as a hybrid-like advantage. Compiled, the 22 measured rows are symmetric to within
+<strong>2.26 %</strong> with identical VRAM on both cards, and the rate falls by a third across the
+context ladder.</p> <p>Both wrong conclusions were published in this repository before they were
+withdrawn. The contribution here is two lines upstream —
+<a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
+<a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> — which keep the default of
+one thread and let a deliberate override through.</p> </div>
 
 <h2><span class="n">1</span>What is being measured</h2>
 
@@ -90,20 +86,14 @@ of context, with power bouncing between the cards". Compiled it is 59.91, and th
 
 <h2><span class="n">3</span>Where twenty-six minutes goes</h2>
 
-<figure class="rv" id="fig2">
-  <div class="figbox">
-    <div class="figtitle">Figure 2 · every engine start in the campaign
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="inits"></div>
-  </div>
-  <figcaption>
-    <b>Figure 2.</b> All eight starts, in the order they ran. Two of them exceed twenty minutes and the
-    other six are under two, and on those two the weight-loading share is 3.4 % and 0.4 % of the total.
-    Whatever is expensive, it is not the model coming off disk. The one repeated configuration is the
-    12B at TP=1, started twice eight minutes apart: 59.67 s then 33.36 s. That is the only
-    cold-against-warm pair the campaign contains, and it is not one of the two slow ones.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · every engine
+start in the campaign <span class="prov yes">recomputable from repo</span></div>
+<div class="bars" id="inits"></div> </div> <figcaption> <b>Figure 2.</b> All eight starts, in the
+order they ran. Two of them exceed twenty minutes while the other six are under two, and on those
+two the weight-loading share is 3.4 % and 0.4 % of the total. Whatever is expensive, it is not the
+model coming off disk. The one repeated configuration is the 12B at TP=1, started twice eight
+minutes apart: 59.67 s then 33.36 s. That is the only cold-against-warm pair the campaign contains,
+and it is not one of the two slow ones. </figcaption> </figure>
 
 <p>The reason it is one core is a single line, run on every <code>import vllm</code>:</p>
 
@@ -118,16 +108,14 @@ overwritten before Inductor reads it. Importing vLLM leaves
 <code>torch._inductor.config.compile_threads == 1</code> whatever the caller asked for. Inductor's own
 default would be one worker per core.</p>
 
-<div class="note">
-  <span class="lbl">The default itself is not the problem</span>
-  Single-threaded compilation is deliberate upstream, for reasons recorded in
-  <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
-  <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>: compile subprocesses
-  interact badly with debuggers and with some launch paths. Changing that default is a different
-  argument from the one made here. What is being reported is narrower — that the mechanism gives the
-  operator no way to opt out, and that this is almost certainly not intended, since a plain assignment
-  is what a <code>setdefault</code> looks like when nobody has needed the override yet.
-</div>
+<div class="note"> <span class="lbl">The default itself is not the problem</span> Single-threaded
+compilation is deliberate upstream, for reasons recorded in
+<a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
+<a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>: compile subprocesses
+interact badly with debuggers and with some launch paths. Changing that default is a different
+argument from the one made here. What is being reported is narrower: the mechanism gives the
+operator no way to opt out. That is almost certainly not intended, since a plain assignment is what
+a <code>setdefault</code> looks like when nobody has needed the override yet. </div>
 
 <h2><span class="n">4</span>The two things eager invented</h2>
 

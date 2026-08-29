@@ -409,7 +409,7 @@ addEventListener("DOMContentLoaded", function () {
   投机多出来的那一行 query 让它失去资格，于是 launch grid 从
   <strong>1 × 8 × 16 变成 1 × 8</strong>。那一句上的注释说的是"这一批里有 prefill 请求"，
   但真正的约束是缓冲区形状：段缓冲按序列分配、按 token 索引，只有在一行 query 时两者才重合。</p>
-  <p><strong>三个看起来更像的解释都被测过并否掉了。</strong>不是 KV head 太少：这个模型有 16 个，
+  <p><strong>三个看起来更像的解释，都测过，都否掉了。</strong>不是 KV head 太少：这个模型有 16 个，
   不开投机时好好的。不是多出来的那行 query：直接调 kernel，从一行到两行在 32K 上一个构造下花
   <strong>0.08 %</strong>，另一个构造下 0.16 %。不是分块参数：把上游给 Blackwell
   调的那组常量移过来，反而慢 8.7 %。</p>
@@ -444,7 +444,7 @@ addEventListener("DOMContentLoaded", function () {
 <p>vLLM 自己的计数器在 32K 上是 <code>Mean acceptance length: 1.12</code>，78 个草稿接受 9 个。
 反推 1K 的加速意味着那里接受率大约 0.46，所以接受率也随深度下降。
 这确实是一笔真实开销 —— 一个被拒的草稿仍然付了助手的一次前向和目标模型的一次验证 ——
-但在助手只有四层宽的情况下，它撑不起 −70.8 %。第 5 节给出撑得起的那个。</p>
+但在助手只有四层宽的情况下，它撑不起 −70.8 %。第 5 节给出撑得住的那个。</p>
 
 <h2><span class="n">2</span>那一句</h2>
 
@@ -509,13 +509,13 @@ addEventListener("DOMContentLoaded", function () {
   <div class="dist" id="dist"></div>
   大多数调用几乎不动，少数爆炸。这是这个模型交替式注意力的结果：
   滑动窗口层看到的 KV 很短，不在乎；全局层要扫完整的 32K，完全失去了分段。
-  报那个 9.2× 的均值，两个群体哪个都没描述到。<code>hipGraphLaunch</code> 从 63 变成 324，
+  报那个 9.2× 的均值，两个群体哪个也没说中。<code>hipGraphLaunch</code> 从 63 变成 324，
   所以图重放是好的 —— 之所以查它，是因为它是最显眼的嫌疑对象。
 </div>
 
 <h2><span class="n">4</span>另一个厂商</h2>
 
-<p>一个关于 kernel 的论断，会对它没被测过的硬件做出预言。如果塌陷就是 3D 掉到 2D，
+<p>一个关于 kernel 的论断，会对它没测过的硬件做出预言。如果塌陷就是 3D 掉到 2D，
 那么任何被路由到同一个 kernel 的 CUDA 机器都该出现它，并随上下文加深；
 而没有这道门的后端不该出现。<code>gemma-4</code> 的 head 维度不齐，
 所以只要 FA4 不可用，vLLM 就强制走 <code>TRITON_ATTN</code> —— 而 A100 没有 FA4。

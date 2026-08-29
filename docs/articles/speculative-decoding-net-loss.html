@@ -428,21 +428,15 @@ addEventListener("DOMContentLoaded", function () {
 <code>gemma-4-31B-it-assistant</code> at <code>num_speculative_tokens: 1</code>. Decode is isolated from
 prefill by differencing a 64-token generation against an 8-token one at the same depth.</p>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · what speculation is worth, by context length
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v1"></div>
-    <div class="bars" id="ladder"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four depths,
-    and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>. Hover any bar
-    for both rates. The MTP arm was measured a second time five weeks later, as the stock baseline of a
-    different comparison: the three long depths reproduce to <strong>0.45 %</strong> and 1K differs by
-    6.0 %, so the end of the ladder that carries the finding is the end that repeats best.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · what speculation
+is worth, by context length <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v1"></div> <div class="bars" id="ladder"></div> </div> <figcaption>
+<b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four depths,
+and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>. Hover any
+bar for both rates. The MTP arm was measured a second time five weeks later, as the stock baseline
+of a different comparison. The three long depths reproduce to <strong>0.45 %</strong> and 1K differs
+by 6.0 %, so the end of the ladder that carries the finding is the end that repeats best.
+</figcaption> </figure>
 
 <p>vLLM's own counter at 32K reads <code>Mean acceptance length: 1.12</code>, 9 accepted of 78 drafted.
 Back-solving the 1K speedup implies roughly 0.46 acceptance there, so acceptance degrades with depth
@@ -554,10 +548,10 @@ speculation finally beats no speculation. That was not a fix: it cannot express 
 rows but not prefill's four thousand", and greedy output at a 30K prompt diverged from stock at token
 35, with three possible causes unseparated.</p>
 
-<p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>, open since June and stalled
-with merge conflicts, is the shape that section asked for: the gate becomes
-<code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded, and the segment buffers are
-sized per token.</p>
+<p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>, open since June and
+stalled with merge conflicts, is the shape that paragraph asked for: the gate becomes
+<code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded, and the segment buffers
+are sized per token.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -582,20 +576,20 @@ defect of the admission.</p>
 <h2><span class="n">6</span>Who reported what</h2>
 
 <p>The same 3D-to-2D drop was reported first, in
-<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a> on 2026-07-09, on a single
-B200 running the same architecture in a different quantisation. That report's trigger is a different
-clause in the same <code>or</code> chain — <code>num_seqs &gt; seq_threshold_3D</code>, a batch-size
-threshold — and its proposed fix derives that threshold from SM count.
-<strong>That fix does not reach this trigger</strong>: <code>max_seqlen_q &gt; 1</code> is independent of
-the threshold, so speculation keeps falling to 2D however the threshold is computed. What is new here is
+<a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a> on 2026-07-09, on a
+single B200 running the same architecture in a different quantisation. The trigger in that report is
+a different clause in the same <code>or</code> chain — <code>num_seqs &gt; seq_threshold_3D</code>,
+a batch-size threshold — and its proposed fix derives that threshold from SM count. <strong>That fix
+does not reach this trigger</strong>: <code>max_seqlen_q &gt; 1</code> is independent of the
+threshold, so speculation keeps falling to 2D however the threshold is computed. What is new here is
 the second trigger, its different cause, and measurements on RDNA3.</p>
 
-<p>It was posted to that thread on 2026-08-01, and on 2026-08-26 to
-<a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of the
-same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer sidesteps
-it, which fits: the collapse is specific to this Triton kernel and an explicit backend choice bypasses
-the forcing. ROCm has no FlashInfer, so on this hardware the remedy is still to gate speculation by
-depth.</p>
+<p>The finding was posted to that thread on 2026-08-01, and on 2026-08-26 to
+<a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of
+the same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer
+sidesteps it, which fits: the collapse is specific to this Triton kernel and an explicit backend
+choice bypasses the forcing. ROCm has no FlashInfer, so on this hardware the remedy is still to gate
+speculation by depth.</p>
 
 <h2><span class="n">7</span>What is not established</h2>
 

@@ -433,7 +433,7 @@ addEventListener("DOMContentLoaded", function () {
 一个不依赖任何东西的复现器推翻了它：普通 <code>mmap</code> 一个热文件全速拷贝，
 而八个能想到的变量 —— 匿名对 file-backed、已 fault 对未 fault、每次拷贝换新 range、
 overlayfs 对 ext4、每次拷贝换新设备分配、1–256 MiB 尺寸扫描、页不对齐的起点、dtype ——
-一个都触发不了。此后对第二个原因的门槛就变成了：一个陌生人能跑出同样的结果。</p>
+一个都触发不了。此后对第二个原因的门槛就变成了：换个人也能跑出同样的结果。</p>
 
 <h2><span class="n">2</span>真正会触发它的那个变量</h2>
 
@@ -489,7 +489,7 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
 这就是永久的那一半，它在这里测过的每一个内核上都在，而那一行比它们都老。</p>
 
 <p>它也不需要任何额外假设就解释了那三种状态：CPU 没碰过的页还没有进入 copy-on-write 共享，
-所以"未常驻"那一档从来不用为打断付费。它还把两半接了起来：破坏 copy-on-write
+所以"未常驻"那一档从来不用为这次打断掏钱。它还把两半接了起来：破坏 copy-on-write
 正是推进 notifier 序列的动作，所以只读映射永远不会失效、永远不会拿到 <code>-EBUSY</code>、
 也就永远不会进 <code>c08972f55594</code> 留下的那个空转重试。</p>
 

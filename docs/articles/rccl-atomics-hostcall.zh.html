@@ -413,7 +413,7 @@ addEventListener("DOMContentLoaded", function () {
   建不出来，dispatch 就在任何集合通信运行之前被拒绝。</p>
   <p>整条链可以缩成 <strong>三十行 HIP</strong>，不用 RCCL、不用 PyTorch、不用 vLLM：
   两个 kernel 走完全相同的启动路径，其中一个调用设备端 <code>printf</code>。
-  普通的那个通过，需要 hostcall 的那个以生产环境里同一句错误失败。</p>
+  普通的那个通过，需要 hostcall 的那个失败，报的正是生产环境里那句错误。</p>
   <p>十二个竞争解释被测试并排除，其中两个是本项目自己相信过、发表过、之后才推翻的：
   以为这是 RCCL 的版本回归，以及以为 ROCm 运行时在虚拟机里拦截了 kernel 提交。</p>
   <p>本仓库最先验证的解法，是让 <code>NDEBUG</code> 进到设备端编译再重建 RCCL。
@@ -459,7 +459,7 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
 
 <h2><span class="n">3</span>三十行代码，把 RCCL 从画面里拿掉</h2>
 
-<p>第 4 环是承重的那一环，因为它可以在不使用任何"看起来相关"的软件的情况下被验证。
+<p>第 4 环是撑起整个论证的那一环，因为它可以在不使用任何"看起来相关"的软件的情况下被验证。
 两个 kernel，启动形状完全相同；唯一的差别是第二个调用了设备端 <code>printf</code>，
 而它需要一个 hostcall buffer。</p>
 
@@ -506,7 +506,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <h2><span class="n">5</span>被排除的假设</h2>
 
-<p>曾经有十三个假设是活的，十二个是错的。把它们列出来，是为了让下一个人不必重跑一遍，
+<p>台面上曾经摆着十三个假设，十二个是错的。把它们列出来，是为了让下一个人不必重跑一遍，
 也因为其中两个是我们自己的。</p>
 
 <figure class="rv" id="fig3">
@@ -517,7 +517,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
     <div id="ruled"></div>
   </div>
   <figcaption>
-    <b>图 3.</b> 每一条都是被测试掉的，不是被论证掉的。其中若干条是靠读源码而不是靠测量排除的 ——
+    <b>图 3.</b> 每一条都是测掉的，不是辩掉的。其中若干条是靠读源码而不是靠测量排除的 ——
     <code>iommu=pt</code> 只是一个字符串检查，会警告但不会拦截；两代 ROCm 用的都是普通的
     <code>DisableTiming</code> 事件 —— 这样更便宜，结论一样确定。
     由 <code>docs/root-cause.md</code> §3 提取。
@@ -602,8 +602,8 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <div class="note ok">
   <span class="lbl">2026-08-23 · 这台机器现在有 atomics 了</span>
-  guest 已改为单功能直通，此后一直广告 completer 支持。未打补丁的原版 RCCL 2.30.4 现在在这里
-  135 次冷启动通信初始化全部正确 —— 所以这台曾经在 atomics 这条轴上充当反例的机器，不再是反例了。
+  guest 已改为单功能直通，此后一直声明支持 completer。未打补丁的原版 RCCL 2.30.4 现在在这里
+  135 次冷启动通信初始化全部正确 —— 所以这台曾经在 atomics 这一项上充当反例的机器，不再是反例了。
 </div>
 
 <div class="note ok">

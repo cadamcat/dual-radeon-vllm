@@ -81,22 +81,15 @@ means in one sentence.</p>
 right and is what everything above is about. The second is that the fallback degrades with context. That
 one is testable here and does not hold.</p>
 
-<figure class="rv" id="fig2">
-  <div class="figbox">
-    <div class="figtitle">Figure 2 · median relative error against context length
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v2"></div>
-    <div class="bandwrap"><div class="band" id="band"></div></div>
-    <div class="barunit" id="bandnote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 2.</b> Medians over all shapes at each length; the shaded zone is the full band across all
-    90 individual cells. The custom kernel sits consistently a little above Triton, which is a different
-    accumulation order rather than a defect — both are inside what bf16 gives for a sum this long. The
-    third series is the identical Triton source compiled on an A100, and it lands in the same band. That
-    column is what makes this a bounded negative rather than an absence of evidence.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · median relative
+error against context length <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v2"></div> <div class="bandwrap"><div class="band" id="band"></div></div>
+<div class="barunit" id="bandnote"></div> </div> <figcaption> <b>Figure 2.</b> Medians over all
+shapes at each length; the shaded zone is the full band across all 90 individual cells. The custom
+kernel sits consistently a little above Triton, which is a different accumulation order rather than
+a defect — both are inside what bf16 gives for a sum this long. The third series is the identical
+Triton source compiled on an A100, and it lands in the same band. That series is what makes this a
+bounded negative rather than an absence of evidence. </figcaption> </figure>
 
 <div class="note">
   <span class="lbl">A clean sweep is worth nothing if the instrument is blind</span>
@@ -192,11 +185,11 @@ The end-to-end measurement is TP=2, but that is a model measurement, not a kerne
 garbage; vllm#53856 attributes it to sleep mode and allocator behaviour. This probe injects it
 deliberately and only measures what the kernel then does.</p>
 
-<h3>One machine, and the model runner question</h3>
-<p>Everything here is one gfx1100 box. A related question — whether Model Runner V2 reaches the same
-guard — was measured on this hardware and it does, on 36 of 37 rows identical to V1; but whether
-speculation makes decode carry more than one query row under MRv2 could not be measured, because no
-checkpoint here configures for it on that image. That half rests on a code read.</p>
+<h3>One machine, and the model runner question</h3> <p>Everything here is one gfx1100 box. A related
+question — whether Model Runner V2 reaches the same guard — was measured on this hardware: it does,
+on 36 of 37 rows identical to V1. Whether speculation makes decode carry more than one query row
+under MRv2 could not be measured, because no checkpoint here configures for it on that image. That
+half rests on a code read.</p>
 
 <h2><span class="n">7</span>What has changed since</h2>
 
@@ -222,14 +215,12 @@ checkpoint here configures for it on that image. That half rests on a code read.
   <code>verify_doc_figures.py</code> rather than transcribed.
 </div>
 
-<div class="note">
-  <span class="lbl">2026-08-29 · one figure needed its derivation stated, not corrected</span>
-  The source directory says a 16× context increase moves the median by 1.06×, which looked wrong against
-  a ladder that spans 32×. It is not: that figure pools the two shortest depths against the two longest,
-  whose centres are about 16× apart. Read end to end instead the move is 1.03×. Both derivations are now
-  written down and both are checked, because the sentence was defensible and unreadable at the same
-  time.
-</div>
+<div class="note"> <span class="lbl">2026-08-29 · one figure needed its derivation stated, not
+corrected</span> The source directory says a 16× context increase moves the median by 1.06×, which
+looked wrong against a ladder that spans 32×. It is not: that figure pools the two shortest depths
+against the two longest, whose centres are about 16× apart. Read end to end instead the move is
+1.03×. Both derivations are now written down and both are checked, because the sentence was
+defensible but unreadable at the same time. </div>
 
 <div class="foot-note">
   <p><strong>Every cell.</strong> The probes, the JSONL they wrote and the container logs are in

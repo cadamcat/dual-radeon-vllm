@@ -491,26 +491,20 @@ speculation worth having is worse on two cards than on one.</p>
 
 <h2><span class="n">5</span>What the cards actually realize</h2>
 
-<p>The nominal ratio assumes both sides reach their ceiling, and neither does. Recomputing realized
+<p>The nominal ratio assumes both sides reach their ceiling, but neither does. Recomputing realized
 bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
 against 800 GB/s — puts this comparison's model at 63 %:</p>
 
-<figure class="rv" id="fig4">
-  <div class="figbox">
-    <div class="figtitle">Figure 4 · realized memory bandwidth at decode, per card
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="util"></div>
-  </div>
-  <figcaption>
-    <b>Figure 4.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context, TP=2,
-    against the per-GPU bytes per token stated in
-    <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md §3</a>.
-    Two effects are visible and both are real: at equal quantisation the larger model reaches higher
-    utilisation, and the BF16 model is higher still. <strong>No equivalent figure was measured on the
-    A100</strong>, so the comparison in Figure 1 is against a nominal ceiling on that side and a realized
-    one on this side.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig4"> <div class="figbox"> <div class="figtitle">Figure 4 · realized memory
+bandwidth at decode, per card <span class="prov yes">recomputable from repo</span></div>
+<div class="bars" id="util"></div> </div> <figcaption> <b>Figure 4.</b> Rates from
+<code>benchmarks/results.jsonl</code> at 500 tokens of context, TP=2, against the per-GPU bytes per
+token stated in
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md
+§3</a>. Two effects are visible and both are real: at equal quantisation the larger model reaches
+higher utilisation, and the BF16 model reaches higher still. <strong>No equivalent figure was
+measured on the A100</strong>, so the comparison in Figure 1 is against a nominal ceiling on that
+side and a realized one on this side. </figcaption> </figure>
 
 <h2><span class="n">6</span>What is not established</h2>
 
@@ -525,10 +519,10 @@ not a measurement.</p>
 datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
 can explain, not as a prediction either side was measured against.</p>
 
-<h3>One model, one stack per side, one run per cell</h3>
-<p>Two different vLLM versions, because each side runs the stack it actually runs; two different
-operating environments, one of them a rented Colab VM whose cross-session variance is unquantified. The
-campaign-grade version of this comparison has not been run.</p>
+<h3>One model, one stack per side, one run per cell</h3> <p>Two different vLLM versions, because
+each side runs the stack it actually uses; two different operating environments, one of them a
+rented Colab VM whose cross-session variance is unquantified. The campaign-grade version of this
+comparison has not been run.</p>
 
 <h3>Why 16K is the minimum</h3>
 <p>The U is described, not explained at its bottom. That the short end is dominated by a fixed
