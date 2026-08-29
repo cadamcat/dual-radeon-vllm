@@ -108,6 +108,75 @@ fig4["correctness"] = {
     "max_abs_diff": max(c["max_abs_diff"] for c in kc),
     "bf16_ulp_at_1": 2 ** -8}
 
+# ---- fig4's second layer: the same A/B, five times, on two vendors ---------
+# The four points above are one model on one machine at k=1. The 2026-08-29
+# campaign ran the same comparison at eleven rungs and two rounds a cell, five
+# times, and the five do not agree -- which is the finding. Where the Triton
+# kernel this patch edits is on the path, the patched arm wins by a widening
+# margin. Where the engine routes the model somewhere else, the two arms are
+# the same measurement twice. The probe says which case a reader is in before
+# any of it is measured.
+import collections as _c, statistics as _st, json as _j, re as _re2
+
+def _ladder(path, cfg):
+    by = _c.defaultdict(list)
+    for line in open(path):
+        r = _j.loads(line)
+        if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] == cfg:
+            by[r["target"]].append(r["decode_tps"])
+    return {t: _st.mean(v) for t, v in by.items()}
+
+_RES = R / "benchmarks/campaign-2026-08-29/results.jsonl"
+_AES = R / "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"
+_PROV = _j.load(open(R / "benchmarks/campaign-2026-08-29/provenance.json"))["arms"]
+
+def _probe_a100(name):
+    f = R / f"benchmarks/cuda-a100/campaign-2026-08-29/logs/serve-{name}.log"
+    return open(f, errors="replace").read().count("PROBE_3D_SPEC_ACTIVE") if f.exists() else None
+
+PAIRS = [
+    ("gemma-4-31B-it", "A100", "TRITON_ATTN", _AES, "A100-G31-mtp",
+     "A100-G31-mtp-p45450", _probe_a100("A100-G31-mtp-p45450")),
+    ("gemma-4-26B-A4B", "A100", "TRITON_ATTN", _AES, "A100-G26A4B-mtp",
+     "A100-G26A4B-mtp-p45450", _probe_a100("A100-G26A4B-mtp-p45450")),
+    ("Qwen3.8-27B", "2x RX 7900 XT", "TRITON_ATTN", _RES, "Q38-mtp-triton-tp2",
+     "Q38-mtp-triton-p45450-tp2",
+     _PROV["Q38-mtp-triton-p45450-tp2"]["probe_3d_spec_active"]),
+    ("Qwen3.8-27B", "2x RX 7900 XT", "ROCM_ATTN", _RES, "Q38-mtp-tp2",
+     "Q38-mtp-p45450-tp2", _PROV["Q38-mtp-p45450-tp2"]["probe_3d_spec_active"]),
+    ("Qwen3.8-27B", "A100", "FLASH_ATTN", _AES, "A100-Q38-mtp",
+     "A100-Q38-mtp-p45450", _probe_a100("A100-Q38-mtp-p45450")),
+]
+
+_pairs = []
+for model, mach, backend, src, a, b, probe in PAIRS:
+    st, po = _ladder(src, a), _ladder(src, b)
+    rungs = sorted(set(st) & set(po))
+    rows = [{"ctx": t, "stock": round(st[t], 2), "ported": round(po[t], 2),
+             "ratio": po[t] / st[t]} for t in rungs]
+    deltas = [(po[t] / st[t] - 1) * 100.0 for t in rungs]
+    _pairs.append({
+        "model": model, "machine": mach, "attn_backend": backend,
+        "probe": probe, "rows": rows,
+        "ratio_at_deepest": rows[-1]["ratio"],
+        "mean_delta_pct": _st.mean(deltas),
+        "worst_delta_pct": max(deltas, key=abs),
+        # "acted" is the probe's claim, not a threshold on the numbers
+        "acted": bool(probe)})
+
+fig4["campaign"] = {
+    "date": "2026-08-29", "k": 3, "harness": "campaign-server",
+    "runs_per_cell": 2, "pairs": _pairs,
+    "acted": [p["model"] + " / " + p["attn_backend"] for p in _pairs if p["acted"]],
+    "inert": [p["model"] + " / " + p["attn_backend"] for p in _pairs if not p["acted"]],
+    "source": {"radeons": "benchmarks/campaign-2026-08-29/results.jsonl",
+               "a100": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"}}
+# the whole point: the probe and the outcome agree in all five
+fig4["campaign"]["probe_predicts"] = all(
+    (p["probe"] > 0) == (abs(p["mean_delta_pct"]) > 5.0) for p in _pairs)
+fig4["campaign"]["inert_worst_pct"] = max(
+    (abs(p["worst_delta_pct"]) for p in _pairs if not p["acted"]), default=None)
+
 # ---- the profiler summary, which is derived from traces not in the repo ---
 tr = jl(S / "trace-unified-attention.json")
 prof = {"reproducible_from_repo": False,

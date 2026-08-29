@@ -179,6 +179,36 @@ one bf16 ULP — at one query row, which is today's shipped behaviour, exactly a
 token-35 divergence was the pre-existing 2D/3D reduction-order reassociation that batch size already
 toggles in production, not a defect of the admission.</p>
 
+<h3>What the patch needs before it can do anything</h3>
+
+<p>Everything above is measured where the Triton unified-attention kernel serves the model. vLLM
+does not always route it there, and where it does not, this patch is installed and idle. The
+<em>same A/B, five times</em> control on Figure 4 draws the five runs that separate the two cases,
+each eleven rungs and two rounds a cell at k=3:</p>
+
+<ul>
+  <li><code>gemma-4-31B-it</code> on an A100, <code>TRITON_ATTN</code>, probe fires once —
+      <b>+45.6 %</b> on average, <b>1.95×</b> at 32K.</li>
+  <li><code>gemma-4-26B-A4B</code> on an A100, <code>TRITON_ATTN</code>, probe once —
+      <b>+48.4 %</b>, <b>1.99×</b> at 32K.</li>
+  <li><code>Qwen3.8-27B</code> on the two Radeons with the kernel pinned by
+      <code>--attention-backend</code>, probe twice, one per tensor-parallel worker —
+      <b>+83.9 %</b>, <b>2.87×</b> at 32K.</li>
+  <li><code>Qwen3.8-27B</code> on the same Radeons as the engine routes it, <code>ROCM_ATTN</code>,
+      probe silent — <b>−1.9 %</b>: the two arms are one measurement taken twice.</li>
+  <li><code>Qwen3.8-27B</code> on an A100 as the engine routes it, <code>FLASH_ATTN</code>, probe
+      silent — <b>−0.08 %</b>. At 32K, 20.51 against 20.52.</li>
+</ul>
+
+<p><strong>The probe says which case you are in before the ladder does.</strong>
+<code>inject_45450.py</code> prints <code>PROBE_3D_SPEC_ACTIVE</code> once per worker process when
+the 3D path serves a step wider than one token, which needs three things at once: the patch
+installed, this kernel on the path, and speculation on. In all five runs the probe and the outcome
+agree — where it printed the patched arm pulled away, where it stayed silent no rung moved by more
+than 8.8 %, which is inside the spread those speculative arms repeat at anyway. So a reader who
+applies this patch and sees a silent log has not mis-applied it. They are on a model the engine
+sends somewhere else, and the fix for them is the backend, not the patch.</p>
+
 <h2><span class="n">6</span>Who reported what</h2>
 
 <p>The same 3D-to-2D drop was reported first, in
@@ -193,9 +223,17 @@ the second trigger, its different cause, and measurements on RDNA3.</p>
 <p>The finding was posted to that thread on 2026-08-01, and on 2026-08-26 to
 <a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of
 the same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer
-sidesteps it, which fits: the collapse is specific to this Triton kernel and an explicit backend
-choice bypasses the forcing. ROCm has no FlashInfer, so on this hardware the remedy is still to gate
-speculation by depth.</p>
+sidesteps it, which fits: the collapse <em>this article traced</em> is specific to this Triton
+kernel, and an explicit backend choice bypasses the forcing. ROCm has no FlashInfer, so on this
+hardware the remedy is still to gate speculation by depth.</p>
+
+<p><strong>What is not specific to this kernel is speculation losing at depth.</strong> Measured on
+2026-08-29, <code>Qwen3.8-27B</code> loses too — on ROCm's <code>ROCM_ATTN</code>, whose backend file
+imports <code>chunked_prefill_paged_decode</code> and none of the files this patch edits, and on
+CUDA's <code>FLASH_ATTN</code>. Neither is this kernel, and on neither does this patch change
+anything. Same sign, different mechanism, and this article does not identify that one. It would be a
+mistake to read those two as more evidence for the argument above; they are evidence that the
+argument above does not cover them.</p>
 
 <h2><span class="n">7</span>What is not established</h2>
 
@@ -315,6 +353,11 @@ is what supports it, not either measurement alone.</p>
  "f4unit": "decode tok/s with MTP on, {a} against {b}",
  "f4note": "the hand-widened experiment reached {h} at 32K, within {p}% of the PR's own number",
  "f4correct": "{n} fixed-input kernel cases, all bit-deterministic, the two paths within one bf16 ULP",
+ "f4camp": "the same A/B, five times",
+ "f4yRatio": "patched ÷ stock, same rung",
+ "f4par": "no difference",
+ "f4probe": "probe fired {n}×",
+ "f4campNote": "2026-08-29 · eleven rungs, two rounds a cell, k=3 · patched against stock in each pair. {a} of the five have the Triton kernel this patch edits on the path and pull away from parity; the other {i} do not, and their arms are the same measurement twice — no rung moves by more than {w}%, inside the spread the speculative arms repeat at. Dashed is a pair where the patch could not act",
  "distStat": "statistic", "distNo": "no speculation", "distMtp": "MTP", "distRatio": "ratio",
  "distMedian": "median", "distP75": "p75", "distMax": "max", "distMean": "mean",
  "distCalls": "{n} calls",
@@ -602,6 +645,8 @@ is what supports it, not either measurement alone.</p>
   (function () {
     var svg = document.getElementById("recover"), note = document.getElementById("rcnote");
     var lg = document.getElementById("v4"), R = F.fig4.rows;
+    var K = F.fig4.campaign, campOn = false;
+    var COL = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)", "var(--s5)"];
     function tipFor(key) {
       return function (i) {
         var r = R[i];
@@ -611,20 +656,69 @@ is what supports it, not either measurement alone.</p>
           '<span class="sub">' + r.ratio.toFixed(2) + "× between them</span>";
       };
     }
-    window.lineChart({
-      el: svg, reduce: reduce, h: 330,
-      x: { values: R.map(function (r) { return r.ctx; }), label: S.ctxAxis, fmt: kctx },
-      y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
-      legend: lg,
-      series: [{ colour: "var(--s1)", label: S.stock, tip: tipFor("stock"),
-                 values: R.map(function (r) { return r.stock; }) },
-               { colour: "var(--s3)", label: S.ported, tip: tipFor("ported"),
-                 values: R.map(function (r) { return r.ported; }) }]
+    function pairTip(p) {
+      return function (i) {
+        var r = p.rows[i];
+        return '<span class="hd">' + p.model + " · " + kctx(r.ctx) + "</span><br>" +
+          S.stock + " <b>" + r.stock.toFixed(2) + "</b> · " +
+          S.ported + " <b>" + r.ported.toFixed(2) + "</b><br>" +
+          '<span class="sub">' + r.ratio.toFixed(2) + "× · " + p.attn_backend +
+          " · " + fmt(S.f4probe, { n: p.probe }) + "</span>";
+      };
+    }
+    function draw() {
+      if (!campOn) {
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: R.map(function (r) { return r.ctx; }), label: S.ctxAxis, fmt: kctx },
+          y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
+          legend: lg,
+          series: [{ colour: "var(--s1)", label: S.stock, tip: tipFor("stock"),
+                     values: R.map(function (r) { return r.stock; }) },
+                   { colour: "var(--s3)", label: S.ported, tip: tipFor("ported"),
+                     values: R.map(function (r) { return r.ported; }) }]
+        });
+        note.innerHTML = fmt(S.f4unit, { a: S.stock, b: S.ported }) + "<br>" +
+          fmt(S.f4note, { h: F.fig4.hand_forced_32k.toFixed(2),
+                          p: F.fig4.hand_vs_ported_pct.toFixed(1) }) + "<br>" +
+          fmt(S.f4correct, { n: F.fig4.correctness.cases });
+      } else {
+        /* Five of the same A/B rather than ten lines of rates: what the five
+           have to say is whether the patched arm pulls away from the stock one
+           at all, and that is one number a rung. Parity is the rule. */
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
+               ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] },
+          y: { label: S.f4yRatio, min: 0.8,
+               fmt: function (v) { return v.toFixed(1) + "×"; } },
+          legend: lg,
+          rules: [{ y: 1, label: S.f4par, colour: "var(--border-2)" }],
+          series: K.pairs.map(function (p, i) {
+            return { colour: COL[i % COL.length], dash: !p.acted, tip: pairTip(p),
+                     label: p.model + " · " + p.attn_backend,
+                     points: p.rows.map(function (r) { return [r.ctx, r.ratio]; }) };
+          })
+        });
+        note.innerHTML = fmt(S.f4campNote, {
+          a: K.acted.length, i: K.inert.length,
+          w: K.inert_worst_pct.toFixed(1) });
+      }
+    }
+    var b = document.createElement("button");
+    b.className = "lg camp";
+    b.style.setProperty("--c", "var(--s4)");
+    b.innerHTML = '<span class="sw"></span>' + S.f4camp;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () {
+      campOn = !campOn;
+      b.classList.toggle("on", campOn);
+      b.setAttribute("aria-pressed", String(campOn));
+      draw();
+      lg.appendChild(b);
     });
-    note.innerHTML = fmt(S.f4unit, { a: S.stock, b: S.ported }) + "<br>" +
-      fmt(S.f4note, { h: F.fig4.hand_forced_32k.toFixed(2),
-                      p: F.fig4.hand_vs_ported_pct.toFixed(1) }) + "<br>" +
-      fmt(S.f4correct, { n: F.fig4.correctness.cases });
+    draw();
+    lg.appendChild(b);
   })();
 
   /* ---------- reveal ---------- */

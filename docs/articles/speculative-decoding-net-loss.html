@@ -858,6 +858,36 @@ one bf16 ULP — at one query row, which is today's shipped behaviour, exactly a
 token-35 divergence was the pre-existing 2D/3D reduction-order reassociation that batch size already
 toggles in production, not a defect of the admission.</p>
 
+<h3>What the patch needs before it can do anything</h3>
+
+<p>Everything above is measured where the Triton unified-attention kernel serves the model. vLLM
+does not always route it there, and where it does not, this patch is installed and idle. The
+<em>same A/B, five times</em> control on Figure 4 draws the five runs that separate the two cases,
+each eleven rungs and two rounds a cell at k=3:</p>
+
+<ul>
+  <li><code>gemma-4-31B-it</code> on an A100, <code>TRITON_ATTN</code>, probe fires once —
+      <b>+45.6 %</b> on average, <b>1.95×</b> at 32K.</li>
+  <li><code>gemma-4-26B-A4B</code> on an A100, <code>TRITON_ATTN</code>, probe once —
+      <b>+48.4 %</b>, <b>1.99×</b> at 32K.</li>
+  <li><code>Qwen3.8-27B</code> on the two Radeons with the kernel pinned by
+      <code>--attention-backend</code>, probe twice, one per tensor-parallel worker —
+      <b>+83.9 %</b>, <b>2.87×</b> at 32K.</li>
+  <li><code>Qwen3.8-27B</code> on the same Radeons as the engine routes it, <code>ROCM_ATTN</code>,
+      probe silent — <b>−1.9 %</b>: the two arms are one measurement taken twice.</li>
+  <li><code>Qwen3.8-27B</code> on an A100 as the engine routes it, <code>FLASH_ATTN</code>, probe
+      silent — <b>−0.08 %</b>. At 32K, 20.51 against 20.52.</li>
+</ul>
+
+<p><strong>The probe says which case you are in before the ladder does.</strong>
+<code>inject_45450.py</code> prints <code>PROBE_3D_SPEC_ACTIVE</code> once per worker process when
+the 3D path serves a step wider than one token, which needs three things at once: the patch
+installed, this kernel on the path, and speculation on. In all five runs the probe and the outcome
+agree — where it printed the patched arm pulled away, where it stayed silent no rung moved by more
+than 8.8 %, which is inside the spread those speculative arms repeat at anyway. So a reader who
+applies this patch and sees a silent log has not mis-applied it. They are on a model the engine
+sends somewhere else, and the fix for them is the backend, not the patch.</p>
+
 <h2><span class="n">6</span>Who reported what</h2>
 
 <p>The same 3D-to-2D drop was reported first, in
@@ -872,9 +902,17 @@ the second trigger, its different cause, and measurements on RDNA3.</p>
 <p>The finding was posted to that thread on 2026-08-01, and on 2026-08-26 to
 <a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of
 the same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer
-sidesteps it, which fits: the collapse is specific to this Triton kernel and an explicit backend
-choice bypasses the forcing. ROCm has no FlashInfer, so on this hardware the remedy is still to gate
-speculation by depth.</p>
+sidesteps it, which fits: the collapse <em>this article traced</em> is specific to this Triton
+kernel, and an explicit backend choice bypasses the forcing. ROCm has no FlashInfer, so on this
+hardware the remedy is still to gate speculation by depth.</p>
+
+<p><strong>What is not specific to this kernel is speculation losing at depth.</strong> Measured on
+2026-08-29, <code>Qwen3.8-27B</code> loses too — on ROCm's <code>ROCM_ATTN</code>, whose backend file
+imports <code>chunked_prefill_paged_decode</code> and none of the files this patch edits, and on
+CUDA's <code>FLASH_ATTN</code>. Neither is this kernel, and on neither does this patch change
+anything. Same sign, different mechanism, and this article does not identify that one. It would be a
+mistake to read those two as more evidence for the argument above; they are evidence that the
+argument above does not cover them.</p>
 
 <h2><span class="n">7</span>What is not established</h2>
 
@@ -1252,6 +1290,419 @@ is what supports it, not either measurement alone.</p>
    "wrote_3d": 18,
    "max_abs_diff": 0.0009765625,
    "bf16_ulp_at_1": 0.00390625
+  },
+  "campaign": {
+   "date": "2026-08-29",
+   "k": 3,
+   "harness": "campaign-server",
+   "runs_per_cell": 2,
+   "pairs": [
+    {
+     "model": "gemma-4-31B-it",
+     "machine": "A100",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 1,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 42.15,
+       "ported": 48.52,
+       "ratio": 1.151058236833427
+      },
+      {
+       "ctx": 1000,
+       "stock": 38.84,
+       "ported": 48.03,
+       "ratio": 1.2365772848735732
+      },
+      {
+       "ctx": 2000,
+       "stock": 38.35,
+       "ported": 47.3,
+       "ratio": 1.2334474692341593
+      },
+      {
+       "ctx": 4000,
+       "stock": 35.31,
+       "ported": 45.75,
+       "ratio": 1.2955254102887241
+      },
+      {
+       "ctx": 6000,
+       "stock": 33.0,
+       "ported": 43.94,
+       "ratio": 1.331699267170575
+      },
+      {
+       "ctx": 8000,
+       "stock": 30.94,
+       "ported": 42.58,
+       "ratio": 1.3763340939796889
+      },
+      {
+       "ctx": 12000,
+       "stock": 27.37,
+       "ported": 40.7,
+       "ratio": 1.487161310361208
+      },
+      {
+       "ctx": 16000,
+       "stock": 24.56,
+       "ported": 38.7,
+       "ratio": 1.5756205791053892
+      },
+      {
+       "ctx": 20000,
+       "stock": 22.27,
+       "ported": 36.61,
+       "ratio": 1.6436239471273864
+      },
+      {
+       "ctx": 24000,
+       "stock": 20.4,
+       "ported": 35.43,
+       "ratio": 1.7372620638091851
+      },
+      {
+       "ctx": 32000,
+       "stock": 17.48,
+       "ported": 34.02,
+       "ratio": 1.9460219310037121
+      }
+     ],
+     "ratio_at_deepest": 1.9460219310037121,
+     "mean_delta_pct": 45.584832670791165,
+     "worst_delta_pct": 94.60219310037121,
+     "acted": true
+    },
+    {
+     "model": "gemma-4-26B-A4B",
+     "machine": "A100",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 1,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 80.77,
+       "ported": 93.3,
+       "ratio": 1.1552025663835697
+      },
+      {
+       "ctx": 1000,
+       "stock": 74.45,
+       "ported": 92.05,
+       "ratio": 1.2363680565955752
+      },
+      {
+       "ctx": 2000,
+       "stock": 72.11,
+       "ported": 91.32,
+       "ratio": 1.2664567433642555
+      },
+      {
+       "ctx": 4000,
+       "stock": 66.71,
+       "ported": 88.1,
+       "ratio": 1.3206332074114049
+      },
+      {
+       "ctx": 6000,
+       "stock": 61.94,
+       "ported": 84.43,
+       "ratio": 1.363036516760965
+      },
+      {
+       "ctx": 8000,
+       "stock": 57.85,
+       "ported": 81.29,
+       "ratio": 1.405264149573551
+      },
+      {
+       "ctx": 12000,
+       "stock": 51.2,
+       "ported": 77.89,
+       "ratio": 1.5212335268062898
+      },
+      {
+       "ctx": 16000,
+       "stock": 45.83,
+       "ported": 73.86,
+       "ratio": 1.6116923486494183
+      },
+      {
+       "ctx": 20000,
+       "stock": 41.48,
+       "ported": 69.67,
+       "ratio": 1.6796002160212546
+      },
+      {
+       "ctx": 24000,
+       "stock": 37.94,
+       "ported": 67.44,
+       "ratio": 1.777382602691349
+      },
+      {
+       "ctx": 32000,
+       "stock": 32.52,
+       "ported": 64.68,
+       "ratio": 1.989022563790298
+      }
+     ],
+     "ratio_at_deepest": 1.989022563790298,
+     "mean_delta_pct": 48.41720452770846,
+     "worst_delta_pct": 98.90225637902981,
+     "acted": true
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "2x RX 7900 XT",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 2,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 67.72,
+       "ported": 75.1,
+       "ratio": 1.1089781453041936
+      },
+      {
+       "ctx": 1000,
+       "stock": 53.27,
+       "ported": 65.56,
+       "ratio": 1.2307114698704713
+      },
+      {
+       "ctx": 2000,
+       "stock": 48.77,
+       "ported": 55.74,
+       "ratio": 1.1429010763710918
+      },
+      {
+       "ctx": 4000,
+       "stock": 48.55,
+       "ported": 59.38,
+       "ratio": 1.2229660144181258
+      },
+      {
+       "ctx": 6000,
+       "stock": 34.11,
+       "ported": 63.99,
+       "ratio": 1.8759894459102902
+      },
+      {
+       "ctx": 8000,
+       "stock": 34.88,
+       "ported": 47.24,
+       "ratio": 1.3541636806650421
+      },
+      {
+       "ctx": 12000,
+       "stock": 23.85,
+       "ported": 50.19,
+       "ratio": 2.1041928721174004
+      },
+      {
+       "ctx": 16000,
+       "stock": 20.18,
+       "ported": 46.56,
+       "ratio": 2.307234886025768
+      },
+      {
+       "ctx": 20000,
+       "stock": 17.14,
+       "ported": 42.86,
+       "ratio": 2.500291715285881
+      },
+      {
+       "ctx": 24000,
+       "stock": 16.08,
+       "ported": 40.27,
+       "ratio": 2.504353233830846
+      },
+      {
+       "ctx": 32000,
+       "stock": 11.84,
+       "ported": 34.02,
+       "ratio": 2.872097931616716
+      }
+     ],
+     "ratio_at_deepest": 2.872097931616716,
+     "mean_delta_pct": 83.85345883105296,
+     "worst_delta_pct": 187.2097931616716,
+     "acted": true
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "2x RX 7900 XT",
+     "attn_backend": "ROCM_ATTN",
+     "probe": 0,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 91.43,
+       "ported": 90.83,
+       "ratio": 0.9934919332786436
+      },
+      {
+       "ctx": 1000,
+       "stock": 64.64,
+       "ported": 68.42,
+       "ratio": 1.0585596039297593
+      },
+      {
+       "ctx": 2000,
+       "stock": 61.22,
+       "ported": 58.18,
+       "ratio": 0.9502654144548797
+      },
+      {
+       "ctx": 4000,
+       "stock": 64.66,
+       "ported": 60.81,
+       "ratio": 0.9404623830511096
+      },
+      {
+       "ctx": 6000,
+       "stock": 58.86,
+       "ported": 59.13,
+       "ratio": 1.0046725002123862
+      },
+      {
+       "ctx": 8000,
+       "stock": 45.12,
+       "ported": 49.09,
+       "ratio": 1.087997340130777
+      },
+      {
+       "ctx": 12000,
+       "stock": 41.72,
+       "ported": 38.42,
+       "ratio": 0.9210210930009587
+      },
+      {
+       "ctx": 16000,
+       "stock": 33.91,
+       "ported": 34.78,
+       "ratio": 1.0256561486287232
+      },
+      {
+       "ctx": 20000,
+       "stock": 34.21,
+       "ported": 32.0,
+       "ratio": 0.935545162233265
+      },
+      {
+       "ctx": 24000,
+       "stock": 28.87,
+       "ported": 26.62,
+       "ratio": 0.9220644267405611
+      },
+      {
+       "ctx": 32000,
+       "stock": 24.34,
+       "ported": 23.09,
+       "ratio": 0.9484387838948234
+      }
+     ],
+     "ratio_at_deepest": 0.9484387838948234,
+     "mean_delta_pct": -1.9256837313101198,
+     "worst_delta_pct": 8.799734013077698,
+     "acted": false
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "A100",
+     "attn_backend": "FLASH_ATTN",
+     "probe": 0,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 41.32,
+       "ported": 41.22,
+       "ratio": 0.997778105871561
+      },
+      {
+       "ctx": 1000,
+       "stock": 40.61,
+       "ported": 40.5,
+       "ratio": 0.9974585474810806
+      },
+      {
+       "ctx": 2000,
+       "stock": 39.35,
+       "ported": 39.21,
+       "ratio": 0.9965438153990814
+      },
+      {
+       "ctx": 4000,
+       "stock": 37.14,
+       "ported": 37.0,
+       "ratio": 0.9963918261398733
+      },
+      {
+       "ctx": 6000,
+       "stock": 34.98,
+       "ported": 34.97,
+       "ratio": 0.9996612504859699
+      },
+      {
+       "ctx": 8000,
+       "stock": 33.19,
+       "ported": 33.21,
+       "ratio": 1.0006162190666315
+      },
+      {
+       "ctx": 12000,
+       "stock": 30.08,
+       "ported": 30.11,
+       "ratio": 1.0010173717895436
+      },
+      {
+       "ctx": 16000,
+       "stock": 27.49,
+       "ported": 27.51,
+       "ratio": 1.000656511649899
+      },
+      {
+       "ctx": 20000,
+       "stock": 25.34,
+       "ported": 25.35,
+       "ratio": 1.000501219502569
+      },
+      {
+       "ctx": 24000,
+       "stock": 23.51,
+       "ported": 23.51,
+       "ratio": 1.0002233534067777
+      },
+      {
+       "ctx": 32000,
+       "stock": 20.51,
+       "ported": 20.52,
+       "ratio": 1.0003729769656253
+      }
+     ],
+     "ratio_at_deepest": 1.0003729769656253,
+     "mean_delta_pct": -0.07980729310352168,
+     "worst_delta_pct": -0.36081738601266844,
+     "acted": false
+    }
+   ],
+   "acted": [
+    "gemma-4-31B-it / TRITON_ATTN",
+    "gemma-4-26B-A4B / TRITON_ATTN",
+    "Qwen3.8-27B / TRITON_ATTN"
+   ],
+   "inert": [
+    "Qwen3.8-27B / ROCM_ATTN",
+    "Qwen3.8-27B / FLASH_ATTN"
+   ],
+   "source": {
+    "radeons": "benchmarks/campaign-2026-08-29/results.jsonl",
+    "a100": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"
+   },
+   "probe_predicts": true,
+   "inert_worst_pct": 8.799734013077698
   }
  },
  "profile": {
@@ -1314,6 +1765,11 @@ is what supports it, not either measurement alone.</p>
  "f4unit": "decode tok/s with MTP on, {a} against {b}",
  "f4note": "the hand-widened experiment reached {h} at 32K, within {p}% of the PR's own number",
  "f4correct": "{n} fixed-input kernel cases, all bit-deterministic, the two paths within one bf16 ULP",
+ "f4camp": "the same A/B, five times",
+ "f4yRatio": "patched ÷ stock, same rung",
+ "f4par": "no difference",
+ "f4probe": "probe fired {n}×",
+ "f4campNote": "2026-08-29 · eleven rungs, two rounds a cell, k=3 · patched against stock in each pair. {a} of the five have the Triton kernel this patch edits on the path and pull away from parity; the other {i} do not, and their arms are the same measurement twice — no rung moves by more than {w}%, inside the spread the speculative arms repeat at. Dashed is a pair where the patch could not act",
  "distStat": "statistic", "distNo": "no speculation", "distMtp": "MTP", "distRatio": "ratio",
  "distMedian": "median", "distP75": "p75", "distMax": "max", "distMean": "mean",
  "distCalls": "{n} calls",
@@ -1601,6 +2057,8 @@ is what supports it, not either measurement alone.</p>
   (function () {
     var svg = document.getElementById("recover"), note = document.getElementById("rcnote");
     var lg = document.getElementById("v4"), R = F.fig4.rows;
+    var K = F.fig4.campaign, campOn = false;
+    var COL = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)", "var(--s5)"];
     function tipFor(key) {
       return function (i) {
         var r = R[i];
@@ -1610,20 +2068,69 @@ is what supports it, not either measurement alone.</p>
           '<span class="sub">' + r.ratio.toFixed(2) + "× between them</span>";
       };
     }
-    window.lineChart({
-      el: svg, reduce: reduce, h: 330,
-      x: { values: R.map(function (r) { return r.ctx; }), label: S.ctxAxis, fmt: kctx },
-      y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
-      legend: lg,
-      series: [{ colour: "var(--s1)", label: S.stock, tip: tipFor("stock"),
-                 values: R.map(function (r) { return r.stock; }) },
-               { colour: "var(--s3)", label: S.ported, tip: tipFor("ported"),
-                 values: R.map(function (r) { return r.ported; }) }]
+    function pairTip(p) {
+      return function (i) {
+        var r = p.rows[i];
+        return '<span class="hd">' + p.model + " · " + kctx(r.ctx) + "</span><br>" +
+          S.stock + " <b>" + r.stock.toFixed(2) + "</b> · " +
+          S.ported + " <b>" + r.ported.toFixed(2) + "</b><br>" +
+          '<span class="sub">' + r.ratio.toFixed(2) + "× · " + p.attn_backend +
+          " · " + fmt(S.f4probe, { n: p.probe }) + "</span>";
+      };
+    }
+    function draw() {
+      if (!campOn) {
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: R.map(function (r) { return r.ctx; }), label: S.ctxAxis, fmt: kctx },
+          y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
+          legend: lg,
+          series: [{ colour: "var(--s1)", label: S.stock, tip: tipFor("stock"),
+                     values: R.map(function (r) { return r.stock; }) },
+                   { colour: "var(--s3)", label: S.ported, tip: tipFor("ported"),
+                     values: R.map(function (r) { return r.ported; }) }]
+        });
+        note.innerHTML = fmt(S.f4unit, { a: S.stock, b: S.ported }) + "<br>" +
+          fmt(S.f4note, { h: F.fig4.hand_forced_32k.toFixed(2),
+                          p: F.fig4.hand_vs_ported_pct.toFixed(1) }) + "<br>" +
+          fmt(S.f4correct, { n: F.fig4.correctness.cases });
+      } else {
+        /* Five of the same A/B rather than ten lines of rates: what the five
+           have to say is whether the patched arm pulls away from the stock one
+           at all, and that is one number a rung. Parity is the rule. */
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
+               ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] },
+          y: { label: S.f4yRatio, min: 0.8,
+               fmt: function (v) { return v.toFixed(1) + "×"; } },
+          legend: lg,
+          rules: [{ y: 1, label: S.f4par, colour: "var(--border-2)" }],
+          series: K.pairs.map(function (p, i) {
+            return { colour: COL[i % COL.length], dash: !p.acted, tip: pairTip(p),
+                     label: p.model + " · " + p.attn_backend,
+                     points: p.rows.map(function (r) { return [r.ctx, r.ratio]; }) };
+          })
+        });
+        note.innerHTML = fmt(S.f4campNote, {
+          a: K.acted.length, i: K.inert.length,
+          w: K.inert_worst_pct.toFixed(1) });
+      }
+    }
+    var b = document.createElement("button");
+    b.className = "lg camp";
+    b.style.setProperty("--c", "var(--s4)");
+    b.innerHTML = '<span class="sw"></span>' + S.f4camp;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () {
+      campOn = !campOn;
+      b.classList.toggle("on", campOn);
+      b.setAttribute("aria-pressed", String(campOn));
+      draw();
+      lg.appendChild(b);
     });
-    note.innerHTML = fmt(S.f4unit, { a: S.stock, b: S.ported }) + "<br>" +
-      fmt(S.f4note, { h: F.fig4.hand_forced_32k.toFixed(2),
-                      p: F.fig4.hand_vs_ported_pct.toFixed(1) }) + "<br>" +
-      fmt(S.f4correct, { n: F.fig4.correctness.cases });
+    draw();
+    lg.appendChild(b);
   })();
 
   /* ---------- reveal ---------- */

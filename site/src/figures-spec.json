@@ -287,6 +287,419 @@
    "wrote_3d": 18,
    "max_abs_diff": 0.0009765625,
    "bf16_ulp_at_1": 0.00390625
+  },
+  "campaign": {
+   "date": "2026-08-29",
+   "k": 3,
+   "harness": "campaign-server",
+   "runs_per_cell": 2,
+   "pairs": [
+    {
+     "model": "gemma-4-31B-it",
+     "machine": "A100",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 1,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 42.15,
+       "ported": 48.52,
+       "ratio": 1.151058236833427
+      },
+      {
+       "ctx": 1000,
+       "stock": 38.84,
+       "ported": 48.03,
+       "ratio": 1.2365772848735732
+      },
+      {
+       "ctx": 2000,
+       "stock": 38.35,
+       "ported": 47.3,
+       "ratio": 1.2334474692341593
+      },
+      {
+       "ctx": 4000,
+       "stock": 35.31,
+       "ported": 45.75,
+       "ratio": 1.2955254102887241
+      },
+      {
+       "ctx": 6000,
+       "stock": 33.0,
+       "ported": 43.94,
+       "ratio": 1.331699267170575
+      },
+      {
+       "ctx": 8000,
+       "stock": 30.94,
+       "ported": 42.58,
+       "ratio": 1.3763340939796889
+      },
+      {
+       "ctx": 12000,
+       "stock": 27.37,
+       "ported": 40.7,
+       "ratio": 1.487161310361208
+      },
+      {
+       "ctx": 16000,
+       "stock": 24.56,
+       "ported": 38.7,
+       "ratio": 1.5756205791053892
+      },
+      {
+       "ctx": 20000,
+       "stock": 22.27,
+       "ported": 36.61,
+       "ratio": 1.6436239471273864
+      },
+      {
+       "ctx": 24000,
+       "stock": 20.4,
+       "ported": 35.43,
+       "ratio": 1.7372620638091851
+      },
+      {
+       "ctx": 32000,
+       "stock": 17.48,
+       "ported": 34.02,
+       "ratio": 1.9460219310037121
+      }
+     ],
+     "ratio_at_deepest": 1.9460219310037121,
+     "mean_delta_pct": 45.584832670791165,
+     "worst_delta_pct": 94.60219310037121,
+     "acted": true
+    },
+    {
+     "model": "gemma-4-26B-A4B",
+     "machine": "A100",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 1,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 80.77,
+       "ported": 93.3,
+       "ratio": 1.1552025663835697
+      },
+      {
+       "ctx": 1000,
+       "stock": 74.45,
+       "ported": 92.05,
+       "ratio": 1.2363680565955752
+      },
+      {
+       "ctx": 2000,
+       "stock": 72.11,
+       "ported": 91.32,
+       "ratio": 1.2664567433642555
+      },
+      {
+       "ctx": 4000,
+       "stock": 66.71,
+       "ported": 88.1,
+       "ratio": 1.3206332074114049
+      },
+      {
+       "ctx": 6000,
+       "stock": 61.94,
+       "ported": 84.43,
+       "ratio": 1.363036516760965
+      },
+      {
+       "ctx": 8000,
+       "stock": 57.85,
+       "ported": 81.29,
+       "ratio": 1.405264149573551
+      },
+      {
+       "ctx": 12000,
+       "stock": 51.2,
+       "ported": 77.89,
+       "ratio": 1.5212335268062898
+      },
+      {
+       "ctx": 16000,
+       "stock": 45.83,
+       "ported": 73.86,
+       "ratio": 1.6116923486494183
+      },
+      {
+       "ctx": 20000,
+       "stock": 41.48,
+       "ported": 69.67,
+       "ratio": 1.6796002160212546
+      },
+      {
+       "ctx": 24000,
+       "stock": 37.94,
+       "ported": 67.44,
+       "ratio": 1.777382602691349
+      },
+      {
+       "ctx": 32000,
+       "stock": 32.52,
+       "ported": 64.68,
+       "ratio": 1.989022563790298
+      }
+     ],
+     "ratio_at_deepest": 1.989022563790298,
+     "mean_delta_pct": 48.41720452770846,
+     "worst_delta_pct": 98.90225637902981,
+     "acted": true
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "2x RX 7900 XT",
+     "attn_backend": "TRITON_ATTN",
+     "probe": 2,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 67.72,
+       "ported": 75.1,
+       "ratio": 1.1089781453041936
+      },
+      {
+       "ctx": 1000,
+       "stock": 53.27,
+       "ported": 65.56,
+       "ratio": 1.2307114698704713
+      },
+      {
+       "ctx": 2000,
+       "stock": 48.77,
+       "ported": 55.74,
+       "ratio": 1.1429010763710918
+      },
+      {
+       "ctx": 4000,
+       "stock": 48.55,
+       "ported": 59.38,
+       "ratio": 1.2229660144181258
+      },
+      {
+       "ctx": 6000,
+       "stock": 34.11,
+       "ported": 63.99,
+       "ratio": 1.8759894459102902
+      },
+      {
+       "ctx": 8000,
+       "stock": 34.88,
+       "ported": 47.24,
+       "ratio": 1.3541636806650421
+      },
+      {
+       "ctx": 12000,
+       "stock": 23.85,
+       "ported": 50.19,
+       "ratio": 2.1041928721174004
+      },
+      {
+       "ctx": 16000,
+       "stock": 20.18,
+       "ported": 46.56,
+       "ratio": 2.307234886025768
+      },
+      {
+       "ctx": 20000,
+       "stock": 17.14,
+       "ported": 42.86,
+       "ratio": 2.500291715285881
+      },
+      {
+       "ctx": 24000,
+       "stock": 16.08,
+       "ported": 40.27,
+       "ratio": 2.504353233830846
+      },
+      {
+       "ctx": 32000,
+       "stock": 11.84,
+       "ported": 34.02,
+       "ratio": 2.872097931616716
+      }
+     ],
+     "ratio_at_deepest": 2.872097931616716,
+     "mean_delta_pct": 83.85345883105296,
+     "worst_delta_pct": 187.2097931616716,
+     "acted": true
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "2x RX 7900 XT",
+     "attn_backend": "ROCM_ATTN",
+     "probe": 0,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 91.43,
+       "ported": 90.83,
+       "ratio": 0.9934919332786436
+      },
+      {
+       "ctx": 1000,
+       "stock": 64.64,
+       "ported": 68.42,
+       "ratio": 1.0585596039297593
+      },
+      {
+       "ctx": 2000,
+       "stock": 61.22,
+       "ported": 58.18,
+       "ratio": 0.9502654144548797
+      },
+      {
+       "ctx": 4000,
+       "stock": 64.66,
+       "ported": 60.81,
+       "ratio": 0.9404623830511096
+      },
+      {
+       "ctx": 6000,
+       "stock": 58.86,
+       "ported": 59.13,
+       "ratio": 1.0046725002123862
+      },
+      {
+       "ctx": 8000,
+       "stock": 45.12,
+       "ported": 49.09,
+       "ratio": 1.087997340130777
+      },
+      {
+       "ctx": 12000,
+       "stock": 41.72,
+       "ported": 38.42,
+       "ratio": 0.9210210930009587
+      },
+      {
+       "ctx": 16000,
+       "stock": 33.91,
+       "ported": 34.78,
+       "ratio": 1.0256561486287232
+      },
+      {
+       "ctx": 20000,
+       "stock": 34.21,
+       "ported": 32.0,
+       "ratio": 0.935545162233265
+      },
+      {
+       "ctx": 24000,
+       "stock": 28.87,
+       "ported": 26.62,
+       "ratio": 0.9220644267405611
+      },
+      {
+       "ctx": 32000,
+       "stock": 24.34,
+       "ported": 23.09,
+       "ratio": 0.9484387838948234
+      }
+     ],
+     "ratio_at_deepest": 0.9484387838948234,
+     "mean_delta_pct": -1.9256837313101198,
+     "worst_delta_pct": 8.799734013077698,
+     "acted": false
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "A100",
+     "attn_backend": "FLASH_ATTN",
+     "probe": 0,
+     "rows": [
+      {
+       "ctx": 500,
+       "stock": 41.32,
+       "ported": 41.22,
+       "ratio": 0.997778105871561
+      },
+      {
+       "ctx": 1000,
+       "stock": 40.61,
+       "ported": 40.5,
+       "ratio": 0.9974585474810806
+      },
+      {
+       "ctx": 2000,
+       "stock": 39.35,
+       "ported": 39.21,
+       "ratio": 0.9965438153990814
+      },
+      {
+       "ctx": 4000,
+       "stock": 37.14,
+       "ported": 37.0,
+       "ratio": 0.9963918261398733
+      },
+      {
+       "ctx": 6000,
+       "stock": 34.98,
+       "ported": 34.97,
+       "ratio": 0.9996612504859699
+      },
+      {
+       "ctx": 8000,
+       "stock": 33.19,
+       "ported": 33.21,
+       "ratio": 1.0006162190666315
+      },
+      {
+       "ctx": 12000,
+       "stock": 30.08,
+       "ported": 30.11,
+       "ratio": 1.0010173717895436
+      },
+      {
+       "ctx": 16000,
+       "stock": 27.49,
+       "ported": 27.51,
+       "ratio": 1.000656511649899
+      },
+      {
+       "ctx": 20000,
+       "stock": 25.34,
+       "ported": 25.35,
+       "ratio": 1.000501219502569
+      },
+      {
+       "ctx": 24000,
+       "stock": 23.51,
+       "ported": 23.51,
+       "ratio": 1.0002233534067777
+      },
+      {
+       "ctx": 32000,
+       "stock": 20.51,
+       "ported": 20.52,
+       "ratio": 1.0003729769656253
+      }
+     ],
+     "ratio_at_deepest": 1.0003729769656253,
+     "mean_delta_pct": -0.07980729310352168,
+     "worst_delta_pct": -0.36081738601266844,
+     "acted": false
+    }
+   ],
+   "acted": [
+    "gemma-4-31B-it / TRITON_ATTN",
+    "gemma-4-26B-A4B / TRITON_ATTN",
+    "Qwen3.8-27B / TRITON_ATTN"
+   ],
+   "inert": [
+    "Qwen3.8-27B / ROCM_ATTN",
+    "Qwen3.8-27B / FLASH_ATTN"
+   ],
+   "source": {
+    "radeons": "benchmarks/campaign-2026-08-29/results.jsonl",
+    "a100": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"
+   },
+   "probe_predicts": true,
+   "inert_worst_pct": 8.799734013077698
   }
  },
  "profile": {

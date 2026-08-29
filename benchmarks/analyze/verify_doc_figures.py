@@ -2371,6 +2371,40 @@ def main():
        1 if PART["fig4"]["correctness"]["max_abs_diff"]
        <= PART["fig4"]["correctness"]["bf16_ulp_at_1"] else 0)
 
+    # --- the same A/B five times, and the probe that predicts which is which --
+    SC = PART["fig4"]["campaign"]
+    ck("spec article, fig4 the campaign ran the A/B five times", "5", len(SC["pairs"]))
+    ck("spec article, and every one of them is eleven rungs", "1",
+       1 if all(len(p["rows"]) == 11 for p in SC["pairs"]) else 0)
+    _by = {(p["model"], p["attn_backend"]): p for p in SC["pairs"]}
+    ck("spec article, gemma-4-31B on Triton gains", "45.6",
+       _by[("gemma-4-31B-it", "TRITON_ATTN")]["mean_delta_pct"], tol=0.05)
+    ck("spec article, and 1.95x at its deepest", "1.95",
+       _by[("gemma-4-31B-it", "TRITON_ATTN")]["ratio_at_deepest"])
+    ck("spec article, gemma-4-26B-A4B on Triton gains", "48.4",
+       _by[("gemma-4-26B-A4B", "TRITON_ATTN")]["mean_delta_pct"], tol=0.05)
+    ck("spec article, and 1.99x at its deepest", "1.99",
+       _by[("gemma-4-26B-A4B", "TRITON_ATTN")]["ratio_at_deepest"])
+    ck("spec article, Qwen3.8 pinned to Triton gains", "83.9",
+       _by[("Qwen3.8-27B", "TRITON_ATTN")]["mean_delta_pct"], tol=0.05)
+    ck("spec article, and 2.87x at its deepest", "2.87",
+       _by[("Qwen3.8-27B", "TRITON_ATTN")]["ratio_at_deepest"])
+    ck("spec article, Qwen3.8 on ROCM_ATTN moves", "-1.9",
+       _by[("Qwen3.8-27B", "ROCM_ATTN")]["mean_delta_pct"], tol=0.05)
+    ck("spec article, Qwen3.8 on FLASH_ATTN moves", "-0.08",
+       _by[("Qwen3.8-27B", "FLASH_ATTN")]["mean_delta_pct"], tol=0.05)
+    # the probe's count is the worker count, and its silence is the prediction
+    ck("spec article, the probe fired once per worker at TP=1", "1",
+       _by[("gemma-4-31B-it", "TRITON_ATTN")]["probe"])
+    ck("spec article, and twice at TP=2", "2",
+       _by[("Qwen3.8-27B", "TRITON_ATTN")]["probe"])
+    ck("spec article, and stayed silent wherever the patch could not act", "0",
+       sum(p["probe"] for p in SC["pairs"] if not p["acted"]))
+    ck("spec article, the probe and the outcome agree in all five", "1",
+       1 if SC["probe_predicts"] else 0)
+    ck("spec article, and no rung moves past 8.8% where it is silent", "8.8",
+       SC["inert_worst_pct"], tol=0.05)
+
     # the profiler block: derived from traces that are not here, and it says so
     ck("spec article, the profile declares itself unreproducible", "1",
        0 if PART["profile"].get("reproducible_from_repo", True) else 1)

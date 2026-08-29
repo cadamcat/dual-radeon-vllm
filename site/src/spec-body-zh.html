@@ -187,6 +187,33 @@ __CHIPS__
 两行、四行同样。第 35 个 token 的分叉是既有的 2D/3D 归约顺序重结合，
 batch size 在生产里本来就会切换它，不是这次准入带来的缺陷。</p>
 
+<h3>这个补丁要先有什么，才谈得上起作用</h3>
+
+<p>上面所有的测量，都发生在 Triton unified-attention kernel 真的在为模型服务的时候。vLLM 并不总把
+模型路由到那里，而在它不路由过去的时候，这个补丁装着，但是闲着。图 4 上那个
+<em>同一组 A/B，做五次</em>的开关，画的就是把两种情形分开的那五次运行，每次十一个档位、每格两轮、k=3：</p>
+
+<ul>
+  <li>A100 上的 <code>gemma-4-31B-it</code>，<code>TRITON_ATTN</code>，探针响一次 ——
+      平均 <b>+45.6 %</b>，32K 上 <b>1.95×</b>。</li>
+  <li>A100 上的 <code>gemma-4-26B-A4B</code>，<code>TRITON_ATTN</code>，探针一次 ——
+      <b>+48.4 %</b>，32K 上 <b>1.99×</b>。</li>
+  <li>两张 Radeon 上的 <code>Qwen3.8-27B</code>，用 <code>--attention-backend</code>
+      把 kernel 钉住，探针响两次（每个张量并行 worker 一次）—— <b>+83.9 %</b>，32K 上 <b>2.87×</b>。</li>
+  <li>同样两张 Radeon，但让引擎自己选，<code>ROCM_ATTN</code>，探针不响 —— <b>−1.9 %</b>：
+      两条臂是同一个测量做了两遍。</li>
+  <li>A100 上让引擎自己选，<code>FLASH_ATTN</code>，探针不响 —— <b>−0.08 %</b>。
+      32K 上是 20.51 对 20.52。</li>
+</ul>
+
+<p><strong>探针比阶梯更早告诉你落在哪一种情形里。</strong><code>inject_45450.py</code> 会在 3D 路径
+真的服务了一个宽于一个 token 的步骤时，每个 worker 进程打印一次
+<code>PROBE_3D_SPEC_ACTIVE</code> —— 这需要三件事同时成立：补丁装了、这个 kernel 在路径上、
+投机开着。五次运行里，探针和结果完全一致：它打印了的，打补丁那条臂就拉开；它沉默的，
+没有任何一档移动超过 8.8 %，而那本来就在那些投机臂自身的重复性散布之内。所以，一个人打了这个补丁
+却看到日志里一片安静，并不是他打错了。他是在一个被引擎送去别处的模型上，而对他来说该换的是后端，
+不是补丁。</p>
+
 <h2><span class="n">6</span>谁报了什么</h2>
 
 <p>同样的 3D 掉 2D 最早由别人报出：
@@ -200,8 +227,15 @@ batch size 在生产里本来就会切换它，不是这次准入带来的缺陷
 <p>2026-08-01 贴到了那个 thread，2026-08-26 贴到了
 <a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a> ——
 CUDA 侧一份同模型同症状的报告。那位报告者确认显式选 FlashInfer 可以绕开它，
-这与机理吻合：塌陷是这个 Triton kernel 特有的，而显式指定后端就绕过了那次强制。
-ROCm 上没有 FlashInfer，所以在这台硬件上办法仍然是按深度决定开不开。</p>
+这与机理吻合：<em>本文追出来的那个</em>塌陷是这个 Triton kernel 特有的，
+而显式指定后端就绕过了那次强制。ROCm 上没有 FlashInfer，所以在这台硬件上办法仍然是按深度决定开不开。</p>
+
+<p><strong>不属于这个 kernel 特有的，是投机在深处亏钱这件事本身。</strong>2026-08-29 测到
+<code>Qwen3.8-27B</code> 同样亏 —— 在 ROCm 的 <code>ROCM_ATTN</code> 上（它的后端文件导入的是
+<code>chunked_prefill_paged_decode</code>，本补丁改的那几个文件一个都没导入），也在 CUDA 的
+<code>FLASH_ATTN</code> 上。两者都不是这个 kernel，而在两者上这个补丁都什么也没改变。
+符号相同，机理不同，而本文没有指认后面那个。把这两条读成上面论证的又一份证据是错的：
+它们恰恰是「上面的论证覆盖不到它们」的证据。</p>
 
 <h2><span class="n">7</span>没有被确立的部分</h2>
 
@@ -315,6 +349,11 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
  "f4unit": "开着 MTP 的解码 tok/s，{a} 对 {b}",
  "f4note": "手工加宽那次实验在 32K 上是 {h}，与该 PR 自己的数字相差不到 {p}%",
  "f4correct": "{n} 个定输入 kernel 用例，全部逐位确定，两条路径相差不超过一个 bf16 ULP",
+ "f4camp": "同一组 A/B，做五次",
+ "f4yRatio": "打补丁 ÷ 未打，同一档位",
+ "f4par": "没有差别",
+ "f4probe": "探针响了 {n} 次",
+ "f4campNote": "2026-08-29 · 十一个档位、每格两轮、k=3 · 每一对都是打补丁对未打。五对里有 {a} 对，这个补丁改的 Triton 内核真在执行路径上，于是离开持平线往上走；另外 {i} 对不在，它们的两条臂是同一个测量做了两遍 —— 没有任何一档移动超过 {w}%，仍在投机臂自身的重复性散布之内。虚线表示补丁在那一对上无从作用",
  "distStat": "统计量", "distNo": "不投机", "distMtp": "MTP", "distRatio": "倍数",
  "distMedian": "中位数", "distP75": "p75", "distMax": "最大", "distMean": "均值",
  "distCalls": "{n} 次调用",
