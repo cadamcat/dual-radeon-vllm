@@ -206,7 +206,8 @@
               color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
               flex-wrap:wrap; align-items:center; gap:.6em; }
   .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
-          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim);
+          white-space:nowrap; }
   .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
   .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
 
@@ -223,6 +224,13 @@
   .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
 
   svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  /* the viewBox scales uniformly, so a narrow figure shrinks the axis text with
+     it. Below the breakpoint the chart keeps a legible size and the box scrolls,
+     which is what .covwrap already does for a wide grid. */
+  @media (max-width:640px){
+    .figbox > svg.chart { min-width:520px; }
+    .figbox:has(> svg.chart) { overflow-x:auto; }
+  }
   .grid line { stroke:var(--border); stroke-width:1; }
   .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
   .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
@@ -495,7 +503,7 @@ window.lineChart = function (opts) {
       var g2 = mk("g", { "class": "rulab" });
       var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
                            "text-anchor": left ? "start" : "end" },
-                 "fill:" + (r.colour || "var(--text-dim)"));
+                 "fill:" + (r.labelColour || "var(--text-dim)"));
       n.textContent = r.label;
       g2.appendChild(n);
       el.appendChild(g2);
@@ -507,16 +515,27 @@ window.lineChart = function (opts) {
     });
 
     ser.forEach(function (s) {
-      var d = "", open = false;
+      var soft = s.dashSegs || [];
+      var firm = "", loose = "", open = false;
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) { open = false; return; }
-        d += (open ? " L" : " M") + X(i) + " " + Y(v);
-        open = true;
+        var here = X(i) + " " + Y(v);
+        if (!open) { firm += " M" + here; open = true; return; }
+        if (soft.indexOf(i - 1) >= 0) {
+          loose += " M" + X(i - 1) + " " + Y(s.values[i - 1]) + " L" + here;
+          firm += " M" + here;
+        } else {
+          firm += " L" + here;
+        }
       });
-      var p = mk("path", { "class": "ln", d: d.trim() },
+      var p = mk("path", { "class": "ln", d: firm.trim() },
                  "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
       el.appendChild(p);
       paths.push(p);
+      if (loose) {
+        el.appendChild(mk("path", { "class": "ln", d: loose.trim() },
+                          "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75"));
+      }
       var dg = [];
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) return;
@@ -623,7 +642,7 @@ addEventListener("DOMContentLoaded", function () {
   <p class="sub">全机最快的模型曾被 15 tok/s 判死刑</p>
   <p class="lede">早先的一次探测给了 <code>torch.compile</code> 二十分钟，等不下去，加上
   <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
-  编译需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
+  引擎初始化需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-model" title="模型" style="--i:1"><b>gemma-4-26B-A4B</b> · 128 专家</span>
@@ -663,7 +682,7 @@ addEventListener("DOMContentLoaded", function () {
 在剩余部分中的占比单独分出来。</p>
 
 <div class="note warn">
-  <span class="lbl">eager 那些数字不在这个仓库里</span>
+  <span class="lbl">eager 的原始输出不在这个仓库里</span>
   下面每一个编译侧的数字都从 <code>benchmarks/results.jsonl</code> 重算。eager 侧不是：
   它们来自一次更早的探测，原始输出从未入库，只以散文形式留在 <code>docs/benchmarks.md</code> 里。
   本文从那份文档里<em>提取</em>它们而不是重新敲一遍，这样两者不会各自漂移；
@@ -692,8 +711,8 @@ MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"�
   <figcaption>
     <b>图 1.</b> 阶梯最短一档上的解码速率，两轮均值，取自
     <code>benchmarks/results.jsonl</code>。斜纹那条是同一个模型在
-    <code>--enforce-eager</code> 下的结果；它画得不一样，因为它是本页唯一一个无法从仓库重算的数字。
-    排序之后，这个 MoE 同时出现在同一张榜的两端。最下面那条混合 SSM
+    <code>--enforce-eager</code> 下的结果；它画得不一样，因为它是这张图里唯一一个无法从仓库重算的值。
+    排序之后，这个 MoE 在同一张榜上既在最前，也靠近最后。最下面那条混合 SSM
     是<a href="w4a16-two-problems.zh.html">另一个有两个成因的故事</a>，
     放在这里只是为了标出整条阶梯的位置。
   </figcaption>

@@ -1,15 +1,11 @@
-<header class="top">
-  <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900 XT</div>
-  <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
-  <p class="sub">The fastest model here was written off at 15 tok/s</p>
-  <p class="lede">An earlier probe gave <code>torch.compile</code> twenty minutes, ran out of patience,
-  added <code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went
-  into this repository's own documents. The compile needs twenty-six minutes. Compiled, the same model
-  is the fastest of five architectures measured on this machine.</p>
-  <div class="meta">
-__CHIPS__
-  </div>
-</header>
+<header class="top"> <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900
+XT</div> <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
+<p class="sub">The fastest model here was written off at 15 tok/s</p> <p class="lede">An earlier
+probe gave <code>torch.compile</code> twenty minutes, ran out of patience, added
+<code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went into
+this repository's own documents. Engine initialisation needs twenty-six minutes. Compiled, the same
+model is the fastest of five architectures measured on this machine.</p> <div class="meta">
+__CHIPS__ </div> </header>
 
 <div class="abstract"> <h3>Abstract</h3> <p>Compiled, a 128-expert MoE decodes at <strong>107.82
 tok/s</strong> at 500 tokens of context and 72.80 at 32000, ahead of every dense model measured here
@@ -42,15 +38,13 @@ loading weights, profiling, allocating the KV cache, <code>torch.compile</code> 
 weight-loading share is recorded separately, which is what lets Figure 2 show that on the two slow
 starts it is not where the time goes. Nothing here isolates Inductor's own share of the remainder.</p>
 
-<div class="note warn">
-  <span class="lbl">The eager numbers are not in this repository</span>
-  Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
-  measurements are not: they come from an earlier probe whose raw output was never committed, and they
-  survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that document
-  rather than restating them, so the two cannot drift apart, but extraction is not the same as
-  recomputation and the figures say so where it applies. The number that decided an architecture verdict
-  is the one with the weakest provenance in this article.
-</div>
+<div class="note warn"> <span class="lbl">The eager raw output is not in this repository</span>
+Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
+measurements are not: they come from an earlier probe whose raw output was never committed, and they
+survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that
+document rather than restating them, so the two cannot drift apart, but extraction is not the same
+as recomputation and the figures say so where it applies. The number that decided an architecture
+verdict is the one with the weakest provenance in this article. </div>
 
 <h2><span class="n">2</span>The verdict that got published</h2>
 
@@ -63,23 +57,16 @@ back by ROCm, and the repository's architecture table read "mediocre, ~15 tok/s"
 like a compile that is not going to finish, and eager is the documented way past it. The step that does
 not survive is the one after: treating what eager then reports as a measurement of the architecture.</p>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · where each architecture ranks at 500 tokens of context
-      <span class="prov yes">recomputable from repo</span>
-      <span class="prov no">eager bar not committed</span></div>
-    <div class="bars" id="rank"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> Decode rate at the shortest rung of the ladder, mean of two rounds, from
-    <code>benchmarks/results.jsonl</code>. The striped bar is the same model under
-    <code>--enforce-eager</code>; it is drawn differently because it is the one number on this page that
-    cannot be recomputed from the repository. Sorted, the MoE appears at both ends of the same list. The
-    hybrid-SSM entry at the bottom is a
-    <a href="w4a16-two-problems.html">different story with two causes of its own</a> and is here only to
-    place the ladder.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · where each
+architecture ranks at 500 tokens of context <span class="prov yes">recomputable from repo</span>
+<span class="prov no">eager bar not committed</span></div> <div class="bars" id="rank"></div> </div>
+<figcaption> <b>Figure 1.</b> Decode rate at the shortest rung of the ladder, mean of two rounds,
+from <code>benchmarks/results.jsonl</code>. The striped bar is the same model under
+<code>--enforce-eager</code>; it is drawn differently because it is the one value in this figure
+that cannot be recomputed from the repository. Sorted, the MoE appears at the top of the same list
+and near the bottom of it. The hybrid-SSM entry at the bottom is a
+<a href="w4a16-two-problems.html">different story with two causes of its own</a> and is here only to
+place the ladder. </figcaption> </figure>
 
 <p>The 12B dense model repeated the mistake independently. An earlier context sweep used
 <code>--enforce-eager</code> to dodge the same compile wall and produced "a flat 15.8 tok/s, independent

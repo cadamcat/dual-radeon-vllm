@@ -206,7 +206,8 @@
               color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
               flex-wrap:wrap; align-items:center; gap:.6em; }
   .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
-          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim);
+          white-space:nowrap; }
   .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
   .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
 
@@ -223,6 +224,13 @@
   .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
 
   svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  /* the viewBox scales uniformly, so a narrow figure shrinks the axis text with
+     it. Below the breakpoint the chart keeps a legible size and the box scrolls,
+     which is what .covwrap already does for a wide grid. */
+  @media (max-width:640px){
+    .figbox > svg.chart { min-width:520px; }
+    .figbox:has(> svg.chart) { overflow-x:auto; }
+  }
   .grid line { stroke:var(--border); stroke-width:1; }
   .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
   .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
@@ -495,7 +503,7 @@ window.lineChart = function (opts) {
       var g2 = mk("g", { "class": "rulab" });
       var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
                            "text-anchor": left ? "start" : "end" },
-                 "fill:" + (r.colour || "var(--text-dim)"));
+                 "fill:" + (r.labelColour || "var(--text-dim)"));
       n.textContent = r.label;
       g2.appendChild(n);
       el.appendChild(g2);
@@ -507,16 +515,27 @@ window.lineChart = function (opts) {
     });
 
     ser.forEach(function (s) {
-      var d = "", open = false;
+      var soft = s.dashSegs || [];
+      var firm = "", loose = "", open = false;
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) { open = false; return; }
-        d += (open ? " L" : " M") + X(i) + " " + Y(v);
-        open = true;
+        var here = X(i) + " " + Y(v);
+        if (!open) { firm += " M" + here; open = true; return; }
+        if (soft.indexOf(i - 1) >= 0) {
+          loose += " M" + X(i - 1) + " " + Y(s.values[i - 1]) + " L" + here;
+          firm += " M" + here;
+        } else {
+          firm += " L" + here;
+        }
       });
-      var p = mk("path", { "class": "ln", d: d.trim() },
+      var p = mk("path", { "class": "ln", d: firm.trim() },
                  "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
       el.appendChild(p);
       paths.push(p);
+      if (loose) {
+        el.appendChild(mk("path", { "class": "ln", d: loose.trim() },
+                          "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75"));
+      }
       var dg = [];
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) return;
@@ -616,21 +635,17 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-<header class="top">
-  <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900 XT</div>
-  <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
-  <p class="sub">The fastest model here was written off at 15 tok/s</p>
-  <p class="lede">An earlier probe gave <code>torch.compile</code> twenty minutes, ran out of patience,
-  added <code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went
-  into this repository's own documents. The compile needs twenty-six minutes. Compiled, the same model
-  is the fastest of five architectures measured on this machine.</p>
-  <div class="meta">
+<header class="top"> <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900
+XT</div> <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
+<p class="sub">The fastest model here was written off at 15 tok/s</p> <p class="lede">An earlier
+probe gave <code>torch.compile</code> twenty minutes, ran out of patience, added
+<code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went into
+this repository's own documents. Engine initialisation needs twenty-six minutes. Compiled, the same
+model is the fastest of five architectures measured on this machine.</p> <div class="meta">
     <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-model" title="model" style="--i:1"><b>gemma-4-26B-A4B</b> · 128 experts</span>
     <span class="chip k-platform" title="platform" style="--i:2">Zen 1 host · <b>8 cores</b></span>
-    <span class="chip k-date" title="date" style="--i:3">measured <b>2026-07-25</b></span>
-  </div>
-</header>
+    <span class="chip k-date" title="date" style="--i:3">measured <b>2026-07-25</b></span> </div> </header>
 
 <div class="abstract"> <h3>Abstract</h3> <p>Compiled, a 128-expert MoE decodes at <strong>107.82
 tok/s</strong> at 500 tokens of context and 72.80 at 32000, ahead of every dense model measured here
@@ -663,15 +678,13 @@ loading weights, profiling, allocating the KV cache, <code>torch.compile</code> 
 weight-loading share is recorded separately, which is what lets Figure 2 show that on the two slow
 starts it is not where the time goes. Nothing here isolates Inductor's own share of the remainder.</p>
 
-<div class="note warn">
-  <span class="lbl">The eager numbers are not in this repository</span>
-  Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
-  measurements are not: they come from an earlier probe whose raw output was never committed, and they
-  survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that document
-  rather than restating them, so the two cannot drift apart, but extraction is not the same as
-  recomputation and the figures say so where it applies. The number that decided an architecture verdict
-  is the one with the weakest provenance in this article.
-</div>
+<div class="note warn"> <span class="lbl">The eager raw output is not in this repository</span>
+Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
+measurements are not: they come from an earlier probe whose raw output was never committed, and they
+survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that
+document rather than restating them, so the two cannot drift apart, but extraction is not the same
+as recomputation and the figures say so where it applies. The number that decided an architecture
+verdict is the one with the weakest provenance in this article. </div>
 
 <h2><span class="n">2</span>The verdict that got published</h2>
 
@@ -684,23 +697,16 @@ back by ROCm, and the repository's architecture table read "mediocre, ~15 tok/s"
 like a compile that is not going to finish, and eager is the documented way past it. The step that does
 not survive is the one after: treating what eager then reports as a measurement of the architecture.</p>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · where each architecture ranks at 500 tokens of context
-      <span class="prov yes">recomputable from repo</span>
-      <span class="prov no">eager bar not committed</span></div>
-    <div class="bars" id="rank"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> Decode rate at the shortest rung of the ladder, mean of two rounds, from
-    <code>benchmarks/results.jsonl</code>. The striped bar is the same model under
-    <code>--enforce-eager</code>; it is drawn differently because it is the one number on this page that
-    cannot be recomputed from the repository. Sorted, the MoE appears at both ends of the same list. The
-    hybrid-SSM entry at the bottom is a
-    <a href="w4a16-two-problems.html">different story with two causes of its own</a> and is here only to
-    place the ladder.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · where each
+architecture ranks at 500 tokens of context <span class="prov yes">recomputable from repo</span>
+<span class="prov no">eager bar not committed</span></div> <div class="bars" id="rank"></div> </div>
+<figcaption> <b>Figure 1.</b> Decode rate at the shortest rung of the ladder, mean of two rounds,
+from <code>benchmarks/results.jsonl</code>. The striped bar is the same model under
+<code>--enforce-eager</code>; it is drawn differently because it is the one value in this figure
+that cannot be recomputed from the repository. Sorted, the MoE appears at the top of the same list
+and near the bottom of it. The hybrid-SSM entry at the bottom is a
+<a href="w4a16-two-problems.html">different story with two causes of its own</a> and is here only to
+place the ladder. </figcaption> </figure>
 
 <p>The 12B dense model repeated the mistake independently. An earlier context sweep used
 <code>--enforce-eager</code> to dodge the same compile wall and produced "a flat 15.8 tok/s, independent

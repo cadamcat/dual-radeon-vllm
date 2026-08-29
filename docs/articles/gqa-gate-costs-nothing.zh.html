@@ -206,7 +206,8 @@
               color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
               flex-wrap:wrap; align-items:center; gap:.6em; }
   .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
-          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim);
+          white-space:nowrap; }
   .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
   .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
 
@@ -223,6 +224,13 @@
   .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
 
   svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  /* the viewBox scales uniformly, so a narrow figure shrinks the axis text with
+     it. Below the breakpoint the chart keeps a legible size and the box scrolls,
+     which is what .covwrap already does for a wide grid. */
+  @media (max-width:640px){
+    .figbox > svg.chart { min-width:520px; }
+    .figbox:has(> svg.chart) { overflow-x:auto; }
+  }
   .grid line { stroke:var(--border); stroke-width:1; }
   .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
   .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
@@ -513,7 +521,7 @@ window.lineChart = function (opts) {
       var g2 = mk("g", { "class": "rulab" });
       var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
                            "text-anchor": left ? "start" : "end" },
-                 "fill:" + (r.colour || "var(--text-dim)"));
+                 "fill:" + (r.labelColour || "var(--text-dim)"));
       n.textContent = r.label;
       g2.appendChild(n);
       el.appendChild(g2);
@@ -525,16 +533,27 @@ window.lineChart = function (opts) {
     });
 
     ser.forEach(function (s) {
-      var d = "", open = false;
+      var soft = s.dashSegs || [];
+      var firm = "", loose = "", open = false;
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) { open = false; return; }
-        d += (open ? " L" : " M") + X(i) + " " + Y(v);
-        open = true;
+        var here = X(i) + " " + Y(v);
+        if (!open) { firm += " M" + here; open = true; return; }
+        if (soft.indexOf(i - 1) >= 0) {
+          loose += " M" + X(i - 1) + " " + Y(s.values[i - 1]) + " L" + here;
+          firm += " M" + here;
+        } else {
+          firm += " L" + here;
+        }
       });
-      var p = mk("path", { "class": "ln", d: d.trim() },
+      var p = mk("path", { "class": "ln", d: firm.trim() },
                  "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
       el.appendChild(p);
       paths.push(p);
+      if (loose) {
+        el.appendChild(mk("path", { "class": "ln", d: loose.trim() },
+                          "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75"));
+      }
       var dg = [];
       s.values.forEach(function (v, i) {
         if (v === null || v === undefined) return;

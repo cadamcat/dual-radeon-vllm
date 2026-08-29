@@ -5,7 +5,7 @@
   <p class="sub">全机最快的模型曾被 15 tok/s 判死刑</p>
   <p class="lede">早先的一次探测给了 <code>torch.compile</code> 二十分钟，等不下去，加上
   <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
-  编译需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
+  引擎初始化需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -42,7 +42,7 @@ __CHIPS__
 在剩余部分中的占比单独分出来。</p>
 
 <div class="note warn">
-  <span class="lbl">eager 那些数字不在这个仓库里</span>
+  <span class="lbl">eager 的原始输出不在这个仓库里</span>
   下面每一个编译侧的数字都从 <code>benchmarks/results.jsonl</code> 重算。eager 侧不是：
   它们来自一次更早的探测，原始输出从未入库，只以散文形式留在 <code>docs/benchmarks.md</code> 里。
   本文从那份文档里<em>提取</em>它们而不是重新敲一遍，这样两者不会各自漂移；
@@ -71,8 +71,8 @@ MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"�
   <figcaption>
     <b>图 1.</b> 阶梯最短一档上的解码速率，两轮均值，取自
     <code>benchmarks/results.jsonl</code>。斜纹那条是同一个模型在
-    <code>--enforce-eager</code> 下的结果；它画得不一样，因为它是本页唯一一个无法从仓库重算的数字。
-    排序之后，这个 MoE 同时出现在同一张榜的两端。最下面那条混合 SSM
+    <code>--enforce-eager</code> 下的结果；它画得不一样，因为它是这张图里唯一一个无法从仓库重算的值。
+    排序之后，这个 MoE 在同一张榜上既在最前，也靠近最后。最下面那条混合 SSM
     是<a href="w4a16-two-problems.zh.html">另一个有两个成因的故事</a>，
     放在这里只是为了标出整条阶梯的位置。
   </figcaption>

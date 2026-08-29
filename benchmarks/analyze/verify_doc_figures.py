@@ -2030,9 +2030,9 @@ def main():
                1 if fl(h) in flat[fn] else 0)
     # and both say that the number the verdict came from is the uncommitted one
     for fn, phrase in (("moe-written-off-by-eager.html",
-                        "The eager numbers are not in this repository"),
+                        "The eager raw output is not in this repository"),
                        ("moe-written-off-by-eager.zh.html",
-                        "eager 那些数字不在这个仓库里")):
+                        "eager 的原始输出不在这个仓库里")):
         ck(f"moe article {fn}, discloses the eager provenance", "1",
            1 if fl(phrase) in flat[fn] else 0)
 

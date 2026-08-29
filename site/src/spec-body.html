@@ -140,24 +140,17 @@ context, and a backend without the guard should not. <code>gemma-4</code> has he
 dimensions, so vLLM forces <code>TRITON_ATTN</code> whenever FA4 is unavailable — and an A100 has no
 FA4. That makes the prediction testable for the price of an hour of rented time.</p>
 
-<figure class="rv" id="fig3">
-  <div class="figbox">
-    <div class="figtitle">Figure 3 · the same model on one A100 80G
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v3"></div>
-    <svg class="chart" id="vendor" role="img"></svg>
-    <div class="barunit" id="vnote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 3.</b> From <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>, vLLM 0.28.0,
-    <strong>one run per cell</strong> — a probe, not a campaign. The grey mark is this machine's −70.8 %
-    at 32K, for scale. On the forced default MTP is a net loss that deepens with depth; on FlashInfer the
-    same MTP is positive at 30K, and the residual −8.7 % at 50K is drafter economics rather than the
-    pathological drop. The two 30K FlashInfer figures come from different Colab VMs with an identical
-    stack; every other ratio here is computed within one session, and the 50K quartet is entirely one
-    session.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · the same model
+on one A100 80G <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v3"></div> <svg class="chart" id="vendor" role="img"></svg>
+<div class="barunit" id="vnote"></div> </div> <figcaption> <b>Figure 3.</b> From
+<code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>, vLLM 0.28.0, <strong>one run per
+cell</strong> — a probe, not a campaign. The grey mark is this machine's −70.8 % at 32K, for scale.
+On the forced default, MTP is a net loss that deepens with depth; on FlashInfer the same MTP is
+positive at 30K, and the residual −8.7 % at 50K is drafter economics rather than the pathological
+drop. The two 30K FlashInfer figures come from different Colab VMs with an identical stack; every
+other ratio here is computed within one session, and the 50K quartet is entirely one session.
+</figcaption> </figure>
 
 <h2><span class="n">5</span>What the path is worth once speculation is let back in</h2>
 
@@ -171,27 +164,20 @@ stalled with merge conflicts, is the shape that paragraph asked for: the gate be
 <code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded, and the segment buffers
 are sized per token.</p>
 
-<figure class="rv" id="fig4">
-  <div class="figbox">
-    <div class="figtitle">Figure 4 · the same ladder through vllm#45450's admission
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v4"></div>
-    <svg class="chart" id="recover" role="img"></svg>
-    <div class="barunit" id="rcnote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 4.</b> Stock against the PR's mechanism, both with MTP on, same machine and session.
-    Speculation is net-positive at every depth tried, against the no-speculation baseline in Figure 1.
-    The hand-widened experiment lands 0.5 % from the PR's own number at 32K, which is what says the two
-    are doing the same thing.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig4"> <div class="figbox"> <div class="figtitle">Figure 4 · the same ladder
+through vllm#45450's admission <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v4"></div> <svg class="chart" id="recover" role="img"></svg>
+<div class="barunit" id="rcnote"></div> </div> <figcaption> <b>Figure 4.</b> Stock against the PR's
+mechanism, both with MTP on, same machine and session. The #45450 path is net-positive at every
+depth tried, against the no-speculation baseline in Figure 1; the stock path is not, below it at all
+three long depths. The hand-widened experiment lands 0.5 % from the PR's own number at 32K, which is
+evidence that the two are doing the same thing. </figcaption> </figure>
 
-<p>The divergence question is settled too. A fixed-input comparison at the kernel level, 18 cases, shows
-each path individually bit-deterministic and the two differing by at most one bf16 ULP — at one query
-row, which is today's shipped behaviour, exactly as at two and four. The token-35 divergence was the
-pre-existing 2D/3D reduction-order reassociation that batch size already toggles in production, not a
-defect of the admission.</p>
+<p>The divergence question is settled too. A fixed-input comparison at the kernel level, 18 cases,
+shows each path bit-deterministic across the 18 fixed-input cases and the two differing by at most
+one bf16 ULP — at one query row, which is today's shipped behaviour, exactly as at two and four. The
+token-35 divergence was the pre-existing 2D/3D reduction-order reassociation that batch size already
+toggles in production, not a defect of the admission.</p>
 
 <h2><span class="n">6</span>Who reported what</h2>
 
@@ -301,21 +287,21 @@ is what supports it, not either measurement alone.</p>
  "f2zero": "free",
  "f1unit": "per cent, MTP against no speculation at the same depth",
  "f1rateUnit": "decode tok/s · one process per cell",
- "f1repeat": "the MTP arm re-measured five weeks later: 1K differs {a}%, 8K–32K within {b}%",
+ "f1repeat": "the MTP arm re-measured five weeks later: 1K differs {a}%, 8K–32K agree to {b}% at two places",
  "f1cross": "monotonic across four depths, and it crosses zero between 1K and 8K",
  "grid2d": "2D, what speculation gets",
  "grid3d": "3D, what decode needs",
  "gridUnit": "workgroups",
  "sweepA": "construction A", "sweepB": "construction B",
  "f2unit": "two query rows against one, same sweep, per cent",
- "f2note": "at 32K the difference is {a}% and {b}% · across all four query lengths the spread is under {c}%",
+ "f2note": "at 32K the difference is {a}% and {b}% · across all four query lengths the spread is about {c}%",
  "qlen": "q={n}",
  "f3unit": "per cent, MTP against no speculation on the same backend and depth",
  "f3ref": "this machine at 32K",
  "f3note": "{g} · vLLM {v} · one run per cell",
  "stock": "stock", "ported": "with #45450",
  "f4unit": "decode tok/s with MTP on, {a} against {b}",
- "f4note": "the hand-widened experiment reached {h} at 32K, {p}% from the PR's own number",
+ "f4note": "the hand-widened experiment reached {h} at 32K, within {p}% of the PR's own number",
  "f4correct": "{n} fixed-input kernel cases, all bit-deterministic, the two paths within one bf16 ULP",
  "distStat": "statistic", "distNo": "no speculation", "distMtp": "MTP", "distRatio": "ratio",
  "distMedian": "median", "distP75": "p75", "distMax": "max", "distMean": "mean",
@@ -450,8 +436,13 @@ is what supports it, not either measurement alone.</p>
           el: svg, reduce: reduce, h: 330,
           x: { values: xs, label: S.ctxAxis, fmt: kctx },
           y: { label: S.yDelta, fmt: function (v) { return v.toFixed(0) + "%"; } },
-          rules: [{ y: 0, label: S.f1zero, colour: "var(--border-2)" }],
+          rules: [{ y: 0, label: S.f1zero, colour: "var(--border-2)",
+                   labelColour: "var(--text-dim)" }],
           series: [{ colour: "var(--accent)", tip: tipFor,
+                     // the sign changes inside this segment and the depth at
+                     // which it does was never measured, so the line does not
+                     // draw it as though it had been
+                     dashSegs: [0],
                      values: R.map(function (r) { return r.delta_pct; }) }]
         });
         note.innerHTML = S.f1cross + "<br>" + S.f1unit;
@@ -511,7 +502,8 @@ is what supports it, not either measurement alone.</p>
       el: svg, reduce: reduce, h: 320,
       x: { values: xs, label: S.kvAxis, fmt: kctx },
       y: { label: S.yDelta, fmt: function (v) { return v.toFixed(0) + "%"; } },
-      rules: [{ y: 0, label: S.f2zero, at: "left", colour: "var(--border-2)" }],
+      rules: [{ y: 0, label: S.f2zero, at: "left", colour: "var(--border-2)",
+                labelColour: "var(--text-dim)" }],
       legend: document.getElementById("v2"),
       series: [series(SW[0], "var(--s2)", S.sweepA), series(SW[1], "var(--s4)", S.sweepB)]
     });
@@ -571,7 +563,12 @@ is what supports it, not either measurement alone.</p>
                    S.nospec + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
                    S.mtp + " <b>" + c.mtp.toFixed(2) + "</b> tok/s<br>" +
                    '<span class="sub">session ' + c.session + "</span>";
-               }, label: cells[0] ? cells[0].label : bk };
+               },
+               // a backend measured at one depth says so in the key rather than
+               // looking like a line that failed to draw
+               label: (cells[0] ? cells[0].label : bk) +
+                 (cells.indexOf(null) < 0 ? "" : " · " +
+                  xs.filter(function (_, i) { return cells[i]; }).map(kctx).join(", ")) };
     });
     window.lineChart({
       el: svg, reduce: reduce, h: 330,
