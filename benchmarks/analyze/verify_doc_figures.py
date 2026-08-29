@@ -3056,8 +3056,9 @@ def main():
     ck("index, the date a record sorts by is its last one", "0",
        sum(1 for a in AJ if a.get("date") != max(a.get("dates") or [""])))
     ck("index, every record carries both languages", "0",
-       sum(1 for a in AJ for f in ("title", "blurb", "establishes", "href")
-           if sorted(a.get(f) or {}) != ["en", "zh"]))
+       sum(1 for a in AJ for f in ("title", "blurb", "establishes", "href", "sub")
+           if sorted(a.get(f) or {}) != ["en", "zh"]
+           or not all((a.get(f) or {}).values())))
 
     # the one-line summary is the synthesis article's own classification of that
     # finding, not a second description written for the index
@@ -3100,6 +3101,12 @@ def main():
         ck("article %s, every chip value reaches both versions" % a["slug"], "0",
            sum(1 for g in got for i, c in enumerate(want) for v in c.get("v", [])
                if i >= len(g) or v not in g[i][1]))
+        # the title now says what was found and the old one is the subtitle, so
+        # the subtitle is prose the index quotes off the page rather than a
+        # second copy of it
+        ck("article %s, the subtitle on the page is the one the index prints" % a["slug"], "2",
+           sum(1 for lg, fn in zip(("en", "zh"), pr)
+               if '<p class="sub">%s</p>' % (a.get("sub") or {}).get(lg) in XPAGES[fn]))
 
     # --- the index pages are a language pair like any other ------------------
     XIP = ["index.html", "index.zh.html"]

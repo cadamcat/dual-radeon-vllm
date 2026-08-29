@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · KFD · HMM · 实测于 2× RX 7900 XT</div>
-  <h1>加载权重比磁盘还慢，<br>而且慢了两次</h1>
+  <h1>只读的拷贝去申请写权限，<br>而某个内核为此每次多收一秒</h1>
+  <p class="sub">加载权重比磁盘还慢，而且慢了两次</p>
   <p class="lede">一个 9.56 GiB 的 checkpoint，磁盘大约六秒就能交出来，实际用了
   <strong>328 秒</strong>。两个彼此独立的原因：一个权限 bug，让 GPU 去要它并不需要的写权限 ——
   AMD 已确认并定位到内核某一行，今天依然存在；另一个是发行版的 backport，

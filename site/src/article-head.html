@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */

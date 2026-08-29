@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loading weights was slower than the disk, twice over</title>
+<title>A read-only copy asks for write access, and one kernel charged a second for it</title>
 <meta name="description" content="A permission read off the VMA makes every host-to-device copy break copy-on-write, and a split kernel backport turned each occurrence into a one-second timeout. Two effects, one reproducer, three kernel states.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -368,7 +373,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div>
-  <h1>Loading weights was slower<br>than the disk, twice over</h1>
+  <h1>A read-only copy asks for write access,<br>and one kernel charged a second for it</h1>
+  <p class="sub">Loading weights was slower than the disk, twice over</p>
   <p class="lede">A 9.56 GiB checkpoint that the disk hands over in about six seconds took
   <strong>328</strong>. Two independent things were responsible: a permission bug that makes the GPU ask
   for write access it does not need, confirmed by AMD down to a kernel line and still present today; and

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How much of this is RDNA3 being second-class</title>
+<title>Three of eight findings are RDNA3's, and measuring another vendor removed two</title>
 <meta name="description" content="Eight findings sorted by what the evidence supports. Three are architecture-specific, one is AMD-wide, two were proved vendor-neutral by measuring another vendor, and one is not about the GPU at all.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -402,7 +407,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">synthesis · RDNA3 · ROCm · vLLM</div>
-  <h1>How much of this is<br>RDNA3 being second-class</h1>
+  <h1>Three of eight findings are RDNA3's,<br>and measuring another vendor removed two</h1>
+  <p class="sub">How much of this is RDNA3 being second-class</p>
   <p class="lede">This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel
   ecosystem, and eight write-ups sit under that heading. Sorting them by what the evidence actually
   supports, <strong>three of the eight are that</strong>. The rest are AMD-wide, vendor-neutral, or not
@@ -615,7 +621,7 @@ it stood.</p>
   "findings": [
    {
     "slug": "hybrid-ssm-collapse",
-    "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
+    "title": "One kernel accounts for the whole 12.1 to 4.2 tok/s fall",
     "axis": "rdna3",
     "mechanism": "the few full-attention layers fall off the ROCm paged-attention fast path",
     "magnitude": 2.851764705882353,
@@ -625,14 +631,14 @@ it stood.</p>
      "vllm#45916",
      "vllm#50264"
     ],
-    "title_zh": "一个上下文越长解码越慢的混合 SSM 模型",
+    "title_zh": "一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑",
     "mechanism_zh": "少数几层全注意力掉出了 ROCm paged-attention 的快路径",
     "unit_zh": "×，从 500 到 32K token 损失的倍数",
     "why_zh": "修好它的 split-KV 兜底是专门为 gfx11 加的；这条路径在别处早就有"
    },
    {
     "slug": "w4a16-two-problems",
-    "title": "Twelve tokens a second was two problems",
+    "title": "A flat 60 ms per step, under a cost that grows with context",
     "axis": "rdna3",
     "mechanism": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
     "magnitude": 3.240640785380657,
@@ -641,14 +647,14 @@ it stood.</p>
     "upstream": [
      "vllm#40977"
     ],
-    "title_zh": "12 tok/s 是两个问题",
+    "title_zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面",
     "mechanism_zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel",
     "unit_zh": "×，1K 上对称与非对称打包之比",
     "why_zh": "十二种非对称配置里有八种在 gfx1100 上至今没有任何 kernel"
    },
    {
     "slug": "gqa-gate-costs-nothing",
-    "title": "A gate that costs 2 to 7 times and buys nothing",
+    "title": "The excluded kernel wins all sixty cells, and the two bands overlap",
     "axis": "rdna3",
     "mechanism": "the gfx11 branch requires gqa_ratio >= 3; the CDNA branch of the same function requires >= 1",
     "magnitude": 7.397910508596247,
@@ -658,14 +664,14 @@ it stood.</p>
      "vllm#54210",
      "vllm#50603"
     ],
-    "title_zh": "一道 2–7 倍的门，什么也没换来",
+    "title_zh": "被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠",
     "mechanism_zh": "gfx11 分支要求 gqa_ratio >= 3，同一函数的 CDNA 分支只要求 >= 1",
     "unit_zh": "×，被排除区间在 kernel 层面的最好情况",
     "why_zh": "一行代码、一种架构，而给出的理由在这里不成立"
    },
    {
     "slug": "weight-loading-19x",
-    "title": "Loading weights was slower than the disk, twice over",
+    "title": "A read-only copy asks for write access, and one kernel charged a second for it",
     "axis": "amd",
     "mechanism": "KFD reads the access mode off the VMA, so a read-only copy asks for write and breaks copy-on-write",
     "magnitude": 7.533617021276595,
@@ -675,14 +681,14 @@ it stood.</p>
      "ROCm#6523",
      "vllm#49991"
     ],
-    "title_zh": "加载权重比磁盘还慢，而且慢了两次",
+    "title_zh": "只读的拷贝去申请写权限，而某个内核为此每次多收一秒",
     "mechanism_zh": "KFD 从 VMA 读访问模式，于是只读的拷贝也要写权限，破坏了 copy-on-write",
     "unit_zh": "×，在一个装不进内存的 checkpoint 上",
     "why_zh": "kfd_svm.c 不是架构特定的，AMD 也这么确认了"
    },
    {
     "slug": "moe-written-off-by-eager",
-    "title": "The fastest model here was written off at 15 tok/s",
+    "title": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
     "axis": "neutral",
     "mechanism": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
     "magnitude": 7.188,
@@ -692,14 +698,14 @@ it stood.</p>
      "vllm#53891",
      "vllm#53892"
     ],
-    "title_zh": "全机最快的模型曾被 15 tok/s 判死刑",
+    "title_zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论",
     "mechanism_zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉",
     "unit_zh": "×，本机上 eager 与编译之比",
     "why_zh": "这条赋值在 env_override.py 里，每个平台都会执行"
    },
    {
     "slug": "speculative-decoding-net-loss",
-    "title": "One boolean costs 71% on a Radeon and 61% on an A100",
+    "title": "Speculation's second query row costs 120 of 128 workgroups",
     "axis": "neutral",
     "mechanism": "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8",
     "magnitude": 3.4248587570621467,
@@ -709,28 +715,28 @@ it stood.</p>
      "vllm#45450",
      "vllm#48076"
     ],
-    "title_zh": "一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%",
+    "title_zh": "投机的第二行 query，要付掉 128 个 workgroup 里的 120 个",
     "mechanism_zh": "max_seqlen_q > 1 把 Triton 注意力 kernel 从 128 个 workgroup 降到 8 个",
     "unit_zh": "×，32K 上开投机比不开慢",
     "why_zh": "在 A100 上也测了，同一个 kernel 在 50K 上损失 61%"
    },
    {
     "slug": "a100-vs-two-radeons",
-    "title": "Two consumer Radeons against one A100",
+    "title": "The gap to an A100 is U-shaped, and both ends are about the split",
     "axis": "tp",
     "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
     "magnitude": 2.1265703912797864,
     "unit": "x worse retention on two cards than on one",
     "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
     "upstream": [],
-    "title_zh": "两张消费级 Radeon 对一张 A100",
+    "title_zh": "与 A100 的差距是 U 形的，而两端都关于把工作拆开",
     "mechanism_zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半",
     "unit_zh": "×，两卡的保持率比单卡差",
     "why_zh": "这是拆分工作的性质，不是硅片的；单张 A100 跑的是同一个 kernel"
    },
    {
     "slug": "rccl-atomics-hostcall",
-    "title": "The RCCL crash was never about RCCL",
+    "title": "No PCIe atomics, no hostcall buffer, and every collective fails at dispatch",
     "axis": "platform",
     "mechanism": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
     "magnitude": null,
@@ -739,7 +745,7 @@ it stood.</p>
     "upstream": [
      "ROCm#6520"
     ],
-    "title_zh": "RCCL 崩溃从来不是 RCCL 的问题",
+    "title_zh": "没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败",
     "mechanism_zh": "没有 PCIe AtomicOps 就没有 hostcall buffer，dispatch 被拒",
     "unit_zh": "每一次集合通信都在 dispatch 处失败",
     "why_zh": "别人在裸机上复现了；触发条件是 root port，不是 GPU"

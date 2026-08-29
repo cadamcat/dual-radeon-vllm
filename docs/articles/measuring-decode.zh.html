@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>在这样一台机器上怎么测 decode</title>
+<title>两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %</title>
 <meta name="description" content="两套 harness 吻合到 0.44%，但前提是机器已经热了：四次相同运行里的第一次低了 31%。为什么每个点都带 run 数和极差，以及为什么报极差而不是标准差。">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -382,7 +387,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">方法学 · 解码吞吐 · 2× RX 7900 XT</div>
-  <h1>在这样一台机器上<br>怎么测 decode</h1>
+  <h1>两套 harness 吻合到 0.44 %，<br>而四次运行里的第一次低了 31 %</h1>
+  <p class="sub">在这样一台机器上怎么测 decode</p>
   <p class="lede">这个仓库里有两套 harness 都会产出解码数字，而任何把两者放在一张图上的做法，
   都需要它们之间的差异是一个数，而不是一个假设。它是 <strong>0.44 %</strong> —— 前提是机器已经热了。
   搞清楚这一点花了四次相同的运行，其中第一次低了 <strong>31 %</strong>。</p>

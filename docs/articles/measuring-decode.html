@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How to measure decode on a machine like this</title>
+<title>Two harnesses agree to 0.44 %, and the first of four runs read 31 % low</title>
 <meta name="description" content="Two harnesses agree to 0.44%, but only once the machine is warm: the first of four identical runs read 31% low. Why every point carries its run count and range, and why the range rather than a standard deviation.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -381,7 +386,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">methodology · decode throughput · 2× RX 7900 XT</div>
-  <h1>How to measure decode<br>on a machine like this</h1>
+  <h1>Two harnesses agree to 0.44 %,<br>and the first of four runs read 31 % low</h1>
+  <p class="sub">How to measure decode on a machine like this</p>
   <p class="lede">Two harnesses in this repository produce decode figures, and charts that pool them
   need the difference to be a number rather than an assumption. It is <strong>0.44 %</strong> — once the
   machine is warm. Finding that out took four identical runs, the first of which read

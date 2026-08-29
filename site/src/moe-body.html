@@ -1,6 +1,7 @@
 <header class="top">
   <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900 XT</div>
-  <h1>The fastest model here<br>was written off at 15 tok/s</h1>
+  <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
+  <p class="sub">The fastest model here was written off at 15 tok/s</p>
   <p class="lede">An earlier probe gave <code>torch.compile</code> twenty minutes, ran out of patience,
   added <code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went
   into this repository's own documents. The compile needs twenty-six minutes. Compiled, the same model

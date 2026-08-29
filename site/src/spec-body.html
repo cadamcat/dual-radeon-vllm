@@ -1,6 +1,7 @@
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · speculative decoding · measured on 2× RX 7900 XT and one A100</div>
-  <h1>One boolean costs 71 %<br>on a Radeon and 61 % on an A100</h1>
+  <h1>Speculation's second query row<br>costs 120 of 128 workgroups</h1>
+  <p class="sub">One boolean costs 71 % on a Radeon and 61 % on an A100</p>
   <p class="lede">Turning on vLLM's own documented MTP assistant makes <code>gemma-4-31B</code> decode
   36.9 % <em>faster</em> at 1K of context and 70.8 % <em>slower</em> at 32K. The cause is not the
   drafter, not the hardware and not the acceptance rate: speculation sets <code>max_seqlen_q = 2</code>,

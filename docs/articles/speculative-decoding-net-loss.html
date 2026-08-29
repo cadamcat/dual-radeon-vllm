@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>One boolean costs 71% on a Radeon and 61% on an A100</title>
+<title>Speculation's second query row costs 120 of 128 workgroups</title>
 <meta name="description" content="Speculative decoding is +36.9% at 1K of context and -70.8% at 32K, because max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8. Measured on two vendors.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -380,7 +385,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · speculative decoding · measured on 2× RX 7900 XT and one A100</div>
-  <h1>One boolean costs 71 %<br>on a Radeon and 61 % on an A100</h1>
+  <h1>Speculation's second query row<br>costs 120 of 128 workgroups</h1>
+  <p class="sub">One boolean costs 71 % on a Radeon and 61 % on an A100</p>
   <p class="lede">Turning on vLLM's own documented MTP assistant makes <code>gemma-4-31B</code> decode
   36.9 % <em>faster</em> at 1K of context and 70.8 % <em>slower</em> at 32K. The cause is not the
   drafter, not the hardware and not the acceptance rate: speculation sets <code>max_seqlen_q = 2</code>,

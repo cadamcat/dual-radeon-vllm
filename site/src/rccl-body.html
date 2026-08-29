@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · RCCL · ROCm · measured on 2× RX 7900 XT</div>
-  <h1>The RCCL crash was never<br>about RCCL</h1>
+  <h1>No PCIe atomics, no hostcall buffer,<br>and every collective fails at dispatch</h1>
+  <p class="sub">The RCCL crash was never about RCCL</p>
   <p class="lede">Two Radeons, <code>--tensor-parallel-size 2</code>, and a message that sends everyone
   to the wrong layer: <code>the operation cannot be performed in the present state</code>. Thirteen
   hypotheses, twelve of them wrong, and a fix that for virtual machines turns out to be one line of

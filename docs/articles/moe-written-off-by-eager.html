@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The fastest model here was written off at 15 tok/s</title>
+<title>Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way</title>
 <meta name="description" content="A 128-expert MoE recorded at 15 tok/s under --enforce-eager decodes at 107.8 compiled. The flag also fabricated an asymmetric power draw and a context-independent rate, both read as architecture.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -375,7 +380,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900 XT</div>
-  <h1>The fastest model here<br>was written off at 15 tok/s</h1>
+  <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
+  <p class="sub">The fastest model here was written off at 15 tok/s</p>
   <p class="lede">An earlier probe gave <code>torch.compile</code> twenty minutes, ran out of patience,
   added <code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went
   into this repository's own documents. The compile needs twenty-six minutes. Compiled, the same model

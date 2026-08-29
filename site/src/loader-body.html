@@ -1,6 +1,7 @@
 <header class="top">
   <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div>
-  <h1>Loading weights was slower<br>than the disk, twice over</h1>
+  <h1>A read-only copy asks for write access,<br>and one kernel charged a second for it</h1>
+  <p class="sub">Loading weights was slower than the disk, twice over</p>
   <p class="lede">A 9.56 GiB checkpoint that the disk hands over in about six seconds took
   <strong>328</strong>. Two independent things were responsible: a permission bug that makes the GPU ask
   for write access it does not need, confirmed by AMD down to a kernel line and still present today; and

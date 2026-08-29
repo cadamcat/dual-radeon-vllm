@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>一个上下文越长解码越慢的混合 SSM 模型</title>
+<title>一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑</title>
 <meta name="description" content="Qwen3.6-27B 在 2× RX 7900 XT 上，上下文从 500 到 32000 token，解码由 12.1 掉到 4.2 tok/s。归因、机理、对照，以及上游修复的实测。">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -321,7 +326,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · 实测于 2× RX 7900 XT</div>
-  <h1>一个上下文越长<br>解码越慢的混合 SSM 模型</h1>
+  <h1>一个 kernel 就解释了<br>12.1 到 4.2 tok/s 的全部下滑</h1>
+  <p class="sub">一个上下文越长解码越慢的混合 SSM 模型</p>
   <p class="lede">线性注意力本该让长上下文变便宜。在这台机器上，<code>Qwen3.6-27B</code> 从 500 token 到 32 000 token
   由 12.1 掉到 4.2 tok/s，而同一个下午测的稠密 8B 保住了 77 % 的短上下文速率。问题不在那 48 层线性注意力。
   在剩下的 16 层。</p>

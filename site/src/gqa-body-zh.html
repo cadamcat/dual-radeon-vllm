@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · paged attention · vLLM · 实测于 2× RX 7900 XT</div>
-  <h1>一道 2 到 7 倍的门，<br>什么也没换来</h1>
+  <h1>被排除的 kernel 在六十个格子里全赢，<br>而两个区间还互相重叠</h1>
+  <p class="sub">一道 2 到 7 倍的门，什么也没换来</p>
   <p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention kernel 只在 query 与 KV
   head 之比至少为 3 时才启用。而在被排除的那个区间里，同一个 kernel
   比它被越过去换来的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>，数值上又与之等价。

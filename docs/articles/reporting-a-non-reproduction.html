@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How to report a bug you cannot reproduce</title>
+<title>The reporter's own script counts rank 0, shown by injecting a one-sided fault</title>
 <meta name="description" content="135 clean communicator initialisations say almost nothing on their own. What makes a negative result usable: a sweep that could have exposed the defect, a stated contrast, and finding what your instrument is blind to.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -389,7 +394,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RCCL · ROCm · a negative result · measured on 2× RX 7900 XT</div>
-  <h1>How to report a bug<br>you cannot reproduce</h1>
+  <h1>The reporter's own script counts rank 0,<br>shown by injecting a one-sided fault</h1>
+  <p class="sub">How to report a bug you cannot reproduce</p>
   <p class="lede">Someone reports deterministic silent corruption in a collective on two gfx1100 cards.
   You have two gfx1100 cards. It does not happen. That is worth almost nothing on its own — and it can
   be made worth something, by three things that have nothing to do with running the test more times.</p>

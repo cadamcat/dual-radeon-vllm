@@ -8,6 +8,8 @@
                 box-shadow:0 2px 4px rgba(0,0,0,.06), 0 16px 40px rgba(0,0,0,.10); }
   .card h3 { margin:.15em 0 .3em; font-size:1.24rem; letter-spacing:-.01em; }
   .card p { margin:0; color:var(--text-2); font-size:.96rem; }
+  .card-sub { margin:.1em 0 .1em !important; color:var(--text-dim) !important;
+              font-size:.95rem; }
   .card-date { font-family:var(--mono); font-size:.71rem; letter-spacing:.1em;
                text-transform:uppercase; color:var(--accent); font-weight:700; }
   .card-foot { display:flex; justify-content:space-between; align-items:center;

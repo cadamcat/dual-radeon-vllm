@@ -78,6 +78,10 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
     assert not left, f"{body} left {left} unfilled"
     p = OUT / out
     TITLES[out] = title
+    # the subtitle is the sentence the page itself prints, read back rather
+    # than retyped, so the index cannot introduce a third version of it
+    m = re.search(r'<p class="sub">(.*?)</p>', b)
+    SUBS[out] = m.group(1) if m else None
     text = h + b
     if CHECK:
         if not p.exists():
@@ -92,6 +96,7 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
 
 MISMATCH = []
 TITLES = {}
+SUBS = {}
 EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark")
 ZH_LABELS = ("语言与配色主题", "跟随系统",
              "浅色", "深色")
@@ -112,15 +117,14 @@ Z_EN, Z_ZH = "rdna3-second-class.html", "rdna3-second-class.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
-                  title="A hybrid-SSM model that decodes slower the longer you talk to it",
+                  title='One kernel accounts for the whole 12.1 to 4.2 tok/s fall',
                   desc="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of "
                        "context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream "
                        "fix, measured.",
                   out="articles/" + H_EN, nav=lang_nav("en", H_EN, H_ZH), labels=EN_LABELS))
 built.append(page("article-body-zh.html", lang="zh-CN", figures="figures.json",
                   script_from="article-body.html",
-                  title="一个上下文越长解码越慢的"
-                        "混合 SSM 模型",
+                  title='一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑',
                   desc="Qwen3.6-27B 在 2× RX 7900 XT 上，上下文从 "
                        "500 到 32000 token，解码由 12.1 掉到 4.2 tok/s。"
                        "归因、机理、对照，以及上游"
@@ -128,7 +132,7 @@ built.append(page("article-body-zh.html", lang="zh-CN", figures="figures.json",
                   out="articles/" + H_ZH, nav=lang_nav("zh", H_EN, H_ZH), labels=ZH_LABELS))
 built.append(page("rccl-body.html", lang="en", figures="figures-rccl.json",
                   extra_css="rccl-extra.css",
-                  title="The RCCL crash was never about RCCL",
+                  title='No PCIe atomics, no hostcall buffer, and every collective fails at dispatch',
                   desc="Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four "
                        "layers below RCCL: no PCIe atomics, no hostcall buffer, refused dispatch. "
                        "Thirteen hypotheses, and a one-line VM fix.",
@@ -136,7 +140,7 @@ built.append(page("rccl-body.html", lang="en", figures="figures-rccl.json",
 if (D / "rccl-body-zh.html").exists():
     built.append(page("rccl-body-zh.html", lang="zh-CN", figures="figures-rccl.json",
                       extra_css="rccl-extra.css", script_from="rccl-body.html",
-                      title="RCCL 崩溃从来不是 RCCL 的问题",
+                      title='没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败',
                       desc="两张 Radeon、张量并行，以及 "
                            "hipErrorIllegalState。根因在 RCCL 下面四层："
                            "没有 PCIe atomics，就没有 hostcall buffer，"
@@ -145,7 +149,7 @@ if (D / "rccl-body-zh.html").exists():
 
 built.append(page("w4a16-body.html", lang="en", figures="figures-w4a16.json",
                   extra_css="w4a16-extra.css",
-                  title="Twelve tokens a second was two problems",
+                  title='A flat 60 ms per step, under a cost that grows with context',
                   desc="One 27B model, two independent costs: a flat 60 ms per decode step from the "
                        "W4A16 linear kernel, and a paged-attention term that grows with context. "
                        "Separated by an A/B, each fixed upstream by someone else.",
@@ -153,7 +157,7 @@ built.append(page("w4a16-body.html", lang="en", figures="figures-w4a16.json",
 if (D / "w4a16-body-zh.html").exists():
     built.append(page("w4a16-body-zh.html", lang="zh-CN", figures="figures-w4a16.json",
                       extra_css="w4a16-extra.css", script_from="w4a16-body.html",
-                      title="12 tok/s 是两个问题",
+                      title='每步固定 60 ms，压在一笔随上下文增长的开销下面',
                       desc="一个 27B 模型上叠着两笔独立开销：W4A16 线性 "
                            "kernel 每步固定 60 ms，以及随上下文增长的 paged "
                            "attention。用一次 A/B 把它们分开，两个修复都是"
@@ -162,7 +166,7 @@ if (D / "w4a16-body-zh.html").exists():
 
 built.append(page("moe-body.html", lang="en", figures="figures-moe.json",
                   extra_css="moe-extra.css",
-                  title="The fastest model here was written off at 15 tok/s",
+                  title='Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way',
                   desc="A 128-expert MoE recorded at 15 tok/s under --enforce-eager decodes at 107.8 "
                        "compiled. The flag also fabricated an asymmetric power draw and a "
                        "context-independent rate, both read as architecture.",
@@ -170,7 +174,7 @@ built.append(page("moe-body.html", lang="en", figures="figures-moe.json",
 if (D / "moe-body-zh.html").exists():
     built.append(page("moe-body-zh.html", lang="zh-CN", figures="figures-moe.json",
                       extra_css="moe-extra.css", script_from="moe-body.html",
-                      title="全机最快的模型曾被 15 tok/s 判死刑",
+                      title='eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论',
                       desc="一个 128 专家的 MoE 在 --enforce-eager 下记作 15 "
                            "tok/s，编译之后是 107.8。这个开关还伪造了功耗左右"
                            "不对称和吞吐与上下文无关两个现象，都被当成了架构结论。",
@@ -178,7 +182,7 @@ if (D / "moe-body-zh.html").exists():
 
 built.append(page("loader-body.html", lang="en", figures="figures-loader.json",
                   extra_css="loader-extra.css",
-                  title="Loading weights was slower than the disk, twice over",
+                  title='A read-only copy asks for write access, and one kernel charged a second for it',
                   desc="A permission read off the VMA makes every host-to-device copy break "
                        "copy-on-write, and a split kernel backport turned each occurrence into a "
                        "one-second timeout. Two effects, one reproducer, three kernel states.",
@@ -186,7 +190,7 @@ built.append(page("loader-body.html", lang="en", figures="figures-loader.json",
 if (D / "loader-body-zh.html").exists():
     built.append(page("loader-body-zh.html", lang="zh-CN", figures="figures-loader.json",
                       extra_css="loader-extra.css", script_from="loader-body.html",
-                      title="加载权重比磁盘还慢，而且慢了两次",
+                      title='只读的拷贝去申请写权限，而某个内核为此每次多收一秒',
                       desc="从 VMA 取权限让每次 host→device 拷贝都破坏 "
                            "copy-on-write；而一个被拆开的内核 backport 把每一次"
                            "触发都变成一秒的超时。两个效应，一个复现器，三种内核状态。",
@@ -194,7 +198,7 @@ if (D / "loader-body-zh.html").exists():
 
 built.append(page("spec-body.html", lang="en", figures="figures-spec.json",
                   extra_css="spec-extra.css",
-                  title="One boolean costs 71% on a Radeon and 61% on an A100",
+                  title="Speculation's second query row costs 120 of 128 workgroups",
                   desc="Speculative decoding is +36.9% at 1K of context and -70.8% at 32K, because "
                        "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8. "
                        "Measured on two vendors.",
@@ -202,7 +206,7 @@ built.append(page("spec-body.html", lang="en", figures="figures-spec.json",
 if (D / "spec-body-zh.html").exists():
     built.append(page("spec-body-zh.html", lang="zh-CN", figures="figures-spec.json",
                       extra_css="spec-extra.css", script_from="spec-body.html",
-                      title="一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%",
+                      title='投机的第二行 query，要付掉 128 个 workgroup 里的 120 个',
                       desc="投机解码在 1K 上下文是 +36.9%，在 32K 上是 "
                            "-70.8%，因为 max_seqlen_q > 1 把 Triton 注意力 "
                            "kernel 从 128 个 workgroup 降到 8 个。两个厂商都测了。",
@@ -210,7 +214,7 @@ if (D / "spec-body-zh.html").exists():
 
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
-                  title="Two consumer Radeons against one A100",
+                  title='The gap to an A100 is U-shaped, and both ends are about the split',
                   desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
                        "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
                        "parallelism rather than about the silicon.",
@@ -218,7 +222,7 @@ built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title="两张消费级 Radeon 对一张 A100",
+                      title='与 A100 的差距是 U 形的，而两端都关于把工作拆开',
                       desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
                            "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
                            "而两端都关于张量并行，不关于硅片本身。",
@@ -226,7 +230,7 @@ if (D / "a100-body-zh.html").exists():
 
 built.append(page("gqa-body.html", lang="en", figures="figures-gqa.json",
                   extra_css="gqa-extra.css",
-                  title="A gate that costs 2 to 7 times and buys nothing",
+                  title='The excluded kernel wins all sixty cells, and the two bands overlap',
                   desc="vLLM's ROCm custom paged attention is gated off below gqa_ratio 3 on gfx11. "
                        "In the excluded range it is 1.70x to 7.28x faster than the fallback, in every "
                        "one of sixty measured cells.",
@@ -234,7 +238,7 @@ built.append(page("gqa-body.html", lang="en", figures="figures-gqa.json",
 if (D / "gqa-body-zh.html").exists():
     built.append(page("gqa-body-zh.html", lang="zh-CN", figures="figures-gqa.json",
                       extra_css="gqa-extra.css", script_from="gqa-body.html",
-                      title="一道 2–7 倍的门，什么也没换来",
+                      title='被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠',
                       desc="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 "
                            "gqa_ratio 3 这道门挡在外面。而在被排除的区间里，"
                            "它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。",
@@ -242,7 +246,7 @@ if (D / "gqa-body-zh.html").exists():
 
 built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",
                   extra_css="n6565-extra.css",
-                  title="How to report a bug you cannot reproduce",
+                  title="The reporter's own script counts rank 0, shown by injecting a one-sided fault",
                   desc="135 clean communicator initialisations say almost nothing on their own. What "
                        "makes a negative result usable: a sweep that could have exposed the defect, a "
                        "stated contrast, and finding what your instrument is blind to.",
@@ -250,7 +254,7 @@ built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",
 if (D / "n6565-body-zh.html").exists():
     built.append(page("n6565-body-zh.html", lang="zh-CN", figures="figures-6565.json",
                       extra_css="n6565-extra.css", script_from="n6565-body.html",
-                      title="怎么报告一个你复现不出来的 bug",
+                      title='上报者自己的脚本只数 rank 0，用一个单边故障演示出来',
                       desc="135 次干净的通信器初始化本身几乎什么也说明不了。"
                            "让一个否定结论变得有用的三件事：一次本可以暴露它的"
                            "扫描、把差异摆明，以及找出你的仪器看不见什么。",
@@ -258,7 +262,7 @@ if (D / "n6565-body-zh.html").exists():
 
 built.append(page("measure-body.html", lang="en", figures="figures-measure.json",
                   extra_css="measure-extra.css",
-                  title="How to measure decode on a machine like this",
+                  title='Two harnesses agree to 0.44 %, and the first of four runs read 31 % low',
                   desc="Two harnesses agree to 0.44%, but only once the machine is warm: the first of "
                        "four identical runs read 31% low. Why every point carries its run count and "
                        "range, and why the range rather than a standard deviation.",
@@ -266,7 +270,7 @@ built.append(page("measure-body.html", lang="en", figures="figures-measure.json"
 if (D / "measure-body-zh.html").exists():
     built.append(page("measure-body-zh.html", lang="zh-CN", figures="figures-measure.json",
                       extra_css="measure-extra.css", script_from="measure-body.html",
-                      title="在这样一台机器上怎么测 decode",
+                      title='两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %',
                       desc="两套 harness 吻合到 0.44%，但前提是机器已经热了："
                            "四次相同运行里的第一次低了 31%。为什么每个点都带 run "
                            "数和极差，以及为什么报极差而不是标准差。",
@@ -274,7 +278,7 @@ if (D / "measure-body-zh.html").exists():
 
 built.append(page("rdna3-body.html", lang="en", figures="figures-rdna3.json",
                   extra_css="rdna3-extra.css",
-                  title="How much of this is RDNA3 being second-class",
+                  title="Three of eight findings are RDNA3's, and measuring another vendor removed two",
                   desc="Eight findings sorted by what the evidence supports. Three are "
                        "architecture-specific, one is AMD-wide, two were proved vendor-neutral by "
                        "measuring another vendor, and one is not about the GPU at all.",
@@ -282,7 +286,7 @@ built.append(page("rdna3-body.html", lang="en", figures="figures-rdna3.json",
 if (D / "rdna3-body-zh.html").exists():
     built.append(page("rdna3-body-zh.html", lang="zh-CN", figures="figures-rdna3.json",
                       extra_css="rdna3-extra.css", script_from="rdna3-body.html",
-                      title="这里面有多少真的是 RDNA3 二等公民",
+                      title='八个结论里只有三个是 RDNA3 的，而测另一个厂商拿掉了两个',
                       desc="八个结论按证据支持的范围分类。三个是架构特有的，"
                            "一个是 AMD 全线的，两个通过在另一个厂商上实测被证明"
                            "与厂商无关，还有一个根本不是 GPU 的事。",
@@ -300,24 +304,24 @@ ESTABLISHES = {f["slug"]: {"en": f["mechanism"], "zh": f["mechanism_zh"]} for f 
 # other two are about method rather than about a mechanism in the stack
 ESTABLISHES.update({
     "reporting-a-non-reproduction": {
-        "en": "the reporter's own script counts failures on rank 0, so a one-sided "
-              "fault is recorded as a clean run",
-        "zh": "上报者自己的脚本只统计 rank 0 "
-              "的失败，单边故障因此被记"
-              "成一次干净运行"},
+        "en": "a clean run says something only once you have shown what the "
+              "instrument is blind to",
+        "zh": "一次干净的运行，只有在你"
+              "说清了仪器看不见什么之后"
+              "才说明问题"},
     "measuring-decode": {
-        "en": "the first of four identical runs reads 31 % low, so one run on this "
-              "machine is not a measurement",
-        "zh": "四次相同运行里的第一次低 "
-              "31%，所以在这台机器上跑一次"
-              "不算测量"},
+        "en": "a decode number needs a run count and a range beside it, because this "
+              "machine's first run is not its steady state",
+        "zh": "一个解码数字旁边得写上运"
+              "行次数和极差，因为这台机"
+              "器的第一次运行不是稳态"},
     "rdna3-second-class": {
-        "en": "three of the eight findings are architecture-specific, and the "
-              "measurements that mattered most took findings off that list",
-        "zh": "八个结论里只有三个是架构"
-              "特有的，而最有价值的测量"
-              "是把结论从这张表上拿掉的"
-              "那些"},
+        "en": "the useful unit is the single finding, not the architecture: each of "
+              "the eight has its own scope and its own evidence",
+        "zh": "有用的单位是单个结论，不"
+              "是整个架构：八个里每一个"
+              "都有自己的适用范围和自己"
+              "的证据"},
 })
 
 ART = [
@@ -460,6 +464,7 @@ for a in ART:
         "slug": a["slug"],
         "href": {"en": "articles/" + a["en"], "zh": "articles/" + a["zh"]},
         "title": {"en": TITLES["articles/" + a["en"]], "zh": TITLES["articles/" + a["zh"]]},
+        "sub": {"en": SUBS["articles/" + a["en"]], "zh": SUBS["articles/" + a["zh"]]},
         "blurb": a["blurb"],
         "establishes": ESTABLISHES[a["slug"]],
         "dates": dchip[0]["v"], "date": max(dchip[0]["v"]), "kind": dchip[0]["tl"],

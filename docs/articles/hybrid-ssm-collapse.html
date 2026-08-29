@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A hybrid-SSM model that decodes slower the longer you talk to it</title>
+<title>One kernel accounts for the whole 12.1 to 4.2 tok/s fall</title>
 <meta name="description" content="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream fix, measured.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -321,7 +326,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>A hybrid-SSM model that decodes<br>slower the longer you talk to it</h1>
+  <h1>One kernel accounts for the whole<br>12.1 to 4.2 tok/s fall</h1>
+  <p class="sub">A hybrid-SSM model that decodes slower the longer you talk to it</p>
   <p class="lede">Linear attention is supposed to make long context cheap. On this machine
   <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
   dense 8B on the same afternoon keeps 77 % of its short-context rate. The 48 linear-attention

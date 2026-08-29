@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>加载权重比磁盘还慢，而且慢了两次</title>
+<title>只读的拷贝去申请写权限，而某个内核为此每次多收一秒</title>
 <meta name="description" content="从 VMA 取权限让每次 host→device 拷贝都破坏 copy-on-write；而一个被拆开的内核 backport 把每一次触发都变成一秒的超时。两个效应，一个复现器，三种内核状态。">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -369,7 +374,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · KFD · HMM · 实测于 2× RX 7900 XT</div>
-  <h1>加载权重比磁盘还慢，<br>而且慢了两次</h1>
+  <h1>只读的拷贝去申请写权限，<br>而某个内核为此每次多收一秒</h1>
+  <p class="sub">加载权重比磁盘还慢，而且慢了两次</p>
   <p class="lede">一个 9.56 GiB 的 checkpoint，磁盘大约六秒就能交出来，实际用了
   <strong>328 秒</strong>。两个彼此独立的原因：一个权限 bug，让 GPU 去要它并不需要的写权限 ——
   AMD 已确认并定位到内核某一行，今天依然存在；另一个是发行版的 backport，

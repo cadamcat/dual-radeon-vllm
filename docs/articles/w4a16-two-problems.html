@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twelve tokens a second was two problems</title>
+<title>A flat 60 ms per step, under a cost that grows with context</title>
 <meta name="description" content="One 27B model, two independent costs: a flat 60 ms per decode step from the W4A16 linear kernel, and a paged-attention term that grows with context. Separated by an A/B, each fixed upstream by someone else.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -420,7 +425,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RDNA3 · W4A16 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>Twelve tokens a second<br>was two problems</h1>
+  <h1>A flat 60 ms per step, under a cost<br>that grows with context</h1>
+  <p class="sub">Twelve tokens a second was two problems</p>
   <p class="lede">A 27B model decoded at 12 tok/s on this machine and every document here treated that
   as one fault with one cause. It is two costs stacked on each other: one flat, one growing with
   context. Separating them takes a single A/B, and once separated each turns out to have its own

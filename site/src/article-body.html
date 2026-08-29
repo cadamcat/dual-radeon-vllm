@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>A hybrid-SSM model that decodes<br>slower the longer you talk to it</h1>
+  <h1>One kernel accounts for the whole<br>12.1 to 4.2 tok/s fall</h1>
+  <p class="sub">A hybrid-SSM model that decodes slower the longer you talk to it</p>
   <p class="lede">Linear attention is supposed to make long context cheap. On this machine
   <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
   dense 8B on the same afternoon keeps 77 % of its short-context rate. The 48 linear-attention

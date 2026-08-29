@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Two consumer Radeons against one A100</title>
+<title>The gap to an A100 is U-shaped, and both ends are about the split</title>
 <meta name="description" content="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor parallelism rather than about the silicon.">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -361,7 +366,8 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against one A100 80G</div>
-  <h1>Two consumer Radeons<br>against one A100</h1>
+  <h1>The gap to an A100 is U-shaped,<br>and both ends are about the split</h1>
+  <p class="sub">Two consumer Radeons against one A100</p>
   <p class="lede">On batch-1 decode of the same 31B model, on each platform's own healthy path, the
   A100 is 1.48× ahead at 1K of context, <strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The
   gap is U-shaped, the two ends have different causes, and neither of them is the price difference.</p>

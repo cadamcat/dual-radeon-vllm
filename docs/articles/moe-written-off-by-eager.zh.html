@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全机最快的模型曾被 15 tok/s 判死刑</title>
+<title>eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论</title>
 <meta name="description" content="一个 128 专家的 MoE 在 --enforce-eager 下记作 15 tok/s，编译之后是 107.8。这个开关还伪造了功耗左右不对称和吞吐与上下文无关两个现象，都被当成了架构结论。">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -376,7 +381,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · MoE · torch.compile · 实测于 2× RX 7900 XT</div>
-  <h1>全机最快的模型<br>曾被 15 tok/s 判死刑</h1>
+  <h1>eager 模式把 107.8 tok/s 记成 15，<br>顺手还造出两个结论</h1>
+  <p class="sub">全机最快的模型曾被 15 tok/s 判死刑</p>
   <p class="lede">早先的一次探测给了 <code>torch.compile</code> 二十分钟，等不下去，加上
   <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
   编译需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>

@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · 投机解码 · 实测于 2× RX 7900 XT 与一张 A100</div>
-  <h1>一个布尔值，在 Radeon 上是 71 %，<br>在 A100 上是 61 %</h1>
+  <h1>投机的第二行 query，<br>要付掉 128 个 workgroup 里的 120 个</h1>
+  <p class="sub">一个布尔值，在 Radeon 上是 71 %，在 A100 上是 61 %</p>
   <p class="lede">打开 vLLM 自己文档里写明支持的 MTP 助手，<code>gemma-4-31B</code>
   在 1K 上下文下解码<em>快</em> 36.9 %，在 32K 下<em>慢</em> 70.8 %。原因不是草稿模型、不是硬件、
   也不是接受率：投机把 <code>max_seqlen_q</code> 设成 2，而某个 <code>or</code>

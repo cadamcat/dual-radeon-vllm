@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · MoE · torch.compile · 实测于 2× RX 7900 XT</div>
-  <h1>全机最快的模型<br>曾被 15 tok/s 判死刑</h1>
+  <h1>eager 模式把 107.8 tok/s 记成 15，<br>顺手还造出两个结论</h1>
+  <p class="sub">全机最快的模型曾被 15 tok/s 判死刑</p>
   <p class="lede">早先的一次探测给了 <code>torch.compile</code> 二十分钟，等不下去，加上
   <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
   编译需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>

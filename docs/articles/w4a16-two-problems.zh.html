@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>12 tok/s 是两个问题</title>
+<title>每步固定 60 ms，压在一笔随上下文增长的开销下面</title>
 <meta name="description" content="一个 27B 模型上叠着两笔独立开销：W4A16 线性 kernel 每步固定 60 ms，以及随上下文增长的 paged attention。用一次 A/B 把它们分开，两个修复都是别人做的。">
 <style>
   /* ===================== theme =====================
@@ -87,6 +87,11 @@
   strong { color:var(--text); font-weight:700; }
   code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+         margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -421,7 +426,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · W4A16 · vLLM · 实测于 2× RX 7900 XT</div>
-  <h1>12 tok/s<br>是两个问题</h1>
+  <h1>每步固定 60 ms，<br>压在一笔随上下文增长的开销下面</h1>
+  <p class="sub">12 tok/s 是两个问题</p>
   <p class="lede">一个 27B 模型在这台机器上解码只有 12 tok/s，而本仓库此前所有文档都把它当成一个故障、
   一个原因。它其实是两笔叠在一起的开销：一笔与上下文无关，一笔随上下文增长。分开它们只需要一次 A/B；
   分开之后会发现，两笔各自都已经有了上游修复，而且都不是我们做的。</p>

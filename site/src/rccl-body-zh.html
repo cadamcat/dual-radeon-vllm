@@ -1,7 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · RCCL · ROCm · 实测于 2× RX 7900 XT</div>
-  <h1>RCCL 崩溃<br>从来不是 RCCL 的问题</h1>
+  <h1>没有 PCIe atomics 就没有 hostcall buffer，<br>每一次集合通信都在 dispatch 处失败</h1>
+  <p class="sub">RCCL 崩溃从来不是 RCCL 的问题</p>
   <p class="lede">两张 Radeon、<code>--tensor-parallel-size 2</code>，以及一句把所有人引向错误层次的报错：
   <code>the operation cannot be performed in the present state</code>。十三个假设，其中十二个是错的；
   而对虚拟机来说，真正的修复是一行配置，不是重新编译一个库。</p>
