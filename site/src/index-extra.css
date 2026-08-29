@@ -31,14 +31,35 @@
      card is one link, so nothing inside it may take a click. */
   .card-fig { margin:.85em 0 .2em; padding:.7em .8em .55em;
     background:var(--bg); border:1px solid var(--border); border-radius:10px; }
-  .card-fig svg { display:block; width:100%; height:74px; overflow:visible; }
+  .card-fig svg { display:block; width:100%; max-width:26em; height:auto;
+    margin:0 auto; overflow:visible; }
+  .cf-ax { stroke:var(--border-2); stroke-width:1; vector-effect:non-scaling-stroke; }
+  .cf-t { fill:var(--text-dim); font-family:var(--mono); font-size:7.5px; }
+  .cf-ty { text-anchor:end; }
+  .cf-end { text-anchor:end; }
+  .cf-key { display:flex; flex-wrap:wrap; gap:.2em .9em; margin-top:.5em;
+    font-family:var(--mono); font-size:.63rem; color:var(--text-dim); }
+  .cf-k { display:inline-flex; align-items:center; gap:.35em; }
+  .cf-sw { width:.8em; height:2px; border-radius:1px; background:var(--m1); }
+  .cf-sw.bad { background:var(--red); }
+  .cf-sw.alt { background:var(--m4); }
+  .cf-sw.s1 { background:var(--m2); }
+  .cf-sw.s2 { background:var(--m3); }
+  .cf-sw.rule { background:var(--border-2); }
   .card-fig .cf-unit { font-family:var(--mono); font-size:.63rem; letter-spacing:.06em;
     color:var(--text-dim); margin-top:.45em; }
-  .cf-line { fill:none; stroke:var(--m1); stroke-width:2;
+  .cf-line { fill:none; stroke:var(--m1); stroke-width:2; vector-effect:non-scaling-stroke;
     stroke-linejoin:round; stroke-linecap:round; }
   .cf-line.bad { stroke:var(--red); }
+  .cf-line.alt { stroke:var(--m4); }
+  .cf-line.s1 { stroke:var(--m2); }
+  .cf-line.s2 { stroke:var(--m3); }
+  .cf-line.dash { stroke-dasharray:5 3; }
   .cf-dot { fill:var(--m1); }
   .cf-dot.bad { fill:var(--red); }
+  .cf-dot.alt { fill:var(--m4); }
+  .cf-dot.s1 { fill:var(--m2); }
+  .cf-dot.s2 { fill:var(--m3); }
   .cf-rule { stroke:var(--border-2); stroke-width:1; stroke-dasharray:3 3; }
   .cf-rows { display:grid; gap:.3em; }
   .cf-row { display:grid; grid-template-columns:minmax(0,9.6em) 1fr auto; gap:.55em;

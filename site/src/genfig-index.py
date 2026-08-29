@@ -183,6 +183,11 @@ print("no faster measurement is left undrawn")
 # Each card's numbers are read out of that article's own figures-*.json, so a
 # card and the page it links to cannot disagree about what the article found --
 # the same rule the one-line summary already follows. Nothing here is typed.
+#
+# Where the article's finding IS a comparison, the card draws both sides rather
+# than the ratio between them: a lone ratio line tells a reader the shape and
+# not the thing. A name beginning "@" is a strings-table key, because it is
+# prose; a bare name is a machine string and reads the same in both languages.
 D = pathlib.Path(__file__).parent
 fig = lambda n: json.load(open(D / n))
 
@@ -191,36 +196,59 @@ A_W4, A_MEAS, A_MOE = fig("figures-w4a16.json"), fig("figures-measure.json"), fi
 A_LOAD, A_RCCL, A_RD = fig("figures-loader.json"), fig("figures-rccl.json"), fig("figures-rdna3.json")
 A_GQA, A_65 = fig("figures-gqa.json"), fig("figures-6565.json")
 
-# the hybrid collapse: the one series the article is named after
 _hyb = [s for s in A_HYB["fig1"]["series"] if s["arch"] == "hybrid SSM"][0]
-# gqa: the shapes the gate excludes, every ratio above parity
+_dense = [s for s in A_HYB["fig1"]["series"]
+          if s["arch"] == "dense" and len(s["points"]) == len(_hyb["points"])][0]
 _gqa023 = A_GQA["fig1"]["versions"][0]
 _gqaex = [r for r in _gqa023["rows"] if not r["admitted"]]
+_meas = A_MEAS["fig2"]["rows"][0]
 
 cards = {
+ # what this article compares is the SLOPE -- "fourteen to forty times steeper
+ # than any dense model" -- so the card draws each model against its own rate at
+ # the shortest depth. On absolute tok/s the hybrid's 12.1 sits so far under the
+ # dense model's 79.6 that its whole collapse reads as a flat line near zero.
  "hybrid-ssm-collapse": {
-   "form": "line", "unit": "cTokS", "xlog": True, "y0": 0,
-   "series": [{"pts": [[p["ctx"], p["tok_s"]] for p in _hyb["points"]], "kind": "bad"}],
+   "form": "line", "unit": "cRetained", "xlog": True, "y0": 0, "xctx": True,
+   "series": [{"name": _hyb["model"], "kind": "bad",
+               "pts": [[p["ctx"], p["tok_s"] / _hyb["points"][0]["tok_s"] * 100.0]
+                       for p in _hyb["points"]]},
+              {"name": _dense["model"],
+               "pts": [[p["ctx"], p["tok_s"] / _dense["points"][0]["tok_s"] * 100.0]
+                       for p in _dense["points"]]}],
    "src": "figures.json fig1"},
  "a100-vs-two-radeons": {
-   "form": "line", "unit": "cAdv", "xlog": True, "rule": 1.0,
-   "series": [{"pts": [[r["ctx"], r["advantage"]] for r in A_A100["fig1"]["rows"]]}],
+   "form": "line", "unit": "cTokS", "xlog": True, "y0": 0, "xctx": True,
+   "series": [{"name": "@cRadeons",
+               "pts": [[r["ctx"], r["radeons"]] for r in A_A100["fig1"]["rows"]]},
+              {"name": "@cA100", "alt": True,
+               "pts": [[r["a100_ctx"], r["a100"]] for r in A_A100["fig1"]["rows"]]}],
    "src": "figures-a100.json fig1"},
  "speculative-decoding-net-loss": {
-   "form": "line", "unit": "cPct", "xlog": True, "rule": 0.0,
-   "series": [{"pts": [[r["ctx"], r["delta_pct"]] for r in A_SPEC["fig1"]["rows"]]}],
+   "form": "line", "unit": "cTokS", "xlog": True, "y0": 0, "xctx": True,
+   "series": [{"name": "@cNoSpec",
+               "pts": [[r["ctx"], r["nospec"]] for r in A_SPEC["fig1"]["rows"]]},
+              {"name": "MTP", "kind": "bad",
+               "pts": [[r["ctx"], r["mtp"]] for r in A_SPEC["fig1"]["rows"]]}],
    "src": "figures-spec.json fig1"},
  "w4a16-two-problems": {
-   "form": "line", "unit": "cMs", "xlog": True, "y0": 0,
-   "series": [{"pts": [[c["ctx"], c["penalty_ms"]] for c in A_W4["fig1"]["cells"]]}],
+   "form": "line", "unit": "cMsStep", "xlog": True, "y0": 0, "xctx": True,
+   "series": [{"name": "@cAsym", "kind": "bad",
+               "pts": [[c["ctx"], c["asym_ms"]] for c in A_W4["fig1"]["cells"]]},
+              {"name": "@cSym",
+               "pts": [[c["ctx"], c["sym_ms"]] for c in A_W4["fig1"]["cells"]]}],
    "src": "figures-w4a16.json fig1"},
  "measuring-decode": {
-   "form": "line", "unit": "cRun", "y0": 0,
-   "series": [{"pts": [[i + 1, v] for i, v in enumerate(A_MEAS["fig2"]["rows"][0]["runs"])]}],
+   "form": "line", "unit": "cRun", "y0": 0, "xrun": True,
+   "rule": _meas["converged"], "ruleT": "@cConverged",
+   "series": [{"name": "@cFourRuns",
+               "pts": [[i + 1, v] for i, v in enumerate(_meas["runs"])]}],
    "src": "figures-measure.json fig2"},
  "gqa-gate-costs-nothing": {
-   "form": "line", "unit": "cRatio", "xlog": True, "rule": 1.0,
-   "series": [{"pts": [[c["ctx"], c["ratio"]] for c in r["cells"]]} for r in _gqaex],
+   "form": "line", "unit": "cRatio", "xlog": True, "rule": 1.0, "ruleT": "@cParity",
+   "xctx": True,
+   "series": [{"name": r["shape"], "pts": [[c["ctx"], c["ratio"]] for c in r["cells"]]}
+              for r in _gqaex],
    "src": "figures-gqa.json fig1"},
  "moe-written-off-by-eager": {
    "form": "bars", "unit": "cTokS",

@@ -116,7 +116,17 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "cPct": "per cent change from turning speculation on, against context",
  "cMs": "milliseconds per decode step the packaging costs, against context",
  "cRun": "decode tok/s over four identical runs, back to back",
+ "cRetained": "per cent of each model's own rate at the shortest depth",
  "cRatio": "the excluded kernel against the fallback it is passed over for",
+ "cMsStep": "milliseconds per decode step, each packaging of the same model",
+ "cRadeons": "2x RX 7900 XT, TP=2",
+ "cA100": "one A100 80G, TP=1",
+ "cNoSpec": "no speculation",
+ "cAsym": "asymmetric int4",
+ "cSym": "symmetric int4",
+ "cFourRuns": "one process per run",
+ "cConverged": "converged",
+ "cParity": "parity",
  "cMsLog": "milliseconds for one 32 MiB host-to-device copy · log scale",
  "cFindings": "findings, by what the evidence supports",
  "cInits": "cold communicator initialisations, all correct",
@@ -218,50 +228,96 @@ topology. The shapes transfer; the levels are the worst case.</p>
   var CFUNIT = {
     cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
-    cInits: S.cInits, cHostcall: S.cHostcall
+    cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
+    cRetained: S.cRetained
   };
-  var CFLABEL = { cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager };
+  var CFLABEL = {
+    cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager,
+    cRadeons: S.cRadeons, cA100: S.cA100, cNoSpec: S.cNoSpec,
+    cAsym: S.cAsym, cSym: S.cSym, cFourRuns: S.cFourRuns,
+    cConverged: S.cConverged, cParity: S.cParity
+  };
 
   function cfLabel(s) {
     return s && s.charAt(0) === "@" ? (CFLABEL[s.slice(1)] || s.slice(1)) : s;
   }
 
+  /* A sparkline stretched to the card's width tells the reader a slope that is
+     not in the data -- the first version drew w4a16's 8.2 % spread as a canyon
+     and its flat cost as flat only by accident. So: a fixed viewBox that is not
+     stretched, strokes that do not scale with it, both ends of both axes
+     written out, and a key naming what each line is. */
+  function cfx(n) {
+    if (n < 1000) return String(n);
+    return (n % 1024 === 0 ? n / 1024 : Math.round(n / 1000)) + "K";
+  }
+
+  function cfy(v) {
+    if (v === Math.round(v)) return String(v);
+    var a = Math.abs(v);
+    if (a >= 100) return String(Math.round(v));
+    if (a >= 10) return v.toFixed(0);
+    if (a >= 1) return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
   function cfLine(c) {
-    var W = 260, H = 74, PX = 6, PY = 8;
+    var W = 320, H = 116, L = 34, R = 6, T = 10, B = 16;
     var all = [];
     c.series.forEach(function (s) { s.pts.forEach(function (p) { all.push(p); }); });
     var xs = all.map(function (p) { return c.xlog ? Math.log(p[0]) : p[0]; });
     var ys = all.map(function (p) { return p[1]; });
     if (c.rule !== undefined) ys.push(c.rule);
-    // where the claim is about the level rather than the shape, anchor at zero:
-    // a sparkline scaled to its own range turns an 8 % spread into a canyon,
-    // which is the opposite of what the w4a16 card is there to show
+    // where the claim is about the level rather than the shape, anchor at zero
     if (c.y0 !== undefined) ys.push(c.y0);
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
     var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
     if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; }
     var px = function (v) {
       var t = x1 - x0 < 1e-9 ? 0.5 : ((c.xlog ? Math.log(v) : v) - x0) / (x1 - x0);
-      return PX + t * (W - 2 * PX);
+      return L + t * (W - L - R);
     };
-    var py = function (v) { return H - PY - (v - y0) / (y1 - y0) * (H - 2 * PY); };
-    var out = "";
+    var py = function (v) { return H - B - (v - y0) / (y1 - y0) * (H - T - B); };
+
+    var g = "";
+    // the frame: both ends of the y axis, and the baseline
+    g += '<line class="cf-ax" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+    g += '<line class="cf-ax" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) +
+         '" y2="' + (H - B) + '"/>';
+    g += '<text class="cf-t cf-ty" x="' + (L - 4) + '" y="' + (T + 4) + '">' +
+         esc(cfy(y1)) + "</text>";
+    g += '<text class="cf-t cf-ty" x="' + (L - 4) + '" y="' + (H - B) + '">' +
+         esc(cfy(y0)) + "</text>";
+    var xlo = all[0][0], xhi = all[0][0];
+    all.forEach(function (p) { if (p[0] < xlo) xlo = p[0]; if (p[0] > xhi) xhi = p[0]; });
+    var xt = c.xctx ? cfx : c.xrun ? String : cfy;
+    g += '<text class="cf-t" x="' + L + '" y="' + (H - 4) + '">' + esc(xt(xlo)) + "</text>";
+    g += '<text class="cf-t cf-end" x="' + (W - R) + '" y="' + (H - 4) + '">' +
+         esc(xt(xhi)) + "</text>";
     if (c.rule !== undefined) {
-      out += '<line class="cf-rule" x1="' + PX + '" x2="' + (W - PX) +
-             '" y1="' + py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
+      g += '<line class="cf-rule" x1="' + L + '" x2="' + (W - R) + '" y1="' +
+           py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
     }
-    c.series.forEach(function (s) {
-      var k = s.kind === "bad" ? " bad" : "";
-      out += '<polyline class="cf-line' + k + '" points="' +
-             s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
-                  .join(" ") + '"/>';
+    c.series.forEach(function (s, i) {
+      var k = s.kind === "bad" ? " bad" : s.alt ? " alt" : i ? " s" + (i % 3) : "";
+      g += '<polyline class="cf-line' + k + (s.alt ? " dash" : "") + '" points="' +
+           s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
+                .join(" ") + '"/>';
       s.pts.forEach(function (p) {
-        out += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
-               '" cy="' + py(p[1]).toFixed(1) + '" r="2.4"/>';
+        g += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
+             '" cy="' + py(p[1]).toFixed(1) + '" r="2.6"/>';
       });
     });
-    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" ' +
-           'aria-hidden="true" focusable="false">' + out + "</svg>";
+    var keys = c.series.map(function (s, i) {
+      var k = s.kind === "bad" ? " bad" : s.alt ? " alt" : i ? " s" + (i % 3) : "";
+      return '<span class="cf-k"><i class="cf-sw' + k + '"></i>' +
+             esc(cfLabel(s.name)) + "</span>";
+    }).join("");
+    if (c.ruleT) keys += '<span class="cf-k"><i class="cf-sw rule"></i>' +
+                         esc(cfLabel(c.ruleT)) + "</span>";
+    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" ' +
+           'aria-hidden="true" focusable="false">' + g + "</svg>" +
+           '<div class="cf-key">' + keys + "</div>";
   }
 
   function cfBars(c) {

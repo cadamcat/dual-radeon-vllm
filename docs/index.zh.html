@@ -312,14 +312,35 @@
      card is one link, so nothing inside it may take a click. */
   .card-fig { margin:.85em 0 .2em; padding:.7em .8em .55em;
     background:var(--bg); border:1px solid var(--border); border-radius:10px; }
-  .card-fig svg { display:block; width:100%; height:74px; overflow:visible; }
+  .card-fig svg { display:block; width:100%; max-width:26em; height:auto;
+    margin:0 auto; overflow:visible; }
+  .cf-ax { stroke:var(--border-2); stroke-width:1; vector-effect:non-scaling-stroke; }
+  .cf-t { fill:var(--text-dim); font-family:var(--mono); font-size:7.5px; }
+  .cf-ty { text-anchor:end; }
+  .cf-end { text-anchor:end; }
+  .cf-key { display:flex; flex-wrap:wrap; gap:.2em .9em; margin-top:.5em;
+    font-family:var(--mono); font-size:.63rem; color:var(--text-dim); }
+  .cf-k { display:inline-flex; align-items:center; gap:.35em; }
+  .cf-sw { width:.8em; height:2px; border-radius:1px; background:var(--m1); }
+  .cf-sw.bad { background:var(--red); }
+  .cf-sw.alt { background:var(--m4); }
+  .cf-sw.s1 { background:var(--m2); }
+  .cf-sw.s2 { background:var(--m3); }
+  .cf-sw.rule { background:var(--border-2); }
   .card-fig .cf-unit { font-family:var(--mono); font-size:.63rem; letter-spacing:.06em;
     color:var(--text-dim); margin-top:.45em; }
-  .cf-line { fill:none; stroke:var(--m1); stroke-width:2;
+  .cf-line { fill:none; stroke:var(--m1); stroke-width:2; vector-effect:non-scaling-stroke;
     stroke-linejoin:round; stroke-linecap:round; }
   .cf-line.bad { stroke:var(--red); }
+  .cf-line.alt { stroke:var(--m4); }
+  .cf-line.s1 { stroke:var(--m2); }
+  .cf-line.s2 { stroke:var(--m3); }
+  .cf-line.dash { stroke-dasharray:5 3; }
   .cf-dot { fill:var(--m1); }
   .cf-dot.bad { fill:var(--red); }
+  .cf-dot.alt { fill:var(--m4); }
+  .cf-dot.s1 { fill:var(--m2); }
+  .cf-dot.s2 { fill:var(--m3); }
   .cf-rule { stroke:var(--border-2); stroke-width:1; stroke-dasharray:3 3; }
   .cf-rows { display:grid; gap:.3em; }
   .cf-row { display:grid; grid-template-columns:minmax(0,9.6em) 1fr auto; gap:.55em;
@@ -1495,85 +1516,160 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
  "cards": {
   "hybrid-ssm-collapse": {
    "form": "line",
-   "unit": "cTokS",
+   "unit": "cRetained",
    "xlog": true,
    "y0": 0,
+   "xctx": true,
    "series": [
     {
+     "name": "Qwen3.6-27B",
+     "kind": "bad",
      "pts": [
       [
        500,
-       12.120000000000001
+       100.0
       ],
       [
        1000,
-       11.649999999999999
+       96.1221122112211
       ],
       [
        2000,
-       10.99
+       90.67656765676567
       ],
       [
        4000,
-       10.03
+       82.75577557755774
       ],
       [
        6000,
-       9.27
+       76.48514851485147
       ],
       [
        8000,
-       8.53
+       70.37953795379536
       ],
       [
        12000,
-       7.24
+       59.73597359735974
       ],
       [
        16000,
-       6.345000000000001
+       52.351485148514854
       ],
       [
        20000,
-       5.67
+       46.78217821782178
       ],
       [
        24000,
-       5.08
+       41.91419141914191
       ],
       [
        32000,
-       4.25
+       35.06600660066007
       ]
-     ],
-     "kind": "bad"
+     ]
+    },
+    {
+     "name": "Qwen3-8B",
+     "pts": [
+      [
+       500,
+       100.0
+      ],
+      [
+       1000,
+       98.64924294779165
+      ],
+      [
+       2000,
+       96.92153043915309
+      ],
+      [
+       4000,
+       95.11842683922848
+      ],
+      [
+       6000,
+       93.77395237796065
+      ],
+      [
+       8000,
+       92.12791355154864
+      ],
+      [
+       12000,
+       89.43268203807249
+      ],
+      [
+       16000,
+       86.47358170509516
+      ],
+      [
+       20000,
+       84.0610667839417
+      ],
+      [
+       24000,
+       81.56059558962114
+      ],
+      [
+       32000,
+       77.20047747691147
+      ]
+     ]
     }
    ],
    "src": "figures.json fig1"
   },
   "a100-vs-two-radeons": {
    "form": "line",
-   "unit": "cAdv",
+   "unit": "cTokS",
    "xlog": true,
-   "rule": 1.0,
+   "y0": 0,
+   "xctx": true,
    "series": [
     {
+     "name": "@cRadeons",
      "pts": [
       [
        1024,
-       1.47830150887969
+       74.89
       ],
       [
        8192,
-       1.1957312252964427
+       63.25
       ],
       [
        16384,
-       1.1432873672531303
+       63.09
       ],
       [
        32768,
-       1.8738102548357385
+       32.57
+      ]
+     ]
+    },
+    {
+     "name": "@cA100",
+     "alt": true,
+     "pts": [
+      [
+       1024,
+       110.71
+      ],
+      [
+       8192,
+       75.63
+      ],
+      [
+       16384,
+       72.13
+      ],
+      [
+       30000,
+       61.03
       ]
      ]
     }
@@ -1582,27 +1678,51 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
   },
   "speculative-decoding-net-loss": {
    "form": "line",
-   "unit": "cPct",
+   "unit": "cTokS",
    "xlog": true,
-   "rule": 0.0,
+   "y0": 0,
+   "xctx": true,
    "series": [
     {
+     "name": "@cNoSpec",
      "pts": [
       [
        1024,
-       36.87240902809765
+       43.42
       ],
       [
        8192,
-       -14.037397945746633
+       37.97
       ],
       [
        16384,
-       -32.36961451247166
+       35.28
       ],
       [
        32768,
-       -70.80171560541075
+       30.31
+      ]
+     ]
+    },
+    {
+     "name": "MTP",
+     "kind": "bad",
+     "pts": [
+      [
+       1024,
+       59.43
+      ],
+      [
+       8192,
+       32.64
+      ],
+      [
+       16384,
+       23.86
+      ],
+      [
+       32768,
+       8.85
       ]
      ]
     }
@@ -1611,23 +1731,43 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
   },
   "w4a16-two-problems": {
    "form": "line",
-   "unit": "cMs",
+   "unit": "cMsStep",
    "xlog": true,
    "y0": 0,
+   "xctx": true,
    "series": [
     {
+     "name": "@cAsym",
+     "kind": "bad",
      "pts": [
       [
        1024,
-       60.16792569841658
+       87.02092511313303
       ],
       [
        8192,
-       58.03071175302779
+       131.90807615007674
       ],
       [
        32768,
-       62.79169235910689
+       298.4730771609715
+      ]
+     ]
+    },
+    {
+     "name": "@cSym",
+     "pts": [
+      [
+       1024,
+       26.85299941471645
+      ],
+      [
+       8192,
+       73.87736439704895
+      ],
+      [
+       32768,
+       235.68138480186462
       ]
      ]
     }
@@ -1638,8 +1778,12 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
    "form": "line",
    "unit": "cRun",
    "y0": 0,
+   "xrun": true,
+   "rule": 79.12004116982243,
+   "ruleT": "@cConverged",
    "series": [
     {
+     "name": "@cFourRuns",
      "pts": [
       [
        1,
@@ -1667,8 +1811,11 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
    "unit": "cRatio",
    "xlog": true,
    "rule": 1.0,
+   "ruleT": "@cParity",
+   "xctx": true,
    "series": [
     {
+     "name": "8/8",
      "pts": [
       [
        1024,
@@ -1697,6 +1844,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      ]
     },
     {
+     "name": "8/4",
      "pts": [
       [
        1024,
@@ -1725,6 +1873,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      ]
     },
     {
+     "name": "32/16",
      "pts": [
       [
        1024,
@@ -2748,7 +2897,17 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
  "cPct": "打开投机后的百分比变化，横轴是上下文",
  "cMs": "打包方式每步多花的毫秒，横轴是上下文",
  "cRun": "连着跑四次相同运行的解码 tok/s",
+ "cRetained": "各自相对自己在最短深度上的速率的百分比",
  "cRatio": "被排除的 kernel 对它让位给的兜底路径",
+ "cMsStep": "每步解码的毫秒，同一个模型的两种打包",
+ "cRadeons": "2× RX 7900 XT，TP=2",
+ "cA100": "一张 A100 80G，TP=1",
+ "cNoSpec": "不投机",
+ "cAsym": "非对称 int4",
+ "cSym": "对称 int4",
+ "cFourRuns": "每次运行一个进程",
+ "cConverged": "收敛值",
+ "cParity": "等值线",
  "cMsLog": "一次 32 MiB 主机到设备拷贝的毫秒 · 对数刻度",
  "cFindings": "结论，按证据支持的范围分",
  "cInits": "冷通信器初始化次数，全部正确",
@@ -2850,50 +3009,96 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
   var CFUNIT = {
     cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
-    cInits: S.cInits, cHostcall: S.cHostcall
+    cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
+    cRetained: S.cRetained
   };
-  var CFLABEL = { cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager };
+  var CFLABEL = {
+    cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager,
+    cRadeons: S.cRadeons, cA100: S.cA100, cNoSpec: S.cNoSpec,
+    cAsym: S.cAsym, cSym: S.cSym, cFourRuns: S.cFourRuns,
+    cConverged: S.cConverged, cParity: S.cParity
+  };
 
   function cfLabel(s) {
     return s && s.charAt(0) === "@" ? (CFLABEL[s.slice(1)] || s.slice(1)) : s;
   }
 
+  /* A sparkline stretched to the card's width tells the reader a slope that is
+     not in the data -- the first version drew w4a16's 8.2 % spread as a canyon
+     and its flat cost as flat only by accident. So: a fixed viewBox that is not
+     stretched, strokes that do not scale with it, both ends of both axes
+     written out, and a key naming what each line is. */
+  function cfx(n) {
+    if (n < 1000) return String(n);
+    return (n % 1024 === 0 ? n / 1024 : Math.round(n / 1000)) + "K";
+  }
+
+  function cfy(v) {
+    if (v === Math.round(v)) return String(v);
+    var a = Math.abs(v);
+    if (a >= 100) return String(Math.round(v));
+    if (a >= 10) return v.toFixed(0);
+    if (a >= 1) return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
   function cfLine(c) {
-    var W = 260, H = 74, PX = 6, PY = 8;
+    var W = 320, H = 116, L = 34, R = 6, T = 10, B = 16;
     var all = [];
     c.series.forEach(function (s) { s.pts.forEach(function (p) { all.push(p); }); });
     var xs = all.map(function (p) { return c.xlog ? Math.log(p[0]) : p[0]; });
     var ys = all.map(function (p) { return p[1]; });
     if (c.rule !== undefined) ys.push(c.rule);
-    // where the claim is about the level rather than the shape, anchor at zero:
-    // a sparkline scaled to its own range turns an 8 % spread into a canyon,
-    // which is the opposite of what the w4a16 card is there to show
+    // where the claim is about the level rather than the shape, anchor at zero
     if (c.y0 !== undefined) ys.push(c.y0);
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
     var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
     if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; }
     var px = function (v) {
       var t = x1 - x0 < 1e-9 ? 0.5 : ((c.xlog ? Math.log(v) : v) - x0) / (x1 - x0);
-      return PX + t * (W - 2 * PX);
+      return L + t * (W - L - R);
     };
-    var py = function (v) { return H - PY - (v - y0) / (y1 - y0) * (H - 2 * PY); };
-    var out = "";
+    var py = function (v) { return H - B - (v - y0) / (y1 - y0) * (H - T - B); };
+
+    var g = "";
+    // the frame: both ends of the y axis, and the baseline
+    g += '<line class="cf-ax" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+    g += '<line class="cf-ax" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) +
+         '" y2="' + (H - B) + '"/>';
+    g += '<text class="cf-t cf-ty" x="' + (L - 4) + '" y="' + (T + 4) + '">' +
+         esc(cfy(y1)) + "</text>";
+    g += '<text class="cf-t cf-ty" x="' + (L - 4) + '" y="' + (H - B) + '">' +
+         esc(cfy(y0)) + "</text>";
+    var xlo = all[0][0], xhi = all[0][0];
+    all.forEach(function (p) { if (p[0] < xlo) xlo = p[0]; if (p[0] > xhi) xhi = p[0]; });
+    var xt = c.xctx ? cfx : c.xrun ? String : cfy;
+    g += '<text class="cf-t" x="' + L + '" y="' + (H - 4) + '">' + esc(xt(xlo)) + "</text>";
+    g += '<text class="cf-t cf-end" x="' + (W - R) + '" y="' + (H - 4) + '">' +
+         esc(xt(xhi)) + "</text>";
     if (c.rule !== undefined) {
-      out += '<line class="cf-rule" x1="' + PX + '" x2="' + (W - PX) +
-             '" y1="' + py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
+      g += '<line class="cf-rule" x1="' + L + '" x2="' + (W - R) + '" y1="' +
+           py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
     }
-    c.series.forEach(function (s) {
-      var k = s.kind === "bad" ? " bad" : "";
-      out += '<polyline class="cf-line' + k + '" points="' +
-             s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
-                  .join(" ") + '"/>';
+    c.series.forEach(function (s, i) {
+      var k = s.kind === "bad" ? " bad" : s.alt ? " alt" : i ? " s" + (i % 3) : "";
+      g += '<polyline class="cf-line' + k + (s.alt ? " dash" : "") + '" points="' +
+           s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
+                .join(" ") + '"/>';
       s.pts.forEach(function (p) {
-        out += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
-               '" cy="' + py(p[1]).toFixed(1) + '" r="2.4"/>';
+        g += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
+             '" cy="' + py(p[1]).toFixed(1) + '" r="2.6"/>';
       });
     });
-    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" ' +
-           'aria-hidden="true" focusable="false">' + out + "</svg>";
+    var keys = c.series.map(function (s, i) {
+      var k = s.kind === "bad" ? " bad" : s.alt ? " alt" : i ? " s" + (i % 3) : "";
+      return '<span class="cf-k"><i class="cf-sw' + k + '"></i>' +
+             esc(cfLabel(s.name)) + "</span>";
+    }).join("");
+    if (c.ruleT) keys += '<span class="cf-k"><i class="cf-sw rule"></i>' +
+                         esc(cfLabel(c.ruleT)) + "</span>";
+    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet" ' +
+           'aria-hidden="true" focusable="false">' + g + "</svg>" +
+           '<div class="cf-key">' + keys + "</div>";
   }
 
   function cfBars(c) {

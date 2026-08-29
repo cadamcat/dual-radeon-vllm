@@ -3264,29 +3264,48 @@ def main():
     ck("index cards, every article has one", "0",
        sum(1 for a in AJ if a["slug"] not in XCARD))
 
-    _hyb = [s for s in _af("figures.json")["fig1"]["series"] if s["arch"] == "hybrid SSM"][0]
+    # a missing card must fail the count check above rather than throw here
+    _card = lambda s: XCARD.get(s) or {"series": [], "bars": [], "rows": [], "rule": -1}
+    _hy = _af("figures.json")["fig1"]["series"]
+    _hyb = [s for s in _hy if s["arch"] == "hybrid SSM"][0]
+    _dense = [s for s in _hy if s["arch"] == "dense"
+              and len(s["points"]) == len(_hyb["points"])][0]
+    _a1 = _af("figures-a100.json")["fig1"]["rows"]
+    _sp = _af("figures-spec.json")["fig1"]["rows"]
+    _w4 = _af("figures-w4a16.json")["fig1"]["cells"]
+    _ms = _af("figures-measure.json")["fig2"]["rows"][0]
     _gqa = [r for r in _af("figures-gqa.json")["fig1"]["versions"][0]["rows"]
             if not r["admitted"]]
+
+    # where the article's finding is a comparison the card draws both sides, so
+    # what is checked is both sides, in order
     WANT = {
-      "hybrid-ssm-collapse": [[p["ctx"], p["tok_s"]] for p in _hyb["points"]],
-      "a100-vs-two-radeons": [[r["ctx"], r["advantage"]]
-                              for r in _af("figures-a100.json")["fig1"]["rows"]],
-      "speculative-decoding-net-loss": [[r["ctx"], r["delta_pct"]]
-                                        for r in _af("figures-spec.json")["fig1"]["rows"]],
-      "w4a16-two-problems": [[c["ctx"], c["penalty_ms"]]
-                             for c in _af("figures-w4a16.json")["fig1"]["cells"]],
-      "measuring-decode": [[i + 1, v] for i, v in
-                           enumerate(_af("figures-measure.json")["fig2"]["rows"][0]["runs"])],
+      # drawn as retention, because the article's claim is about slope
+      "hybrid-ssm-collapse": [
+        [[p["ctx"], p["tok_s"] / _hyb["points"][0]["tok_s"] * 100.0] for p in _hyb["points"]],
+        [[p["ctx"], p["tok_s"] / _dense["points"][0]["tok_s"] * 100.0]
+         for p in _dense["points"]]],
+      "a100-vs-two-radeons": [[[r["ctx"], r["radeons"]] for r in _a1],
+                              [[r["a100_ctx"], r["a100"]] for r in _a1]],
+      "speculative-decoding-net-loss": [[[r["ctx"], r["nospec"]] for r in _sp],
+                                        [[r["ctx"], r["mtp"]] for r in _sp]],
+      "w4a16-two-problems": [[[c["ctx"], c["asym_ms"]] for c in _w4],
+                             [[c["ctx"], c["sym_ms"]] for c in _w4]],
+      "measuring-decode": [[[i + 1, v] for i, v in enumerate(_ms["runs"])]],
     }
-    # a missing card must fail the check above rather than throw here
-    _card = lambda s: XCARD.get(s) or {"series": [], "bars": [], "rows": []}
     for slug, want in WANT.items():
-        got = [p for s in _card(slug).get("series", []) for p in s["pts"]]
-        ck("index card %s, points" % slug, str(len(want)), len(got))
+        got = [s["pts"] for s in _card(slug).get("series", [])]
+        ck("index card %s, lines" % slug, str(len(want)), len(got))
+        ck("index card %s, points" % slug, str(sum(len(w) for w in want)),
+           sum(len(g) for g in got))
         ck("index card %s, matches its article's data" % slug, "1",
            1 if len(want) == len(got) and all(
-               abs(a[0] - b[0]) < 1e-9 and abs(a[1] - b[1]) < 1e-9
-               for a, b in zip(want, got)) else 0)
+               len(w) == len(g) and all(abs(a[0] - b[0]) < 1e-9 and abs(a[1] - b[1]) < 1e-9
+                                        for a, b in zip(w, g))
+               for w, g in zip(want, got)) else 0)
+    ck("index card measure, the rule is the converged rate", repr(_ms["converged"]),
+       _card("measuring-decode")["rule"])
+
     ck("index card gqa, one line per excluded shape", str(len(_gqa)),
        len(_card("gqa-gate-costs-nothing")["series"]))
     ck("index card gqa, every ratio is the article's", "1",
