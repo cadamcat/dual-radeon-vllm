@@ -1,4 +1,3 @@
-
 <header class="top">
   <div class="kicker">dual-radeon-vllm · write-ups</div>
   <h1>Two consumer Radeons,<br>measured</h1>
@@ -6,17 +5,39 @@
   (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
   the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
   <div class="meta">
-    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
-    <span class="chip">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
-    <span class="chip"><a href="https://github.com/cadamcat/dual-radeon-vllm">repository</a></span>
+__CHIPS__
   </div>
 </header>
 
 <h2><span class="n">1</span>Articles</h2>
 
+<p>Eleven write-ups, newest first. The line under each title is what that article establishes, in the
+words the synthesis piece uses to classify it — so the two cannot describe a finding differently.</p>
+
 <div class="cards" id="cards"></div>
 
-<h2><span class="n">2</span>How to read these</h2>
+<h2><span class="n">2</span>When each of these was measured</h2>
+
+<p>The date on an article is the date its measurement was taken, not the date it was written. Three
+came from the last week of July, then nothing for four weeks, then eight in seven days: the second
+cluster is largely re-measurement of the first under conditions the first got wrong. A bar spanning
+two dates is an article whose evidence comes from two separate sittings.</p>
+
+<figure class="rv" id="figtl">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · measurement dates
+      <span class="prov yes">the dates the articles carry</span></div>
+    <div class="legend" id="tlkey"></div>
+    <div class="tl" id="tl"></div>
+    <div class="barunit" id="tlnote"></div>
+  </div>
+  <figcaption><b>Figure 1.</b> Positioned by date, not by publication order. Two of the eleven are not
+  measurements of this machine: one is the date a defect was reported upstream, and the synthesis
+  re-read sixteen upstream threads rather than running anything. Both are marked as such rather than
+  given a measurement date they do not have.</figcaption>
+</figure>
+
+<h2><span class="n">3</span>How to read these</h2>
 
 <p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
 this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
@@ -42,10 +63,25 @@ topology. The shapes transfer; the levels are the worst case.</p>
 </div>
 
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
+<script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
+<script type="application/json" id="strings">{
+ "estLabel": "establishes",
+ "tlKinds": {"measured": "measured here", "reported": "reported upstream",
+             "reviewed": "statuses re-read"},
+ "tlNote": "{a} to {b} · {d} days end to end · {n} articles"
+}</script>
 <script>
 (function () {
   "use strict";
-  var A = JSON.parse(document.getElementById("articles").textContent);
+  var A = JSON.parse(document.getElementById("articles").textContent).articles;
+  var W = JSON.parse(document.getElementById("chipwords").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  // one script serves both index pages; everything language-dependent is either
+  // keyed by this or comes out of the strings table below it
+  var LANG = document.documentElement.lang.slice(0, 2) === "zh" ? "zh" : "en";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
   var root = document.documentElement, KEY = "hssm-theme";
   var btns = { auto: document.getElementById("th-auto"),
                light: document.getElementById("th-light"),
@@ -73,33 +109,178 @@ topology. The shapes transfer; the levels are the worst case.</p>
     });
   });
 
+  /* ---------- helpers ---------- */
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+    });
+  }
+  function fmt(t, o) {
+    return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; });
+  }
+  function el(p, c, h) {
+    var d = document.createElement("div");
+    if (c) d.className = c;
+    if (h !== undefined) d.innerHTML = h;
+    p.appendChild(d);
+    return d;
+  }
+  // the same chip table the article mastheads are built from, so a card and the
+  // page it links to cannot disagree about the hardware they describe
+  function fill(c) {
+    var t = W[c.w];
+    for (var i = 0; i < c.v.length; i++) t = t.split("{" + i + "}").join(esc(c.v[i]));
+    return t;
+  }
+  function chip(c) {
+    var k = "k" + c.kind.charAt(0).toUpperCase() + c.kind.slice(1);
+    return '<span class="chip k-' + c.kind + '" title="' + esc(W[k]) + '">' + fill(c) + "</span>";
+  }
+  function day(s) {
+    var p = s.split("-");
+    return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
+  }
+
+  /* ---------- the cards ---------- */
   var box = document.getElementById("cards");
-  A.articles.forEach(function (a, i) {
-    var el = document.createElement("a");
-    el.className = "card rv"; el.href = a.href;
-    el.innerHTML =
-      '<div class="card-date">' + a.measured + "</div>" +
-      "<h3>" + a.title + "</h3>" +
-      "<p>" + a.blurb + "</p>" +
+  A.forEach(function (a) {
+    var dchip = null, rest = [];
+    a.chips.forEach(function (c) { (c.kind === "date" ? (dchip = c) : rest.push(c)); });
+    var card = document.createElement("a");
+    card.className = "card rv";
+    card.href = a.href[LANG];
+    card.innerHTML =
+      '<div class="card-date">' + (dchip ? fill(dchip) : "") + "</div>" +
+      "<h3>" + esc(a.title[LANG]) + "</h3>" +
+      '<p class="card-est"><span>' + esc(S.estLabel) + "</span>" +
+      esc(a.establishes[LANG]) + "</p>" +
+      "<p>" + esc(a.blurb[LANG]) + "</p>" +
+      '<div class="card-chips">' + rest.map(chip).join("") + "</div>" +
       '<div class="card-foot"><span class="card-tags">' +
-      a.tags.map(function (t) { return "<span>" + t + "</span>"; }).join("") +
-      '</span><span class="card-lang">' + a.langs.join(" · ") + "</span></div>";
-    box.appendChild(el);
+      a.tags.map(function (t) { return "<span>" + esc(t) + "</span>"; }).join("") +
+      '</span><span class="card-lang">' + a.langs.map(esc).join(" · ") + "</span></div>";
+    box.appendChild(card);
   });
 
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* ---------- the timeline ----------
+     One grid for the whole figure so every row shares a left edge; a per-row
+     grid comes out ragged the moment one label is longer than the others. */
+  var tl = document.getElementById("tl"), bars = [];
+  (function () {
+    var all = [];
+    A.forEach(function (a) { a.dates.forEach(function (d) { all.push(day(d)); }); });
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    var span = hi - lo || 1;
+    var pct = function (d) { return (d - lo) / span * 100; };
+    // A bar is a rounded cap 12px wide even when it stands for a single day, so
+    // the scale has to be the track minus one cap; laid out on a plain
+    // percentage the last day's marker hangs over the end of its track.
+    var CAP = 12;
+    var at = function (v) { return "calc(" + v + "% - " + (v / 100 * CAP).toFixed(2) + "px)"; };
+    var mid = function (v) { return "calc(" + v + "% - " + (v / 100 * CAP - CAP / 2).toFixed(2) + "px)"; };
+
+    Object.keys(S.tlKinds).forEach(function (k) {
+      var g = el(document.getElementById("tlkey"), "lg on k-" + k);
+      g.style.cursor = "default";
+      el(g, "sw");
+      var t = document.createElement("span");
+      t.textContent = S.tlKinds[k];
+      g.appendChild(t);
+    });
+
+    // month bands, labelled with the ISO month so no month name has to be
+    // translated and no two labels can collide
+    el(tl, "tlaxlab");
+    var ax = el(tl, "tlax");
+    var m = new Date(lo * 86400000), seen = {}, rules = [], months = [];
+    for (var d = lo; d <= hi; d++) {
+      m = new Date(d * 86400000);
+      var key = m.toISOString().slice(0, 7);
+      if (seen[key]) continue;
+      seen[key] = 1;
+      var s = el(ax, "tlmon", esc(key));
+      s.style.left = mid(pct(d));
+      months.push([s, pct(d)]);
+      // and the same boundary as a hairline through every track below, so a
+      // reader can place a bar against the month without counting pixels
+      if (d > lo) rules.push("transparent calc(" + mid(pct(d)).slice(5, -1) + " - .5px)"
+                             + ", var(--border-2) " + mid(pct(d))
+                             + ", transparent calc(" + mid(pct(d)).slice(5, -1) + " + .5px)");
+    }
+    if (rules.length) tl.style.setProperty("--tlgrid",
+      "linear-gradient(to right, " + rules.join(", ") + ", transparent)");
+    el(tl, "tlaxpad");
+
+    // On a narrow track two month labels land on top of each other and print as
+    // one unreadable run of digits. Walk from the right so the label that keeps
+    // its place is the one standing on a boundary hairline rather than the one
+    // on the left edge, which the note line below already gives; the hairline
+    // stays either way.
+    function fitMonths() {
+      var w = ax.clientWidth, prev = 1e9;
+      months.slice().reverse().forEach(function (mo) {
+        var x = mo[1] / 100 * (w - 12) + 6;
+        var keep = prev - x >= mo[0].offsetWidth + 8;
+        mo[0].style.visibility = keep ? "" : "hidden";
+        if (keep) prev = x;
+      });
+    }
+    fitMonths();
+    addEventListener("resize", fitMonths, { passive: true });
+
+    A.slice().sort(function (x, y) { return day(x.date) - day(y.date); }).forEach(function (a) {
+      var lab = document.createElement("a");
+      lab.className = "tllab";
+      lab.href = a.href[LANG];
+      lab.textContent = a.title[LANG];
+      lab.title = a.title[LANG];
+      tl.appendChild(lab);
+      var track = el(tl, "tltrack");
+      var d0 = day(a.dates[0]), d1 = day(a.date);
+      var b = el(track, "tlbar k-" + a.kind);
+      var w = pct(d1) - pct(d0);
+      b.style.left = at(pct(d0));
+      b.setAttribute("data-w", "calc(" + w + "% + " + (CAP - w / 100 * CAP).toFixed(2) + "px)");
+      b.title = S.tlKinds[a.kind] + " · " + a.dates.join(" / ");
+      bars.push(b);
+      el(tl, "tldate", a.dates.length > 1
+         ? esc(a.dates[0].slice(5)) + " → " + esc(a.date.slice(5))
+         : esc(a.date));
+    });
+
+    document.getElementById("tlnote").textContent = fmt(S.tlNote, {
+      a: A.reduce(function (p, c) { return c.dates[0] < p ? c.dates[0] : p; }, "9999"),
+      b: A.reduce(function (p, c) { return c.date > p ? c.date : p; }, ""),
+      d: span, n: A.length });
+  })();
+
+  function grow() {
+    bars.forEach(function (b, i) {
+      b.style.transitionDelay = reduce ? "0ms" : (i * 45) + "ms";
+      b.style.width = b.getAttribute("data-w");
+    });
+  }
+
+  /* ---------- reveal ----------
+     Everything above is built already, so the observer sees every .rv there is;
+     nothing on this page is redrawn later. */
   if (reduce) {
-    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) {
+      e.classList.add("in");
+    });
+    grow();
   } else {
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (en) {
         if (!en.isIntersecting) return;
         en.target.classList.add("in");
+        if (en.target.id === "figtl") grow();
         io.unobserve(en.target);
       });
     }, { threshold: 0.15 });
     Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
-      e.style.transitionDelay = (i * 70) + "ms"; io.observe(e);
+      e.style.transitionDelay = (i * 70) + "ms";
+      io.observe(e);
     });
   }
 })();

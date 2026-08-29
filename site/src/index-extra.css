@@ -17,3 +17,45 @@
                     background:var(--surface-2); border:1px solid var(--border);
                     border-radius:99px; padding:.2em .65em; }
   .card-lang { font-family:var(--mono); font-size:.71rem; color:var(--text-dim); }
+
+  /* ---- the one-line summary and the typed chips on a card ---- */
+  .card-est { margin:.55em 0 .5em !important; font-size:.95rem; color:var(--text) !important;
+              display:flex; gap:.6em; align-items:baseline; }
+  .card-est > span { font-family:var(--mono); font-size:.63rem; letter-spacing:.11em;
+                     text-transform:uppercase; color:var(--accent); font-weight:700;
+                     flex:0 0 auto; padding-top:.15em; }
+  .card-chips { display:flex; flex-wrap:wrap; gap:.4em; margin-top:.9em; }
+  .card-chips .chip { font-size:.68rem; padding:.24em .7em; }
+
+  /* ---- the timeline ----
+     One grid for every row, so the label column, the track and the date share a
+     left edge no matter how long any one title is. */
+  .tl { display:grid; grid-template-columns:var(--tlw,248px) 1fr max-content;
+        column-gap:1em; row-gap:.5em; align-items:center; }
+  .tllab { font-size:.83rem; color:var(--text-2); text-align:right; white-space:nowrap;
+           overflow:hidden; text-overflow:ellipsis; border-bottom:0; }
+  .tllab:hover { color:var(--accent-2); }
+  .tltrack { position:relative; height:16px; border-radius:99px; background:var(--surface-2);
+             border:1px solid var(--border); background-image:var(--tlgrid,none); }
+  .tlbar { position:absolute; top:2px; bottom:2px; border-radius:99px;
+           background:var(--ck,var(--accent)); width:0;
+           transition:width .8s cubic-bezier(.22,1,.36,1); }
+  .tlbar.k-measured { --ck:var(--s2); }
+  .tlbar.k-reported { --ck:var(--s1); }
+  .tlbar.k-reviewed { --ck:var(--s5); }
+  .tldate { font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+            font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .tlax { position:relative; height:1.1em; }
+  .tlmon { position:absolute; top:0; font-family:var(--mono); font-size:.68rem;
+           letter-spacing:.06em; color:var(--text-dim); border-left:1px solid var(--border-2);
+           padding-left:.4em; height:1.5em; white-space:nowrap; }
+  .tlaxlab, .tlaxpad { min-width:0; }
+  #tlkey .lg { cursor:default; }
+  #tlkey .lg.k-measured { color:var(--s2); }
+  #tlkey .lg.k-reported { color:var(--s1); }
+  #tlkey .lg.k-reviewed { color:var(--s5); }
+  @media (max-width:640px) {
+    .tl { --tlw:118px; column-gap:.6em; }
+    .tllab { font-size:.75rem; }
+    .tldate { font-size:.66rem; }
+  }

@@ -1,0 +1,87 @@
+{
+ "_what": "The masthead chips, once, as data. Every machine string -- a card name, a version, an issue id, a date -- is written here exactly once and rendered into both language versions by site/build.py, which is what stops the two from disagreeing. The connectives and the word order live in chipwords-en.json / chipwords-zh.json, keyed by 'w'. 'kind' types the chip so the index can group and colour them; a chip of kind 'date' carries the measurement dates the timeline is drawn from, and 'tl' says which of the three claims that date is: measured here, reported upstream, or a status re-read.",
+
+ "hybrid-ssm-collapse": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "stack", "w": "stackVllmRocm", "v": ["0.23.1.dev1", "7.14"]},
+  {"kind": "platform", "w": "platVfioNoP2P", "v": ["PCIe 3.0"]},
+  {"kind": "date", "tl": "measured", "w": "dCampaign", "v": ["2026-07-25"]}
+ ],
+
+ "rccl-atomics-hostcall": [
+  {"kind": "hardware", "w": "hwPair", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "stack", "w": "stackRocmRccl", "v": ["7.14", "2.30.4"]},
+  {"kind": "platform", "w": "platProxmox", "v": ["X399 / Threadripper 1950X"]},
+  {"kind": "upstream", "w": "upFiled", "v": ["ROCm#6520"]},
+  {"kind": "date", "tl": "reported", "w": "dReported", "v": ["2026-07-26"]}
+ ],
+
+ "w4a16-two-problems": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "stack", "w": "stackVllmTwo", "v": ["0.23.1.dev", "0.27.1.dev5"]},
+  {"kind": "model", "w": "modelDot", "v": ["Qwen3.8-27B", "compressed-tensors int4"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-27"]}
+ ],
+
+ "moe-written-off-by-eager": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "model", "w": "modelExperts", "v": ["gemma-4-26B-A4B", "128"]},
+  {"kind": "platform", "w": "platHostCores", "v": ["8"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-07-25"]}
+ ],
+
+ "weight-loading-19x": [
+  {"kind": "hardware", "w": "hwPairVfio", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "stack", "w": "stackKernelBump", "v": ["7.0.0-28", "-30"]},
+  {"kind": "stack", "w": "stackTwo", "v": ["ROCm 7.14", "safetensors 0.8.0"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasuredTwo", "v": ["2026-07-28", "2026-08-23"]}
+ ],
+
+ "speculative-decoding-net-loss": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "hardware", "w": "hwAndA100", "v": ["A100 80G"]},
+  {"kind": "model", "w": "modelMtpAssistant", "v": ["gemma-4-31B"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasuredTwo", "v": ["2026-08-01", "2026-08-26"]}
+ ],
+
+ "a100-vs-two-radeons": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "hardware", "w": "hwA100Tp1", "v": ["A100-SXM4-80GB"]},
+  {"kind": "model", "w": "modelMtpOn", "v": ["gemma-4-31B", "w4a16"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-26"]}
+ ],
+
+ "gqa-gate-costs-nothing": [
+  {"kind": "hardware", "w": "hwPair", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "stack", "w": "stackVllmTwo", "v": ["0.23.1", "0.27.1"]},
+  {"kind": "hardware", "w": "hwPlusA100", "v": ["A100"]},
+  {"kind": "upstream", "w": "upProposed", "v": ["vllm#54210"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-28"]}
+ ],
+
+ "reporting-a-non-reproduction": [
+  {"kind": "hardware", "w": "hwPairVfio", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "stack", "w": "stackRcclRocm", "v": ["2.30.4", "7.14"]},
+  {"kind": "hardware", "w": "hwAgainstBare", "v": ["W7800"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasuredTwo", "v": ["2026-08-27", "2026-08-28"]}
+ ],
+
+ "measuring-decode": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "model", "w": "modelCalibrated", "v": ["Qwen3-8B", "bf16"]},
+  {"kind": "scale", "w": "scaleLedgerRows", "v": ["170"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-26"]}
+ ],
+
+ "rdna3-second-class": [
+  {"kind": "hardware", "w": "hwPair", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "scale", "w": "scaleFindings", "v": ["8", "16"]},
+  {"kind": "date", "tl": "reviewed", "w": "dChecked", "v": ["2026-08-29"]}
+ ],
+
+ "index": [
+  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
+  {"kind": "platform", "w": "platVfioNoP2P", "v": ["PCIe 3.0"]},
+  {"kind": "link", "w": "linkRepo", "v": ["https://github.com/cadamcat/dual-radeon-vllm"]}
+ ]
+}

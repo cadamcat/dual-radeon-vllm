@@ -7,9 +7,7 @@
   about the GPU at all — and knowing which is which is the difference between a diagnosis and a
   grievance.</p>
   <div class="meta">
-    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100</span>
-    <span class="chip">eight findings · <b>sixteen</b> upstream threads</span>
-    <span class="chip">statuses checked <b>2026-08-29</b></span>
+__CHIPS__
   </div>
 </header>
 
@@ -234,6 +232,11 @@ it stood.</p>
   var F = JSON.parse(document.getElementById("figures").textContent);
   var S = JSON.parse(document.getElementById("strings").textContent);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // one figures block serves both versions, so the Chinese half of each finding
+  // rides along inside it and the page picks by its own lang attribute
+  var ZH = document.documentElement.lang.slice(0, 2) === "zh";
+  var HREF = ZH ? ".zh.html" : ".html";
+  function L(o, k) { return ZH && o[k + "_zh"] ? o[k + "_zh"] : o[k]; }
 
   /* ---------- theme ---------- */
   (function () {
@@ -296,10 +299,10 @@ it stood.</p>
       return order[a.axis] - order[b.axis] || b.magnitude - a.magnitude;
     }).forEach(function (f) {
       var c = el(box, "find rv" + (f.axis === "rdna3" ? " rdna3" : ""));
-      el(c, "", '<h4><a href="' + f.slug + '.html">' + esc(f.title) + "</a></h4>");
+      el(c, "", '<h4><a href="' + f.slug + HREF + '">' + esc(L(f, "title")) + "</a></h4>");
       el(c, "mag", f.magnitude === null ? "—" : f.magnitude.toFixed(2) + "×");
-      el(c, "mech", code(f.mechanism));
-      el(c, "unit", esc(f.unit));
+      el(c, "mech", code(L(f, "mechanism")));
+      el(c, "unit", esc(L(f, "unit")));
       var t = el(c, "tags");
       var s = document.createElement("span");
       s.textContent = S.axisNames[f.axis];
@@ -309,7 +312,7 @@ it stood.</p>
         x.textContent = u2;
         t.appendChild(x);
       });
-      el(c, "why", "<b>" + S.whyLabel + "</b> · " + code(f.why));
+      el(c, "why", "<b>" + S.whyLabel + "</b> · " + code(L(f, "why")));
     });
   })();
 

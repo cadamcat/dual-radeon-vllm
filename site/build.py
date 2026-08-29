@@ -12,6 +12,28 @@ D = pathlib.Path(__file__).parent / "src"
 OUT = pathlib.Path(__file__).resolve().parent.parent / "docs"
 head = (D / "article-head.html").read_text()
 
+# The masthead chips are data. Every machine string -- a card name, a version,
+# an issue id, a date -- is written once in chips.json and rendered into both
+# language versions from here, so the two cannot disagree about the hardware.
+# chipwords-*.json holds only the connectives and the word order.
+CHIPS = json.loads((D / "chips.json").read_text())
+CHIPWORDS = {l: json.loads((D / f"chipwords-{l}.json").read_text()) for l in ("en", "zh")}
+
+
+def chips_html(slug, lang):
+    out = []
+    for c in CHIPS[slug]:
+        t = CHIPWORDS[lang][c["w"]]
+        for i, v in enumerate(c["v"]):
+            assert "{%d}" % i in t, f'{slug}: {c["w"]} has no slot {i}'
+            t = t.replace("{%d}" % i, v)
+        assert "{" not in t, f'{slug}: {c["w"]} left a slot unfilled in {lang}'
+        # the type is what the dot means, so it is also spelled out: colour on
+        # its own is not a label
+        k = "k" + c["kind"][0].upper() + c["kind"][1:]
+        out.append(f'    <span class="chip k-{c["kind"]}" title="{CHIPWORDS[lang][k]}">{t}</span>')
+    return "\n".join(out)
+
 
 def lang_nav(current, en, zh):
     """Both links always present; the current one is not a link to itself."""
@@ -23,7 +45,7 @@ def lang_nav(current, en, zh):
 
 
 def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figures=None,
-         script_from=None):
+         script_from=None, subs=None):
     h = head
     if extra_css:
         h = h.replace("  .rv { opacity:0;", (D / extra_css).read_text() + "\n  .rv { opacity:0;")
@@ -42,7 +64,19 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
         b = b.replace("__SCRIPT__", m.group(0).rstrip("\n"))
     if figures:
         b = b.replace("__FIGURES_JSON__", (D / figures).read_text())
+    # the slug is the published filename, so the chips cannot be attached to the
+    # wrong article without also publishing it under the wrong name
+    slug = out.split("/")[-1].replace(".zh.html", "").replace(".html", "")
+    short = "zh" if lang.startswith("zh") else "en"
+    if "__CHIPS__" in b:
+        b = b.replace("__CHIPS__", chips_html(slug, short))
+    for k, v in (subs or {}).items():
+        assert k in b, f"{body} has no {k} slot"
+        b = b.replace(k, v)
+    left = re.findall(r"__[A-Z][A-Z_]*__", b)
+    assert not left, f"{body} left {left} unfilled"
     p = OUT / out
+    TITLES[out] = title
     text = h + b
     if CHECK:
         if not p.exists():
@@ -56,10 +90,12 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
 
 
 MISMATCH = []
+TITLES = {}
 EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark")
 ZH_LABELS = ("语言与配色主题", "跟随系统",
              "浅色", "深色")
-IDX_LABELS = ("Colour theme", "Match system", "Light", "Dark")
+IDX_LABELS = ("Language and colour theme", "Match system", "Light", "Dark")
+IDX_LABELS_ZH = ZH_LABELS
 
 H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"
 R_EN, R_ZH = "rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"
@@ -251,101 +287,215 @@ if (D / "rdna3-body-zh.html").exists():
                            "与厂商无关，还有一个根本不是 GPU 的事。",
                       out="articles/" + Z_ZH, nav=lang_nav("zh", Z_EN, Z_ZH), labels=ZH_LABELS))
 
-articles = {"articles": [
-    {"href": "articles/" + Z_EN, "title": "How much of this is RDNA3 being second-class",
-     "blurb": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel "
-              "ecosystem. Sorting eight findings by what the evidence supports, three of them are "
-              "that, and the measurements that mattered most took findings off the list.",
-     "measured": "reviewed 2026-08-29",
-     "langs": ["EN", "\u4e2d"] if (D / "rdna3-body-zh.html").exists() else ["EN"],
-     "tags": ["synthesis", "RDNA3", "ROCm"]},
-    {"href": "articles/" + X_EN, "title": "How to measure decode on a machine like this",
-     "blurb": "The two harnesses agree to 0.44%, and finding that out took four identical runs the "
-              "first of which read 31% low. What every point carries, where the chart-grade line sits, "
-              "and one cell where the range and the standard deviation disagree about the direction.",
-     "measured": "measured 2026-08-26",
-     "langs": ["EN", "\u4e2d"] if (D / "measure-body-zh.html").exists() else ["EN"],
-     "tags": ["methodology", "calibration", "nondeterminism"]},
-    {"href": "articles/" + N_EN, "title": "How to report a bug you cannot reproduce",
-     "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth "
-              "something, and the third found that the reporter's own script counts failures on rank 0 "
-              "only \u2014 demonstrated by injecting a one-sided fault rather than argued.",
-     "measured": "measured 2026-08-28",
-     "langs": ["EN", "\u4e2d"] if (D / "n6565-body-zh.html").exists() else ["EN"],
-     "tags": ["RCCL", "negative result", "ROCm#6565"]},
-    {"href": "articles/" + Q_EN, "title": "A gate that costs 2 to 7 times and buys nothing",
-     "blurb": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is "
-              "a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and "
-              "the excluded band overlaps the admitted one on both.",
-     "measured": "measured 2026-08-28",
-     "langs": ["EN", "\u4e2d"] if (D / "gqa-body-zh.html").exists() else ["EN"],
-     "tags": ["paged attention", "gqa_ratio", "vllm#54210"]},
-    {"href": "articles/" + A_EN, "title": "Two consumer Radeons against one A100",
-     "blurb": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, "
-              "1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about "
-              "splitting the work across two cards.",
-     "measured": "measured 2026-08-26",
-     "langs": ["EN", "\u4e2d"] if (D / "a100-body-zh.html").exists() else ["EN"],
-     "tags": ["A100", "tensor parallelism", "bandwidth"]},
-    {"href": "articles/" + S_EN, "title": "One boolean costs 71% on a Radeon and 61% on an A100",
-     "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and "
-              "70.8% slower at 32K. One clause in an or chain reads speculation's second query row as "
-              "\"not decode\" and gives up 120 of 128 workgroups.",
-     "measured": "measured 2026-08-26",
-     "langs": ["EN", "\u4e2d"] if (D / "spec-body-zh.html").exists() else ["EN"],
-     "tags": ["speculative decoding", "Triton attention", "vllm#45450"]},
-    {"href": "articles/" + L_EN, "title": "Loading weights was slower than the disk, twice over",
-     "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the "
-              "mapping is writable, and that breaks copy-on-write on every resident page. On one "
-              "distro kernel each occurrence also cost a full second.",
-     "measured": "measured 2026-08-23",
-     "langs": ["EN", "\u4e2d"] if (D / "loader-body-zh.html").exists() else ["EN"],
-     "tags": ["HMM", "copy-on-write", "ROCm#6523"]},
-    {"href": "articles/" + M_EN, "title": "The fastest model here was written off at 15 tok/s",
-     "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced "
-              "into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, "
-              "and the flag had invented two qualitative findings on the way.",
-     "measured": "measured 2026-07-25",
-     "langs": ["EN", "\u4e2d"] if (D / "moe-body-zh.html").exists() else ["EN"],
-     "tags": ["MoE", "torch.compile", "vllm#53892"]},
-    {"href": "articles/" + W_EN, "title": "Twelve tokens a second was two problems",
-     "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x "
-              "at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one "
-              "growing cost, and each has its own upstream fix.",
-     "measured": "measured 2026-08-27",
-     "langs": ["EN", "\u4e2d"] if (D / "w4a16-body-zh.html").exists() else ["EN"],
-     "tags": ["W4A16", "kernel selection", "vllm#40977"]},
-    {"href": "articles/" + R_EN, "title": "The RCCL crash was never about RCCL",
-     "blurb": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers "
-              "below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual "
-              "machine the fix is one line of configuration.",
-     "measured": "reported 2026-07-26",
-     "langs": ["EN", "中"] if (D / "rccl-body-zh.html").exists() else ["EN"],
-     "tags": ["PCIe atomics", "hostcall", "ROCm#6520"]},
-    {"href": "articles/" + H_EN,
-     "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
-     "blurb": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel "
-              "accounts for all of it, the custom kernel is unreachable three conditions over, and "
-              "llama.cpp on the same machine rules out the driver.",
-     "measured": "measured 2026-07-25", "langs": ["EN", "中"],
-     "tags": ["hybrid SSM", "paged attention", "vllm#45916"]},
-]}
-(D / "articles.json").write_text(json.dumps(articles, ensure_ascii=False, indent=1))
+# ---- the index, as data ----------------------------------------------------
+# Nothing here is retyped. The titles are the ones the pages were built with,
+# the chips come from chips.json, the dates and what kind of claim they are come
+# from each article's chip of kind "date", and the one-line "what this
+# establishes" comes from the synthesis article's own figure data -- so the
+# synthesis and the index cannot describe a finding two different ways.
+RD = json.loads((D / "figures-rdna3.json").read_text())["fig1"]["findings"]
+ESTABLISHES = {f["slug"]: {"en": f["mechanism"], "zh": f["mechanism_zh"]} for f in RD}
+# the three the synthesis does not classify: it is one of them itself, and the
+# other two are about method rather than about a mechanism in the stack
+ESTABLISHES.update({
+    "reporting-a-non-reproduction": {
+        "en": "the reporter's own script counts failures on rank 0, so a one-sided "
+              "fault is recorded as a clean run",
+        "zh": "上报者自己的脚本只统计 rank 0 "
+              "的失败，单边故障因此被记"
+              "成一次干净运行"},
+    "measuring-decode": {
+        "en": "the first of four identical runs reads 31 % low, so one run on this "
+              "machine is not a measurement",
+        "zh": "四次相同运行里的第一次低 "
+              "31%，所以在这台机器上跑一次"
+              "不算测量"},
+    "rdna3-second-class": {
+        "en": "three of the eight findings are architecture-specific, and the "
+              "measurements that mattered most took findings off that list",
+        "zh": "八个结论里只有三个是架构"
+              "特有的，而最有价值的测量"
+              "是把结论从这张表上拿掉的"
+              "那些"},
+})
+
+ART = [
+ {"slug": "rdna3-second-class", "en": Z_EN, "zh": Z_ZH, "zhbody": "rdna3-body-zh.html",
+  "tags": ["synthesis", "RDNA3", "ROCm"],
+  "blurb": {
+   "en": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel "
+         "ecosystem. Sorting eight findings by what the evidence supports, three of them are "
+         "that, and the measurements that mattered most took findings off the list.",
+   "zh": "仓库自己的总结说 RDNA3 是 ROCm kernel "
+         "生态里的二等公民。把八个结"
+         "论按证据支持的范围排一排，"
+         "其中三个是；而最关键的几次"
+         "测量都是把结论从表上拿掉的。"}},
+ {"slug": "measuring-decode", "en": X_EN, "zh": X_ZH, "zhbody": "measure-body-zh.html",
+  "tags": ["methodology", "calibration", "nondeterminism"],
+  "blurb": {
+   "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the "
+         "first of which read 31% low. What every point carries, where the chart-grade line sits, "
+         "and one cell where the range and the standard deviation disagree about the direction.",
+   "zh": "两套 harness 吻合到 0.44%，而弄清这一"
+         "点用了四次相同的运行，其中"
+         "第一次低了 31%。每个点带什么、"
+         "制图级的线划在哪里，以及有"
+         "一格里极差和标准差对方向的"
+         "判断相反。"}},
+ {"slug": "reporting-a-non-reproduction", "en": N_EN, "zh": N_ZH, "zhbody": "n6565-body-zh.html",
+  "tags": ["RCCL", "negative result", "ROCm#6565"],
+  "blurb": {
+   "en": "A clean run is the least useful sentence on a bug tracker. Three things make it worth "
+         "something, and the third found that the reporter's own script counts failures on rank 0 "
+         "only — demonstrated by injecting a one-sided fault rather than argued.",
+   "zh": "一次干净的运行是 bug tracker 上最没"
+         "用的一句话。有三件事能让它"
+         "值点钱，而第三件找出了上报"
+         "者自己的脚本只数 rank 0 的失败"
+         "—— 是注入一个单边故障演示"
+         "出来的，不是论证出来的。"}},
+ {"slug": "gqa-gate-costs-nothing", "en": Q_EN, "zh": Q_ZH, "zhbody": "gqa-body-zh.html",
+  "tags": ["paged attention", "gqa_ratio", "vllm#54210"],
+  "blurb": {
+   "en": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is "
+         "a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and "
+         "the excluded band overlaps the admitted one on both.",
+   "zh": "把 vLLM 的 ROCm 定制 paged attention 在 gfx11 上挡"
+         "在 gqa_ratio 3 之外的那道界是一个性"
+         "能启发式，而它在这里是反的："
+         "六十个格子、两个 vLLM 版本，被"
+         "排除的区间在两边都与被放行"
+         "的区间重叠。"}},
+ {"slug": "a100-vs-two-radeons", "en": A_EN, "zh": A_ZH, "zhbody": "a100-body-zh.html",
+  "tags": ["A100", "tensor parallelism", "bandwidth"],
+  "blurb": {
+   "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, "
+         "1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about "
+         "splitting the work across two cards.",
+   "zh": "同一个 31B 模型的 batch-1 解码，两边"
+         "都跑在各自的健康路径上：1K "
+         "相差 1.48×，16K 是 1.14×，32K 是 1.87×。"
+         "两端的成因不同，而都关于把"
+         "工作拆到两张卡上。"}},
+ {"slug": "speculative-decoding-net-loss", "en": S_EN, "zh": S_ZH, "zhbody": "spec-body-zh.html",
+  "tags": ["speculative decoding", "Triton attention", "vllm#45450"],
+  "blurb": {
+   "en": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and "
+         "70.8% slower at 32K. One clause in an or chain reads speculation's second query row as "
+         "\"not decode\" and gives up 120 of 128 workgroups.",
+   "zh": "vLLM 自己文档里的 MTP 助手让 gemma-4-31B "
+         "在 1K 上快 36.9%，在 32K 上慢 70.8%。一串"
+         " or 里的一个子句把投机的第二"
+         "行 query 读成了“不是 decode”，于是"
+         "交出了 128 个 workgroup 里的 120 个。"}},
+ {"slug": "weight-loading-19x", "en": L_EN, "zh": L_ZH, "zhbody": "loader-body-zh.html",
+  "tags": ["HMM", "copy-on-write", "ROCm#6523"],
+  "blurb": {
+   "en": "A host-to-device copy only reads its source, but KFD asks for write access because the "
+         "mapping is writable, and that breaks copy-on-write on every resident page. On one "
+         "distro kernel each occurrence also cost a full second.",
+   "zh": "host→device 的拷贝只读源数据，但 KFD "
+         "因为映射可写就去申请写权限，"
+         "于是每一个驻留页的 copy-on-write 都被"
+         "破坏。在某个发行版内核上，"
+         "每触发一次还要多花整整一秒。"}},
+ {"slug": "moe-written-off-by-eager", "en": M_EN, "zh": M_ZH, "zhbody": "moe-body-zh.html",
+  "tags": ["MoE", "torch.compile", "vllm#53892"],
+  "blurb": {
+   "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced "
+         "into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, "
+         "and the flag had invented two qualitative findings on the way.",
+   "zh": "torch.compile 只给了二十分钟，而它需"
+         "要二十六，于是这次运行被压"
+         "进 eager 模式，一个 128 专家的 MoE 被"
+         "记作 15 tok/s。编译之后是 107.8，而"
+         "这个开关路上还凭空造出了两"
+         "个定性结论。"}},
+ {"slug": "w4a16-two-problems", "en": W_EN, "zh": W_ZH, "zhbody": "w4a16-body-zh.html",
+  "tags": ["W4A16", "kernel selection", "vllm#40977"],
+  "blurb": {
+   "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x "
+         "at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one "
+         "growing cost, and each has its own upstream fix.",
+   "zh": "同一个模型家族的两种打包，"
+         "在1K 上差 3.24×，在32K 上差 1.27×。"
+         "把它当毫秒而不是倍数来读，"
+         "就是一笔固定开销压在一笔增"
+         "长开销下面，而两者各自有自"
+         "己的上游修复。"}},
+ {"slug": "rccl-atomics-hostcall", "en": R_EN, "zh": R_ZH, "zhbody": "rccl-body-zh.html",
+  "tags": ["PCIe atomics", "hostcall", "ROCm#6520"],
+  "blurb": {
+   "en": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers "
+         "below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual "
+         "machine the fix is one line of configuration.",
+   "zh": "两张 Radeon、张量并行，以及 "
+         "hipErrorIllegalState。根因在 RCCL 下面四层，"
+         "三十行 HIP 不用 RCCL 就能复现，而"
+         "对一台虚拟机来说修复是一行"
+         "配置。"}},
+ {"slug": "hybrid-ssm-collapse", "en": H_EN, "zh": H_ZH, "zhbody": "article-body-zh.html",
+  "tags": ["hybrid SSM", "paged attention", "vllm#45916"],
+  "blurb": {
+   "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel "
+         "accounts for all of it, the custom kernel is unreachable three conditions over, and "
+         "llama.cpp on the same machine rules out the driver.",
+   "zh": "Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 掉到 "
+         "4.2 tok/s。一个 kernel 就解释了全部，"
+         "定制 kernel 差三个条件都进不去，"
+         "而同一台机器上的 llama.cpp 排除了"
+         "驱动。"}},
+]
+
+DKIND = {"measured", "reported", "reviewed"}
+records = []
+for a in ART:
+    dchip = [c for c in CHIPS[a["slug"]] if c["kind"] == "date"]
+    assert len(dchip) == 1, f'{a["slug"]}: expected one date chip, got {len(dchip)}'
+    assert dchip[0]["tl"] in DKIND, f'{a["slug"]}: unknown timeline kind {dchip[0]["tl"]}'
+    zh = (D / a["zhbody"]).exists()
+    records.append({
+        "slug": a["slug"],
+        "href": {"en": "articles/" + a["en"], "zh": "articles/" + a["zh"]},
+        "title": {"en": TITLES["articles/" + a["en"]], "zh": TITLES["articles/" + a["zh"]]},
+        "blurb": a["blurb"],
+        "establishes": ESTABLISHES[a["slug"]],
+        "dates": dchip[0]["v"], "date": max(dchip[0]["v"]), "kind": dchip[0]["tl"],
+        "chips": CHIPS[a["slug"]],
+        "langs": ["EN", "中"] if zh else ["EN"],
+        "tags": a["tags"]})
+articles = {"articles": records}
+AJSON = json.dumps(articles, ensure_ascii=False, indent=1)
+if CHECK:
+    if (D / "articles.json").read_text() != AJSON:
+        MISMATCH.append("articles.json: committed copy differs from its source")
+else:
+    (D / "articles.json").write_text(AJSON)
+
+I_EN, I_ZH = "index.html", "index.zh.html"
+IDX_SUBS = {"__ARTICLES_JSON__": AJSON}
 built.append(page("index-body.html", lang="en", extra_css="index-extra.css",
                   title="dual-radeon-vllm · write-ups",
                   desc="Long-form write-ups from a repository of measurements on 2x RX 7900 XT under "
                        "ROCm and vLLM. Every figure is checked against the committed data it is drawn "
                        "from.",
-                  out="index.html", labels=IDX_LABELS))
-idx = OUT / "index.html"
-if not CHECK:
-    idx.write_text(idx.read_text().replace("__ARTICLES_JSON__",
-                                           json.dumps(articles, ensure_ascii=False, indent=1)))
+                  out=I_EN, nav=lang_nav("en", I_EN, I_ZH), labels=IDX_LABELS,
+                  subs=dict(IDX_SUBS, __CHIPWORDS_JSON__=json.dumps(
+                      CHIPWORDS["en"], ensure_ascii=False, indent=1))))
+built.append(page("index-body-zh.html", lang="zh-CN", extra_css="index-extra.css",
+                  script_from="index-body.html",
+                  title="dual-radeon-vllm · 实测长文",
+                  desc="一个在 2× RX 7900 XT 上做 ROCm 与 vLLM "
+                       "实测的仓库，其中的长文。"
+                       "每张图都对照它所出自的已"
+                       "入库数据被检查过。",
+                  out=I_ZH, nav=lang_nav("zh", I_EN, I_ZH), labels=IDX_LABELS_ZH,
+                  subs=dict(IDX_SUBS, __CHIPWORDS_JSON__=json.dumps(
+                      CHIPWORDS["zh"], ensure_ascii=False, indent=1))))
+
 
 if CHECK:
-    # the index carries a placeholder until after it is written, so compare the
-    # rest of it and let the articles carry the byte-for-byte guarantee
-    MISMATCH[:] = [m for m in MISMATCH if not m.startswith("index.html")]
     for m in MISMATCH:
         print("  MISMATCH", m)
     print(f"  {len(built)} pages checked, {len(MISMATCH)} differ from their source")
@@ -369,15 +519,17 @@ for p in built:
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
                  (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH),
-                 (N_EN, N_ZH), (X_EN, X_ZH), (Z_EN, Z_ZH)):
-    a, b = OUT / "articles" / en, OUT / "articles" / zh
+                 (N_EN, N_ZH), (X_EN, X_ZH), (Z_EN, Z_ZH), (I_EN, I_ZH)):
+    sub = OUT if en == I_EN else OUT / "articles"
+    a, b = sub / en, sub / zh
     if not b.exists():
         continue
     ta, tb = a.read_text(), b.read_text()
     grab = lambda t, i: re.search(r'<script type="application/json" id="%s">(.*?)</script>' % i, t, re.S)
-    assert grab(ta, "figures").group(1) == grab(tb, "figures").group(1), f"{en}/{zh} figures diverged"
+    data = "figures" if en != I_EN else "articles"
+    assert grab(ta, data).group(1) == grab(tb, data).group(1), f"{en}/{zh} data diverged"
     sa = re.search(r"<script>\n\(function \(\).*?\n</script>", ta, re.S).group(0)
     sb = re.search(r"<script>\n\(function \(\).*?\n</script>", tb, re.S).group(0)
     assert sa == sb, f"{en}/{zh} scripts diverged"
-    print(f"  {en} / {zh}: figures block and script identical")
+    print(f"  {en} / {zh}: data block and script identical")
 print(f"  no page loads an external asset; links stay within {sorted(LINK_HOSTS)}")

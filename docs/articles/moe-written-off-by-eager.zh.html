@@ -114,6 +114,19 @@
   .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
           border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
   .chip b { color:var(--text); font-weight:700; }
+  /* chips are typed, and the type is the dot: hardware, model, stack, platform,
+     scale, upstream, date. The dot is decoration, so the type is also spelled
+     out in the chip's own words rather than carried by colour alone. */
+  .chip::before { content:""; display:inline-block; width:5px; height:5px; border-radius:99px;
+                  margin-right:.55em; vertical-align:.1em; background:var(--ck,var(--text-dim)); }
+  .chip.k-hardware { --ck:var(--s2); }
+  .chip.k-model    { --ck:var(--s4); }
+  .chip.k-stack    { --ck:var(--s3); }
+  .chip.k-platform { --ck:var(--s5); }
+  .chip.k-upstream { --ck:var(--s1); }
+  .chip.k-date     { --ck:var(--accent); }
+  .chip.k-scale    { --ck:var(--text-dim); }
+  .chip.k-link::before { display:none; }
 
   /* ---- abstract ---- */
   .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
@@ -310,10 +323,10 @@
   <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
   编译需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
   <div class="meta">
-    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
-    <span class="chip"><b>gemma-4-26B-A4B</b> · 128 专家</span>
-    <span class="chip">Zen 1 宿主 · <b>8 核</b></span>
-    <span class="chip">实测 <b>2026-07-25</b></span>
+    <span class="chip k-hardware" title="硬件">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip k-model" title="模型"><b>gemma-4-26B-A4B</b> · 128 专家</span>
+    <span class="chip k-platform" title="平台">Zen 1 宿主 · <b>8 核</b></span>
+    <span class="chip k-date" title="日期">实测 <b>2026-07-25</b></span>
   </div>
 </header>
 

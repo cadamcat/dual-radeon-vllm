@@ -1,10 +1,54 @@
 {
  "articles": [
   {
-   "href": "articles/rdna3-second-class.html",
-   "title": "How much of this is RDNA3 being second-class",
-   "blurb": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel ecosystem. Sorting eight findings by what the evidence supports, three of them are that, and the measurements that mattered most took findings off the list.",
-   "measured": "reviewed 2026-08-29",
+   "slug": "rdna3-second-class",
+   "href": {
+    "en": "articles/rdna3-second-class.html",
+    "zh": "articles/rdna3-second-class.zh.html"
+   },
+   "title": {
+    "en": "How much of this is RDNA3 being second-class",
+    "zh": "这里面有多少真的是 RDNA3 二等公民"
+   },
+   "blurb": {
+    "en": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel ecosystem. Sorting eight findings by what the evidence supports, three of them are that, and the measurements that mattered most took findings off the list.",
+    "zh": "仓库自己的总结说 RDNA3 是 ROCm kernel 生态里的二等公民。把八个结论按证据支持的范围排一排，其中三个是；而最关键的几次测量都是把结论从表上拿掉的。"
+   },
+   "establishes": {
+    "en": "three of the eight findings are architecture-specific, and the measurements that mattered most took findings off that list",
+    "zh": "八个结论里只有三个是架构特有的，而最有价值的测量是把结论从这张表上拿掉的那些"
+   },
+   "dates": [
+    "2026-08-29"
+   ],
+   "date": "2026-08-29",
+   "kind": "reviewed",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwPair",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleFindings",
+     "v": [
+      "8",
+      "16"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "reviewed",
+     "w": "dChecked",
+     "v": [
+      "2026-08-29"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -16,10 +60,62 @@
    ]
   },
   {
-   "href": "articles/measuring-decode.html",
-   "title": "How to measure decode on a machine like this",
-   "blurb": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
-   "measured": "measured 2026-08-26",
+   "slug": "measuring-decode",
+   "href": {
+    "en": "articles/measuring-decode.html",
+    "zh": "articles/measuring-decode.zh.html"
+   },
+   "title": {
+    "en": "How to measure decode on a machine like this",
+    "zh": "在这样一台机器上怎么测 decode"
+   },
+   "blurb": {
+    "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
+    "zh": "两套 harness 吻合到 0.44%，而弄清这一点用了四次相同的运行，其中第一次低了 31%。每个点带什么、制图级的线划在哪里，以及有一格里极差和标准差对方向的判断相反。"
+   },
+   "establishes": {
+    "en": "the first of four identical runs reads 31 % low, so one run on this machine is not a measurement",
+    "zh": "四次相同运行里的第一次低 31%，所以在这台机器上跑一次不算测量"
+   },
+   "dates": [
+    "2026-08-26"
+   ],
+   "date": "2026-08-26",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelCalibrated",
+     "v": [
+      "Qwen3-8B",
+      "bf16"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleLedgerRows",
+     "v": [
+      "170"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-26"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -31,10 +127,63 @@
    ]
   },
   {
-   "href": "articles/reporting-a-non-reproduction.html",
-   "title": "How to report a bug you cannot reproduce",
-   "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth something, and the third found that the reporter's own script counts failures on rank 0 only — demonstrated by injecting a one-sided fault rather than argued.",
-   "measured": "measured 2026-08-28",
+   "slug": "reporting-a-non-reproduction",
+   "href": {
+    "en": "articles/reporting-a-non-reproduction.html",
+    "zh": "articles/reporting-a-non-reproduction.zh.html"
+   },
+   "title": {
+    "en": "How to report a bug you cannot reproduce",
+    "zh": "怎么报告一个你复现不出来的 bug"
+   },
+   "blurb": {
+    "en": "A clean run is the least useful sentence on a bug tracker. Three things make it worth something, and the third found that the reporter's own script counts failures on rank 0 only — demonstrated by injecting a one-sided fault rather than argued.",
+    "zh": "一次干净的运行是 bug tracker 上最没用的一句话。有三件事能让它值点钱，而第三件找出了上报者自己的脚本只数 rank 0 的失败—— 是注入一个单边故障演示出来的，不是论证出来的。"
+   },
+   "establishes": {
+    "en": "the reporter's own script counts failures on rank 0, so a one-sided fault is recorded as a clean run",
+    "zh": "上报者自己的脚本只统计 rank 0 的失败，单边故障因此被记成一次干净运行"
+   },
+   "dates": [
+    "2026-08-27",
+    "2026-08-28"
+   ],
+   "date": "2026-08-28",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwPairVfio",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackRcclRocm",
+     "v": [
+      "2.30.4",
+      "7.14"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwAgainstBare",
+     "v": [
+      "W7800"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasuredTwo",
+     "v": [
+      "2026-08-27",
+      "2026-08-28"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -46,10 +195,68 @@
    ]
   },
   {
-   "href": "articles/gqa-gate-costs-nothing.html",
-   "title": "A gate that costs 2 to 7 times and buys nothing",
-   "blurb": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and the excluded band overlaps the admitted one on both.",
-   "measured": "measured 2026-08-28",
+   "slug": "gqa-gate-costs-nothing",
+   "href": {
+    "en": "articles/gqa-gate-costs-nothing.html",
+    "zh": "articles/gqa-gate-costs-nothing.zh.html"
+   },
+   "title": {
+    "en": "A gate that costs 2 to 7 times and buys nothing",
+    "zh": "一道 2–7 倍的门，什么也没换来"
+   },
+   "blurb": {
+    "en": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and the excluded band overlaps the admitted one on both.",
+    "zh": "把 vLLM 的 ROCm 定制 paged attention 在 gfx11 上挡在 gqa_ratio 3 之外的那道界是一个性能启发式，而它在这里是反的：六十个格子、两个 vLLM 版本，被排除的区间在两边都与被放行的区间重叠。"
+   },
+   "establishes": {
+    "en": "the gfx11 branch requires gqa_ratio >= 3; the CDNA branch of the same function requires >= 1",
+    "zh": "gfx11 分支要求 gqa_ratio >= 3，同一函数的 CDNA 分支只要求 >= 1"
+   },
+   "dates": [
+    "2026-08-28"
+   ],
+   "date": "2026-08-28",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwPair",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmTwo",
+     "v": [
+      "0.23.1",
+      "0.27.1"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwPlusA100",
+     "v": [
+      "A100"
+     ]
+    },
+    {
+     "kind": "upstream",
+     "w": "upProposed",
+     "v": [
+      "vllm#54210"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-28"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -61,10 +268,62 @@
    ]
   },
   {
-   "href": "articles/a100-vs-two-radeons.html",
-   "title": "Two consumer Radeons against one A100",
-   "blurb": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",
-   "measured": "measured 2026-08-26",
+   "slug": "a100-vs-two-radeons",
+   "href": {
+    "en": "articles/a100-vs-two-radeons.html",
+    "zh": "articles/a100-vs-two-radeons.zh.html"
+   },
+   "title": {
+    "en": "Two consumer Radeons against one A100",
+    "zh": "两张消费级 Radeon 对一张 A100"
+   },
+   "blurb": {
+    "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",
+    "zh": "同一个 31B 模型的 batch-1 解码，两边都跑在各自的健康路径上：1K 相差 1.48×，16K 是 1.14×，32K 是 1.87×。两端的成因不同，而都关于把工作拆到两张卡上。"
+   },
+   "establishes": {
+    "en": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
+    "zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半"
+   },
+   "dates": [
+    "2026-08-26"
+   ],
+   "date": "2026-08-26",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwA100Tp1",
+     "v": [
+      "A100-SXM4-80GB"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelMtpOn",
+     "v": [
+      "gemma-4-31B",
+      "w4a16"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-26"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -76,10 +335,63 @@
    ]
   },
   {
-   "href": "articles/speculative-decoding-net-loss.html",
-   "title": "One boolean costs 71% on a Radeon and 61% on an A100",
-   "blurb": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and 70.8% slower at 32K. One clause in an or chain reads speculation's second query row as \"not decode\" and gives up 120 of 128 workgroups.",
-   "measured": "measured 2026-08-26",
+   "slug": "speculative-decoding-net-loss",
+   "href": {
+    "en": "articles/speculative-decoding-net-loss.html",
+    "zh": "articles/speculative-decoding-net-loss.zh.html"
+   },
+   "title": {
+    "en": "One boolean costs 71% on a Radeon and 61% on an A100",
+    "zh": "一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%"
+   },
+   "blurb": {
+    "en": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and 70.8% slower at 32K. One clause in an or chain reads speculation's second query row as \"not decode\" and gives up 120 of 128 workgroups.",
+    "zh": "vLLM 自己文档里的 MTP 助手让 gemma-4-31B 在 1K 上快 36.9%，在 32K 上慢 70.8%。一串 or 里的一个子句把投机的第二行 query 读成了“不是 decode”，于是交出了 128 个 workgroup 里的 120 个。"
+   },
+   "establishes": {
+    "en": "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8",
+    "zh": "max_seqlen_q > 1 把 Triton 注意力 kernel 从 128 个 workgroup 降到 8 个"
+   },
+   "dates": [
+    "2026-08-01",
+    "2026-08-26"
+   ],
+   "date": "2026-08-26",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwAndA100",
+     "v": [
+      "A100 80G"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelMtpAssistant",
+     "v": [
+      "gemma-4-31B"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasuredTwo",
+     "v": [
+      "2026-08-01",
+      "2026-08-26"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -91,10 +403,64 @@
    ]
   },
   {
-   "href": "articles/weight-loading-19x.html",
-   "title": "Loading weights was slower than the disk, twice over",
-   "blurb": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",
-   "measured": "measured 2026-08-23",
+   "slug": "weight-loading-19x",
+   "href": {
+    "en": "articles/weight-loading-19x.html",
+    "zh": "articles/weight-loading-19x.zh.html"
+   },
+   "title": {
+    "en": "Loading weights was slower than the disk, twice over",
+    "zh": "加载权重比磁盘还慢，而且慢了两次"
+   },
+   "blurb": {
+    "en": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",
+    "zh": "host→device 的拷贝只读源数据，但 KFD 因为映射可写就去申请写权限，于是每一个驻留页的 copy-on-write 都被破坏。在某个发行版内核上，每触发一次还要多花整整一秒。"
+   },
+   "establishes": {
+    "en": "KFD reads the access mode off the VMA, so a read-only copy asks for write and breaks copy-on-write",
+    "zh": "KFD 从 VMA 读访问模式，于是只读的拷贝也要写权限，破坏了 copy-on-write"
+   },
+   "dates": [
+    "2026-07-28",
+    "2026-08-23"
+   ],
+   "date": "2026-08-23",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwPairVfio",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackKernelBump",
+     "v": [
+      "7.0.0-28",
+      "-30"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackTwo",
+     "v": [
+      "ROCm 7.14",
+      "safetensors 0.8.0"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasuredTwo",
+     "v": [
+      "2026-07-28",
+      "2026-08-23"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -106,10 +472,62 @@
    ]
   },
   {
-   "href": "articles/moe-written-off-by-eager.html",
-   "title": "The fastest model here was written off at 15 tok/s",
-   "blurb": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
-   "measured": "measured 2026-07-25",
+   "slug": "moe-written-off-by-eager",
+   "href": {
+    "en": "articles/moe-written-off-by-eager.html",
+    "zh": "articles/moe-written-off-by-eager.zh.html"
+   },
+   "title": {
+    "en": "The fastest model here was written off at 15 tok/s",
+    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
+   },
+   "blurb": {
+    "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
+    "zh": "torch.compile 只给了二十分钟，而它需要二十六，于是这次运行被压进 eager 模式，一个 128 专家的 MoE 被记作 15 tok/s。编译之后是 107.8，而这个开关路上还凭空造出了两个定性结论。"
+   },
+   "establishes": {
+    "en": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
+    "zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉"
+   },
+   "dates": [
+    "2026-07-25"
+   ],
+   "date": "2026-07-25",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelExperts",
+     "v": [
+      "gemma-4-26B-A4B",
+      "128"
+     ]
+    },
+    {
+     "kind": "platform",
+     "w": "platHostCores",
+     "v": [
+      "8"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-07-25"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -121,10 +539,63 @@
    ]
   },
   {
-   "href": "articles/w4a16-two-problems.html",
-   "title": "Twelve tokens a second was two problems",
-   "blurb": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
-   "measured": "measured 2026-08-27",
+   "slug": "w4a16-two-problems",
+   "href": {
+    "en": "articles/w4a16-two-problems.html",
+    "zh": "articles/w4a16-two-problems.zh.html"
+   },
+   "title": {
+    "en": "Twelve tokens a second was two problems",
+    "zh": "12 tok/s 是两个问题"
+   },
+   "blurb": {
+    "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
+    "zh": "同一个模型家族的两种打包，在1K 上差 3.24×，在32K 上差 1.27×。把它当毫秒而不是倍数来读，就是一笔固定开销压在一笔增长开销下面，而两者各自有自己的上游修复。"
+   },
+   "establishes": {
+    "en": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
+    "zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel"
+   },
+   "dates": [
+    "2026-08-27"
+   ],
+   "date": "2026-08-27",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmTwo",
+     "v": [
+      "0.23.1.dev",
+      "0.27.1.dev5"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelDot",
+     "v": [
+      "Qwen3.8-27B",
+      "compressed-tensors int4"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-27"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -136,10 +607,68 @@
    ]
   },
   {
-   "href": "articles/rccl-atomics-hostcall.html",
-   "title": "The RCCL crash was never about RCCL",
-   "blurb": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",
-   "measured": "reported 2026-07-26",
+   "slug": "rccl-atomics-hostcall",
+   "href": {
+    "en": "articles/rccl-atomics-hostcall.html",
+    "zh": "articles/rccl-atomics-hostcall.zh.html"
+   },
+   "title": {
+    "en": "The RCCL crash was never about RCCL",
+    "zh": "RCCL 崩溃从来不是 RCCL 的问题"
+   },
+   "blurb": {
+    "en": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",
+    "zh": "两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层，三十行 HIP 不用 RCCL 就能复现，而对一台虚拟机来说修复是一行配置。"
+   },
+   "establishes": {
+    "en": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
+    "zh": "没有 PCIe AtomicOps 就没有 hostcall buffer，dispatch 被拒"
+   },
+   "dates": [
+    "2026-07-26"
+   ],
+   "date": "2026-07-26",
+   "kind": "reported",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwPair",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackRocmRccl",
+     "v": [
+      "7.14",
+      "2.30.4"
+     ]
+    },
+    {
+     "kind": "platform",
+     "w": "platProxmox",
+     "v": [
+      "X399 / Threadripper 1950X"
+     ]
+    },
+    {
+     "kind": "upstream",
+     "w": "upFiled",
+     "v": [
+      "ROCm#6520"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "reported",
+     "w": "dReported",
+     "v": [
+      "2026-07-26"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"
@@ -151,10 +680,62 @@
    ]
   },
   {
-   "href": "articles/hybrid-ssm-collapse.html",
-   "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
-   "blurb": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
-   "measured": "measured 2026-07-25",
+   "slug": "hybrid-ssm-collapse",
+   "href": {
+    "en": "articles/hybrid-ssm-collapse.html",
+    "zh": "articles/hybrid-ssm-collapse.zh.html"
+   },
+   "title": {
+    "en": "A hybrid-SSM model that decodes slower the longer you talk to it",
+    "zh": "一个上下文越长解码越慢的混合 SSM 模型"
+   },
+   "blurb": {
+    "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
+    "zh": "Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 掉到 4.2 tok/s。一个 kernel 就解释了全部，定制 kernel 差三个条件都进不去，而同一台机器上的 llama.cpp 排除了驱动。"
+   },
+   "establishes": {
+    "en": "the few full-attention layers fall off the ROCm paged-attention fast path",
+    "zh": "少数几层全注意力掉出了 ROCm paged-attention 的快路径"
+   },
+   "dates": [
+    "2026-07-25"
+   ],
+   "date": "2026-07-25",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmRocm",
+     "v": [
+      "0.23.1.dev1",
+      "7.14"
+     ]
+    },
+    {
+     "kind": "platform",
+     "w": "platVfioNoP2P",
+     "v": [
+      "PCIe 3.0"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dCampaign",
+     "v": [
+      "2026-07-25"
+     ]
+    }
+   ],
    "langs": [
     "EN",
     "中"

@@ -114,6 +114,19 @@
   .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
           border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
   .chip b { color:var(--text); font-weight:700; }
+  /* chips are typed, and the type is the dot: hardware, model, stack, platform,
+     scale, upstream, date. The dot is decoration, so the type is also spelled
+     out in the chip's own words rather than carried by colour alone. */
+  .chip::before { content:""; display:inline-block; width:5px; height:5px; border-radius:99px;
+                  margin-right:.55em; vertical-align:.1em; background:var(--ck,var(--text-dim)); }
+  .chip.k-hardware { --ck:var(--s2); }
+  .chip.k-model    { --ck:var(--s4); }
+  .chip.k-stack    { --ck:var(--s3); }
+  .chip.k-platform { --ck:var(--s5); }
+  .chip.k-upstream { --ck:var(--s1); }
+  .chip.k-date     { --ck:var(--accent); }
+  .chip.k-scale    { --ck:var(--text-dim); }
+  .chip.k-link::before { display:none; }
 
   /* ---- abstract ---- */
   .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
@@ -323,10 +336,10 @@
   You have two gfx1100 cards. It does not happen. That is worth almost nothing on its own — and it can
   be made worth something, by three things that have nothing to do with running the test more times.</p>
   <div class="meta">
-    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
-    <span class="chip">RCCL <b>2.30.4</b> · ROCm 7.14</span>
-    <span class="chip">against <b>2× W7800</b> on bare metal</span>
-    <span class="chip">measured <b>2026-08-27</b> and <b>2026-08-28</b></span>
+    <span class="chip k-hardware" title="hardware">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
+    <span class="chip k-stack" title="stack">RCCL <b>2.30.4</b> · ROCm 7.14</span>
+    <span class="chip k-hardware" title="hardware">against <b>2× W7800</b> on bare metal</span>
+    <span class="chip k-date" title="date">measured <b>2026-08-27</b> and <b>2026-08-28</b></span>
   </div>
 </header>
 

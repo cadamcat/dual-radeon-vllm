@@ -89,6 +89,57 @@ FINDINGS = [
      "why": "reproduced on bare metal by someone else; the trigger is the root port, not the GPU",
      "upstream": ["ROCm#6520"]},
 ]
+# The Chinese half of the same eight rows. The figure block is byte-identical
+# across the language pair, so both live here and the shared script picks by
+# document.documentElement.lang; the index's one-line summary reads the same
+# mechanism field, which is what keeps the synthesis article and the index from
+# describing a finding two different ways.
+ZH = {
+    "hybrid-ssm-collapse": {
+        "title": "\u4e00\u4e2a\u4e0a\u4e0b\u6587\u8d8a\u957f\u89e3\u7801\u8d8a\u6162\u7684\u6df7\u5408 SSM \u6a21\u578b",
+        "mechanism": "\u5c11\u6570\u51e0\u5c42\u5168\u6ce8\u610f\u529b\u6389\u51fa\u4e86 ROCm paged-attention \u7684\u5feb\u8def\u5f84",
+        "unit": "\u00d7\uff0c\u4ece 500 \u5230 32K token \u635f\u5931\u7684\u500d\u6570",
+        "why": "\u4fee\u597d\u5b83\u7684 split-KV \u515c\u5e95\u662f\u4e13\u95e8\u4e3a gfx11 \u52a0\u7684\uff1b\u8fd9\u6761\u8def\u5f84\u5728\u522b\u5904\u65e9\u5c31\u6709"},
+    "w4a16-two-problems": {
+        "title": "12 tok/s \u662f\u4e24\u4e2a\u95ee\u9898",
+        "mechanism": "\u975e\u5bf9\u79f0 int4 checkpoint \u5728\u7c7b\u578b\u5224\u65ad\u4e0a\u9519\u8fc7\u4e86 gfx1100 \u7684\u539f\u751f W4A16 kernel",
+        "unit": "\u00d7\uff0c1K \u4e0a\u5bf9\u79f0\u4e0e\u975e\u5bf9\u79f0\u6253\u5305\u4e4b\u6bd4",
+        "why": "\u5341\u4e8c\u79cd\u975e\u5bf9\u79f0\u914d\u7f6e\u91cc\u6709\u516b\u79cd\u5728 gfx1100 \u4e0a\u81f3\u4eca\u6ca1\u6709\u4efb\u4f55 kernel"},
+    "gqa-gate-costs-nothing": {
+        "title": "\u4e00\u9053 2\u20137 \u500d\u7684\u95e8\uff0c\u4ec0\u4e48\u4e5f\u6ca1\u6362\u6765",
+        "mechanism": "gfx11 \u5206\u652f\u8981\u6c42 gqa_ratio >= 3\uff0c\u540c\u4e00\u51fd\u6570\u7684 CDNA \u5206\u652f\u53ea\u8981\u6c42 >= 1",
+        "unit": "\u00d7\uff0c\u88ab\u6392\u9664\u533a\u95f4\u5728 kernel \u5c42\u9762\u7684\u6700\u597d\u60c5\u51b5",
+        "why": "\u4e00\u884c\u4ee3\u7801\u3001\u4e00\u79cd\u67b6\u6784\uff0c\u800c\u7ed9\u51fa\u7684\u7406\u7531\u5728\u8fd9\u91cc\u4e0d\u6210\u7acb"},
+    "weight-loading-19x": {
+        "title": "\u52a0\u8f7d\u6743\u91cd\u6bd4\u78c1\u76d8\u8fd8\u6162\uff0c\u800c\u4e14\u6162\u4e86\u4e24\u6b21",
+        "mechanism": "KFD \u4ece VMA \u8bfb\u8bbf\u95ee\u6a21\u5f0f\uff0c\u4e8e\u662f\u53ea\u8bfb\u7684\u62f7\u8d1d\u4e5f\u8981\u5199\u6743\u9650\uff0c\u7834\u574f\u4e86 copy-on-write",
+        "unit": "\u00d7\uff0c\u5728\u4e00\u4e2a\u88c5\u4e0d\u8fdb\u5185\u5b58\u7684 checkpoint \u4e0a",
+        "why": "kfd_svm.c \u4e0d\u662f\u67b6\u6784\u7279\u5b9a\u7684\uff0cAMD \u4e5f\u8fd9\u4e48\u786e\u8ba4\u4e86"},
+    "moe-written-off-by-eager": {
+        "title": "\u5168\u673a\u6700\u5feb\u7684\u6a21\u578b\u66fe\u88ab 15 tok/s \u5224\u6b7b\u5211",
+        "mechanism": "vLLM \u5728 import \u65f6\u5c31\u8d4b\u503c TORCHINDUCTOR_COMPILE_THREADS=1\uff0cexport \u8986\u76d6\u4e0d\u6389",
+        "unit": "\u00d7\uff0c\u672c\u673a\u4e0a eager \u4e0e\u7f16\u8bd1\u4e4b\u6bd4",
+        "why": "\u8fd9\u6761\u8d4b\u503c\u5728 env_override.py \u91cc\uff0c\u6bcf\u4e2a\u5e73\u53f0\u90fd\u4f1a\u6267\u884c"},
+    "speculative-decoding-net-loss": {
+        "title": "\u4e00\u4e2a\u5e03\u5c14\u503c\uff0c\u5728 Radeon \u4e0a\u662f 71%\uff0c\u5728 A100 \u4e0a\u662f 61%",
+        "mechanism": "max_seqlen_q > 1 \u628a Triton \u6ce8\u610f\u529b kernel \u4ece 128 \u4e2a workgroup \u964d\u5230 8 \u4e2a",
+        "unit": "\u00d7\uff0c32K \u4e0a\u5f00\u6295\u673a\u6bd4\u4e0d\u5f00\u6162",
+        "why": "\u5728 A100 \u4e0a\u4e5f\u6d4b\u4e86\uff0c\u540c\u4e00\u4e2a kernel \u5728 50K \u4e0a\u635f\u5931 61%"},
+    "a100-vs-two-radeons": {
+        "title": "\u4e24\u5f20\u6d88\u8d39\u7ea7 Radeon \u5bf9\u4e00\u5f20 A100",
+        "mechanism": "2D \u6ce8\u610f\u529b\u8def\u5f84\u6bcf\u4e2a KV head \u8d77\u4e00\u4e2a workgroup\uff0c\u5f20\u91cf\u5e76\u884c\u628a\u5b83\u4eec\u51cf\u534a",
+        "unit": "\u00d7\uff0c\u4e24\u5361\u7684\u4fdd\u6301\u7387\u6bd4\u5355\u5361\u5dee",
+        "why": "\u8fd9\u662f\u62c6\u5206\u5de5\u4f5c\u7684\u6027\u8d28\uff0c\u4e0d\u662f\u7845\u7247\u7684\uff1b\u5355\u5f20 A100 \u8dd1\u7684\u662f\u540c\u4e00\u4e2a kernel"},
+    "rccl-atomics-hostcall": {
+        "title": "RCCL \u5d29\u6e83\u4ece\u6765\u4e0d\u662f RCCL \u7684\u95ee\u9898",
+        "mechanism": "\u6ca1\u6709 PCIe AtomicOps \u5c31\u6ca1\u6709 hostcall buffer\uff0cdispatch \u88ab\u62d2",
+        "unit": "\u6bcf\u4e00\u6b21\u96c6\u5408\u901a\u4fe1\u90fd\u5728 dispatch \u5904\u5931\u8d25",
+        "why": "\u522b\u4eba\u5728\u88f8\u673a\u4e0a\u590d\u73b0\u4e86\uff1b\u89e6\u53d1\u6761\u4ef6\u662f root port\uff0c\u4e0d\u662f GPU"},
+}
+for _f in FINDINGS:
+    for _k, _v in ZH[_f["slug"]].items():
+        _f[_k + "_zh"] = _v
+
 AXES = {"rdna3": "RDNA3 specifically", "amd": "AMD-wide", "neutral": "vendor-neutral",
         "tp": "tensor parallelism", "platform": "platform capability"}
 fig1 = {"findings": FINDINGS, "axes": AXES,

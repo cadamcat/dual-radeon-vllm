@@ -114,6 +114,19 @@
   .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
           border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
   .chip b { color:var(--text); font-weight:700; }
+  /* chips are typed, and the type is the dot: hardware, model, stack, platform,
+     scale, upstream, date. The dot is decoration, so the type is also spelled
+     out in the chip's own words rather than carried by colour alone. */
+  .chip::before { content:""; display:inline-block; width:5px; height:5px; border-radius:99px;
+                  margin-right:.55em; vertical-align:.1em; background:var(--ck,var(--text-dim)); }
+  .chip.k-hardware { --ck:var(--s2); }
+  .chip.k-model    { --ck:var(--s4); }
+  .chip.k-stack    { --ck:var(--s3); }
+  .chip.k-platform { --ck:var(--s5); }
+  .chip.k-upstream { --ck:var(--s1); }
+  .chip.k-date     { --ck:var(--accent); }
+  .chip.k-scale    { --ck:var(--text-dim); }
+  .chip.k-link::before { display:none; }
 
   /* ---- abstract ---- */
   .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
@@ -338,9 +351,9 @@
   about the GPU at all — and knowing which is which is the difference between a diagnosis and a
   grievance.</p>
   <div class="meta">
-    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100</span>
-    <span class="chip">eight findings · <b>sixteen</b> upstream threads</span>
-    <span class="chip">statuses checked <b>2026-08-29</b></span>
+    <span class="chip k-hardware" title="hardware">2× <b>RX 7900 XT</b> · gfx1100</span>
+    <span class="chip k-scale" title="scale"><b>8</b> findings · <b>16</b> upstream threads</span>
+    <span class="chip k-date" title="date">statuses checked <b>2026-08-29</b></span>
   </div>
 </header>
 
@@ -553,7 +566,11 @@ it stood.</p>
     "upstream": [
      "vllm#45916",
      "vllm#50264"
-    ]
+    ],
+    "title_zh": "一个上下文越长解码越慢的混合 SSM 模型",
+    "mechanism_zh": "少数几层全注意力掉出了 ROCm paged-attention 的快路径",
+    "unit_zh": "×，从 500 到 32K token 损失的倍数",
+    "why_zh": "修好它的 split-KV 兜底是专门为 gfx11 加的；这条路径在别处早就有"
    },
    {
     "slug": "w4a16-two-problems",
@@ -565,7 +582,11 @@ it stood.</p>
     "why": "eight of twelve asymmetric configurations still have no kernel at all on gfx1100",
     "upstream": [
      "vllm#40977"
-    ]
+    ],
+    "title_zh": "12 tok/s 是两个问题",
+    "mechanism_zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel",
+    "unit_zh": "×，1K 上对称与非对称打包之比",
+    "why_zh": "十二种非对称配置里有八种在 gfx1100 上至今没有任何 kernel"
    },
    {
     "slug": "gqa-gate-costs-nothing",
@@ -578,7 +599,11 @@ it stood.</p>
     "upstream": [
      "vllm#54210",
      "vllm#50603"
-    ]
+    ],
+    "title_zh": "一道 2–7 倍的门，什么也没换来",
+    "mechanism_zh": "gfx11 分支要求 gqa_ratio >= 3，同一函数的 CDNA 分支只要求 >= 1",
+    "unit_zh": "×，被排除区间在 kernel 层面的最好情况",
+    "why_zh": "一行代码、一种架构，而给出的理由在这里不成立"
    },
    {
     "slug": "weight-loading-19x",
@@ -591,7 +616,11 @@ it stood.</p>
     "upstream": [
      "ROCm#6523",
      "vllm#49991"
-    ]
+    ],
+    "title_zh": "加载权重比磁盘还慢，而且慢了两次",
+    "mechanism_zh": "KFD 从 VMA 读访问模式，于是只读的拷贝也要写权限，破坏了 copy-on-write",
+    "unit_zh": "×，在一个装不进内存的 checkpoint 上",
+    "why_zh": "kfd_svm.c 不是架构特定的，AMD 也这么确认了"
    },
    {
     "slug": "moe-written-off-by-eager",
@@ -604,7 +633,11 @@ it stood.</p>
     "upstream": [
      "vllm#53891",
      "vllm#53892"
-    ]
+    ],
+    "title_zh": "全机最快的模型曾被 15 tok/s 判死刑",
+    "mechanism_zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉",
+    "unit_zh": "×，本机上 eager 与编译之比",
+    "why_zh": "这条赋值在 env_override.py 里，每个平台都会执行"
    },
    {
     "slug": "speculative-decoding-net-loss",
@@ -617,7 +650,11 @@ it stood.</p>
     "upstream": [
      "vllm#45450",
      "vllm#48076"
-    ]
+    ],
+    "title_zh": "一个布尔值，在 Radeon 上是 71%，在 A100 上是 61%",
+    "mechanism_zh": "max_seqlen_q > 1 把 Triton 注意力 kernel 从 128 个 workgroup 降到 8 个",
+    "unit_zh": "×，32K 上开投机比不开慢",
+    "why_zh": "在 A100 上也测了，同一个 kernel 在 50K 上损失 61%"
    },
    {
     "slug": "a100-vs-two-radeons",
@@ -627,7 +664,11 @@ it stood.</p>
     "magnitude": 2.1265703912797864,
     "unit": "x worse retention on two cards than on one",
     "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
-    "upstream": []
+    "upstream": [],
+    "title_zh": "两张消费级 Radeon 对一张 A100",
+    "mechanism_zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半",
+    "unit_zh": "×，两卡的保持率比单卡差",
+    "why_zh": "这是拆分工作的性质，不是硅片的；单张 A100 跑的是同一个 kernel"
    },
    {
     "slug": "rccl-atomics-hostcall",
@@ -639,7 +680,11 @@ it stood.</p>
     "why": "reproduced on bare metal by someone else; the trigger is the root port, not the GPU",
     "upstream": [
      "ROCm#6520"
-    ]
+    ],
+    "title_zh": "RCCL 崩溃从来不是 RCCL 的问题",
+    "mechanism_zh": "没有 PCIe AtomicOps 就没有 hostcall buffer，dispatch 被拒",
+    "unit_zh": "每一次集合通信都在 dispatch 处失败",
+    "why_zh": "别人在裸机上复现了；触发条件是 root port，不是 GPU"
    }
   ],
   "axes": {
@@ -856,6 +901,11 @@ it stood.</p>
   var F = JSON.parse(document.getElementById("figures").textContent);
   var S = JSON.parse(document.getElementById("strings").textContent);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // one figures block serves both versions, so the Chinese half of each finding
+  // rides along inside it and the page picks by its own lang attribute
+  var ZH = document.documentElement.lang.slice(0, 2) === "zh";
+  var HREF = ZH ? ".zh.html" : ".html";
+  function L(o, k) { return ZH && o[k + "_zh"] ? o[k + "_zh"] : o[k]; }
 
   /* ---------- theme ---------- */
   (function () {
@@ -918,10 +968,10 @@ it stood.</p>
       return order[a.axis] - order[b.axis] || b.magnitude - a.magnitude;
     }).forEach(function (f) {
       var c = el(box, "find rv" + (f.axis === "rdna3" ? " rdna3" : ""));
-      el(c, "", '<h4><a href="' + f.slug + '.html">' + esc(f.title) + "</a></h4>");
+      el(c, "", '<h4><a href="' + f.slug + HREF + '">' + esc(L(f, "title")) + "</a></h4>");
       el(c, "mag", f.magnitude === null ? "—" : f.magnitude.toFixed(2) + "×");
-      el(c, "mech", code(f.mechanism));
-      el(c, "unit", esc(f.unit));
+      el(c, "mech", code(L(f, "mechanism")));
+      el(c, "unit", esc(L(f, "unit")));
       var t = el(c, "tags");
       var s = document.createElement("span");
       s.textContent = S.axisNames[f.axis];
@@ -931,7 +981,7 @@ it stood.</p>
         x.textContent = u2;
         t.appendChild(x);
       });
-      el(c, "why", "<b>" + S.whyLabel + "</b> · " + code(f.why));
+      el(c, "why", "<b>" + S.whyLabel + "</b> · " + code(L(f, "why")));
     });
   })();
 

@@ -1,0 +1,70 @@
+<header class="top">
+  <div class="kicker">dual-radeon-vllm · 实测长文</div>
+  <h1>两张消费级 Radeon，<br>逐项实测</h1>
+  <p class="lede">这些长文出自一个在 2× RX 7900 XT（gfx1100，RDNA3）上做 ROCm 与 vLLM 实测的仓库。
+  每篇文章的图都取自仓库自己会去校验的那份已入库数据，并在页面上标明哪些数字可以重算、哪些不能。</p>
+  <div class="meta">
+__CHIPS__
+  </div>
+</header>
+
+<h2><span class="n">1</span>文章</h2>
+
+<p>十一篇，新的在前。标题下面那一行是这篇文章确立了什么，用的是综述篇给它分类时的原话——
+所以两处不会把同一个结论说成两回事。</p>
+
+<div class="cards" id="cards"></div>
+
+<h2><span class="n">2</span>它们各自是什么时候测的</h2>
+
+<p>文章上的日期是测量发生的日期，不是撰写的日期。三篇出自七月最后一周，然后四周什么都没有，
+接着七天里出了八篇：第二簇基本上是在第一簇搞错了的条件下重测一遍。跨两个日期的条形，
+说明这篇文章的证据来自两次分开的测量。</p>
+
+<figure class="rv" id="figtl">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 测量日期
+      <span class="prov yes">与文章上标注的日期同源</span></div>
+    <div class="legend" id="tlkey"></div>
+    <div class="tl" id="tl"></div>
+    <div class="barunit" id="tlnote"></div>
+  </div>
+  <figcaption><b>图 1.</b> 按日期排，不按发表顺序。十一篇里有两篇不是对这台机器的测量：
+  一篇的日期是把缺陷上报到上游的日期，而综述篇是把十六条上游线程重读了一遍，没有跑任何东西。
+  这两篇都如实标出，而不是安一个它们并没有的测量日期。</figcaption>
+</figure>
+
+<h2><span class="n">3</span>怎么读这些文章</h2>
+
+<p>每一篇都是<strong>一份有日期的记录，不是长期有效的建议</strong>。这个仓库里最大的两个结论，
+在测完之后就已经变了：一个 Ubuntu 内核回归在 <code>7.0.0-30</code> 里修掉了；
+而一个 3.9× 到 5.6× 的加载提速，在把 page cache 真正控制住之后被撤回了。
+所以每篇文章都以「此后发生的变化」一节收尾，那一节只往后追加，不回头改写。</p>
+
+<p>每张图都带一个来源标记。<span class="prov yes">recomputable from repo</span> 表示
+<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+会把这个值对照它的源文件检查一遍，两者不一致就非零退出——和守着仓库自身文档的是同一套检查。
+<span class="prov no">raw output not committed</span> 表示这个数字抄自一次原始输出没有入库的运行，
+无法重算。</p>
+
+<p>这里的绝对速率是下限，不是这套硬件的跑分：这是一台 VFIO 虚拟机，两张卡之间没有 P2P，
+走的是跨 die 的 PCIe 3.0，是刻意挑的最不利拓扑。形状可以迁移，绝对值是最坏情况。</p>
+
+<div class="foot-note">
+  <p>源码、原始数据，以及产生它们的运行脚本：
+  <a href="https://github.com/cadamcat/dual-radeon-vllm">github.com/cadamcat/dual-radeon-vllm</a>。
+  上游的报告与补丁在每篇文章里给出链接。</p>
+</div>
+</div>
+
+<script type="application/json" id="articles">__ARTICLES_JSON__</script>
+<script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
+<script type="application/json" id="strings">{
+ "estLabel": "确立了",
+ "tlKinds": {"measured": "本机实测", "reported": "上报上游",
+             "reviewed": "重读状态"},
+ "tlNote": "{a} 至 {b} · 前后 {d} 天 · {n} 篇"
+}</script>
+__SCRIPT__
+</body>
+</html>

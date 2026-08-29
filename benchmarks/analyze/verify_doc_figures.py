@@ -2986,6 +2986,163 @@ def main():
         ck(f"rdna3 article {fn}, says which are not", "1",
            1 if phrase in pages[fn] else 0)
 
+
+    # --- the typed chips, the index and the timeline -------------------------
+    # The masthead chips became data: every machine string -- a card name, a
+    # version, an issue id, a date -- is written once in site/src/chips.json and
+    # rendered into both language versions by site/build.py. What follows is
+    # what stops that from being a longer way to write the same duplication.
+    # Everything this block needs is loaded here rather than reused from above:
+    # main() is one namespace and names get rebound between blocks.
+    XSRC = os.path.join(HERE, "..", "..", "site", "src")
+    XDOCS = os.path.join(HERE, "..", "..", "docs")
+    xld = lambda p: json.load(open(p, encoding="utf-8"))
+    CH = xld(os.path.join(XSRC, "chips.json"))
+    CW = {lg: xld(os.path.join(XSRC, "chipwords-%s.json" % lg)) for lg in ("en", "zh")}
+    AJ = xld(os.path.join(XSRC, "articles.json"))["articles"]
+    ZFIG = xld(os.path.join(XSRC, "figures-rdna3.json"))["fig1"]["findings"]
+
+    def xblock(text, ident):
+        m = re.search(r'<script type="application/json" id="%s">(.*?)</script>' % ident,
+                      text, re.S)
+        return m.group(1) if m else None
+
+    xslots = lambda t: sorted(re.findall(r"\{(\d+)\}", t))
+    ck("chips, the two word tables have the same keys", "1",
+       1 if set(CW["en"]) == set(CW["zh"]) else 0)
+    ck("chips, every word takes the same slots in both languages", "0",
+       sum(1 for k in CW["en"]
+           if k not in CW["zh"] or xslots(CW["en"][k]) != xslots(CW["zh"][k])))
+
+    XKINDS = ["hardware", "model", "stack", "platform", "scale", "upstream", "date", "link"]
+    XSLUGS = [s for s in CH if not s.startswith("_")]
+    xall = [c for s in XSLUGS for c in CH[s]]
+    ck("chips, every chip has a known kind", "0",
+       sum(1 for c in xall if c.get("kind") not in XKINDS))
+    ck("chips, every chip names a word that exists", "0",
+       sum(1 for c in xall if c.get("w") not in CW["en"]))
+    # a template with an unfilled slot renders a literal "{0}" on the page, and
+    # a value with no slot is a machine string nobody ever sees
+    ck("chips, every value has a slot and every slot a value", "0",
+       sum(1 for c in xall
+           if c.get("w") not in CW["en"]
+           or xslots(CW["en"][c["w"]]) != [str(i) for i in range(len(c.get("v", [])))]))
+    xused = {c.get("w") for c in xall} | {"k" + k[0].upper() + k[1:] for k in XKINDS}
+    ck("chips, no word is left unused", "0", len(set(CW["en"]) - xused))
+
+    # the three verbs are not the same claim, so the timeline has to be told
+    # which one each date is
+    XTLK = ["measured", "reported", "reviewed"]
+    XDC = {s: [c for c in CH[s] if c.get("kind") == "date"] for s in XSLUGS if s != "index"}
+    ck("chips, every article carries exactly one date chip", "11",
+       sum(1 for v in XDC.values() if len(v) == 1))
+    ck("chips, every date chip says what kind of claim it is", "11",
+       sum(1 for v in XDC.values() if len(v) == 1 and v[0].get("tl") in XTLK))
+    ck("chips, every date is an ISO date", "0",
+       sum(1 for v in XDC.values() for c in v for d in c.get("v", [])
+           if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(d))))
+    ck("chips, the one reported date is the RCCL report", "1",
+       1 if sorted(s for s, v in XDC.items() if v and v[0].get("tl") == "reported")
+       == ["rccl-atomics-hostcall"] else 0)
+    ck("chips, the one reviewed date is the synthesis", "1",
+       1 if sorted(s for s, v in XDC.items() if v and v[0].get("tl") == "reviewed")
+       == ["rdna3-second-class"] else 0)
+
+    ck("index, one record per article", "11", len(AJ))
+    ck("index, every record's dates come from its date chip", "0",
+       sum(1 for a in AJ if a.get("dates") != (XDC.get(a.get("slug")) or [{}])[0].get("v")))
+    ck("index, every record's kind comes from its date chip", "0",
+       sum(1 for a in AJ if a.get("kind") != (XDC.get(a.get("slug")) or [{}])[0].get("tl")))
+    ck("index, the date a record sorts by is its last one", "0",
+       sum(1 for a in AJ if a.get("date") != max(a.get("dates") or [""])))
+    ck("index, every record carries both languages", "0",
+       sum(1 for a in AJ for f in ("title", "blurb", "establishes", "href")
+           if sorted(a.get(f) or {}) != ["en", "zh"]))
+
+    # the one-line summary is the synthesis article's own classification of that
+    # finding, not a second description written for the index
+    ZF = {f["slug"]: f for f in ZFIG}
+    ck("index, the eight classified summaries are the synthesis's own", "8",
+       sum(1 for a in AJ if a.get("slug") in ZF
+           and (a.get("establishes") or {}).get("en") == ZF[a["slug"]].get("mechanism")
+           and (a.get("establishes") or {}).get("zh") == ZF[a["slug"]].get("mechanism_zh")))
+    ck("index, and the other three are written for it", "3",
+       sum(1 for a in AJ if a.get("slug") not in ZF
+           and (a.get("establishes") or {}).get("en")
+           and (a.get("establishes") or {}).get("zh")))
+    # a title lives in the page, in build.py and in the synthesis's figure; this
+    # is what makes retitling an article fail loudly rather than drift
+    ck("rdna3 article, every finding's title is that article's own title", "16",
+       sum(1 for a in AJ if a.get("slug") in ZF
+           for lg, fk in (("en", "title"), ("zh", "title_zh"))
+           if (a.get("title") or {}).get(lg) == ZF[a["slug"]].get(fk)))
+
+    # the point of the typed chips: a machine string is written once, so it has
+    # to come out identical on both language versions of the page
+    XPAIRS = [[a["href"]["en"].split("/")[-1], a["href"]["zh"].split("/")[-1]] for a in AJ]
+    XPAGES = {fn: open(os.path.join(XDOCS, "articles", fn), encoding="utf-8").read()
+              for pr in XPAIRS for fn in pr}
+    def xmeta(text):
+        """the rendered masthead chips, as (kind, contents) in page order"""
+        m = re.search(r'<div class="meta">(.*?)</div>', text, re.S)
+        return re.findall(r'<span class="chip k-([a-z]+)"[^>]*>(.*?)</span>',
+                          m.group(1), re.S) if m else []
+
+    for a in AJ:
+        pr = [a["href"]["en"].split("/")[-1], a["href"]["zh"].split("/")[-1]]
+        want = CH[a["slug"]]
+        got = [xmeta(XPAGES[fn]) for fn in pr]
+        ck("article %s, both versions carry the same chips" % a["slug"], "1",
+           1 if [k for k, _ in got[0]] == [k for k, _ in got[1]]
+           == [c["kind"] for c in want] else 0)
+        # inside the chip, not merely somewhere on the page: the prose mentions
+        # these model names too, so a chip could lose one and still look clean
+        ck("article %s, every chip value reaches both versions" % a["slug"], "0",
+           sum(1 for g in got for i, c in enumerate(want) for v in c.get("v", [])
+               if i >= len(g) or v not in g[i][1]))
+
+    # --- the index pages are a language pair like any other ------------------
+    XIP = ["index.html", "index.zh.html"]
+    XHOSTS = {"github.com", "bugs.launchpad.net"}
+    XI = {fn: open(os.path.join(XDOCS, fn), encoding="utf-8").read() for fn in XIP}
+    for fn in XIP:
+        ck("index %s, loads no external asset" % fn, "0",
+           len(re.findall(r'\ssrc="(https?://[^"]+)"', XI[fn])
+               + re.findall(r'<link[^>]+href="(https?://[^"]+)"', XI[fn])))
+        ck("index %s, links only to known hosts" % fn, "0",
+           len({u.split("/")[2] for u in
+                re.findall(r'<a [^>]*href="(https?://[^"]+)"', XI[fn])} - XHOSTS))
+        ck("index %s, no stray Cyrillic" % fn, "0",
+           len(re.findall(r"[Ѐ-ӿ]", XI[fn])))
+        xnav = re.findall(r'<a class="lang" href="([^"]+)" hreflang="([a-z]+)"'
+                          r'( aria-current="page")?>', XI[fn])
+        ck("index %s, both languages in the switcher" % fn, "2", len(xnav))
+        ck("index %s, targets are the two pages" % fn, "1",
+           1 if sorted(h for h, _, _ in xnav) == sorted(XIP) else 0)
+        ck("index %s, exactly one is current, and it is this page" % fn, "1",
+           1 if sum(1 for h, _, cur in xnav if cur and h == fn) == 1
+           and sum(1 for _, _, cur in xnav if cur) == 1 else 0)
+        # every card on the page is drawn by the script, so the eleven titles
+        # only reach a reader through this block
+        ck("index %s, carries the article data" % fn, "1",
+           1 if xblock(XI[fn], "articles") else 0)
+    ck("index, the two versions share one data block", "1",
+       1 if xblock(XI[XIP[0]], "articles") == xblock(XI[XIP[1]], "articles") else 0)
+    ck("index, the data block is the file on disk", "1",
+       1 if json.loads(xblock(XI[XIP[0]], "articles") or "{}") == {"articles": AJ} else 0)
+    ck("index, each version carries its own chip words", "2",
+       sum(1 for fn, lg in zip(XIP, ("en", "zh"))
+           if json.loads(xblock(XI[fn], "chipwords") or "{}") == CW[lg]))
+    xscr = [re.search(r"<script>\n\(function \(\).*?\n</script>", XI[fn], re.S) for fn in XIP]
+    ck("index, the two versions share one script", "1",
+       1 if all(xscr) and xscr[0].group(0) == xscr[1].group(0) else 0)
+    xkeys = [set(json.loads(xblock(XI[fn], "strings") or "{}").keys()) for fn in XIP]
+    ck("index, the strings tables have the same keys", "1",
+       1 if xkeys[0] == xkeys[1] and xkeys[0] else 0)
+    for k in sorted(xkeys[0]):
+        ck("index, script uses string '%s'" % k, "1",
+           1 if xscr[0] and ("S." + k) in xscr[0].group(0) else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
