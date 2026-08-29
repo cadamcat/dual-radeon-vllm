@@ -183,6 +183,23 @@ W4A16 那个类型门是一个恰好落在架构特定 kernel 里的普通 bug�
   不成词，现改为"状态核查于"。
 </div>
 
+<div class="note ok">
+  <span class="lbl">2026-08-29 · 一次 campaign 同时落进了其中三个类</span>
+  在两张 Radeon 和一台租来的 A100 上跑的二十个配置，各产出一个类别的结论 ——
+  这是上面这套分类被<em>用起来</em>，而不是被重述一遍。<b>与厂商无关：</b>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
+  只有在它所修改的那个 Triton 内核真在执行路径上时才起作用，而 <code>Qwen3.8-27B</code>
+  在<em>两个</em>厂商上都被路由到别处 —— 这边是 <code>ROCM_ATTN</code>，CUDA 上是
+  <code>FLASH_ATTN</code> —— 于是补丁在两边都装着、都闲着。<b>AMD 范围：</b>ROCm 的选择器
+  会去取 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容；这在 32K 上
+  留下了 15.0 %，而 <code>TRITON_ATTN</code> —— 就在它自己打印出来的候选列表里 —— 本可以保住。
+  <b>以及本文反复遇到的那个中间态：</b>gemma-4 在 0.27 的 ROCm 镜像上根本起不来。
+  那个不安全的读取是 vLLM 自己的 <code>getattr</code> 默认值，在
+  <code>model_arch_config_convertor.py</code> 里 —— 它等的是 <code>AttributeError</code>，
+  遇到的却是 transformers 5.x 自己的异常；而这条路径只有在 AMD 的 Quark 插件改写了 config
+  流程之后才会被走到。既不单是 AMD 的，也不单是 vLLM 的。
+</div>
+
 <div class="foot-note">
   <p><strong>那八篇。</strong>
   <a href="hybrid-ssm-collapse.zh.html">混合 SSM 的塌陷</a> ·

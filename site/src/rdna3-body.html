@@ -193,6 +193,23 @@ how quickly gfx11 support has moved, only where it stood.</p>
   idiomatic; it now reads 状态核查于.
 </div>
 
+<div class="note ok">
+  <span class="lbl">2026-08-29 · a campaign that sorted into three of these bins at once</span>
+  Twenty configurations across the two Radeons and a rented A100 produced one finding of each kind,
+  which is this taxonomy being used rather than restated. <b>Vendor-neutral:</b>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> does nothing unless the
+  Triton kernel it patches is on the path, and <code>Qwen3.8-27B</code> is routed off that kernel on
+  <em>both</em> vendors — <code>ROCM_ATTN</code> here, <code>FLASH_ATTN</code> on CUDA — so the patch
+  is installed and idle on each. <b>AMD-wide:</b> ROCm's selector reaches for
+  <code>ROCM_ATTN</code> because <code>TURBOQUANT</code> is incompatible with the decoder, and leaves
+  15.0 % at 32K that <code>TRITON_ATTN</code> — in the same candidate list it printed — would have
+  kept. <b>And the middle case this article keeps finding:</b> gemma-4 cannot be served on the 0.27
+  ROCm image at all. The unsafe read is vLLM's own <code>getattr</code> default in
+  <code>model_arch_config_convertor.py</code>, which expects <code>AttributeError</code> and meets
+  transformers 5.x's own exception instead; it is reached only because AMD's Quark plugin patches the
+  config path. Not AMD's alone and not vLLM's alone.
+</div>
+
 <div class="foot-note">
   <p><strong>The eight articles.</strong>
   <a href="hybrid-ssm-collapse.html">the hybrid-SSM collapse</a> ·
