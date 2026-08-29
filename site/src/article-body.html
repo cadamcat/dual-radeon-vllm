@@ -65,7 +65,10 @@ a KV cache makes inevitable. The fifth does something else.</p>
     Two lines are lit by default: <code>Qwen3.6-27B</code>, the hybrid-SSM checkpoint this article is about,
     and <code>Qwen3-8B</code>, the dense control. The other three are one click away. Retention from 500 to
     32 000 tokens: 8B <b>77.2 %</b>, 12B <b>69.9 %</b>, 26B MoE <b>67.5 %</b>, 31B <b>68.4 %</b>,
-    hybrid-SSM <b>35.1 %</b>. Source: <code>benchmarks/ledger.jsonl</code>.
+    hybrid-SSM <b>35.1 %</b>. The last two lines are the successor checkpoint on the two kernels
+    the engine can serve its full-attention layers with, measured 2026-08-29 without speculation on
+    either; they are off until clicked because they are a different stack from the campaign above.
+    Source: <code>benchmarks/ledger.jsonl</code>.
   </figcaption>
 </figure>
 
@@ -138,6 +141,17 @@ is why making the fallback fast is the only path that helps this class of model.
   <code>case 64</code> and <code>case 128</code> and <code>TORCH_CHECK</code>s on anything else. The
   condition is the kernel's actual limit, not conservative gating.
 </div>
+
+<p><strong>Some of the slope is the kernel, not the architecture.</strong> The successor
+checkpoint, <code>Qwen3.8-27B</code> on vLLM 0.27, was measured on 2026-08-29 against both of the
+kernels the engine will serve those 16 layers with — no speculation on either arm, same checkpoint,
+same session, both repeating to better than <b>0.12 %</b>. Left to itself the ROCm selector takes
+<code>ROCM_ATTN</code>, because <code>TURBOQUANT</code> is incompatible with the decoder and that is
+the first fallback it reaches for. Pinned to <code>TRITON_ATTN</code> instead — one flag, no patch —
+the same ladder is <b>15.0 %</b> faster at 32K, and retention across the whole span goes from
+<b>73.4 %</b> to <b>84.3 %</b>. Eleven points of the collapse this article is about belong to which
+kernel serves those layers. The rest does not: even pinned, the model still gives up 15.7 % of its
+short-context rate by 32K, which is the argument below.</p>
 
 <h2><span class="n">5</span>Why the fallback is slow <em>on this model</em></h2>
 
@@ -512,7 +526,10 @@ baseline is a different question with a different answer.</p>
     var b = document.createElement("button");
     b.className = "lg" + (lit[i] ? " on" : "");
     b.style.setProperty("--c", c);
-    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
+    // a series can carry its own name: the two 2026-08-29 backend ladders are
+    // both Qwen3.8-27B and would otherwise share a swatch label
+    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' +
+                  (s.label || s.model);
     b.addEventListener("click", function () {
       lit[i] = !lit[i]; b.classList.toggle("on", lit[i]); apply();
     });

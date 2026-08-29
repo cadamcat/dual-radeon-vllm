@@ -692,6 +692,8 @@ TP=2、开启 CUDA graph、<code>--gpu-memory-utilization 0.85</code>、512 toke
     默认亮起两条：<code>Qwen3.6-27B</code>，本文讨论的混合 SSM 检查点；<code>Qwen3-8B</code>，稠密对照。
     另外三条点一下就出来。从 500 到 32 000 token 的保留率：8B <b>77.2 %</b>、12B <b>69.9 %</b>、
     26B MoE <b>67.5 %</b>、31B <b>68.4 %</b>、混合 SSM <b>35.1 %</b>。
+    最后两条线是后继 checkpoint 在两个内核上的阶梯 —— 引擎可以用它们中的任一个来服务全注意力层，
+    2026-08-29 测的，两条臂都不带投机；它们默认不亮，因为那是和上面这次 campaign 不同的一套栈。
     数据来源：<code>benchmarks/ledger.jsonl</code>。
   </figcaption>
 </figure>
@@ -759,6 +761,15 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
   <code>case 64</code> 和 <code>case 128</code>，其余一律 <code>TORCH_CHECK</code>。
   这个条件是 kernel 的实际能力边界，不是保守的门槛。
 </div>
+
+<p><strong>这条下滑里有一部分是内核的，不是架构的。</strong>后继 checkpoint
+<code>Qwen3.8-27B</code> 在 vLLM 0.27 上，于 2026-08-29 被对着引擎可用来服务那 16 层的两个内核
+各测了一遍 —— 两条臂都不带投机，同一个 checkpoint、同一场会话，重复性都优于 <b>0.12 %</b>。
+放任不管时，ROCm 的选择器会取 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容，
+而那是它够得着的第一个回退。改成钉住 <code>TRITON_ATTN</code> —— 一个旗标，不用补丁 ——
+同一条阶梯在 32K 上快 <b>15.0 %</b>，整段的保留率从 <b>73.4 %</b> 升到 <b>84.3 %</b>。
+本文谈的这次塌陷里，有十一个百分点属于「那 16 层由哪个内核来服务」。其余的不属于：
+即便钉住了，这个模型到 32K 仍然交出了短上下文速率的 15.7 %，那才是下面要论证的东西。</p>
 
 <h2><span class="n">5</span>为什么回退路径<em>在这个模型上</em>特别慢</h2>
 
@@ -925,6 +936,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1014,6 +1027,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1103,6 +1118,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1192,6 +1209,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1281,6 +1300,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1360,8 +1381,257 @@ kernel 手里有多少可并行的东西。</p>
       "graded": true
      }
     ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "ROCM_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.675,
+      "runs": 2,
+      "range_pct": 0.060392551585306764,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.394999999999996,
+      "runs": 2,
+      "range_pct": 0.10122482032595256,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.83,
+      "runs": 2,
+      "range_pct": 0.04095842719640207,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 47.739999999999995,
+      "runs": 2,
+      "range_pct": 0.08378718056137233,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 46.785,
+      "runs": 2,
+      "range_pct": 0.10687186063910285,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 45.78,
+      "runs": 2,
+      "range_pct": 0.04368719965049371,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 43.894999999999996,
+      "runs": 2,
+      "range_pct": 0.11390818999887065,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 42.125,
+      "runs": 2,
+      "range_pct": 0.0712166172106852,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 40.540000000000006,
+      "runs": 2,
+      "range_pct": 0.09866798223976109,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 39.15,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.47,
+      "runs": 2,
+      "range_pct": 0.05483959418699211,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 ROCM_ATTN",
+    "campaign": true,
+    "retained_pct": 73.41721187720182
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "TRITON_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.78,
+      "runs": 2,
+      "range_pct": 0.08035355564483557,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.6,
+      "runs": 2,
+      "range_pct": 0.04032258064515327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 49.379999999999995,
+      "runs": 2,
+      "range_pct": 0.08100445524503676,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 48.855000000000004,
+      "runs": 2,
+      "range_pct": 0.10234367004401651,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 48.325,
+      "runs": 2,
+      "range_pct": 0.06207966890843483,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 47.695,
+      "runs": 2,
+      "range_pct": 0.10483279169723693,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 46.575,
+      "runs": 2,
+      "range_pct": 0.06441223832528424,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 45.535,
+      "runs": 2,
+      "range_pct": 0.021961128802016058,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.505,
+      "runs": 2,
+      "range_pct": 0.06740815638692536,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.615,
+      "runs": 2,
+      "range_pct": 0.06878367534105499,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.95,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 TRITON_ATTN",
+    "campaign": true,
+    "retained_pct": 84.27079148252311
    }
-  ]
+  ],
+  "backends": {
+   "date": "2026-08-29",
+   "spec": null,
+   "why": "the 16 full-attention layers are what falls over with depth; these are the two kernels the engine can serve them with, same checkpoint, same day",
+   "retained_pct": {
+    "ROCM_ATTN": 73.41721187720182,
+    "TRITON_ATTN": 84.27079148252311
+   },
+   "gain_pct": [
+    {
+     "ctx": 500,
+     "pct": 0.21137393054857512
+    },
+    {
+     "ctx": 1000,
+     "pct": 0.4150217633363873
+    },
+    {
+     "ctx": 2000,
+     "pct": 1.1263567479008696
+    },
+    {
+     "ctx": 4000,
+     "pct": 2.33556765814833
+    },
+    {
+     "ctx": 6000,
+     "pct": 3.291653307684106
+    },
+    {
+     "ctx": 8000,
+     "pct": 4.183049366535596
+    },
+    {
+     "ctx": 12000,
+     "pct": 6.105478983938961
+    },
+    {
+     "ctx": 16000,
+     "pct": 8.09495548961423
+    },
+    {
+     "ctx": 20000,
+     "pct": 9.78046373951651
+    },
+    {
+     "ctx": 24000,
+     "pct": 11.404853128991066
+    },
+    {
+     "ctx": 32000,
+     "pct": 15.026048807238833
+    }
+   ],
+   "gain_at_deepest_pct": 15.026048807238833,
+   "worst_range_pct": 0.11390818999887065
+  }
  },
  "fig2": {
   "caption_source": "torch profile, raw output not committed",
@@ -1485,6 +1755,8 @@ kernel 手里有多少可并行的东西。</p>
     "patches": [],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,
@@ -1520,6 +1792,8 @@ kernel 手里有多少可并行的东西。</p>
     ],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,
@@ -1749,7 +2023,10 @@ kernel 手里有多少可并行的东西。</p>
     var b = document.createElement("button");
     b.className = "lg" + (lit[i] ? " on" : "");
     b.style.setProperty("--c", c);
-    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
+    // a series can carry its own name: the two 2026-08-29 backend ladders are
+    // both Qwen3.8-27B and would otherwise share a swatch label
+    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' +
+                  (s.label || s.model);
     b.addEventListener("click", function () {
       lit[i] = !lit[i]; b.classList.toggle("on", lit[i]); apply();
     });

@@ -698,7 +698,10 @@ a KV cache makes inevitable. The fifth does something else.</p>
     Two lines are lit by default: <code>Qwen3.6-27B</code>, the hybrid-SSM checkpoint this article is about,
     and <code>Qwen3-8B</code>, the dense control. The other three are one click away. Retention from 500 to
     32 000 tokens: 8B <b>77.2 %</b>, 12B <b>69.9 %</b>, 26B MoE <b>67.5 %</b>, 31B <b>68.4 %</b>,
-    hybrid-SSM <b>35.1 %</b>. Source: <code>benchmarks/ledger.jsonl</code>.
+    hybrid-SSM <b>35.1 %</b>. The last two lines are the successor checkpoint on the two kernels
+    the engine can serve its full-attention layers with, measured 2026-08-29 without speculation on
+    either; they are off until clicked because they are a different stack from the campaign above.
+    Source: <code>benchmarks/ledger.jsonl</code>.
   </figcaption>
 </figure>
 
@@ -771,6 +774,17 @@ is why making the fallback fast is the only path that helps this class of model.
   <code>case 64</code> and <code>case 128</code> and <code>TORCH_CHECK</code>s on anything else. The
   condition is the kernel's actual limit, not conservative gating.
 </div>
+
+<p><strong>Some of the slope is the kernel, not the architecture.</strong> The successor
+checkpoint, <code>Qwen3.8-27B</code> on vLLM 0.27, was measured on 2026-08-29 against both of the
+kernels the engine will serve those 16 layers with — no speculation on either arm, same checkpoint,
+same session, both repeating to better than <b>0.12 %</b>. Left to itself the ROCm selector takes
+<code>ROCM_ATTN</code>, because <code>TURBOQUANT</code> is incompatible with the decoder and that is
+the first fallback it reaches for. Pinned to <code>TRITON_ATTN</code> instead — one flag, no patch —
+the same ladder is <b>15.0 %</b> faster at 32K, and retention across the whole span goes from
+<b>73.4 %</b> to <b>84.3 %</b>. Eleven points of the collapse this article is about belong to which
+kernel serves those layers. The rest does not: even pinned, the model still gives up 15.7 % of its
+short-context rate by 32K, which is the argument below.</p>
 
 <h2><span class="n">5</span>Why the fallback is slow <em>on this model</em></h2>
 
@@ -956,6 +970,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1045,6 +1061,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1134,6 +1152,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1223,6 +1243,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1312,6 +1334,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -1391,8 +1415,257 @@ baseline is a different question with a different answer.</p>
       "graded": true
      }
     ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "ROCM_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.675,
+      "runs": 2,
+      "range_pct": 0.060392551585306764,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.394999999999996,
+      "runs": 2,
+      "range_pct": 0.10122482032595256,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.83,
+      "runs": 2,
+      "range_pct": 0.04095842719640207,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 47.739999999999995,
+      "runs": 2,
+      "range_pct": 0.08378718056137233,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 46.785,
+      "runs": 2,
+      "range_pct": 0.10687186063910285,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 45.78,
+      "runs": 2,
+      "range_pct": 0.04368719965049371,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 43.894999999999996,
+      "runs": 2,
+      "range_pct": 0.11390818999887065,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 42.125,
+      "runs": 2,
+      "range_pct": 0.0712166172106852,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 40.540000000000006,
+      "runs": 2,
+      "range_pct": 0.09866798223976109,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 39.15,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.47,
+      "runs": 2,
+      "range_pct": 0.05483959418699211,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 ROCM_ATTN",
+    "campaign": true,
+    "retained_pct": 73.41721187720182
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "TRITON_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.78,
+      "runs": 2,
+      "range_pct": 0.08035355564483557,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.6,
+      "runs": 2,
+      "range_pct": 0.04032258064515327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 49.379999999999995,
+      "runs": 2,
+      "range_pct": 0.08100445524503676,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 48.855000000000004,
+      "runs": 2,
+      "range_pct": 0.10234367004401651,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 48.325,
+      "runs": 2,
+      "range_pct": 0.06207966890843483,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 47.695,
+      "runs": 2,
+      "range_pct": 0.10483279169723693,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 46.575,
+      "runs": 2,
+      "range_pct": 0.06441223832528424,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 45.535,
+      "runs": 2,
+      "range_pct": 0.021961128802016058,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.505,
+      "runs": 2,
+      "range_pct": 0.06740815638692536,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.615,
+      "runs": 2,
+      "range_pct": 0.06878367534105499,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.95,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 TRITON_ATTN",
+    "campaign": true,
+    "retained_pct": 84.27079148252311
    }
-  ]
+  ],
+  "backends": {
+   "date": "2026-08-29",
+   "spec": null,
+   "why": "the 16 full-attention layers are what falls over with depth; these are the two kernels the engine can serve them with, same checkpoint, same day",
+   "retained_pct": {
+    "ROCM_ATTN": 73.41721187720182,
+    "TRITON_ATTN": 84.27079148252311
+   },
+   "gain_pct": [
+    {
+     "ctx": 500,
+     "pct": 0.21137393054857512
+    },
+    {
+     "ctx": 1000,
+     "pct": 0.4150217633363873
+    },
+    {
+     "ctx": 2000,
+     "pct": 1.1263567479008696
+    },
+    {
+     "ctx": 4000,
+     "pct": 2.33556765814833
+    },
+    {
+     "ctx": 6000,
+     "pct": 3.291653307684106
+    },
+    {
+     "ctx": 8000,
+     "pct": 4.183049366535596
+    },
+    {
+     "ctx": 12000,
+     "pct": 6.105478983938961
+    },
+    {
+     "ctx": 16000,
+     "pct": 8.09495548961423
+    },
+    {
+     "ctx": 20000,
+     "pct": 9.78046373951651
+    },
+    {
+     "ctx": 24000,
+     "pct": 11.404853128991066
+    },
+    {
+     "ctx": 32000,
+     "pct": 15.026048807238833
+    }
+   ],
+   "gain_at_deepest_pct": 15.026048807238833,
+   "worst_range_pct": 0.11390818999887065
+  }
  },
  "fig2": {
   "caption_source": "torch profile, raw output not committed",
@@ -1516,6 +1789,8 @@ baseline is a different question with a different answer.</p>
     "patches": [],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,
@@ -1551,6 +1826,8 @@ baseline is a different question with a different answer.</p>
     ],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,
@@ -1780,7 +2057,10 @@ baseline is a different question with a different answer.</p>
     var b = document.createElement("button");
     b.className = "lg" + (lit[i] ? " on" : "");
     b.style.setProperty("--c", c);
-    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + s.model;
+    // a series can carry its own name: the two 2026-08-29 backend ladders are
+    // both Qwen3.8-27B and would otherwise share a swatch label
+    b.innerHTML = '<span class="sw" style="background:' + c + '"></span>' +
+                  (s.label || s.model);
     b.addEventListener("click", function () {
       lit[i] = !lit[i]; b.classList.toggle("on", lit[i]); apply();
     });

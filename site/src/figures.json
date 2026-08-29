@@ -12,6 +12,8 @@
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -101,6 +103,8 @@
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -190,6 +194,8 @@
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -279,6 +285,8 @@
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -368,6 +376,8 @@
     "patches": [],
     "harness": "campaign-server",
     "date": "2026-07-25",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 500,
@@ -447,8 +457,257 @@
       "graded": true
      }
     ]
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "ROCM_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.675,
+      "runs": 2,
+      "range_pct": 0.060392551585306764,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.394999999999996,
+      "runs": 2,
+      "range_pct": 0.10122482032595256,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.83,
+      "runs": 2,
+      "range_pct": 0.04095842719640207,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 47.739999999999995,
+      "runs": 2,
+      "range_pct": 0.08378718056137233,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 46.785,
+      "runs": 2,
+      "range_pct": 0.10687186063910285,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 45.78,
+      "runs": 2,
+      "range_pct": 0.04368719965049371,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 43.894999999999996,
+      "runs": 2,
+      "range_pct": 0.11390818999887065,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 42.125,
+      "runs": 2,
+      "range_pct": 0.0712166172106852,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 40.540000000000006,
+      "runs": 2,
+      "range_pct": 0.09866798223976109,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 39.15,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.47,
+      "runs": 2,
+      "range_pct": 0.05483959418699211,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 ROCM_ATTN",
+    "campaign": true,
+    "retained_pct": 73.41721187720182
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "spec": null,
+    "attn_backend": "TRITON_ATTN",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.78,
+      "runs": 2,
+      "range_pct": 0.08035355564483557,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.6,
+      "runs": 2,
+      "range_pct": 0.04032258064515327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 49.379999999999995,
+      "runs": 2,
+      "range_pct": 0.08100445524503676,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 48.855000000000004,
+      "runs": 2,
+      "range_pct": 0.10234367004401651,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 48.325,
+      "runs": 2,
+      "range_pct": 0.06207966890843483,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 47.695,
+      "runs": 2,
+      "range_pct": 0.10483279169723693,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 46.575,
+      "runs": 2,
+      "range_pct": 0.06441223832528424,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 45.535,
+      "runs": 2,
+      "range_pct": 0.021961128802016058,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.505,
+      "runs": 2,
+      "range_pct": 0.06740815638692536,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.615,
+      "runs": 2,
+      "range_pct": 0.06878367534105499,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.95,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ],
+    "label": "Qwen3.8-27B \u00b7 TRITON_ATTN",
+    "campaign": true,
+    "retained_pct": 84.27079148252311
    }
-  ]
+  ],
+  "backends": {
+   "date": "2026-08-29",
+   "spec": null,
+   "why": "the 16 full-attention layers are what falls over with depth; these are the two kernels the engine can serve them with, same checkpoint, same day",
+   "retained_pct": {
+    "ROCM_ATTN": 73.41721187720182,
+    "TRITON_ATTN": 84.27079148252311
+   },
+   "gain_pct": [
+    {
+     "ctx": 500,
+     "pct": 0.21137393054857512
+    },
+    {
+     "ctx": 1000,
+     "pct": 0.4150217633363873
+    },
+    {
+     "ctx": 2000,
+     "pct": 1.1263567479008696
+    },
+    {
+     "ctx": 4000,
+     "pct": 2.33556765814833
+    },
+    {
+     "ctx": 6000,
+     "pct": 3.291653307684106
+    },
+    {
+     "ctx": 8000,
+     "pct": 4.183049366535596
+    },
+    {
+     "ctx": 12000,
+     "pct": 6.105478983938961
+    },
+    {
+     "ctx": 16000,
+     "pct": 8.09495548961423
+    },
+    {
+     "ctx": 20000,
+     "pct": 9.78046373951651
+    },
+    {
+     "ctx": 24000,
+     "pct": 11.404853128991066
+    },
+    {
+     "ctx": 32000,
+     "pct": 15.026048807238833
+    }
+   ],
+   "gain_at_deepest_pct": 15.026048807238833,
+   "worst_range_pct": 0.11390818999887065
+  }
  },
  "fig2": {
   "caption_source": "torch profile, raw output not committed",
@@ -572,6 +831,8 @@
     "patches": [],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,
@@ -607,6 +868,8 @@
     ],
     "harness": "probe-t8t64",
     "date": "2026-08-28",
+    "spec": null,
+    "attn_backend": null,
     "points": [
      {
       "ctx": 1024,

@@ -24,12 +24,37 @@ for v in series.values(): v.sort(key=lambda r: r["ctx"])
 def pack(k, rows):
     return {"model": k[0], "quant": k[1], "arch": k[2], "tp": k[3], "vllm": k[4],
             "patches": list(k[5]), "harness": k[6], "date": k[7],
+            "spec": json.loads(k[8]), "attn_backend": k[9],
             "points": [{"ctx": r["ctx"], "tok_s": r["decode_tok_s"], "runs": r["runs"],
                         "range_pct": r["range_pct"], "graded": r["chart_grade"]} for r in rows]}
 
 fig1 = [pack(k, v) for k, v in sorted(series.items())
         if k[7] == "2026-07-25" and k[3] == 2 and not k[5]]
 fig4 = [pack(k, v) for k, v in sorted(series.items()) if k[7] == "2026-08-28"]
+
+# The same hybrid model on the two kernels the engine can serve its 16 full
+# attention layers with, measured 2026-08-29 without speculation on either.
+# Appended to fig1 rather than given a figure: it is the same quantity on the
+# same axis, and the legend already starts a series unlit unless the default
+# regex names it -- which it does not, so these are off until asked for.
+def _one(cfg, label):
+    rows = [r for r in led if r["date"] == "2026-08-29" and r["cfg"] == cfg]
+    assert len(rows) == 11, f"{cfg}: {len(rows)} rungs"
+    rows.sort(key=lambda r: r["ctx"])
+    k = key(rows[0])
+    d = pack(k, rows)
+    d["label"] = label
+    d["campaign"] = True
+    d["attn_backend"] = rows[0]["attn_backend"]
+    d["retained_pct"] = rows[-1]["decode_tok_s"] / rows[0]["decode_tok_s"] * 100.0
+    return d
+
+_bk = [_one("Q38-tp2", "Qwen3.8-27B · ROCM_ATTN"),
+       _one("Q38-triton-tp2", "Qwen3.8-27B · TRITON_ATTN")]
+_bk_gain = [{"ctx": a["points"][i]["ctx"],
+             "pct": (b["points"][i]["tok_s"] / a["points"][i]["tok_s"] - 1) * 100.0}
+            for a, b in [(_bk[0], _bk[1])] for i in range(len(a["points"]))]
+fig1 = fig1 + _bk
 
 def slope_us(pts):
     """microseconds of decode time added per token of context, over the span."""
@@ -54,7 +79,16 @@ fig3 = {"vllm_hybrid_slope_us": round(V.slope_us(jul, "D-27B-tp2"), 3),
 out = {
  "_what": "Every figure in hybrid-ssm-collapse.html. Checked against the data "
           "files by benchmarks/analyze/verify_doc_figures.py; edit the data, not this.",
- "fig1": {"caption_source": "benchmarks/ledger.jsonl", "series": fig1},
+ "fig1": {"caption_source": "benchmarks/ledger.jsonl", "series": fig1,
+          "backends": {"date": "2026-08-29", "spec": None,
+                       "why": "the 16 full-attention layers are what falls over "
+                              "with depth; these are the two kernels the engine "
+                              "can serve them with, same checkpoint, same day",
+                       "retained_pct": {b["attn_backend"]: b["retained_pct"] for b in _bk},
+                       "gain_pct": _bk_gain,
+                       "gain_at_deepest_pct": _bk_gain[-1]["pct"],
+                       "worst_range_pct": max(p["range_pct"] for b in _bk
+                                              for p in b["points"] if p["range_pct"])}},
  "fig2": {"caption_source": "torch profile, raw output not committed",
           "reproducible_from_repo": False,
           "kernels": [

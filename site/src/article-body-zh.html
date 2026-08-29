@@ -59,6 +59,8 @@ TP=2、开启 CUDA graph、<code>--gpu-memory-utilization 0.85</code>、512 toke
     默认亮起两条：<code>Qwen3.6-27B</code>，本文讨论的混合 SSM 检查点；<code>Qwen3-8B</code>，稠密对照。
     另外三条点一下就出来。从 500 到 32 000 token 的保留率：8B <b>77.2 %</b>、12B <b>69.9 %</b>、
     26B MoE <b>67.5 %</b>、31B <b>68.4 %</b>、混合 SSM <b>35.1 %</b>。
+    最后两条线是后继 checkpoint 在两个内核上的阶梯 —— 引擎可以用它们中的任一个来服务全注意力层，
+    2026-08-29 测的，两条臂都不带投机；它们默认不亮，因为那是和上面这次 campaign 不同的一套栈。
     数据来源：<code>benchmarks/ledger.jsonl</code>。
   </figcaption>
 </figure>
@@ -126,6 +128,15 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
   <code>case 64</code> 和 <code>case 128</code>，其余一律 <code>TORCH_CHECK</code>。
   这个条件是 kernel 的实际能力边界，不是保守的门槛。
 </div>
+
+<p><strong>这条下滑里有一部分是内核的，不是架构的。</strong>后继 checkpoint
+<code>Qwen3.8-27B</code> 在 vLLM 0.27 上，于 2026-08-29 被对着引擎可用来服务那 16 层的两个内核
+各测了一遍 —— 两条臂都不带投机，同一个 checkpoint、同一场会话，重复性都优于 <b>0.12 %</b>。
+放任不管时，ROCm 的选择器会取 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容，
+而那是它够得着的第一个回退。改成钉住 <code>TRITON_ATTN</code> —— 一个旗标，不用补丁 ——
+同一条阶梯在 32K 上快 <b>15.0 %</b>，整段的保留率从 <b>73.4 %</b> 升到 <b>84.3 %</b>。
+本文谈的这次塌陷里，有十一个百分点属于「那 16 层由哪个内核来服务」。其余的不属于：
+即便钉住了，这个模型到 32K 仍然交出了短上下文速率的 15.7 %，那才是下面要论证的东西。</p>
 
 <h2><span class="n">5</span>为什么回退路径<em>在这个模型上</em>特别慢</h2>
 

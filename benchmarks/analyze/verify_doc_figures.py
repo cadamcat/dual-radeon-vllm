@@ -845,7 +845,9 @@ def main():
              if r["model"] == s["model"] and r["quant"] == s["quant"]
              and r["arch"] == s["arch"] and r["tp"] == s["tp"]
              and r["vllm"] == s["vllm"] and r["patches"] == s["patches"]
-             and r["harness"] == s["harness"] and r["date"] == s["date"]),
+             and r["harness"] == s["harness"] and r["date"] == s["date"]
+             and r.get("spec") == s.get("spec")
+             and r.get("attn_backend") == s.get("attn_backend")),
             key=lambda r: r["ctx"])
 
     for fig in ("fig1", "fig4"):
@@ -861,7 +863,24 @@ def main():
                 for r, p in zip(rows, s_["points"]))
             ck(f"article, {tag} matches the ledger", "1", 1 if same else 0)
 
-    ck("article, fig1 is the five-architecture campaign", "5", len(A["fig1"]["series"]))
+    ck("article, fig1 is the five-architecture campaign", "5",
+       sum(1 for s_ in A["fig1"]["series"] if not s_.get("campaign")))
+    ck("article, fig1 also carries the two 2026-08-29 backend ladders", "2",
+       sum(1 for s_ in A["fig1"]["series"] if s_.get("campaign")))
+    # the paragraph before section 5: how much of the collapse is the kernel
+    HB = A["fig1"]["backends"]
+    ck("article, neither backend ladder speculates", "1",
+       1 if HB["spec"] is None else 0)
+    ck("article, ROCM_ATTN retains", "73.4", HB["retained_pct"]["ROCM_ATTN"], tol=0.05)
+    ck("article, TRITON_ATTN retains", "84.3", HB["retained_pct"]["TRITON_ATTN"], tol=0.05)
+    ck("article, pinning the kernel is worth this at 32K", "15.0",
+       HB["gain_at_deepest_pct"], tol=0.05)
+    # a bound, not a value: the worst is 0.114, and "to 0.11%" would be false
+    ck("article, and both ladders repeat inside an eighth of a per cent", "1",
+       1 if HB["worst_range_pct"] < 0.12 else 0)
+    # what is left over is the article's own subject, not the kernel's
+    ck("article, the pinned ladder still gives up 15.7% by 32K", "15.7",
+       100.0 - HB["retained_pct"]["TRITON_ATTN"], tol=0.05)
     ck("article, fig4 is both arms of the A/B", "2", len(A["fig4"]["series"]))
 
     # the slope figure is derived, so it is checked against the same helper the
