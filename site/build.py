@@ -70,6 +70,7 @@ S_EN, S_ZH = "speculative-decoding-net-loss.html", "speculative-decoding-net-los
 A_EN, A_ZH = "a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"
 Q_EN, Q_ZH = "gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"
 N_EN, N_ZH = "reporting-a-non-reproduction.html", "reporting-a-non-reproduction.zh.html"
+X_EN, X_ZH = "measuring-decode.html", "measuring-decode.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -217,7 +218,30 @@ if (D / "n6565-body-zh.html").exists():
                            "扫描、把差异摆明，以及找出你的仪器看不见什么。",
                       out="articles/" + N_ZH, nav=lang_nav("zh", N_EN, N_ZH), labels=ZH_LABELS))
 
+built.append(page("measure-body.html", lang="en", figures="figures-measure.json",
+                  extra_css="measure-extra.css",
+                  title="How to measure decode on a machine like this",
+                  desc="Two harnesses agree to 0.44%, but only once the machine is warm: the first of "
+                       "four identical runs read 31% low. Why every point carries its run count and "
+                       "range, and why the range rather than a standard deviation.",
+                  out="articles/" + X_EN, nav=lang_nav("en", X_EN, X_ZH), labels=EN_LABELS))
+if (D / "measure-body-zh.html").exists():
+    built.append(page("measure-body-zh.html", lang="zh-CN", figures="figures-measure.json",
+                      extra_css="measure-extra.css", script_from="measure-body.html",
+                      title="在这样一台机器上怎么测 decode",
+                      desc="两套 harness 吻合到 0.44%，但前提是机器已经热了："
+                           "四次相同运行里的第一次低了 31%。为什么每个点都带 run "
+                           "数和极差，以及为什么报极差而不是标准差。",
+                      out="articles/" + X_ZH, nav=lang_nav("zh", X_EN, X_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + X_EN, "title": "How to measure decode on a machine like this",
+     "blurb": "The two harnesses agree to 0.44%, and finding that out took four identical runs the "
+              "first of which read 31% low. What every point carries, where the chart-grade line sits, "
+              "and one cell where the range and the standard deviation disagree about the direction.",
+     "measured": "measured 2026-08-26",
+     "langs": ["EN", "\u4e2d"] if (D / "measure-body-zh.html").exists() else ["EN"],
+     "tags": ["methodology", "calibration", "nondeterminism"]},
     {"href": "articles/" + N_EN, "title": "How to report a bug you cannot reproduce",
      "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth "
               "something, and the third found that the reporter's own script counts failures on rank 0 "
@@ -321,7 +345,7 @@ for p in built:
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
                  (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH),
-                 (N_EN, N_ZH)):
+                 (N_EN, N_ZH), (X_EN, X_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

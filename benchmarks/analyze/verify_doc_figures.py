@@ -757,7 +757,8 @@ def main():
              ["a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"],
              ["gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"],
              ["reporting-a-non-reproduction.html",
-              "reporting-a-non-reproduction.zh.html"]]
+              "reporting-a-non-reproduction.zh.html"],
+             ["measuring-decode.html", "measuring-decode.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -2707,6 +2708,157 @@ def main():
             ck(f"6565 article {fn}, carries '{h[:22]}'", "1",
                1 if h in pages[fn] else 0)
         ck(f"6565 article {fn}, states what the first sweep really showed", "1",
+           1 if phrase in " ".join(pages[fn].split()) else 0)
+
+    # --- measuring-decode.html -----------------------------------------------
+    # The methodology article. Its figures are the rules the rest of the
+    # repository is measured under, so they are pinned to the files that set
+    # them rather than to the prose that describes them.
+    XART = json.loads(block(pages["measuring-decode.html"], "figures"))
+    XDIR = os.path.join(HERE, "..", "harness-calibration")
+    xcal = {}
+    for i in (1, 2, 3, 4):
+        for line in open(os.path.join(XDIR, f"harness-cal-r{i}.jsonl")):
+            r = json.loads(line)
+            xcal[(i, r["campaign_target"])] = r
+    xaug = [json.loads(l) for l in
+            open(os.path.join(HERE, "..", "results-2026-08-24.jsonl"))]
+    xcamp = {t_: [r["decode_tps"] for r in xaug if r.get("kind") == "decode"
+                  and r.get("cfg") == "B-8B-tp2" and r.get("target") == t_]
+             for t_ in (500, 8000, 32000)}
+    xconv = lambda t_, k: (xcal[(3, t_)][k] + xcal[(4, t_)][k]) / 2
+
+    ck("measure article, fig1 rows", "3", len(XART["fig1"]["rows"]))
+    ck("measure article, fig1 rows match the calibration", "3",
+       sum(1 for r in XART["fig1"]["rows"]
+           if abs(r["campaign"] - sum(xcamp[r["ctx"]]) / len(xcamp[r["ctx"]])) < 1e-9
+           and abs(r["probe_64"] - xconv(r["ctx"], "tps_64")) < 1e-9
+           and abs(r["probe_512"] - xconv(r["ctx"], "tps_512")) < 1e-9))
+    ck("measure article, fig1 the two harnesses agree to", "0.44",
+       XART["fig1"]["worst_delta_pct"])
+    ck("measure article, fig1 and matching the span does not change that", "0.97",
+       XART["fig1"]["worst_delta_512_pct"])
+    # the depths have to be the campaign's own reported prompt lengths, or the
+    # two sides are not at the same context
+    ck("measure article, fig1 every depth is matched", "1",
+       1 if XART["fig1"]["all_depths_matched"] else 0)
+    ck("measure article, fig1 recomputes that from the probe", "3",
+       sum(1 for r in XART["fig1"]["rows"]
+           if xcal[(3, r["ctx"])]["prompt_tokens_got"]
+           == xcal[(3, r["ctx"])]["prompt_tokens_wanted"]))
+    ck("measure article, fig1 states why this model", "4",
+       len(XART["fig1"]["why_this_model"]))
+
+    ck("measure article, fig2 rows", "3", len(XART["fig2"]["rows"]))
+    ck("measure article, fig2 four runs each", "3",
+       sum(1 for r in XART["fig2"]["rows"] if len(r["runs"]) == 4))
+    ck("measure article, fig2 runs match the files", "12",
+       sum(1 for r in XART["fig2"]["rows"] for i, v in enumerate(r["runs"])
+           if abs(v - xcal[(i + 1, r["ctx"])]["tps_64"]) < 1e-9))
+    ck("measure article, fig2 the first run's worst", "-30.7",
+       XART["fig2"]["first_run_worst_pct"])
+    ck("measure article, fig2 the second is still", "-6.2",
+       XART["fig2"]["second_run_worst_pct"])
+    ck("measure article, fig2 the converged pair agrees to at least", "0.07",
+       XART["fig2"]["converged_spread_pct"]["min"])
+    ck("measure article, fig2 and at most", "0.36",
+       XART["fig2"]["converged_spread_pct"]["max"])
+    # the shape is the claim: the deficit is worst where the machine is fastest
+    ck("measure article, fig2 the deficit is worst at the shortest depth", "500",
+       XART["fig2"]["worst_at"])
+
+    # fig3: the cross-campaign control
+    ck("measure article, fig3 controls", "6", len(XART["fig3"]["controls"]))
+    # `aug` is rebound to a list of raw rows further up this function, so the
+    # two decode projections are rebuilt here rather than reused
+    xjul, xaugd = decode(JULY), decode(AUG)
+    ck("measure article, fig3 offsets recompute", "6",
+       sum(1 for c in XART["fig3"]["controls"]
+           if abs(c["offset_pct"] - offset(xjul, xaugd, c["cfg"])) < 1e-9))
+    ck("measure article, fig3 inside the band", "4", XART["fig3"]["within_band"])
+    ck("measure article, fig3 and the band is", "0.25", XART["fig3"]["band_pct"])
+    ck("measure article, fig3 two are outside", "2", len(XART["fig3"]["outside"]))
+
+    # fig4: the ledger's own spread distribution and where it cuts
+    xled = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
+    xspread = sorted(r["range_pct"] for r in xled if r["range_pct"] is not None)
+    ck("measure article, fig4 ledger rows", str(len(xled)), XART["fig4"]["rows"])
+    ck("measure article, fig4 points with a range", str(len(xspread)),
+       XART["fig4"]["with_range"])
+    ck("measure article, fig4 the spread list is the ledger's", "1",
+       1 if XART["fig4"]["spreads"] == xspread else 0)
+    ck("measure article, fig4 the cut is build_ledger's", str(build_ledger.RANGE_CUT),
+       XART["fig4"]["cut"])
+    ck("measure article, fig4 median", "0.12", XART["fig4"]["median"])
+    ck("measure article, fig4 p95", "2.32", XART["fig4"]["p95"])
+    ck("measure article, fig4 points above the cut", "1", len(XART["fig4"]["above_cut"]))
+    ck("measure article, fig4 which is the ungraded count", "1", XART["fig4"]["ungraded"])
+    ck("measure article, fig4 no ledger row is a single run", "0",
+       XART["fig4"]["single_run"])
+    # the tail is what justifies a cut at 6 rather than a convention, and
+    # build_ledger's comment now describes it; both have to stay true
+    ck("measure article, fig4 the tail above 2.5%", "6", len(XART["fig4"]["tail"]))
+    ck("measure article, fig4 the gap the cut sits in", "1",
+       1 if max(v for v in XART["fig4"]["tail"] if v < XART["fig4"]["cut"]) < 5.5
+       and min(XART["fig4"]["above_cut"]) > 15 else 0)
+    bl = open(os.path.join(HERE, "build_ledger.py"), encoding="utf-8").read()
+    ck("build_ledger, its comment describes the current distribution", "1",
+       1 if "0.00-2.32%" in bl and "2.6, 3.4, 3.5, 4.1, 5.1, and then jump to 16.8" in bl
+       else 0)
+    ck("build_ledger, and says it excludes one point", "1",
+       1 if "excludes the one point" in bl else 0)
+
+    # fig5: why the range rather than a standard deviation
+    B5 = XART["fig4"]["bimodal"]
+    ck("measure article, fig5 the cell has four runs", "4", B5["runs"])
+    ck("measure article, fig5 range at two", "15.79", B5["range_at_two"])
+    ck("measure article, fig5 range at four", "16.79", B5["range_at_four"])
+    ck("measure article, fig5 the range widened", "1",
+       1 if B5["widened_by_adding_runs"] else 0)
+    ck("measure article, fig5 the standard deviation narrowed", "1",
+       1 if B5["stdev_at_four"] < B5["stdev_at_two"] else 0)
+    ck("measure article, fig5 stdev at two", "4.87", B5["stdev_at_two"])
+    ck("measure article, fig5 stdev at four", "3.61", B5["stdev_at_four"])
+    # the run order is not recoverable from the ledger, so it has to come from
+    # the files that produced the four runs
+    HD = os.path.join(HERE, "..", "hybrid-splitkv-027")
+    cell = []
+    for fn in ("qwen38-027-depth.jsonl", "qwen38-027-depth-b.jsonl",
+               "qwen38-8k-r3r4.jsonl"):
+        cell += [r["decode_tok_s"] for r in
+                 (json.loads(l) for l in open(os.path.join(HD, fn)))
+                 if r.get("ctx") == 8192 and r.get("arm") == "splitkv"]
+    ck("measure article, fig5 the values are in run order", "1",
+       1 if B5["in_run_order"] == cell else 0)
+    ck("measure article, fig5 and sorted they are the ledger's", "1",
+       1 if sorted(B5["in_run_order"]) == B5["values"] else 0)
+
+    # fig6: why token comparison is not the correctness test here
+    xnd = json.load(open(os.path.join(HERE, "..",
+                                      "gfx1100-greedy-nondeterminism.json")))
+    N6 = XART["fig5"]
+    ck("measure article, fig6 cells", str(xnd["result"]["cells"]), N6["cells"])
+    ck("measure article, fig6 varying",
+       str(xnd["result"]["cells_with_more_than_one_output"]), N6["varying"])
+    ck("measure article, fig6 symmetric between kernel states", "1",
+       1 if N6["by_state"]["before"] == N6["by_state"]["after"] else 0)
+    ck("measure article, fig6 within-process cells",
+       str(len(xnd["within_process"]["cells"])), N6["within_process"])
+    ck("measure article, fig6 and most of them vary too", "12",
+       N6["within_process_varying"])
+    ck("measure article, fig6 the worst cell", "8", N6["worst_distinct_of_8"])
+
+    for fn, heads, phrase in (
+            ("measuring-decode.html",
+             ("What is not established", "What has changed since"),
+             "a single run is not a measurement"),
+            ("measuring-decode.zh.html",
+             ("没有被确立的部分", "此后发生的变化"),
+             "一次运行不构成一次测量")):
+        for h in heads:
+            ck(f"measure article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+        ck(f"measure article {fn}, states the rule it exists for", "1",
            1 if phrase in " ".join(pages[fn].split()) else 0)
 
     failed = [c for c in checks if not c[0]]

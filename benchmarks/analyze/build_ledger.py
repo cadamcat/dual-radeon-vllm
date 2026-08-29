@@ -55,10 +55,12 @@ CFG = {
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 
-# Where chart_grade cuts. Chosen from the distribution rather than picked: the
-# ranges run 0.00-2.36% up to p95, then 3.4, 4.1, 5.1, and then jump to 15.4 and
-# 15.8. The cut sits in that gap, so it excludes the two points that are known
-# to be unstable and nothing else.
+# Where chart_grade cuts. Chosen from the distribution rather than picked, and
+# restated 2026-08-29 because the distribution moved when the 0.27 rows landed
+# and the bimodal 8K cell gained two more runs: the ranges now run 0.00-2.32%
+# up to p95, then 2.6, 3.4, 3.5, 4.1, 5.1, and then jump to 16.8. The cut sits
+# in that gap, so it excludes the one point known to be unstable and nothing
+# else. verify_doc_figures.py pins the tail so this cannot go stale unnoticed.
 RANGE_CUT = 6.0
 
 CAMPAIGNS = [

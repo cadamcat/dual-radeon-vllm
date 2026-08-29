@@ -1,6 +1,21 @@
 {
  "articles": [
   {
+   "href": "articles/measuring-decode.html",
+   "title": "How to measure decode on a machine like this",
+   "blurb": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
+   "measured": "measured 2026-08-26",
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "methodology",
+    "calibration",
+    "nondeterminism"
+   ]
+  },
+  {
    "href": "articles/reporting-a-non-reproduction.html",
    "title": "How to report a bug you cannot reproduce",
    "blurb": "A clean run is the least useful sentence on a bug tracker. Three things make it worth something, and the third found that the reporter's own script counts failures on rank 0 only — demonstrated by injecting a one-sided fault rather than argued.",
