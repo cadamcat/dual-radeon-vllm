@@ -12,24 +12,21 @@ __CHIPS__
   </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>A hybrid Mamba/gated-delta-net checkpoint loses <strong>65 % of its decode rate</strong> between
-  500 and 32 000 tokens of context under vLLM on RDNA3, a curve four to forty times steeper than any
-  dense model measured on the same machine in the same campaign.</p>
-  <p>A kernel-level profile puts essentially all of the growth in one place: <code>kernel_paged_attention_2d</code>,
-  the Triton fallback serving the model's 16 full-attention layers, whose per-call cost grows 28.3× while
-  every other kernel in the step is flat or slightly cheaper. The linear-attention layers deliver what
-  the architecture promises.</p>
-  <p>The fallback is taken because the ROCm custom paged-attention kernel is unreachable for this model
-  three conditions over, and it is slow <em>on this model in particular</em> because 4 KV heads at batch 1
-  leave the kernel almost nothing to parallelise over. Two independent signals agree: per-card power
-  <em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than narrower.</p>
-  <p>The same checkpoint under llama.cpp on the same machine and the same day holds a slope 28× shallower,
-  which rules out the driver and the hardware. An upstream fix exists and is measured here twice, most
-  recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>. One cell of that A/B is
-  bimodal and is reported as such.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3> <p>A hybrid Mamba/gated-delta-net checkpoint loses
+<strong>65 % of its decode rate</strong> between 500 and 32 000 tokens of context under vLLM on
+RDNA3, a curve fourteen to forty times steeper than any dense model measured on the same machine in
+the same campaign.</p> <p>A kernel-level profile puts essentially all of the growth in one place:
+<code>kernel_paged_attention_2d</code>, the Triton fallback serving the model's 16 full-attention
+layers, whose per-call cost grows 28.3× while every other kernel in the step is flat or slightly
+cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The fallback is
+taken because the ROCm custom paged-attention kernel is unreachable for this model three conditions
+over, and it is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
+kernel almost nothing to parallelise over. Two independent signals agree: per-card power
+<em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than
+narrower.</p> <p>The same checkpoint under llama.cpp on the same machine and the same day holds a
+slope 28× shallower, which rules out the driver and the hardware. An upstream fix exists and is
+measured here twice, most recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>.
+One cell of that A/B is bimodal and is reported as such.</p> </div>
 
 <h2><span class="n">1</span>What was measured, and how</h2>
 
@@ -89,7 +86,7 @@ whose window they fall in, so that chunked-prefill calls are not mixed into the 
 <figure class="rv" id="fig2">
   <div class="figbox">
     <div class="figtitle">Figure 2 · per-call GPU time, 1 K against 32 K <span class="prov no">raw trace not committed</span></div>
-    <div class="bars" id="bars2" style="--labw:210px"></div>
+    <div class="bars" id="bars2"></div>
   </div>
   <figcaption>
     <b>Figure 2.</b> Per-call GPU time on rank 0, logarithmic. Call counts are identical at the two
@@ -179,7 +176,7 @@ collapse were in the driver, the GPU, or the topology, it would appear here too.
 <figure class="rv" id="fig3">
   <div class="figbox">
     <div class="figtitle">Figure 3 · decode slope, microseconds per token of context <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="bars3" style="--labw:158px"></div>
+    <div class="bars" id="bars3"></div>
   </div>
   <figcaption>
     <b>Figure 3.</b> Lower is flatter. The shaded band is the range the dense models under vLLM produce on
@@ -190,9 +187,10 @@ collapse were in the driver, the GPU, or the topology, it would appear here too.
   </figcaption>
 </figure>
 
-<p>llama.cpp's slope lands <em>inside</em> the band the dense models produce under vLLM. Two
-independent sources therefore agree on what a normal slope looks like on this hardware, but this one
-configuration sits an order of magnitude outside it.</p>
+<p>llama.cpp's ROCm slope lands <em>inside</em> the band the dense models produce under vLLM; its
+Vulkan slope is below the band, flatter than any of them. Two independent sources therefore agree on
+what a normal slope looks like on this hardware, but this one configuration sits an order of
+magnitude outside it.</p>
 
 <div class="note">
   <span class="lbl">One disturbed point, stated rather than dropped</span>
@@ -222,7 +220,7 @@ the arm order reversed.</p>
   <div class="figbox">
     <div class="figtitle">Figure 4 · controlled A/B on vLLM 0.27 <span class="prov yes">recomputable from repo</span></div>
     <div class="hint">click a bar group to switch between rate and milliseconds per token</div>
-    <div class="bars" id="ab4" style="--labw:128px"></div>
+    <div class="bars" id="ab4"></div>
   </div>
   <figcaption>
     <b>Figure 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>, TP=2, vLLM 0.27.1.dev5, offline 64-vs-8 differencing.
@@ -282,6 +280,16 @@ baseline is a different question with a different answer.</p>
   Figure 4 answers it: at 32 K the model now decodes at 36.1 tok/s against the 4.2 the original campaign
   measured, and the residual slope sits inside the band this machine's dense models produce rather than
   27 % above it.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · two numbers in this article did not match its own figure</span>
+  The abstract said the hybrid curve is "four to forty times steeper" than the dense models. Against
+  the band Figure 3 draws, <strong>0.118 to 0.339 µs per token</strong>, the hybrid's
+  <strong>4.84</strong> is 14.3× to 41.0× steeper: the floor is fourteen, not four. And "llama.cpp's
+  slope lands inside the band" was true of the ROCm backend and not of the Vulkan one, which at
+  <strong>0.107</strong> is below the band entirely. Both corrected in place, and
+  <code>verify_doc_figures.py</code> now pins the ratio and each backend's position against the band.
 </div>
 
 <div class="foot">
@@ -363,9 +371,11 @@ baseline is a different question with a different answer.</p>
 
   function showTip(e, html) {
     tip.innerHTML = html; tip.style.opacity = "1";
-    var x = e.clientX + 14, y = e.clientY + 14;
-    if (x + 280 > window.innerWidth) x = e.clientX - 280;
-    if (y + 90 > window.innerHeight) y = e.clientY - 90;
+    // measured rather than assumed 280x90, and clamped at both ends: on a
+    // phone the guess put it off the left edge
+    var r = tip.getBoundingClientRect();
+    var x = Math.min(Math.max(8, e.clientX + 14), window.innerWidth - r.width - 8);
+    var y = Math.min(Math.max(8, e.clientY + 14), window.innerHeight - r.height - 8);
     tip.style.left = x + "px"; tip.style.top = y + "px";
   }
   function hideTip() { tip.style.opacity = "0"; }
@@ -400,9 +410,11 @@ baseline is a different question with a different answer.</p>
     paths = []; dots = [];
     var ymax = 0;
     s1.forEach(function (s) { s.points.forEach(function (p) { ymax = Math.max(ymax, yval(s, p)); }); });
-    ymax *= 1.06;
+    // round up to the tick above, or the highest point sits over the last
+    // gridline with nothing labelled above it
+    ymax = mode1 ? ymax * 1.06 : Math.ceil(ymax * 1.02 / 20) * 20;
     var Y = function (v) { return H - M.b - v / ymax * (H - M.t - M.b); };
-    var ticks = mode1 ? [0, 25, 50, 75, 100] : [0, 20, 40, 60, 80, 100];
+    var ticks = mode1 ? [0, 25, 50, 75, 100] : [0, 20, 40, 60, 80, 100, 120];
 
     var g = svgEl("g", { "class": "grid" });
     ticks.forEach(function (v) {

@@ -14,7 +14,7 @@ __CHIPS__
 <div class="abstract">
   <h3>摘要</h3>
   <p>一个混合 Mamba / gated-delta-net 检查点，在 500 到 32 000 token 之间<strong>丢掉 65 % 的解码速率</strong>，
-  曲线比同一台机器同一场 campaign 里任何稠密模型都陡四到四十倍。</p>
+  曲线比同一台机器同一场 campaign 里任何稠密模型都陡十四到四十倍。</p>
   <p>kernel 级 profile 把这段增长几乎全部指向一处：<code>kernel_paged_attention_2d</code>，
   服务该模型 16 个全注意力层的 Triton 回退路径，单次调用成本涨 28.3 倍，而这一步里其余 kernel 全都持平或更便宜。
   线性注意力层兑现了这个架构的承诺。</p>
@@ -78,7 +78,7 @@ TP=2、开启 CUDA graph、<code>--gpu-memory-utilization 0.85</code>、512 toke
 <figure class="rv" id="fig2">
   <div class="figbox">
     <div class="figtitle">图 2 · 单次调用 GPU 时间，1 K 对 32 K <span class="prov no">原始 trace 未入库</span></div>
-    <div class="bars" id="bars2" style="--labw:210px"></div>
+    <div class="bars" id="bars2"></div>
   </div>
   <figcaption>
     <b>图 2.</b> rank 0 上的单次调用 GPU 时间，对数刻度。两个深度的调用次数完全相同——
@@ -161,7 +161,7 @@ kernel 手里有多少可并行的东西。</p>
 <figure class="rv" id="fig3">
   <div class="figbox">
     <div class="figtitle">图 3 · 解码斜率，每 token 上下文的微秒数 <span class="prov yes">可从仓库重算</span></div>
-    <div class="bars" id="bars3" style="--labw:158px"></div>
+    <div class="bars" id="bars3"></div>
   </div>
   <figcaption>
     <b>图 3.</b> 越低越平。阴影区间是这台机器上稠密模型在 vLLM 下产生的范围，0.118 到 0.339 µs。
@@ -171,7 +171,7 @@ kernel 手里有多少可并行的东西。</p>
   </figcaption>
 </figure>
 
-<p>llama.cpp 的斜率落在稠密模型在 vLLM 下产生的那个区间<em>之内</em>。
+<p>llama.cpp 的 ROCm 斜率落在稠密模型在 vLLM 下产生的那个区间<em>之内</em>；Vulkan 那条比这个区间还低，比它们里任何一个都更平。
 于是有两个独立来源对"这台硬件上正常的斜率长什么样"给出了一致答案，而这一个配置比它高出一个数量级。</p>
 
 <div class="note">
@@ -198,7 +198,7 @@ kernel 手里有多少可并行的东西。</p>
   <div class="figbox">
     <div class="figtitle">图 4 · vLLM 0.27 上的受控 A/B <span class="prov yes">可从仓库重算</span></div>
     <div class="hint">点击柱组在速率与每 token 毫秒之间切换</div>
-    <div class="bars" id="ab4" style="--labw:128px"></div>
+    <div class="bars" id="ab4"></div>
   </div>
   <figcaption>
     <b>图 4.</b> <code>Qwen3.8-27B-AWQ-INT4</code>，TP=2，vLLM 0.27.1.dev5，离线 64-vs-8 差分。
@@ -251,6 +251,15 @@ kernel 手里有多少可并行的东西。</p>
   7 月的写作稿收在"斜率解决了，基线是另一个问题"。图 4 的 0.27 A/B 回答了它：
   32 K 处该模型现在跑 36.1 tok/s，对最初 campaign 测到的 4.2；
   而残余斜率落进了这台机器上稠密模型产生的区间之内，不再高出 27 %。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 本文有两个数字和它自己的图对不上</span>
+  摘要里写混合模型的曲线比稠密模型"陡四到四十倍"。对照图 3 画出的那个区间——
+  <strong>每 token 0.118 到 0.339 µs</strong>——混合模型的 <strong>4.84</strong> 是陡 14.3× 到 41.0×：
+  下界是十四，不是四。另外"llama.cpp 的斜率落在区间之内"只对 ROCm 那条成立，Vulkan 那条是
+  <strong>0.107</strong>，整个落在区间以下。两处都已就地更正，<code>verify_doc_figures.py</code>
+  现在把这个比值和两个后端各自相对区间的位置都钉住了。
 </div>
 
 <div class="foot-note">

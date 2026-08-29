@@ -20,8 +20,8 @@
             vertical-align:baseline; margin-right:.35em; }
 
   /* ---- figure 2: the four corners ---- */
-  .k2 { display:grid; grid-template-columns:max-content 1fr 1fr; gap:.5em;
-        align-items:stretch; }
+  .k2 { display:grid; grid-template-columns:max-content minmax(0,1fr) minmax(0,1fr);
+        gap:.5em; align-items:stretch; }
   .k2 .hd { font-family:var(--mono); font-size:.72rem; letter-spacing:.08em;
             text-transform:uppercase; color:var(--text-dim); align-self:end;
             padding-bottom:.3em; }
@@ -33,7 +33,8 @@
                  border-color:color-mix(in srgb, var(--green) 30%, transparent); }
   .cell.fall { background:var(--red-bg);
                border-color:color-mix(in srgb, var(--red) 26%, transparent); }
-  .cell b { font-family:var(--mono); font-size:.78rem; display:block; color:var(--text); }
+  .cell b { font-family:var(--mono); font-size:.78rem; display:block; color:var(--text);
+            overflow-wrap:anywhere; }
   .cell.native b { color:var(--green); } .cell.fall b { color:var(--red); }
   .cell span { font-size:.75rem; color:var(--text-dim); }
 

@@ -1,0 +1,9 @@
+  /* ---- this article's bar label columns ----
+     These were inline style="--labw:210px" on the containers, which beats the
+     shared 640px rule and left a 90px track on a phone. In a stylesheet the
+     media query can win. */
+  #bars2 { --labw:210px; }
+  #bars3 { --labw:158px; }
+  #ab4   { --labw:128px; }
+  @media (max-width:640px){ #bars2, #bars3, #ab4 { --labw:104px; } }
+  @media (max-width:420px){ #bars2, #bars3, #ab4 { --labw:88px; } }

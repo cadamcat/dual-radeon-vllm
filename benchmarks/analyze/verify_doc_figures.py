@@ -869,6 +869,23 @@ def main():
         ck(f"article, fig3 llama.cpp {be} points", str(len(raw)),
            len(A["fig3"]["llamacpp"][be]["points"]))
 
+    # the abstract compares the hybrid's slope to the band the dense models
+    # occupy, and said "four to forty" where the floor is fourteen. Both ends
+    # are pinned now, and so is which llama.cpp backend sits inside that band:
+    # the sentence claiming both did was true of one.
+    _lo, _hi = A["fig3"]["dense_band_us"]
+    _h = A["fig3"]["vllm_hybrid_slope_us"]
+    ck("article, hybrid slope against the dense band, floor", "14.3", _h / _hi)
+    ck("article, hybrid slope against the dense band, ceiling", "41.0", _h / _lo)
+    ck("article, llama.cpp on ROCm is inside the dense band", "1",
+       1 if _lo <= A["fig3"]["llamacpp"]["rocm"]["slope_us"] <= _hi else 0)
+    ck("article, llama.cpp on Vulkan is below it", "1",
+       1 if A["fig3"]["llamacpp"]["vulkan"]["slope_us"] < _lo else 0)
+    for fn, phrase in (("hybrid-ssm-collapse.html", "fourteen to forty times steeper"),
+                       ("hybrid-ssm-collapse.zh.html", "\u9661\u5341\u56db\u5230\u56db\u5341\u500d")):
+        ck(f"article {fn}, the abstract says fourteen", "1",
+           1 if fl(phrase) in flat[fn] else 0)
+
     # the one figure that cannot be recomputed says so, in the data and on the page
     ck("article, fig2 declares itself unreproducible", "1",
        0 if A["fig2"].get("reproducible_from_repo", True) else 1)

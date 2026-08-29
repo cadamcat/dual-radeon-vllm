@@ -117,13 +117,14 @@ Z_EN, Z_ZH = "rdna3-second-class.html", "rdna3-second-class.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
+                  extra_css="article-extra.css",
                   title='One kernel accounts for the whole 12.1 to 4.2 tok/s fall',
                   desc="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of "
                        "context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream "
                        "fix, measured.",
                   out="articles/" + H_EN, nav=lang_nav("en", H_EN, H_ZH), labels=EN_LABELS))
 built.append(page("article-body-zh.html", lang="zh-CN", figures="figures.json",
-                  script_from="article-body.html",
+                  extra_css="article-extra.css", script_from="article-body.html",
                   title='一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑',
                   desc="Qwen3.6-27B 在 2× RX 7900 XT 上，上下文从 "
                        "500 到 32000 token，解码由 12.1 掉到 4.2 tok/s。"
