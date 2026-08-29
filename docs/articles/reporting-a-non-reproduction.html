@@ -708,7 +708,8 @@ addEventListener("DOMContentLoaded", function () {
 8-byte copy whose payload is not in device memory when the synchronise returns. It reproduces
 deterministically for them on RCCL 2.27.7 and 2.28.3. On this box at 2.30.4 it does not, across
 <strong>135 cold communicator initialisations in eight configurations</strong>.</p> <p>Three things
-make that mean something. <strong>A sweep that could have exposed it</strong>: their mechanism is
+make that mean something. <strong>A sweep across the dimensions their mechanism names</strong>:
+their mechanism is
 specific to the first of several concurrent init copies, this box builds two channels by default,
 and the sweep drives that from one to sixteen and the transport from shared memory to sockets.
 <strong>A stated contrast</strong>: the two machines differ on platform, kernel and RCCL version,
@@ -845,9 +846,10 @@ replace anything.</p>
 
 <p>The plan had a second witness that does not go through PyTorch, using the reporter's other
 reproducer. <code>rccl-tests</code> builds cleanly against this container's toolchain, with gfx1100 code
-objects confirmed in both the benchmark and the verification object, and then every collective aborts on
-rank 1 at the data-initialisation kernel with <code>HIP failure: 'invalid device function'</code>. It
-fails identically with and without the verification pass, so it is not the verification kernels, and the
+objects confirmed in both the benchmark and the verification object, and then both of the logged
+<code>all_gather</code> runs abort on rank 1 at the data-initialisation kernel with
+<code>HIP failure: 'invalid device function'</code>. It fails identically with and without the
+verification pass, so it is not the verification kernels; the script's later arms never ran; and the
 clone is on the deprecated branch against RCCL 2.30.4.</p>
 
 <p>That is recorded as a limitation rather than dropped, and the unfiltered log is what is committed. An
@@ -893,6 +895,18 @@ second independent path would have been better and did not build usefully here.<
   <span class="lbl">Still open</span>
   <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> is open and nothing above
   2.28.3 has been reported either way by anyone else. This is one contrast cell, offered as one.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "every collective" is one collective in the committed log</span>
+  Section 4 said <code>rccl-tests</code> builds and "then every collective aborts on rank 1".
+  <code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> holds two invocations, both
+  <code>all_gather_perf</code>; nothing under that directory carries
+  <code>reduce_scatter_perf</code> or <code>all_reduce_perf</code> output.
+  <code>scripts/stage2b_rccltests.sh</code> intends six arms and the run stopped after the second.
+  Script intent is not committed evidence, which is the distinction this article is about.
+  Separately, the sweep was billed as one "that could have exposed it"; what it covers is the
+  dimensions their mechanism names, and the injection demonstrates the checker rather than the fault.
 </div>
 
 <div class="foot-note">

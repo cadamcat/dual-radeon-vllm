@@ -52,8 +52,8 @@ prefill by differencing a 64-token generation against an 8-token one at the same
   <figcaption>
     <b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four
     depths, and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>.
-    Hover any point for both rates. The MTP arm was measured a second time five weeks later, as the
-    stock baseline of a different comparison. The three long depths reproduce to <strong>0.45
+    Hover any point for both rates. The MTP arm was measured a second time twenty-five days later,
+    as the stock baseline of a different comparison. The three long depths reproduce to <strong>0.45
     %</strong> and 1K differs by 6.0 %, so the end of the ladder that carries the finding is the end
     that repeats best.
   </figcaption>
@@ -205,7 +205,8 @@ were measured and where MTP stops paying on FlashInfer was bracketed rather than
 
 <h3>Replication</h3>
 <p>The ROCm ladder is one process per cell. The MTP arm turns out to have a second, independent run
-five weeks later, and the three long depths agree to 0.45 % — but the no-speculation arm has none, and
+twenty-five days later, and the three long depths agree to 0.45 % — but the no-speculation arm has
+none, and
 acceptance rate was not captured per cell. The A100 matrix is also one run per cell, across two VMs
 whose cross-session variance is unquantified.</p>
 
@@ -252,6 +253,17 @@ is what supports it, not either measurement alone.</p>
   the assistant on for short prompts and off by 8K, where it is already a net loss.
 </div>
 
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "five weeks later" did not match this page's own dates</span>
+  The MTP arm's two runs are dated <strong>2026-08-01</strong> and <strong>2026-08-26</strong>:
+  twenty-five days, not five weeks. The phrase stood in six places across the two languages.
+  Corrected in all six. The same phrase was corrected in
+  <a href="weight-loading-19x.html">the loader article</a> earlier the same day, and the interval
+  between the two campaigns — thirty days, not five weeks either — is corrected in
+  <a href="measuring-decode.html">the measurement article</a>. Separately, the Chinese figure-2 note
+  said the spread across query lengths was 不超过 1.3 %, a bound, where the English says "about".
+</div>
+
 <div class="foot-note">
   <p><strong>The data.</strong> The ROCm ladders, the direct kernel sweeps and the correctness cases are
   in
@@ -287,7 +299,7 @@ is what supports it, not either measurement alone.</p>
  "f2zero": "free",
  "f1unit": "per cent, MTP against no speculation at the same depth",
  "f1rateUnit": "decode tok/s · one process per cell",
- "f1repeat": "the MTP arm re-measured five weeks later: 1K differs {a}%, 8K–32K agree to {b}% at two places",
+ "f1repeat": "the MTP arm re-measured twenty-five days later: 1K differs {a}%, 8K–32K agree to {b}% at two places",
  "f1cross": "monotonic across four depths, and it crosses zero between 1K and 8K",
  "grid2d": "2D, what speculation gets",
  "grid3d": "3D, what decode needs",

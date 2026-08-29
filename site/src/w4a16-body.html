@@ -23,11 +23,11 @@ __CHIPS__
   <code>uint4b8</code>; the layer silently falls to Triton. Nothing warns, and the model name does not
   tell you which kind you have.</p>
   <p>The growing cost is paged attention, which
-  <a href="hybrid-ssm-collapse.html">has its own article</a>. Both halves are now fixed upstream and
+  <a href="hybrid-ssm-collapse.html">has its own article</a>. Both halves have a fix upstream and
   <strong>neither fix is ours</strong>: <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
-  added a second native kernel that does accept <code>uint4</code>, and
+  merged, adding a second native kernel that does accept <code>uint4</code>;
   <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> widens the split-KV
-  attention gate.</p>
+  attention gate and is still unmerged.</p>
   <p>What this article contributes is the separation, and one thing found on the way: sweeping the
   asymmetric configuration space on gfx1100, three of twelve configurations are served by two kernels,
   one by Triton, and <strong>eight by nothing at all</strong>. Every asymmetric checkpoint with
@@ -308,6 +308,15 @@ run but broke ten existing cases, because a GPTQ checkpoint stores zero points e
 uses the v1 "+1" offset. The right key is <code>not c.weight_type.has_bias()</code>. Keying on
 <code>zero_points</code> would have silently mis-dequantized every asymmetric GPTQ checkpoint on
 RDNA3 while passing the run that was supposed to validate it. </div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · one of the two fixes is merged and the other is not</span>
+  The abstract said "Both halves are now fixed upstream", which puts a merged change and an open
+  pull request in one basket. <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
+  merged; <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> has not, and
+  <code>docs/benchmarks.md</code> says so — "unmerged, so on a stock install this stands". Section 9
+  had it right and the abstract did not. Corrected in place.
+</div>
 
 <div class="foot-note">
   <p><strong>The data behind every figure.</strong> The A/B, the forced-kernel run, the three-line fix

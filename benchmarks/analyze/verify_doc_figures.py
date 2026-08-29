@@ -517,6 +517,15 @@ def main():
                          "failed": int(m.group(3)), "error": int(m.group(4) or 0),
                          "n": int(m.group(5))})
     ck("6565 README, arms measured", "8", len(arms))
+    # section 4 said "every collective aborts on rank 1" until 2026-08-29. The
+    # committed log holds two invocations and both are all_gather; the script
+    # intends six arms and the run stopped after the second.
+    _s2b = open(os.path.join(HERE, "..", "..", "benchmarks", "rccl-6565", "logs",
+                             "stage2b-raw.log"), encoding="utf-8").read()
+    ck("6565 log, all_gather invocations", "2",
+       len(re.findall(r"^\+ \./build/all_gather_perf", _s2b, re.M)))
+    ck("6565 log, and no other collective ran", "0",
+       len(re.findall(r"^\+ \./build/(?!all_gather_perf)\w+_perf", _s2b, re.M)))
     ck("6565 README, cold inits total", "135", sum(a["n"] for a in arms))
     ck("6565 README, cold inits correct", "135", sum(a["passed"] for a in arms))
     ck("6565 README, failures", "0", sum(a["failed"] for a in arms))
@@ -1942,6 +1951,16 @@ def main():
            and abs(s["init_engine_s"] - float(m["init_engine_s"])) < 1e-9
            and abs(s["model_load_s"] - float(m["model_load_s"])) < 1e-9))
     ck("moe article, fig2 starts over 20 minutes", "2", len(MART["fig2"]["over_20min"]))
+    # until 2026-08-29 the caption said "the other six are under two". Four are;
+    # the 31B and the 27B sit between two and twenty minutes, and the figure
+    # prints both of them, directly above the sentence that denied them.
+    _mins = [(s["cfg"], s["init_engine_s"] / 60.0) for s in MART["fig2"]["starts"]]
+    ck("moe article, fig2 starts under two minutes", "4",
+       sum(1 for _, m in _mins if m < 2))
+    ck("moe article, fig2 starts between two and twenty", "2",
+       sum(1 for _, m in _mins if 2 <= m <= 20))
+    ck("moe article, fig2 those two are the 31B and the 27B", "1",
+       1 if sorted(c for c, m in _mins if 2 <= m <= 20) == ["C-31B-tp2", "D-27B-tp2"] else 0)
     ck("moe article, fig2 and neither was ever restarted", "2",
        len(MART["fig2"]["no_warm_start_for"]))
     ck("moe article, fig2 the slowest start", "1569.01",
@@ -2105,6 +2124,14 @@ def main():
     med_by = {(r["model"], r["cache"], r["mode"]): r for r in lflag["medians_seconds"]}
     cells = [(g, c) for g in LART["fig2"]["groups"] for c in g["cells"]]
     ck("loader article, fig2 cells", str(len(lflag["medians_seconds"])), len(cells))
+    # the caption said "89 cells" until 2026-08-29. The file holds 89; the figure
+    # draws only the cache-controlled ones, and the other 16 are the `asis`
+    # ordering controls that deliberately do not control page cache.
+    _cache = [c["cache"] for c in lflag["cells"]]
+    ck("loader article, fig2 the file holds 89 cells", "89", len(_cache))
+    ck("loader article, fig2 draws the cache-controlled ones", "73",
+       _cache.count("warm") + _cache.count("cold"))
+    ck("loader article, fig2 the rest are asis ordering controls", "16", _cache.count("asis"))
     ck("loader article, fig2 cells match their medians", str(len(cells)),
        sum(1 for g, c in cells
            if (g["model"], g["cache"], c["mode"]) in med_by
@@ -2750,6 +2777,14 @@ def main():
     xconv = lambda t_, k: (xcal[(3, t_)][k] + xcal[(4, t_)][k]) / 2
 
     ck("measure article, fig1 rows", "3", len(XART["fig1"]["rows"]))
+    # section 2 said "the campaigns already run two rounds per cell which agree
+    # to 0.2 %" until 2026-08-29. True of the calibration's own model, and not of
+    # the campaigns at large, so the sentence is scoped and the bound is pinned.
+    _q8 = [r["range_pct"] for r in led
+           if "Qwen3-8B" in r.get("model", "") and r.get("range_pct") is not None]
+    ck("measure article, the calibration model's worst spread", "0.2", max(_q8))
+    ck("measure article, and the ledger at large is wider than that", "1",
+       1 if sum(1 for r in led if (r.get("range_pct") or 0) > 1.0) > 0 else 0)
     ck("measure article, fig1 rows match the calibration", "3",
        sum(1 for r in XART["fig1"]["rows"]
            if abs(r["campaign"] - sum(xcamp[r["ctx"]]) / len(xcamp[r["ctx"]])) < 1e-9

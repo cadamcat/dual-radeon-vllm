@@ -141,7 +141,9 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 <h2><span class="n">6</span>真正要紧的修复是一行虚拟机配置</h2>
 
 <p>最先验证的解法是重建：让 <code>NDEBUG</code> 进到设备端编译，从而移除把 hostcall 拉进来的
-<code>assert()</code>。这有效，而且有一段时间它就是全部答案。</p>
+<code>assert()</code>。这在 <strong>RCCL 2.27.7</strong> 上有效——端到端验证就是在那个版本上做的——
+而且有一段时间它就是全部答案。但它对 2.30.4 不够：在那边，即使构建出来一条 hostcall 调用指令都
+不剩，那个声明依然还在——见第 8 节。</p>
 
 <p>但对虚拟机来说这是错的第一步。QEMU 本来就知道怎么在模拟根端口上广告 AtomicOp completer 支持 ——
 <code>vfio_pci_enable_rp_atomics()</code> 自 v8.1.0 起就在自动做这件事 —— 它只在一小串条件下放弃，

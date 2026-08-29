@@ -49,7 +49,7 @@ __CHIPS__
   <figcaption>
     <b>图 1.</b> 取自 <code>benchmarks/speculative-decoding/</code>。四个深度上单调，
     而且在 1K 与 8K 之间穿过零 —— <strong>这个交叉点没有测出来</strong>。
-    把鼠标停在任意一个点上可以看到两个速率。MTP 那一臂在五周之后作为另一次对比的 stock
+    把鼠标停在任意一个点上可以看到两个速率。MTP 那一臂在二十五天之后作为另一次对比的 stock
     基线又测了一遍：三个长深度重现到 <strong>0.45 %</strong>，1K 差 6.0 % ——
     也就是说，承载这个结论的那一端，正是重现得最好的那一端。
   </figcaption>
@@ -210,7 +210,7 @@ ROCm 上没有 FlashInfer，所以在这台硬件上办法仍然是按深度决�
 而 MTP 在 FlashInfer 上何时不再划算，只框出了范围，没有定位。</p>
 
 <h3>重复</h3>
-<p>ROCm 这条阶梯每格一个进程。MTP 那一臂后来发现有第二次独立运行，隔了五周，
+<p>ROCm 这条阶梯每格一个进程。MTP 那一臂后来发现有第二次独立运行，隔了二十五天，
 三个长深度一致到 0.45 % —— 但不投机那一臂一次也没有，而且接受率没有逐格记录。
 A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有量化。</p>
 
@@ -256,6 +256,16 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
   短提示打开助手，到 8K 就关掉 —— 那里它已经是净亏。
 </div>
 
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "五周之后"和本页自己的日期对不上</span>
+  MTP 那一臂的两次运行日期是 <strong>2026-08-01</strong> 和 <strong>2026-08-26</strong>：
+  二十五天，不是五周。这个说法在中英两版共六处。六处都已更正。同一天稍早，
+  <a href="weight-loading-19x.zh.html">loader 那篇</a>也为同一个短语打过更正；
+  而两次 campaign 之间的间隔——三十天，同样不是五周——在
+  <a href="measuring-decode.zh.html">测量那篇</a>里更正。另外，图 2 的中文说明写的是
+  各 query 长度之间的散布"不超过 1.3 %"，是一个上界，而英文说的是"大约"。
+</div>
+
 <div class="foot-note">
   <p><strong>数据。</strong>ROCm 的两条阶梯、直接调 kernel 的扫描和正确性用例在
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
@@ -289,14 +299,14 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
  "f2zero": "不要钱",
  "f1unit": "百分比，同深度下 MTP 对不投机",
  "f1rateUnit": "解码 tok/s · 每格一个进程",
- "f1repeat": "MTP 那一臂五周后重测：1K 差 {a}%，8K–32K 取两位后吻合到 {b}%",
+ "f1repeat": "MTP 那一臂二十五天后重测：1K 差 {a}%，8K–32K 取两位后吻合到 {b}%",
  "f1cross": "四个深度上单调，并在 1K 与 8K 之间穿过零",
  "grid2d": "2D，投机拿到的",
  "grid3d": "3D，长上下文解码需要的",
  "gridUnit": "个 workgroup",
  "sweepA": "构造 A", "sweepB": "构造 B",
  "f2unit": "两行 query 对一行，同一次扫描内，百分比",
- "f2note": "32K 上差 {a}% 和 {b}% · 四个 query 长度之间的散布不超过 {c}%",
+ "f2note": "32K 上差 {a}% 和 {b}% · 四个 query 长度之间的散布大约 {c}%",
  "qlen": "q={n}",
  "f3unit": "百分比，同后端同深度下 MTP 对不投机",
  "f3ref": "这台机器在 32K",

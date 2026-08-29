@@ -834,8 +834,10 @@ just as conclusive. Extracted from <code>docs/root-cause.md</code> §3. </figcap
 <h2><span class="n">6</span>The fix that mattered was one line of VM configuration</h2>
 
 <p>The remedy verified first was a rebuild: compile RCCL with <code>NDEBUG</code> reaching the device
-pass, which removes the <code>assert()</code> that pulls hostcall in. That works, and for a while it was
-the whole answer.</p>
+pass, which removes the <code>assert()</code> that pulls hostcall in. That works on <strong>RCCL
+2.27.7</strong>, which is where it was verified end to end, and for a while it was the whole answer.
+It is not sufficient on 2.30.4, where the declaration survives a build with no hostcall-calling
+instructions left in it — §8.</p>
 
 <p>A rebuild is the wrong first move for a virtual machine. QEMU already knows how to advertise
 AtomicOp completer support on an emulated root port — <code>vfio_pci_enable_rp_atomics()</code> has

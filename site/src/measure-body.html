@@ -85,21 +85,21 @@ do differ in span, sampling and transport. It was none of those.</p>
 <div class="note">
   <span class="lbl">Why this does not retroactively damage the campaigns</span>
   Each campaign cell starts a fresh container whose engine initialisation — model load, compile, graph
-  capture — takes minutes before anything is timed, and the campaigns already run two rounds per cell
-  which agree to 0.2 %. The arm-order-reversed pair in a separate experiment agrees to 0.3 % at 1K and
+  capture — takes minutes before anything is timed, and this model's campaign cells already run two
+  rounds which agree to 0.2 %. The arm-order-reversed pair in a separate experiment agrees to 0.3 % at 1K and
   0.2 % at 32K, which a first-cell penalty of this size would have broken. The rule that follows is for
   <em>probe</em> runs starting from a cold machine: discard the first rather than average it in.
 </div>
 
-<h2><span class="n">3</span>The control that spans five weeks</h2>
+<h2><span class="n">3</span>The control that spans thirty days</h2>
 
-<p>Two campaigns, five weeks apart, different kernel, different patches — and six configurations
+<p>Two campaigns, thirty days apart, different kernel, different patches — and six configurations
 measured in both. Those six are the only thing that says whether a number from July and a number from
 August can be put on one chart.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">Figure 3 · the same configuration, measured twice, five weeks apart
+    <div class="figtitle">Figure 3 · the same configuration, measured twice, thirty days apart
       <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="ctrl"></div>
   </div>
@@ -213,6 +213,17 @@ reproducible. TP=1 is untested, and the source is above the kernel but not furth
   gained two runs, so the tail is now 2.6, 3.4, 3.5, 4.1, 5.1 and then 16.8, and the cut excludes one
   point rather than two. The comment now describes the current distribution and the verifier pins its
   tail, so it cannot go stale unnoticed again.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · two intervals and one scope</span>
+  Section 2 said "the campaigns already run two rounds per cell which agree to 0.2 %". That is true
+  of this calibration's model — the Qwen3-8B cells' worst spread is 0.216 % — and not of the
+  campaigns at large, where <code>benchmarks/README.md</code> counts 30 of 142 cells above 1 %. The
+  sentence is now scoped to the cells it is about. Separately, the two campaigns are
+  <strong>thirty days</strong> apart, 2026-07-25 to 2026-08-24, not five weeks; the heading, the
+  paragraph and figure 3's title all said five. And the Chinese rendered "stated with a band" as
+  带宽陈述, which is bandwidth; it now reads 区间.
 </div>
 
 <div class="foot-note"> <p><strong>Run it yourself.</strong> The calibration probe and its four

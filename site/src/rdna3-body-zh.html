@@ -14,7 +14,7 @@ __CHIPS__
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>这个论断是真的，而且比它看起来更窄。作为<strong>架构特有</strong>留下来的是一份很小很具体的清单：
+  <p>这个论断是真的，而且比它看起来更窄。作为<strong>架构特定</strong>留下来的是一份很小很具体的清单：
   一条这台硬件会掉下去的注意力快路径、一个类型门把常见 checkpoint 类别挡在外面的原生量化线性 kernel，
   以及一条写在某个函数其中一个架构分支里、另一个分支没有的性能启发式。</p>
   <p>最纯粹的那个实例是一行。<code>use_rocm_custom_paged_attention</code> 在 gfx11 上要求
@@ -45,7 +45,7 @@ __CHIPS__
     <b>图 1.</b> 按轴排序，不按大小。这些倍数彼此之间不可比 ——
     它们是不同东西的比值，各自只在自己那篇文章的基线上才有意义 ——
     放在这里是为了说明哪些结论值得花一个下午，而不是给它们排名。
-    被标为架构特有的那三个，是同一套软件在这台硬件上做出与另一款 AMD 部件不同决定的那三个。
+    被标为架构特定的那三个，是同一套软件在这台硬件上做出与另一款 AMD 部件不同决定的那三个。
   </figcaption>
 </figure>
 
@@ -94,7 +94,7 @@ __CHIPS__
   <span class="lbl">一个是 AMD 全线的，在 AMD 自己点名的那一行上</span>
   加载权重比磁盘还慢，是 <code>kfd_svm.c</code> 从 VMA 上读访问模式，
   于是一次只读的拷贝去要写权限，把每一个常驻页上的 copy-on-write 都打断。
-  那个文件不是架构特有的，AMD 确认了机理，而且有外人在另一块卡上复现了。
+  那个文件不是架构特定的，AMD 确认了机理，而且有外人在另一块卡上复现了。
   <a href="weight-loading-19x.zh.html">那篇文章</a>。
 </div>
 
@@ -140,7 +140,7 @@ __CHIPS__
 <h3>这个分类是一个判断</h3>
 <p>旁边每一个倍数都是重算的，每一条"理由"也点了证据，但把某个结论归到某条轴上，
 是一个论证而不是一次测量。八个里有两个可以合理地被争到另一列去：
-W4A16 那个类型门是一个恰好落在架构特有 kernel 里的普通 bug；
+W4A16 那个类型门是一个恰好落在架构特定 kernel 里的普通 bug；
 而缺失的 MoE 调优配置是一个 AMD 全线的缺口，被包在一个原本属于 RDNA3 的故事里。</p>
 
 <h3>一台机器，一代软件</h3>
@@ -165,7 +165,7 @@ W4A16 那个类型门是一个恰好落在架构特有 kernel 里的普通 bug�
 <div class="note ok">
   <span class="lbl">2026-08-20 · 有一个是被发行版修的，不是被报告修的</span>
   Canonical 在 <code>7.0.0-30</code> 里发出了缺失的那个内核 commit。
-  那个专门请求这次 backport 的 Launchpad bug至今未经分诊，所以它是走普通 stable 流程进来的。
+  那个专门请求这次 backport 的 Launchpad bug 至今未经分诊，所以它是走普通 stable 流程进来的。
   "报告了一件事"和"一件事被修了"是两个不同的事件，而这个仓库两样各有一个。
 </div>
 
@@ -173,6 +173,14 @@ W4A16 那个类型门是一个恰好落在架构特有 kernel 里的普通 bug�
   <span class="lbl">状态会过期</span>
   图 3 是一张快照。除了一次合并之外，里面的一切在 2026-08-29 都还开着；
   对这一页正确的用法是去点那些链接，而不是相信那一列。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 中文的轴标签宣称了排他性</span>
+  图 1 里架构那一轴的中文标签原写作 <code>RDNA3 特有</code>，"架构特有"另有四处。
+  "特有"是"唯独有"，而英文写的是 specifically；本文的全部论证恰恰是这些结论比那句断言更窄，
+  不是说它们为这块芯片所独有。两处都已改为"特定"。masthead 的日期 chip 原写作"状态核对于"，
+  不成词，现改为"状态核查于"。
 </div>
 
 <div class="foot-note">
@@ -199,7 +207,7 @@ W4A16 那个类型门是一个恰好落在架构特有 kernel 里的普通 bug�
 <script type="application/json" id="figures">__FIGURES_JSON__</script>
 <script type="application/json" id="strings">{
  "axisNames": {
-  "rdna3": "RDNA3 特有",
+  "rdna3": "RDNA3 特定",
   "amd": "AMD 全线",
   "neutral": "与厂商无关",
   "tp": "张量并行",

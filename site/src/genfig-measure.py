@@ -57,7 +57,7 @@ fig2["converged_spread_pct"] = {
 # a harness difference before the repeats existed
 fig2["worst_at"] = min(fig2["rows"], key=lambda r: r["vs_converged_pct"][0])["ctx"]
 
-# ---- fig3: the same configurations, five weeks apart ----------------------
+# ---- fig3: the same configurations, thirty days apart ---------------------
 jul, augd = V.decode(str(R / "benchmarks/results.jsonl")), V.decode(
     str(R / "benchmarks/results-2026-08-24.jsonl"))
 NAME = {"A-12B-tp1": "gemma-4-12B · TP=1", "A-12B-tp2": "gemma-4-12B · TP=2",

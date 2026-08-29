@@ -709,7 +709,7 @@ addEventListener("DOMContentLoaded", function () {
   <code>all_gather</code> 会静默返回错数据，根因定位到初始化时的一次 8 字节拷贝 ——
   同步返回时它的载荷还不在显存里。在他们那边，RCCL 2.27.7 和 2.28.3 上都能确定性复现。
   在这台机器的 2.30.4 上不能，<strong>八种配置、135 次冷通信器初始化</strong>都正确。</p>
-  <p>让这句话有意义的是三件事。<strong>一次本可以暴露它的扫描</strong>：
+  <p>让这句话有意义的是三件事。<strong>一次覆盖了他们机理所指那些维度的扫描</strong>：
   他们的机理专门针对几个并发初始化拷贝里的第一个，而这台机器默认建两个通道，
   扫描把这个数从 1 一直扫到 16，并把传输从共享内存换到 socket。
   <strong>把差异摆明</strong>：两台机器在平台、内核和 RCCL 版本上不同，
@@ -839,9 +839,9 @@ bad_into = [...]        <span class="c"># 每个 rank 都算</span>
 
 <p>原计划里还有一个不经过 PyTorch 的第二证人，用的是报告者的另一个复现器。
 <code>rccl-tests</code> 对着这个容器的工具链干净地编出来了，benchmark 和验证目标文件里都确认有
-gfx1100 代码对象，然后每一个集合通信都在 rank 1 上于数据初始化 kernel 处以
+gfx1100 代码对象，然后两次记录在案的 <code>all_gather</code> 都在 rank 1 上于数据初始化 kernel 处以
 <code>HIP failure: 'invalid device function'</code> 中止。
-加不加验证那一遍都一样失败，所以不是验证 kernel 的问题；
+加不加验证那一遍都一样失败，所以不是验证 kernel 的问题；脚本后面几条臂没有跑到；
 而那份克隆停在的是针对 RCCL 2.30.4 的 deprecated 分支。</p>
 
 <p>这一点作为限制被记录下来，而不是删掉，而且入库的是未过滤的日志。
@@ -886,6 +886,17 @@ gfx1100 代码对象，然后每一个集合通信都在 rank 1 上于数据初�
   <span class="lbl">仍然开着</span>
   <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> 开着，
   而 2.28.3 之上的版本至今没有任何人报告过任一方向的结果。这里只是一个对照格子，也只当作一个来提供。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · "每一个集合通信"在已入库日志里只有一个</span>
+  第 4 节原写 <code>rccl-tests</code> 编出来之后"每一个集合通信都在 rank 1 上中止"。
+  <code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> 里只有两次调用，都是
+  <code>all_gather_perf</code>；那个目录下没有任何 <code>reduce_scatter_perf</code> 或
+  <code>all_reduce_perf</code> 的输出。<code>scripts/stage2b_rccltests.sh</code> 本来要跑六条臂，
+  而运行在第二条之后就停了。脚本的意图不等于已入库的证据——这正是本文要讲的那个区别。
+  另外，那次扫描原本被称作"一次本可以暴露它的扫描"；它覆盖的是他们机理所指的那些维度，
+  而注入演示的是检查器，不是故障本身。
 </div>
 
 <div class="foot-note">

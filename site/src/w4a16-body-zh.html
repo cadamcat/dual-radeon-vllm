@@ -21,10 +21,10 @@ __CHIPS__
   而 <code>SUPPORTED_QUANT_TYPES</code> 只收 <code>uint4b8</code>，这一层就静默地退回 Triton。
   没有任何警告，模型名字也不告诉你手上是哪一种。</p>
   <p>增长的那笔是 paged attention，<a href="hybrid-ssm-collapse.zh.html">它有自己的一篇</a>。
-  两半如今都已在上游修好，<strong>而且两个修复都不是我们做的</strong>：
+  两半在上游都有修复，<strong>而且两个修复都不是我们做的</strong>：
   <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
-  加了第二个确实接受 <code>uint4</code> 的原生 kernel，
-  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 放宽了 split-KV 的注意力门槛。</p>
+  已经合并，加了第二个确实接受 <code>uint4</code> 的原生 kernel；
+  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 放宽了 split-KV 的注意力门槛，但还没有合并。</p>
   <p>这篇文章贡献的是"把两者分开"，以及分开途中发现的一件事：在 gfx1100 上扫过非对称配置空间，
   十二个配置里有三个被两个 kernel 同时接受、一个只剩 Triton，
   <strong>另外八个根本没有任何 kernel 能服务</strong>。所有带 act-order 的非对称 checkpoint 都落在最后这一档。</p>
@@ -47,9 +47,9 @@ __CHIPS__
 若某次插桩根本没到 worker，它会写下一条空记录然后以 0 退出。</p>
 
 <div class="note">
-  <span class="lbl">这些绝对值值多少</span>
+  <span class="lbl">这些绝对数值值多少</span>
   这是一台 VFIO 直通的虚拟机，两卡之间没有 P2P，走的是跨 die 的 PCIe 3.0，
-  这是刻意挑的最不利拓扑而非展示配置。这里的<em>形状</em>可以外推，绝对水平是下界。
+  这是刻意挑的最不利拓扑而非展示配置。这里的<em>形状</em>可以迁移，绝对水平是下界。
   不同容器镜像上测的格子彼此之间不可作绝对比较，图 3 标出了适用范围。
 </div>
 
@@ -84,7 +84,7 @@ __CHIPS__
     <b>图 1.</b> 六个格子，每臂每深度一个，来自
     <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>。毫秒视图里橙色块就是两臂之差，
     三行按同一比例尺绘制，这正是论点所在：它不随上下文增长。比值视图是同样六个数字，
-    按标题党的读法读一遍。<strong>每格只起了一次容器</strong>，所以这里不报 run 间区间；
+    按标题的读法读一遍。<strong>每格只起了一次容器</strong>，所以这里不报 run 间区间；
     这次实验唯一的一次重复把对称臂移动了至多 1.31 %，
     所以 8.2 % 的散布大于噪声底，但与它同量级。
   </figcaption>
@@ -293,6 +293,16 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
   因为 GPTQ checkpoint 会显式存零点、同时仍然使用 v1 的 "+1" 偏移。正确的键是
   <code>not c.weight_type.has_bias()</code>。挂在 <code>zero_points</code> 上会让 RDNA3
   上每一个非对称 GPTQ checkpoint 被静默反量化错，而那次本该验证它的运行还是会通过。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 两个修复里一个已合并、一个没有</span>
+  摘要原写"两半如今都已在上游修好"，把一个已合并的改动和一个还开着的 PR 放进了同一个说法里。
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 已经合并；
+  <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 没有，
+  <code>docs/benchmarks.md</code> 写着"unmerged, so on a stock install this stands"。
+  第 9 节本来是对的，摘要不对。已就地更正。另外三处中文措辞比英文重或偏，也一并改齐：
+  "标题党"改回"标题"，"可以外推"改为"可以迁移"，"这些绝对值值多少"改为"这些绝对数值值多少"。
 </div>
 
 <div class="foot-note">

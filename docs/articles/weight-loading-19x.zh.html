@@ -831,7 +831,7 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   </div>
   <figcaption>
     <b>图 2.</b> 中位数，取自 <code>benchmarks/loader-flag-kernel-30.json</code>，
-    <code>7.0.0-30</code> 上的 89 格。默认视图是相对每格自己 baseline 的倍数，
+    <code>7.0.0-30</code> 上 89 格里做了缓存控制的那 73 格。默认视图是相对每格自己 baseline 的倍数，
     因为绝对秒数被一个格子主导，而问题问的是每条路径值多少。把鼠标停在任意一条上
     可以看到中位数、极差以及它跨了多少个进程。<code>clone</code> 是
     <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 那个开关；
@@ -946,6 +946,15 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   实际做的是把缺的那个 commit 加回去，不是拿掉。而"五周后"和本页上的日期对不上：修复是
   <strong>2026-08-20</strong> 随 <code>-30</code> 发出的。三处都已就地更正。另外
   "所有框架都会走的那条路"收窄成了实际测到的那个加载器。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 图 2 的图注数进了这张图没画的格子</span>
+  原文写的是"<code>7.0.0-30</code> 上的 89 格"。文件里确实有 89 格，但
+  <code>genfig-loader.py</code> 只画做了缓存控制的那些——73 格，冷和暖——另外 16 格是
+  <code>asis</code> 排序对照，按设计就不控制缓存，这一点 <code>benchmarks/README.md</code> 写着。
+  它和上一句"逐格控制 page cache —— 每一格"挨在一起，合起来就等于宣称 89 格全部做了缓存控制。
+  计数现在改成这张图真正画的 73 格；它上面那句话对这 73 格本来就是成立的。
 </div>
 
 <div class="foot-note">

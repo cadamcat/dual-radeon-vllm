@@ -119,7 +119,8 @@ edit cannot leak between arms:</p>
   </figcaption>
 </figure>
 
-<p>Routing is recorded from inside the TP workers rather than inferred, in every cell. The
+<p>Routing is recorded from inside the TP workers rather than inferred: every cell on 0.23.1, and
+on 0.27 at 1K in both arms, from a run of its own after the in-place recorder returned nothing. The
 full-attention layers arrive with head size 128, block size 16, the native KV layout and a power-of-two
 block, so <strong>the ratio is the only gate condition they fail</strong>; the sliding layers fail on
 <code>sliding_window == 0</code> in both arms and never move.</p>
@@ -225,6 +226,15 @@ defensible but unreadable at the same time. </div>
   <em>higher</em> on the newer image, and across the thirty the Triton time falls in 21 while the
   custom kernel's time <em>rises</em> in 25. Both arms moved. The caption now says so, and
   <code>verify_doc_figures.py</code> pins both counts.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · the routing claim covered one of the two stacks</span>
+  Section 3 said routing is recorded from inside the TP workers "in every cell". That holds for the
+  0.23.1 sweep. On 0.27 the in-place recorder produced nothing — the workers ran unmodified bytecode
+  while the file on disk was modified, which
+  <code>benchmarks/vllm-50603/README.md</code> records — and routing there comes from
+  <code>route_027.py</code>, a run of its own at 1K in both arms. The sentence now says so.
 </div>
 
 <div class="foot-note">

@@ -748,9 +748,10 @@ campaign is no longer the best this machine can do. Every line says which it is.
   <figcaption>
     <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
     log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
-    deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there in the
-    same configuration as here, which is what makes the overlay a comparison rather than two ladders
-    sharing a pair of axes. Dashed is the A100. Hover a point for the run count and the stack it took.
+    deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there on the
+    same model, quantisation and patch, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The
+    checkpoint is what the two sides share; the split and the stack are not. Dashed is the A100.
+    Hover a point for the run count and the stack it took.
   </figcaption>
 </figure>
 
@@ -2321,7 +2322,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · each line is that model's fastest measured configuration, not one experiment",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
- "bestRepro": "the same models re-run five weeks apart agree to {w}% at worst and {m}% at the median, across {c} cells",
+ "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
  "bestSpec": "MTP on",
  "bestRuns": "{n} runs · range {r}%",

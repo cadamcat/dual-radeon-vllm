@@ -91,7 +91,7 @@ series.append({
                 "graded": True} for c, fn in A100]})
 
 # --- how well this machine repeats a whole campaign -------------------------
-# The same models were run twice, five weeks apart, on the same box. Their
+# The same models were run twice, thirty days apart, on the same box. Their
 # disagreement is this machine's campaign-to-campaign reproducibility, measured
 # rather than assumed, and it is the slack the check below is entitled to.
 PRIOR = "2026-07-25"

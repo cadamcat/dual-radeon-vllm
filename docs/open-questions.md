@@ -327,9 +327,9 @@ in the README as a snapshot, not a guarantee.
 > whole seconds per copy on guest kernel `7.0.0-28-generic` that is a separate
 > regression. The second one is a backport that took `c08972f55594` without its
 > follow-up `342981fff328`, which is why every timing lands on an exact multiple of
-> the 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT`. **That is now proven by revert**: the
+> the 1000 ms `HMM_RANGE_DEFAULT_TIMEOUT`. **That is now proven by applying it**: the
 > same kernel rebuilt with `342981fff328` applied does the copy in 17.0 ms instead
-> of 16 019.7, with the reproducer's other cases unmoved — see "Proven by revert"
+> of 16 019.7, with the reproducer's other cases unmoved — see "Proven by applying the missing commit"
 > below, which also states what the test does not settle. An earlier version of this
 > section claimed a root cause that we disproved ourselves, and a later one called
 > the whole thing long-standing rather than a regression, which the kernel
@@ -649,7 +649,15 @@ in the README as a snapshot, not a guarantee.
 > König, committed by Alex Deucher; `c08972f55594` is Christian König's, signed
 > off by Alex Deucher.
 >
-> ### Proven by revert — 2026-07-28
+> ### Proven by applying the missing commit — 2026-07-28
+>
+> **Renamed 2026-08-29.** This section, and the sentence above pointing at it,
+> said "proven by revert". That is the opposite of what was done: the missing
+> commit `342981fff328` was **applied** to Ubuntu's `-28` source, not removed.
+> The published article carries the same correction, dated the same day; the
+> phrase also stood in `README.md` and is corrected there. The one place a
+> revert is still the right word is §7's VFIO configuration A/B, where the
+> `hostpci0` line really was put back.
 >
 > `amdgpu.ko` built from the `linux-hwe-7.0` 7.0.0-28.28~24.04.1 source with
 > `342981fff328` as the only change, then swapped into the running `-28` kernel.
@@ -666,8 +674,8 @@ in the README as a snapshot, not a guarantee.
 >
 > The reproducer's other three cases do not move: `r--p` resident stays at
 > 3.0-3.1 ms and `rw-p` not-resident at 14.5-14.6 ms, before and after. Only the
-> case that entered the futile retry changes, which is what a single-commit revert
-> of that retry should do and nothing more.
+> case that entered the futile retry changes, which is what applying the one commit
+> that fixes that retry should do and nothing more.
 >
 > The residual is what the arithmetic predicted. 16 019.7 ms is sixteen 1000 ms
 > windows plus 19.7 ms of real work, and 17.0 ms lands in the same band

@@ -28,7 +28,7 @@
  "dMeasuredTwo": "实测 <b>{0}</b> 与 <b>{1}</b>",
  "dCampaign": "测量批次 <b>{0}</b>",
  "dReported": "上报于 <b>{0}</b>",
- "dChecked": "状态核对于 <b>{0}</b>",
+ "dChecked": "状态核查于 <b>{0}</b>",
  "linkRepo": "<a href=\"{0}\">仓库</a>",
  "kHardware": "硬件",
  "kModel": "模型",

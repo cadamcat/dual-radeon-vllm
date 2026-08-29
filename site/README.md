@@ -59,7 +59,7 @@ the same table.
 line is that model's fastest measured configuration. `genfig-index.py` refuses
 to emit a pick it cannot show is the best one in the repository: it derives this
 machine's campaign-to-campaign reproducibility from the two campaigns that ran
-the same models five weeks apart, and then asserts that no other series in
+the same models thirty days apart, and then asserts that no other series in
 `ledger.jsonl` beats a drawn line by more than that. `verify_doc_figures.py`
 re-derives the same assertion from the published page rather than trusting the
 script that wrote it.

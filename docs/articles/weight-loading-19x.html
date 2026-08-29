@@ -830,8 +830,8 @@ cell a fresh process.</p>
     <div class="bars" id="load"></div>
   </div>
   <figcaption>
-    <b>Figure 2.</b> Medians from <code>benchmarks/loader-flag-kernel-30.json</code>, 89 cells on
-    <code>7.0.0-30</code>. The default view is the ratio against each cell's own baseline, because the
+    <b>Figure 2.</b> Medians from <code>benchmarks/loader-flag-kernel-30.json</code>, the 73
+    cache-controlled cells of 89 on <code>7.0.0-30</code>. The default view is the ratio against each cell's own baseline, because the
     absolute seconds are dominated by one cell and the question is what each path is worth. Hover any bar
     for the median, its range and how many processes it is over. <code>clone</code> is
     <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a>'s flag;
@@ -952,6 +952,16 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
   missing commit was applied, not removed. And "five weeks later" does not match the dates on this
   page: the fix shipped in <code>-30</code> on <strong>2026-08-20</strong>. All three corrected in
   place. Separately, "the path every framework takes" is narrowed to the loader actually measured.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · figure 2's caption counted cells the figure does not draw</span>
+  It said "89 cells on <code>7.0.0-30</code>". The file holds 89, but
+  <code>genfig-loader.py</code> draws only the cache-controlled ones — 73, warm and cold — and the
+  other 16 are the <code>asis</code> ordering controls that deliberately do not control cache, as
+  <code>benchmarks/README.md</code> says. Sitting next to "page cache controlled per cell — every
+  cell", the pair claimed cache control over all 89. The count is now the 73 the figure draws; the
+  sentence above it was already true of them.
 </div>
 
 <div class="foot-note">
