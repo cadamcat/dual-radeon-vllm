@@ -1703,7 +1703,7 @@ def main():
     sys.path.insert(0, HERE)
     import build_ledger
     led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("benchmarks README, ledger rows", "258", len(led))
+    ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
        == open(os.path.join(HERE, "..", "ledger.jsonl")).read() else 0)
@@ -2955,7 +2955,7 @@ def main():
     ck("measure article, fig4 the cut is build_ledger's", str(build_ledger.RANGE_CUT),
        XART["fig4"]["cut"])
     ck("measure article, fig4 median", "0.17", XART["fig4"]["median"])
-    ck("measure article, fig4 p95", "14.09", XART["fig4"]["p95"])
+    ck("measure article, fig4 p95", "13.93", XART["fig4"]["p95"])
     ck("measure article, fig4 points above the cut", "29", len(XART["fig4"]["above_cut"]))
     ck("measure article, fig4 which is the ungraded count", "29", XART["fig4"]["ungraded"])
     ck("measure article, fig4 no ledger row is a single run", "0",

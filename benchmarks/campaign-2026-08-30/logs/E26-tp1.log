@@ -1,0 +1,259 @@
+[sitecustomize] VLLM_CLONE_MMAP=1: safetensors.safe_open wrapped (get_tensor -> clone)
+WARNING 08-29 23:11:34 [quark_ocp_mx.py:142] AITER is not found or QuarkOCP_MX is not supported on the current platform. QuarkOCP_MX quantization will not be available.
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339] 
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339]        █     █     █▄   ▄█
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.23.1.dev1+g9ddef7117.d20260715
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339]   █▄█▀ █     █     █     █  model   /models/gemma-4-26B-A4B-AWQ
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:339] 
+(APIServer pid=8) INFO 08-29 23:11:34 [api_utils.py:273] non-default args: {'model_tag': '/models/gemma-4-26B-A4B-AWQ', 'model': '/models/gemma-4-26B-A4B-AWQ', 'max_model_len': 33000, 'max_num_seqs': 16}
+(APIServer pid=8) WARNING 08-29 23:11:34 [envs.py:2097] Unknown vLLM environment variable detected: VLLM_CLONE_MMAP
+(APIServer pid=8) INFO 08-29 23:11:34 [model.py:611] Resolved architecture: Gemma4ForConditionalGeneration
+(APIServer pid=8) INFO 08-29 23:11:34 [model.py:1745] Using max model len 33000
+(APIServer pid=8) INFO 08-29 23:11:38 [arg_utils.py:2537] Raising max_num_batched_tokens from 2048 to 2496 to accommodate 'video' input for prefix-LM model /models/gemma-4-26B-A4B-AWQ.
+(APIServer pid=8) INFO 08-29 23:11:38 [scheduler.py:239] Chunked prefill is enabled with max_num_batched_tokens=2496.
+(APIServer pid=8) INFO 08-29 23:11:38 [config.py:100] Gemma4 model has heterogeneous head dimensions (head_dim=256, global_head_dim=512). Forcing TRITON_ATTN backend to prevent mixed-backend numerical divergence.
+(APIServer pid=8) INFO 08-29 23:11:38 [vllm.py:999] Asynchronous scheduling is enabled.
+(APIServer pid=8) INFO 08-29 23:11:38 [kernel.py:270] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+[sitecustomize] VLLM_CLONE_MMAP=1: safetensors.safe_open wrapped (get_tensor -> clone)
+[sitecustomize] VLLM_CLONE_MMAP=1: safetensors.safe_open wrapped (get_tensor -> clone)
+(EngineCore pid=50) WARNING 08-29 23:11:51 [quark_ocp_mx.py:142] AITER is not found or QuarkOCP_MX is not supported on the current platform. QuarkOCP_MX quantization will not be available.
+(EngineCore pid=50) INFO 08-29 23:11:51 [core.py:113] Initializing a V1 LLM engine (v0.23.1.dev1+g9ddef7117.d20260715) with config: model='/models/gemma-4-26B-A4B-AWQ', speculative_config=None, tokenizer='/models/gemma-4-26B-A4B-AWQ', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=33000, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=True, quantization=compressed-tensors, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/models/gemma-4-26B-A4B-AWQ, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['+sparse_attn_indexer', 'none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2496], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False}, 'max_cudagraph_capture_size': 32, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=50) INFO 08-29 23:11:54 [parallel_state.py:1568] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.17.0.2:53659 backend=nccl
+(EngineCore pid=50) INFO 08-29 23:11:54 [parallel_state.py:1903] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(EngineCore pid=50) INFO 08-29 23:11:54 [gpu_model_runner.py:5092] Starting to load model /models/gemma-4-26B-A4B-AWQ...
+(EngineCore pid=50) INFO 08-29 23:11:55 [vllm.py:999] Asynchronous scheduling is enabled.
+(EngineCore pid=50) INFO 08-29 23:11:55 [kernel.py:270] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=50) INFO 08-29 23:11:55 [compressed_tensors_wNa16.py:112] Using RDNA3W4A16LinearKernel for CompressedTensorsWNA16
+(EngineCore pid=50) INFO 08-29 23:11:55 [rocm.py:538] Using TRITON_ATTN backend (selected via --attention-backend).
+(EngineCore pid=50) WARNING 08-29 23:11:55 [activation.py:349] [ROCm] PyTorch's native GELU with tanh approximation is unstable with torch.compile. For native implementation, fallback to 'none' approximation. The custom kernel implementation is unaffected.
+(EngineCore pid=50) INFO 08-29 23:11:55 [rocm_moe.py:40] Using CompressedTensorsWNA16RDNA3MoEMethod (native RDNA3 HIP kernel)
+(EngineCore pid=50) WARNING 08-29 23:11:55 [compilation.py:1312] Op 'sparse_attn_indexer' not present in model, enabling with '+sparse_attn_indexer' has no effect
+(EngineCore pid=50) INFO 08-29 23:11:55 [weight_utils.py:928] Filesystem type for checkpoints: EXT4. Checkpoint size: 16.01 GiB. Available RAM: 18.97 GiB.
+(EngineCore pid=50) INFO 08-29 23:11:55 [weight_utils.py:951] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=50) Loading safetensors checkpoint shards:   0% Completed | 0/4 [00:00<?, ?it/s]
+(EngineCore pid=50) Loading safetensors checkpoint shards:  25% Completed | 1/4 [00:10<00:32, 10.93s/it]
+(EngineCore pid=50) Loading safetensors checkpoint shards:  50% Completed | 2/4 [00:24<00:24, 12.31s/it]
+(EngineCore pid=50) Loading safetensors checkpoint shards:  75% Completed | 3/4 [00:37<00:12, 12.59s/it]
+(EngineCore pid=50) Loading safetensors checkpoint shards: 100% Completed | 4/4 [00:38<00:00,  7.97s/it]
+(EngineCore pid=50) Loading safetensors checkpoint shards: 100% Completed | 4/4 [00:38<00:00,  9.51s/it]
+(EngineCore pid=50) 
+(EngineCore pid=50) INFO 08-29 23:12:33 [default_loader.py:397] Loading weights took 38.02 seconds
+(EngineCore pid=50) INFO 08-29 23:12:35 [gpu_model_runner.py:5187] Model loading took 16.96 GiB memory and 39.575006 seconds
+(EngineCore pid=50) INFO 08-29 23:12:35 [gpu_model_runner.py:6200] Encoder cache will be initialized with a budget of 2496 tokens, and profiled with 1 video items of the maximum feature size.
+(EngineCore pid=50) INFO 08-29 23:13:09 [backends.py:1089] Using cache directory: /root/.cache/vllm/torch_compile_cache/14912d9ea8/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=50) INFO 08-29 23:13:09 [backends.py:1148] Dynamo bytecode transform time: 11.74 s
+(EngineCore pid=50) INFO 08-29 23:13:27 [backends.py:378] Cache the graph of compile range (1, 2496) for later use
+(EngineCore pid=50) INFO 08-29 23:14:01 [backends.py:393] Compiling a graph for compile range (1, 2496) takes 50.68 s
+(EngineCore pid=50) INFO 08-29 23:14:07 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/0a2520a963c0bb9fffd44891266b9917fe12bd2f1486a538724f43f168e578a3/rank_0_0/model
+(EngineCore pid=50) INFO 08-29 23:14:07 [monitor.py:53] torch.compile took 68.99 s in total
+(EngineCore pid=50) INFO 08-29 23:14:08 [monitor.py:81] Initial profiling/warmup run took 1.56 s
+(EngineCore pid=50) INFO 08-29 23:14:18 [gpu_worker.py:480] Available KV cache memory: 0.33 GiB
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195] EngineCore failed to start.
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195] Traceback (most recent call last):
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1164, in run_engine_core
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     return func(*args, **kwargs)
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 930, in __init__
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     super().__init__(
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         vllm_config,
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         ^^^^^^^^^^^^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ...<3 lines>...
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         internal_dp_balancing,
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     )
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 132, in __init__
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     return func(*args, **kwargs)
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 268, in _initialize_kv_caches
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         vllm_config, kv_cache_specs, available_gpu_memory
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     )
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/core/kv_cache_utils.py", line 2052, in get_kv_cache_configs
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     _check_enough_kv_cache_memory(
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         avail_mem,
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         ^^^^^^^^^^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ...<2 lines>...
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         partial(_estimate_max_model_len_from_groups, vllm_config, groups),
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     )
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ^
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/core/kv_cache_utils.py", line 740, in _check_enough_kv_cache_memory
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     raise ValueError(
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     ...<9 lines>...
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195]     )
+(EngineCore pid=50) ERROR 08-29 23:14:18 [core.py:1195] ValueError: To serve at least one request with the model's max seq len (33000), (1.3 GiB KV cache is needed, which is larger than the available KV cache memory (0.33 GiB). Based on the available memory, the estimated maximum model length is 1536. Try increasing `gpu_memory_utilization` (which also controls CPU memory on the CPU backend) or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+(EngineCore pid=50) Process EngineCore:
+(EngineCore pid=50) Traceback (most recent call last):
+(EngineCore pid=50)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/multiprocessing/process.py", line 320, in _bootstrap
+(EngineCore pid=50)     self.run()
+(EngineCore pid=50)     ~~~~~~~~^^
+(EngineCore pid=50)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/multiprocessing/process.py", line 108, in run
+(EngineCore pid=50)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=50)     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1199, in run_engine_core
+(EngineCore pid=50)     raise e
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1164, in run_engine_core
+(EngineCore pid=50)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=50)     return func(*args, **kwargs)
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 930, in __init__
+(EngineCore pid=50)     super().__init__(
+(EngineCore pid=50)     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=50)         vllm_config,
+(EngineCore pid=50)         ^^^^^^^^^^^^
+(EngineCore pid=50)     ...<3 lines>...
+(EngineCore pid=50)         internal_dp_balancing,
+(EngineCore pid=50)         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=50)     )
+(EngineCore pid=50)     ^
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 132, in __init__
+(EngineCore pid=50)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=50)     return func(*args, **kwargs)
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 268, in _initialize_kv_caches
+(EngineCore pid=50)     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=50)         vllm_config, kv_cache_specs, available_gpu_memory
+(EngineCore pid=50)     )
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/core/kv_cache_utils.py", line 2052, in get_kv_cache_configs
+(EngineCore pid=50)     _check_enough_kv_cache_memory(
+(EngineCore pid=50)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(EngineCore pid=50)         avail_mem,
+(EngineCore pid=50)         ^^^^^^^^^^
+(EngineCore pid=50)     ...<2 lines>...
+(EngineCore pid=50)         partial(_estimate_max_model_len_from_groups, vllm_config, groups),
+(EngineCore pid=50)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=50)     )
+(EngineCore pid=50)     ^
+(EngineCore pid=50)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/core/kv_cache_utils.py", line 740, in _check_enough_kv_cache_memory
+(EngineCore pid=50)     raise ValueError(
+(EngineCore pid=50)     ...<9 lines>...
+(EngineCore pid=50)     )
+(EngineCore pid=50) ValueError: To serve at least one request with the model's max seq len (33000), (1.3 GiB KV cache is needed, which is larger than the available KV cache memory (0.33 GiB). Based on the available memory, the estimated maximum model length is 1536. Try increasing `gpu_memory_utilization` (which also controls CPU memory on the CPU backend) or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+[rank0]:[W829 23:14:20.999190547 ProcessGroupNCCL.cpp:1576] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+(APIServer pid=8) Traceback (most recent call last):
+(APIServer pid=8)   File "/opt/python/bin/vllm", line 10, in <module>
+(APIServer pid=8)     sys.exit(main())
+(APIServer pid=8)              ~~~~^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/main.py", line 95, in main
+(APIServer pid=8)     args.dispatch_function(args)
+(APIServer pid=8)     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/serve.py", line 148, in cmd
+(APIServer pid=8)     uvloop.run(run_server(args))
+(APIServer pid=8)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=8)     return __asyncio.run(
+(APIServer pid=8)            ~~~~~~~~~~~~~^
+(APIServer pid=8)         wrapper(),
+(APIServer pid=8)         ^^^^^^^^^^
+(APIServer pid=8)     ...<2 lines>...
+(APIServer pid=8)         **run_kwargs
+(APIServer pid=8)         ^^^^^^^^^^^^
+(APIServer pid=8)     )
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 205, in run
+(APIServer pid=8)     return runner.run(main)
+(APIServer pid=8)            ~~~~~~~~~~^^^^^^
+(APIServer pid=8)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 128, in run
+(APIServer pid=8)     return self._loop.run_until_complete(task)
+(APIServer pid=8)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=8)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=8)     return await main
+(APIServer pid=8)            ^^^^^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 665, in run_server
+(APIServer pid=8)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 679, in run_server_worker
+(APIServer pid=8)     async with build_async_engine_client(
+(APIServer pid=8)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         args,
+(APIServer pid=8)         ^^^^^
+(APIServer pid=8)         client_config=client_config,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ) as engine_client:
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=8)     return await anext(self.gen)
+(APIServer pid=8)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 99, in build_async_engine_client
+(APIServer pid=8)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=8)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         engine_args,
+(APIServer pid=8)         ^^^^^^^^^^^^
+(APIServer pid=8)         usage_context=usage_context,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)         client_config=client_config,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ) as engine:
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=8)     return await anext(self.gen)
+(APIServer pid=8)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 135, in build_async_engine_client_from_engine_args
+(APIServer pid=8)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=8)         vllm_config=vllm_config,
+(APIServer pid=8)     ...<6 lines>...
+(APIServer pid=8)         client_index=client_index,
+(APIServer pid=8)     )
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 217, in from_vllm_config
+(APIServer pid=8)     return cls(
+(APIServer pid=8)         vllm_config=vllm_config,
+(APIServer pid=8)     ...<9 lines>...
+(APIServer pid=8)         client_index=client_index,
+(APIServer pid=8)     )
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 146, in __init__
+(APIServer pid=8)     self.engine_core = EngineCoreClient.make_async_mp_client(
+(APIServer pid=8)                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         vllm_config=vllm_config,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ...<4 lines>...
+(APIServer pid=8)         client_index=client_index,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     )
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=8)     return func(*args, **kwargs)
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 131, in make_async_mp_client
+(APIServer pid=8)     return AsyncMPClient(*client_args)
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=8)     return func(*args, **kwargs)
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 948, in __init__
+(APIServer pid=8)     super().__init__(
+(APIServer pid=8)     ~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         asyncio_mode=True,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ...<3 lines>...
+(APIServer pid=8)         client_addresses=client_addresses,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     )
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 570, in __init__
+(APIServer pid=8)     with launch_core_engines(
+(APIServer pid=8)          ~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         vllm_config, executor_class, log_stats, addresses
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ) as (engine_manager, coordinator, addresses, tensor_queue):
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/root/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 148, in __exit__
+(APIServer pid=8)     next(self.gen)
+(APIServer pid=8)     ~~~~^^^^^^^^^^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/utils.py", line 1190, in launch_core_engines
+(APIServer pid=8)     wait_for_engine_startup(
+(APIServer pid=8)     ~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=8)         handshake_socket,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     ...<6 lines>...
+(APIServer pid=8)         coordinator.proc if coordinator else None,
+(APIServer pid=8)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=8)     )
+(APIServer pid=8)     ^
+(APIServer pid=8)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/utils.py", line 1249, in wait_for_engine_startup
+(APIServer pid=8)     raise RuntimeError(
+(APIServer pid=8)     ...<3 lines>...
+(APIServer pid=8)     )
+(APIServer pid=8) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

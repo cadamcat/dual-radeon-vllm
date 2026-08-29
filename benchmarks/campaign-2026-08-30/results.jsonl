@@ -1,0 +1,33 @@
+{"kind": "config_failed", "cfg": "E26-tp1", "why": "kv_max_len=1536 too small at util=0.92", "ts": 1788045262.7}
+{"kind": "note", "cfg": "E26-tp1-u95", "note": "kv_max_len=32064, mml->31743", "ts": 1788045803.8}
+{"kind": "note", "cfg": "E26-tp1-u95", "note": "kv_max_len=13248, mml->13115", "ts": 1788045989.2}
+{"kind": "model_meta", "cfg": "E26-tp1-u95", "weights_s": "26.07", "model_load_s": "27.606184", "init_engine_s": "111.86", "kv_gib": "0.93", "kv_tokens": "13149", "concurrency": "1.00", "mml": 13115, "util": 0.95, "ts": 1788046249.8}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 500, "round": 1, "prompt_tokens": 521, "ttft": 0.2036, "prefill_tps": 2558.5, "ts": 1788046255.0}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 500, "round": 2, "prompt_tokens": 521, "ttft": 0.2066, "prefill_tps": 2521.5, "ts": 1788046256.3}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 500, "round": 1, "prompt_tokens": 522, "ttft": 0.2075, "completion_tokens": 438, "decode_tps": 96.85, "pw_sum_min": 63, "pw_sum_max": 248, "p1_max": 240, "p2_max": 8, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046262.0}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 500, "round": 2, "prompt_tokens": 519, "ttft": 0.2129, "completion_tokens": 443, "decode_tps": 97.03, "pw_sum_min": 64, "pw_sum_max": 246, "p1_max": 239, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046267.8}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 1000, "round": 1, "prompt_tokens": 971, "ttft": 0.3778, "prefill_tps": 2570.5, "ts": 1788046269.2}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 1000, "round": 2, "prompt_tokens": 971, "ttft": 0.376, "prefill_tps": 2582.7, "ts": 1788046270.5}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 1000, "round": 1, "prompt_tokens": 970, "ttft": 0.3766, "completion_tokens": 512, "decode_tps": 94.85, "pw_sum_min": 56, "pw_sum_max": 248, "p1_max": 241, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046277.3}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 1000, "round": 2, "prompt_tokens": 972, "ttft": 0.3767, "completion_tokens": 512, "decode_tps": 94.86, "pw_sum_min": 60, "pw_sum_max": 254, "p1_max": 247, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046284.1}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 2000, "round": 1, "prompt_tokens": 2042, "ttft": 0.7837, "prefill_tps": 2605.7, "ts": 1788046285.8}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 2000, "round": 2, "prompt_tokens": 2042, "ttft": 0.7826, "prefill_tps": 2609.3, "ts": 1788046287.6}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 2000, "round": 1, "prompt_tokens": 2045, "ttft": 0.7867, "completion_tokens": 512, "decode_tps": 93.16, "pw_sum_min": 58, "pw_sum_max": 256, "p1_max": 249, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046294.9}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 2000, "round": 2, "prompt_tokens": 2044, "ttft": 0.7901, "completion_tokens": 512, "decode_tps": 93.15, "pw_sum_min": 60, "pw_sum_max": 260, "p1_max": 252, "p2_max": 8, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046302.2}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 4000, "round": 1, "prompt_tokens": 4029, "ttft": 1.8411, "prefill_tps": 2188.3, "ts": 1788046305.0}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 4000, "round": 2, "prompt_tokens": 4030, "ttft": 1.6584, "prefill_tps": 2430.1, "ts": 1788046307.7}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 4000, "round": 1, "prompt_tokens": 4031, "ttft": 1.6607, "completion_tokens": 512, "decode_tps": 89.64, "pw_sum_min": 60, "pw_sum_max": 271, "p1_max": 264, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046316.0}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 4000, "round": 2, "prompt_tokens": 4028, "ttft": 1.6592, "completion_tokens": 512, "decode_tps": 89.87, "pw_sum_min": 60, "pw_sum_max": 272, "p1_max": 265, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046324.4}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 6000, "round": 1, "prompt_tokens": 6043, "ttft": 2.6691, "prefill_tps": 2264.1, "ts": 1788046328.1}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 6000, "round": 2, "prompt_tokens": 6044, "ttft": 2.6692, "prefill_tps": 2264.3, "ts": 1788046331.7}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 6000, "round": 1, "prompt_tokens": 6044, "ttft": 2.6674, "completion_tokens": 512, "decode_tps": 86.08, "pw_sum_min": 248, "pw_sum_max": 254, "p1_max": 246, "p2_max": 8, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046341.3}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 6000, "round": 2, "prompt_tokens": 6045, "ttft": 2.673, "completion_tokens": 512, "decode_tps": 86.67, "pw_sum_min": 251, "pw_sum_max": 253, "p1_max": 246, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046350.9}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 8000, "round": 1, "prompt_tokens": 7983, "ttft": 3.7187, "prefill_tps": 2146.7, "ts": 1788046355.6}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 8000, "round": 2, "prompt_tokens": 7982, "ttft": 3.7197, "prefill_tps": 2145.9, "ts": 1788046360.3}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 8000, "round": 1, "prompt_tokens": 7982, "ttft": 3.7346, "completion_tokens": 512, "decode_tps": 83.21, "pw_sum_min": 252, "pw_sum_max": 272, "p1_max": 265, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046371.2}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 8000, "round": 2, "prompt_tokens": 7981, "ttft": 3.7273, "completion_tokens": 512, "decode_tps": 83.13, "pw_sum_min": 252, "pw_sum_max": 271, "p1_max": 263, "p2_max": 8, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046382.1}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 12000, "round": 1, "prompt_tokens": 11986, "ttft": 6.2094, "prefill_tps": 1930.3, "ts": 1788046389.3}
+{"kind": "prefill", "cfg": "E26-tp1-u95", "target": 12000, "round": 2, "prompt_tokens": 11984, "ttft": 6.2073, "prefill_tps": 1930.6, "ts": 1788046396.5}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 12000, "round": 1, "prompt_tokens": 11983, "ttft": 6.2079, "completion_tokens": 512, "decode_tps": 79.06, "pw_sum_min": 252, "pw_sum_max": 274, "p1_max": 266, "p2_max": 8, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046410.2}
+{"kind": "decode", "cfg": "E26-tp1-u95", "target": 12000, "round": 2, "prompt_tokens": 11984, "ttft": 6.2178, "completion_tokens": 512, "decode_tps": 79.11, "pw_sum_min": 254, "pw_sum_max": 271, "p1_max": 264, "p2_max": 7, "v1_g": 19.17, "v2_g": 0.03, "ts": 1788046423.9}
+{"kind": "config_complete", "cfg": "E26-tp1-u95", "mml": 13115, "util": 0.95, "ok": 28, "err": 0, "ts": 1788046424.9}

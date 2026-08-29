@@ -76,6 +76,12 @@ CFG = {
     "Q38-mtp-triton-p45450-tp2": ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "G31-tp2":                   ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
     "G31-mtp-p45450-tp2":        ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
+    # 2026-08-30. The MoE on a single card. The id carries its utilisation
+    # because it is the only row here not measured at this campaign's own
+    # 0.92: 16.96 GiB of weights resident on a 19.98 GiB card leaves no KV at
+    # 0.92 (1536 tokens, recorded as a config_failed in the same file), and
+    # 0.95 buys 13 149 -- seven rungs, not eleven.
+    "E26-tp1-u95":               ("gemma-4-26B-A4B", "int4 AWQ", "MoE, 128 experts", 1),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -112,6 +118,7 @@ ARMS = {
     "Q38-mtp-triton-p45450-tp2": (MTP3,   "TRITON_ATTN"),
     "G31-tp2":                   (None,   "TRITON_ATTN"),
     "G31-mtp-p45450-tp2":        (DRAFT3, "TRITON_ATTN"),
+    "E26-tp1-u95":               (None,   "TRITON_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 
@@ -162,6 +169,9 @@ CAMPAIGNS = [
                  patches=["vllm#45916 split-KV", "window block-skip",
                           "vllm#45450 3D admission"]),
          }),
+    dict(file="campaign-2026-08-30/results.jsonl", date="2026-08-30",
+         vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
+         kernel="7.0.0-30", patches=[]),
 ]
 # The probe sources are arm-structured: the same cells measured with and
 # without a patch, so the arm decides `patches` rather than the file does.
