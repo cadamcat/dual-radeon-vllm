@@ -15,7 +15,7 @@ __CHIPS__
   <h3>摘要</h3>
   <p>在一台没有 PCIe AtomicOps 的机器上，所有 RCCL 集合通信都会在 dispatch 阶段以
   <code>hipErrorIllegalState</code> 失败。根因在 <strong>RCCL 下面四层</strong>：自 ROCm 7.2 起，
-  发行版里的设备端 kernel 会声明一个 hostcall buffer；而 ROCr 只有在 GPU 具备 atomics 时才建得出来；
+  发行版里的设备端 kernel 会声明一个 hostcall buffer；而 ROCr 只有在 PCIe 路径能提供 AtomicOps 时才建得出来；
   建不出来，dispatch 就在任何集合通信运行之前被拒绝。</p>
   <p>整条链可以缩成 <strong>三十行 HIP</strong>，不用 RCCL、不用 PyTorch、不用 vLLM：
   两个 kernel 走完全相同的启动路径，其中一个调用设备端 <code>printf</code>。
@@ -79,7 +79,7 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
 
 <p>同一句报错，来自三十行 HIP、一张 GPU、半秒钟。这就是把"库版本"的故事变成"平台能力"的故事的那一步：
 <strong>这个失败与集合通信毫无关系</strong>。任何需要 hostcall 的 kernel 都会复现它，
-而 RCCL 的 kernel 需要,是因为它们带着设备端的 <code>assert()</code>。</p>
+而 RCCL 的 kernel 之所以需要 hostcall，是因为它们带着设备端的 <code>assert()</code>。</p>
 
 <h2><span class="n">4</span>"降级那个库"为什么有效，以及它真正说明了什么</h2>
 
@@ -119,7 +119,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
   <div class="figbox">
     <div class="figtitle">图 3 · 测试过的假设
       <span class="prov src">由 root-cause.md 提取</span></div>
-    <div class="hint">点击任一条查看它是怎么被排除的</div>
+    <div class="hint">点击任一条查看它是怎么测的，排除还是确认</div>
     <div id="ruled"></div>
   </div>
   <figcaption>
@@ -180,7 +180,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <div class="note">
   <span class="lbl">一条命令判断你属于哪种情况</span>
-  <code>dmesg | grep "PCIE atomic"</code> —— 有输出就是中招，没有就是没中。
+  <code>dmesg | grep "PCIE atomic"</code> —— 有输出就是中招；没有输出并不反过来说明没中，只是说明不了，接着跑下面那条 lspci。
   要 grep 这个确切短语；单纯 <code>grep -i atomic</code> 还会匹配到开机早期那些无关的
   <code>DMA: preallocated ... pool for atomic allocations</code>。
   如果中招且你在虚拟机里，先看显卡上方根端口的 <code>lspci -vv</code>，再动手编译。

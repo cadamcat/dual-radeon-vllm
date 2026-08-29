@@ -15,7 +15,7 @@
     --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
     --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
     --border:#e0d9c8; --border-2:#cfc7b2;
-    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#736b59;
     --accent:#a06a12; --accent-2:#7d5208;
     --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
     --blue:#1d6390; --blue-bg:#e3edf4;
@@ -89,9 +89,9 @@
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
   /* the title says what was found; the subtitle is the line the article used to
      lead with, kept because it says what the piece is about */
-  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
-         margin:.15em 0 0; letter-spacing:-.008em; }
-  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
+  .top .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+              margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .top .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -232,6 +232,7 @@
   .rule { stroke-width:1.4; opacity:.75; }
   .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
   .dot { cursor:default; }
+  .dot[data-tip] { cursor:pointer; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
          font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
          border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
@@ -263,7 +264,12 @@
   .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
                 margin:-.25em 0 .5em; }
   .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+  .bars > .barunit { grid-column:1 / -1; }
 
+  /* .rv hides content until a script reveals it, so the one browser without
+     IntersectionObserver would get a page of empty figure frames. The root
+     carries the capability and the rule opts out. */
+  .no-io .rv { opacity:1 !important; transform:none !important; }
   /* ---- provenance variants used by this article ---- */
   .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
   .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
@@ -505,6 +511,7 @@ window.lineChart = function (opts) {
         var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
                    "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
         if (s.tip) {
+          c.setAttribute("data-tip", "");
           c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
           c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
           c.addEventListener("mouseleave", hide);
@@ -558,6 +565,8 @@ window.lineChart = function (opts) {
   draw(true);
   return { redraw: draw };
 };
+
+if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
 
 addEventListener("DOMContentLoaded", function () {
   "use strict";

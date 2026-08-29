@@ -15,7 +15,7 @@
     --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
     --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
     --border:#e0d9c8; --border-2:#cfc7b2;
-    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#736b59;
     --accent:#a06a12; --accent-2:#7d5208;
     --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
     --blue:#1d6390; --blue-bg:#e3edf4;
@@ -89,9 +89,9 @@
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
   /* the title says what was found; the subtitle is the line the article used to
      lead with, kept because it says what the piece is about */
-  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
-         margin:.15em 0 0; letter-spacing:-.008em; }
-  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
+  .top .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+              margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .top .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -232,6 +232,7 @@
   .rule { stroke-width:1.4; opacity:.75; }
   .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
   .dot { cursor:default; }
+  .dot[data-tip] { cursor:pointer; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
          font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
          border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
@@ -263,7 +264,12 @@
   .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
                 margin:-.25em 0 .5em; }
   .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+  .bars > .barunit { grid-column:1 / -1; }
 
+  /* .rv hides content until a script reveals it, so the one browser without
+     IntersectionObserver would get a page of empty figure frames. The root
+     carries the capability and the rule opts out. */
+  .no-io .rv { opacity:1 !important; transform:none !important; }
   /* ---- provenance variants used by this article ---- */
   .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
   .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
@@ -288,7 +294,7 @@
   .step-arrow { text-align:center; color:var(--border-2); font-size:1.1rem; line-height:1.2; margin:.15em 0; }
 
   /* ---- figure 2: shipped libraries ---- */
-  .ship { display:grid; grid-template-columns:minmax(150px,1fr) 78px minmax(110px,1fr);
+  .ship { display:grid; grid-template-columns:minmax(150px,1fr) minmax(78px,max-content) minmax(110px,1fr);
           gap:1em; align-items:center; padding:.7em 1em; border-radius:9px; margin-bottom:.45em;
           border:1px solid var(--border); font-size:.9rem; }
   .ship.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 26%, transparent); }
@@ -297,7 +303,11 @@
   .ship-c { font-family:var(--mono); font-weight:800; text-align:center; font-size:1.05rem; }
   .ship.ok .ship-c { color:var(--green); } .ship.bad .ship-c { color:var(--red); }
   .ship-b { color:var(--text-2); font-size:.86rem; }
-  @media (max-width:560px){ .ship{ grid-template-columns:1fr 54px; } .ship-b{ grid-column:1/-1; } }
+  .ship-q { display:block; font-weight:400; font-size:.7rem; color:var(--text-dim);
+            white-space:nowrap; letter-spacing:0; }
+  @media (max-width:560px){ .ship{ grid-template-columns:1fr max-content; }
+                            .ship-b{ grid-column:1/-1; }
+                            .ship-q{ white-space:normal; } }
 
   /* ---- figure 3: hypotheses ---- */
   .hyp { width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border);
@@ -526,6 +536,7 @@ window.lineChart = function (opts) {
         var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
                    "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
         if (s.tip) {
+          c.setAttribute("data-tip", "");
           c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
           c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
           c.addEventListener("mouseleave", hide);
@@ -579,6 +590,8 @@ window.lineChart = function (opts) {
   draw(true);
   return { redraw: draw };
 };
+
+if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
 
 addEventListener("DOMContentLoaded", function () {
   "use strict";
@@ -637,15 +650,15 @@ addEventListener("DOMContentLoaded", function () {
 <div class="abstract"> <h3>Abstract</h3> <p>On a machine without PCIe AtomicOps, every RCCL
 collective fails at dispatch with <code>hipErrorIllegalState</code>. The cause is <strong>four
 layers below RCCL</strong>: since ROCm 7.2 the shipped device kernels declare a hostcall buffer,
-ROCr can only build one when the GPU has atomics, and without it the dispatch is refused before any
-collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong> that use neither
-RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which calls device
-<code>printf</code>. The plain one passes; the one needing hostcall fails with the production
-error.</p> <p>Twelve competing explanations were tested and eliminated, including two this project
-believed and published before disproving them: that it was an RCCL version regression, and that the
-ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository first
-verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix that
-matters more was found later: on a passthrough guest the missing capability is usually
+ROCr can only build one when the PCIe path provides AtomicOps, and without it the dispatch is
+refused before any collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong>
+that use neither RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which
+calls device <code>printf</code>. The plain one passes; the one needing hostcall fails with the
+production error.</p> <p>Twelve competing explanations were tested and eliminated, including two
+this project believed and published before disproving them: that it was an RCCL version regression,
+and that the ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository
+first verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix
+that matters more was found later: on a passthrough guest the missing capability is usually
 <strong>self-inflicted by one line of VM configuration</strong>. QEMU advertises AtomicOp completer
 support automatically, and declines only when the card is handed over as a multifunction device —
 which is the Proxmox default.</p> </div>
@@ -744,20 +757,13 @@ would not help. That downgrading helps is itself evidence that they lack atomics
 <p>Thirteen hypotheses were live at some point. Twelve are wrong. They are listed because the next person
 should not have to re-run them, and because two of them were ours.</p>
 
-<figure class="rv" id="fig3">
-  <div class="figbox">
-    <div class="figtitle">Figure 3 · hypotheses tested
-      <span class="prov src">derived from root-cause.md</span></div>
-    <div class="hint">click any card for how it was eliminated</div>
-    <div id="ruled"></div>
-  </div>
-  <figcaption>
-    <b>Figure 3.</b> Each was tested rather than argued away. Several are eliminated by reading source
-    rather than by measurement — <code>iommu=pt</code> is a string check that warns and does not gate,
-    and both ROCm generations use an ordinary <code>DisableTiming</code> event — which is cheaper and
-    just as conclusive. Extracted from <code>docs/root-cause.md</code> §3.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · hypotheses
+tested <span class="prov src">derived from root-cause.md</span></div> <div class="hint">click any
+card for how it was tested, eliminated or confirmed</div> <div id="ruled"></div> </div> <figcaption>
+<b>Figure 3.</b> Each was tested rather than argued away. Several are eliminated by reading source
+rather than by measurement — <code>iommu=pt</code> is a string check that warns and does not gate,
+and both ROCm generations use an ordinary <code>DisableTiming</code> event — which is cheaper and
+just as conclusive. Extracted from <code>docs/root-cause.md</code> §3. </figcaption> </figure>
 
 <div class="note warn">
   <span class="lbl">The second thing we got wrong</span>
@@ -812,14 +818,12 @@ the GPU over together with its audio function, which takes exactly that branch.<
 verified. What changed is the <strong>ordering</strong>: in a VM, check the configuration before
 rebuilding anything.</p>
 
-<div class="note">
-  <span class="lbl">One command decides which case you are in</span>
-  <code>dmesg | grep "PCIE atomic"</code> — output means affected, silence means not. Grep that exact
-  phrase; a bare <code>grep -i atomic</code> also matches unrelated
-  <code>DMA: preallocated ... pool for atomic allocations</code> lines from early boot. If you are
-  affected and in a guest, look at <code>lspci -vv</code> on the root port above the card before you
-  build anything.
-</div>
+<div class="note"> <span class="lbl">One command decides which case you are in</span> <code>dmesg |
+grep "PCIE atomic"</code> — output means affected; silence is not the other way round, only
+inconclusive, so follow it with the lspci check below. Grep that exact phrase; a bare <code>grep -i
+atomic</code> also matches unrelated <code>DMA: preallocated ... pool for atomic allocations</code>
+lines from early boot. If you are affected and in a guest, look at <code>lspci -vv</code> on the
+root port above the card before you build anything. </div>
 
 <h2><span class="n">8</span>What is not established</h2>
 
@@ -1087,7 +1091,11 @@ multifunction and not when passed as a single function. </div>
       el.className = "ship rv" + (zero ? " ok" : " bad");
       el.innerHTML =
         '<div class="ship-v">' + r.rccl + "</div>" +
-        '<div class="ship-c">' + r.hostcall + "</div>" +
+        // "N (every Generic kernel)" in a 78px column wrapped to four lines and
+        // made its row three times the height of the others. The count and its
+        // qualifier are the same string, printed on two lines.
+        '<div class="ship-c">' + r.hostcall.replace(/^(\S+)\s+(\(.*\))$/,
+          '$1<span class="ship-q">$2</span>') + "</div>" +
         '<div class="ship-b">' + r.behaviour + "</div>";
       box.appendChild(el);
     });

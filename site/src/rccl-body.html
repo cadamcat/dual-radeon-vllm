@@ -15,15 +15,15 @@ __CHIPS__
 <div class="abstract"> <h3>Abstract</h3> <p>On a machine without PCIe AtomicOps, every RCCL
 collective fails at dispatch with <code>hipErrorIllegalState</code>. The cause is <strong>four
 layers below RCCL</strong>: since ROCm 7.2 the shipped device kernels declare a hostcall buffer,
-ROCr can only build one when the GPU has atomics, and without it the dispatch is refused before any
-collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong> that use neither
-RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which calls device
-<code>printf</code>. The plain one passes; the one needing hostcall fails with the production
-error.</p> <p>Twelve competing explanations were tested and eliminated, including two this project
-believed and published before disproving them: that it was an RCCL version regression, and that the
-ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository first
-verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix that
-matters more was found later: on a passthrough guest the missing capability is usually
+ROCr can only build one when the PCIe path provides AtomicOps, and without it the dispatch is
+refused before any collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong>
+that use neither RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which
+calls device <code>printf</code>. The plain one passes; the one needing hostcall fails with the
+production error.</p> <p>Twelve competing explanations were tested and eliminated, including two
+this project believed and published before disproving them: that it was an RCCL version regression,
+and that the ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository
+first verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix
+that matters more was found later: on a passthrough guest the missing capability is usually
 <strong>self-inflicted by one line of VM configuration</strong>. QEMU advertises AtomicOp completer
 support automatically, and declines only when the card is handed over as a multifunction device —
 which is the Proxmox default.</p> </div>
@@ -122,20 +122,13 @@ would not help. That downgrading helps is itself evidence that they lack atomics
 <p>Thirteen hypotheses were live at some point. Twelve are wrong. They are listed because the next person
 should not have to re-run them, and because two of them were ours.</p>
 
-<figure class="rv" id="fig3">
-  <div class="figbox">
-    <div class="figtitle">Figure 3 · hypotheses tested
-      <span class="prov src">derived from root-cause.md</span></div>
-    <div class="hint">click any card for how it was eliminated</div>
-    <div id="ruled"></div>
-  </div>
-  <figcaption>
-    <b>Figure 3.</b> Each was tested rather than argued away. Several are eliminated by reading source
-    rather than by measurement — <code>iommu=pt</code> is a string check that warns and does not gate,
-    and both ROCm generations use an ordinary <code>DisableTiming</code> event — which is cheaper and
-    just as conclusive. Extracted from <code>docs/root-cause.md</code> §3.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · hypotheses
+tested <span class="prov src">derived from root-cause.md</span></div> <div class="hint">click any
+card for how it was tested, eliminated or confirmed</div> <div id="ruled"></div> </div> <figcaption>
+<b>Figure 3.</b> Each was tested rather than argued away. Several are eliminated by reading source
+rather than by measurement — <code>iommu=pt</code> is a string check that warns and does not gate,
+and both ROCm generations use an ordinary <code>DisableTiming</code> event — which is cheaper and
+just as conclusive. Extracted from <code>docs/root-cause.md</code> §3. </figcaption> </figure>
 
 <div class="note warn">
   <span class="lbl">The second thing we got wrong</span>
@@ -190,14 +183,12 @@ the GPU over together with its audio function, which takes exactly that branch.<
 verified. What changed is the <strong>ordering</strong>: in a VM, check the configuration before
 rebuilding anything.</p>
 
-<div class="note">
-  <span class="lbl">One command decides which case you are in</span>
-  <code>dmesg | grep "PCIE atomic"</code> — output means affected, silence means not. Grep that exact
-  phrase; a bare <code>grep -i atomic</code> also matches unrelated
-  <code>DMA: preallocated ... pool for atomic allocations</code> lines from early boot. If you are
-  affected and in a guest, look at <code>lspci -vv</code> on the root port above the card before you
-  build anything.
-</div>
+<div class="note"> <span class="lbl">One command decides which case you are in</span> <code>dmesg |
+grep "PCIE atomic"</code> — output means affected; silence is not the other way round, only
+inconclusive, so follow it with the lspci check below. Grep that exact phrase; a bare <code>grep -i
+atomic</code> also matches unrelated <code>DMA: preallocated ... pool for atomic allocations</code>
+lines from early boot. If you are affected and in a guest, look at <code>lspci -vv</code> on the
+root port above the card before you build anything. </div>
 
 <h2><span class="n">8</span>What is not established</h2>
 
@@ -341,7 +332,11 @@ multifunction and not when passed as a single function. </div>
       el.className = "ship rv" + (zero ? " ok" : " bad");
       el.innerHTML =
         '<div class="ship-v">' + r.rccl + "</div>" +
-        '<div class="ship-c">' + r.hostcall + "</div>" +
+        // "N (every Generic kernel)" in a 78px column wrapped to four lines and
+        // made its row three times the height of the others. The count and its
+        // qualifier are the same string, printed on two lines.
+        '<div class="ship-c">' + r.hostcall.replace(/^(\S+)\s+(\(.*\))$/,
+          '$1<span class="ship-q">$2</span>') + "</div>" +
         '<div class="ship-b">' + r.behaviour + "</div>";
       box.appendChild(el);
     });

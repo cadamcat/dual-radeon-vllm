@@ -22,7 +22,7 @@
   .step-arrow { text-align:center; color:var(--border-2); font-size:1.1rem; line-height:1.2; margin:.15em 0; }
 
   /* ---- figure 2: shipped libraries ---- */
-  .ship { display:grid; grid-template-columns:minmax(150px,1fr) 78px minmax(110px,1fr);
+  .ship { display:grid; grid-template-columns:minmax(150px,1fr) minmax(78px,max-content) minmax(110px,1fr);
           gap:1em; align-items:center; padding:.7em 1em; border-radius:9px; margin-bottom:.45em;
           border:1px solid var(--border); font-size:.9rem; }
   .ship.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 26%, transparent); }
@@ -31,7 +31,11 @@
   .ship-c { font-family:var(--mono); font-weight:800; text-align:center; font-size:1.05rem; }
   .ship.ok .ship-c { color:var(--green); } .ship.bad .ship-c { color:var(--red); }
   .ship-b { color:var(--text-2); font-size:.86rem; }
-  @media (max-width:560px){ .ship{ grid-template-columns:1fr 54px; } .ship-b{ grid-column:1/-1; } }
+  .ship-q { display:block; font-weight:400; font-size:.7rem; color:var(--text-dim);
+            white-space:nowrap; letter-spacing:0; }
+  @media (max-width:560px){ .ship{ grid-template-columns:1fr max-content; }
+                            .ship-b{ grid-column:1/-1; }
+                            .ship-q{ white-space:normal; } }
 
   /* ---- figure 3: hypotheses ---- */
   .hyp { width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border);

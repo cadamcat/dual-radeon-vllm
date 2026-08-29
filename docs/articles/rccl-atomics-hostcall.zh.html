@@ -15,7 +15,7 @@
     --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
     --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
     --border:#e0d9c8; --border-2:#cfc7b2;
-    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#736b59;
     --accent:#a06a12; --accent-2:#7d5208;
     --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
     --blue:#1d6390; --blue-bg:#e3edf4;
@@ -89,9 +89,9 @@
          padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
   /* the title says what was found; the subtitle is the line the article used to
      lead with, kept because it says what the piece is about */
-  .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
-         margin:.15em 0 0; letter-spacing:-.008em; }
-  @media (max-width:640px){ .sub{ font-size:1.06rem; } }
+  .top .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+              margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .top .sub{ font-size:1.06rem; } }
   .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
 
   /* ---- theme toggle ---- */
@@ -232,6 +232,7 @@
   .rule { stroke-width:1.4; opacity:.75; }
   .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
   .dot { cursor:default; }
+  .dot[data-tip] { cursor:pointer; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
          font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
          border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
@@ -263,7 +264,12 @@
   .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
                 margin:-.25em 0 .5em; }
   .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+  .bars > .barunit { grid-column:1 / -1; }
 
+  /* .rv hides content until a script reveals it, so the one browser without
+     IntersectionObserver would get a page of empty figure frames. The root
+     carries the capability and the rule opts out. */
+  .no-io .rv { opacity:1 !important; transform:none !important; }
   /* ---- provenance variants used by this article ---- */
   .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
   .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
@@ -288,7 +294,7 @@
   .step-arrow { text-align:center; color:var(--border-2); font-size:1.1rem; line-height:1.2; margin:.15em 0; }
 
   /* ---- figure 2: shipped libraries ---- */
-  .ship { display:grid; grid-template-columns:minmax(150px,1fr) 78px minmax(110px,1fr);
+  .ship { display:grid; grid-template-columns:minmax(150px,1fr) minmax(78px,max-content) minmax(110px,1fr);
           gap:1em; align-items:center; padding:.7em 1em; border-radius:9px; margin-bottom:.45em;
           border:1px solid var(--border); font-size:.9rem; }
   .ship.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 26%, transparent); }
@@ -297,7 +303,11 @@
   .ship-c { font-family:var(--mono); font-weight:800; text-align:center; font-size:1.05rem; }
   .ship.ok .ship-c { color:var(--green); } .ship.bad .ship-c { color:var(--red); }
   .ship-b { color:var(--text-2); font-size:.86rem; }
-  @media (max-width:560px){ .ship{ grid-template-columns:1fr 54px; } .ship-b{ grid-column:1/-1; } }
+  .ship-q { display:block; font-weight:400; font-size:.7rem; color:var(--text-dim);
+            white-space:nowrap; letter-spacing:0; }
+  @media (max-width:560px){ .ship{ grid-template-columns:1fr max-content; }
+                            .ship-b{ grid-column:1/-1; }
+                            .ship-q{ white-space:normal; } }
 
   /* ---- figure 3: hypotheses ---- */
   .hyp { width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border);
@@ -526,6 +536,7 @@ window.lineChart = function (opts) {
         var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
                    "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
         if (s.tip) {
+          c.setAttribute("data-tip", "");
           c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
           c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
           c.addEventListener("mouseleave", hide);
@@ -579,6 +590,8 @@ window.lineChart = function (opts) {
   draw(true);
   return { redraw: draw };
 };
+
+if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
 
 addEventListener("DOMContentLoaded", function () {
   "use strict";
@@ -637,7 +650,7 @@ addEventListener("DOMContentLoaded", function () {
   <h3>摘要</h3>
   <p>在一台没有 PCIe AtomicOps 的机器上，所有 RCCL 集合通信都会在 dispatch 阶段以
   <code>hipErrorIllegalState</code> 失败。根因在 <strong>RCCL 下面四层</strong>：自 ROCm 7.2 起，
-  发行版里的设备端 kernel 会声明一个 hostcall buffer；而 ROCr 只有在 GPU 具备 atomics 时才建得出来；
+  发行版里的设备端 kernel 会声明一个 hostcall buffer；而 ROCr 只有在 PCIe 路径能提供 AtomicOps 时才建得出来；
   建不出来，dispatch 就在任何集合通信运行之前被拒绝。</p>
   <p>整条链可以缩成 <strong>三十行 HIP</strong>，不用 RCCL、不用 PyTorch、不用 vLLM：
   两个 kernel 走完全相同的启动路径，其中一个调用设备端 <code>printf</code>。
@@ -701,7 +714,7 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
 
 <p>同一句报错，来自三十行 HIP、一张 GPU、半秒钟。这就是把"库版本"的故事变成"平台能力"的故事的那一步：
 <strong>这个失败与集合通信毫无关系</strong>。任何需要 hostcall 的 kernel 都会复现它，
-而 RCCL 的 kernel 需要,是因为它们带着设备端的 <code>assert()</code>。</p>
+而 RCCL 的 kernel 之所以需要 hostcall，是因为它们带着设备端的 <code>assert()</code>。</p>
 
 <h2><span class="n">4</span>"降级那个库"为什么有效，以及它真正说明了什么</h2>
 
@@ -741,7 +754,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
   <div class="figbox">
     <div class="figtitle">图 3 · 测试过的假设
       <span class="prov src">由 root-cause.md 提取</span></div>
-    <div class="hint">点击任一条查看它是怎么被排除的</div>
+    <div class="hint">点击任一条查看它是怎么测的，排除还是确认</div>
     <div id="ruled"></div>
   </div>
   <figcaption>
@@ -802,7 +815,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <div class="note">
   <span class="lbl">一条命令判断你属于哪种情况</span>
-  <code>dmesg | grep "PCIE atomic"</code> —— 有输出就是中招，没有就是没中。
+  <code>dmesg | grep "PCIE atomic"</code> —— 有输出就是中招；没有输出并不反过来说明没中，只是说明不了，接着跑下面那条 lspci。
   要 grep 这个确切短语；单纯 <code>grep -i atomic</code> 还会匹配到开机早期那些无关的
   <code>DMA: preallocated ... pool for atomic allocations</code>。
   如果中招且你在虚拟机里，先看显卡上方根端口的 <code>lspci -vv</code>，再动手编译。
@@ -1073,7 +1086,11 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
       el.className = "ship rv" + (zero ? " ok" : " bad");
       el.innerHTML =
         '<div class="ship-v">' + r.rccl + "</div>" +
-        '<div class="ship-c">' + r.hostcall + "</div>" +
+        // "N (every Generic kernel)" in a 78px column wrapped to four lines and
+        // made its row three times the height of the others. The count and its
+        // qualifier are the same string, printed on two lines.
+        '<div class="ship-c">' + r.hostcall.replace(/^(\S+)\s+(\(.*\))$/,
+          '$1<span class="ship-q">$2</span>') + "</div>" +
         '<div class="ship-b">' + r.behaviour + "</div>";
       box.appendChild(el);
     });

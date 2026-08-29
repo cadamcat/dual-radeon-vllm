@@ -440,6 +440,7 @@ baseline is a different question with a different answer.</p>
         var dot = svgEl("circle", { "class": "dot", cx: X(p.ctx), cy: Y(yval(s, p)),
                                     r: p.graded ? 3.6 : 4.4 },
                         "stroke:" + c + ";stroke-width:2;fill:" + (p.graded ? c : "var(--surface)"));
+        dot.setAttribute("data-tip", "");
         dot.addEventListener("mouseenter", function (e) {
           showTip(e, '<span class="hd">' + s.model + "</span><br>" +
             p.ctx.toLocaleString() + " " + S.tokens + " &middot; <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
