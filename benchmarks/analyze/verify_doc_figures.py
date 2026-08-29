@@ -3111,6 +3111,21 @@ def main():
            sum(1 for lg, fn in zip(("en", "zh"), pr)
                if '<p class="sub">%s</p>' % (a.get("sub") or {}).get(lg) in XPAGES[fn]))
 
+    # --- a shared script reaches for ids that must exist in both bodies ------
+    # The Chinese page takes the English script byte for byte, so a container
+    # renamed on one side and not the other leaves getElementById returning null
+    # and the script throwing on the first use. Neither --check nor any figure
+    # check executes anything, so this is the only thing that sees it: four
+    # Chinese pages shipped broken this way before it existed.
+    for a in AJ:
+        pr = [a["href"]["en"].split("/")[-1], a["href"]["zh"].split("/")[-1]]
+        scr = re.search(r"<script>\n\(function \(\).*?\n</script>", XPAGES[pr[0]], re.S)
+        want = set(re.findall(r'getElementById\("([^"]+)"\)', scr.group(0) if scr else ""))
+        for fn in pr:
+            have = set(re.findall(r'\sid="([^"]+)"', XPAGES[fn]))
+            ck("article %s, %s has every id its script asks for" % (a["slug"], fn), "0",
+               len(want - have))
+
     # --- the index pages are a language pair like any other ------------------
     XIP = ["index.html", "index.zh.html"]
     XHOSTS = {"github.com", "bugs.launchpad.net"}

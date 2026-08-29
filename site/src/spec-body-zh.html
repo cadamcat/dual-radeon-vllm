@@ -42,7 +42,9 @@ __CHIPS__
     <div class="figtitle">图 1 · 投机在各个上下文长度上值多少
       <span class="prov yes">可由仓库重算</span></div>
     <div class="legend" id="v1"></div>
-    <div class="bars" id="ladder"></div>
+    <div class="legend" id="v1k"></div>
+    <svg class="chart" id="ladder" role="img"></svg>
+    <div class="barunit" id="ladnote"></div>
   </div>
   <figcaption>
     <b>图 1.</b> 取自 <code>benchmarks/speculative-decoding/</code>。四个深度上单调，
@@ -92,7 +94,9 @@ __CHIPS__
   <div class="figbox">
     <div class="figtitle">图 2 · 同一个 kernel，只改 query 行数，不加载模型
       <span class="prov yes">可由仓库重算</span></div>
-    <div class="bars" id="sweep"></div>
+    <div class="legend" id="v2"></div>
+    <svg class="chart" id="sweep" role="img"></svg>
+    <div class="barunit" id="swnote"></div>
   </div>
   <figcaption>
     <b>图 2.</b> 每一个点是两行 query 相对同一次扫描自己那个一行的时间，单位百分比；
@@ -137,7 +141,9 @@ __CHIPS__
   <div class="figbox">
     <div class="figtitle">图 3 · 同一个模型在一张 A100 80G 上
       <span class="prov yes">可由仓库重算</span></div>
-    <div class="bars" id="vendor"></div>
+    <div class="legend" id="v3"></div>
+    <svg class="chart" id="vendor" role="img"></svg>
+    <div class="barunit" id="vnote"></div>
   </div>
   <figcaption>
     <b>图 3.</b> 取自 <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>，
@@ -164,7 +170,9 @@ __CHIPS__
   <div class="figbox">
     <div class="figtitle">图 4 · 同一条阶梯，走 vllm#45450 的准入
       <span class="prov yes">可由仓库重算</span></div>
-    <div class="bars" id="recover"></div>
+    <div class="legend" id="v4"></div>
+    <svg class="chart" id="recover" role="img"></svg>
+    <div class="barunit" id="rcnote"></div>
   </div>
   <figcaption>
     <b>图 4.</b> stock 对该 PR 的机制，两边都开着 MTP，同一台机器同一次会话。

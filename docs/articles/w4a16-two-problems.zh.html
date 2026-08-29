@@ -837,7 +837,9 @@ SELECTED  TritonW4A16LinearKernel
   <div class="figbox">
     <div class="figtitle">图 3 · 两个修复的上下文剖面正好相反
       <span class="prov yes">可由仓库重算</span></div>
-    <div class="bars" id="arms"></div>
+    <div class="legend" id="armkey"></div>
+    <svg class="chart" id="arms" role="img"></svg>
+    <div class="armid" id="armid"></div>
     <div class="barunit" id="gainhd"></div>
     <div class="gains" id="gains"></div>
   </div>
@@ -1571,7 +1573,7 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
      time to find them. */
   (function () {
     var svg = document.getElementById("arms"), A = F.fig3.arms;
-    var COL = { "023": "var(--s1)", "027": "var(--s2)", "045916": "var(--s3)" };
+    var COL = { "023": "var(--s1)", "027": "var(--s2)", "027p": "var(--s3)" };
     var xs = A[0].points.map(function (p) { return p.ctx; });
     window.lineChart({
       el: svg, reduce: reduce, h: 340,
