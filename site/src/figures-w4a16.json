@@ -135,7 +135,7 @@
   "arms": [
    {
     "model": "Qwen3.8-27B",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "tp": 2,
     "id": "023",
@@ -172,7 +172,7 @@
    },
    {
     "model": "Qwen3.8-27B",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "tp": 2,
     "id": "027",
@@ -209,7 +209,7 @@
    },
    {
     "model": "Qwen3.8-27B",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "tp": 2,
     "id": "027p",

@@ -416,6 +416,35 @@
   .lg.off { opacity:.55; }
   .lg.off .sw { opacity:.25; }
 
+  /* A model and its speculative switch are one control. They sit in a wrapper
+     so the pair wraps as a unit -- two loose buttons broke across lines on a
+     narrow screen and the switch arrived under a different model's name -- and
+     the seam between them is flattened so the pair reads as one pill. A button
+     cannot contain a button, which is why this is not simply nesting. */
+  #bestkey .lgw { display:inline-flex; align-items:stretch; }
+  #bestkey .lgw:has(.lgs) .lg { border-top-right-radius:0; border-bottom-right-radius:0;
+                                border-right-width:0; padding-right:.6em; }
+  /* the quantisation rides with the name, dimmer, because it identifies the
+     checkpoint rather than naming it */
+  #bestkey .lg .q { opacity:.62; font-size:.92em; letter-spacing:.01em; }
+  #bestkey .lg.on .q { opacity:.78; }
+  .lgs { display:inline-flex; align-items:center; font-size:.72rem; font-family:var(--mono);
+         background:var(--surface-2); border:1px solid var(--border);
+         border-radius:0 99px 99px 0; padding:.34em .8em .34em .62em; cursor:pointer;
+         color:var(--text-dim); user-select:none; letter-spacing:.02em;
+         transition:color .25s, border-color .25s, background .25s; }
+  .lgs::before { content:""; width:11px; height:0; flex:0 0 auto; margin-right:.45em;
+                 border-top:2px dashed currentColor; opacity:.45;
+                 transition:opacity .25s; }
+  .lgs:hover { border-color:var(--border-2); }
+  .lgs.on { color:var(--c); border-color:currentColor; background:var(--surface);
+            font-weight:600; }
+  .lgs.on::before { opacity:1; }
+  /* an arm measured only on a machine that is not shown: the switch is there,
+     because the arm exists, but it has nothing to draw until that machine is */
+  .lgs.na { opacity:.4; cursor:default; }
+  .lgs.na:hover { border-color:var(--border); }
+
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
@@ -473,9 +502,24 @@
      band     {lo, hi}                               a shaded y range behind everything
      legend   an element to fill with one swatch per labelled series
      reduce   true to skip the draw-in animation
+     fitLit   true to scale y to the lit series only, rather than to every
+              series the chart holds, and to leave the unlit ones out of the
+              drawing entirely. For a chart whose legend can switch most of its
+              lines off this is the difference between an axis that describes
+              what the reader is looking at and one set by a line they cannot
+              see -- the index chart holds an A100 model peaking at 161 tok/s
+              behind a default view whose own top is 108. The two halves go
+              together: once the axis stops covering a series, dimming it
+              rather than dropping it draws it off the top of the frame, which
+              is worse than not drawing it -- a line that leaves and re-enters
+              reads as a plateau it never had.
+     lit      the initial predicate, so the first draw already fits and the
+              first setLit finds nothing to change
    A null in a series' values is a gap, not a zero.
    Returns {redraw, setLit}: setLit(fn) dims every series for which fn(i) is
-   false, without redrawing, so a legend toggle does not replay the animation. */
+   false. Without fitLit it does not redraw, so a legend toggle does not replay
+   the animation; with it, it redraws -- without animating -- whenever the set
+   of shown series actually changed, and not otherwise. */
 window.lineChart = function (opts) {
   "use strict";
   var NS = "http://www.w3.org/2000/svg";
@@ -504,23 +548,47 @@ window.lineChart = function (opts) {
   }
   function hide() { tip.style.opacity = "0"; }
 
-  var paths = [], dots = [], owner = [];
+  var paths = [], dots = [], owner = [], dotOwner = [];
+  var litFn = opts.lit || null, drawnKey = null;
+
+  // Under fitLit a series the reader has switched off is not drawn at all, so
+  // what has to be compared between draws is the set and not just the extent.
+  function shown(i) { return !opts.fitLit || !litFn || litFn(i); }
+  function litKey() {
+    var k = "";
+    ser.forEach(function (_, i) { k += shown(i) ? "1" : "0"; });
+    return k;
+  }
+
+  // What sets the y axis. Under fitLit a series the reader has switched off
+  // does not, which is the whole point; if that leaves nothing at all, the
+  // frame stays as it was rather than collapsing onto an empty chart.
+  function yvals() {
+    var vals = [], all = !opts.fitLit || !litFn;
+    function take(s) {
+      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
+      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
+    }
+    ser.forEach(function (s, i) { if (all || shown(i)) take(s); });
+    if (!vals.length) ser.forEach(take);
+    rules.forEach(function (r) { vals.push(r.y); });
+    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
+    return vals;
+  }
+  function yext() {
+    var v = yvals();
+    return [opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, v),
+            opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, v)];
+  }
 
   function draw(animate) {
     while (el.firstChild) el.removeChild(el.firstChild);
-    paths = []; dots = []; owner = [];
+    paths = []; dots = []; owner = []; dotOwner = [];
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-    var vals = [];
-    ser.forEach(function (s) {
-      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
-      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
-    });
-    rules.forEach(function (r) { vals.push(r.y); });
-    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
-    var lo = opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, vals);
-    var hi = opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, vals);
+    var ext = yext(), lo = ext[0], hi = ext[1];
+    drawnKey = litKey();
     if (opts.y.zero && lo > 0) lo = 0;
     var pad = (hi - lo) * 0.08 || 1;
     if (opts.y.min === undefined) lo -= pad;
@@ -626,7 +694,8 @@ window.lineChart = function (opts) {
       g2.insertBefore(bg, n);
     });
 
-    ser.forEach(function (s) {
+    ser.forEach(function (s, si) {
+      if (!shown(si)) return;
       var soft = s.dashSegs || [];
       var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
       var at = s.points
@@ -648,12 +717,12 @@ window.lineChart = function (opts) {
                  "stroke:" + s.colour +
                  (s.dash ? ";stroke-dasharray:" + (s.dashPattern || "6 5") : ""));
       el.appendChild(p);
-      paths.push(p); owner.push(dots.length);
+      paths.push(p); owner.push(si);
       if (loose) {
         var lp = mk("path", { "class": "ln", d: loose.trim() },
                     "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75");
         el.appendChild(lp);
-        paths.push(lp); owner.push(dots.length);
+        paths.push(lp); owner.push(si);
       }
       var dg = [];
       vs.forEach(function (v, i) {
@@ -669,7 +738,7 @@ window.lineChart = function (opts) {
         el.appendChild(c);
         dg.push(c);
       });
-      dots.push(dg);
+      dots.push(dg); dotOwner.push(si);
     });
 
     if (!animate || opts.reduce) return;
@@ -740,10 +809,16 @@ window.lineChart = function (opts) {
   }
 
   function setLit(fn) {
+    litFn = fn;
+    // Under fitLit the axis and the drawing both belong to what is lit, so a
+    // toggle rebuilds -- but only when it actually changed the set. The first
+    // call lands while the draw-in is still running and must find nothing to
+    // change, which is what opts.lit is for.
+    if (opts.fitLit && litKey() !== drawnKey) draw(false);
     // a series can own two paths when part of it is drawn as an inference
     paths.forEach(function (p, i) { p.classList.toggle("dim", !fn(owner[i])); });
     dots.forEach(function (dg, i) {
-      dg.forEach(function (c) { c.classList.toggle("dim", !fn(i)); });
+      dg.forEach(function (c) { c.classList.toggle("dim", !fn(dotOwner[i])); });
     });
   }
 
@@ -803,9 +878,10 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">1</span>这台机器今天能跑多快</h2>
 
-<p>每个模型一条线，画的都是它自己实测到的最快配置，而不是一个统一口径。七条里有五条出自同一场
-campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈和投机解码，因为在这两个模型上，
-那场 campaign 已经不是这台机器的上限了。每条线都写明自己是哪一种。</p>
+<p>每个模型、每台机器一条线，画的都是它自己实测到的最快配置，而不是一个统一口径。Radeon 这边七条里
+有五条出自同一场 campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈，因为在这两个模型上，
+那场 campaign 已经不是这台机器的上限了。A100 那边有同样五个模型，是它自己一个下午跑完的一整场。
+每条线都写明自己是哪一种。</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
@@ -819,14 +895,17 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
   </div>
   <figcaption>
     <b>图 1.</b> 2× RX 7900 XT、张量并行 2 上的解码速率，横轴是上下文长度，取对数。
-    默认点亮四个模型，点名字可以加上或去掉任意一条。A100 那边只有一个模型——只有
-    <code>gemma-4-31B</code> 在两台机器上都测过——而且那边用的是同一个模型、同一种量化、
-    同一个补丁，但那边是 TP=1、vLLM 0.28.0，这边是 TP=2、0.23.1。两边共用的是 checkpoint，
-    拆分方式和软件栈不是。每条线都出自一场会话、同一套阶梯 —— 十一个档位、每格两轮 ——
-    而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。<b>MTP</b> 按钮会加上那两个有投机数据的
-    模型的投机臂，它们与各自那条线同日、同内核测得，所以这个按钮显示的是「<em>这条线</em>开了投机
-    会怎样」，而不是「哪里最快的一次投机」。笔画区分身份：实线是这两张卡，长虚线是 A100，短虚线是 MTP。
-    把鼠标停在任意点上可以看到 run 数和它用的软件栈。
+    默认点亮四个模型，点名字可以加上或去掉任意一条，点上面那一行机器名可以把另一张卡叠上来。
+    七个模型里有五个也在一张 A100 80G 上测过 —— 同样的 checkpoint，那边是 TP=1、vLLM 0.28.0，
+    这边是 TP=2、0.23.1。两边共用的是 checkpoint，拆分方式和软件栈不是。
+    每条线都出自一场会话、同一套阶梯 —— 十一个档位、每格两轮 ——
+    而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。模型旁边的小开关会加上这个模型的投机臂，
+    它与旁边那条线同日、同内核测得，所以它显示的是「<em>这条线</em>开了投机会怎样」，
+    而不是「哪里最快的一次投机」。开关上写的是这条臂实际解析出的方法，所以其中一个写的是
+    <b>DFlash</b>：Muse-Glimmer 的助手模型是块扩散草稿模型，不是 MTP。投机到底划不划算并没有一个统一答案 ——
+    在这两张卡上，两条臂在最短档都领先，其中一条一路领先到 32K；而在 A100 上，四条臂在每一档都是净亏。
+    笔画区分身份：实线是这两张卡，长虚线是 A100，短虚线是投机。
+    把鼠标停在任意点上可以看到 run 数和它用的软件栈。纵轴只按点亮的线取值域，所以多点亮一条线可能会让它变。
   </figcaption>
 </figure>
 
@@ -880,7 +959,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
 </div>
 
 <script type="application/json" id="bestdata">{
- "_what": "The index's best-measured-today figure. One line per model, each the fastest configuration it has been measured in; five share one campaign and two do not. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
+ "_what": "The index's best-measured-today figure. One line per model per machine, each the fastest configuration that model has been measured in; five of the Radeon lines share one campaign and two do not, and the A100 side is the whole 2026-08-29 campaign rather than one model of it. Speculation is a switch on each model that has an arm, named for the method the engine resolved. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
  "best": {
   "series": [
    {
@@ -893,7 +972,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     ],
     "harness": "campaign-server",
     "date": "2026-08-24",
-    "quant": "int4",
+    "quant": "int4 AWQ",
     "arch": "MoE, 128 experts",
     "spec": false,
     "spec_desc": null,
@@ -980,7 +1059,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -1079,7 +1160,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "BF16",
+    "spec_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -1178,7 +1261,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4",
+    "spec_label": null
    },
    {
     "model": "gemma-3-27b-it",
@@ -1277,7 +1362,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16",
+    "spec_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -1376,7 +1463,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -1387,7 +1476,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     ],
     "harness": "campaign-server",
     "date": "2026-08-29",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "spec": false,
     "spec_desc": null,
@@ -1474,7 +1563,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -1574,7 +1665,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -1678,7 +1771,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
    },
    {
     "model": "Qwen3.8-27B",
@@ -1690,7 +1785,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     ],
     "harness": "campaign-server",
     "date": "2026-08-29",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "spec": true,
     "spec_desc": {
@@ -1780,7 +1875,9 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
    },
    {
     "model": "gemma-4-31B-it",
@@ -1876,7 +1973,401 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
       "range_pct": 0.001879893598017971,
       "graded": true
      }
-    ]
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-G12",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 115.0498,
+      "runs": 2,
+      "range_pct": 0.3308132652121092,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 113.3944,
+      "runs": 2,
+      "range_pct": 0.02857283957584814,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 110.14,
+      "runs": 2,
+      "range_pct": 0.7819139277283427,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 104.7409,
+      "runs": 2,
+      "range_pct": 0.05785705488495303,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 99.2247,
+      "runs": 2,
+      "range_pct": 0.020760959720716444,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 94.17445,
+      "runs": 2,
+      "range_pct": 0.030900100823524516,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.89885,
+      "runs": 2,
+      "range_pct": 0.0307090586661096,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.2601,
+      "runs": 2,
+      "range_pct": 0.012250765973134244,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 77.3352,
+      "runs": 2,
+      "range_pct": 0.007499818969878643,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 74.4528,
+      "runs": 2,
+      "range_pct": 0.02551952377883096,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 71.25775,
+      "runs": 2,
+      "range_pct": 0.009963828495859499,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-G26A4B",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 160.96895,
+      "runs": 2,
+      "range_pct": 1.3384568887353823,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 158.73865,
+      "runs": 2,
+      "range_pct": 0.1401675017394923,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 155.7656,
+      "runs": 2,
+      "range_pct": 0.6337727970745796,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 149.06504999999999,
+      "runs": 2,
+      "range_pct": 0.028108533824680364,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 142.0097,
+      "runs": 2,
+      "range_pct": 0.023942026495367436,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 135.59305,
+      "runs": 2,
+      "range_pct": 0.03193379011681491,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 128.32319999999999,
+      "runs": 2,
+      "range_pct": 0.045977656417543755,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 121.05905,
+      "runs": 2,
+      "range_pct": 0.07409607129743166,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 113.23400000000001,
+      "runs": 2,
+      "range_pct": 0.026317183884706632,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 109.207,
+      "runs": 2,
+      "range_pct": 0.01904639812465699,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 104.9693,
+      "runs": 2,
+      "range_pct": 0.012765637191068527,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-Q38",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 69.28765,
+      "runs": 2,
+      "range_pct": 0.9931062750720966,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 69.57585,
+      "runs": 2,
+      "range_pct": 0.004743025058257803,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 69.1031,
+      "runs": 2,
+      "range_pct": 0.0034730713962100204,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 68.64585,
+      "runs": 2,
+      "range_pct": 0.01587860009018254,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 68.08789999999999,
+      "runs": 2,
+      "range_pct": 0.01086830405990502,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 67.9971,
+      "runs": 2,
+      "range_pct": 0.04000170595509728,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 66.96255,
+      "runs": 2,
+      "range_pct": 0.010005592678309375,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 66.21785,
+      "runs": 2,
+      "range_pct": 0.03428078682711744,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 65.3776,
+      "runs": 2,
+      "range_pct": 0.013766182912802459,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.5721,
+      "runs": 2,
+      "range_pct": 0.0003097312926053643,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 63.519149999999996,
+      "runs": 2,
+      "range_pct": 0.03069940325083182,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-MG30",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 66.9365,
+      "runs": 2,
+      "range_pct": 0.11533318891784096,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 64.705,
+      "runs": 2,
+      "range_pct": 0.02256394405378487,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 61.3867,
+      "runs": 2,
+      "range_pct": 0.011077318050975803,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 60.8822,
+      "runs": 2,
+      "range_pct": 0.035149846753238,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 61.2201,
+      "runs": 2,
+      "range_pct": 0.02744196758907021,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 61.16705,
+      "runs": 2,
+      "range_pct": 0.022397679796557206,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 60.9749,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 60.563500000000005,
+      "runs": 2,
+      "range_pct": 0.00462324667497846,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 60.667,
+      "runs": 2,
+      "range_pct": 0.5620848237097616,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 60.58645,
+      "runs": 2,
+      "range_pct": 0.042418725639149515,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 60.40625,
+      "runs": 2,
+      "range_pct": 0.603414381789975,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -1894,6 +2385,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     "spec": true,
     "spec_desc": {
      "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
      "k": 3
     },
     "attn_backend": "TRITON_ATTN",
@@ -1977,7 +2469,318 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
       "range_pct": 1.5040909097589683,
       "graded": true
      }
-    ]
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "drafter": "gemma-4-26B-A4B-it-assistant",
+     "k": 3
+    },
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "A100-G26A4B-mtp-p45450",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 93.30265,
+      "runs": 2,
+      "range_pct": 0.8590324069037742,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 92.0489,
+      "runs": 2,
+      "range_pct": 0.8391192072909124,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 91.31875,
+      "runs": 2,
+      "range_pct": 0.14487714735473356,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 88.0968,
+      "runs": 2,
+      "range_pct": 0.12440860507986709,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 84.42655,
+      "runs": 2,
+      "range_pct": 0.4938020089651872,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 81.29425,
+      "runs": 2,
+      "range_pct": 0.2670545579791954,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 77.89384999999999,
+      "runs": 2,
+      "range_pct": 0.24019868064038558,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 73.8583,
+      "runs": 2,
+      "range_pct": 0.3815414110533333,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 69.66544999999999,
+      "runs": 2,
+      "range_pct": 0.21258744470898225,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 67.44065,
+      "runs": 2,
+      "range_pct": 0.24984931195059468,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 64.67644999999999,
+      "runs": 2,
+      "range_pct": 0.027057762137529653,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "k": 3
+    },
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "A100-Q38-mtp-p45450",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 41.2243,
+      "runs": 2,
+      "range_pct": 0.3755066793129162,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 40.5035,
+      "runs": 2,
+      "range_pct": 0.006419198340886703,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 39.213750000000005,
+      "runs": 2,
+      "range_pct": 0.11858085492971664,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 37.0039,
+      "runs": 2,
+      "range_pct": 0.06161512705418538,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 34.969750000000005,
+      "runs": 2,
+      "range_pct": 0.022590953609903847,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 33.2067,
+      "runs": 2,
+      "range_pct": 0.022886947513615037,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 30.1081,
+      "runs": 2,
+      "range_pct": 0.12289051783406801,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 27.51185,
+      "runs": 2,
+      "range_pct": 0.018537466582577225,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 25.3509,
+      "runs": 2,
+      "range_pct": 0.02287887215049838,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 23.5106,
+      "runs": 2,
+      "range_pct": 0.0791132510442068,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 20.5183,
+      "runs": 2,
+      "range_pct": 0.03411588679372997,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": true,
+    "spec_desc": {
+     "method": "dflash",
+     "drafter": "Muse-Glimmer-30B-assistant",
+     "k": 8
+    },
+    "attn_backend": null,
+    "cfg": "A100-MG30-dflash",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 48.01825,
+      "runs": 2,
+      "range_pct": 0.5837363918926592,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 46.2432,
+      "runs": 2,
+      "range_pct": 0.06141443498719327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 43.96465,
+      "runs": 2,
+      "range_pct": 0.16536012455460816,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 42.937200000000004,
+      "runs": 2,
+      "range_pct": 0.20588207894320082,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 41.89185,
+      "runs": 2,
+      "range_pct": 0.16160661321952144,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 40.85265,
+      "runs": 2,
+      "range_pct": 0.009056940002673108,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 38.98205,
+      "runs": 2,
+      "range_pct": 0.02129185099295296,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 37.29545,
+      "runs": 2,
+      "range_pct": 0.0721267607710989,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 35.7395,
+      "runs": 2,
+      "range_pct": 0.024622616432780818,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 34.2883,
+      "runs": 2,
+      "range_pct": 0.059495513046710066,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 31.7273,
+      "runs": 2,
+      "range_pct": 0.14561592067399026,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": "DFlash"
    }
   ],
   "campaign": {
@@ -2016,9 +2819,48 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     "picked_deepest": 29.134999999999998
    }
   ],
+  "labels": {
+   "gemma-4-26B-A4B": {
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   "Qwen3-8B": {
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "spec_label": null
+   },
+   "Muse-Glimmer-30B": {
+    "quant": "int4",
+    "quant_label": "INT4",
+    "spec_label": "DFlash"
+   },
+   "gemma-3-27b-it": {
+    "quant": "w4a16",
+    "quant_label": "W4A16",
+    "spec_label": null
+   },
+   "gemma-4-12B-it": {
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   "Qwen3.8-27B": {
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   "gemma-4-31B-it": {
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
+   }
+  },
   "mtp_pairs": [
    {
     "model": "gemma-4-31B-it",
+    "machine": "rdna3",
+    "label": "MTP",
     "base_cfg": "G31-tp2",
     "mtp_cfg": "G31-mtp-p45450-tp2",
     "attn_backend": "TRITON_ATTN",
@@ -2080,6 +2922,8 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
    },
    {
     "model": "Qwen3.8-27B",
+    "machine": "rdna3",
+    "label": "MTP",
     "base_cfg": "Q38-triton-tp2",
     "mtp_cfg": "Q38-mtp-triton-p45450-tp2",
     "attn_backend": "TRITON_ATTN",
@@ -2137,6 +2981,257 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     "crosses_zero": true,
     "at_shortest_pct": 50.863800723181996,
     "at_deepest_pct": -18.903456495828387
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-G31",
+    "mtp_cfg": "A100-G31-mtp-p45450",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -12.49611108455878
+     },
+     {
+      "ctx": 1000,
+      "pct": -12.94900012776472
+     },
+     {
+      "ctx": 2000,
+      "pct": -18.26270289419908
+     },
+     {
+      "ctx": 4000,
+      "pct": -17.114382158057516
+     },
+     {
+      "ctx": 6000,
+      "pct": -17.452425659662772
+     },
+     {
+      "ctx": 8000,
+      "pct": -17.894563305978885
+     },
+     {
+      "ctx": 12000,
+      "pct": -18.54039464427073
+     },
+     {
+      "ctx": 16000,
+      "pct": -18.842349941338487
+     },
+     {
+      "ctx": 20000,
+      "pct": -19.11269661171059
+     },
+     {
+      "ctx": 24000,
+      "pct": -19.423644099207984
+     },
+     {
+      "ctx": 32000,
+      "pct": -20.056232317250846
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -12.49611108455878,
+    "at_deepest_pct": -20.056232317250846
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-G26A4B",
+    "mtp_cfg": "A100-G26A4B-mtp-p45450",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "drafter": "gemma-4-26B-A4B-it-assistant",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -42.036864873629355
+     },
+     {
+      "ctx": 1000,
+      "pct": -42.01229505227618
+     },
+     {
+      "ctx": 2000,
+      "pct": -41.37425079735192
+     },
+     {
+      "ctx": 4000,
+      "pct": -40.90043239511877
+     },
+     {
+      "ctx": 6000,
+      "pct": -40.54874420550145
+     },
+     {
+      "ctx": 8000,
+      "pct": -40.04541530705298
+     },
+     {
+      "ctx": 12000,
+      "pct": -39.298700468816236
+     },
+     {
+      "ctx": 16000,
+      "pct": -38.98985660303794
+     },
+     {
+      "ctx": 20000,
+      "pct": -38.47656181005706
+     },
+     {
+      "ctx": 24000,
+      "pct": -38.24512164971109
+     },
+     {
+      "ctx": 32000,
+      "pct": -38.38536600701349
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -42.036864873629355,
+    "at_deepest_pct": -38.38536600701349
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-Q38",
+    "mtp_cfg": "A100-Q38-mtp-p45450",
+    "attn_backend": "FLASH_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -40.50267255419977
+     },
+     {
+      "ctx": 1000,
+      "pct": -41.7851165310952
+     },
+     {
+      "ctx": 2000,
+      "pct": -43.25326939022995
+     },
+     {
+      "ctx": 4000,
+      "pct": -46.09448349754574
+     },
+     {
+      "ctx": 6000,
+      "pct": -48.64028704072234
+     },
+     {
+      "ctx": 8000,
+      "pct": -51.16453495810851
+     },
+     {
+      "ctx": 12000,
+      "pct": -55.03740523621039
+     },
+     {
+      "ctx": 16000,
+      "pct": -58.45251695728568
+     },
+     {
+      "ctx": 20000,
+      "pct": -61.22387484398326
+     },
+     {
+      "ctx": 24000,
+      "pct": -63.59015735898321
+     },
+     {
+      "ctx": 32000,
+      "pct": -67.69745816812724
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -40.50267255419977,
+    "at_deepest_pct": -67.69745816812724
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "label": "DFlash",
+    "base_cfg": "A100-MG30",
+    "mtp_cfg": "A100-MG30-dflash",
+    "attn_backend": null,
+    "date": "2026-08-29",
+    "spec": {
+     "method": "dflash",
+     "drafter": "Muse-Glimmer-30B-assistant",
+     "k": 8
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -28.262980586077845
+     },
+     {
+      "ctx": 1000,
+      "pct": -28.532261803570048
+     },
+     {
+      "ctx": 2000,
+      "pct": -28.38082190441903
+     },
+     {
+      "ctx": 4000,
+      "pct": -29.474953270414005
+     },
+     {
+      "ctx": 6000,
+      "pct": -31.571738693664344
+     },
+     {
+      "ctx": 8000,
+      "pct": -33.21134499702046
+     },
+     {
+      "ctx": 12000,
+      "pct": -36.068693839596285
+     },
+     {
+      "ctx": 16000,
+      "pct": -38.41926242703939
+     },
+     {
+      "ctx": 20000,
+      "pct": -41.089059950220054
+     },
+     {
+      "ctx": 24000,
+      "pct": -43.40599259405362
+     },
+     {
+      "ctx": 32000,
+      "pct": -47.476792550439725
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -28.262980586077845,
+    "at_deepest_pct": -47.476792550439725
    }
   ],
   "omitted": [
@@ -2154,7 +3249,7 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
   ],
   "ctx_min": 500,
   "ctx_max": 32000,
-  "fastest": 107.66499999999999
+  "fastest": 160.96895
  },
  "cards": {
   "hybrid-ssm-collapse": {
@@ -3523,17 +4618,18 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
  "kLink": "仓库链接"
 }</script>
 <script type="application/json" id="strings">{
- "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · MTP 会加上有投机数据的那几个模型的投机臂",
+ "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · 模型旁边的小开关会加上这个模型的投机臂，开关上写的是它实际跑的那种方法",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
  "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
- "bestStroke": "实线：这两张卡 · 长虚线：A100 · 短虚线：同一条线开着 MTP",
- "bestMtp": "MTP",
+ "bestStroke": "实线：这两张卡 · 长虚线：A100 · 短虚线：同一条线开着投机",
  "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
  "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
  "bestOmit": "{m} 没有放进来：ledger 里它只有被 split-KV 那批工作取代掉的那次旧运行",
- "bestSpec": "开着 MTP",
+ "bestSpec": "开着 {s}",
+ "bestSpecOf": "{m}：把这条线换成开着 {s} 的那次，它是与这条线并排测的",
+ "bestSpecAway": "{m} 的 {s} 臂只在{x}上测过 —— 把那台机器叠上来才看得到",
  "bestRuns": "{n} 次运行 · 极差 {r}%",
  "bestOne": "一次运行",
  "estLabel": "确立了",
@@ -3812,9 +4908,14 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
 
   /* ---------- Figure 1: what the machine does today ----------
      Seven models on one pair of axes, each drawn in the fastest configuration
-     it has been measured in. The lines are not one experiment and the figure
-     does not pretend otherwise: five share a campaign, two do not, and every
-     one of them carries the stack it needed into its tooltip. */
+     it has been measured in, on either machine that has run it. The lines are
+     not one experiment and the figure does not pretend otherwise: five share a
+     campaign, two do not, the A100 side is a third, and every one of them
+     carries the stack it needed into its tooltip. Speculation is a switch on
+     each model that has an arm rather than one button over all of them,
+     because the arms are not one thing -- three are MTP and the fourth is a
+     block-diffusion drafter -- and a single button would have to call them
+     all by one name. */
   (function () {
     var F = JSON.parse(document.getElementById("bestdata").textContent).best;
     var svg = document.getElementById("best");
@@ -3837,24 +4938,31 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
     var machOn = {};
     F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
-    // Speculation is off until asked for. It is a different way of running the
-    // same machine, not a faster reading of the same thing, and on Qwen3.8 it
-    // is a net loss past 8K -- so it does not belong in a default view of what
-    // this machine does.
-    var specOn = false;
-    var hasSpec = F.series.some(function (x) { return x.spec; });
+    // Speculation is off until asked for, and it is asked for per model. It is
+    // a different way of running the same model, not a faster reading of the
+    // same thing -- on every arm drawn here it is a net loss against that
+    // model's own control -- so it does not belong in a default view of what
+    // these machines do. The switch's name comes from the data, not from here:
+    // three of the four arms resolved to mtp and Muse-Glimmer's is dflash, a
+    // block-diffusion drafter at k=8, which a switch marked MTP would misname.
+    var specOn = {}, specLabel = {};
+    models.forEach(function (m) {
+      specOn[m] = false;
+      specLabel[m] = (F.labels[m] || {}).spec_label || null;
+    });
 
     function stack(x) {
       var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
       if (x.patches.length) bits.push(x.patches.join(" + "));
-      if (x.spec) bits.push(S.bestSpec);
+      if (x.spec) bits.push(fmt(S.bestSpec, { s: x.spec_label }));
       bits.push(x.date);
       return bits.join(" · ");
     }
     function tipFor(x) {
       return function (i) {
         var p = x.points[i];
-        return '<span class="hd">' + esc(x.model) + " · " + esc(S.bestMach[x.machine]) +
+        return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
+          " · " + esc(S.bestMach[x.machine]) +
           "</span><br>" + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
           '<span class="sub">' +
           (p.runs > 1 && p.range_pct !== null
@@ -3874,21 +4982,55 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
       return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
                points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
     });
+    // A line the reader has switched off must not set the axis. The chart holds
+    // an A100 model that peaks at 161 tok/s behind a default view whose own top
+    // is 108, and without fitLit that one hidden line would flatten the four
+    // lit ones into the bottom two thirds of the frame.
+    function isLit(i) {
+      var x = F.series[i];
+      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model]);
+    }
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
+      fitLit: true, lit: isLit,
       x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
            ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
       y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
       series: ser
     });
-    function apply() {
-      chart.setLit(function (i) {
-        var x = F.series[i];
-        return on[x.model] && machOn[x.machine] && (specOn || !x.spec);
+    // One legend entry per model, and each entry owns its own elements rather
+    // than being found again by position: the previous version mapped
+    // key.children[i] to models[i] and skipped a trailing global button, which
+    // only held while there was exactly one extra child and it was last.
+    var entries = [];
+    // Two of the four arms were only ever run on the A100, so their switches
+    // have nothing to draw while that machine is off. Left live they press and
+    // change nothing, which reads as broken rather than as absent; so they go
+    // inert, and the wrapper says which machine has the arm.
+    function armShown(m) {
+      return F.series.some(function (x) {
+        return x.spec && x.model === m && machOn[x.machine];
       });
-      Array.prototype.forEach.call(key.children, function (b, i) {
-        if (i >= models.length) return;      // the MTP button sits after them
-        b.classList.toggle("on", on[models[i]]);
+    }
+    function armOn(m) {
+      var x = F.series.filter(function (y) { return y.spec && y.model === m; })[0];
+      return x ? S.bestMach[x.machine] : "";
+    }
+    function apply() {
+      chart.setLit(isLit);
+      entries.forEach(function (e) {
+        e.btn.classList.toggle("on", on[e.model]);
+        if (!e.sw) return;
+        var live = armShown(e.model);
+        e.sw.classList.toggle("on", specOn[e.model]);
+        e.sw.classList.toggle("na", !live);
+        e.sw.disabled = !live;
+        // the title moves to the wrapper: a disabled button shows none
+        e.wrap.setAttribute("title", live ? ""
+          : fmt(S.bestSpecAway, { m: e.model, s: specLabel[e.model],
+                                  x: armOn(e.model) }));
+        e.sw.setAttribute("title", live
+          ? fmt(S.bestSpecOf, { m: e.model, s: specLabel[e.model] }) : "");
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
         var id = F.machines[i].id;
@@ -3910,32 +5052,45 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
       mach.appendChild(b);
     });
     models.forEach(function (m) {
+      // a model and its speculative switch are one control, so they sit in one
+      // wrapper: a button cannot contain another button, and two loose buttons
+      // would wrap apart from each other on a narrow screen
+      var wrap = document.createElement("span");
+      wrap.className = "lgw";
       var b = document.createElement("button");
       b.className = "lg";
       b.style.setProperty("--c", colour[m]);
-      b.innerHTML = '<span class="sw"></span>' + esc(m);
+      // the quantisation is part of the name: "gemma-4-31B-it" does not say
+      // whether this is the 4-bit checkpoint or the 16-bit one
+      b.innerHTML = '<span class="sw"></span>' + esc(m) +
+                    '<span class="q">' + esc(F.labels[m].quant_label) + "</span>";
+      // the two spans are flex items with a gap between them, so the space a
+      // reader sees is not in the text a screen reader gets
+      b.setAttribute("aria-label", m + " " + F.labels[m].quant_label);
       b.setAttribute("aria-pressed", String(on[m]));
       b.addEventListener("click", function () {
         on[m] = !on[m];
         b.setAttribute("aria-pressed", String(on[m]));
         apply();
       });
-      key.appendChild(b);
+      wrap.appendChild(b);
+      var sw = null;
+      if (specLabel[m]) {
+        sw = document.createElement("button");
+        sw.className = "lgs";
+        sw.style.setProperty("--c", colour[m]);
+        sw.textContent = specLabel[m];
+        sw.setAttribute("aria-pressed", "false");
+        sw.addEventListener("click", function () {
+          specOn[m] = !specOn[m];
+          sw.setAttribute("aria-pressed", String(specOn[m]));
+          apply();
+        });
+        wrap.appendChild(sw);
+      }
+      key.appendChild(wrap);
+      entries.push({ model: m, btn: b, sw: sw, wrap: wrap });
     });
-    if (hasSpec) {
-      var sb = document.createElement("button");
-      sb.className = "lg";
-      sb.style.setProperty("--c", "var(--accent)");
-      sb.innerHTML = '<span class="sw"></span>' + esc(S.bestMtp);
-      sb.setAttribute("aria-pressed", "false");
-      sb.addEventListener("click", function () {
-        specOn = !specOn;
-        sb.classList.toggle("on", specOn);
-        sb.setAttribute("aria-pressed", String(specOn));
-        apply();
-      });
-      key.appendChild(sb);
-    }
     apply();
     note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +
       esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,

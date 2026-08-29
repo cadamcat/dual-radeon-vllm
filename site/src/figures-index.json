@@ -1,5 +1,5 @@
 {
- "_what": "The index's best-measured-today figure. One line per model, each the fastest configuration it has been measured in; five share one campaign and two do not. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
+ "_what": "The index's best-measured-today figure. One line per model per machine, each the fastest configuration that model has been measured in; five of the Radeon lines share one campaign and two do not, and the A100 side is the whole 2026-08-29 campaign rather than one model of it. Speculation is a switch on each model that has an arm, named for the method the engine resolved. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
  "best": {
   "series": [
    {
@@ -12,7 +12,7 @@
     ],
     "harness": "campaign-server",
     "date": "2026-08-24",
-    "quant": "int4",
+    "quant": "int4 AWQ",
     "arch": "MoE, 128 experts",
     "spec": false,
     "spec_desc": null,
@@ -99,7 +99,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -198,7 +200,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "BF16",
+    "spec_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -297,7 +301,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4",
+    "spec_label": null
    },
    {
     "model": "gemma-3-27b-it",
@@ -396,7 +402,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16",
+    "spec_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -495,7 +503,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -506,7 +516,7 @@
     ],
     "harness": "campaign-server",
     "date": "2026-08-29",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "spec": false,
     "spec_desc": null,
@@ -593,7 +603,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -693,7 +705,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": true
+    "lit": true,
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -797,7 +811,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
    },
    {
     "model": "Qwen3.8-27B",
@@ -809,7 +825,7 @@
     ],
     "harness": "campaign-server",
     "date": "2026-08-29",
-    "quant": "AWQ int4",
+    "quant": "int4 AWQ",
     "arch": "hybrid SSM",
     "spec": true,
     "spec_desc": {
@@ -899,7 +915,9 @@
      }
     ],
     "machine": "rdna3",
-    "lit": false
+    "lit": false,
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
    },
    {
     "model": "gemma-4-31B-it",
@@ -995,7 +1013,401 @@
       "range_pct": 0.001879893598017971,
       "graded": true
      }
-    ]
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-G12",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 115.0498,
+      "runs": 2,
+      "range_pct": 0.3308132652121092,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 113.3944,
+      "runs": 2,
+      "range_pct": 0.02857283957584814,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 110.14,
+      "runs": 2,
+      "range_pct": 0.7819139277283427,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 104.7409,
+      "runs": 2,
+      "range_pct": 0.05785705488495303,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 99.2247,
+      "runs": 2,
+      "range_pct": 0.020760959720716444,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 94.17445,
+      "runs": 2,
+      "range_pct": 0.030900100823524516,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.89885,
+      "runs": 2,
+      "range_pct": 0.0307090586661096,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.2601,
+      "runs": 2,
+      "range_pct": 0.012250765973134244,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 77.3352,
+      "runs": 2,
+      "range_pct": 0.007499818969878643,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 74.4528,
+      "runs": 2,
+      "range_pct": 0.02551952377883096,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 71.25775,
+      "runs": 2,
+      "range_pct": 0.009963828495859499,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-G26A4B",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 160.96895,
+      "runs": 2,
+      "range_pct": 1.3384568887353823,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 158.73865,
+      "runs": 2,
+      "range_pct": 0.1401675017394923,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 155.7656,
+      "runs": 2,
+      "range_pct": 0.6337727970745796,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 149.06504999999999,
+      "runs": 2,
+      "range_pct": 0.028108533824680364,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 142.0097,
+      "runs": 2,
+      "range_pct": 0.023942026495367436,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 135.59305,
+      "runs": 2,
+      "range_pct": 0.03193379011681491,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 128.32319999999999,
+      "runs": 2,
+      "range_pct": 0.045977656417543755,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 121.05905,
+      "runs": 2,
+      "range_pct": 0.07409607129743166,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 113.23400000000001,
+      "runs": 2,
+      "range_pct": 0.026317183884706632,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 109.207,
+      "runs": 2,
+      "range_pct": 0.01904639812465699,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 104.9693,
+      "runs": 2,
+      "range_pct": 0.012765637191068527,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-Q38",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 69.28765,
+      "runs": 2,
+      "range_pct": 0.9931062750720966,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 69.57585,
+      "runs": 2,
+      "range_pct": 0.004743025058257803,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 69.1031,
+      "runs": 2,
+      "range_pct": 0.0034730713962100204,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 68.64585,
+      "runs": 2,
+      "range_pct": 0.01587860009018254,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 68.08789999999999,
+      "runs": 2,
+      "range_pct": 0.01086830405990502,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 67.9971,
+      "runs": 2,
+      "range_pct": 0.04000170595509728,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 66.96255,
+      "runs": 2,
+      "range_pct": 0.010005592678309375,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 66.21785,
+      "runs": 2,
+      "range_pct": 0.03428078682711744,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 65.3776,
+      "runs": 2,
+      "range_pct": 0.013766182912802459,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.5721,
+      "runs": 2,
+      "range_pct": 0.0003097312926053643,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 63.519149999999996,
+      "runs": 2,
+      "range_pct": 0.03069940325083182,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A100-MG30",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 66.9365,
+      "runs": 2,
+      "range_pct": 0.11533318891784096,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 64.705,
+      "runs": 2,
+      "range_pct": 0.02256394405378487,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 61.3867,
+      "runs": 2,
+      "range_pct": 0.011077318050975803,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 60.8822,
+      "runs": 2,
+      "range_pct": 0.035149846753238,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 61.2201,
+      "runs": 2,
+      "range_pct": 0.02744196758907021,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 61.16705,
+      "runs": 2,
+      "range_pct": 0.022397679796557206,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 60.9749,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 60.563500000000005,
+      "runs": 2,
+      "range_pct": 0.00462324667497846,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 60.667,
+      "runs": 2,
+      "range_pct": 0.5620848237097616,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 60.58645,
+      "runs": 2,
+      "range_pct": 0.042418725639149515,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 60.40625,
+      "runs": 2,
+      "range_pct": 0.603414381789975,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -1013,6 +1425,7 @@
     "spec": true,
     "spec_desc": {
      "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
      "k": 3
     },
     "attn_backend": "TRITON_ATTN",
@@ -1096,7 +1509,318 @@
       "range_pct": 1.5040909097589683,
       "graded": true
      }
-    ]
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "drafter": "gemma-4-26B-A4B-it-assistant",
+     "k": 3
+    },
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "A100-G26A4B-mtp-p45450",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 93.30265,
+      "runs": 2,
+      "range_pct": 0.8590324069037742,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 92.0489,
+      "runs": 2,
+      "range_pct": 0.8391192072909124,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 91.31875,
+      "runs": 2,
+      "range_pct": 0.14487714735473356,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 88.0968,
+      "runs": 2,
+      "range_pct": 0.12440860507986709,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 84.42655,
+      "runs": 2,
+      "range_pct": 0.4938020089651872,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 81.29425,
+      "runs": 2,
+      "range_pct": 0.2670545579791954,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 77.89384999999999,
+      "runs": 2,
+      "range_pct": 0.24019868064038558,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 73.8583,
+      "runs": 2,
+      "range_pct": 0.3815414110533333,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 69.66544999999999,
+      "runs": 2,
+      "range_pct": 0.21258744470898225,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 67.44065,
+      "runs": 2,
+      "range_pct": 0.24984931195059468,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 64.67644999999999,
+      "runs": 2,
+      "range_pct": 0.027057762137529653,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "k": 3
+    },
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "A100-Q38-mtp-p45450",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 41.2243,
+      "runs": 2,
+      "range_pct": 0.3755066793129162,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 40.5035,
+      "runs": 2,
+      "range_pct": 0.006419198340886703,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 39.213750000000005,
+      "runs": 2,
+      "range_pct": 0.11858085492971664,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 37.0039,
+      "runs": 2,
+      "range_pct": 0.06161512705418538,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 34.969750000000005,
+      "runs": 2,
+      "range_pct": 0.022590953609903847,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 33.2067,
+      "runs": 2,
+      "range_pct": 0.022886947513615037,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 30.1081,
+      "runs": 2,
+      "range_pct": 0.12289051783406801,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 27.51185,
+      "runs": 2,
+      "range_pct": 0.018537466582577225,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 25.3509,
+      "runs": 2,
+      "range_pct": 0.02287887215049838,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 23.5106,
+      "runs": 2,
+      "range_pct": 0.0791132510442068,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 20.5183,
+      "runs": 2,
+      "range_pct": 0.03411588679372997,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": true,
+    "spec_desc": {
+     "method": "dflash",
+     "drafter": "Muse-Glimmer-30B-assistant",
+     "k": 8
+    },
+    "attn_backend": null,
+    "cfg": "A100-MG30-dflash",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 48.01825,
+      "runs": 2,
+      "range_pct": 0.5837363918926592,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 46.2432,
+      "runs": 2,
+      "range_pct": 0.06141443498719327,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 43.96465,
+      "runs": 2,
+      "range_pct": 0.16536012455460816,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 42.937200000000004,
+      "runs": 2,
+      "range_pct": 0.20588207894320082,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 41.89185,
+      "runs": 2,
+      "range_pct": 0.16160661321952144,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 40.85265,
+      "runs": 2,
+      "range_pct": 0.009056940002673108,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 38.98205,
+      "runs": 2,
+      "range_pct": 0.02129185099295296,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 37.29545,
+      "runs": 2,
+      "range_pct": 0.0721267607710989,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 35.7395,
+      "runs": 2,
+      "range_pct": 0.024622616432780818,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 34.2883,
+      "runs": 2,
+      "range_pct": 0.059495513046710066,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 31.7273,
+      "runs": 2,
+      "range_pct": 0.14561592067399026,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": "DFlash"
    }
   ],
   "campaign": {
@@ -1135,9 +1859,48 @@
     "picked_deepest": 29.134999999999998
    }
   ],
+  "labels": {
+   "gemma-4-26B-A4B": {
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   "Qwen3-8B": {
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "spec_label": null
+   },
+   "Muse-Glimmer-30B": {
+    "quant": "int4",
+    "quant_label": "INT4",
+    "spec_label": "DFlash"
+   },
+   "gemma-3-27b-it": {
+    "quant": "w4a16",
+    "quant_label": "W4A16",
+    "spec_label": null
+   },
+   "gemma-4-12B-it": {
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "spec_label": null
+   },
+   "Qwen3.8-27B": {
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "spec_label": "MTP"
+   },
+   "gemma-4-31B-it": {
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "spec_label": "MTP"
+   }
+  },
   "mtp_pairs": [
    {
     "model": "gemma-4-31B-it",
+    "machine": "rdna3",
+    "label": "MTP",
     "base_cfg": "G31-tp2",
     "mtp_cfg": "G31-mtp-p45450-tp2",
     "attn_backend": "TRITON_ATTN",
@@ -1199,6 +1962,8 @@
    },
    {
     "model": "Qwen3.8-27B",
+    "machine": "rdna3",
+    "label": "MTP",
     "base_cfg": "Q38-triton-tp2",
     "mtp_cfg": "Q38-mtp-triton-p45450-tp2",
     "attn_backend": "TRITON_ATTN",
@@ -1256,6 +2021,257 @@
     "crosses_zero": true,
     "at_shortest_pct": 50.863800723181996,
     "at_deepest_pct": -18.903456495828387
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-G31",
+    "mtp_cfg": "A100-G31-mtp-p45450",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -12.49611108455878
+     },
+     {
+      "ctx": 1000,
+      "pct": -12.94900012776472
+     },
+     {
+      "ctx": 2000,
+      "pct": -18.26270289419908
+     },
+     {
+      "ctx": 4000,
+      "pct": -17.114382158057516
+     },
+     {
+      "ctx": 6000,
+      "pct": -17.452425659662772
+     },
+     {
+      "ctx": 8000,
+      "pct": -17.894563305978885
+     },
+     {
+      "ctx": 12000,
+      "pct": -18.54039464427073
+     },
+     {
+      "ctx": 16000,
+      "pct": -18.842349941338487
+     },
+     {
+      "ctx": 20000,
+      "pct": -19.11269661171059
+     },
+     {
+      "ctx": 24000,
+      "pct": -19.423644099207984
+     },
+     {
+      "ctx": 32000,
+      "pct": -20.056232317250846
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -12.49611108455878,
+    "at_deepest_pct": -20.056232317250846
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-G26A4B",
+    "mtp_cfg": "A100-G26A4B-mtp-p45450",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "drafter": "gemma-4-26B-A4B-it-assistant",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -42.036864873629355
+     },
+     {
+      "ctx": 1000,
+      "pct": -42.01229505227618
+     },
+     {
+      "ctx": 2000,
+      "pct": -41.37425079735192
+     },
+     {
+      "ctx": 4000,
+      "pct": -40.90043239511877
+     },
+     {
+      "ctx": 6000,
+      "pct": -40.54874420550145
+     },
+     {
+      "ctx": 8000,
+      "pct": -40.04541530705298
+     },
+     {
+      "ctx": 12000,
+      "pct": -39.298700468816236
+     },
+     {
+      "ctx": 16000,
+      "pct": -38.98985660303794
+     },
+     {
+      "ctx": 20000,
+      "pct": -38.47656181005706
+     },
+     {
+      "ctx": 24000,
+      "pct": -38.24512164971109
+     },
+     {
+      "ctx": 32000,
+      "pct": -38.38536600701349
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -42.036864873629355,
+    "at_deepest_pct": -38.38536600701349
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "a100",
+    "label": "MTP",
+    "base_cfg": "A100-Q38",
+    "mtp_cfg": "A100-Q38-mtp-p45450",
+    "attn_backend": "FLASH_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -40.50267255419977
+     },
+     {
+      "ctx": 1000,
+      "pct": -41.7851165310952
+     },
+     {
+      "ctx": 2000,
+      "pct": -43.25326939022995
+     },
+     {
+      "ctx": 4000,
+      "pct": -46.09448349754574
+     },
+     {
+      "ctx": 6000,
+      "pct": -48.64028704072234
+     },
+     {
+      "ctx": 8000,
+      "pct": -51.16453495810851
+     },
+     {
+      "ctx": 12000,
+      "pct": -55.03740523621039
+     },
+     {
+      "ctx": 16000,
+      "pct": -58.45251695728568
+     },
+     {
+      "ctx": 20000,
+      "pct": -61.22387484398326
+     },
+     {
+      "ctx": 24000,
+      "pct": -63.59015735898321
+     },
+     {
+      "ctx": 32000,
+      "pct": -67.69745816812724
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -40.50267255419977,
+    "at_deepest_pct": -67.69745816812724
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "a100",
+    "label": "DFlash",
+    "base_cfg": "A100-MG30",
+    "mtp_cfg": "A100-MG30-dflash",
+    "attn_backend": null,
+    "date": "2026-08-29",
+    "spec": {
+     "method": "dflash",
+     "drafter": "Muse-Glimmer-30B-assistant",
+     "k": 8
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -28.262980586077845
+     },
+     {
+      "ctx": 1000,
+      "pct": -28.532261803570048
+     },
+     {
+      "ctx": 2000,
+      "pct": -28.38082190441903
+     },
+     {
+      "ctx": 4000,
+      "pct": -29.474953270414005
+     },
+     {
+      "ctx": 6000,
+      "pct": -31.571738693664344
+     },
+     {
+      "ctx": 8000,
+      "pct": -33.21134499702046
+     },
+     {
+      "ctx": 12000,
+      "pct": -36.068693839596285
+     },
+     {
+      "ctx": 16000,
+      "pct": -38.41926242703939
+     },
+     {
+      "ctx": 20000,
+      "pct": -41.089059950220054
+     },
+     {
+      "ctx": 24000,
+      "pct": -43.40599259405362
+     },
+     {
+      "ctx": 32000,
+      "pct": -47.476792550439725
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": -28.262980586077845,
+    "at_deepest_pct": -47.476792550439725
    }
   ],
   "omitted": [
@@ -1273,7 +2289,7 @@
   ],
   "ctx_min": 500,
   "ctx_max": 32000,
-  "fastest": 107.66499999999999
+  "fastest": 160.96895
  },
  "cards": {
   "hybrid-ssm-collapse": {

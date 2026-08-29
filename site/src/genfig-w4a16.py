@@ -65,7 +65,7 @@ led = jl(R / "benchmarks" / "ledger.jsonl")
 
 
 def ledger_row(patches, ctx):
-    rows = [r for r in led if r["model"] == "Qwen3.8-27B" and r["quant"] == "AWQ int4"
+    rows = [r for r in led if r["model"] == "Qwen3.8-27B" and r["quant"] == "int4 AWQ"
             and r["tp"] == 2 and r["vllm"] == "0.27.1.dev5+gf46a9dfe2"
             and r["patches"] == patches and r["harness"] == "probe-t8t64"
             and r["date"] == "2026-08-28" and r["ctx"] == ctx]
@@ -80,7 +80,7 @@ def pt(r):
 
 # every axis the ledger varies travels with the series, because two arms that
 # share (model, ctx) and differ in patches would otherwise merge silently
-IDENT = {"model": "Qwen3.8-27B", "quant": "AWQ int4", "arch": "hybrid SSM", "tp": 2}
+IDENT = {"model": "Qwen3.8-27B", "quant": "int4 AWQ", "arch": "hybrid SSM", "tp": 2}
 fig3 = {"arms": [
     dict(IDENT, id="023", vllm="0.23.1.dev", kernel="TritonW4A16LinearKernel",
          patches=[], max_num_seqs=128, harness="probe-t8t64", date="2026-08-27",

@@ -3489,22 +3489,36 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "11", len(XB["series"]))
-    ck("index figure, points", "121", sum(len(x["points"]) for x in XB["series"]))
+    ck("index figure, series", "18", len(XB["series"]))
+    ck("index figure, points", "198", sum(len(x["points"]) for x in XB["series"]))
     # every line is one session at the campaign ladder now, not a three-point
     # probe beside an eleven-rung campaign
     ck("index figure, and every line is eleven rungs", "1",
        1 if all(len(x["points"]) == 11 for x in XB["series"]) else 0)
-    ck("index figure, speculative lines", "3",
+    ck("index figure, speculative lines", "6",
        sum(1 for x in XB["series"] if x["spec"]))
     ck("index figure, and none of them is lit without being asked", "0",
        sum(1 for x in XB["series"] if x["spec"] and x["lit"]))
     ck("index figure, lines on the Radeons", "9",
        sum(1 for x in XB["series"] if x["machine"] == "rdna3"))
-    ck("index figure, lines on the A100", "2",
+    ck("index figure, lines on the A100", "9",
        sum(1 for x in XB["series"] if x["machine"] == "a100"))
     ck("index figure, lit without being asked", "4",
        sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "rdna3"))
+    ck("index figure, and the same models on the other machine", "4",
+       sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "a100"))
+
+    # One colour per model, seven of them defined, and adding a machine must not
+    # quietly add an eighth: colour[m] is var(--m{i%7+1}), so the eighth model
+    # would be drawn in the first one's colour and two lines would claim to be
+    # the same thing. Every A100 model is already a Radeon model, which is why
+    # nine new lines cost no colours -- this is the check that says so.
+    xmodels = sorted({x["model"] for x in XB["series"]})
+    ck("index figure, models drawn", "7", len(xmodels))
+    ck("index figure, and a colour for each without wrapping", "1",
+       1 if len(xmodels) <= len(set(re.findall(r"--m(\d):",
+          open(os.path.join(HERE, "..", "..", "site", "src", "index-extra.css"),
+               encoding="utf-8").read()))) else 0)
 
     xsid = lambda r: (r["model"], r["tp"], r["vllm"], tuple(r["patches"]),
                       r["harness"], r["date"])
@@ -3588,17 +3602,115 @@ def main():
             XA[r["cfg"]][r["target"]].append(r["decode_tps"])
     for xa in [x for x in XB["series"] if x["machine"] == "a100"]:
         src = XA[xa["cfg"]]
-        tag = "A100 " + ("MTP" if xa["spec"] else "stock")
+        tag = xa["cfg"]
         ck("index figure, %s point count" % tag, str(len(src)), len(xa["points"]))
         ck("index figure, %s recomputes" % tag, "1",
            1 if all(abs(sum(src[p["ctx"]]) / len(src[p["ctx"]]) - p["tok_s"]) < 1e-9
                     for p in xa["points"]) else 0)
-    # the button's promise: each MTP line is its own line's arm, same day and
-    # same kernel, not the fastest speculative run anywhere
+
+    # The A100 side is the whole campaign now, not one model of it, so the claim
+    # to check is that nothing eleven-rung was left out. Twelve configurations
+    # were measured; nine are drawn, and the three that are not are exactly the
+    # unpatched twins of the three patched speculative arms that are.
+    XA11 = sorted(c for c in XA if len(XA[c]) == 11)
+    XADRAWN = {x["cfg"] for x in XB["series"] if x["machine"] == "a100"}
+    ck("index figure, A100 configurations at eleven rungs", "12", len(XA11))
+    ck("index figure, and every one is drawn or is a drawn arm's control", "0",
+       sum(1 for c in XA11
+           if c not in XADRAWN and c + "-p45450" not in XADRAWN))
+    ck("index figure, A100 models drawn", "5",
+       len({x["model"] for x in XB["series"] if x["machine"] == "a100"}))
+    # The arm chosen is the patched one throughout, which is a choice and not an
+    # inheritance: every A100 speculative line that has an unpatched twin in the
+    # campaign carries #45450.
+    ck("index figure, and every A100 arm with a twin is the patched one", "0",
+       sum(1 for x in XB["series"]
+           if x["machine"] == "a100" and x["spec"]
+           and x["cfg"].endswith("-p45450")
+           and "vllm#45450 3D admission" not in x["patches"]))
+    ck("index figure, and the arms without a twin are the ones that had none", "1",
+       1 if {x["cfg"] for x in XB["series"]
+             if x["machine"] == "a100" and x["spec"]
+             and not x["cfg"].endswith("-p45450")} == {"A100-MG30-dflash"} else 0)
+    # It is defensible on Qwen3.8 because there the two arms are one
+    # measurement: #45450 patches the Triton files and vLLM serves that model
+    # through FLASH_ATTN here, so the probe never fires. Recomputed, not quoted.
+    _q38a = {c: sum(v) / len(v) for c, v in XA["A100-Q38-mtp"].items()}
+    _q38b = {c: sum(v) / len(v) for c, v in XA["A100-Q38-mtp-p45450"].items()}
+    ck("index figure, A100 Qwen3.8 patched against unpatched, mean pct", "-0.08",
+       sum(_q38b[c] / _q38a[c] - 1 for c in _q38a) / len(_q38a) * 100.0)
+    ck("index figure, and at 32K", "0.04",
+       (_q38b[32000] / _q38a[32000] - 1) * 100.0)
+    ck("index figure, and no rung of it moves by half a per cent", "0",
+       sum(1 for c in _q38a if abs(_q38b[c] / _q38a[c] - 1) * 100.0 >= 0.5))
+    # Which way speculation goes is not one answer, and the caption says so, so
+    # both halves are checked. On the A100 every arm loses at every depth it was
+    # measured at. On the Radeons neither does: gemma-4-31B is ahead the whole
+    # way and Qwen3.8 starts ahead and crosses. A caption claiming one rule for
+    # all six would be wrong about two of them.
+    ck("index figure, A100 arms that lose at every depth", "4",
+       sum(1 for pr in XB["mtp_pairs"]
+           if pr["machine"] == "a100" and all(d["pct"] < 0 for d in pr["delta_pct"])))
+    ck("index figure, and A100 arms drawn", "4",
+       sum(1 for pr in XB["mtp_pairs"] if pr["machine"] == "a100"))
+    ck("index figure, Radeon arms that are ahead at the shortest depth", "2",
+       sum(1 for pr in XB["mtp_pairs"]
+           if pr["machine"] == "rdna3" and pr["at_shortest_pct"] > 0))
+    ck("index figure, and Radeon arms still ahead at the deepest", "1",
+       sum(1 for pr in XB["mtp_pairs"]
+           if pr["machine"] == "rdna3" and pr["at_deepest_pct"] > 0))
+    ck("index figure, arms that cross zero", "1",
+       sum(1 for pr in XB["mtp_pairs"] if pr["crosses_zero"]))
+    # the switch's promise: each speculative line is its own line's arm, on its
+    # own machine, same day and same kernel -- not the fastest speculative run
+    # anywhere. This is what stops the chart drawing a fast speculative arm
+    # beside a control that is not on the page.
     for pr in XB["mtp_pairs"]:
-        ck("index figure, MTP %s is paired to its own line" % pr["model"], "1",
+        tag = "%s %s %s" % (pr["machine"], pr["model"], pr["label"])
+        ck("index figure, %s is paired to its own line" % tag, "1",
            1 if any(x["cfg"] == pr["base_cfg"] and not x["spec"]
-                    and x["machine"] == "rdna3" for x in XB["series"]) else 0)
+                    and x["machine"] == pr["machine"] for x in XB["series"]) else 0)
+        ck("index figure, %s pairs on the same day" % tag, "1",
+           1 if all(x["date"] == pr["date"] for x in XB["series"]
+                    if x["cfg"] in (pr["base_cfg"], pr["mtp_cfg"])) else 0)
+    ck("index figure, one pair per speculative line", "6", len(XB["mtp_pairs"]))
+    ck("index figure, and each is a switch on its model", "1",
+       1 if all(XB["labels"][pr["model"]]["spec_label"] == pr["label"]
+                for pr in XB["mtp_pairs"]) else 0)
+
+    # --- the labels -----------------------------------------------------------
+    # The label is drawn, so it is checked. `quant` is the ledger's own string
+    # for every line including the A100 ones, which read it by model name rather
+    # than carrying a copy; `quant_label` is that string with its first token
+    # upper-cased and nothing else changed, which is the whole rule.
+    XQ = {}
+    for r in XLED:
+        XQ.setdefault(r["model"], set()).add(r["quant"])
+    for x in XB["series"]:
+        ck("index figure, %s %s quant is the ledger's" % (x["machine"], x["cfg"]), "1",
+           1 if XQ.get(x["model"]) == {x["quant"]} else 0)
+        ck("index figure, %s %s quant label" % (x["machine"], x["cfg"]), "1",
+           1 if x["quant_label"] == x["quant"].split(" ")[0].upper()
+                                    + x["quant"][len(x["quant"].split(" ")[0]):] else 0)
+    ck("index figure, a label for every model drawn", "0",
+       len({x["model"] for x in XB["series"]} - set(XB["labels"])))
+    ck("index figure, and no line disagrees with its model's label", "0",
+       sum(1 for x in XB["series"]
+           if XB["labels"][x["model"]]["quant_label"] != x["quant_label"]))
+    # the switch is named for what the arm resolved to, not for the button it
+    # replaced: three arms are mtp and Muse-Glimmer's is a block-diffusion
+    # drafter at k=8, which a switch marked MTP would misname
+    XSL = {"mtp": "MTP", "dflash": "DFlash"}
+    ck("index figure, every switch is named for its own method", "0",
+       sum(1 for x in XB["series"] if x["spec"]
+           and x["spec_label"] != XSL.get(x["spec_desc"]["method"])))
+    ck("index figure, and Muse-Glimmer's is not called MTP", "1",
+       1 if XB["labels"]["Muse-Glimmer-30B"]["spec_label"] == "DFlash" else 0)
+    ck("index figure, models with a switch", "4",
+       sum(1 for m in XB["labels"] if XB["labels"][m]["spec_label"]))
+    ck("index figure, and only those with an arm drawn", "1",
+       1 if {m for m in XB["labels"] if XB["labels"][m]["spec_label"]}
+            == {x["model"] for x in XB["series"] if x["spec"]} else 0)
 
     xis = re.search(r"<script>\n\(function \(\).*?\n</script>", XI[XIP[0]], re.S)
     xiwant = set(re.findall(r'getElementById\("([^"]+)"\)', xis.group(0) if xis else ""))

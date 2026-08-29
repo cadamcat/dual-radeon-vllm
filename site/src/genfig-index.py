@@ -89,21 +89,81 @@ for model, cfg in MTP:
     series.append(m)
 
 # --- the other machine ------------------------------------------------------
-# Both arms from the 2026-08-29 campaign, eleven rungs and two rounds a cell,
-# the same ladder the Radeon lines use. It used to be five single-run points
-# from a validation log, speculative, with no control beside it -- so the one
-# cross-machine comparison on the front page was between a speculative A100 and
-# a stock Radeon. Now the default is stock against stock and the MTP button
-# moves both.
+# All twelve A100 configurations are the ladder the Radeon lines use -- eleven
+# rungs, two rounds a cell -- so the campaign is drawable whole, not just the
+# one model that happened to exist on both machines first. Five stock lines and
+# the four speculative arms measured beside them. It used to be five single-run
+# points from a validation log, speculative, with no control beside it, so the
+# one cross-machine comparison on the front page was between a speculative A100
+# and a stock Radeon. Now the default is stock against stock.
+#
+# `quant` and `arch` are read out of the ledger by model name rather than typed
+# here. The two machines serve the same checkpoints -- the campaign's setup.log
+# pulls google/gemma-4-31B-it-qat-w4a16-ct, cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit
+# and cyankiwi/Qwen3.8-27B-AWQ-INT4, which are the paths bench_runner.py serves
+# -- so there is one place in this repository that says what a checkpoint is,
+# and it is not this file.
+#
+# `spec` records what the *engine* resolved, read off the serve logs in
+# cuda-a100/campaign-2026-08-29/logs/, and not what the flag asked for: the two
+# gemma arms request method "draft_model" and vLLM reports
+# SpeculativeConfig(method='mtp', model=.../-assistant, num_spec_tokens=3),
+# which is exactly what the ledger records for the Radeon gemma arm. Qwen3.8
+# carries its head in its own weights and so has no drafter. Muse-Glimmer's arm
+# is method 'dflash' at k=8 -- a block-diffusion drafter, not MTP -- and the
+# switch on that model takes its name from this field rather than assuming, so
+# it does not say MTP on the one model where MTP would be a lie.
+#
+# Which of each pair: the patched arm, throughout, stated rather than inherited.
+# vllm#45450 nearly doubles decode at 32K on the two models vLLM routes onto the
+# Triton kernel and does nothing at all on the one it does not -- Qwen3.8 is
+# served by FLASH_ATTN here, the probe never prints, and its two arms agree to a
+# mean of -0.08%, 20.51 against 20.52 at 32K. So on Qwen3.8 the patched arm and
+# the unpatched one are the same measurement and either would draw the same
+# line; on the two gemmas the patched arm is the one the article reports.
+#
+# `attn_backend` is only filled where a serve log survives to say so. The VM was
+# reclaimed four times mid-campaign and the logs of nine configurations went
+# with it; the results did not, because the harvester had them. An inference
+# from the model family would be a good one -- vLLM forces TRITON_ATTN for
+# Gemma4's heterogeneous head dimensions -- but it would be an inference, and
+# this column is for what was read.
 import statistics as _st, collections as _ct
 
-def _a100(cfg, spec_desc, lit):
-    by = _ct.defaultdict(list)
-    for line in open(B / "cuda-a100" / "campaign-2026-08-29" / "results.jsonl"):
-        r = json.loads(line)
-        if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] == cfg:
-            by[r["target"]].append(r["decode_tps"])
+_QA = {r["model"]: (r["quant"], r["arch"]) for r in led}
+_A100_RAW = _ct.defaultdict(lambda: _ct.defaultdict(list))
+for _line in open(B / "cuda-a100" / "campaign-2026-08-29" / "results.jsonl"):
+    _r = json.loads(_line)
+    if _r.get("kind") == "decode" and _r.get("decode_tps"):
+        _A100_RAW[_r["cfg"]][_r["target"]].append(_r["decode_tps"])
+
+P45450 = ["vllm#45450 3D admission"]
+MTP3 = {"method": "mtp", "k": 3}
+DRAFT3 = lambda d: {"method": "mtp", "drafter": d, "k": 3}
+# cfg, model, spec descriptor, patches, backend read from a log, lit
+A100 = [
+    ("A100-G31",               "gemma-4-31B-it",   None, [], "TRITON_ATTN"),
+    ("A100-G12",               "gemma-4-12B-it",   None, [], None),
+    ("A100-G26A4B",            "gemma-4-26B-A4B",  None, [], None),
+    ("A100-Q38",               "Qwen3.8-27B",      None, [], None),
+    ("A100-MG30",              "Muse-Glimmer-30B", None, [], None),
+    ("A100-G31-mtp-p45450",    "gemma-4-31B-it",
+     DRAFT3("gemma-4-31B-it-assistant"), P45450, "TRITON_ATTN"),
+    ("A100-G26A4B-mtp-p45450", "gemma-4-26B-A4B",
+     DRAFT3("gemma-4-26B-A4B-it-assistant"), P45450, "TRITON_ATTN"),
+    ("A100-Q38-mtp-p45450",    "Qwen3.8-27B",      MTP3, P45450, "FLASH_ATTN"),
+    ("A100-MG30-dflash",       "Muse-Glimmer-30B",
+     {"method": "dflash", "drafter": "Muse-Glimmer-30B-assistant", "k": 8}, [], None),
+]
+# A100-G31 is the one stock line whose backend the campaign README states from a
+# log that no longer exists; it is kept because the patched arm's surviving log
+# says TRITON_ATTN for the same model on the same stack and the forcing is
+# architectural, printed as "Gemma4 model has heterogeneous head dimensions".
+
+def _a100(cfg, model, spec_desc, patches, backend, lit):
+    by = _A100_RAW[cfg]
     assert len(by) == 11, f"{cfg}: {len(by)} rungs"
+    quant, arch = _QA[model]
     pts = []
     for ctx in sorted(by):
         v = by[ctx]
@@ -111,16 +171,54 @@ def _a100(cfg, spec_desc, lit):
         rng = (max(v) - min(v)) / m * 100.0
         pts.append({"ctx": ctx, "tok_s": m, "runs": len(v),
                     "range_pct": rng, "graded": len(v) >= 2 and rng <= 8.0})
-    return {"model": "gemma-4-31B-it", "machine": "a100", "tp": 1, "lit": lit,
-            "vllm": "0.28.0", "patches": ["vllm#45450 3D admission"] if spec_desc else [],
-            "harness": "campaign-server", "date": "2026-08-29", "quant": "w4a16 QAT",
-            "arch": "dense", "spec": bool(spec_desc), "spec_desc": spec_desc,
-            "attn_backend": "TRITON_ATTN", "cfg": cfg,
+    return {"model": model, "machine": "a100", "tp": 1, "lit": lit,
+            "vllm": "0.28.0", "patches": list(patches),
+            "harness": "campaign-server", "date": "2026-08-29", "quant": quant,
+            "arch": arch, "spec": bool(spec_desc), "spec_desc": spec_desc,
+            "attn_backend": backend, "cfg": cfg,
             "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
             "points": pts}
 
-series.append(_a100("A100-G31", None, True))
-series.append(_a100("A100-G31-mtp-p45450", {"method": "mtp", "k": 3}, False))
+for cfg, model, spec_desc, patches, backend in A100:
+    series.append(_a100(cfg, model, spec_desc, patches, backend,
+                        not spec_desc and model in LIT))
+
+# --- what a label says ------------------------------------------------------
+# The chart names a model by the format its checkpoint is in as well as by its
+# name, because "gemma-4-31B-it" does not tell a reader whether they are looking
+# at a 4-bit model or a 16-bit one and the two are not the same claim. The
+# string is the ledger's own `quant` with its first token upper-cased and the
+# qualifier left alone -- "w4a16 QAT" -> "W4A16 QAT", "int4 AWQ" -> "INT4 AWQ"
+# -- which is one rule rather than a table, and works because build_ledger.py
+# writes that field to one grammar. It is not a strings-table key: it is a
+# machine string and reads the same in both languages.
+#
+# The speculative switch is named for what the engine resolved rather than for
+# the button it replaces. Three of the four arms are mtp; Muse-Glimmer's is a
+# block-diffusion drafter at k=8, method dflash, and is a net loss at every
+# depth -- so a switch labelled MTP would be wrong on the one model where it
+# matters most to be right.
+qlabel = lambda q: q.split(" ")[0].upper() + q[len(q.split(" ")[0]):]
+SPEC_LABEL = {"mtp": "MTP", "dflash": "DFlash"}
+for x in series:
+    x["quant_label"] = qlabel(x["quant"])
+    x["spec_label"] = SPEC_LABEL[x["spec_desc"]["method"]] if x["spec"] else None
+
+# A label is per model, so every line a model owns has to agree about it --
+# otherwise the legend would have to pick one and the chart would say something
+# no row does. The checkpoints are the same on both machines, so this holds; the
+# assertion is what would catch it if a later campaign served a different one.
+labels = {}
+for x in series:
+    prev = labels.setdefault(x["model"], {"quant": x["quant"],
+                                          "quant_label": x["quant_label"],
+                                          "spec_label": None})
+    assert prev["quant"] == x["quant"], \
+        f'{x["model"]}: {prev["quant"]!r} on one line and {x["quant"]!r} on another'
+    if x["spec"]:
+        assert prev["spec_label"] in (None, x["spec_label"]), \
+            f'{x["model"]}: two speculative methods, {prev["spec_label"]} and {x["spec_label"]}'
+        prev["spec_label"] = x["spec_label"]
 
 # --- how well this machine repeats a whole campaign -------------------------
 # The same models were run twice, thirty days apart, on the same box. Their
@@ -173,21 +271,32 @@ for spec_layer in (False,):
 assert not beaten, "a faster measurement exists and is not drawn:\n  " + \
                    "\n  ".join(map(str, beaten))
 
-# The MTP layer is held to a different rule, because "the fastest speculative
-# measurement" is not what it answers. Neither Qwen3.8 arm dominates -- ROCM_ATTN
-# is faster at 500 (91.43 against 75.10) and far slower at 32K (24.34 against
-# 34.02) -- so picking by speed would draw an arm whose stock control is not on
-# the chart. What the button is for is what happens to *this line* when MTP goes
-# on, so each speculative series has to be its own line's companion: same day,
-# same kernel, same stack apart from the speculation.
+# The speculative layer is held to a different rule, because "the fastest
+# speculative measurement" is not what it answers. Neither Qwen3.8 arm dominates
+# -- ROCM_ATTN is faster at 500 (91.43 against 75.10) and far slower at 32K
+# (24.34 against 34.02) -- so picking by speed would draw an arm whose stock
+# control is not on the chart. What a switch is for is what happens to *this
+# line* when speculation goes on, so every speculative series has to be its own
+# line's companion, on its own machine: same day, same kernel, same stack apart
+# from the speculation. That promise now covers both machines, which is what
+# stops the A100 arms being drawn beside a control that is not on the page.
+#
+# The kernel is compared only where both sides recorded one. Nine of the twelve
+# A100 configurations lost their serve logs to the reclaims, so most of that
+# machine's stock lines carry no backend to compare against -- an equality test
+# there would be testing that two nulls match, and asserting it as though it
+# were the kernel would be worse than saying nothing.
 mtp_pairs = []
-for m in [x for x in series if x["machine"] == "rdna3" and x["spec"]]:
-    base = next(x for x in series
-                if x["machine"] == "rdna3" and not x["spec"] and x["model"] == m["model"])
+for m in [x for x in series if x["spec"]]:
+    base = next(x for x in series if x["machine"] == m["machine"]
+                and not x["spec"] and x["model"] == m["model"])
     assert m["date"] == base["date"], (m["cfg"], m["date"], base["date"])
-    assert m["attn_backend"] == base["attn_backend"], (m["cfg"], m["attn_backend"])
     assert m["vllm"] == base["vllm"], (m["cfg"], m["vllm"])
-    mtp_pairs.append({"model": m["model"], "base_cfg": base["cfg"], "mtp_cfg": m["cfg"],
+    if m["attn_backend"] and base["attn_backend"]:
+        assert m["attn_backend"] == base["attn_backend"], (m["cfg"], m["attn_backend"])
+    mtp_pairs.append({"model": m["model"], "machine": m["machine"],
+                      "label": m["spec_label"],
+                      "base_cfg": base["cfg"], "mtp_cfg": m["cfg"],
                       "attn_backend": m["attn_backend"], "date": m["date"],
                       "spec": m["spec_desc"],
                       "delta_pct": [
@@ -232,9 +341,12 @@ for m in OMIT:
     assert not any(s["model"] == m for s in series), f"{m} was not omitted"
 
 out = {
-    "_what": "The index's best-measured-today figure. One line per model, each the "
-             "fastest configuration it has been measured in; five share one campaign "
-             "and two do not. Derived by site/src/genfig-index.py from "
+    "_what": "The index's best-measured-today figure. One line per model per machine, "
+             "each the fastest configuration that model has been measured in; five of "
+             "the Radeon lines share one campaign and two do not, and the A100 side is "
+             "the whole 2026-08-29 campaign rather than one model of it. Speculation "
+             "is a switch on each model that has an arm, named for the method the "
+             "engine resolved. Derived by site/src/genfig-index.py from "
              "benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and "
              "benchmarks/cuda-a100/.",
     "best": {
@@ -243,6 +355,7 @@ out = {
                      "vllm": series[0]["vllm"], "patches": series[0]["patches"]},
         "repro": REPRO,
         "overrides": over,
+        "labels": labels,
         "mtp_pairs": mtp_pairs,
         "omitted": OMIT,
         "machines": [{"id": "rdna3", "default": True}, {"id": "a100", "default": False}],
@@ -256,10 +369,12 @@ json.dump(out, open(pathlib.Path(__file__).parent / "figures-index.json", "w"),
 
 print(f"{len(series)} series, {sum(len(s['points']) for s in series)} points")
 for s in series:
-    print(f'  {s["machine"]:6s} {s["model"]:18s} {"lit " if s["lit"] else "    "}'
+    print(f'  {s["machine"]:6s} {s["model"]:18s} {s["quant_label"]:10s} '
+          f'{"lit " if s["lit"] else "    "}'
           f'{len(s["points"]):2d} pts  {s["points"][0]["tok_s"]:6.1f} -> '
-          f'{s["points"][-1]["tok_s"]:5.1f}  '
-          f'{"MTP " if s["spec"] else ""}{"+".join(s["patches"]) or "stock"}')
+          f'{s["points"][-1]["tok_s"]:6.1f}  '
+          f'{(s["spec_label"] + " ") if s["spec"] else ""}'
+          f'{"+".join(s["patches"]) or "stock"}')
 print("overrides:", [(o["model"], round(o["min"], 2), round(o["max"], 2)) for o in over])
 print(f'the two campaigns agree on {REPRO["cells"]} cells to '
       f'{REPRO["worst_pct"]:.2f}% at worst, {REPRO["median_pct"]:.2f}% median')

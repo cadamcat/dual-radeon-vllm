@@ -41,25 +41,39 @@ LEDGER = B("ledger.jsonl")
 
 # cfg id -> what the model is. Ids are the campaign's; the probe sources name
 # their model directly and map through MODELS by path.
+#
+# `quant` has one grammar: the numeric format first, then how the checkpoint was
+# produced, where that is known -- "int4 AWQ", not "AWQ int4". The format is the
+# axis every model can be compared on and the method is a qualifier only some
+# carry, so the format leads and the qualifier trails, the way "w4a16 QAT"
+# already did. Six of the eight strings already read that way; the two Qwen
+# rows were the exception and were turned round on 2026-08-30, when the field
+# started being drawn on the index chart's labels rather than only recorded.
+#
+# gemma-4-26B-A4B was "int4" until the same day, which understated it: the
+# checkpoint is cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit on both machines --
+# campaign-2026-08-29's setup.log downloads it by that name and bench_runner
+# serves /models/gemma-4-26B-A4B-AWQ -- so it is AWQ for exactly the reason
+# Qwen3.8 is, and only this row failed to say so.
 CFG = {
-    "E-26B-tp2":  ("gemma-4-26B-A4B", "int4", "MoE, 128 experts", 2),
+    "E-26B-tp2":  ("gemma-4-26B-A4B", "int4 AWQ", "MoE, 128 experts", 2),
     "B-8B-tp2":   ("Qwen3-8B", "bf16", "dense", 2),
     "B-8B-tp1":   ("Qwen3-8B", "bf16", "dense", 1),
     "A-12B-tp2":  ("gemma-4-12B-it", "w4a16 QAT", "dense", 2),
     "A-12B-tp1":  ("gemma-4-12B-it", "w4a16 QAT", "dense", 1),
     "C-31B-tp2":  ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
-    "D-27B-tp2":  ("Qwen3.6-27B", "AWQ int4", "hybrid SSM", 2),
-    "D8-27B-tp2": ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "D-27B-tp2":  ("Qwen3.6-27B", "int4 AWQ", "hybrid SSM", 2),
+    "D8-27B-tp2": ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "F-27B-tp2":  ("gemma-3-27b-it", "w4a16", "sliding window", 2),
     "G-30B-tp2":  ("Muse-Glimmer-30B", "int4", "sliding window 2048", 2),
     # 2026-08-29. The campaign names its own arms, so a model appears under
     # several ids that differ in speculation and in which kernel served them.
-    "Q38-tp2":                   ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
-    "Q38-mtp-tp2":               ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
-    "Q38-mtp-p45450-tp2":        ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
-    "Q38-triton-tp2":            ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
-    "Q38-mtp-triton-tp2":        ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
-    "Q38-mtp-triton-p45450-tp2": ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-tp2":                   ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-mtp-tp2":               ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-mtp-p45450-tp2":        ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-triton-tp2":            ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-mtp-triton-tp2":        ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-mtp-triton-p45450-tp2": ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "G31-tp2":                   ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
     "G31-mtp-p45450-tp2":        ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
 }

@@ -131,3 +131,32 @@
   #bestmach { margin-bottom:.55em; }
   .lg.off { opacity:.55; }
   .lg.off .sw { opacity:.25; }
+
+  /* A model and its speculative switch are one control. They sit in a wrapper
+     so the pair wraps as a unit -- two loose buttons broke across lines on a
+     narrow screen and the switch arrived under a different model's name -- and
+     the seam between them is flattened so the pair reads as one pill. A button
+     cannot contain a button, which is why this is not simply nesting. */
+  #bestkey .lgw { display:inline-flex; align-items:stretch; }
+  #bestkey .lgw:has(.lgs) .lg { border-top-right-radius:0; border-bottom-right-radius:0;
+                                border-right-width:0; padding-right:.6em; }
+  /* the quantisation rides with the name, dimmer, because it identifies the
+     checkpoint rather than naming it */
+  #bestkey .lg .q { opacity:.62; font-size:.92em; letter-spacing:.01em; }
+  #bestkey .lg.on .q { opacity:.78; }
+  .lgs { display:inline-flex; align-items:center; font-size:.72rem; font-family:var(--mono);
+         background:var(--surface-2); border:1px solid var(--border);
+         border-radius:0 99px 99px 0; padding:.34em .8em .34em .62em; cursor:pointer;
+         color:var(--text-dim); user-select:none; letter-spacing:.02em;
+         transition:color .25s, border-color .25s, background .25s; }
+  .lgs::before { content:""; width:11px; height:0; flex:0 0 auto; margin-right:.45em;
+                 border-top:2px dashed currentColor; opacity:.45;
+                 transition:opacity .25s; }
+  .lgs:hover { border-color:var(--border-2); }
+  .lgs.on { color:var(--c); border-color:currentColor; background:var(--surface);
+            font-weight:600; }
+  .lgs.on::before { opacity:1; }
+  /* an arm measured only on a machine that is not shown: the switch is there,
+     because the arm exists, but it has nothing to draw until that machine is */
+  .lgs.na { opacity:.4; cursor:default; }
+  .lgs.na:hover { border-color:var(--border); }

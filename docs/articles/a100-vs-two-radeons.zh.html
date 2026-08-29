@@ -376,9 +376,24 @@
      band     {lo, hi}                               a shaded y range behind everything
      legend   an element to fill with one swatch per labelled series
      reduce   true to skip the draw-in animation
+     fitLit   true to scale y to the lit series only, rather than to every
+              series the chart holds, and to leave the unlit ones out of the
+              drawing entirely. For a chart whose legend can switch most of its
+              lines off this is the difference between an axis that describes
+              what the reader is looking at and one set by a line they cannot
+              see -- the index chart holds an A100 model peaking at 161 tok/s
+              behind a default view whose own top is 108. The two halves go
+              together: once the axis stops covering a series, dimming it
+              rather than dropping it draws it off the top of the frame, which
+              is worse than not drawing it -- a line that leaves and re-enters
+              reads as a plateau it never had.
+     lit      the initial predicate, so the first draw already fits and the
+              first setLit finds nothing to change
    A null in a series' values is a gap, not a zero.
    Returns {redraw, setLit}: setLit(fn) dims every series for which fn(i) is
-   false, without redrawing, so a legend toggle does not replay the animation. */
+   false. Without fitLit it does not redraw, so a legend toggle does not replay
+   the animation; with it, it redraws -- without animating -- whenever the set
+   of shown series actually changed, and not otherwise. */
 window.lineChart = function (opts) {
   "use strict";
   var NS = "http://www.w3.org/2000/svg";
@@ -407,23 +422,47 @@ window.lineChart = function (opts) {
   }
   function hide() { tip.style.opacity = "0"; }
 
-  var paths = [], dots = [], owner = [];
+  var paths = [], dots = [], owner = [], dotOwner = [];
+  var litFn = opts.lit || null, drawnKey = null;
+
+  // Under fitLit a series the reader has switched off is not drawn at all, so
+  // what has to be compared between draws is the set and not just the extent.
+  function shown(i) { return !opts.fitLit || !litFn || litFn(i); }
+  function litKey() {
+    var k = "";
+    ser.forEach(function (_, i) { k += shown(i) ? "1" : "0"; });
+    return k;
+  }
+
+  // What sets the y axis. Under fitLit a series the reader has switched off
+  // does not, which is the whole point; if that leaves nothing at all, the
+  // frame stays as it was rather than collapsing onto an empty chart.
+  function yvals() {
+    var vals = [], all = !opts.fitLit || !litFn;
+    function take(s) {
+      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
+      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
+    }
+    ser.forEach(function (s, i) { if (all || shown(i)) take(s); });
+    if (!vals.length) ser.forEach(take);
+    rules.forEach(function (r) { vals.push(r.y); });
+    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
+    return vals;
+  }
+  function yext() {
+    var v = yvals();
+    return [opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, v),
+            opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, v)];
+  }
 
   function draw(animate) {
     while (el.firstChild) el.removeChild(el.firstChild);
-    paths = []; dots = []; owner = [];
+    paths = []; dots = []; owner = []; dotOwner = [];
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-    var vals = [];
-    ser.forEach(function (s) {
-      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
-      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
-    });
-    rules.forEach(function (r) { vals.push(r.y); });
-    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
-    var lo = opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, vals);
-    var hi = opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, vals);
+    var ext = yext(), lo = ext[0], hi = ext[1];
+    drawnKey = litKey();
     if (opts.y.zero && lo > 0) lo = 0;
     var pad = (hi - lo) * 0.08 || 1;
     if (opts.y.min === undefined) lo -= pad;
@@ -529,7 +568,8 @@ window.lineChart = function (opts) {
       g2.insertBefore(bg, n);
     });
 
-    ser.forEach(function (s) {
+    ser.forEach(function (s, si) {
+      if (!shown(si)) return;
       var soft = s.dashSegs || [];
       var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
       var at = s.points
@@ -551,12 +591,12 @@ window.lineChart = function (opts) {
                  "stroke:" + s.colour +
                  (s.dash ? ";stroke-dasharray:" + (s.dashPattern || "6 5") : ""));
       el.appendChild(p);
-      paths.push(p); owner.push(dots.length);
+      paths.push(p); owner.push(si);
       if (loose) {
         var lp = mk("path", { "class": "ln", d: loose.trim() },
                     "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75");
         el.appendChild(lp);
-        paths.push(lp); owner.push(dots.length);
+        paths.push(lp); owner.push(si);
       }
       var dg = [];
       vs.forEach(function (v, i) {
@@ -572,7 +612,7 @@ window.lineChart = function (opts) {
         el.appendChild(c);
         dg.push(c);
       });
-      dots.push(dg);
+      dots.push(dg); dotOwner.push(si);
     });
 
     if (!animate || opts.reduce) return;
@@ -643,10 +683,16 @@ window.lineChart = function (opts) {
   }
 
   function setLit(fn) {
+    litFn = fn;
+    // Under fitLit the axis and the drawing both belong to what is lit, so a
+    // toggle rebuilds -- but only when it actually changed the set. The first
+    // call lands while the draw-in is still running and must find nothing to
+    // change, which is what opts.lit is for.
+    if (opts.fitLit && litKey() !== drawnKey) draw(false);
     // a series can own two paths when part of it is drawn as an inference
     paths.forEach(function (p, i) { p.classList.toggle("dim", !fn(owner[i])); });
     dots.forEach(function (dg, i) {
-      dg.forEach(function (c) { c.classList.toggle("dim", !fn(i)); });
+      dg.forEach(function (c) { c.classList.toggle("dim", !fn(dotOwner[i])); });
     });
   }
 

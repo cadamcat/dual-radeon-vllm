@@ -11,10 +11,11 @@ __CHIPS__
 
 <h2><span class="n">1</span>What this machine does today</h2>
 
-<p>One line per model, each of them that model's fastest measured configuration rather than a common
-one. Five of the seven come from a single campaign on one stack and are directly comparable; the other
-two are drawn from a later stack and from speculative decoding, because on those two models the
-campaign is no longer the best this machine can do. Every line says which it is.</p>
+<p>One line per model per machine, each of them that model's fastest measured configuration rather
+than a common one. Five of the seven Radeon lines come from a single campaign on one stack and are
+directly comparable; the other two are drawn from a later stack, because on those two models the
+campaign is no longer the best this machine can do. The A100 carries five of the same models, its
+own whole campaign on one afternoon. Every line says which it is.</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
@@ -28,16 +29,21 @@ campaign is no longer the best this machine can do. Every line says which it is.
   </div>
   <figcaption>
     <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
-    log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
-    deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there on the
-    same model, quantisation and patch, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The
-    checkpoint is what the two sides share; the split and the stack are not. Every line is one
-    session at one ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across
-    days, and the tooltip carries each one's own. <b>MTP</b> adds the speculative arm of the two
-    models that have one, measured the same day and on the same kernel as their line here, so the
-    button shows what speculation does to <em>that</em> line rather than the fastest speculative run
-    anywhere. Stroke says which is which: solid these two cards, long dash the A100, short dash MTP.
-    Hover a point for the run count and the stack it took.
+    log axis. Four models are lit to start; click any name to add or remove it, and the machine row
+    above to overlay the other card. Five of the seven models have also been measured on one A100
+    80G — the same checkpoints, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The checkpoint
+    is what the two sides share; the split and the stack are not. Every line is one session at one
+    ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across days, and the
+    tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
+    measured the same day and on the same kernel as the line it sits beside, so it shows what
+    speculation does to <em>that</em> line rather than the fastest speculative run anywhere. It is
+    named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
+    Muse-Glimmer's assistant is a block-diffusion drafter and not MTP. Which way it goes is not one
+    answer — on these cards both arms start ahead and one stays ahead all the way to 32 K, while on
+    the A100 all four lose at every depth. Stroke says which is which: solid these two cards, long
+    dash the A100, short dash speculation. Hover a point for the run count and the stack it took.
+    The vertical axis fits
+    what is lit, so switching a line on can move it.
   </figcaption>
 </figure>
 
@@ -104,17 +110,18 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
- "bestHint": "click a model to add or remove its line · click a machine to overlay it · MTP adds the speculative arm of the models that have one",
+ "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
- "bestStroke": "solid: these two cards · long dash: the A100 · short dash: the same line with MTP on",
- "bestMtp": "MTP",
+ "bestStroke": "solid: these two cards · long dash: the A100 · short dash: the same line with speculation on",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
- "bestSpec": "MTP on",
+ "bestSpec": "{s} on",
+ "bestSpecOf": "{m}: draw the same line with {s} on, measured beside it as its control",
+ "bestSpecAway": "{m}'s {s} arm was only ever measured on {x} — add that machine to see it",
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
  "estLabel": "establishes",
@@ -393,9 +400,14 @@ topology. The shapes transfer; the levels are the worst case.</p>
 
   /* ---------- Figure 1: what the machine does today ----------
      Seven models on one pair of axes, each drawn in the fastest configuration
-     it has been measured in. The lines are not one experiment and the figure
-     does not pretend otherwise: five share a campaign, two do not, and every
-     one of them carries the stack it needed into its tooltip. */
+     it has been measured in, on either machine that has run it. The lines are
+     not one experiment and the figure does not pretend otherwise: five share a
+     campaign, two do not, the A100 side is a third, and every one of them
+     carries the stack it needed into its tooltip. Speculation is a switch on
+     each model that has an arm rather than one button over all of them,
+     because the arms are not one thing -- three are MTP and the fourth is a
+     block-diffusion drafter -- and a single button would have to call them
+     all by one name. */
   (function () {
     var F = JSON.parse(document.getElementById("bestdata").textContent).best;
     var svg = document.getElementById("best");
@@ -418,24 +430,31 @@ topology. The shapes transfer; the levels are the worst case.</p>
     F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
     var machOn = {};
     F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
-    // Speculation is off until asked for. It is a different way of running the
-    // same machine, not a faster reading of the same thing, and on Qwen3.8 it
-    // is a net loss past 8K -- so it does not belong in a default view of what
-    // this machine does.
-    var specOn = false;
-    var hasSpec = F.series.some(function (x) { return x.spec; });
+    // Speculation is off until asked for, and it is asked for per model. It is
+    // a different way of running the same model, not a faster reading of the
+    // same thing -- on every arm drawn here it is a net loss against that
+    // model's own control -- so it does not belong in a default view of what
+    // these machines do. The switch's name comes from the data, not from here:
+    // three of the four arms resolved to mtp and Muse-Glimmer's is dflash, a
+    // block-diffusion drafter at k=8, which a switch marked MTP would misname.
+    var specOn = {}, specLabel = {};
+    models.forEach(function (m) {
+      specOn[m] = false;
+      specLabel[m] = (F.labels[m] || {}).spec_label || null;
+    });
 
     function stack(x) {
       var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
       if (x.patches.length) bits.push(x.patches.join(" + "));
-      if (x.spec) bits.push(S.bestSpec);
+      if (x.spec) bits.push(fmt(S.bestSpec, { s: x.spec_label }));
       bits.push(x.date);
       return bits.join(" · ");
     }
     function tipFor(x) {
       return function (i) {
         var p = x.points[i];
-        return '<span class="hd">' + esc(x.model) + " · " + esc(S.bestMach[x.machine]) +
+        return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
+          " · " + esc(S.bestMach[x.machine]) +
           "</span><br>" + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
           '<span class="sub">' +
           (p.runs > 1 && p.range_pct !== null
@@ -455,21 +474,55 @@ topology. The shapes transfer; the levels are the worst case.</p>
       return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
                points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
     });
+    // A line the reader has switched off must not set the axis. The chart holds
+    // an A100 model that peaks at 161 tok/s behind a default view whose own top
+    // is 108, and without fitLit that one hidden line would flatten the four
+    // lit ones into the bottom two thirds of the frame.
+    function isLit(i) {
+      var x = F.series[i];
+      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model]);
+    }
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
+      fitLit: true, lit: isLit,
       x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
            ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
       y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
       series: ser
     });
-    function apply() {
-      chart.setLit(function (i) {
-        var x = F.series[i];
-        return on[x.model] && machOn[x.machine] && (specOn || !x.spec);
+    // One legend entry per model, and each entry owns its own elements rather
+    // than being found again by position: the previous version mapped
+    // key.children[i] to models[i] and skipped a trailing global button, which
+    // only held while there was exactly one extra child and it was last.
+    var entries = [];
+    // Two of the four arms were only ever run on the A100, so their switches
+    // have nothing to draw while that machine is off. Left live they press and
+    // change nothing, which reads as broken rather than as absent; so they go
+    // inert, and the wrapper says which machine has the arm.
+    function armShown(m) {
+      return F.series.some(function (x) {
+        return x.spec && x.model === m && machOn[x.machine];
       });
-      Array.prototype.forEach.call(key.children, function (b, i) {
-        if (i >= models.length) return;      // the MTP button sits after them
-        b.classList.toggle("on", on[models[i]]);
+    }
+    function armOn(m) {
+      var x = F.series.filter(function (y) { return y.spec && y.model === m; })[0];
+      return x ? S.bestMach[x.machine] : "";
+    }
+    function apply() {
+      chart.setLit(isLit);
+      entries.forEach(function (e) {
+        e.btn.classList.toggle("on", on[e.model]);
+        if (!e.sw) return;
+        var live = armShown(e.model);
+        e.sw.classList.toggle("on", specOn[e.model]);
+        e.sw.classList.toggle("na", !live);
+        e.sw.disabled = !live;
+        // the title moves to the wrapper: a disabled button shows none
+        e.wrap.setAttribute("title", live ? ""
+          : fmt(S.bestSpecAway, { m: e.model, s: specLabel[e.model],
+                                  x: armOn(e.model) }));
+        e.sw.setAttribute("title", live
+          ? fmt(S.bestSpecOf, { m: e.model, s: specLabel[e.model] }) : "");
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
         var id = F.machines[i].id;
@@ -491,32 +544,45 @@ topology. The shapes transfer; the levels are the worst case.</p>
       mach.appendChild(b);
     });
     models.forEach(function (m) {
+      // a model and its speculative switch are one control, so they sit in one
+      // wrapper: a button cannot contain another button, and two loose buttons
+      // would wrap apart from each other on a narrow screen
+      var wrap = document.createElement("span");
+      wrap.className = "lgw";
       var b = document.createElement("button");
       b.className = "lg";
       b.style.setProperty("--c", colour[m]);
-      b.innerHTML = '<span class="sw"></span>' + esc(m);
+      // the quantisation is part of the name: "gemma-4-31B-it" does not say
+      // whether this is the 4-bit checkpoint or the 16-bit one
+      b.innerHTML = '<span class="sw"></span>' + esc(m) +
+                    '<span class="q">' + esc(F.labels[m].quant_label) + "</span>";
+      // the two spans are flex items with a gap between them, so the space a
+      // reader sees is not in the text a screen reader gets
+      b.setAttribute("aria-label", m + " " + F.labels[m].quant_label);
       b.setAttribute("aria-pressed", String(on[m]));
       b.addEventListener("click", function () {
         on[m] = !on[m];
         b.setAttribute("aria-pressed", String(on[m]));
         apply();
       });
-      key.appendChild(b);
+      wrap.appendChild(b);
+      var sw = null;
+      if (specLabel[m]) {
+        sw = document.createElement("button");
+        sw.className = "lgs";
+        sw.style.setProperty("--c", colour[m]);
+        sw.textContent = specLabel[m];
+        sw.setAttribute("aria-pressed", "false");
+        sw.addEventListener("click", function () {
+          specOn[m] = !specOn[m];
+          sw.setAttribute("aria-pressed", String(specOn[m]));
+          apply();
+        });
+        wrap.appendChild(sw);
+      }
+      key.appendChild(wrap);
+      entries.push({ model: m, btn: b, sw: sw, wrap: wrap });
     });
-    if (hasSpec) {
-      var sb = document.createElement("button");
-      sb.className = "lg";
-      sb.style.setProperty("--c", "var(--accent)");
-      sb.innerHTML = '<span class="sw"></span>' + esc(S.bestMtp);
-      sb.setAttribute("aria-pressed", "false");
-      sb.addEventListener("click", function () {
-        specOn = !specOn;
-        sb.classList.toggle("on", specOn);
-        sb.setAttribute("aria-pressed", String(specOn));
-        apply();
-      });
-      key.appendChild(sb);
-    }
     apply();
     note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +
       esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
