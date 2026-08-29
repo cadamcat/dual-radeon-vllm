@@ -65,3 +65,24 @@
     .tllab { font-size:.75rem; }
     .tldate { font-size:.66rem; }
   }
+
+  /* ---- seven models need seven lines ----
+     The shared --s1..--s5 set is tuned for figures that never carry more than
+     five series. These repeat the head's three-way structure so an explicit
+     theme choice still wins over the system preference. */
+  :root { --m1:#1c6b96; --m2:#2d7d54; --m3:#a5761a; --m4:#6b47b2;
+          --m5:#c1462c; --m6:#9c3070; --m7:#3f6d7a; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
+      --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+  }
+  :root[data-theme="dark"] {
+    --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
+    --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+
+  /* the machine row reads as a pair of switches rather than a colour key */
+  #bestmach .lg .sw { border-radius:3px; }
+  #bestmach { margin-bottom:.55em; }
+  .lg.off { opacity:.55; }
+  .lg.off .sw { opacity:.25; }

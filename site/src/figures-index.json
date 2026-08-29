@@ -1,0 +1,675 @@
+{
+ "_what": "The index's best-measured-today figure. One line per model, each the fastest configuration it has been measured in; five share one campaign and two do not. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
+ "best": {
+  "series": [
+   {
+    "model": "gemma-4-26B-A4B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "int4",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.66499999999999,
+      "runs": 2,
+      "range_pct": 1.2910416569915948,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.74,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.08,
+      "runs": 2,
+      "range_pct": 0.019215987701777702,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 99.715,
+      "runs": 2,
+      "range_pct": 0.11031439602868116,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 95.995,
+      "runs": 2,
+      "range_pct": 0.30209906765978045,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.63,
+      "runs": 2,
+      "range_pct": 0.043182554248090525,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.15,
+      "runs": 2,
+      "range_pct": 0.13613159387406729,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.105,
+      "runs": 2,
+      "range_pct": 0.15642861440346004,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 78.82,
+      "runs": 2,
+      "range_pct": 0.5328596802841941,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 75.93,
+      "runs": 2,
+      "range_pct": 0.42144080073753104,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.86500000000001,
+      "runs": 2,
+      "range_pct": 0.09606807109038273,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "Qwen3-8B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 79.47,
+      "runs": 2,
+      "range_pct": 0.05033345916697124,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 78.39,
+      "runs": 2,
+      "range_pct": 0.20410766679422962,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 77.075,
+      "runs": 2,
+      "range_pct": 0.03892312682452304,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 75.515,
+      "runs": 2,
+      "range_pct": 0.013242402171741911,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 74.485,
+      "runs": 2,
+      "range_pct": 0.09397865342014254,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 73.36000000000001,
+      "runs": 2,
+      "range_pct": 0.19083969465648928,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 71.115,
+      "runs": 2,
+      "range_pct": 0.04218519299725956,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 68.715,
+      "runs": 2,
+      "range_pct": 0.014552863275856968,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 66.92,
+      "runs": 2,
+      "range_pct": 0.05977286312013155,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.9,
+      "runs": 2,
+      "range_pct": 0.09244992295840103,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 61.385000000000005,
+      "runs": 2,
+      "range_pct": 0.14661562270912487,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 43.69,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.36,
+      "runs": 2,
+      "range_pct": 0.09671179883945635,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 37.99,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 37.91,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 37.870000000000005,
+      "runs": 2,
+      "range_pct": 0.052812252442574925,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 37.78,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 37.735,
+      "runs": 2,
+      "range_pct": 0.026500596263429484,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 37.67,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 37.665,
+      "runs": 2,
+      "range_pct": 0.026549847338391386,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 37.615,
+      "runs": 2,
+      "range_pct": 0.1329256945367464,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 37.4,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-3-27b-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "w4a16",
+    "arch": "sliding window",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 44.769999999999996,
+      "runs": 2,
+      "range_pct": 0.22336385972749928,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.525,
+      "runs": 2,
+      "range_pct": 0.1204093919325639,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 40.4,
+      "runs": 2,
+      "range_pct": 0.04950495049503966,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 38.205,
+      "runs": 2,
+      "range_pct": 0.1832220913493006,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 36.375,
+      "runs": 2,
+      "range_pct": 0.08247422680412683,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 34.64,
+      "runs": 2,
+      "range_pct": 0.05773672055426103,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 31.64,
+      "runs": 2,
+      "range_pct": 0.06321112515802646,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 29.025,
+      "runs": 2,
+      "range_pct": 0.17226528854436077,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 26.935000000000002,
+      "runs": 2,
+      "range_pct": 0.11137924633375748,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 25.115000000000002,
+      "runs": 2,
+      "range_pct": 0.1990842126219419,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 22.055,
+      "runs": 2,
+      "range_pct": 0.045341192473353026,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.89,
+      "runs": 2,
+      "range_pct": 0.5343129069961601,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.345,
+      "runs": 2,
+      "range_pct": 0.5656011654811866,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 57.345,
+      "runs": 2,
+      "range_pct": 1.1683669020838812,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 55.515,
+      "runs": 2,
+      "range_pct": 2.2876699990993354,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.255,
+      "runs": 2,
+      "range_pct": 0.05529444290848979,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 52.05,
+      "runs": 2,
+      "range_pct": 0.6916426512968289,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.085,
+      "runs": 2,
+      "range_pct": 0.3870836304369924,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.095,
+      "runs": 2,
+      "range_pct": 0.9130480942775236,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.68,
+      "runs": 2,
+      "range_pct": 0.26857654431514,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.5,
+      "runs": 2,
+      "range_pct": 1.6551724137931008,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.44499999999999,
+      "runs": 2,
+      "range_pct": 0.16889854023404582,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 51.61950396234055,
+      "runs": 2,
+      "range_pct": 0.7207002092390873,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 44.286645291258964,
+      "runs": 4,
+      "range_pct": 16.793271375671562,
+      "graded": false
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 36.12291880809809,
+      "runs": 2,
+      "range_pct": 5.117549957300597,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-26",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": true,
+    "source": "benchmarks/speculative-decoding/mtp-31b-p45450.json",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 74.89,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 63.25,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 16384,
+      "tok_s": 63.09,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 32.57,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "probe-ids",
+    "date": "2026-08-26",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": true,
+    "source": "benchmarks/cuda-a100/45450-validation/logs/",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 110.71,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 75.63,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 16384,
+      "tok_s": 72.13,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 30000,
+      "tok_s": 61.03,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 50000,
+      "tok_s": 37.91,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     }
+    ]
+   }
+  ],
+  "campaign": {
+   "date": "2026-08-24",
+   "models": 5,
+   "vllm": "0.23.1.dev1+g9ddef7117",
+   "patches": [
+    "vllm#45916 split-KV",
+    "window block-skip"
+   ]
+  },
+  "repro": {
+   "cells": 60,
+   "worst_pct": 3.95265501140189,
+   "median_pct": 0.4109119963474483,
+   "campaigns": [
+    "2026-07-25",
+    "2026-08-24"
+   ]
+  },
+  "overrides": [
+   {
+    "model": "Qwen3.8-27B",
+    "min": 3.380713037725606,
+    "max": 4.259034980391134,
+    "campaign_deepest": 10.684999999999999,
+    "picked_deepest": 36.12291880809809
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "min": 1.1129335383563985,
+    "max": 1.8934573829531813,
+    "campaign_deepest": 29.265,
+    "picked_deepest": 32.57
+   }
+  ],
+  "omitted": [
+   "Qwen3.6-27B"
+  ],
+  "machines": [
+   {
+    "id": "rdna3",
+    "default": true
+   },
+   {
+    "id": "a100",
+    "default": false
+   }
+  ],
+  "ctx_min": 500,
+  "ctx_max": 50000,
+  "fastest": 110.71
+ }
+}

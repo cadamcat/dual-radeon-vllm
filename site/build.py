@@ -483,6 +483,7 @@ else:
 I_EN, I_ZH = "index.html", "index.zh.html"
 IDX_SUBS = {"__ARTICLES_JSON__": AJSON}
 built.append(page("index-body.html", lang="en", extra_css="index-extra.css",
+                  figures="figures-index.json",
                   title="dual-radeon-vllm · write-ups",
                   desc="Long-form write-ups from a repository of measurements on 2x RX 7900 XT under "
                        "ROCm and vLLM. Every figure is checked against the committed data it is drawn "
@@ -491,7 +492,7 @@ built.append(page("index-body.html", lang="en", extra_css="index-extra.css",
                   subs=dict(IDX_SUBS, __CHIPWORDS_JSON__=json.dumps(
                       CHIPWORDS["en"], ensure_ascii=False, indent=1))))
 built.append(page("index-body-zh.html", lang="zh-CN", extra_css="index-extra.css",
-                  script_from="index-body.html",
+                  figures="figures-index.json", script_from="index-body.html",
                   title="dual-radeon-vllm · 实测长文",
                   desc="一个在 2× RX 7900 XT 上做 ROCm 与 vLLM "
                        "实测的仓库，其中的长文。"

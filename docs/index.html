@@ -347,6 +347,27 @@
     .tldate { font-size:.66rem; }
   }
 
+  /* ---- seven models need seven lines ----
+     The shared --s1..--s5 set is tuned for figures that never carry more than
+     five series. These repeat the head's three-way structure so an explicit
+     theme choice still wins over the system preference. */
+  :root { --m1:#1c6b96; --m2:#2d7d54; --m3:#a5761a; --m4:#6b47b2;
+          --m5:#c1462c; --m6:#9c3070; --m7:#3f6d7a; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
+      --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+  }
+  :root[data-theme="dark"] {
+    --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
+    --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+
+  /* the machine row reads as a pair of switches rather than a colour key */
+  #bestmach .lg .sw { border-radius:3px; }
+  #bestmach { margin-bottom:.55em; }
+  .lg.off { opacity:.55; }
+  .lg.off .sw { opacity:.25; }
+
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
@@ -390,11 +411,17 @@
    window.lineChart(opts) -> { redraw }
      el       the <svg class="chart"> to draw into
      x        {values, label, fmt}          ordered, shared by every series
+              {scale:"log"|"linear", min, max, ticks, label, fmt}   numeric instead
      y        {label, fmt, ticks, min, max, zero}
-     series   [{name, colour, values, dash, tip}]   values parallel to x.values
-     rules    [{y, label, colour, dash}]            horizontal reference lines
+     series   [{label, colour, values, dash, dashSegs, tip}]  values parallel to x.values
+              or [{label, colour, points:[[x,y],...], ...}]   on a numeric x
+     rules    [{y, label, at, colour, labelColour}]  horizontal reference lines
+     band     {lo, hi}                               a shaded y range behind everything
+     legend   an element to fill with one swatch per labelled series
      reduce   true to skip the draw-in animation
-   A null in a series' values is a gap, not a zero. */
+   A null in a series' values is a gap, not a zero.
+   Returns {redraw, setLit}: setLit(fn) dims every series for which fn(i) is
+   false, without redrawing, so a legend toggle does not replay the animation. */
 window.lineChart = function (opts) {
   "use strict";
   var NS = "http://www.w3.org/2000/svg";
@@ -423,16 +450,17 @@ window.lineChart = function (opts) {
   }
   function hide() { tip.style.opacity = "0"; }
 
-  var paths = [], dots = [];
+  var paths = [], dots = [], owner = [];
 
   function draw(animate) {
     while (el.firstChild) el.removeChild(el.firstChild);
-    paths = []; dots = [];
+    paths = []; dots = []; owner = [];
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     var vals = [];
     ser.forEach(function (s) {
+      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
       s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
     });
     rules.forEach(function (r) { vals.push(r.y); });
@@ -444,9 +472,26 @@ window.lineChart = function (opts) {
     if (opts.y.min === undefined) lo -= pad;
     if (opts.y.max === undefined) hi += pad;
     var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
-    // the x axis is ordinal: the depths are a ladder, not a ratio scale, and
-    // spacing them by value buries 1K and 8K against the left edge
+    // Ordinal by default: a ladder of depths spaced by value buries 1K and 8K
+    // against the left edge. A chart whose series do not share one ladder asks
+    // for scale:"log" (or "linear") and gives each series its own points.
+    var num = opts.x.scale === "log" || opts.x.scale === "linear";
+    var lg = opts.x.scale === "log";
+    var xall = [];
+    if (num) {
+      ser.forEach(function (s) {
+        (s.points || []).forEach(function (p) { xall.push(p[0]); });
+      });
+      if (opts.x.ticks) opts.x.ticks.forEach(function (v) { xall.push(v); });
+    }
+    var xlo = num ? (opts.x.min !== undefined ? opts.x.min : Math.min.apply(null, xall)) : 0;
+    var xhi = num ? (opts.x.max !== undefined ? opts.x.max : Math.max.apply(null, xall)) : 1;
+    var xscale = function (v) { return lg ? Math.log(v) : v; };
     var X = function (i) {
+      if (num) {
+        return xhi === xlo ? (M.l + W - M.r) / 2
+          : M.l + (xscale(i) - xscale(xlo)) / (xscale(xhi) - xscale(xlo)) * (W - M.l - M.r);
+      }
       return xs.length === 1 ? (M.l + W - M.r) / 2
         : M.l + i / (xs.length - 1) * (W - M.l - M.r);
     };
@@ -476,8 +521,8 @@ window.lineChart = function (opts) {
       n.textContent = (opts.y.fmt || String)(v);
       ax.appendChild(n);
     });
-    xs.forEach(function (v, i) {
-      var n = mk("text", { x: X(i), y: H - M.b + 20, "text-anchor": "middle" });
+    (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
       n.textContent = (opts.x.fmt || String)(v);
       ax.appendChild(n);
     });
@@ -529,13 +574,17 @@ window.lineChart = function (opts) {
 
     ser.forEach(function (s) {
       var soft = s.dashSegs || [];
+      var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      var at = s.points
+        ? function (i) { return X(s.points[i][0]); }
+        : function (i) { return X(i); };
       var firm = "", loose = "", open = false;
-      s.values.forEach(function (v, i) {
+      vs.forEach(function (v, i) {
         if (v === null || v === undefined) { open = false; return; }
-        var here = X(i) + " " + Y(v);
+        var here = at(i) + " " + Y(v);
         if (!open) { firm += " M" + here; open = true; return; }
         if (soft.indexOf(i - 1) >= 0) {
-          loose += " M" + X(i - 1) + " " + Y(s.values[i - 1]) + " L" + here;
+          loose += " M" + at(i - 1) + " " + Y(vs[i - 1]) + " L" + here;
           firm += " M" + here;
         } else {
           firm += " L" + here;
@@ -544,15 +593,17 @@ window.lineChart = function (opts) {
       var p = mk("path", { "class": "ln", d: firm.trim() },
                  "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
       el.appendChild(p);
-      paths.push(p);
+      paths.push(p); owner.push(dots.length);
       if (loose) {
-        el.appendChild(mk("path", { "class": "ln", d: loose.trim() },
-                          "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75"));
+        var lp = mk("path", { "class": "ln", d: loose.trim() },
+                    "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75");
+        el.appendChild(lp);
+        paths.push(lp); owner.push(dots.length);
       }
       var dg = [];
-      s.values.forEach(function (v, i) {
+      vs.forEach(function (v, i) {
         if (v === null || v === undefined) return;
-        var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
+        var c = mk("circle", { "class": "dot", cx: at(i), cy: Y(v), r: 4.2 },
                    "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
         if (s.tip) {
           c.setAttribute("data-tip", "");
@@ -606,8 +657,16 @@ window.lineChart = function (opts) {
     });
   }
 
+  function setLit(fn) {
+    // a series can own two paths when part of it is drawn as an inference
+    paths.forEach(function (p, i) { p.classList.toggle("dim", !fn(owner[i])); });
+    dots.forEach(function (dg, i) {
+      dg.forEach(function (c) { c.classList.toggle("dim", !fn(i)); });
+    });
+  }
+
   draw(true);
-  return { redraw: draw };
+  return { redraw: draw, setLit: setLit };
 };
 
 if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
@@ -669,7 +728,33 @@ describe a finding differently.</p>
 
 <div class="cards" id="cards"></div>
 
-<h2><span class="n">2</span>What each of these is dated to</h2>
+<h2><span class="n">2</span>What this machine does today</h2>
+
+<p>One line per model, each of them that model's fastest measured configuration rather than a common
+one. Five of the seven come from a single campaign on one stack and are directly comparable; the other
+two are drawn from a later stack and from speculative decoding, because on those two models the
+campaign is no longer the best this machine can do. Every line says which it is.</p>
+
+<figure class="rv" id="figbest">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · decode rate at batch 1, best measured configuration per model
+      <span class="prov yes">recomputable from repo</span></div>
+    <p class="hint" id="besthint"></p>
+    <div class="legend" id="bestmach"></div>
+    <div class="legend" id="bestkey"></div>
+    <svg class="chart" id="best" role="img"></svg>
+    <div class="barunit" id="bestnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
+    log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
+    deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there in the
+    same configuration as here, which is what makes the overlay a comparison rather than two ladders
+    sharing a pair of axes. Dashed is the A100. Hover a point for the run count and the stack it took.
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>What each of these is dated to</h2>
 
 <p>The date on an article is the date its evidence was taken, not the date it was written. Three of
 the eleven are dated to the last week of July and eight to the last week of August. The machine
@@ -678,16 +763,23 @@ cluster is largely re-measurement of the first under conditions the first got wr
 two dates is an article whose evidence comes from two separate sittings, not one that ran
 throughout.</p>
 
-<figure class="rv" id="figtl"> <div class="figbox"> <div class="figtitle">Figure 1 · the date each
-article carries <span class="prov yes">the dates the articles carry</span></div>
-<div class="legend" id="tlkey"></div> <div class="tl" id="tl"></div>
-<div class="barunit" id="tlnote"></div> </div> <figcaption> <b>Figure 1.</b> Positioned by date, not
-by publication order. Two of the eleven are not measurements of this machine: one records the date a
-defect was reported upstream, and the synthesis re-read sixteen upstream threads rather than running
-anything. Both are marked as such rather than given a measurement date they do not have.
-</figcaption> </figure>
+<figure class="rv" id="figtl">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · the date each article carries <span class="prov yes">the dates
+    the articles carry</span></div>
+    <div class="legend" id="tlkey"></div>
+    <div class="tl" id="tl"></div>
+    <div class="barunit" id="tlnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Positioned by date, not by publication order. Two of the eleven are not
+    measurements of this machine: one records the date a defect was reported upstream, and the
+    synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
+    rather than given a measurement date they do not have.
+  </figcaption>
+</figure>
 
-<h2><span class="n">3</span>How to read these</h2>
+<h2><span class="n">4</span>How to read these</h2>
 
 <p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
 this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
@@ -712,6 +804,681 @@ topology. The shapes transfer; the levels are the worst case.</p>
 </div>
 </div>
 
+<script type="application/json" id="bestdata">{
+ "_what": "The index's best-measured-today figure. One line per model, each the fastest configuration it has been measured in; five share one campaign and two do not. Derived by site/src/genfig-index.py from benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and benchmarks/cuda-a100/.",
+ "best": {
+  "series": [
+   {
+    "model": "gemma-4-26B-A4B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "int4",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.66499999999999,
+      "runs": 2,
+      "range_pct": 1.2910416569915948,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.74,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.08,
+      "runs": 2,
+      "range_pct": 0.019215987701777702,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 99.715,
+      "runs": 2,
+      "range_pct": 0.11031439602868116,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 95.995,
+      "runs": 2,
+      "range_pct": 0.30209906765978045,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.63,
+      "runs": 2,
+      "range_pct": 0.043182554248090525,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.15,
+      "runs": 2,
+      "range_pct": 0.13613159387406729,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.105,
+      "runs": 2,
+      "range_pct": 0.15642861440346004,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 78.82,
+      "runs": 2,
+      "range_pct": 0.5328596802841941,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 75.93,
+      "runs": 2,
+      "range_pct": 0.42144080073753104,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.86500000000001,
+      "runs": 2,
+      "range_pct": 0.09606807109038273,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "Qwen3-8B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 79.47,
+      "runs": 2,
+      "range_pct": 0.05033345916697124,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 78.39,
+      "runs": 2,
+      "range_pct": 0.20410766679422962,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 77.075,
+      "runs": 2,
+      "range_pct": 0.03892312682452304,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 75.515,
+      "runs": 2,
+      "range_pct": 0.013242402171741911,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 74.485,
+      "runs": 2,
+      "range_pct": 0.09397865342014254,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 73.36000000000001,
+      "runs": 2,
+      "range_pct": 0.19083969465648928,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 71.115,
+      "runs": 2,
+      "range_pct": 0.04218519299725956,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 68.715,
+      "runs": 2,
+      "range_pct": 0.014552863275856968,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 66.92,
+      "runs": 2,
+      "range_pct": 0.05977286312013155,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 64.9,
+      "runs": 2,
+      "range_pct": 0.09244992295840103,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 61.385000000000005,
+      "runs": 2,
+      "range_pct": 0.14661562270912487,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 43.69,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.36,
+      "runs": 2,
+      "range_pct": 0.09671179883945635,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 37.99,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 37.91,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 37.870000000000005,
+      "runs": 2,
+      "range_pct": 0.052812252442574925,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 37.78,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 37.735,
+      "runs": 2,
+      "range_pct": 0.026500596263429484,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 37.67,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 37.665,
+      "runs": 2,
+      "range_pct": 0.026549847338391386,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 37.615,
+      "runs": 2,
+      "range_pct": 0.1329256945367464,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 37.4,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-3-27b-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "w4a16",
+    "arch": "sliding window",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 44.769999999999996,
+      "runs": 2,
+      "range_pct": 0.22336385972749928,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 41.525,
+      "runs": 2,
+      "range_pct": 0.1204093919325639,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 40.4,
+      "runs": 2,
+      "range_pct": 0.04950495049503966,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 38.205,
+      "runs": 2,
+      "range_pct": 0.1832220913493006,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 36.375,
+      "runs": 2,
+      "range_pct": 0.08247422680412683,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 34.64,
+      "runs": 2,
+      "range_pct": 0.05773672055426103,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 31.64,
+      "runs": 2,
+      "range_pct": 0.06321112515802646,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 29.025,
+      "runs": 2,
+      "range_pct": 0.17226528854436077,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 26.935000000000002,
+      "runs": 2,
+      "range_pct": 0.11137924633375748,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 25.115000000000002,
+      "runs": 2,
+      "range_pct": 0.1990842126219419,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 22.055,
+      "runs": 2,
+      "range_pct": 0.045341192473353026,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-24",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.89,
+      "runs": 2,
+      "range_pct": 0.5343129069961601,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.345,
+      "runs": 2,
+      "range_pct": 0.5656011654811866,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 57.345,
+      "runs": 2,
+      "range_pct": 1.1683669020838812,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 55.515,
+      "runs": 2,
+      "range_pct": 2.2876699990993354,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.255,
+      "runs": 2,
+      "range_pct": 0.05529444290848979,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 52.05,
+      "runs": 2,
+      "range_pct": 0.6916426512968289,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.085,
+      "runs": 2,
+      "range_pct": 0.3870836304369924,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.095,
+      "runs": 2,
+      "range_pct": 0.9130480942775236,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.68,
+      "runs": 2,
+      "range_pct": 0.26857654431514,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.5,
+      "runs": 2,
+      "range_pct": 1.6551724137931008,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.44499999999999,
+      "runs": 2,
+      "range_pct": 0.16889854023404582,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-28",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 51.61950396234055,
+      "runs": 2,
+      "range_pct": 0.7207002092390873,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 44.286645291258964,
+      "runs": 4,
+      "range_pct": 16.793271375671562,
+      "graded": false
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 36.12291880809809,
+      "runs": 2,
+      "range_pct": 5.117549957300597,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "probe-t8t64",
+    "date": "2026-08-26",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": true,
+    "source": "benchmarks/speculative-decoding/mtp-31b-p45450.json",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 74.89,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 63.25,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 16384,
+      "tok_s": 63.09,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 32768,
+      "tok_s": 32.57,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": true
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "a100",
+    "tp": 1,
+    "lit": true,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#45450 3D admission"
+    ],
+    "harness": "probe-ids",
+    "date": "2026-08-26",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": true,
+    "source": "benchmarks/cuda-a100/45450-validation/logs/",
+    "points": [
+     {
+      "ctx": 1024,
+      "tok_s": 110.71,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 8192,
+      "tok_s": 75.63,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 16384,
+      "tok_s": 72.13,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 30000,
+      "tok_s": 61.03,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     },
+     {
+      "ctx": 50000,
+      "tok_s": 37.91,
+      "runs": 1,
+      "range_pct": null,
+      "graded": true
+     }
+    ]
+   }
+  ],
+  "campaign": {
+   "date": "2026-08-24",
+   "models": 5,
+   "vllm": "0.23.1.dev1+g9ddef7117",
+   "patches": [
+    "vllm#45916 split-KV",
+    "window block-skip"
+   ]
+  },
+  "repro": {
+   "cells": 60,
+   "worst_pct": 3.95265501140189,
+   "median_pct": 0.4109119963474483,
+   "campaigns": [
+    "2026-07-25",
+    "2026-08-24"
+   ]
+  },
+  "overrides": [
+   {
+    "model": "Qwen3.8-27B",
+    "min": 3.380713037725606,
+    "max": 4.259034980391134,
+    "campaign_deepest": 10.684999999999999,
+    "picked_deepest": 36.12291880809809
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "min": 1.1129335383563985,
+    "max": 1.8934573829531813,
+    "campaign_deepest": 29.265,
+    "picked_deepest": 32.57
+   }
+  ],
+  "omitted": [
+   "Qwen3.6-27B"
+  ],
+  "machines": [
+   {
+    "id": "rdna3",
+    "default": true
+   },
+   {
+    "id": "a100",
+    "default": false
+   }
+  ],
+  "ctx_min": 500,
+  "ctx_max": 50000,
+  "fastest": 110.71
+ }
+}</script>
 <script type="application/json" id="articles">{
  "articles": [
   {
@@ -1548,6 +2315,17 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "kLink": "repository link"
 }</script>
 <script type="application/json" id="strings">{
+ "bestHint": "click a model to add or remove its line · click a machine to overlay it",
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
+ "bestAxisX": "context length",
+ "bestAxisY": "decode tok/s",
+ "bestUnit": "decode tok/s at batch 1 · each line is that model's fastest measured configuration, not one experiment",
+ "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
+ "bestRepro": "the same models re-run five weeks apart agree to {w}% at worst and {m}% at the median, across {c} cells",
+ "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
+ "bestSpec": "MTP on",
+ "bestRuns": "{n} runs · range {r}%",
+ "bestOne": "one run",
  "estLabel": "establishes",
  "tlKinds": {"measured": "measured here", "reported": "reported upstream",
              "reviewed": "statuses re-read"},
@@ -1619,6 +2397,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var k = "k" + c.kind.charAt(0).toUpperCase() + c.kind.slice(1);
     return '<span class="chip k-' + c.kind + '" title="' + esc(W[k]) + '">' + fill(c) + "</span>";
   }
+  // a context length as the ladder names it
+  function kctx(n) { return n >= 1000 ? Math.round(n / 1000) + "K" : String(n); }
   function day(s) {
     var p = s.split("-");
     return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
@@ -1645,6 +2425,113 @@ topology. The shapes transfer; the levels are the worst case.</p>
       '</span><span class="card-lang">' + a.langs.map(esc).join(" · ") + "</span></div>";
     box.appendChild(card);
   });
+
+  /* ---------- Figure 1: what the machine does today ----------
+     Seven models on one pair of axes, each drawn in the fastest configuration
+     it has been measured in. The lines are not one experiment and the figure
+     does not pretend otherwise: five share a campaign, two do not, and every
+     one of them carries the stack it needed into its tooltip. */
+  (function () {
+    var F = JSON.parse(document.getElementById("bestdata").textContent).best;
+    var svg = document.getElementById("best");
+    var key = document.getElementById("bestkey"), mach = document.getElementById("bestmach");
+    var note = document.getElementById("bestnote");
+    document.getElementById("besthint").textContent = S.bestHint;
+
+    // one colour per model, assigned in the order the data lists them so a
+    // model keeps its colour whatever is lit
+    var models = [];
+    F.series.forEach(function (x) { if (x.lit && models.indexOf(x.model) < 0) models.push(x.model); });
+    F.series.forEach(function (x) { if (models.indexOf(x.model) < 0) models.push(x.model); });
+    // the models lit by default take the first four, which are the four furthest
+    // apart in both themes; the rest follow
+    var colour = {};
+    models.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
+
+    var on = {};
+    models.forEach(function (m) { on[m] = false; });
+    F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
+    var machOn = {};
+    F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
+
+    function stack(x) {
+      var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
+      if (x.patches.length) bits.push(x.patches.join(" + "));
+      if (x.spec) bits.push(S.bestSpec);
+      bits.push(x.date);
+      return bits.join(" · ");
+    }
+    function tipFor(x) {
+      return function (i) {
+        var p = x.points[i];
+        return '<span class="hd">' + esc(x.model) + " · " + esc(S.bestMach[x.machine]) +
+          "</span><br>" + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+          '<span class="sub">' +
+          (p.runs > 1 && p.range_pct !== null
+            ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) })
+            : S.bestOne) +
+          "<br>" + esc(stack(x)) + "</span>";
+      };
+    }
+    var ser = F.series.map(function (x) {
+      return { colour: colour[x.model], dash: x.machine !== "rdna3", tip: tipFor(x),
+               points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
+    });
+    var chart = window.lineChart({
+      el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
+      x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
+           ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
+      y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    function apply() {
+      chart.setLit(function (i) {
+        var x = F.series[i];
+        return on[x.model] && machOn[x.machine];
+      });
+      Array.prototype.forEach.call(key.children, function (b, i) {
+        b.classList.toggle("on", on[models[i]]);
+      });
+      Array.prototype.forEach.call(mach.children, function (b, i) {
+        var id = F.machines[i].id;
+        b.classList.toggle("on", machOn[id]);
+        b.classList.toggle("off", !machOn[id]);
+      });
+    }
+    F.machines.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "lg";
+      b.style.setProperty("--c", "var(--text-2)");
+      b.innerHTML = '<span class="sw"></span>' + esc(S.bestMach[m.id]);
+      b.setAttribute("aria-pressed", String(!!m["default"]));
+      b.addEventListener("click", function () {
+        machOn[m.id] = !machOn[m.id];
+        b.setAttribute("aria-pressed", String(machOn[m.id]));
+        apply();
+      });
+      mach.appendChild(b);
+    });
+    models.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "lg";
+      b.style.setProperty("--c", colour[m]);
+      b.innerHTML = '<span class="sw"></span>' + esc(m);
+      b.setAttribute("aria-pressed", String(on[m]));
+      b.addEventListener("click", function () {
+        on[m] = !on[m];
+        b.setAttribute("aria-pressed", String(on[m]));
+        apply();
+      });
+      key.appendChild(b);
+    });
+    apply();
+    note.innerHTML = esc(S.bestUnit) + "<br>" +
+      esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
+                                v: F.campaign.vllm })) + "<br>" +
+      esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),
+                             m: F.repro.median_pct.toFixed(2), c: F.repro.cells })) + "<br>" +
+      esc(fmt(S.bestOmit, { m: F.omitted.join(", ") }));
+  })();
 
   /* ---------- the timeline ----------
      One grid for the whole figure so every row shares a left edge; a per-row

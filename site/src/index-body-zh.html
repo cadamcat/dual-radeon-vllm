@@ -15,7 +15,32 @@ __CHIPS__
 
 <div class="cards" id="cards"></div>
 
-<h2><span class="n">2</span>它们各自记的是哪一天</h2>
+<h2><span class="n">2</span>这台机器今天能跑多快</h2>
+
+<p>每个模型一条线，画的都是它自己实测到的最快配置，而不是一个统一口径。七条里有五条出自同一场
+campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈和投机解码，因为在这两个模型上，
+那场 campaign 已经不是这台机器的上限了。每条线都写明自己是哪一种。</p>
+
+<figure class="rv" id="figbest">
+  <div class="figbox">
+    <div class="figtitle">图 1 · batch 1 的解码速率，每个模型取实测最快的配置
+      <span class="prov yes">可由仓库重算</span></div>
+    <p class="hint" id="besthint"></p>
+    <div class="legend" id="bestmach"></div>
+    <div class="legend" id="bestkey"></div>
+    <svg class="chart" id="best" role="img"></svg>
+    <div class="barunit" id="bestnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 2× RX 7900 XT、张量并行 2 上的解码速率，横轴是上下文长度，取对数。
+    默认点亮四个模型，点名字可以加上或去掉任意一条。A100 那边只有一个模型——只有
+    <code>gemma-4-31B</code> 在两台机器上都测过——而且那边用的是和这边完全相同的配置，
+    这才使得叠加是一次对比，而不是两把梯子共用一副坐标轴。虚线是 A100。
+    把鼠标停在任意点上可以看到 run 数和它用的软件栈。
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>它们各自记的是哪一天</h2>
 
 <p>文章上的日期是证据取得的日期，不是撰写的日期。十一篇里有三篇记在七月最后一周，八篇记在八月最后一周。
 机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，之后三周没有再跑——第二批基本上是在第一批搞错了的
@@ -23,18 +48,18 @@ __CHIPS__
 
 <figure class="rv" id="figtl">
   <div class="figbox">
-    <div class="figtitle">图 1 · 每篇文章带的日期
+    <div class="figtitle">图 2 · 每篇文章带的日期
       <span class="prov yes">与文章上标注的日期同源</span></div>
     <div class="legend" id="tlkey"></div>
     <div class="tl" id="tl"></div>
     <div class="barunit" id="tlnote"></div>
   </div>
-  <figcaption><b>图 1.</b> 按日期排，不按发表顺序。十一篇里有两篇不是对这台机器的测量：
+  <figcaption><b>图 2.</b> 按日期排，不按发表顺序。十一篇里有两篇不是对这台机器的测量：
   一篇的日期是把缺陷上报到上游的日期，而综述篇是把十六条上游 issue 与 PR 重读了一遍，没有跑任何东西。
   这两篇都如实标出，而不是安一个它们并没有的测量日期。</figcaption>
 </figure>
 
-<h2><span class="n">3</span>怎么读这些文章</h2>
+<h2><span class="n">4</span>怎么读这些文章</h2>
 
 <p>每一篇都是<strong>一份有日期的记录，不是长期有效的建议</strong>。这个仓库里最大的两个结论，
 在测完之后就已经变了：一个 Ubuntu 内核回归在 <code>7.0.0-30</code> 里修掉了；
@@ -56,9 +81,21 @@ __CHIPS__
 </div>
 </div>
 
+<script type="application/json" id="bestdata">__FIGURES_JSON__</script>
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
+ "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来",
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1"},
+ "bestAxisX": "上下文长度",
+ "bestAxisY": "解码 tok/s",
+ "bestUnit": "batch 1 的解码 tok/s · 每条线都是那个模型实测最快的配置，不是同一场实验",
+ "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
+ "bestRepro": "同样的模型隔五周重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
+ "bestOmit": "{m} 没有放进来：ledger 里它只有被 split-KV 那批工作取代掉的那次旧运行",
+ "bestSpec": "开着 MTP",
+ "bestRuns": "{n} 次运行 · 极差 {r}%",
+ "bestOne": "一次运行",
  "estLabel": "确立了",
  "tlKinds": {"measured": "本机实测", "reported": "上报上游",
              "reviewed": "重读状态"},

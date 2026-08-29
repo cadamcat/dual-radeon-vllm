@@ -379,11 +379,17 @@
    window.lineChart(opts) -> { redraw }
      el       the <svg class="chart"> to draw into
      x        {values, label, fmt}          ordered, shared by every series
+              {scale:"log"|"linear", min, max, ticks, label, fmt}   numeric instead
      y        {label, fmt, ticks, min, max, zero}
-     series   [{name, colour, values, dash, tip}]   values parallel to x.values
-     rules    [{y, label, colour, dash}]            horizontal reference lines
+     series   [{label, colour, values, dash, dashSegs, tip}]  values parallel to x.values
+              or [{label, colour, points:[[x,y],...], ...}]   on a numeric x
+     rules    [{y, label, at, colour, labelColour}]  horizontal reference lines
+     band     {lo, hi}                               a shaded y range behind everything
+     legend   an element to fill with one swatch per labelled series
      reduce   true to skip the draw-in animation
-   A null in a series' values is a gap, not a zero. */
+   A null in a series' values is a gap, not a zero.
+   Returns {redraw, setLit}: setLit(fn) dims every series for which fn(i) is
+   false, without redrawing, so a legend toggle does not replay the animation. */
 window.lineChart = function (opts) {
   "use strict";
   var NS = "http://www.w3.org/2000/svg";
@@ -412,16 +418,17 @@ window.lineChart = function (opts) {
   }
   function hide() { tip.style.opacity = "0"; }
 
-  var paths = [], dots = [];
+  var paths = [], dots = [], owner = [];
 
   function draw(animate) {
     while (el.firstChild) el.removeChild(el.firstChild);
-    paths = []; dots = [];
+    paths = []; dots = []; owner = [];
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     var vals = [];
     ser.forEach(function (s) {
+      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
       s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
     });
     rules.forEach(function (r) { vals.push(r.y); });
@@ -433,9 +440,26 @@ window.lineChart = function (opts) {
     if (opts.y.min === undefined) lo -= pad;
     if (opts.y.max === undefined) hi += pad;
     var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
-    // the x axis is ordinal: the depths are a ladder, not a ratio scale, and
-    // spacing them by value buries 1K and 8K against the left edge
+    // Ordinal by default: a ladder of depths spaced by value buries 1K and 8K
+    // against the left edge. A chart whose series do not share one ladder asks
+    // for scale:"log" (or "linear") and gives each series its own points.
+    var num = opts.x.scale === "log" || opts.x.scale === "linear";
+    var lg = opts.x.scale === "log";
+    var xall = [];
+    if (num) {
+      ser.forEach(function (s) {
+        (s.points || []).forEach(function (p) { xall.push(p[0]); });
+      });
+      if (opts.x.ticks) opts.x.ticks.forEach(function (v) { xall.push(v); });
+    }
+    var xlo = num ? (opts.x.min !== undefined ? opts.x.min : Math.min.apply(null, xall)) : 0;
+    var xhi = num ? (opts.x.max !== undefined ? opts.x.max : Math.max.apply(null, xall)) : 1;
+    var xscale = function (v) { return lg ? Math.log(v) : v; };
     var X = function (i) {
+      if (num) {
+        return xhi === xlo ? (M.l + W - M.r) / 2
+          : M.l + (xscale(i) - xscale(xlo)) / (xscale(xhi) - xscale(xlo)) * (W - M.l - M.r);
+      }
       return xs.length === 1 ? (M.l + W - M.r) / 2
         : M.l + i / (xs.length - 1) * (W - M.l - M.r);
     };
@@ -465,8 +489,8 @@ window.lineChart = function (opts) {
       n.textContent = (opts.y.fmt || String)(v);
       ax.appendChild(n);
     });
-    xs.forEach(function (v, i) {
-      var n = mk("text", { x: X(i), y: H - M.b + 20, "text-anchor": "middle" });
+    (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
       n.textContent = (opts.x.fmt || String)(v);
       ax.appendChild(n);
     });
@@ -518,13 +542,17 @@ window.lineChart = function (opts) {
 
     ser.forEach(function (s) {
       var soft = s.dashSegs || [];
+      var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      var at = s.points
+        ? function (i) { return X(s.points[i][0]); }
+        : function (i) { return X(i); };
       var firm = "", loose = "", open = false;
-      s.values.forEach(function (v, i) {
+      vs.forEach(function (v, i) {
         if (v === null || v === undefined) { open = false; return; }
-        var here = X(i) + " " + Y(v);
+        var here = at(i) + " " + Y(v);
         if (!open) { firm += " M" + here; open = true; return; }
         if (soft.indexOf(i - 1) >= 0) {
-          loose += " M" + X(i - 1) + " " + Y(s.values[i - 1]) + " L" + here;
+          loose += " M" + at(i - 1) + " " + Y(vs[i - 1]) + " L" + here;
           firm += " M" + here;
         } else {
           firm += " L" + here;
@@ -533,15 +561,17 @@ window.lineChart = function (opts) {
       var p = mk("path", { "class": "ln", d: firm.trim() },
                  "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
       el.appendChild(p);
-      paths.push(p);
+      paths.push(p); owner.push(dots.length);
       if (loose) {
-        el.appendChild(mk("path", { "class": "ln", d: loose.trim() },
-                          "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75"));
+        var lp = mk("path", { "class": "ln", d: loose.trim() },
+                    "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75");
+        el.appendChild(lp);
+        paths.push(lp); owner.push(dots.length);
       }
       var dg = [];
-      s.values.forEach(function (v, i) {
+      vs.forEach(function (v, i) {
         if (v === null || v === undefined) return;
-        var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
+        var c = mk("circle", { "class": "dot", cx: at(i), cy: Y(v), r: 4.2 },
                    "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
         if (s.tip) {
           c.setAttribute("data-tip", "");
@@ -595,8 +625,16 @@ window.lineChart = function (opts) {
     });
   }
 
+  function setLit(fn) {
+    // a series can own two paths when part of it is drawn as an inference
+    paths.forEach(function (p, i) { p.classList.toggle("dim", !fn(owner[i])); });
+    dots.forEach(function (dg, i) {
+      dg.forEach(function (c) { c.classList.toggle("dim", !fn(i)); });
+    });
+  }
+
   draw(true);
-  return { redraw: draw };
+  return { redraw: draw, setLit: setLit };
 };
 
 if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");

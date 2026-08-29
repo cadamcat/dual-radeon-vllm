@@ -17,7 +17,33 @@ describe a finding differently.</p>
 
 <div class="cards" id="cards"></div>
 
-<h2><span class="n">2</span>What each of these is dated to</h2>
+<h2><span class="n">2</span>What this machine does today</h2>
+
+<p>One line per model, each of them that model's fastest measured configuration rather than a common
+one. Five of the seven come from a single campaign on one stack and are directly comparable; the other
+two are drawn from a later stack and from speculative decoding, because on those two models the
+campaign is no longer the best this machine can do. Every line says which it is.</p>
+
+<figure class="rv" id="figbest">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · decode rate at batch 1, best measured configuration per model
+      <span class="prov yes">recomputable from repo</span></div>
+    <p class="hint" id="besthint"></p>
+    <div class="legend" id="bestmach"></div>
+    <div class="legend" id="bestkey"></div>
+    <svg class="chart" id="best" role="img"></svg>
+    <div class="barunit" id="bestnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
+    log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
+    deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there in the
+    same configuration as here, which is what makes the overlay a comparison rather than two ladders
+    sharing a pair of axes. Dashed is the A100. Hover a point for the run count and the stack it took.
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>What each of these is dated to</h2>
 
 <p>The date on an article is the date its evidence was taken, not the date it was written. Three of
 the eleven are dated to the last week of July and eight to the last week of August. The machine
@@ -26,16 +52,23 @@ cluster is largely re-measurement of the first under conditions the first got wr
 two dates is an article whose evidence comes from two separate sittings, not one that ran
 throughout.</p>
 
-<figure class="rv" id="figtl"> <div class="figbox"> <div class="figtitle">Figure 1 · the date each
-article carries <span class="prov yes">the dates the articles carry</span></div>
-<div class="legend" id="tlkey"></div> <div class="tl" id="tl"></div>
-<div class="barunit" id="tlnote"></div> </div> <figcaption> <b>Figure 1.</b> Positioned by date, not
-by publication order. Two of the eleven are not measurements of this machine: one records the date a
-defect was reported upstream, and the synthesis re-read sixteen upstream threads rather than running
-anything. Both are marked as such rather than given a measurement date they do not have.
-</figcaption> </figure>
+<figure class="rv" id="figtl">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · the date each article carries <span class="prov yes">the dates
+    the articles carry</span></div>
+    <div class="legend" id="tlkey"></div>
+    <div class="tl" id="tl"></div>
+    <div class="barunit" id="tlnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Positioned by date, not by publication order. Two of the eleven are not
+    measurements of this machine: one records the date a defect was reported upstream, and the
+    synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
+    rather than given a measurement date they do not have.
+  </figcaption>
+</figure>
 
-<h2><span class="n">3</span>How to read these</h2>
+<h2><span class="n">4</span>How to read these</h2>
 
 <p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
 this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
@@ -60,9 +93,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 </div>
 </div>
 
+<script type="application/json" id="bestdata">__FIGURES_JSON__</script>
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
+ "bestHint": "click a model to add or remove its line · click a machine to overlay it",
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
+ "bestAxisX": "context length",
+ "bestAxisY": "decode tok/s",
+ "bestUnit": "decode tok/s at batch 1 · each line is that model's fastest measured configuration, not one experiment",
+ "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
+ "bestRepro": "the same models re-run five weeks apart agree to {w}% at worst and {m}% at the median, across {c} cells",
+ "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
+ "bestSpec": "MTP on",
+ "bestRuns": "{n} runs · range {r}%",
+ "bestOne": "one run",
  "estLabel": "establishes",
  "tlKinds": {"measured": "measured here", "reported": "reported upstream",
              "reviewed": "statuses re-read"},
@@ -134,6 +179,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var k = "k" + c.kind.charAt(0).toUpperCase() + c.kind.slice(1);
     return '<span class="chip k-' + c.kind + '" title="' + esc(W[k]) + '">' + fill(c) + "</span>";
   }
+  // a context length as the ladder names it
+  function kctx(n) { return n >= 1000 ? Math.round(n / 1000) + "K" : String(n); }
   function day(s) {
     var p = s.split("-");
     return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
@@ -160,6 +207,113 @@ topology. The shapes transfer; the levels are the worst case.</p>
       '</span><span class="card-lang">' + a.langs.map(esc).join(" · ") + "</span></div>";
     box.appendChild(card);
   });
+
+  /* ---------- Figure 1: what the machine does today ----------
+     Seven models on one pair of axes, each drawn in the fastest configuration
+     it has been measured in. The lines are not one experiment and the figure
+     does not pretend otherwise: five share a campaign, two do not, and every
+     one of them carries the stack it needed into its tooltip. */
+  (function () {
+    var F = JSON.parse(document.getElementById("bestdata").textContent).best;
+    var svg = document.getElementById("best");
+    var key = document.getElementById("bestkey"), mach = document.getElementById("bestmach");
+    var note = document.getElementById("bestnote");
+    document.getElementById("besthint").textContent = S.bestHint;
+
+    // one colour per model, assigned in the order the data lists them so a
+    // model keeps its colour whatever is lit
+    var models = [];
+    F.series.forEach(function (x) { if (x.lit && models.indexOf(x.model) < 0) models.push(x.model); });
+    F.series.forEach(function (x) { if (models.indexOf(x.model) < 0) models.push(x.model); });
+    // the models lit by default take the first four, which are the four furthest
+    // apart in both themes; the rest follow
+    var colour = {};
+    models.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
+
+    var on = {};
+    models.forEach(function (m) { on[m] = false; });
+    F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
+    var machOn = {};
+    F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
+
+    function stack(x) {
+      var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
+      if (x.patches.length) bits.push(x.patches.join(" + "));
+      if (x.spec) bits.push(S.bestSpec);
+      bits.push(x.date);
+      return bits.join(" · ");
+    }
+    function tipFor(x) {
+      return function (i) {
+        var p = x.points[i];
+        return '<span class="hd">' + esc(x.model) + " · " + esc(S.bestMach[x.machine]) +
+          "</span><br>" + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+          '<span class="sub">' +
+          (p.runs > 1 && p.range_pct !== null
+            ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) })
+            : S.bestOne) +
+          "<br>" + esc(stack(x)) + "</span>";
+      };
+    }
+    var ser = F.series.map(function (x) {
+      return { colour: colour[x.model], dash: x.machine !== "rdna3", tip: tipFor(x),
+               points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
+    });
+    var chart = window.lineChart({
+      el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
+      x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
+           ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
+      y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    function apply() {
+      chart.setLit(function (i) {
+        var x = F.series[i];
+        return on[x.model] && machOn[x.machine];
+      });
+      Array.prototype.forEach.call(key.children, function (b, i) {
+        b.classList.toggle("on", on[models[i]]);
+      });
+      Array.prototype.forEach.call(mach.children, function (b, i) {
+        var id = F.machines[i].id;
+        b.classList.toggle("on", machOn[id]);
+        b.classList.toggle("off", !machOn[id]);
+      });
+    }
+    F.machines.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "lg";
+      b.style.setProperty("--c", "var(--text-2)");
+      b.innerHTML = '<span class="sw"></span>' + esc(S.bestMach[m.id]);
+      b.setAttribute("aria-pressed", String(!!m["default"]));
+      b.addEventListener("click", function () {
+        machOn[m.id] = !machOn[m.id];
+        b.setAttribute("aria-pressed", String(machOn[m.id]));
+        apply();
+      });
+      mach.appendChild(b);
+    });
+    models.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "lg";
+      b.style.setProperty("--c", colour[m]);
+      b.innerHTML = '<span class="sw"></span>' + esc(m);
+      b.setAttribute("aria-pressed", String(on[m]));
+      b.addEventListener("click", function () {
+        on[m] = !on[m];
+        b.setAttribute("aria-pressed", String(on[m]));
+        apply();
+      });
+      key.appendChild(b);
+    });
+    apply();
+    note.innerHTML = esc(S.bestUnit) + "<br>" +
+      esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
+                                v: F.campaign.vllm })) + "<br>" +
+      esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),
+                             m: F.repro.median_pct.toFixed(2), c: F.repro.cells })) + "<br>" +
+      esc(fmt(S.bestOmit, { m: F.omitted.join(", ") }));
+  })();
 
   /* ---------- the timeline ----------
      One grid for the whole figure so every row shares a left edge; a per-row
