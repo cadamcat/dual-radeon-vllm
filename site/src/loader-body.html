@@ -1,41 +1,33 @@
-<header class="top">
-  <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div>
-  <h1>A read-only copy asks for write access,<br>and one kernel charged a second for it</h1>
-  <p class="sub">Loading weights was slower than the disk, twice over</p>
-  <p class="lede">A 9.56 GiB checkpoint that the disk hands over in about six seconds took
-  <strong>328</strong>. Two independent things were responsible: a permission bug that makes the GPU ask
-  for write access it does not need, confirmed by AMD down to a kernel line and still present today; and
-  a distro backport that turned every occurrence of it into a whole second, proven by revert and fixed
-  by Canonical five weeks later.</p>
-  <div class="meta">
-__CHIPS__
-  </div>
+<header class="top"> <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div> <h1>A
+read-only copy asks for write access,<br>and one kernel charged a second for it</h1>
+<p class="sub">Loading weights was slower than the disk, twice over</p> <p class="lede">A 9.56 GiB
+checkpoint that the disk hands over in about six seconds took <strong>328</strong>. Two independent
+things were responsible: a permission bug that makes the GPU ask for write access it does not need,
+confirmed by AMD down to a kernel line and still present today; and a distro backport that turned
+every occurrence of it into a whole second, proven by rebuilding with the missing commit as the only
+change, and fixed by Canonical in <code>-30</code>.</p> <div class="meta"> __CHIPS__ </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>The first effect is a <strong>permission taken from the wrong place</strong>. A host-to-device copy
-  only reads its source, but KFD derives the access it requests from the VMA's flags, so a mapping that
-  carries <code>VM_WRITE</code> makes <code>hmm_range_fault()</code> ask for write and break
-  copy-on-write on every resident page. PyTorch maps safetensors checkpoints writable because a storage
-  must be mutable, so this is the path every framework takes. AMD confirmed it and named the line. It is
-  worth <strong>4.8×</strong> on the kernel shipping today.</p>
-  <p>The second was a backport. Ubuntu's <code>7.0.0-28</code> took
-  <code>c08972f55594</code> without its follow-up <code>342981fff328</code>, leaving a retry loop that
-  spins for the full <code>HMM_RANGE_DEFAULT_TIMEOUT</code>. Every timing lands on an integer multiple
-  of 1000 ms: a 32 MiB copy took <strong>16 019.6 ms</strong>, which is sixteen windows plus 19.6 ms of
-  real work. Rebuilding <code>amdgpu.ko</code> with the missing commit as its only change gives
-  <strong>17.0 ms</strong>. Canonical shipped it in <code>-30</code> on 2026-08-20 and the same
-  reproducer now returns 15.3.</p>
-  <p>The pair explains itself: breaking copy-on-write is what advances the notifier sequence, so the
-  permission bug is the trigger and the missing commit turned each trigger into a full second. A
-  read-only mapping never invalidates and never enters the retry.</p>
-  <p><strong>One of this repository's own numbers did not survive.</strong> The 3.9× to 5.6× published
-  with <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> came from a run with no
-  control over page cache. Re-measured with cache controlled per cell it is 1.5× to 2.0× while the
-  checkpoint fits in RAM, 7.5× when it does not, and <strong>slightly negative</strong> on a
-  128-expert MoE.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3> <p>The first effect is a <strong>permission taken from the
+wrong place</strong>. A host-to-device copy only reads its source, but KFD derives the access it
+requests from the VMA's flags, so a mapping that carries <code>VM_WRITE</code> makes
+<code>hmm_range_fault()</code> ask for write and break copy-on-write on every resident page. PyTorch
+maps safetensors checkpoints writable because a storage must be mutable, so this is the path PyTorch
+takes here. AMD confirmed it and named the line. It is worth <strong>4.8×</strong> on the kernel
+shipping today.</p> <p>The second was a backport. Ubuntu's <code>7.0.0-28</code> took
+<code>c08972f55594</code> without its follow-up <code>342981fff328</code>, leaving a retry loop that
+spins for the full <code>HMM_RANGE_DEFAULT_TIMEOUT</code>. Every timing is measured in whole 1000 ms
+windows rather than in bandwidth: a 32 MiB copy took <strong>16 019.6 ms</strong>, which is sixteen
+windows plus 19.6 ms of real work. Rebuilding <code>amdgpu.ko</code> with the missing commit as its
+only change gives <strong>17.0 ms</strong>. Canonical shipped it in <code>-30</code> on 2026-08-20
+and the same reproducer now returns 15.3.</p> <p>The pair explains itself: breaking copy-on-write is
+what advances the notifier sequence, so the permission bug is the trigger and the missing commit
+turned each trigger into a full second. A read-only mapping never invalidates and never enters the
+retry.</p> <p><strong>One of this repository's own numbers did not survive.</strong> The 3.9× to
+5.6× published with <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> came
+from a run with no control over page cache. Re-measured with cache controlled per cell it is 1.5× to
+2.0× while the checkpoint fits in RAM, 7.5× when it does not, and <strong>slightly negative</strong>
+on a 128-expert MoE.</p> </div>
 
 <h2><span class="n">1</span>The question, and what it was worth asking from</h2>
 
@@ -283,6 +275,16 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
   number replaced with the measured band above. <code>ROC_FORCE_STAGED_D2H</code> would sidestep the
   copy entirely, but @ashetaia-amd states that the long-term fix taken in ROCm/rocm-systems#6676 does not
   help this copy path, so it is not the remedy to wait for.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · three sentences in the abstract were wrong about their own evidence</span>
+  "Every timing lands on an integer multiple of 1000 ms" is contradicted by the example that follows
+  it: <strong>16 019.6 ms</strong> is sixteen windows plus real work, and the per-tensor timings
+  include a window and a half. "Proven by revert" describes the opposite of what was done — the
+  missing commit was applied, not removed. And "five weeks later" does not match the dates on this
+  page: the fix shipped in <code>-30</code> on <strong>2026-08-20</strong>. All three corrected in
+  place. Separately, "the path every framework takes" is narrowed to the loader actually measured.
 </div>
 
 <div class="foot-note">

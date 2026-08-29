@@ -6,7 +6,7 @@
   <p class="lede">一个 9.56 GiB 的 checkpoint，磁盘大约六秒就能交出来，实际用了
   <strong>328 秒</strong>。两个彼此独立的原因：一个权限 bug，让 GPU 去要它并不需要的写权限 ——
   AMD 已确认并定位到内核某一行，今天依然存在；另一个是发行版的 backport，
-  把这个 bug 的每一次触发都变成整整一秒 —— 用 revert 证明，Canonical 五周后修好。</p>
+  把这个 bug 的每一次触发都变成整整一秒 —— 把缺的那个 commit 单独加回去证明，Canonical 在 <code>-30</code> 里修好。</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -18,12 +18,12 @@ __CHIPS__
   但 KFD 是从 VMA 的 flags 推出它要申请的访问权限；于是带 <code>VM_WRITE</code> 的映射
   会让 <code>hmm_range_fault()</code> 去要写权限，从而在每一个常驻页上破坏 copy-on-write。
   PyTorch 把 safetensors checkpoint 映射成可写的，因为 storage 必须可变 ——
-  所以这是所有框架都会走的那条路。AMD 确认了它并给出了行号。在今天在跑的内核上，它值
+  所以这是 PyTorch 在这里走的那条路。AMD 确认了它并给出了行号。在今天在跑的内核上，它值
   <strong>4.8×</strong>。</p>
   <p>第二个是一次 backport。Ubuntu 的 <code>7.0.0-28</code> 取了
   <code>c08972f55594</code> 却没取它的后续 <code>342981fff328</code>，
   留下一个会空转满 <code>HMM_RANGE_DEFAULT_TIMEOUT</code> 的重试循环。
-  于是每一个计时都落在 1000 ms 的整数倍上：一次 32 MiB 拷贝要
+  于是每一个计时的单位都成了整块的 1000 ms 窗口，而不是带宽：一次 32 MiB 拷贝要
   <strong>16 019.6 ms</strong>，也就是十六个窗口加 19.6 ms 的真实工作。
   只把缺的那个 commit 加回去重编 <code>amdgpu.ko</code>，结果是 <strong>17.0 ms</strong>。
   Canonical 在 2026-08-20 随 <code>-30</code> 发出来，同一个复现器现在是 15.3。</p>
@@ -270,6 +270,15 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   它的头条数字需要换成上面那个实测区间。<code>ROC_FORCE_STAGED_D2H</code>
   本可以完全绕开这次拷贝，但 @ashetaia-amd 说 ROCm/rocm-systems#6676
   里采取的长期修复对这条拷贝路径没有帮助，所以那不是可以等的解药。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 摘要里有三句话和它自己的证据不符</span>
+  "每一个计时都落在 1000 ms 的整数倍上"被紧跟其后的例子否掉了：<strong>16 019.6 ms</strong>
+  是十六个窗口再加上真实工作，而按张量的那几个计时里还有一个半窗口。"用 revert 证明"说反了——
+  实际做的是把缺的那个 commit 加回去，不是拿掉。而"五周后"和本页上的日期对不上：修复是
+  <strong>2026-08-20</strong> 随 <code>-30</code> 发出的。三处都已就地更正。另外
+  "所有框架都会走的那条路"收窄成了实际测到的那个加载器。
 </div>
 
 <div class="foot-note">
