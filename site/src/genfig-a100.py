@@ -38,6 +38,141 @@ fig1["u_shaped"] = adv[0] > min(adv) < adv[-1]
 fig1["below_nominal"] = [r["ctx"] for r in fig1["rows"]
                          if r["advantage"] < fig1["nominal_ratio"]]
 
+# ---- fig1's second layer: the 2026-08-29 ladder, both arms, both machines --
+# A different configuration, not more points on the same one: k=3 against the
+# k=1 above, the campaign harness against probe-t8t64, eleven matched rungs
+# against four with one of them mismatched, and two rounds a cell against one.
+# It is drawn as its own toggle for exactly that reason. What it adds is the
+# arm the figure above does not have: without speculation the A100 leads
+# everywhere, and turning MTP on is what erases the lead.
+import statistics, collections
+
+def campaign(path, cfgs):
+    by = collections.defaultdict(lambda: collections.defaultdict(list))
+    for line in open(path):
+        r = json.loads(line)
+        if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] in cfgs:
+            by[r["cfg"]][r["target"]].append(r["decode_tps"])
+    out = {}
+    for cfg, d in by.items():
+        out[cfg] = {t: {"tok_s": statistics.mean(v), "runs": len(v),
+                        "range_pct": (max(v) - min(v)) / statistics.mean(v) * 100.0}
+                    for t, v in d.items()}
+    return out
+
+CR = campaign(R / "benchmarks/campaign-2026-08-29/results.jsonl",
+              {"G31-tp2", "G31-mtp-p45450-tp2"})
+CA = campaign(R / "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+              {"A100-G31", "A100-G31-mtp-p45450"})
+rungs = sorted(CR["G31-tp2"])
+assert rungs == sorted(CA["A100-G31"]), "the two halves must share a ladder"
+
+def cell(d, t):
+    c = d[t]
+    return {"tok_s": round(c["tok_s"], 2), "runs": c["runs"],
+            "range_pct": round(c["range_pct"], 2)}
+
+fig1["campaign"] = {
+    "date": "2026-08-29", "k": 3, "harness": "campaign-server", "runs_per_cell": 2,
+    "matched": True,
+    "rows": [{"ctx": t,
+              "radeons_nospec": cell(CR["G31-tp2"], t),
+              "radeons_mtp": cell(CR["G31-mtp-p45450-tp2"], t),
+              "a100_nospec": cell(CA["A100-G31"], t),
+              "a100_mtp": cell(CA["A100-G31-mtp-p45450"], t),
+              "advantage_nospec": CA["A100-G31"][t]["tok_s"] / CR["G31-tp2"][t]["tok_s"],
+              "advantage_mtp": (CA["A100-G31-mtp-p45450"][t]["tok_s"]
+                                / CR["G31-mtp-p45450-tp2"][t]["tok_s"])}
+             for t in rungs],
+    "source": {"radeons": "benchmarks/campaign-2026-08-29/results.jsonl",
+               "a100": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"},
+}
+_c = fig1["campaign"]
+_c["nospec_min"] = min(r["advantage_nospec"] for r in _c["rows"])
+_c["nospec_max"] = max(r["advantage_nospec"] for r in _c["rows"])
+_c["mtp_min"] = min(r["advantage_mtp"] for r in _c["rows"])
+_c["mtp_at_500"] = _c["rows"][0]["advantage_mtp"]
+_c["mtp_at_32k"] = _c["rows"][-1]["advantage_mtp"]
+# the A100 leads on every rung without speculation, and does not with it
+_c["nospec_always_ahead"] = all(r["advantage_nospec"] > 1.0 for r in _c["rows"])
+_c["mtp_behind_at"] = [r["ctx"] for r in _c["rows"] if r["advantage_mtp"] < 1.0]
+
+# ---- what the prose beside fig1 claims, computed rather than typed ---------
+# Acceptance comes from vLLM's own `SpecDecoding metrics` lines, aligned to each
+# rung's measurement window by the timestamps both sides carry. Step cost is
+# derived: a speculative step yields `acceptance` tokens and a plain one yields
+# 1, so its cost in plain steps is (acceptance / spec_rate) / (1 / plain_rate).
+import datetime, re as _re
+
+_ACC = _re.compile(r"INFO (\d\d)-(\d\d) (\d\d):(\d\d):(\d\d).*?"
+                   r"Mean acceptance length: ([0-9.]+)")
+
+def accept_by_rung(log, decodes):
+    """{ctx: mean acceptance} for the rungs a metrics line falls inside."""
+    pts = sorted(decodes.items())
+    year = datetime.datetime.fromtimestamp(pts[0][1]["ts"],
+                                           datetime.timezone.utc).year
+    marks = []
+    for line in open(log, errors="replace"):
+        m = _ACC.search(line)
+        if not m:
+            continue
+        mo, d, hh, mm, ss = (int(x) for x in m.groups()[:5])
+        marks.append((datetime.datetime(year, mo, d, hh, mm, ss,
+                                        tzinfo=datetime.timezone.utc).timestamp(),
+                      float(m.group(6))))
+    out, prev = {}, pts[0][1]["ts"] - 60
+    for ctx, c in pts:
+        inside = [v for t, v in marks if prev < t <= c["ts"]]
+        prev = c["ts"]
+        if inside:
+            out[ctx] = sum(inside) / len(inside)
+    return out
+
+def with_ts(path, cfg):
+    by = collections.defaultdict(list)
+    for line in open(path):
+        r = json.loads(line)
+        if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] == cfg:
+            by[r["target"]].append((r["decode_tps"], r["ts"]))
+    return {t: {"tok_s": statistics.mean([v for v, _ in vs]),
+                "ts": max(ts for _, ts in vs)} for t, vs in by.items()}
+
+_RS = with_ts(R / "benchmarks/campaign-2026-08-29/results.jsonl", "G31-mtp-p45450-tp2")
+_AS = with_ts(R / "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl", "A100-G31-mtp-p45450")
+_RA = accept_by_rung(R / "benchmarks/campaign-2026-08-29/logs/G31-mtp-p45450-tp2.log", _RS)
+_AA = accept_by_rung(R / "benchmarks/cuda-a100/campaign-2026-08-29/logs/serve-A100-G31-mtp-p45450.log", _AS)
+
+def economics(acc, spec, plain):
+    """cost of a speculative step in plain steps, at every rung acceptance covers"""
+    out = {}
+    for ctx, a in sorted(acc.items()):
+        if ctx in spec and ctx in plain:
+            out[ctx] = {"acceptance": round(a, 2),
+                        "step_cost": round(a * plain[ctx]["tok_s"] / spec[ctx]["tok_s"], 2)}
+    return out
+
+_shared = sorted(set(_RA) & set(_AA))
+fig1["economics"] = {
+    "rungs": _shared,
+    "why": "a speculative step yields `acceptance` tokens where a plain one "
+           "yields 1, so its cost in plain steps is "
+           "(acceptance / spec_rate) / (1 / plain_rate)",
+    "radeons": economics(_RA, _RS, CR["G31-tp2"]),
+    "a100": economics(_AA, _AS, CA["A100-G31"]),
+}
+for who in ("radeons", "a100"):
+    d = fig1["economics"][who]
+    rows = [d[c] for c in _shared if c in d]
+    fig1["economics"][who + "_acceptance_range"] = [min(r["acceptance"] for r in rows),
+                                                    max(r["acceptance"] for r in rows)]
+    fig1["economics"][who + "_step_cost_range"] = [min(r["step_cost"] for r in rows),
+                                                   max(r["step_cost"] for r in rows)]
+# the point of the block: the machine that accepts more is the one that loses
+fig1["economics"]["a100_accepts_more"] = (
+    fig1["economics"]["a100_acceptance_range"][0]
+    > fig1["economics"]["radeons_acceptance_range"][1])
+
 # ---- fig2: the same starved path, twice as starved on two cards -----------
 stk = lad("mtp-31b-stock45450.json")
 fig2 = {"retention": [

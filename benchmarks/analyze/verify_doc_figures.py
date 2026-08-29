@@ -2429,6 +2429,35 @@ def main():
     ck("a100 article, fig1 the gap is U-shaped", "1",
        1 if AART["fig1"]["u_shaped"] else 0)
     ck("a100 article, fig1 its minimum", "1.14", AART["fig1"]["min_advantage"])
+
+    # --- the 2026-08-29 ladder drawn beside it, and the prose that reads it ---
+    # Off by default in the page, so nothing here is about the default view; it
+    # is about the second measurement being what the paragraph says it is.
+    AC = AART["fig1"]["campaign"]
+    ck("a100 article, the 2026-08-29 ladder is eleven matched rungs", "11",
+       len(AC["rows"]))
+    ck("a100 article, and every cell of it has two rounds", "1",
+       1 if all(r[k]["runs"] == 2 for r in AC["rows"]
+                for k in ("radeons_nospec", "radeons_mtp",
+                          "a100_nospec", "a100_mtp")) else 0)
+    ck("a100 article, without speculation the A100 leads at every depth", "1",
+       1 if AC["nospec_always_ahead"] else 0)
+    ck("a100 article, and by 1.30x at least", "1.30", AC["nospec_min"])
+    ck("a100 article, and 1.46x at most", "1.46", AC["nospec_max"])
+    ck("a100 article, with MTP it is behind at 500", "0.88", AC["mtp_at_500"])
+    ck("a100 article, and only ahead by 1.08x at 32K", "1.08", AC["mtp_at_32k"])
+    # the paragraph's claim is that acceptance is not the explanation
+    AE = AART["fig1"]["economics"]
+    ck("a100 article, the A100 accepts more than the Radeons do", "1",
+       1 if AE["a100_accepts_more"] else 0)
+    ck("a100 article, Radeon acceptance floor", "1.46", AE["radeons_acceptance_range"][0])
+    ck("a100 article, A100 acceptance ceiling", "2.07", AE["a100_acceptance_range"][1])
+    # and that the cost is
+    ck("a100 article, a speculative step costs the Radeons 1.35x at least",
+       "1.35", AE["radeons_step_cost_range"][0])
+    ck("a100 article, and 1.39x at most", "1.39", AE["radeons_step_cost_range"][1])
+    ck("a100 article, it costs the A100 2.40x at least", "2.40", AE["a100_step_cost_range"][0])
+    ck("a100 article, and 2.57x at most", "2.57", AE["a100_step_cost_range"][1])
     ck("a100 article, fig1 and where it sits", "16384", AART["fig1"]["min_at"])
     ck("a100 article, fig1 rungs below the nominal ratio", "2",
        len(AART["fig1"]["below_nominal"]))

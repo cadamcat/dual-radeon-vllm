@@ -718,7 +718,23 @@ one A100 is, by context length <span class="prov yes">recomputable from repo</sp
 the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Between them, at 8K and 16K, the
 measured advantage is <em>smaller</em> than the bandwidth ceilings alone would predict. The last
 point compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has;
-every other depth is matched exactly. </figcaption> </figure>
+every other depth is matched exactly. The <em>2026-08-29 ladder</em> control puts a second
+measurement beside these four: eleven matched rungs, two rounds a cell, k=3 rather than k=1, on the
+campaign harness. It is off by default because it is a different configuration and not more points
+on this one. </figcaption> </figure>
+
+<p><strong>The lead is what speculation costs the A100.</strong> Both lines above have MTP on,
+because that is the configuration the RDNA3 write-up arrived at. Measured again on 2026-08-29 with
+<em>both</em> arms and eleven matched rungs, the picture separates. Without speculation the A100 is
+ahead by 1.30× to 1.46× at every depth, flat and unremarkable. Switch MTP on and that lead is gone:
+0.88× at 500 tokens, level from 2K through 8K, and only 1.08× at 32K. The Radeons do not get faster.
+The A100 gives up more by speculating — and not because it drafts badly. Its acceptance is the
+<em>better</em> of the two, 1.92–2.07 tokens a step against 1.46–1.53. It loses because a
+speculative step costs it 2.40–2.57× a plain decode step, where the same step costs the Radeons
+1.35–1.39×. At batch 1 the pair has compute to spare inside a step; the single card does not, so the
+fixed price of drafting and verifying four tokens is a much larger fraction of what it was already
+doing. Both figures are in <code>benchmarks/campaign-2026-08-29/</code> and
+<code>benchmarks/cuda-a100/campaign-2026-08-29/</code>.</p>
 
 <p>The A100 being fourteen per cent ahead at 16K is the number worth sitting with. It is not a claim
 that the hardware is equivalent — it is a claim about one regime: single-stream decode, one model,
@@ -894,7 +910,402 @@ measurement here, but the crossing itself was not located, and only four depths 
   "below_nominal": [
    8192,
    16384
-  ]
+  ],
+  "campaign": {
+   "date": "2026-08-29",
+   "k": 3,
+   "harness": "campaign-server",
+   "runs_per_cell": 2,
+   "matched": true,
+   "rows": [
+    {
+     "ctx": 500,
+     "radeons_nospec": {
+      "tok_s": 42.55,
+      "runs": 2,
+      "range_pct": 0.59
+     },
+     "radeons_mtp": {
+      "tok_s": 55.22,
+      "runs": 2,
+      "range_pct": 2.68
+     },
+     "a100_nospec": {
+      "tok_s": 55.45,
+      "runs": 2,
+      "range_pct": 13.91
+     },
+     "a100_mtp": {
+      "tok_s": 48.52,
+      "runs": 2,
+      "range_pct": 0.17
+     },
+     "advantage_nospec": 1.302926800610974,
+     "advantage_mtp": 0.8786209706628033
+    },
+    {
+     "ctx": 1000,
+     "radeons_nospec": {
+      "tok_s": 41.63,
+      "runs": 2,
+      "range_pct": 0.07
+     },
+     "radeons_mtp": {
+      "tok_s": 51.59,
+      "runs": 2,
+      "range_pct": 1.59
+     },
+     "a100_nospec": {
+      "tok_s": 55.18,
+      "runs": 2,
+      "range_pct": 10.07
+     },
+     "a100_mtp": {
+      "tok_s": 48.03,
+      "runs": 2,
+      "range_pct": 1.2
+     },
+     "advantage_nospec": 1.3253164404947761,
+     "advantage_mtp": 0.931078697421981
+    },
+    {
+     "ctx": 2000,
+     "radeons_nospec": {
+      "tok_s": 40.69,
+      "runs": 2,
+      "range_pct": 0.12
+     },
+     "radeons_mtp": {
+      "tok_s": 47.55,
+      "runs": 2,
+      "range_pct": 0.23
+     },
+     "a100_nospec": {
+      "tok_s": 57.87,
+      "runs": 2,
+      "range_pct": 0.04
+     },
+     "a100_mtp": {
+      "tok_s": 47.3,
+      "runs": 2,
+      "range_pct": 0.13
+     },
+     "advantage_nospec": 1.4222870836917783,
+     "advantage_mtp": 0.9945936284302387
+    },
+    {
+     "ctx": 4000,
+     "radeons_nospec": {
+      "tok_s": 39.4,
+      "runs": 2,
+      "range_pct": 0.1
+     },
+     "radeons_mtp": {
+      "tok_s": 45.35,
+      "runs": 2,
+      "range_pct": 2.03
+     },
+     "a100_nospec": {
+      "tok_s": 55.19,
+      "runs": 2,
+      "range_pct": 0.79
+     },
+     "a100_mtp": {
+      "tok_s": 45.75,
+      "runs": 2,
+      "range_pct": 0.05
+     },
+     "advantage_nospec": 1.4007944162436545,
+     "advantage_mtp": 1.0087243660418963
+    },
+    {
+     "ctx": 6000,
+     "radeons_nospec": {
+      "tok_s": 37.95,
+      "runs": 2,
+      "range_pct": 0.13
+     },
+     "radeons_mtp": {
+      "tok_s": 42.91,
+      "runs": 2,
+      "range_pct": 0.58
+     },
+     "a100_nospec": {
+      "tok_s": 53.23,
+      "runs": 2,
+      "range_pct": 0.01
+     },
+     "a100_mtp": {
+      "tok_s": 43.94,
+      "runs": 2,
+      "range_pct": 0.5
+     },
+     "advantage_nospec": 1.4024463180081677,
+     "advantage_mtp": 1.0241218972147768
+    },
+    {
+     "ctx": 8000,
+     "radeons_nospec": {
+      "tok_s": 36.56,
+      "runs": 2,
+      "range_pct": 0.19
+     },
+     "radeons_mtp": {
+      "tok_s": 42.64,
+      "runs": 2,
+      "range_pct": 0.87
+     },
+     "a100_nospec": {
+      "tok_s": 51.86,
+      "runs": 2,
+      "range_pct": 0.01
+     },
+     "a100_mtp": {
+      "tok_s": 42.58,
+      "runs": 2,
+      "range_pct": 0.01
+     },
+     "advantage_nospec": 1.4183618214139204,
+     "advantage_mtp": 0.9987533716430163
+    },
+    {
+     "ctx": 12000,
+     "radeons_nospec": {
+      "tok_s": 34.97,
+      "runs": 2,
+      "range_pct": 0.03
+     },
+     "radeons_mtp": {
+      "tok_s": 39.27,
+      "runs": 2,
+      "range_pct": 1.91
+     },
+     "a100_nospec": {
+      "tok_s": 49.96,
+      "runs": 2,
+      "range_pct": 0.01
+     },
+     "a100_mtp": {
+      "tok_s": 40.7,
+      "runs": 2,
+      "range_pct": 0.65
+     },
+     "advantage_nospec": 1.4288988988988987,
+     "advantage_mtp": 1.03650579396409
+    },
+    {
+     "ctx": 16000,
+     "radeons_nospec": {
+      "tok_s": 33.26,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     "radeons_mtp": {
+      "tok_s": 36.59,
+      "runs": 2,
+      "range_pct": 0.68
+     },
+     "a100_nospec": {
+      "tok_s": 47.69,
+      "runs": 2,
+      "range_pct": 0.11
+     },
+     "a100_mtp": {
+      "tok_s": 38.7,
+      "runs": 2,
+      "range_pct": 0.69
+     },
+     "advantage_nospec": 1.4338199037883346,
+     "advantage_mtp": 1.0578966789667896
+    },
+    {
+     "ctx": 20000,
+     "radeons_nospec": {
+      "tok_s": 31.59,
+      "runs": 2,
+      "range_pct": 0.09
+     },
+     "radeons_mtp": {
+      "tok_s": 34.8,
+      "runs": 2,
+      "range_pct": 0.89
+     },
+     "a100_nospec": {
+      "tok_s": 45.26,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     "a100_mtp": {
+      "tok_s": 36.61,
+      "runs": 2,
+      "range_pct": 1.1
+     },
+     "advantage_nospec": 1.432874782333386,
+     "advantage_mtp": 1.0520893806581404
+    },
+    {
+     "ctx": 24000,
+     "radeons_nospec": {
+      "tok_s": 30.53,
+      "runs": 2,
+      "range_pct": 0.07
+     },
+     "radeons_mtp": {
+      "tok_s": 33.36,
+      "runs": 2,
+      "range_pct": 1.11
+     },
+     "a100_nospec": {
+      "tok_s": 43.98,
+      "runs": 2,
+      "range_pct": 0.05
+     },
+     "a100_mtp": {
+      "tok_s": 35.43,
+      "runs": 2,
+      "range_pct": 1.24
+     },
+     "advantage_nospec": 1.4404290861447757,
+     "advantage_mtp": 1.062344476090541
+    },
+    {
+     "ctx": 32000,
+     "radeons_nospec": {
+      "tok_s": 29.13,
+      "runs": 2,
+      "range_pct": 0.03
+     },
+     "radeons_mtp": {
+      "tok_s": 31.43,
+      "runs": 2,
+      "range_pct": 1.81
+     },
+     "a100_nospec": {
+      "tok_s": 42.56,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     "a100_mtp": {
+      "tok_s": 34.02,
+      "runs": 2,
+      "range_pct": 1.5
+     },
+     "advantage_nospec": 1.46063497511584,
+     "advantage_mtp": 1.0825950676213205
+    }
+   ],
+   "source": {
+    "radeons": "benchmarks/campaign-2026-08-29/results.jsonl",
+    "a100": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl"
+   },
+   "nospec_min": 1.302926800610974,
+   "nospec_max": 1.46063497511584,
+   "mtp_min": 0.8786209706628033,
+   "mtp_at_500": 0.8786209706628033,
+   "mtp_at_32k": 1.0825950676213205,
+   "nospec_always_ahead": true,
+   "mtp_behind_at": [
+    500,
+    1000,
+    2000,
+    8000
+   ]
+  },
+  "economics": {
+   "rungs": [
+    12000,
+    16000,
+    20000,
+    24000,
+    32000
+   ],
+   "why": "a speculative step yields `acceptance` tokens where a plain one yields 1, so its cost in plain steps is (acceptance / spec_rate) / (1 / plain_rate)",
+   "radeons": {
+    "500": {
+     "acceptance": 1.75,
+     "step_cost": 1.34
+    },
+    "1000": {
+     "acceptance": 1.71,
+     "step_cost": 1.38
+    },
+    "2000": {
+     "acceptance": 1.61,
+     "step_cost": 1.38
+    },
+    "4000": {
+     "acceptance": 1.54,
+     "step_cost": 1.34
+    },
+    "6000": {
+     "acceptance": 1.55,
+     "step_cost": 1.37
+    },
+    "8000": {
+     "acceptance": 1.59,
+     "step_cost": 1.36
+    },
+    "12000": {
+     "acceptance": 1.52,
+     "step_cost": 1.35
+    },
+    "16000": {
+     "acceptance": 1.53,
+     "step_cost": 1.39
+    },
+    "20000": {
+     "acceptance": 1.49,
+     "step_cost": 1.35
+    },
+    "24000": {
+     "acceptance": 1.49,
+     "step_cost": 1.36
+    },
+    "32000": {
+     "acceptance": 1.46,
+     "step_cost": 1.36
+    }
+   },
+   "a100": {
+    "12000": {
+     "acceptance": 2.01,
+     "step_cost": 2.47
+    },
+    "16000": {
+     "acceptance": 1.97,
+     "step_cost": 2.43
+    },
+    "20000": {
+     "acceptance": 1.96,
+     "step_cost": 2.42
+    },
+    "24000": {
+     "acceptance": 2.07,
+     "step_cost": 2.57
+    },
+    "32000": {
+     "acceptance": 1.92,
+     "step_cost": 2.4
+    }
+   },
+   "radeons_acceptance_range": [
+    1.46,
+    1.53
+   ],
+   "radeons_step_cost_range": [
+    1.35,
+    1.39
+   ],
+   "a100_acceptance_range": [
+    1.92,
+    2.07
+   ],
+   "a100_step_cost_range": [
+    2.4,
+    2.57
+   ],
+   "a100_accepts_more": true
+  }
  },
  "fig2": {
   "retention": [
@@ -980,6 +1391,15 @@ measurement here, but the crossing itself was not located, and only four depths 
 <script type="application/json" id="strings">{
  "viewAdv": "how far ahead the A100 is",
  "viewRate": "decode tok/s",
+ "viewCamp": "2026-08-29 ladder",
+ "campBase": "2026-08-26 · MTP k=1",
+ "campNospec": "2026-08-29 · no speculation",
+ "campMtp": "2026-08-29 · MTP k=3",
+ "campRNospec": "2026-08-29 · Radeons, no speculation",
+ "campRMtp": "2026-08-29 · Radeons, MTP k=3",
+ "campANospec": "2026-08-29 · A100, no speculation",
+ "campAMtp": "2026-08-29 · A100, MTP k=3",
+ "campNote": "dashed: eleven matched rungs, two rounds a cell, k=3 on the campaign harness — a different configuration from the four single-run k=1 points above, not more of them. Without speculation the A100 leads {lo}× to {hi}× at every depth. With MTP on it starts <em>behind</em>, {at500}× at 500 tokens, and reaches only {mtp32}× at 32K: the lead is what speculation costs it",
  "radeons": "2× RX 7900 XT",
  "a100": "one A100 80G",
  "ctxK": "{n}K",
@@ -1099,7 +1519,40 @@ measurement here, but the crossing itself was not located, and only four depths 
     var note = document.getElementById("advnote");
     var key = document.getElementById("v1k");
     var mode = 0;                                /* 0 = advantage, 1 = rates */
-    var R = F.fig1.rows;
+    var campOn = false;                          /* the 2026-08-29 ladder */
+    var R = F.fig1.rows, K = F.fig1.campaign, C = K.rows;
+    function xAxis() {
+      // the two ladders do not share rungs, so the axis has to be the real
+      // number line rather than four evenly spaced categories
+      return { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
+               ticks: campOn ? [500, 1000, 2000, 4000, 8000, 16000, 32000]
+                             : [1000, 2000, 4000, 8000, 16000, 32000] };
+    }
+    function cell(r, k) { return r[k]; }
+    function campTip(k) {
+      return function (i) {
+        var r = C[i], c = cell(r, k);
+        return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+          c.tok_s.toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
+          c.runs + " runs, range " + c.range_pct.toFixed(2) + "% · k=3</span>";
+      };
+    }
+    function campAdv(which) {
+      return function (i) {
+        var r = C[i], v = which === "mtp" ? r.advantage_mtp : r.advantage_nospec;
+        return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+          v.toFixed(3) + "×</b><br><span class=\"sub\">" +
+          (which === "mtp" ? S.campMtp : S.campNospec) + "</span>";
+      };
+    }
+    function campNote() {
+      // not a list of rungs: kctx rounds 500 to "1K", and two of the four the
+      // data calls "behind" are 0.99x and 1.00x, which is parity and not a lead
+      // either way. The two ends say it without rounding anything away.
+      return fmt(S.campNote, {
+        lo: K.nospec_min.toFixed(2), hi: K.nospec_max.toFixed(2),
+        at500: K.mtp_at_500.toFixed(2), mtp32: K.mtp_at_32k.toFixed(2) });
+    }
     function tipFor(i) {
       var r = R[i];
       return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
@@ -1119,27 +1572,44 @@ measurement here, but the crossing itself was not located, and only four depths 
           y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
           legend: key,
           series: [{ colour: "var(--s1)", label: S.radeons, tip: tipFor,
-                     values: R.map(function (r) { return r.radeons; }) },
+                     points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
                    { colour: "var(--s2)", label: S.a100, tip: tipFor,
-                     values: R.map(function (r) { return r.a100; }) }]
+                     points: R.map(function (r) { return [r.ctx, r.a100]; }) }].concat(
+            campOn ? [
+              { colour: "var(--s1)", dash: true, label: S.campRNospec, tip: campTip("radeons_nospec"),
+                points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
+              { colour: "var(--s1)", dash: true, dashSegs: "2 3", label: S.campRMtp, tip: campTip("radeons_mtp"),
+                points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
+              { colour: "var(--s2)", dash: true, label: S.campANospec, tip: campTip("a100_nospec"),
+                points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
+              { colour: "var(--s2)", dash: true, dashSegs: "2 3", label: S.campAMtp, tip: campTip("a100_mtp"),
+                points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
         });
-        note.innerHTML = S.f1rateUnit;
+        note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");
       } else {
         key.innerHTML = "";
         window.lineChart({
           el: svg, reduce: reduce, h: 330,
-          x: { values: xs, label: S.ctxAxis, fmt: kctx },
-          y: { label: S.f1yAdv, min: 1, fmt: function (v) { return v.toFixed(2) + "×"; },
-               ticks: [1, 1.2, 1.4, 1.6, 1.8, 2] },
+          x: xAxis(),
+          y: { label: S.f1yAdv, min: campOn ? 0.8 : 1,
+               fmt: function (v) { return v.toFixed(2) + "×"; },
+               ticks: campOn ? [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2]
+                             : [1, 1.2, 1.4, 1.6, 1.8, 2] },
+          legend: campOn ? key : null,
           rules: [{ y: 1, label: S.f1par, colour: "var(--border-2)" },
                   { y: F.fig1.nominal_ratio, label: S.f1nom, colour: "var(--accent)" }],
-          series: [{ colour: "var(--s2)", tip: tipFor,
-                     values: R.map(function (r) { return r.advantage; }) }]
+          series: [{ colour: "var(--s2)", label: campOn ? S.campBase : null, tip: tipFor,
+                     points: R.map(function (r) { return [r.ctx, r.advantage]; }) }].concat(
+            campOn ? [
+              { colour: "var(--s3)", dash: true, label: S.campNospec, tip: campAdv("nospec"),
+                points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
+              { colour: "var(--s4)", dash: true, label: S.campMtp, tip: campAdv("mtp"),
+                points: C.map(function (r) { return [r.ctx, r.advantage_mtp]; }) }] : [])
         });
         note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
           d: F.fig1.below_nominal.map(kctx).join(" and ") }) +
-          "<br>" + S.f1unit;
+          "<br>" + S.f1unit + (campOn ? "<br>" + campNote() : "");
       }
     }
     [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
@@ -1150,11 +1620,30 @@ measurement here, but the crossing itself was not located, and only four depths 
       b.addEventListener("click", function () {
         mode = o[1];
         Array.prototype.forEach.call(vbox.children, function (x, k) {
-          x.classList.toggle("on", k === i); });
+          if (k < 2) x.classList.toggle("on", k === i); });
         draw();
       });
       vbox.appendChild(b);
     });
+    /* The 2026-08-29 ladder is off until asked for. It is a different
+       configuration -- k=3, the campaign harness, eleven matched rungs, two
+       rounds -- so it sits beside the four points above rather than extending
+       them, and a reader who has not asked for it sees the figure this article
+       was written against. */
+    (function () {
+      var b = document.createElement("button");
+      b.className = "lg camp";
+      b.style.setProperty("--c", "var(--s3)");
+      b.innerHTML = '<span class="sw"></span>' + S.viewCamp;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        campOn = !campOn;
+        b.classList.toggle("on", campOn);
+        b.setAttribute("aria-pressed", String(campOn));
+        draw();
+      });
+      vbox.appendChild(b);
+    })();
     draw();
   })();
 
