@@ -392,11 +392,11 @@ measurement here, but the crossing itself was not located, and only four depths 
             campOn ? [
               { colour: "var(--s1)", dash: true, label: S.campRNospec, tip: campTip("radeons_nospec"),
                 points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
-              { colour: "var(--s1)", dash: true, dashSegs: "2 3", label: S.campRMtp, tip: campTip("radeons_mtp"),
+              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp, tip: campTip("radeons_mtp"),
                 points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
               { colour: "var(--s2)", dash: true, label: S.campANospec, tip: campTip("a100_nospec"),
                 points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, dashSegs: "2 3", label: S.campAMtp, tip: campTip("a100_mtp"),
+              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp, tip: campTip("a100_mtp"),
                 points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
         });
         note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");

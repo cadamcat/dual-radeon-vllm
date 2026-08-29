@@ -217,8 +217,11 @@
         padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
         transition:color .25s, border-color .25s, background .25s, transform .18s; }
   .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
-  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
-            transition:opacity .25s, box-shadow .25s; }
+  /* flex:0 0 auto or the key squeezes the swatch: in a .lg with a long label
+     the 9px dot was rendering at 3.3px, and a 15px dashed bar at 5px, which
+     is most of why two stroke patterns were not telling apart. */
+  .lg .sw { width:9px; height:9px; flex:0 0 auto; border-radius:99px; background:currentColor;
+            opacity:.4; transition:opacity .25s, box-shadow .25s; }
   .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
   .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
   .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
@@ -334,7 +337,13 @@
      x        {values, label, fmt}          ordered, shared by every series
               {scale:"log"|"linear", min, max, ticks, label, fmt}   numeric instead
      y        {label, fmt, ticks, min, max, zero}
-     series   [{label, colour, values, dash, dashSegs, tip}]  values parallel to x.values
+     series   [{label, colour, values, dash, dashPattern, dashSegs, tip}]
+              values parallel to x.values. `dash` strokes the whole series
+              dashed; `dashPattern` is its stroke-dasharray, default "6 5", for
+              when two dashed series have to be told apart. NOT `dashSegs`,
+              which is a list of *segment indices* drawn as a second, softer
+              path -- passing a pattern string there silently splits the line,
+              because "2 3".indexOf(2) is 0.
               or [{label, colour, points:[[x,y],...], ...}]   on a numeric x
      rules    [{y, label, at, colour, labelColour}]  horizontal reference lines
      band     {lo, hi}                               a shaded y range behind everything
@@ -512,7 +521,8 @@ window.lineChart = function (opts) {
         }
       });
       var p = mk("path", { "class": "ln", d: firm.trim() },
-                 "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
+                 "stroke:" + s.colour +
+                 (s.dash ? ";stroke-dasharray:" + (s.dashPattern || "6 5") : ""));
       el.appendChild(p);
       paths.push(p); owner.push(dots.length);
       if (loose) {
@@ -543,12 +553,23 @@ window.lineChart = function (opts) {
     // faded in by this redraw: an observer set up on an earlier pass would
     // never see these nodes
     paths.forEach(function (p) {
+      // The draw-in borrows stroke-dasharray to hide the line, so whatever
+      // pattern the series asked for has to be handed back when it finishes.
+      // Without this every dashed line ends up solid once the animation has
+      // run, and a key that distinguishes them by stroke is describing
+      // something the reader cannot see.
+      var want = p.style.strokeDasharray;
       var L = p.getTotalLength();
       p.style.strokeDasharray = L;
       p.style.strokeDashoffset = L;
       p.getBoundingClientRect();
       p.style.transition = "stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)";
       p.style.strokeDashoffset = "0";
+      setTimeout(function () {
+        p.style.transition = "";
+        p.style.strokeDasharray = want;
+        p.style.strokeDashoffset = "";
+      }, 1400);
     });
     dots.forEach(function (dg) {
       dg.forEach(function (c, i) {
@@ -570,6 +591,22 @@ window.lineChart = function (opts) {
       g.style.cursor = "default";
       var sw = document.createElement("div");
       sw.className = "sw";
+      // A dashed series needs a dashed swatch. Without this, two lines that
+      // differ only in stroke pattern arrive in the key as the same dot, and a
+      // figure drawing one machine's arms in one colour hands the reader three
+      // labels and one swatch.
+      if (s.dash) {
+        var seg = String(s.dashPattern || "6 5").split(/[ ,]+/).map(Number);
+        var on = seg[0] || 5, off = seg[1] || 4, sc = 1.4;
+        sw.className = "sw dash";
+        sw.style.width = "15px";
+        sw.style.height = "3px";
+        sw.style.borderRadius = "1px";
+        sw.style.background =
+          "repeating-linear-gradient(90deg, currentColor 0 " + (on * sc).toFixed(1) +
+          "px, transparent " + (on * sc).toFixed(1) + "px " +
+          ((on + off) * sc).toFixed(1) + "px)";
+      }
       g.appendChild(sw);
       var t = document.createElement("span");
       t.textContent = s.label;
