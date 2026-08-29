@@ -485,8 +485,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
       fitLit: true, lit: isLit,
+      // the ticks are the ladder's own doubling depths, generated beside the
+      // points, so the left edge says 500 rather than leaving a reader to read
+      // an unlabelled origin as zero, and nothing is labelled past 32K
       x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
-           ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
+           ticks: F.ctx_ticks },
       y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
       series: ser
     });

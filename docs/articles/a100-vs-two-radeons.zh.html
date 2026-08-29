@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>与 A100 的差距是 U 形的，而两端都关于把工作拆开</title>
+<title>两张消费级 Radeon 7900 XT 对一张 A100</title>
 <meta name="description" content="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，而两端都关于张量并行，不关于硅片本身。">
 <style>
   /* ===================== theme =====================
@@ -319,6 +319,20 @@
   .wgcard .u { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
   @media (max-width:520px){ .wgs { grid-template-columns:1fr; } }
 
+  /* Figure 1's controls are two things, not three: a segmented pair choosing
+     which view of the same four points is drawn, and a separate switch that
+     overlays a second measurement on whichever view is showing. As three
+     identical pills they read as three independent toggles. */
+  #v1 { align-items:center; gap:.6em; }
+  #v1 .seg { display:inline-flex; align-items:stretch; }
+  #v1 .seg .lg:first-child { border-top-right-radius:0; border-bottom-right-radius:0;
+                             border-right-width:0; }
+  #v1 .seg .lg:last-child { border-top-left-radius:0; border-bottom-left-radius:0; }
+  #v1 .lg.camp { margin-left:.35em; }
+  #v1 .lg.camp::before { content:""; align-self:center; width:1px; height:1.5em;
+                         margin-right:.75em; background:var(--border);
+                         display:inline-block; }
+
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
@@ -518,6 +532,10 @@ window.lineChart = function (opts) {
       ax.appendChild(n);
     });
     (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      // outside the range is outside the frame: the y ticks have always been
+      // clipped this way and the x ones were not, so a 50 000 tick on an axis
+      // that stops at 32 000 printed itself past the right-hand edge
+      if (num && (v < xlo || v > xhi)) return;
       var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
       n.textContent = (opts.x.fmt || String)(v);
       ax.appendChild(n);
@@ -572,8 +590,14 @@ window.lineChart = function (opts) {
       if (!shown(si)) return;
       var soft = s.dashSegs || [];
       var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      // On a numeric axis X takes the value; on an ordinal one it takes the
+      // slot. A series carrying `points` on an ordinal axis used to hand the
+      // value in as though it were a slot, which put a point at 32 000 seven
+      // thousand widths off the right of the frame instead of at the last
+      // category -- silently, because nothing was left on screen to look wrong.
       var at = s.points
-        ? function (i) { return X(s.points[i][0]); }
+        ? (num ? function (i) { return X(s.points[i][0]); }
+               : function (i) { return X(xs.indexOf(s.points[i][0])); })
         : function (i) { return X(i); };
       var firm = "", loose = "", open = false;
       vs.forEach(function (v, i) {
@@ -741,8 +765,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · 张量并行 · 2× RX 7900 XT 对一张 A100 80G</div>
-  <h1>与 A100 的差距是 U 形的，<br>而两端都关于把工作拆开</h1>
-  <p class="sub">两张消费级 Radeon 对一张 A100</p>
+  <h1>两张消费级 Radeon 7900 XT<br>对一张 A100</h1>
+  <p class="sub">差距是 U 形的，而两端都关于把工作拆开</p>
   <p class="lede">同一个 31B 模型的 batch-1 解码，两边各走自己那条健康路径：A100 在 1K 上下文领先
   1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，两端与不同的开销相符，而且都不是标称带宽之比。</p>
   <div class="meta">
@@ -787,7 +811,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <figure class="rv" id="fig1">
   <div class="figbox">
-    <div class="figtitle">图 1 · 一张 A100 领先多少，按上下文长度
+    <div class="figtitle">图 1 · 一张 A100 对两张 Radeon，按上下文长度
       <span class="prov yes">可由仓库重算</span></div>
     <div class="legend" id="v1"></div>
     <div class="legend" id="v1k"></div>
@@ -802,7 +826,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     在两者之间的 8K 和 16K 上，实测领先幅度比单看带宽上限该给的还要<em>小</em>。
     最后一个点是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧能跑到的最长一档；其余每一个深度都精确对齐。
     「2026-08-29 的阶梯」那个开关会在这四个点旁边并上另一次测量：十一个对齐档位、每格两轮、
-    k=3 而不是 k=1，走 campaign 谐波。它默认关着，因为那是<em>另一个配置</em>，
+    k=3 而不是 k=1，走 campaign 那套 harness。它默认关着，因为那是<em>另一个配置</em>，
     而不是这条曲线上的更多点。
   </figcaption>
 </figure>
@@ -1470,13 +1494,17 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "viewRate": "解码 tok/s",
  "viewCamp": "2026-08-29 的阶梯",
  "campBase": "2026-08-26 · MTP k=1",
+ "campRuns": "{n} 次运行，极差 {r}%",
+ "andJoin": " 和 ",
+ "campBaseR": "2026-08-26 · Radeon 双卡，MTP k=1",
+ "campBaseA": "2026-08-26 · A100，MTP k=1",
  "campNospec": "2026-08-29 · 不带投机",
  "campMtp": "2026-08-29 · MTP k=3",
  "campRNospec": "2026-08-29 · Radeon，不带投机",
  "campRMtp": "2026-08-29 · Radeon，MTP k=3",
  "campANospec": "2026-08-29 · A100，不带投机",
  "campAMtp": "2026-08-29 · A100，MTP k=3",
- "campNote": "虚线：十一个对齐档位、每格两轮、k=3，走 campaign 谐波——和上面那四个单次 k=1 的点是<em>另一个配置</em>，不是同一条曲线上的更多点。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}×。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
+ "campNote": "虚线：十一个对齐档位、每格两轮、k=3，走 campaign 那套 harness——和上面那四个单次 k=1 的点是<em>另一个配置</em>，不是同一条曲线上的更多点。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}×。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
  "radeons": "2× RX 7900 XT",
  "a100": "一张 A100 80G",
  "ctxK": "{n}K",
@@ -1484,7 +1512,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "f1yAdv": "A100 ÷ Radeon",
  "f1yRate": "解码 tok/s",
   "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
- "f1rateUnit": "解码 tok/s，开着 MTP，两边都走 3D 路径",
+ "f1rateUnit": "batch 1 的解码 tok/s，两边都走 3D 路径 · 每条线都写明自己是哪一次测量，图例说明笔画",
  "f1par": "持平", "f1nom": "标称带宽之比",
  "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",
  "f1unmatched": "对 A100 的 {n}K，那是它最长的一条腿",
@@ -1569,7 +1597,11 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
            '" style="background:var(' + v + ')"></span>';
   }
   var kctx = function (n) {
-    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+    // Math.round(500 / 1000) is 1, so the shallowest rung of the 2026-08-29
+    // ladder used to print as "1K" beside the real 1K and the axis carried the
+    // same label twice. Under a thousand a depth is written out.
+    return n < 1000 ? String(n)
+                    : fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
   };
   /* a plain bar, plus the reference marks the comparison is actually against */
   function refbar(box, label, value, max, colour, marks, tipHtml) {
@@ -1604,14 +1636,16 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
       return { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
                ticks: campOn ? [500, 1000, 2000, 4000, 8000, 16000, 32000]
                              : [1000, 2000, 4000, 8000, 16000, 32000] };
+      // fixed in both states on purpose: toggling the ladder must not slide the
+      // four points the article was written against out from under the reader
     }
     function cell(r, k) { return r[k]; }
-    function campTip(k) {
+    function campTip(k, name) {
       return function (i) {
         var r = C[i], c = cell(r, k);
-        return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+        return '<span class="hd">' + name + " · " + kctx(r.ctx) + "</span><br><b>" +
           c.tok_s.toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
-          c.runs + " runs, range " + c.range_pct.toFixed(2) + "% · k=3</span>";
+          fmt(S.campRuns, { n: c.runs, r: c.range_pct.toFixed(2) }) + " · k=3</span>";
       };
     }
     function campAdv(which) {
@@ -1623,9 +1657,9 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
       };
     }
     function campNote() {
-      // not a list of rungs: kctx rounds 500 to "1K", and two of the four the
-      // data calls "behind" are 0.99x and 1.00x, which is parity and not a lead
-      // either way. The two ends say it without rounding anything away.
+      // not a list of rungs: two of the four the data calls "behind" are 0.99x
+      // and 1.00x, which is parity and not a lead either way. The two ends say
+      // it without rounding anything away.
       return fmt(S.campNote, {
         lo: K.nospec_min.toFixed(2), hi: K.nospec_max.toFixed(2),
         at500: K.mtp_at_500.toFixed(2), mtp32: K.mtp_at_32k.toFixed(2) });
@@ -1643,23 +1677,34 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     function draw() {
       var xs = R.map(function (r) { return r.ctx; });
       if (mode) {
+        // the same real number line the advantage view uses. This was an
+        // ordinal axis while every series handed in numeric points, so
+        // lineChart read a context length as a category index and put the 32K
+        // dot about seven thousand frame-widths off the right: the view was
+        // empty in both states, not only with the ladder on.
         window.lineChart({
           el: svg, reduce: reduce, h: 330,
-          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          x: xAxis(),
           y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
           legend: key,
-          series: [{ colour: "var(--s1)", label: S.radeons, tip: tipFor,
+          // both lines say which measurement they are, ladder or no ladder:
+          // they are k=1 and single-run, which the platform name does not say
+          series: [{ colour: "var(--s1)", label: S.campBaseR, tip: tipFor,
                      points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
-                   { colour: "var(--s2)", label: S.a100, tip: tipFor,
+                   { colour: "var(--s2)", label: S.campBaseA, tip: tipFor,
                      points: R.map(function (r) { return [r.ctx, r.a100]; }) }].concat(
             campOn ? [
-              { colour: "var(--s1)", dash: true, label: S.campRNospec, tip: campTip("radeons_nospec"),
+              { colour: "var(--s1)", dash: true, label: S.campRNospec,
+                tip: campTip("radeons_nospec", S.campRNospec),
                 points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
-              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp, tip: campTip("radeons_mtp"),
+              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
+                tip: campTip("radeons_mtp", S.campRMtp),
                 points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, label: S.campANospec, tip: campTip("a100_nospec"),
+              { colour: "var(--s2)", dash: true, label: S.campANospec,
+                tip: campTip("a100_nospec", S.campANospec),
                 points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp, tip: campTip("a100_mtp"),
+              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
+                tip: campTip("a100_mtp", S.campAMtp),
                 points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
         });
         note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");
@@ -1685,23 +1730,39 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
         });
         note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
-          d: F.fig1.below_nominal.map(kctx).join(" and ") }) +
+          d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
           "<br>" + S.f1unit + (campOn ? "<br>" + campNote() : "");
       }
     }
-    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
+    /* Two of these three controls are exclusive views of the same data and the
+       third overlays a second measurement on whichever view is showing. Drawn as
+       three identical pills they read as three independent toggles, and a reader
+       who lights the second and third and expects the first to still mean
+       something gets a figure that is not answering the question they think they
+       asked. So the two views are one segmented control and the overlay stands
+       apart from it. They also carry aria-pressed now: the active view was
+       marked by a class alone, which says nothing to a screen reader. */
+    var seg = document.createElement("span");
+    seg.className = "seg";
+    var modeBtns = [];
+    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o) {
       var b = document.createElement("button");
       b.className = "lg" + (o[1] === mode ? " on" : "");
       b.style.setProperty("--c", "var(--accent)");
       b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.setAttribute("aria-pressed", String(o[1] === mode));
       b.addEventListener("click", function () {
         mode = o[1];
-        Array.prototype.forEach.call(vbox.children, function (x, k) {
-          if (k < 2) x.classList.toggle("on", k === i); });
+        modeBtns.forEach(function (x) {
+          x.b.classList.toggle("on", x.v === mode);
+          x.b.setAttribute("aria-pressed", String(x.v === mode));
+        });
         draw();
       });
-      vbox.appendChild(b);
+      seg.appendChild(b);
+      modeBtns.push({ b: b, v: o[1] });
     });
+    vbox.appendChild(seg);
     /* The 2026-08-29 ladder is off until asked for. It is a different
        configuration -- k=3, the campaign harness, eleven matched rungs, two
        rounds -- so it sits beside the four points above rather than extending

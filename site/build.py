@@ -215,7 +215,7 @@ if (D / "spec-body-zh.html").exists():
 
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
-                  title='The gap to an A100 is U-shaped, and both ends are about the split',
+                  title='Two consumer RX 7900 XTs against one A100',
                   desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
                        "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
                        "parallelism rather than about the silicon.",
@@ -223,7 +223,7 @@ built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title='与 A100 的差距是 U 形的，而两端都关于把工作拆开',
+                      title='两张消费级 Radeon 7900 XT 对一张 A100',
                       desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
                            "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
                            "而两端都关于张量并行，不关于硅片本身。",

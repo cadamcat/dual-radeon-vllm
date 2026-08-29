@@ -34,3 +34,17 @@
   .wgcard.thin .n { color:var(--red); }
   .wgcard .u { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
   @media (max-width:520px){ .wgs { grid-template-columns:1fr; } }
+
+  /* Figure 1's controls are two things, not three: a segmented pair choosing
+     which view of the same four points is drawn, and a separate switch that
+     overlays a second measurement on whichever view is showing. As three
+     identical pills they read as three independent toggles. */
+  #v1 { align-items:center; gap:.6em; }
+  #v1 .seg { display:inline-flex; align-items:stretch; }
+  #v1 .seg .lg:first-child { border-top-right-radius:0; border-bottom-right-radius:0;
+                             border-right-width:0; }
+  #v1 .seg .lg:last-child { border-top-left-radius:0; border-bottom-left-radius:0; }
+  #v1 .lg.camp { margin-left:.35em; }
+  #v1 .lg.camp::before { content:""; align-self:center; width:1px; height:1.5em;
+                         margin-right:.75em; background:var(--border);
+                         display:inline-block; }

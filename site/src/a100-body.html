@@ -1,6 +1,7 @@
 <header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against
-one A100 80G</div> <h1>The gap to an A100 is U-shaped,<br>and both ends are about the split</h1>
-<p class="sub">Two consumer Radeons against one A100</p> <p class="lede">On batch-1 decode of the
+one A100 80G</div> <h1>Two consumer RX 7900 XTs<br>against one A100</h1>
+<p class="sub">The gap is U-shaped, and both ends are about the split</p>
+<p class="lede">On batch-1 decode of the
 same 31B model, on each platform's own healthy path, the A100 is 1.48× ahead at 1K of context,
 <strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The gap is U-shaped, the two ends are
 consistent with different costs, and neither of them is the nominal bandwidth ratio.</p>
@@ -48,8 +49,8 @@ differences here are not separated from noise.</p>
 
 <h2><span class="n">2</span>The gap, and the shape of it</h2>
 
-<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · how far ahead
-one A100 is, by context length <span class="prov yes">recomputable from repo</span></div>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · one A100 against
+two Radeons, by context length <span class="prov yes">recomputable from repo</span></div>
 <div class="legend" id="v1"></div> <div class="legend" id="v1k"></div>
 <svg class="chart" id="adv" role="img"></svg> <div class="barunit" id="advnote"></div> </div>
 <figcaption> <b>Figure 1.</b> The Radeon column is
@@ -207,6 +208,10 @@ measurement here, but the crossing itself was not located, and only four depths 
  "viewRate": "decode tok/s",
  "viewCamp": "2026-08-29 ladder",
  "campBase": "2026-08-26 · MTP k=1",
+ "campRuns": "{n} runs, range {r}%",
+ "andJoin": " and ",
+ "campBaseR": "2026-08-26 · Radeons, MTP k=1",
+ "campBaseA": "2026-08-26 · A100, MTP k=1",
  "campNospec": "2026-08-29 · no speculation",
  "campMtp": "2026-08-29 · MTP k=3",
  "campRNospec": "2026-08-29 · Radeons, no speculation",
@@ -221,7 +226,7 @@ measurement here, but the crossing itself was not located, and only four depths 
  "f1yAdv": "A100 ÷ Radeons",
  "f1yRate": "decode tok/s",
   "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · one run per cell",
- "f1rateUnit": "decode tok/s, MTP on, both through the 3D path",
+ "f1rateUnit": "decode tok/s at batch 1, both platforms through the 3D path · each line says which measurement it is, and the key says which stroke",
  "f1par": "parity", "f1nom": "nominal bandwidth ratio",
  "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · the measured advantage is under it at {d}",
  "f1unmatched": "against the A100 at {n}K, its longest leg",
@@ -306,7 +311,11 @@ measurement here, but the crossing itself was not located, and only four depths 
            '" style="background:var(' + v + ')"></span>';
   }
   var kctx = function (n) {
-    return fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
+    // Math.round(500 / 1000) is 1, so the shallowest rung of the 2026-08-29
+    // ladder used to print as "1K" beside the real 1K and the axis carried the
+    // same label twice. Under a thousand a depth is written out.
+    return n < 1000 ? String(n)
+                    : fmt(S.ctxK, { n: n % 1024 === 0 ? n / 1024 : Math.round(n / 1000) });
   };
   /* a plain bar, plus the reference marks the comparison is actually against */
   function refbar(box, label, value, max, colour, marks, tipHtml) {
@@ -341,14 +350,16 @@ measurement here, but the crossing itself was not located, and only four depths 
       return { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
                ticks: campOn ? [500, 1000, 2000, 4000, 8000, 16000, 32000]
                              : [1000, 2000, 4000, 8000, 16000, 32000] };
+      // fixed in both states on purpose: toggling the ladder must not slide the
+      // four points the article was written against out from under the reader
     }
     function cell(r, k) { return r[k]; }
-    function campTip(k) {
+    function campTip(k, name) {
       return function (i) {
         var r = C[i], c = cell(r, k);
-        return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+        return '<span class="hd">' + name + " · " + kctx(r.ctx) + "</span><br><b>" +
           c.tok_s.toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
-          c.runs + " runs, range " + c.range_pct.toFixed(2) + "% · k=3</span>";
+          fmt(S.campRuns, { n: c.runs, r: c.range_pct.toFixed(2) }) + " · k=3</span>";
       };
     }
     function campAdv(which) {
@@ -360,9 +371,9 @@ measurement here, but the crossing itself was not located, and only four depths 
       };
     }
     function campNote() {
-      // not a list of rungs: kctx rounds 500 to "1K", and two of the four the
-      // data calls "behind" are 0.99x and 1.00x, which is parity and not a lead
-      // either way. The two ends say it without rounding anything away.
+      // not a list of rungs: two of the four the data calls "behind" are 0.99x
+      // and 1.00x, which is parity and not a lead either way. The two ends say
+      // it without rounding anything away.
       return fmt(S.campNote, {
         lo: K.nospec_min.toFixed(2), hi: K.nospec_max.toFixed(2),
         at500: K.mtp_at_500.toFixed(2), mtp32: K.mtp_at_32k.toFixed(2) });
@@ -380,23 +391,34 @@ measurement here, but the crossing itself was not located, and only four depths 
     function draw() {
       var xs = R.map(function (r) { return r.ctx; });
       if (mode) {
+        // the same real number line the advantage view uses. This was an
+        // ordinal axis while every series handed in numeric points, so
+        // lineChart read a context length as a category index and put the 32K
+        // dot about seven thousand frame-widths off the right: the view was
+        // empty in both states, not only with the ladder on.
         window.lineChart({
           el: svg, reduce: reduce, h: 330,
-          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          x: xAxis(),
           y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
           legend: key,
-          series: [{ colour: "var(--s1)", label: S.radeons, tip: tipFor,
+          // both lines say which measurement they are, ladder or no ladder:
+          // they are k=1 and single-run, which the platform name does not say
+          series: [{ colour: "var(--s1)", label: S.campBaseR, tip: tipFor,
                      points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
-                   { colour: "var(--s2)", label: S.a100, tip: tipFor,
+                   { colour: "var(--s2)", label: S.campBaseA, tip: tipFor,
                      points: R.map(function (r) { return [r.ctx, r.a100]; }) }].concat(
             campOn ? [
-              { colour: "var(--s1)", dash: true, label: S.campRNospec, tip: campTip("radeons_nospec"),
+              { colour: "var(--s1)", dash: true, label: S.campRNospec,
+                tip: campTip("radeons_nospec", S.campRNospec),
                 points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
-              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp, tip: campTip("radeons_mtp"),
+              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
+                tip: campTip("radeons_mtp", S.campRMtp),
                 points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, label: S.campANospec, tip: campTip("a100_nospec"),
+              { colour: "var(--s2)", dash: true, label: S.campANospec,
+                tip: campTip("a100_nospec", S.campANospec),
                 points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp, tip: campTip("a100_mtp"),
+              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
+                tip: campTip("a100_mtp", S.campAMtp),
                 points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
         });
         note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");
@@ -422,23 +444,39 @@ measurement here, but the crossing itself was not located, and only four depths 
         });
         note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
-          d: F.fig1.below_nominal.map(kctx).join(" and ") }) +
+          d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
           "<br>" + S.f1unit + (campOn ? "<br>" + campNote() : "");
       }
     }
-    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
+    /* Two of these three controls are exclusive views of the same data and the
+       third overlays a second measurement on whichever view is showing. Drawn as
+       three identical pills they read as three independent toggles, and a reader
+       who lights the second and third and expects the first to still mean
+       something gets a figure that is not answering the question they think they
+       asked. So the two views are one segmented control and the overlay stands
+       apart from it. They also carry aria-pressed now: the active view was
+       marked by a class alone, which says nothing to a screen reader. */
+    var seg = document.createElement("span");
+    seg.className = "seg";
+    var modeBtns = [];
+    [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o) {
       var b = document.createElement("button");
       b.className = "lg" + (o[1] === mode ? " on" : "");
       b.style.setProperty("--c", "var(--accent)");
       b.innerHTML = '<span class="sw"></span>' + o[0];
+      b.setAttribute("aria-pressed", String(o[1] === mode));
       b.addEventListener("click", function () {
         mode = o[1];
-        Array.prototype.forEach.call(vbox.children, function (x, k) {
-          if (k < 2) x.classList.toggle("on", k === i); });
+        modeBtns.forEach(function (x) {
+          x.b.classList.toggle("on", x.v === mode);
+          x.b.setAttribute("aria-pressed", String(x.v === mode));
+        });
         draw();
       });
-      vbox.appendChild(b);
+      seg.appendChild(b);
+      modeBtns.push({ b: b, v: o[1] });
     });
+    vbox.appendChild(seg);
     /* The 2026-08-29 ladder is off until asked for. It is a different
        configuration -- k=3, the campaign harness, eleven matched rungs, two
        rounds -- so it sits beside the four points above rather than extending

@@ -362,12 +362,12 @@
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "The gap to an A100 is U-shaped, and both ends are about the split",
-    "zh": "与 A100 的差距是 U 形的，而两端都关于把工作拆开"
+    "en": "Two consumer RX 7900 XTs against one A100",
+    "zh": "两张消费级 Radeon 7900 XT 对一张 A100"
    },
    "sub": {
-    "en": "Two consumer Radeons against one A100",
-    "zh": "两张消费级 Radeon 对一张 A100"
+    "en": "The gap is U-shaped, and both ends are about the split",
+    "zh": "差距是 U 形的，而两端都关于把工作拆开"
    },
    "blurb": {
     "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",

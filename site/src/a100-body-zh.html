@@ -1,8 +1,8 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · 张量并行 · 2× RX 7900 XT 对一张 A100 80G</div>
-  <h1>与 A100 的差距是 U 形的，<br>而两端都关于把工作拆开</h1>
-  <p class="sub">两张消费级 Radeon 对一张 A100</p>
+  <h1>两张消费级 Radeon 7900 XT<br>对一张 A100</h1>
+  <p class="sub">差距是 U 形的，而两端都关于把工作拆开</p>
   <p class="lede">同一个 31B 模型的 batch-1 解码，两边各走自己那条健康路径：A100 在 1K 上下文领先
   1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，两端与不同的开销相符，而且都不是标称带宽之比。</p>
   <div class="meta">
@@ -44,7 +44,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <figure class="rv" id="fig1">
   <div class="figbox">
-    <div class="figtitle">图 1 · 一张 A100 领先多少，按上下文长度
+    <div class="figtitle">图 1 · 一张 A100 对两张 Radeon，按上下文长度
       <span class="prov yes">可由仓库重算</span></div>
     <div class="legend" id="v1"></div>
     <div class="legend" id="v1k"></div>
@@ -59,7 +59,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     在两者之间的 8K 和 16K 上，实测领先幅度比单看带宽上限该给的还要<em>小</em>。
     最后一个点是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧能跑到的最长一档；其余每一个深度都精确对齐。
     「2026-08-29 的阶梯」那个开关会在这四个点旁边并上另一次测量：十一个对齐档位、每格两轮、
-    k=3 而不是 k=1，走 campaign 谐波。它默认关着，因为那是<em>另一个配置</em>，
+    k=3 而不是 k=1，走 campaign 那套 harness。它默认关着，因为那是<em>另一个配置</em>，
     而不是这条曲线上的更多点。
   </figcaption>
 </figure>
@@ -201,13 +201,17 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "viewRate": "解码 tok/s",
  "viewCamp": "2026-08-29 的阶梯",
  "campBase": "2026-08-26 · MTP k=1",
+ "campRuns": "{n} 次运行，极差 {r}%",
+ "andJoin": " 和 ",
+ "campBaseR": "2026-08-26 · Radeon 双卡，MTP k=1",
+ "campBaseA": "2026-08-26 · A100，MTP k=1",
  "campNospec": "2026-08-29 · 不带投机",
  "campMtp": "2026-08-29 · MTP k=3",
  "campRNospec": "2026-08-29 · Radeon，不带投机",
  "campRMtp": "2026-08-29 · Radeon，MTP k=3",
  "campANospec": "2026-08-29 · A100，不带投机",
  "campAMtp": "2026-08-29 · A100，MTP k=3",
- "campNote": "虚线：十一个对齐档位、每格两轮、k=3，走 campaign 谐波——和上面那四个单次 k=1 的点是<em>另一个配置</em>，不是同一条曲线上的更多点。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}×。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
+ "campNote": "虚线：十一个对齐档位、每格两轮、k=3，走 campaign 那套 harness——和上面那四个单次 k=1 的点是<em>另一个配置</em>，不是同一条曲线上的更多点。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}×。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
  "radeons": "2× RX 7900 XT",
  "a100": "一张 A100 80G",
  "ctxK": "{n}K",
@@ -215,7 +219,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "f1yAdv": "A100 ÷ Radeon",
  "f1yRate": "解码 tok/s",
   "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
- "f1rateUnit": "解码 tok/s，开着 MTP，两边都走 3D 路径",
+ "f1rateUnit": "batch 1 的解码 tok/s，两边都走 3D 路径 · 每条线都写明自己是哪一次测量，图例说明笔画",
  "f1par": "持平", "f1nom": "标称带宽之比",
  "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",
  "f1unmatched": "对 A100 的 {n}K，那是它最长的一条腿",

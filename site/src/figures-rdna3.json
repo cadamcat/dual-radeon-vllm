@@ -105,14 +105,14 @@
    },
    {
     "slug": "a100-vs-two-radeons",
-    "title": "The gap to an A100 is U-shaped, and both ends are about the split",
+    "title": "Two consumer RX 7900 XTs against one A100",
     "axis": "tp",
     "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
     "magnitude": 2.1265703912797864,
     "unit": "x worse retention on two cards than on one",
     "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
     "upstream": [],
-    "title_zh": "与 A100 的差距是 U 形的，而两端都关于把工作拆开",
+    "title_zh": "两张消费级 Radeon 7900 XT 对一张 A100",
     "mechanism_zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半",
     "unit_zh": "×，两卡的保持率比单卡差",
     "why_zh": "这是拆分工作的性质，不是硅片的；单张 A100 跑的是同一个 kernel"

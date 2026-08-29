@@ -340,6 +340,19 @@ for m in OMIT:
     assert any(r["model"] == m for r in led), f"{m} is not in the ledger to omit"
     assert not any(s["model"] == m for s in series), f"{m} was not omitted"
 
+# --- where the axis is written ----------------------------------------------
+# The depths that double: 500 and each doubling of it the ladder actually has.
+# Both ends are labelled, which is the point -- the left edge used to carry no
+# label at all, so an axis whose first mark was 1K read as though it started at
+# zero, and the lines looked like they began somewhere they do not. And no tick
+# is allowed outside the range: the list used to end at 50 000, which is past
+# the deepest rung measured and drew itself beyond the right-hand edge of the
+# frame. Derived rather than typed, so it cannot outlive the ladder again.
+CTX_TICKS = [c for c in sorted({p["ctx"] for s in series for p in s["points"]})
+             if c in {500 * 2 ** i for i in range(8)}]
+assert CTX_TICKS[0] == min(p["ctx"] for s in series for p in s["points"]), CTX_TICKS
+assert CTX_TICKS[-1] == max(p["ctx"] for s in series for p in s["points"]), CTX_TICKS
+
 out = {
     "_what": "The index's best-measured-today figure. One line per model per machine, "
              "each the fastest configuration that model has been measured in; five of "
@@ -361,6 +374,7 @@ out = {
         "machines": [{"id": "rdna3", "default": True}, {"id": "a100", "default": False}],
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),
         "ctx_max": max(p["ctx"] for s in series for p in s["points"]),
+        "ctx_ticks": CTX_TICKS,
         "fastest": max(p["tok_s"] for s in series for p in s["points"]),
     },
 }

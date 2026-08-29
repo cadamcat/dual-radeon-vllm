@@ -3712,6 +3712,62 @@ def main():
        1 if {m for m in XB["labels"] if XB["labels"][m]["spec_label"]}
             == {x["model"] for x in XB["series"] if x["spec"]} else 0)
 
+    # --- the x axis -----------------------------------------------------------
+    # Every tick is a depth that was actually measured, both ends of the range
+    # are labelled, and nothing is labelled outside it. The list used to be typed
+    # and ended at 50 000 -- past the deepest rung, so it printed itself beyond
+    # the right edge of the frame -- while the left edge carried no label at all,
+    # which made an axis starting at 500 read as though it started at zero.
+    xrungs = {p["ctx"] for x in XB["series"] for p in x["points"]}
+    ck("index figure, x ticks", "7", len(XB["ctx_ticks"]))
+    ck("index figure, and every one is a measured depth", "0",
+       len(set(XB["ctx_ticks"]) - xrungs))
+    ck("index figure, and none is outside the axis", "0",
+       sum(1 for t in XB["ctx_ticks"] if t < XB["ctx_min"] or t > XB["ctx_max"]))
+    ck("index figure, and both ends are labelled", "1",
+       1 if XB["ctx_ticks"][0] == XB["ctx_min"]
+            and XB["ctx_ticks"][-1] == XB["ctx_max"] else 0)
+    ck("index figure, and they are the depths that double", "1",
+       1 if XB["ctx_ticks"] == sorted(c for c in xrungs
+                                      if c in {500 * 2 ** i for i in range(8)}) else 0)
+
+    # A series carrying `points` is positioned by value, which only means
+    # anything on an axis that declares scale "log" or "linear". Drawn on an
+    # ordinal axis the value is read as a category index instead, and the whole
+    # series lands thousands of frame-widths off the side -- silently, because
+    # nothing is left on screen to look wrong. The A100 article's rate view
+    # shipped that way and was empty. Every lineChart call is checked here.
+    xsrc = os.path.join(HERE, "..", "..", "site", "src")
+    xbad = []
+    for xfn in sorted(os.listdir(xsrc)):
+        if not xfn.endswith("-body.html"):
+            continue
+        xt = open(os.path.join(xsrc, xfn), encoding="utf-8").read()
+        for xm in re.finditer(r"lineChart\(\{", xt):
+            xi = xm.end() - 1
+            xd = 0
+            for xj in range(xi, len(xt)):
+                if xt[xj] == "{":
+                    xd += 1
+                elif xt[xj] == "}":
+                    xd -= 1
+                    if xd == 0:
+                        break
+            xblk = xt[xi:xj + 1]
+            if "points:" not in xblk:
+                continue
+            # the axis is either written inline or comes out of a helper; a
+            # helper is resolved by looking for a scale in the file at large
+            xax = re.search(r"\n\s*x:\s*([^\n]*)", xblk)
+            xax = xax.group(1) if xax else ""
+            if "scale:" in xax:
+                continue
+            xh = re.match(r"\s*(\w+)\(\)", xax)
+            if xh and re.search(r"function %s\s*\(\)[\s\S]{0,600}?scale:" % xh.group(1), xt):
+                continue
+            xbad.append(xfn + ":" + xax[:40])
+    ck("site, charts drawing points on an axis that cannot place them", "0", len(xbad))
+
     xis = re.search(r"<script>\n\(function \(\).*?\n</script>", XI[XIP[0]], re.S)
     xiwant = set(re.findall(r'getElementById\("([^"]+)"\)', xis.group(0) if xis else ""))
     for fn in XIP:

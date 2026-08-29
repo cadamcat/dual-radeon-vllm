@@ -538,6 +538,10 @@ window.lineChart = function (opts) {
       ax.appendChild(n);
     });
     (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      // outside the range is outside the frame: the y ticks have always been
+      // clipped this way and the x ones were not, so a 50 000 tick on an axis
+      // that stops at 32 000 printed itself past the right-hand edge
+      if (num && (v < xlo || v > xhi)) return;
       var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
       n.textContent = (opts.x.fmt || String)(v);
       ax.appendChild(n);
@@ -592,8 +596,14 @@ window.lineChart = function (opts) {
       if (!shown(si)) return;
       var soft = s.dashSegs || [];
       var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      // On a numeric axis X takes the value; on an ordinal one it takes the
+      // slot. A series carrying `points` on an ordinal axis used to hand the
+      // value in as though it were a slot, which put a point at 32 000 seven
+      // thousand widths off the right of the frame instead of at the last
+      // category -- silently, because nothing was left on screen to look wrong.
       var at = s.points
-        ? function (i) { return X(s.points[i][0]); }
+        ? (num ? function (i) { return X(s.points[i][0]); }
+               : function (i) { return X(xs.indexOf(s.points[i][0])); })
         : function (i) { return X(i); };
       var firm = "", loose = "", open = false;
       vs.forEach(function (v, i) {

@@ -644,6 +644,10 @@ window.lineChart = function (opts) {
       ax.appendChild(n);
     });
     (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      // outside the range is outside the frame: the y ticks have always been
+      // clipped this way and the x ones were not, so a 50 000 tick on an axis
+      // that stops at 32 000 printed itself past the right-hand edge
+      if (num && (v < xlo || v > xhi)) return;
       var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
       n.textContent = (opts.x.fmt || String)(v);
       ax.appendChild(n);
@@ -698,8 +702,14 @@ window.lineChart = function (opts) {
       if (!shown(si)) return;
       var soft = s.dashSegs || [];
       var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      // On a numeric axis X takes the value; on an ordinal one it takes the
+      // slot. A series carrying `points` on an ordinal axis used to hand the
+      // value in as though it were a slot, which put a point at 32 000 seven
+      // thousand widths off the right of the frame instead of at the last
+      // category -- silently, because nothing was left on screen to look wrong.
       var at = s.points
-        ? function (i) { return X(s.points[i][0]); }
+        ? (num ? function (i) { return X(s.points[i][0]); }
+               : function (i) { return X(xs.indexOf(s.points[i][0])); })
         : function (i) { return X(i); };
       var firm = "", loose = "", open = false;
       vs.forEach(function (v, i) {
@@ -3265,6 +3275,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
   ],
   "ctx_min": 500,
   "ctx_max": 32000,
+  "ctx_ticks": [
+   500,
+   1000,
+   2000,
+   4000,
+   8000,
+   16000,
+   32000
+  ],
   "fastest": 160.96895
  },
  "cards": {
@@ -4162,12 +4181,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "The gap to an A100 is U-shaped, and both ends are about the split",
-    "zh": "与 A100 的差距是 U 形的，而两端都关于把工作拆开"
+    "en": "Two consumer RX 7900 XTs against one A100",
+    "zh": "两张消费级 Radeon 7900 XT 对一张 A100"
    },
    "sub": {
-    "en": "Two consumer Radeons against one A100",
-    "zh": "两张消费级 Radeon 对一张 A100"
+    "en": "The gap is U-shaped, and both ends are about the split",
+    "zh": "差距是 U 形的，而两端都关于把工作拆开"
    },
    "blurb": {
     "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",
@@ -5009,8 +5028,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
       fitLit: true, lit: isLit,
+      // the ticks are the ladder's own doubling depths, generated beside the
+      // points, so the left edge says 500 rather than leaving a reader to read
+      // an unlabelled origin as zero, and nothing is labelled past 32K
       x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
-           ticks: [1000, 2000, 4000, 8000, 16000, 32000, 50000] },
+           ticks: F.ctx_ticks },
       y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
       series: ser
     });
