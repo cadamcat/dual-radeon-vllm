@@ -67,13 +67,21 @@
   }
   .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
   @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
-  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent;
+      transition:color .2s ease, border-color .25s ease; }
   a:hover { border-bottom-color:var(--accent); }
   h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
   h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
   @media (max-width:640px){ h1{font-size:1.85rem;} }
   h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
   h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  /* the section number settles into place with its heading. It starts dim and
+     offset rather than invisible: this is static markup, and an observer that
+     never fires -- a background tab, no IntersectionObserver at all -- must
+     leave the page readable rather than blank. */
+  h2 .n.nq { display:inline-block; color:var(--text-dim); transform:translateX(-.3em);
+             transition:color .55s ease, transform .55s cubic-bezier(.22,1,.36,1); }
+  h2 .n.nin { color:var(--accent); transform:none; }
   h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
   p { margin:.9em 0; }
   strong { color:var(--text); font-weight:700; }
@@ -94,6 +102,7 @@
                      width:30px; height:30px; display:grid; place-items:center;
                      color:var(--text-dim); transition:background .2s, color .2s; }
   .themebar button:hover { color:var(--text-2); }
+  .themebar button:active { transform:scale(.88); }
   .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
   .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
                   stroke-linecap:round; stroke-linejoin:round; }
@@ -127,6 +136,16 @@
   .chip.k-date     { --ck:var(--accent); }
   .chip.k-scale    { --ck:var(--text-dim); }
   .chip.k-link::before { display:none; }
+  /* the masthead chips land one after another; --i is written by build.py, so
+     the order is the order they are declared in and not a script's guess */
+  .meta .chip { animation:chipin .5s cubic-bezier(.22,1,.36,1) both;
+                animation-delay:calc(var(--i,0) * 55ms + 130ms); }
+  @keyframes chipin { from { opacity:0; transform:translateY(7px); } }
+
+  /* ---- reading progress ---- */
+  .prog { position:fixed; top:0; left:0; height:2px; width:0; z-index:70;
+          background:linear-gradient(90deg, var(--accent), var(--accent-2));
+          transition:width .12s linear; pointer-events:none; }
 
   /* ---- abstract ---- */
   .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
@@ -308,12 +327,15 @@
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior:auto; }
-    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    *, *::before, *::after { animation-duration:.001ms !important; animation-delay:.001ms !important;
+                              transition-duration:.001ms !important; }
     .rv { opacity:1; transform:none; }
+    .prog { transition:none; }
   }
 </style>
 </head>
 <body>
+<div class="prog" id="prog" aria-hidden="true"></div>
 <nav class="themebar" aria-label="Language and colour theme">
   <a class="lang" href="reporting-a-non-reproduction.html" hreflang="en" aria-current="page">EN</a>
   <a class="lang" href="reporting-a-non-reproduction.zh.html" hreflang="zh">中</a>
@@ -328,6 +350,42 @@
     <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
   </button>
 </nav>
+<script id="chrome">
+addEventListener("DOMContentLoaded", function () {
+  "use strict";
+  var bar = document.getElementById("prog"), queued = false;
+  function draw() {
+    var h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.width = (h > 0 ? Math.min(1, Math.max(0, scrollY / h)) * 100 : 0) + "%";
+    queued = false;
+  }
+  addEventListener("scroll", function () {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(draw);
+  }, { passive: true });
+  addEventListener("resize", draw, { passive: true });
+  draw();
+
+  // The section numbers settle in with their heading. Headings come from the
+  // source and are never redrawn, so one observer over them cannot miss a node
+  // the way it would for anything a figure rebuilds -- and the start state is
+  // dim rather than hidden, so a paused observer costs a shade of colour and
+  // not the number itself.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!window.IntersectionObserver) return;
+  var ns = document.querySelectorAll("h2 .n");
+  Array.prototype.forEach.call(ns, function (n) { n.classList.add("nq"); });
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("nin");
+      io.unobserve(e.target);
+    });
+  }, { threshold: 1 });
+  Array.prototype.forEach.call(ns, function (n) { io.observe(n); });
+});
+</script>
 <div class="wrap">
 <header class="top">
   <div class="kicker">RCCL · ROCm · a negative result · measured on 2× RX 7900 XT</div>
@@ -336,10 +394,10 @@
   You have two gfx1100 cards. It does not happen. That is worth almost nothing on its own — and it can
   be made worth something, by three things that have nothing to do with running the test more times.</p>
   <div class="meta">
-    <span class="chip k-hardware" title="hardware">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
-    <span class="chip k-stack" title="stack">RCCL <b>2.30.4</b> · ROCm 7.14</span>
-    <span class="chip k-hardware" title="hardware">against <b>2× W7800</b> on bare metal</span>
-    <span class="chip k-date" title="date">measured <b>2026-08-27</b> and <b>2026-08-28</b></span>
+    <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
+    <span class="chip k-stack" title="stack" style="--i:1">RCCL <b>2.30.4</b> · ROCm 7.14</span>
+    <span class="chip k-hardware" title="hardware" style="--i:2">against <b>2× W7800</b> on bare metal</span>
+    <span class="chip k-date" title="date" style="--i:3">measured <b>2026-08-27</b> and <b>2026-08-28</b></span>
   </div>
 </header>
 

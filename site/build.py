@@ -22,7 +22,7 @@ CHIPWORDS = {l: json.loads((D / f"chipwords-{l}.json").read_text()) for l in ("e
 
 def chips_html(slug, lang):
     out = []
-    for c in CHIPS[slug]:
+    for n, c in enumerate(CHIPS[slug]):
         t = CHIPWORDS[lang][c["w"]]
         for i, v in enumerate(c["v"]):
             assert "{%d}" % i in t, f'{slug}: {c["w"]} has no slot {i}'
@@ -31,7 +31,8 @@ def chips_html(slug, lang):
         # the type is what the dot means, so it is also spelled out: colour on
         # its own is not a label
         k = "k" + c["kind"][0].upper() + c["kind"][1:]
-        out.append(f'    <span class="chip k-{c["kind"]}" title="{CHIPWORDS[lang][k]}">{t}</span>')
+        out.append(f'    <span class="chip k-{c["kind"]}" title="{CHIPWORDS[lang][k]}"'
+                   f' style="--i:{n}">{t}</span>')
     return "\n".join(out)
 
 
