@@ -414,10 +414,11 @@ one thread and let a deliberate override through.</p> </div>
 
 <h2><span class="n">1</span>What is being measured</h2>
 
-<p>One campaign, 2026-07-25, seven engine starts and 146 timed generations across five models and two
-parallelism settings. Decode rate is reported by the server over a generation of several hundred tokens
-after a warm-up; each cell is the mean of two rounds. Board power is sampled during each generation and
-recorded per card as the maximum seen in that window, alongside per-card VRAM.</p>
+<p>One campaign, 2026-07-25, seven configurations and eight engine starts, 146 timed generations
+across five models and two parallelism settings. Decode rate is reported by the server over a
+generation of several hundred tokens after a warm-up; each cell is the mean of two rounds. Board
+power is sampled during each generation and recorded per card as the maximum seen in that window,
+alongside per-card VRAM.</p>
 
 <p><strong><code>init_engine_s</code> is engine initialisation, not compile time.</strong> It covers
 loading weights, profiling, allocating the KV cache, <code>torch.compile</code> and graph capture. The
@@ -606,6 +607,15 @@ Nothing here measures the patched build's compile time, because the patch is ups
   33 s warm" pair put a TP=2 cold start next to a TP=1 warm one. All three are corrected and dated in
   place, and <code>verify_doc_figures.py</code> now pins every engine-start time in the campaign so they
   cannot drift back.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · a count in this article was wrong</span>
+  The English version of the paragraph above said seven engine starts. The campaign has
+  <strong>eight</strong>, across seven configurations: the 12B at TP=1 was started twice, which is the
+  repeat the warm-start figure is drawn from. The Chinese version had it right. Corrected in place;
+  <code>verify_doc_figures.py</code> was already checking the count against
+  <code>model_meta</code> and the prose was the only place it was retyped.
 </div>
 
 <div class="foot-note">

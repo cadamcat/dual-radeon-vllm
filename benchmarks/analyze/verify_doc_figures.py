@@ -780,6 +780,9 @@ def main():
         ck(f"article {fn}, no stray Cyrillic", "0",
            len(re.findall(r"[\u0400-\u04ff]", pages[fn])))
 
+    flat = {fn: re.sub(r"\s+", " ", t) for fn, t in pages.items()}
+    fl = lambda x: re.sub(r"\s+", " ", x)
+
     def block(text, ident):
         m = re.search(r'<script type="application/json" id="%s">(.*?)</script>' % ident,
                       text, re.S)
@@ -870,11 +873,11 @@ def main():
     ck("article, fig2 declares itself unreproducible", "1",
        0 if A["fig2"].get("reproducible_from_repo", True) else 1)
     ck("article, fig2 carries the marker on the page", "1",
-       1 if "raw trace not committed" in pages[LANGS[0]] else 0)
+       1 if "raw trace not committed" in flat[LANGS[0]] else 0)
     ck("article, the Chinese version carries it too", "1",
-       1 if "原始 trace 未入库" in pages["hybrid-ssm-collapse.zh.html"] else 0)
+       1 if "原始 trace 未入库" in flat["hybrid-ssm-collapse.zh.html"] else 0)
     ck("rccl article, the Chinese version marks fig2 too", "1",
-       1 if "llvm-readelf 输出未入库" in pages["rccl-atomics-hostcall.zh.html"] else 0)
+       1 if "llvm-readelf 输出未入库" in flat["rccl-atomics-hostcall.zh.html"] else 0)
     adm = [r for r in g1c if r["gqa_ratio"] == 4]
     ck("50603 README, gqa4 is admitted by the shipped gate", "8",
        sum(1 for r in adm if r["gate_as_shipped"]))
@@ -1524,14 +1527,14 @@ def main():
              "每格只起了一次容器")):
         for h in heads:
             ck(f"w4a16 article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
         ck(f"w4a16 article {fn}, says the A/B cells have no repeat", "1",
-           1 if marker in pages[fn] else 0)
+           1 if fl(marker) in flat[fn] else 0)
     # figure 3 crosses images, and the page has to say so where the figure is
     for fn, phrase in (("w4a16-two-problems.html", "not equivalent in kind"),
                        ("w4a16-two-problems.zh.html", "两组纵向对比的性质并不相同")):
         ck(f"w4a16 article {fn}, fig3 discloses the cross-stack step", "1",
-           1 if phrase in pages[fn] else 0)
+           1 if fl(phrase) in flat[fn] else 0)
 
     # the act-order case, verified numerically rather than by can_implement
     ao = open(os.path.join(WDIR, "logs", "tests-actorder.log"),
@@ -2007,14 +2010,14 @@ def main():
                        ("没有被确立的部分", "此后发生的变化"))):
         for h in heads:
             ck(f"moe article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
     # and both say that the number the verdict came from is the uncommitted one
     for fn, phrase in (("moe-written-off-by-eager.html",
                         "The eager numbers are not in this repository"),
                        ("moe-written-off-by-eager.zh.html",
                         "eager 那些数字不在这个仓库里")):
         ck(f"moe article {fn}, discloses the eager provenance", "1",
-           1 if phrase in pages[fn] else 0)
+           1 if fl(phrase) in flat[fn] else 0)
 
     # --- weight-loading-19x.html ---------------------------------------------
     # Two committed data files behind three figures, plus one opening pair that
@@ -2169,9 +2172,9 @@ def main():
              "这两个数字是从哪来的")):
         for h in heads:
             ck(f"loader article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
         ck(f"loader article {fn}, discloses the opening's provenance", "1",
-           1 if phrase in pages[fn] else 0)
+           1 if fl(phrase) in flat[fn] else 0)
     # the reproducers the article tells the reader to run must exist
     for f in ("benchmarks/repro-mmap-prot.py", "benchmarks/repro-mmap-prot.hip.cpp",
               "benchmarks/hmm-kernel-three-states.json",
@@ -2316,7 +2319,7 @@ def main():
                        ("speculative-decoding-net-loss.zh.html",
                         "\u539f\u59cb trace \u672a\u5165\u5e93")):
         ck(f"spec article {fn}, marks the profile block", "1",
-           1 if marker in pages[fn] else 0)
+           1 if fl(marker) in flat[fn] else 0)
 
     for fn, heads in (("speculative-decoding-net-loss.html",
                        ("What is not established", "What has changed since")),
@@ -2324,7 +2327,7 @@ def main():
                        ("没有被确立的部分", "此后发生的变化"))):
         for h in heads:
             ck(f"spec article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
 
     # --- a100-vs-two-radeons.html --------------------------------------------
     # Both columns are already checked against their sources above; what this
@@ -2421,7 +2424,7 @@ def main():
                        ("没有被确立的部分", "此后发生的变化"))):
         for h in heads:
             ck(f"a100 article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
     # the figure whose counterpart was never measured has to say so
     for fn, phrase in (("a100-vs-two-radeons.html",
                         "No equivalent figure was measured on the\n    A100"),
@@ -2595,7 +2598,7 @@ def main():
                        ("没有被确立的部分", "此后发生的变化"))):
         for h in heads:
             ck(f"gqa article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
 
     # --- reporting-a-non-reproduction.html -----------------------------------
     # The tallies are already checked against the logs above; what this adds is
@@ -2707,7 +2710,7 @@ def main():
              "在 rank 0 上没有观察到损坏")):
         for h in heads:
             ck(f"6565 article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
         ck(f"6565 article {fn}, states what the first sweep really showed", "1",
            1 if phrase in " ".join(pages[fn].split()) else 0)
 
@@ -2858,7 +2861,7 @@ def main():
              "一次运行不构成一次测量")):
         for h in heads:
             ck(f"measure article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
         ck(f"measure article {fn}, states the rule it exists for", "1",
            1 if phrase in " ".join(pages[fn].split()) else 0)
 
@@ -2979,12 +2982,12 @@ def main():
                        ("没有被确立的部分", "此后发生的变化"))):
         for h in heads:
             ck(f"rdna3 article {fn}, carries '{h[:22]}'", "1",
-               1 if h in pages[fn] else 0)
+               1 if fl(h) in flat[fn] else 0)
     # the article's own point: it says which findings are NOT this
     for fn, phrase in (("rdna3-second-class.html", "are <em>not</em> RDNA3 problems"),
                        ("rdna3-second-class.zh.html", "不是</em> RDNA3 的问题")):
         ck(f"rdna3 article {fn}, says which are not", "1",
-           1 if phrase in pages[fn] else 0)
+           1 if fl(phrase) in flat[fn] else 0)
 
 
     # --- the typed chips, the index and the timeline -------------------------

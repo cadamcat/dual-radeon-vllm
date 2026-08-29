@@ -218,6 +218,14 @@ Inductor 自己的默认值是每核一个 worker。</p>
   现在把这次 campaign 的每一次引擎启动时间都钉住，让它们不会漂回去。
 </div>
 
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 这篇文章里有一个数目是错的</span>
+  上面那一段的英文版写的是七次引擎启动。这次 campaign 实际是<strong>八次</strong>，分布在七个配置上：
+  12B 在 TP=1 下启动了两次，热启动那个数字正是从这次重复里来的。中文版原本是对的。
+  已就地更正；<code>verify_doc_figures.py</code> 一直在拿这个数目和 <code>model_meta</code>
+  对照，散文是唯一一处把它重新抄了一遍的地方。
+</div>
+
 <div class="foot-note">
   <p><strong>数据。</strong>这次 campaign 是
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>
