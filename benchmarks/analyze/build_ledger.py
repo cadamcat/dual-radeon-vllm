@@ -106,8 +106,11 @@ MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 # moved the tail properly. The distribution is no longer one quiet stretch with
 # a single outlier: of 258 points with more than one run, the ranges climb
 # 0.00 ... 5.30, 5.33, 5.97, 6.02, 6.10, and then jump to 9.50 and stay high,
-# 29 of them above. Twenty-eight of those 29 are speculative rungs, which
-# repeat an order of magnitude worse on this machine than any stock arm does.
+# 29 of them above the cut. Twenty-eight of those 29 are speculative rungs.
+# The twenty-ninth is not: it is the bimodal 8 K cell from 2026-08-28, at
+# 16.79 %, worse than most of the speculative ones. So the reading is that
+# speculation is where the instability concentrates, not that an arm without
+# it cannot produce the same thing.
 #
 # The widest gap in that region is 6.10 -> 9.50, 3.40 percentage points, and
 # the cut sits in the middle of it. The previous 6.0 was chosen from the
