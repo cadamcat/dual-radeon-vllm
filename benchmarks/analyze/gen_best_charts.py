@@ -77,8 +77,27 @@ def pick(rows):
     for r in rows:
         if r["tp"] != 2 or r["model"] not in COLOUR:
             continue
+        # A speculative arm is not a candidate for this chart. The chart draws
+        # one unlabelled line per model and calls it what the machine does; a
+        # line measured with speculation on carries conditions the line cannot
+        # state -- k, a drafter, and on Qwen3.8 a collapse past 8K that the
+        # same setting does not produce on gemma-4. They are drawn where those
+        # conditions can be said: the index's own speculative series and
+        # docs/speculative-decoding-on-rdna.md.
+        if r.get("spec") is not None:
+            continue
+        # `spec` is in the key as well as the filter: without it a stock arm
+        # and a speculative one measured the same day, on the same stack and
+        # the same patch list -- which is exactly how this campaign ran -- fall
+        # into one group and are picked from as though they were one series.
+        # `attn_backend` is in the key for the same reason `spec` is, and the
+        # same campaign proves it: Q38-tp2 and Q38-triton-tp2 are one date, one
+        # image, one patch list and neither speculates -- they differ only in
+        # which kernel served them, and by 15% at 32K. Without the backend they
+        # are one group and the chart picks from a mixture of two ladders.
         groups.setdefault(
-            (r["model"], r["date"], r["vllm"], r["rocm"], tuple(r["patches"])),
+            (r["model"], r["date"], r["vllm"], r["rocm"], tuple(r["patches"]),
+             json.dumps(r.get("spec"), sort_keys=True), r.get("attn_backend")),
             []).append(r)
 
     chosen = {}

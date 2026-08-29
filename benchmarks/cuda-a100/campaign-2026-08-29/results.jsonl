@@ -1,0 +1,554 @@
+{"kind": "model_meta", "cfg": "A100-G31", "init_engine_s": "242.15", "model_load_s": "61.664783", "kv_gib": "49.28", "kv_tokens": "252587", "ts": 1788025026.0}
+{"kind": "prefill", "cfg": "A100-G31", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 2.1599, "prefill_tps": 237.5, "ts": 1788025047.0}
+{"kind": "decode", "cfg": "A100-G31", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 512, "wall_s": 10.777, "decode_tps": 59.303, "ts": 1788025047.0}
+{"kind": "prefill", "cfg": "A100-G31", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.046, "prefill_tps": 11155.9, "ts": 1788025055.7}
+{"kind": "decode", "cfg": "A100-G31", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 445, "wall_s": 8.652, "decode_tps": 51.5891, "ts": 1788025055.7}
+{"kind": "prefill", "cfg": "A100-G31", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.2245, "prefill_tps": 4513.2, "ts": 1788025064.6}
+{"kind": "decode", "cfg": "A100-G31", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 457, "wall_s": 8.927, "decode_tps": 52.4005, "ts": 1788025064.6}
+{"kind": "prefill", "cfg": "A100-G31", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.047, "prefill_tps": 21566.1, "ts": 1788025073.3}
+{"kind": "decode", "cfg": "A100-G31", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 505, "wall_s": 8.743, "decode_tps": 57.9586, "ts": 1788025073.3}
+{"kind": "prefill", "cfg": "A100-G31", "target": 2000, "round": 1, "prompt_tokens": 2012, "ttft": 0.4285, "prefill_tps": 4695.2, "ts": 1788025082.6}
+{"kind": "decode", "cfg": "A100-G31", "target": 2000, "round": 1, "prompt_tokens": 2012, "gen_tokens": 512, "wall_s": 9.261, "decode_tps": 57.8554, "ts": 1788025082.6}
+{"kind": "prefill", "cfg": "A100-G31", "target": 2000, "round": 2, "prompt_tokens": 2012, "ttft": 0.0498, "prefill_tps": 40396.6, "ts": 1788025091.5}
+{"kind": "decode", "cfg": "A100-G31", "target": 2000, "round": 2, "prompt_tokens": 2012, "gen_tokens": 512, "wall_s": 8.879, "decode_tps": 57.8761, "ts": 1788025091.5}
+{"kind": "prefill", "cfg": "A100-G31", "target": 4000, "round": 1, "prompt_tokens": 4010, "ttft": 0.8905, "prefill_tps": 4503.1, "ts": 1788025101.6}
+{"kind": "decode", "cfg": "A100-G31", "target": 4000, "round": 1, "prompt_tokens": 4010, "gen_tokens": 508, "wall_s": 10.113, "decode_tps": 54.9726, "ts": 1788025101.6}
+{"kind": "prefill", "cfg": "A100-G31", "target": 4000, "round": 2, "prompt_tokens": 4010, "ttft": 0.0585, "prefill_tps": 68554.8, "ts": 1788025110.9}
+{"kind": "decode", "cfg": "A100-G31", "target": 4000, "round": 2, "prompt_tokens": 4010, "gen_tokens": 512, "wall_s": 9.281, "decode_tps": 55.41, "ts": 1788025110.9}
+{"kind": "prefill", "cfg": "A100-G31", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.9683, "prefill_tps": 6210.1, "ts": 1788025121.4}
+{"kind": "decode", "cfg": "A100-G31", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 10.568, "decode_tps": 53.2281, "ts": 1788025121.4}
+{"kind": "prefill", "cfg": "A100-G31", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0668, "prefill_tps": 90045.7, "ts": 1788025131.1}
+{"kind": "decode", "cfg": "A100-G31", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 9.666, "decode_tps": 53.2316, "ts": 1788025131.1}
+{"kind": "prefill", "cfg": "A100-G31", "target": 8000, "round": 1, "prompt_tokens": 8011, "ttft": 1.0629, "prefill_tps": 7537.1, "ts": 1788025142.0}
+{"kind": "decode", "cfg": "A100-G31", "target": 8000, "round": 1, "prompt_tokens": 8011, "gen_tokens": 512, "wall_s": 10.916, "decode_tps": 51.8606, "ts": 1788025142.0}
+{"kind": "prefill", "cfg": "A100-G31", "target": 8000, "round": 2, "prompt_tokens": 8011, "ttft": 0.0792, "prefill_tps": 101192.2, "ts": 1788025151.9}
+{"kind": "decode", "cfg": "A100-G31", "target": 8000, "round": 2, "prompt_tokens": 8011, "gen_tokens": 512, "wall_s": 9.932, "decode_tps": 51.8642, "ts": 1788025151.9}
+{"kind": "prefill", "cfg": "A100-G31", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 2.2828, "prefill_tps": 5262.4, "ts": 1788025164.5}
+{"kind": "decode", "cfg": "A100-G31", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 12.51, "decode_tps": 49.9643, "ts": 1788025164.5}
+{"kind": "prefill", "cfg": "A100-G31", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.0949, "prefill_tps": 126539.9, "ts": 1788025174.8}
+{"kind": "decode", "cfg": "A100-G31", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 10.323, "decode_tps": 49.9586, "ts": 1788025174.8}
+{"kind": "prefill", "cfg": "A100-G31", "target": 16000, "round": 1, "prompt_tokens": 16012, "ttft": 2.6104, "prefill_tps": 6133.9, "ts": 1788025188.1}
+{"kind": "decode", "cfg": "A100-G31", "target": 16000, "round": 1, "prompt_tokens": 16012, "gen_tokens": 512, "wall_s": 13.32, "decode_tps": 47.7144, "ts": 1788025188.1}
+{"kind": "prefill", "cfg": "A100-G31", "target": 16000, "round": 2, "prompt_tokens": 16012, "ttft": 0.1175, "prefill_tps": 136308.5, "ts": 1788025198.9}
+{"kind": "decode", "cfg": "A100-G31", "target": 16000, "round": 2, "prompt_tokens": 16012, "gen_tokens": 512, "wall_s": 10.839, "decode_tps": 47.6633, "ts": 1788025198.9}
+{"kind": "prefill", "cfg": "A100-G31", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 2.9126, "prefill_tps": 6871.3, "ts": 1788025213.1}
+{"kind": "decode", "cfg": "A100-G31", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 14.204, "decode_tps": 45.257, "ts": 1788025213.1}
+{"kind": "prefill", "cfg": "A100-G31", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1413, "prefill_tps": 141652.1, "ts": 1788025224.6}
+{"kind": "decode", "cfg": "A100-G31", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 11.432, "decode_tps": 45.2577, "ts": 1788025224.6}
+{"kind": "prefill", "cfg": "A100-G31", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 3.2283, "prefill_tps": 7438.4, "ts": 1788025239.4}
+{"kind": "decode", "cfg": "A100-G31", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 512, "wall_s": 14.845, "decode_tps": 43.9866, "ts": 1788025239.4}
+{"kind": "prefill", "cfg": "A100-G31", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1607, "prefill_tps": 149466.2, "ts": 1788025251.2}
+{"kind": "decode", "cfg": "A100-G31", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 512, "wall_s": 11.783, "decode_tps": 43.966, "ts": 1788025251.2}
+{"kind": "prefill", "cfg": "A100-G31", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 7.2426, "prefill_tps": 4420.1, "ts": 1788025270.5}
+{"kind": "decode", "cfg": "A100-G31", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 512, "wall_s": 19.25, "decode_tps": 42.556, "ts": 1788025270.5}
+{"kind": "prefill", "cfg": "A100-G31", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.2099, "prefill_tps": 152497.9, "ts": 1788025282.7}
+{"kind": "decode", "cfg": "A100-G31", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 512, "wall_s": 12.218, "decode_tps": 42.5552, "ts": 1788025282.7}
+{"kind": "config_complete", "cfg": "A100-G31", "ok": 22, "err": 0, "ts": 1788025282.7}
+{"kind": "model_meta", "cfg": "A100-G31-mtp", "init_engine_s": "165.68", "model_load_s": "13.070544", "kv_gib": "48.27", "kv_tokens": "247406", "ts": 1788025532.7}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 0.2924, "prefill_tps": 1754.7, "ts": 1788025538.4}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 226, "wall_s": 5.733, "decode_tps": 41.3554, "ts": 1788025538.4}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0743, "prefill_tps": 6903.7, "ts": 1788025543.6}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 221, "wall_s": 5.197, "decode_tps": 42.9452, "ts": 1788025543.6}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.2601, "prefill_tps": 3894.8, "ts": 1788025549.8}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 224, "wall_s": 6.172, "decode_tps": 37.7221, "ts": 1788025549.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.0838, "prefill_tps": 12095.2, "ts": 1788025556.2}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 254, "wall_s": 6.414, "decode_tps": 39.9671, "ts": 1788025556.2}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 2000, "round": 1, "prompt_tokens": 2012, "ttft": 0.4541, "prefill_tps": 4430.3, "ts": 1788025563.1}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 2000, "round": 1, "prompt_tokens": 2012, "gen_tokens": 245, "wall_s": 6.822, "decode_tps": 38.3157, "ts": 1788025563.1}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 2000, "round": 2, "prompt_tokens": 2012, "ttft": 0.057, "prefill_tps": 35291.4, "ts": 1788025568.9}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 2000, "round": 2, "prompt_tokens": 2012, "gen_tokens": 225, "wall_s": 5.894, "decode_tps": 38.3765, "ts": 1788025568.9}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 4000, "round": 1, "prompt_tokens": 4010, "ttft": 0.9497, "prefill_tps": 4222.3, "ts": 1788025577.1}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 4000, "round": 1, "prompt_tokens": 4010, "gen_tokens": 254, "wall_s": 8.156, "decode_tps": 35.1092, "ts": 1788025577.1}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 4000, "round": 2, "prompt_tokens": 4010, "ttft": 0.0742, "prefill_tps": 54042.0, "ts": 1788025584.2}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 4000, "round": 2, "prompt_tokens": 4010, "gen_tokens": 251, "wall_s": 7.114, "decode_tps": 35.5118, "ts": 1788025584.2}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.9824, "prefill_tps": 6120.8, "ts": 1788025593.2}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 264, "wall_s": 8.966, "decode_tps": 32.9413, "ts": 1788025593.2}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0891, "prefill_tps": 67452.3, "ts": 1788025601.3}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 265, "wall_s": 8.077, "decode_tps": 33.0495, "ts": 1788025601.3}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 8000, "round": 1, "prompt_tokens": 8011, "ttft": 1.1263, "prefill_tps": 7112.5, "ts": 1788025610.8}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 8000, "round": 1, "prompt_tokens": 8011, "gen_tokens": 262, "wall_s": 9.564, "decode_tps": 30.9314, "ts": 1788025610.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 8000, "round": 2, "prompt_tokens": 8011, "ttft": 0.0846, "prefill_tps": 94733.8, "ts": 1788025619.0}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 8000, "round": 2, "prompt_tokens": 8011, "gen_tokens": 252, "wall_s": 8.196, "decode_tps": 30.9458, "ts": 1788025619.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 2.3424, "prefill_tps": 5128.5, "ts": 1788025630.2}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 241, "wall_s": 11.137, "decode_tps": 27.2896, "ts": 1788025630.2}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.1059, "prefill_tps": 113412.4, "ts": 1788025639.8}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 263, "wall_s": 9.653, "decode_tps": 27.4434, "ts": 1788025639.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 16000, "round": 1, "prompt_tokens": 16012, "ttft": 2.6731, "prefill_tps": 5990.1, "ts": 1788025652.3}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 16000, "round": 1, "prompt_tokens": 16012, "gen_tokens": 242, "wall_s": 12.515, "decode_tps": 24.4876, "ts": 1788025652.3}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 16000, "round": 2, "prompt_tokens": 16012, "ttft": 0.1259, "prefill_tps": 127178.6, "ts": 1788025663.1}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 16000, "round": 2, "prompt_tokens": 16012, "gen_tokens": 263, "wall_s": 10.759, "decode_tps": 24.6399, "ts": 1788025663.1}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 3.0058, "prefill_tps": 6658.2, "ts": 1788025677.3}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 250, "wall_s": 14.223, "decode_tps": 22.1978, "ts": 1788025677.3}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1478, "prefill_tps": 135443.1, "ts": 1788025689.0}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 259, "wall_s": 11.693, "decode_tps": 22.347, "ts": 1788025689.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 3.3295, "prefill_tps": 7212.2, "ts": 1788025705.1}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 260, "wall_s": 16.073, "decode_tps": 20.3246, "ts": 1788025705.1}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1697, "prefill_tps": 141516.6, "ts": 1788025717.8}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 258, "wall_s": 12.725, "decode_tps": 20.4689, "ts": 1788025717.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 7.6045, "prefill_tps": 4209.7, "ts": 1788025740.9}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 271, "wall_s": 23.107, "decode_tps": 17.4171, "ts": 1788025740.9}
+{"kind": "prefill", "cfg": "A100-G31-mtp", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.2206, "prefill_tps": 145092.8, "ts": 1788025756.4}
+{"kind": "decode", "cfg": "A100-G31-mtp", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 269, "wall_s": 15.494, "decode_tps": 17.5471, "ts": 1788025756.4}
+{"kind": "config_complete", "cfg": "A100-G31-mtp", "ok": 22, "err": 0, "ts": 1788025756.4}
+{"kind": "model_meta", "cfg": "A100-G12", "init_engine_s": "132.39", "model_load_s": "8.466737", "kv_gib": "60.61", "kv_tokens": "965712", "ts": 1788025966.4}
+{"kind": "prefill", "cfg": "A100-G12", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 1.9797, "prefill_tps": 259.1, "ts": 1788025977.3}
+{"kind": "decode", "cfg": "A100-G12", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 512, "wall_s": 6.429, "decode_tps": 114.8595, "ts": 1788025977.3}
+{"kind": "prefill", "cfg": "A100-G12", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0399, "prefill_tps": 12850.4, "ts": 1788025981.8}
+{"kind": "decode", "cfg": "A100-G12", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 512, "wall_s": 4.474, "decode_tps": 115.2401, "ts": 1788025981.8}
+{"kind": "prefill", "cfg": "A100-G12", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.1041, "prefill_tps": 9733.1, "ts": 1788025986.4}
+{"kind": "decode", "cfg": "A100-G12", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 512, "wall_s": 4.611, "decode_tps": 113.3782, "ts": 1788025986.4}
+{"kind": "prefill", "cfg": "A100-G12", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.0387, "prefill_tps": 26169.4, "ts": 1788025991.0}
+{"kind": "decode", "cfg": "A100-G12", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 512, "wall_s": 4.544, "decode_tps": 113.4106, "ts": 1788025991.0}
+{"kind": "prefill", "cfg": "A100-G12", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.1868, "prefill_tps": 10776.1, "ts": 1788025995.8}
+{"kind": "decode", "cfg": "A100-G12", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 508, "wall_s": 4.808, "decode_tps": 109.7094, "ts": 1788025995.8}
+{"kind": "prefill", "cfg": "A100-G12", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.0428, "prefill_tps": 47040.1, "ts": 1788026000.4}
+{"kind": "decode", "cfg": "A100-G12", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 512, "wall_s": 4.664, "decode_tps": 110.5706, "ts": 1788026000.4}
+{"kind": "prefill", "cfg": "A100-G12", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 0.3639, "prefill_tps": 11026.7, "ts": 1788026005.7}
+{"kind": "decode", "cfg": "A100-G12", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 512, "wall_s": 5.244, "decode_tps": 104.7106, "ts": 1788026005.7}
+{"kind": "prefill", "cfg": "A100-G12", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 0.0532, "prefill_tps": 75379.6, "ts": 1788026010.6}
+{"kind": "decode", "cfg": "A100-G12", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 512, "wall_s": 4.931, "decode_tps": 104.7712, "ts": 1788026010.6}
+{"kind": "prefill", "cfg": "A100-G12", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.4026, "prefill_tps": 14935.1, "ts": 1788026016.2}
+{"kind": "decode", "cfg": "A100-G12", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 5.553, "decode_tps": 99.2144, "ts": 1788026016.2}
+{"kind": "prefill", "cfg": "A100-G12", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0614, "prefill_tps": 97923.3, "ts": 1788026021.4}
+{"kind": "decode", "cfg": "A100-G12", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 5.211, "decode_tps": 99.235, "ts": 1788026021.4}
+{"kind": "prefill", "cfg": "A100-G12", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 0.4556, "prefill_tps": 17587.6, "ts": 1788026027.3}
+{"kind": "decode", "cfg": "A100-G12", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 5.883, "decode_tps": 94.1599, "ts": 1788026027.3}
+{"kind": "prefill", "cfg": "A100-G12", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 0.0716, "prefill_tps": 111920.9, "ts": 1788026032.8}
+{"kind": "decode", "cfg": "A100-G12", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 5.497, "decode_tps": 94.189, "ts": 1788026032.8}
+{"kind": "prefill", "cfg": "A100-G12", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 0.9275, "prefill_tps": 12951.5, "ts": 1788026039.4}
+{"kind": "decode", "cfg": "A100-G12", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 6.677, "decode_tps": 88.8852, "ts": 1788026039.4}
+{"kind": "prefill", "cfg": "A100-G12", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.0892, "prefill_tps": 134659.0, "ts": 1788026045.3}
+{"kind": "decode", "cfg": "A100-G12", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 5.836, "decode_tps": 88.9125, "ts": 1788026045.3}
+{"kind": "prefill", "cfg": "A100-G12", "target": 16000, "round": 1, "prompt_tokens": 16013, "ttft": 1.068, "prefill_tps": 14993.3, "ts": 1788026052.5}
+{"kind": "decode", "cfg": "A100-G12", "target": 16000, "round": 1, "prompt_tokens": 16013, "gen_tokens": 512, "wall_s": 7.206, "decode_tps": 83.255, "ts": 1788026052.5}
+{"kind": "prefill", "cfg": "A100-G12", "target": 16000, "round": 2, "prompt_tokens": 16013, "ttft": 0.1097, "prefill_tps": 146016.6, "ts": 1788026058.7}
+{"kind": "decode", "cfg": "A100-G12", "target": 16000, "round": 2, "prompt_tokens": 16013, "gen_tokens": 512, "wall_s": 6.247, "decode_tps": 83.2652, "ts": 1788026058.7}
+{"kind": "prefill", "cfg": "A100-G12", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 1.202, "prefill_tps": 16650.4, "ts": 1788026066.5}
+{"kind": "decode", "cfg": "A100-G12", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 511, "wall_s": 7.796, "decode_tps": 77.3381, "ts": 1788026066.5}
+{"kind": "prefill", "cfg": "A100-G12", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1324, "prefill_tps": 151108.5, "ts": 1788026073.3}
+{"kind": "decode", "cfg": "A100-G12", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 511, "wall_s": 6.727, "decode_tps": 77.3323, "ts": 1788026073.3}
+{"kind": "prefill", "cfg": "A100-G12", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 1.3481, "prefill_tps": 17811.9, "ts": 1788026081.5}
+{"kind": "decode", "cfg": "A100-G12", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 511, "wall_s": 8.197, "decode_tps": 74.4623, "ts": 1788026081.5}
+{"kind": "prefill", "cfg": "A100-G12", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1533, "prefill_tps": 156646.1, "ts": 1788026088.5}
+{"kind": "decode", "cfg": "A100-G12", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 511, "wall_s": 7.004, "decode_tps": 74.4433, "ts": 1788026088.5}
+{"kind": "prefill", "cfg": "A100-G12", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 2.932, "prefill_tps": 10918.7, "ts": 1788026098.5}
+{"kind": "decode", "cfg": "A100-G12", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 510, "wall_s": 10.075, "decode_tps": 71.2542, "ts": 1788026098.5}
+{"kind": "prefill", "cfg": "A100-G12", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.201, "prefill_tps": 159299.3, "ts": 1788026105.9}
+{"kind": "decode", "cfg": "A100-G12", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 510, "wall_s": 7.344, "decode_tps": 71.2613, "ts": 1788026105.9}
+{"kind": "config_complete", "cfg": "A100-G12", "ok": 22, "err": 0, "ts": 1788026105.9}
+{"kind": "model_meta", "cfg": "A100-G26A4B", "init_engine_s": "128.48", "model_load_s": "60.579724", "kv_gib": "53.38", "kv_tokens": "1094393", "ts": 1788026350.9}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 2.032, "prefill_tps": 252.5, "ts": 1788026360.6}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 508, "wall_s": 5.203, "decode_tps": 159.8917, "ts": 1788026360.6}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0165, "prefill_tps": 31108.0, "ts": 1788026363.8}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 512, "wall_s": 3.17, "decode_tps": 162.0462, "ts": 1788026363.8}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.0685, "prefill_tps": 14786.5, "ts": 1788026367.0}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 508, "wall_s": 3.265, "decode_tps": 158.6274, "ts": 1788026367.0}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.0315, "prefill_tps": 32176.2, "ts": 1788026370.3}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 509, "wall_s": 3.229, "decode_tps": 158.8499, "ts": 1788026370.3}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.0977, "prefill_tps": 20595.3, "ts": 1788026373.6}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 509, "wall_s": 3.369, "decode_tps": 155.272, "ts": 1788026373.6}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.035, "prefill_tps": 57562.4, "ts": 1788026376.9}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 512, "wall_s": 3.305, "decode_tps": 156.2592, "ts": 1788026376.9}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 0.1811, "prefill_tps": 22158.1, "ts": 1788026380.6}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 512, "wall_s": 3.609, "decode_tps": 149.086, "ts": 1788026380.6}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 0.045, "prefill_tps": 89220.6, "ts": 1788026384.0}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 512, "wall_s": 3.473, "decode_tps": 149.0441, "ts": 1788026384.0}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.2051, "prefill_tps": 29312.5, "ts": 1788026387.8}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 3.804, "decode_tps": 141.9927, "ts": 1788026387.8}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0535, "prefill_tps": 112400.7, "ts": 1788026391.5}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 3.651, "decode_tps": 142.0267, "ts": 1788026391.5}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 0.2348, "prefill_tps": 34132.5, "ts": 1788026395.5}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 4.003, "decode_tps": 135.6147, "ts": 1788026395.5}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 0.0618, "prefill_tps": 129717.2, "ts": 1788026399.3}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 3.831, "decode_tps": 135.5714, "ts": 1788026399.3}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 0.4953, "prefill_tps": 24255.8, "ts": 1788026403.8}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 511, "wall_s": 4.469, "decode_tps": 128.3527, "ts": 1788026403.8}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.0802, "prefill_tps": 149837.1, "ts": 1788026407.8}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 511, "wall_s": 4.055, "decode_tps": 128.2937, "ts": 1788026407.8}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 16000, "round": 1, "prompt_tokens": 16013, "ttft": 0.5881, "prefill_tps": 27228.3, "ts": 1788026412.6}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 16000, "round": 1, "prompt_tokens": 16013, "gen_tokens": 511, "wall_s": 4.799, "decode_tps": 121.1039, "ts": 1788026412.6}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 16000, "round": 2, "prompt_tokens": 16013, "ttft": 0.1074, "prefill_tps": 149038.4, "ts": 1788026417.0}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 16000, "round": 2, "prompt_tokens": 16013, "gen_tokens": 510, "wall_s": 4.314, "decode_tps": 121.0142, "ts": 1788026417.0}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 0.678, "prefill_tps": 29519.2, "ts": 1788026422.1}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 510, "wall_s": 5.172, "decode_tps": 113.2489, "ts": 1788026422.1}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1212, "prefill_tps": 165073.6, "ts": 1788026426.7}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 510, "wall_s": 4.617, "decode_tps": 113.2191, "ts": 1788026426.7}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 0.7732, "prefill_tps": 31057.5, "ts": 1788026432.2}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 510, "wall_s": 5.434, "decode_tps": 109.2174, "ts": 1788026432.2}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1406, "prefill_tps": 170775.6, "ts": 1788026437.0}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 510, "wall_s": 4.802, "decode_tps": 109.1966, "ts": 1788026437.0}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 1.6811, "prefill_tps": 19042.7, "ts": 1788026443.5}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 509, "wall_s": 6.52, "decode_tps": 104.976, "ts": 1788026443.5}
+{"kind": "prefill", "cfg": "A100-G26A4B", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.1881, "prefill_tps": 170146.4, "ts": 1788026448.5}
+{"kind": "decode", "cfg": "A100-G26A4B", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 509, "wall_s": 5.028, "decode_tps": 104.9626, "ts": 1788026448.5}
+{"kind": "config_complete", "cfg": "A100-G26A4B", "ok": 22, "err": 0, "ts": 1788026448.5}
+{"kind": "model_meta", "cfg": "A100-G26A4B-mtp", "init_engine_s": "136.46", "model_load_s": "28.830303", "kv_gib": "50.56", "kv_tokens": "1036703", "ts": 1788026668.6}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 4.0429, "prefill_tps": 126.9, "ts": 1788026675.1}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 201, "wall_s": 6.526, "decode_tps": 80.5418, "ts": 1788026675.1}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0424, "prefill_tps": 12085.4, "ts": 1788026677.6}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 203, "wall_s": 2.536, "decode_tps": 80.9929, "ts": 1788026677.6}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.0869, "prefill_tps": 11652.8, "ts": 1788026680.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 195, "wall_s": 2.663, "decode_tps": 75.3063, "ts": 1788026680.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.045, "prefill_tps": 22522.6, "ts": 1788026682.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 193, "wall_s": 2.654, "decode_tps": 73.5958, "ts": 1788026682.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.1098, "prefill_tps": 18327.9, "ts": 1788026685.5}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 179, "wall_s": 2.58, "decode_tps": 72.0649, "ts": 1788026685.5}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.0484, "prefill_tps": 41582.6, "ts": 1788026688.2}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 189, "wall_s": 2.654, "decode_tps": 72.1465, "ts": 1788026688.2}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 0.2081, "prefill_tps": 19280.9, "ts": 1788026691.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 196, "wall_s": 3.133, "decode_tps": 66.6793, "ts": 1788026691.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 0.0608, "prefill_tps": 66042.3, "ts": 1788026694.4}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 200, "wall_s": 3.043, "decode_tps": 66.7367, "ts": 1788026694.4}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.2274, "prefill_tps": 26444.9, "ts": 1788026697.7}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 196, "wall_s": 3.384, "decode_tps": 61.7791, "ts": 1788026697.7}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0678, "prefill_tps": 88696.6, "ts": 1788026700.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 196, "wall_s": 3.208, "decode_tps": 62.101, "ts": 1788026701.0}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 0.2729, "prefill_tps": 29365.0, "ts": 1788026704.7}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 202, "wall_s": 3.755, "decode_tps": 57.7294, "ts": 1788026704.7}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 0.0837, "prefill_tps": 95763.7, "ts": 1788026708.2}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 197, "wall_s": 3.465, "decode_tps": 57.9702, "ts": 1788026708.2}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 0.5476, "prefill_tps": 21938.3, "ts": 1788026712.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 186, "wall_s": 4.165, "decode_tps": 51.1357, "ts": 1788026712.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.0996, "prefill_tps": 120553.2, "ts": 1788026716.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 201, "wall_s": 4.0, "decode_tps": 51.2731, "ts": 1788026716.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 16000, "round": 1, "prompt_tokens": 16013, "ttft": 0.6563, "prefill_tps": 24397.5, "ts": 1788026721.1}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 16000, "round": 1, "prompt_tokens": 16013, "gen_tokens": 188, "wall_s": 4.741, "decode_tps": 45.7864, "ts": 1788026721.1}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 16000, "round": 2, "prompt_tokens": 16013, "ttft": 0.1137, "prefill_tps": 140846.6, "ts": 1788026725.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 16000, "round": 2, "prompt_tokens": 16013, "gen_tokens": 189, "wall_s": 4.213, "decode_tps": 45.8667, "ts": 1788026725.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 0.7654, "prefill_tps": 26146.1, "ts": 1788026730.7}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 193, "wall_s": 5.399, "decode_tps": 41.4412, "ts": 1788026730.7}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1342, "prefill_tps": 149153.2, "ts": 1788026735.6}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 198, "wall_s": 4.88, "decode_tps": 41.5136, "ts": 1788026735.6}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 0.8759, "prefill_tps": 27414.2, "ts": 1788026741.5}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 193, "wall_s": 5.937, "decode_tps": 37.9364, "ts": 1788026741.5}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1523, "prefill_tps": 157676.1, "ts": 1788026746.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 200, "wall_s": 5.396, "decode_tps": 37.9512, "ts": 1788026746.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 1.9225, "prefill_tps": 16651.4, "ts": 1788026754.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 199, "wall_s": 8.011, "decode_tps": 32.5214, "ts": 1788026754.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.1993, "prefill_tps": 160635.4, "ts": 1788026761.1}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 197, "wall_s": 6.228, "decode_tps": 32.512, "ts": 1788026761.1}
+{"kind": "config_complete", "cfg": "A100-G26A4B-mtp", "ok": 22, "err": 0, "ts": 1788026761.1}
+{"kind": "model_meta", "cfg": "A100-Q38", "init_engine_s": "186.70", "model_load_s": "54.790686", "kv_gib": "49.59", "kv_tokens": "697714", "ts": 1788027116.2}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 500, "round": 1, "prompt_tokens": 552, "ttft": 0.3645, "prefill_tps": 1514.2, "ts": 1788027126.1}
+{"kind": "decode", "cfg": "A100-Q38", "target": 500, "round": 1, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 7.776, "decode_tps": 68.9436, "ts": 1788027126.1}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 500, "round": 2, "prompt_tokens": 552, "ttft": 0.1963, "prefill_tps": 2811.3, "ts": 1788027133.7}
+{"kind": "decode", "cfg": "A100-Q38", "target": 500, "round": 2, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 7.535, "decode_tps": 69.6317, "ts": 1788027133.7}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 1000, "round": 1, "prompt_tokens": 1051, "ttft": 0.3688, "prefill_tps": 2849.7, "ts": 1788027141.4}
+{"kind": "decode", "cfg": "A100-Q38", "target": 1000, "round": 1, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 7.713, "decode_tps": 69.5742, "ts": 1788027141.4}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 1000, "round": 2, "prompt_tokens": 1051, "ttft": 0.1445, "prefill_tps": 7274.5, "ts": 1788027148.9}
+{"kind": "decode", "cfg": "A100-Q38", "target": 1000, "round": 2, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 7.489, "decode_tps": 69.5775, "ts": 1788027148.9}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 2000, "round": 1, "prompt_tokens": 2052, "ttft": 0.4415, "prefill_tps": 4648.3, "ts": 1788027156.7}
+{"kind": "decode", "cfg": "A100-Q38", "target": 2000, "round": 1, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 7.836, "decode_tps": 69.1043, "ts": 1788027156.7}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 2000, "round": 2, "prompt_tokens": 2052, "ttft": 0.1866, "prefill_tps": 10996.1, "ts": 1788027164.3}
+{"kind": "decode", "cfg": "A100-Q38", "target": 2000, "round": 2, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 7.581, "decode_tps": 69.1019, "ts": 1788027164.3}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 4000, "round": 1, "prompt_tokens": 4052, "ttft": 0.8445, "prefill_tps": 4798.4, "ts": 1788027172.6}
+{"kind": "decode", "cfg": "A100-Q38", "target": 4000, "round": 1, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 8.289, "decode_tps": 68.6404, "ts": 1788027172.6}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 4000, "round": 2, "prompt_tokens": 4052, "ttft": 0.1532, "prefill_tps": 26453.3, "ts": 1788027180.2}
+{"kind": "decode", "cfg": "A100-Q38", "target": 4000, "round": 2, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 7.597, "decode_tps": 68.6513, "ts": 1788027180.2}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 6000, "round": 1, "prompt_tokens": 6052, "ttft": 0.7363, "prefill_tps": 8219.6, "ts": 1788027188.4}
+{"kind": "decode", "cfg": "A100-Q38", "target": 6000, "round": 1, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 8.242, "decode_tps": 68.0842, "ts": 1788027188.4}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 6000, "round": 2, "prompt_tokens": 6052, "ttft": 0.231, "prefill_tps": 26195.2, "ts": 1788027196.2}
+{"kind": "decode", "cfg": "A100-Q38", "target": 6000, "round": 2, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 7.736, "decode_tps": 68.0916, "ts": 1788027196.2}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 8000, "round": 1, "prompt_tokens": 8052, "ttft": 0.9107, "prefill_tps": 8841.9, "ts": 1788027204.6}
+{"kind": "decode", "cfg": "A100-Q38", "target": 8000, "round": 1, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 8.427, "decode_tps": 67.9835, "ts": 1788027204.6}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 8000, "round": 2, "prompt_tokens": 8052, "ttft": 0.1662, "prefill_tps": 48454.5, "ts": 1788027212.3}
+{"kind": "decode", "cfg": "A100-Q38", "target": 8000, "round": 2, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 7.68, "decode_tps": 68.0107, "ts": 1788027212.3}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 12000, "round": 1, "prompt_tokens": 12052, "ttft": 1.5151, "prefill_tps": 7954.4, "ts": 1788027221.4}
+{"kind": "decode", "cfg": "A100-Q38", "target": 12000, "round": 1, "prompt_tokens": 12052, "gen_tokens": 512, "wall_s": 9.146, "decode_tps": 66.9659, "ts": 1788027221.4}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 12000, "round": 2, "prompt_tokens": 12052, "ttft": 0.1843, "prefill_tps": 65389.7, "ts": 1788027229.2}
+{"kind": "decode", "cfg": "A100-Q38", "target": 12000, "round": 2, "prompt_tokens": 12052, "gen_tokens": 512, "wall_s": 7.816, "decode_tps": 66.9592, "ts": 1788027229.2}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 16000, "round": 1, "prompt_tokens": 16052, "ttft": 1.6098, "prefill_tps": 9971.5, "ts": 1788027238.6}
+{"kind": "decode", "cfg": "A100-Q38", "target": 16000, "round": 1, "prompt_tokens": 16052, "gen_tokens": 512, "wall_s": 9.328, "decode_tps": 66.2065, "ts": 1788027238.6}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 16000, "round": 2, "prompt_tokens": 16052, "ttft": 0.2354, "prefill_tps": 68191.2, "ts": 1788027246.5}
+{"kind": "decode", "cfg": "A100-Q38", "target": 16000, "round": 2, "prompt_tokens": 16052, "gen_tokens": 512, "wall_s": 7.951, "decode_tps": 66.2292, "ts": 1788027246.5}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 20000, "round": 1, "prompt_tokens": 20051, "ttft": 1.6996, "prefill_tps": 11797.4, "ts": 1788027256.0}
+{"kind": "decode", "cfg": "A100-Q38", "target": 20000, "round": 1, "prompt_tokens": 20051, "gen_tokens": 512, "wall_s": 9.515, "decode_tps": 65.3821, "ts": 1788027256.0}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 20000, "round": 2, "prompt_tokens": 20051, "ttft": 0.2765, "prefill_tps": 72522.6, "ts": 1788027264.1}
+{"kind": "decode", "cfg": "A100-Q38", "target": 20000, "round": 2, "prompt_tokens": 20051, "gen_tokens": 512, "wall_s": 8.093, "decode_tps": 65.3731, "ts": 1788027264.1}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 24000, "round": 1, "prompt_tokens": 24052, "ttft": 1.7885, "prefill_tps": 13448.4, "ts": 1788027273.8}
+{"kind": "decode", "cfg": "A100-Q38", "target": 24000, "round": 1, "prompt_tokens": 24052, "gen_tokens": 512, "wall_s": 9.702, "decode_tps": 64.5722, "ts": 1788027273.8}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 24000, "round": 2, "prompt_tokens": 24052, "ttft": 0.3288, "prefill_tps": 73157.4, "ts": 1788027282.1}
+{"kind": "decode", "cfg": "A100-Q38", "target": 24000, "round": 2, "prompt_tokens": 24052, "gen_tokens": 512, "wall_s": 8.242, "decode_tps": 64.572, "ts": 1788027282.1}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 32000, "round": 1, "prompt_tokens": 32052, "ttft": 3.488, "prefill_tps": 9189.1, "ts": 1788027293.6}
+{"kind": "decode", "cfg": "A100-Q38", "target": 32000, "round": 1, "prompt_tokens": 32052, "gen_tokens": 512, "wall_s": 11.532, "decode_tps": 63.5289, "ts": 1788027293.6}
+{"kind": "prefill", "cfg": "A100-Q38", "target": 32000, "round": 2, "prompt_tokens": 32052, "ttft": 0.4331, "prefill_tps": 74006.9, "ts": 1788027302.1}
+{"kind": "decode", "cfg": "A100-Q38", "target": 32000, "round": 2, "prompt_tokens": 32052, "gen_tokens": 512, "wall_s": 8.479, "decode_tps": 63.5094, "ts": 1788027302.1}
+{"kind": "config_complete", "cfg": "A100-Q38", "ok": 22, "err": 0, "ts": 1788027302.1}
+{"kind": "model_meta", "cfg": "A100-Q38-mtp", "init_engine_s": "197.59", "model_load_s": "30.182030", "kv_gib": "48.58", "kv_tokens": "541894", "ts": 1788027642.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 500, "round": 1, "prompt_tokens": 552, "ttft": 1.8212, "prefill_tps": 303.1, "ts": 1788027648.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 500, "round": 1, "prompt_tokens": 552, "gen_tokens": 191, "wall_s": 6.409, "decode_tps": 41.4118, "ts": 1788027648.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 500, "round": 2, "prompt_tokens": 552, "ttft": 0.2162, "prefill_tps": 2553.6, "ts": 1788027653.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 500, "round": 2, "prompt_tokens": 552, "gen_tokens": 197, "wall_s": 4.971, "decode_tps": 41.2204, "ts": 1788027653.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 1000, "round": 1, "prompt_tokens": 1051, "ttft": 0.3617, "prefill_tps": 2906.1, "ts": 1788027658.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 1000, "round": 1, "prompt_tokens": 1051, "gen_tokens": 175, "wall_s": 4.643, "decode_tps": 40.6374, "ts": 1788027658.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 1000, "round": 2, "prompt_tokens": 1051, "ttft": 0.363, "prefill_tps": 2895.0, "ts": 1788027663.6}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 1000, "round": 2, "prompt_tokens": 1051, "gen_tokens": 208, "wall_s": 5.465, "decode_tps": 40.576, "ts": 1788027663.6}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 2000, "round": 1, "prompt_tokens": 2052, "ttft": 0.6978, "prefill_tps": 2940.6, "ts": 1788027670.2}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 2000, "round": 1, "prompt_tokens": 2052, "gen_tokens": 232, "wall_s": 6.573, "decode_tps": 39.3158, "ts": 1788027670.2}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 2000, "round": 2, "prompt_tokens": 2052, "ttft": 0.4374, "prefill_tps": 4691.5, "ts": 1788027676.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 2000, "round": 2, "prompt_tokens": 2052, "gen_tokens": 216, "wall_s": 5.896, "decode_tps": 39.3837, "ts": 1788027676.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 4000, "round": 1, "prompt_tokens": 4052, "ttft": 1.0897, "prefill_tps": 3718.5, "ts": 1788027682.9}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 4000, "round": 1, "prompt_tokens": 4052, "gen_tokens": 213, "wall_s": 6.802, "decode_tps": 37.1101, "ts": 1788027682.9}
+{"kind": "model_meta", "cfg": "A100-Q38-mtp", "init_engine_s": "286.80", "model_load_s": "16.999311", "kv_gib": "48.58", "kv_tokens": "541894", "ts": 1788031514.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 4000, "round": 2, "prompt_tokens": 4052, "ttft": 2.8558, "prefill_tps": 1418.9, "ts": 1788031529.0}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 4000, "round": 2, "prompt_tokens": 4052, "gen_tokens": 183, "wall_s": 7.753, "decode_tps": 37.1657, "ts": 1788031529.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 6000, "round": 1, "prompt_tokens": 6052, "ttft": 0.9464, "prefill_tps": 6394.6, "ts": 1788031535.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 6000, "round": 1, "prompt_tokens": 6052, "gen_tokens": 183, "wall_s": 6.148, "decode_tps": 34.9866, "ts": 1788031535.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 6000, "round": 2, "prompt_tokens": 6052, "ttft": 0.4434, "prefill_tps": 13648.4, "ts": 1788031541.9}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 6000, "round": 2, "prompt_tokens": 6052, "gen_tokens": 221, "wall_s": 6.733, "decode_tps": 34.9766, "ts": 1788031541.9}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 8000, "round": 1, "prompt_tokens": 8052, "ttft": 1.1188, "prefill_tps": 7197.2, "ts": 1788031548.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 8000, "round": 1, "prompt_tokens": 8052, "gen_tokens": 184, "wall_s": 6.633, "decode_tps": 33.1857, "ts": 1788031548.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 8000, "round": 2, "prompt_tokens": 8052, "ttft": 0.3365, "prefill_tps": 23931.6, "ts": 1788031555.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 8000, "round": 2, "prompt_tokens": 8052, "gen_tokens": 210, "wall_s": 6.634, "decode_tps": 33.1868, "ts": 1788031555.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 12000, "round": 1, "prompt_tokens": 12052, "ttft": 1.698, "prefill_tps": 7097.8, "ts": 1788031563.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 12000, "round": 1, "prompt_tokens": 12052, "gen_tokens": 201, "wall_s": 8.349, "decode_tps": 30.0712, "ts": 1788031563.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 12000, "round": 2, "prompt_tokens": 12052, "ttft": 0.3612, "prefill_tps": 33370.6, "ts": 1788031570.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 12000, "round": 2, "prompt_tokens": 12052, "gen_tokens": 188, "wall_s": 6.577, "decode_tps": 30.0838, "ts": 1788031570.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 16000, "round": 1, "prompt_tokens": 16052, "ttft": 1.7725, "prefill_tps": 9056.3, "ts": 1788031579.6}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 16000, "round": 1, "prompt_tokens": 16052, "gen_tokens": 214, "wall_s": 9.524, "decode_tps": 27.4797, "ts": 1788031579.6}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 16000, "round": 2, "prompt_tokens": 16052, "ttft": 0.3896, "prefill_tps": 41199.8, "ts": 1788031587.2}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 16000, "round": 2, "prompt_tokens": 16052, "gen_tokens": 201, "wall_s": 7.66, "decode_tps": 27.5079, "ts": 1788031587.2}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 20000, "round": 1, "prompt_tokens": 20052, "ttft": 1.8527, "prefill_tps": 10823.1, "ts": 1788031597.3}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 20000, "round": 1, "prompt_tokens": 20052, "gen_tokens": 210, "wall_s": 10.103, "decode_tps": 25.3314, "ts": 1788031597.3}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 20000, "round": 2, "prompt_tokens": 20052, "ttft": 0.4149, "prefill_tps": 48326.7, "ts": 1788031606.9}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 20000, "round": 2, "prompt_tokens": 20052, "gen_tokens": 233, "wall_s": 9.569, "decode_tps": 25.345, "ts": 1788031606.9}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 24000, "round": 1, "prompt_tokens": 24052, "ttft": 1.9205, "prefill_tps": 12524.0, "ts": 1788031616.3}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 24000, "round": 1, "prompt_tokens": 24052, "gen_tokens": 177, "wall_s": 9.407, "decode_tps": 23.5085, "ts": 1788031616.3}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 24000, "round": 2, "prompt_tokens": 24052, "ttft": 0.441, "prefill_tps": 54536.6, "ts": 1788031625.0}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 24000, "round": 2, "prompt_tokens": 24052, "gen_tokens": 194, "wall_s": 8.653, "decode_tps": 23.5022, "ts": 1788031625.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 32000, "round": 1, "prompt_tokens": 32051, "ttft": 3.5712, "prefill_tps": 8974.8, "ts": 1788031638.3}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 32000, "round": 1, "prompt_tokens": 32051, "gen_tokens": 202, "wall_s": 13.371, "decode_tps": 20.5102, "ts": 1788031638.3}
+{"kind": "prefill", "cfg": "A100-Q38-mtp", "target": 32000, "round": 2, "prompt_tokens": 32051, "ttft": 0.4996, "prefill_tps": 64150.3, "ts": 1788031647.9}
+{"kind": "decode", "cfg": "A100-Q38-mtp", "target": 32000, "round": 2, "prompt_tokens": 32051, "gen_tokens": 186, "wall_s": 9.519, "decode_tps": 20.5111, "ts": 1788031647.9}
+{"kind": "config_complete", "cfg": "A100-Q38-mtp", "ok": 22, "err": 0, "ts": 1788031647.9}
+{"kind": "model_meta", "cfg": "A100-MG30", "init_engine_s": "9.43", "model_load_s": "12.317612", "kv_gib": "48.23", "kv_tokens": "2493233", "ts": 1788032095.7}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 500, "round": 1, "prompt_tokens": 555, "ttft": 0.2657, "prefill_tps": 2088.5, "ts": 1788032111.9}
+{"kind": "decode", "cfg": "A100-MG30", "target": 500, "round": 1, "prompt_tokens": 555, "gen_tokens": 511, "wall_s": 7.889, "decode_tps": 66.8979, "ts": 1788032111.9}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 500, "round": 2, "prompt_tokens": 555, "ttft": 0.0289, "prefill_tps": 19181.0, "ts": 1788032119.6}
+{"kind": "decode", "cfg": "A100-MG30", "target": 500, "round": 2, "prompt_tokens": 555, "gen_tokens": 511, "wall_s": 7.644, "decode_tps": 66.9751, "ts": 1788032119.6}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 1000, "round": 1, "prompt_tokens": 1055, "ttft": 0.166, "prefill_tps": 6353.6, "ts": 1788032127.6}
+{"kind": "decode", "cfg": "A100-MG30", "target": 1000, "round": 1, "prompt_tokens": 1055, "gen_tokens": 511, "wall_s": 8.049, "decode_tps": 64.6977, "ts": 1788032127.6}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 1000, "round": 2, "prompt_tokens": 1055, "ttft": 0.0354, "prefill_tps": 29824.6, "ts": 1788032135.5}
+{"kind": "decode", "cfg": "A100-MG30", "target": 1000, "round": 2, "prompt_tokens": 1055, "gen_tokens": 511, "wall_s": 7.916, "decode_tps": 64.7123, "ts": 1788032135.5}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 2000, "round": 1, "prompt_tokens": 2055, "ttft": 0.3141, "prefill_tps": 6542.9, "ts": 1788032144.2}
+{"kind": "decode", "cfg": "A100-MG30", "target": 2000, "round": 1, "prompt_tokens": 2055, "gen_tokens": 511, "wall_s": 8.623, "decode_tps": 61.3833, "ts": 1788032144.2}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 2000, "round": 2, "prompt_tokens": 2055, "ttft": 0.0358, "prefill_tps": 57334.3, "ts": 1788032152.5}
+{"kind": "decode", "cfg": "A100-MG30", "target": 2000, "round": 2, "prompt_tokens": 2055, "gen_tokens": 511, "wall_s": 8.343, "decode_tps": 61.3901, "ts": 1788032152.5}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 4000, "round": 1, "prompt_tokens": 4055, "ttft": 0.61, "prefill_tps": 6647.6, "ts": 1788032161.5}
+{"kind": "decode", "cfg": "A100-MG30", "target": 4000, "round": 1, "prompt_tokens": 4055, "gen_tokens": 508, "wall_s": 8.936, "decode_tps": 60.8929, "ts": 1788032161.5}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 4000, "round": 2, "prompt_tokens": 4055, "ttft": 0.0435, "prefill_tps": 93227.7, "ts": 1788032169.8}
+{"kind": "decode", "cfg": "A100-MG30", "target": 4000, "round": 2, "prompt_tokens": 4055, "gen_tokens": 508, "wall_s": 8.373, "decode_tps": 60.8715, "ts": 1788032169.8}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 6000, "round": 1, "prompt_tokens": 6055, "ttft": 0.6224, "prefill_tps": 9728.4, "ts": 1788032178.8}
+{"kind": "decode", "cfg": "A100-MG30", "target": 6000, "round": 1, "prompt_tokens": 6055, "gen_tokens": 511, "wall_s": 8.954, "decode_tps": 61.2117, "ts": 1788032178.8}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 6000, "round": 2, "prompt_tokens": 6055, "ttft": 0.051, "prefill_tps": 118795.7, "ts": 1788032187.2}
+{"kind": "decode", "cfg": "A100-MG30", "target": 6000, "round": 2, "prompt_tokens": 6055, "gen_tokens": 511, "wall_s": 8.38, "decode_tps": 61.2285, "ts": 1788032187.2}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 8000, "round": 1, "prompt_tokens": 8055, "ttft": 0.6359, "prefill_tps": 12666.8, "ts": 1788032196.1}
+{"kind": "decode", "cfg": "A100-MG30", "target": 8000, "round": 1, "prompt_tokens": 8055, "gen_tokens": 511, "wall_s": 8.975, "decode_tps": 61.1602, "ts": 1788032196.1}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 8000, "round": 2, "prompt_tokens": 8055, "ttft": 0.0593, "prefill_tps": 135806.5, "ts": 1788032204.5}
+{"kind": "decode", "cfg": "A100-MG30", "target": 8000, "round": 2, "prompt_tokens": 8055, "gen_tokens": 511, "wall_s": 8.396, "decode_tps": 61.1739, "ts": 1788032204.5}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 12000, "round": 1, "prompt_tokens": 12055, "ttft": 1.2519, "prefill_tps": 9629.1, "ts": 1788032214.1}
+{"kind": "decode", "cfg": "A100-MG30", "target": 12000, "round": 1, "prompt_tokens": 12055, "gen_tokens": 511, "wall_s": 9.616, "decode_tps": 60.9749, "ts": 1788032214.1}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 12000, "round": 2, "prompt_tokens": 12055, "ttft": 0.0762, "prefill_tps": 158232.8, "ts": 1788032222.6}
+{"kind": "decode", "cfg": "A100-MG30", "target": 12000, "round": 2, "prompt_tokens": 12055, "gen_tokens": 511, "wall_s": 8.44, "decode_tps": 60.9749, "ts": 1788032222.6}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 16000, "round": 1, "prompt_tokens": 16055, "ttft": 1.29, "prefill_tps": 12445.8, "ts": 1788032232.3}
+{"kind": "decode", "cfg": "A100-MG30", "target": 16000, "round": 1, "prompt_tokens": 16055, "gen_tokens": 508, "wall_s": 9.662, "decode_tps": 60.5621, "ts": 1788032232.3}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 16000, "round": 2, "prompt_tokens": 16055, "ttft": 0.0926, "prefill_tps": 173326.8, "ts": 1788032240.7}
+{"kind": "decode", "cfg": "A100-MG30", "target": 16000, "round": 2, "prompt_tokens": 16055, "gen_tokens": 508, "wall_s": 8.464, "decode_tps": 60.5649, "ts": 1788032240.7}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 20000, "round": 1, "prompt_tokens": 20055, "ttft": 1.3242, "prefill_tps": 15144.6, "ts": 1788032250.4}
+{"kind": "decode", "cfg": "A100-MG30", "target": 20000, "round": 1, "prompt_tokens": 20055, "gen_tokens": 508, "wall_s": 9.705, "decode_tps": 60.4965, "ts": 1788032250.4}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 20000, "round": 2, "prompt_tokens": 20055, "ttft": 0.1121, "prefill_tps": 178866.8, "ts": 1788032258.9}
+{"kind": "decode", "cfg": "A100-MG30", "target": 20000, "round": 2, "prompt_tokens": 20055, "gen_tokens": 511, "wall_s": 8.495, "decode_tps": 60.8375, "ts": 1788032258.9}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 24000, "round": 1, "prompt_tokens": 24055, "ttft": 1.3577, "prefill_tps": 17717.1, "ts": 1788032268.7}
+{"kind": "decode", "cfg": "A100-MG30", "target": 24000, "round": 1, "prompt_tokens": 24055, "gen_tokens": 511, "wall_s": 9.777, "decode_tps": 60.5736, "ts": 1788032268.7}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 24000, "round": 2, "prompt_tokens": 24055, "ttft": 0.1349, "prefill_tps": 178311.2, "ts": 1788032277.2}
+{"kind": "decode", "cfg": "A100-MG30", "target": 24000, "round": 2, "prompt_tokens": 24055, "gen_tokens": 511, "wall_s": 8.551, "decode_tps": 60.5993, "ts": 1788032277.2}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 32000, "round": 1, "prompt_tokens": 32055, "ttft": 2.692, "prefill_tps": 11907.6, "ts": 1788032288.4}
+{"kind": "decode", "cfg": "A100-MG30", "target": 32000, "round": 1, "prompt_tokens": 32055, "gen_tokens": 508, "wall_s": 11.111, "decode_tps": 60.224, "ts": 1788032288.4}
+{"kind": "prefill", "cfg": "A100-MG30", "target": 32000, "round": 2, "prompt_tokens": 32055, "ttft": 0.1624, "prefill_tps": 197441.5, "ts": 1788032296.9}
+{"kind": "decode", "cfg": "A100-MG30", "target": 32000, "round": 2, "prompt_tokens": 32055, "gen_tokens": 511, "wall_s": 8.58, "decode_tps": 60.5885, "ts": 1788032296.9}
+{"kind": "config_complete", "cfg": "A100-MG30", "ok": 22, "err": 0, "ts": 1788032296.9}
+{"kind": "model_meta", "cfg": "A100-MG30-dflash", "init_engine_s": "140.35", "model_load_s": "13.140299", "kv_gib": "42.09", "kv_tokens": "1679905", "ts": 1788032749.8}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 500, "round": 1, "prompt_tokens": 555, "ttft": 0.3537, "prefill_tps": 1569.1, "ts": 1788032751.7}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 500, "round": 1, "prompt_tokens": 555, "gen_tokens": 73, "wall_s": 1.849, "decode_tps": 48.1584, "ts": 1788032751.7}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 500, "round": 2, "prompt_tokens": 555, "ttft": 0.0731, "prefill_tps": 7587.4, "ts": 1788032753.3}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 500, "round": 2, "prompt_tokens": 555, "gen_tokens": 75, "wall_s": 1.619, "decode_tps": 47.8781, "ts": 1788032753.3}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 1000, "round": 1, "prompt_tokens": 1055, "ttft": 0.2074, "prefill_tps": 5086.8, "ts": 1788032756.7}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 1000, "round": 1, "prompt_tokens": 1055, "gen_tokens": 146, "wall_s": 3.344, "decode_tps": 46.229, "ts": 1788032756.7}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 1000, "round": 2, "prompt_tokens": 1055, "ttft": 0.0831, "prefill_tps": 12697.5, "ts": 1788032759.8}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 1000, "round": 2, "prompt_tokens": 1055, "gen_tokens": 142, "wall_s": 3.131, "decode_tps": 46.2574, "ts": 1788032759.8}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 2000, "round": 1, "prompt_tokens": 2055, "ttft": 0.3663, "prefill_tps": 5610.5, "ts": 1788032763.8}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 2000, "round": 1, "prompt_tokens": 2055, "gen_tokens": 163, "wall_s": 4.054, "decode_tps": 43.9283, "ts": 1788032763.8}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 2000, "round": 2, "prompt_tokens": 2055, "ttft": 0.0839, "prefill_tps": 24484.8, "ts": 1788032766.7}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 2000, "round": 2, "prompt_tokens": 2055, "gen_tokens": 125, "wall_s": 2.902, "decode_tps": 44.001, "ts": 1788032766.7}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 4000, "round": 1, "prompt_tokens": 4055, "ttft": 0.6854, "prefill_tps": 5915.8, "ts": 1788032771.9}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 4000, "round": 1, "prompt_tokens": 4055, "gen_tokens": 191, "wall_s": 5.106, "decode_tps": 42.9814, "ts": 1788032771.9}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 4000, "round": 2, "prompt_tokens": 4055, "ttft": 0.0699, "prefill_tps": 57991.2, "ts": 1788032776.1}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 4000, "round": 2, "prompt_tokens": 4055, "gen_tokens": 179, "wall_s": 4.22, "decode_tps": 42.893, "ts": 1788032776.1}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 6000, "round": 1, "prompt_tokens": 6055, "ttft": 0.6742, "prefill_tps": 8981.6, "ts": 1788032781.3}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 6000, "round": 1, "prompt_tokens": 6055, "gen_tokens": 193, "wall_s": 5.254, "decode_tps": 41.9257, "ts": 1788032781.3}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 6000, "round": 2, "prompt_tokens": 6055, "ttft": 0.0839, "prefill_tps": 72185.5, "ts": 1788032786.2}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 6000, "round": 2, "prompt_tokens": 6055, "gen_tokens": 200, "wall_s": 4.838, "decode_tps": 41.858, "ts": 1788032786.2}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 8000, "round": 1, "prompt_tokens": 8055, "ttft": 0.6853, "prefill_tps": 11754.6, "ts": 1788032791.5}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 8000, "round": 1, "prompt_tokens": 8055, "gen_tokens": 192, "wall_s": 5.361, "decode_tps": 40.8508, "ts": 1788032791.5}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 8000, "round": 2, "prompt_tokens": 8055, "ttft": 0.1005, "prefill_tps": 80131.3, "ts": 1788032796.4}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 8000, "round": 2, "prompt_tokens": 8055, "gen_tokens": 194, "wall_s": 4.825, "decode_tps": 40.8545, "ts": 1788032796.4}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 12000, "round": 1, "prompt_tokens": 12055, "ttft": 1.3252, "prefill_tps": 9096.7, "ts": 1788032802.4}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 12000, "round": 1, "prompt_tokens": 12055, "gen_tokens": 186, "wall_s": 6.071, "decode_tps": 38.9779, "ts": 1788032802.4}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 12000, "round": 2, "prompt_tokens": 12055, "ttft": 0.1034, "prefill_tps": 116597.6, "ts": 1788032807.7}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 12000, "round": 2, "prompt_tokens": 12055, "gen_tokens": 202, "wall_s": 5.259, "decode_tps": 38.9862, "ts": 1788032807.7}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 16000, "round": 1, "prompt_tokens": 16055, "ttft": 1.3551, "prefill_tps": 11848.1, "ts": 1788032814.3}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 16000, "round": 1, "prompt_tokens": 16055, "gen_tokens": 197, "wall_s": 6.612, "decode_tps": 37.282, "ts": 1788032814.3}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 16000, "round": 2, "prompt_tokens": 16055, "ttft": 0.1302, "prefill_tps": 123321.0, "ts": 1788032819.0}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 16000, "round": 2, "prompt_tokens": 16055, "gen_tokens": 172, "wall_s": 4.714, "decode_tps": 37.3089, "ts": 1788032819.0}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 20000, "round": 1, "prompt_tokens": 20055, "ttft": 1.3994, "prefill_tps": 14330.7, "ts": 1788032825.9}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 20000, "round": 1, "prompt_tokens": 20055, "gen_tokens": 197, "wall_s": 6.884, "decode_tps": 35.7351, "ts": 1788032825.9}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 20000, "round": 2, "prompt_tokens": 20055, "ttft": 0.1372, "prefill_tps": 146178.2, "ts": 1788032831.4}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 20000, "round": 2, "prompt_tokens": 20055, "gen_tokens": 192, "wall_s": 5.481, "decode_tps": 35.7439, "ts": 1788032831.4}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 24000, "round": 1, "prompt_tokens": 24055, "ttft": 1.4284, "prefill_tps": 16840.7, "ts": 1788032838.8}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 24000, "round": 1, "prompt_tokens": 24055, "gen_tokens": 208, "wall_s": 7.467, "decode_tps": 34.2781, "ts": 1788032838.8}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 24000, "round": 2, "prompt_tokens": 24055, "ttft": 0.1622, "prefill_tps": 148263.2, "ts": 1788032844.3}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 24000, "round": 2, "prompt_tokens": 24055, "gen_tokens": 184, "wall_s": 5.498, "decode_tps": 34.2985, "ts": 1788032844.3}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 32000, "round": 1, "prompt_tokens": 32055, "ttft": 2.7856, "prefill_tps": 11507.3, "ts": 1788032853.9}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 32000, "round": 1, "prompt_tokens": 32055, "gen_tokens": 216, "wall_s": 9.567, "decode_tps": 31.7042, "ts": 1788032853.9}
+{"kind": "prefill", "cfg": "A100-MG30-dflash", "target": 32000, "round": 2, "prompt_tokens": 32055, "ttft": 0.1966, "prefill_tps": 163066.0, "ts": 1788032860.4}
+{"kind": "decode", "cfg": "A100-MG30-dflash", "target": 32000, "round": 2, "prompt_tokens": 32055, "gen_tokens": 202, "wall_s": 6.527, "decode_tps": 31.7504, "ts": 1788032860.4}
+{"kind": "config_complete", "cfg": "A100-MG30-dflash", "ok": 22, "err": 0, "ts": 1788032860.4}
+{"kind": "model_meta", "cfg": "A100-G31-mtp-p45450", "init_engine_s": "156.26", "model_load_s": "59.779637", "kv_gib": "48.27", "kv_tokens": "247406", "ts": 1788033145.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 2.7952, "prefill_tps": 183.5, "ts": 1788033161.9}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 235, "wall_s": 7.614, "decode_tps": 48.5599, "ts": 1788033161.9}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0567, "prefill_tps": 9043.9, "ts": 1788033166.9}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 245, "wall_s": 5.09, "decode_tps": 48.475, "ts": 1788033166.9}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.2541, "prefill_tps": 3987.1, "ts": 1788033172.6}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 261, "wall_s": 5.7, "decode_tps": 47.7464, "ts": 1788033172.6}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.065, "prefill_tps": 15573.0, "ts": 1788033177.7}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 244, "wall_s": 5.094, "decode_tps": 48.3223, "ts": 1788033177.7}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.4529, "prefill_tps": 4444.8, "ts": 1788033183.7}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 263, "wall_s": 5.996, "decode_tps": 47.2674, "ts": 1788033183.7}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.0566, "prefill_tps": 35577.0, "ts": 1788033189.3}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 263, "wall_s": 5.592, "decode_tps": 47.3284, "ts": 1788033189.3}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 0.9339, "prefill_tps": 4297.0, "ts": 1788033195.6}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 247, "wall_s": 6.313, "decode_tps": 45.7351, "ts": 1788033195.6}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 0.0618, "prefill_tps": 64973.1, "ts": 1788033201.0}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 245, "wall_s": 5.394, "decode_tps": 45.7562, "ts": 1788033201.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.9746, "prefill_tps": 6169.9, "ts": 1788033207.5}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 242, "wall_s": 6.473, "decode_tps": 43.8297, "ts": 1788033207.5}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0819, "prefill_tps": 73430.0, "ts": 1788033214.0}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 284, "wall_s": 6.506, "decode_tps": 44.0502, "ts": 1788033214.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 1.1224, "prefill_tps": 7139.0, "ts": 1788033220.8}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 241, "wall_s": 6.758, "decode_tps": 42.5848, "ts": 1788033220.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 0.0819, "prefill_tps": 97846.7, "ts": 1788033227.0}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 261, "wall_s": 6.188, "decode_tps": 42.5789, "ts": 1788033227.0}
+{"kind": "model_meta", "cfg": "A100-G31-mtp-p45450", "init_engine_s": "261.47", "model_load_s": "9.350525", "kv_gib": "48.27", "kv_tokens": "247406", "ts": 1788034561.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 7.9956, "prefill_tps": 1502.5, "ts": 1788034586.9}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 257, "wall_s": 14.306, "decode_tps": 40.5657, "ts": 1788034586.9}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.1068, "prefill_tps": 112526.2, "ts": 1788034593.4}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 263, "wall_s": 6.523, "decode_tps": 40.8311, "ts": 1788034593.4}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16012, "ttft": 2.6744, "prefill_tps": 5987.2, "ts": 1788034602.8}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16012, "gen_tokens": 258, "wall_s": 9.338, "decode_tps": 38.5704, "ts": 1788034602.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16012, "ttft": 0.1279, "prefill_tps": 125209.2, "ts": 1788034609.5}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16012, "gen_tokens": 258, "wall_s": 6.745, "decode_tps": 38.8359, "ts": 1788034609.5}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 3.0063, "prefill_tps": 6657.0, "ts": 1788034619.8}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 267, "wall_s": 10.313, "decode_tps": 36.4056, "ts": 1788034619.8}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.1461, "prefill_tps": 137022.6, "ts": 1788034627.0}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 261, "wall_s": 7.209, "decode_tps": 36.8093, "ts": 1788034627.0}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 3.3482, "prefill_tps": 7172.0, "ts": 1788034637.5}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 250, "wall_s": 10.419, "decode_tps": 35.2149, "ts": 1788034637.5}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1698, "prefill_tps": 141390.3, "ts": 1788034645.3}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 276, "wall_s": 7.883, "decode_tps": 35.6541, "ts": 1788034645.3}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 7.6056, "prefill_tps": 4209.1, "ts": 1788034660.6}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 259, "wall_s": 15.247, "decode_tps": 33.7647, "ts": 1788034660.6}
+{"kind": "prefill", "cfg": "A100-G31-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.2318, "prefill_tps": 138095.3, "ts": 1788034668.4}
+{"kind": "decode", "cfg": "A100-G31-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 260, "wall_s": 7.788, "decode_tps": 34.2764, "ts": 1788034668.4}
+{"kind": "config_complete", "cfg": "A100-G31-mtp-p45450", "ok": 22, "err": 0, "ts": 1788034668.4}
+{"kind": "model_meta", "cfg": "A100-G26A4B-mtp-p45450", "init_engine_s": "139.63", "model_load_s": "25.905942", "kv_gib": "50.56", "kv_tokens": "1036703", "ts": 1788034892.5}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 4.7019, "prefill_tps": 109.1, "ts": 1788034903.8}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 204, "wall_s": 6.868, "decode_tps": 93.7034, "ts": 1788034903.8}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.0418, "prefill_tps": 12277.3, "ts": 1788034905.8}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 186, "wall_s": 2.033, "decode_tps": 92.9019, "ts": 1788034905.8}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.0907, "prefill_tps": 11169.1, "ts": 1788034908.0}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 197, "wall_s": 2.229, "decode_tps": 91.6627, "ts": 1788034908.0}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.0452, "prefill_tps": 22410.1, "ts": 1788034910.1}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 189, "wall_s": 2.079, "decode_tps": 92.4351, "ts": 1788034910.1}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.1086, "prefill_tps": 18538.0, "ts": 1788034912.2}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 182, "wall_s": 2.092, "decode_tps": 91.2526, "ts": 1788034912.2}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.0486, "prefill_tps": 41436.1, "ts": 1788034914.4}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 192, "wall_s": 2.139, "decode_tps": 91.3849, "ts": 1788034914.4}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 0.2073, "prefill_tps": 19356.1, "ts": 1788034916.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 210, "wall_s": 2.581, "decode_tps": 88.042, "ts": 1788034916.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 0.0597, "prefill_tps": 67179.2, "ts": 1788034919.2}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 199, "wall_s": 2.306, "decode_tps": 88.1516, "ts": 1788034919.2}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 0.2254, "prefill_tps": 26682.1, "ts": 1788034921.7}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 191, "wall_s": 2.481, "decode_tps": 84.2181, "ts": 1788034921.7}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 0.0654, "prefill_tps": 91977.9, "ts": 1788034924.2}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 201, "wall_s": 2.428, "decode_tps": 84.635, "ts": 1788034924.2}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 0.2723, "prefill_tps": 29432.4, "ts": 1788034926.8}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 196, "wall_s": 2.674, "decode_tps": 81.1857, "ts": 1788034926.8}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 0.0748, "prefill_tps": 107142.0, "ts": 1788034929.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 199, "wall_s": 2.507, "decode_tps": 81.4028, "ts": 1788034929.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 0.5596, "prefill_tps": 21467.1, "ts": 1788034932.4}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 196, "wall_s": 3.06, "decode_tps": 77.9874, "ts": 1788034932.4}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 0.0947, "prefill_tps": 126814.8, "ts": 1788034935.0}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 193, "wall_s": 2.563, "decode_tps": 77.8003, "ts": 1788034935.0}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16013, "ttft": 0.6559, "prefill_tps": 24413.7, "ts": 1788034938.1}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16013, "gen_tokens": 187, "wall_s": 3.179, "decode_tps": 73.7174, "ts": 1788034938.1}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16013, "ttft": 0.1133, "prefill_tps": 141273.2, "ts": 1788034940.8}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16013, "gen_tokens": 191, "wall_s": 2.681, "decode_tps": 73.9992, "ts": 1788034940.8}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 0.7625, "prefill_tps": 26247.5, "ts": 1788034944.4}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 195, "wall_s": 3.55, "decode_tps": 69.5914, "ts": 1788034944.4}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 0.131, "prefill_tps": 152769.6, "ts": 1788034947.3}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 193, "wall_s": 2.884, "decode_tps": 69.7395, "ts": 1788034947.3}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 0.8716, "prefill_tps": 27551.8, "ts": 1788034950.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 190, "wall_s": 3.678, "decode_tps": 67.3564, "ts": 1788034950.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 0.1504, "prefill_tps": 159691.9, "ts": 1788034953.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 191, "wall_s": 2.964, "decode_tps": 67.5249, "ts": 1788034953.9}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 1.9222, "prefill_tps": 16654.6, "ts": 1788034958.7}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 189, "wall_s": 4.829, "decode_tps": 64.6852, "ts": 1788034958.7}
+{"kind": "prefill", "cfg": "A100-G26A4B-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 0.1951, "prefill_tps": 164089.8, "ts": 1788034961.9}
+{"kind": "decode", "cfg": "A100-G26A4B-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 191, "wall_s": 3.133, "decode_tps": 64.6677, "ts": 1788034961.9}
+{"kind": "config_complete", "cfg": "A100-G26A4B-mtp-p45450", "ok": 22, "err": 0, "ts": 1788034961.9}
+{"kind": "model_meta", "cfg": "A100-Q38-mtp-p45450", "init_engine_s": "190.25", "model_load_s": "18.038997", "kv_gib": "48.58", "kv_tokens": "541894", "ts": 1788035301.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 552, "ttft": 1.7269, "prefill_tps": 319.7, "ts": 1788035309.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 500, "round": 1, "prompt_tokens": 552, "gen_tokens": 191, "wall_s": 6.327, "decode_tps": 41.3017, "ts": 1788035309.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 552, "ttft": 0.2166, "prefill_tps": 2548.4, "ts": 1788035315.0}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 500, "round": 2, "prompt_tokens": 552, "gen_tokens": 216, "wall_s": 5.442, "decode_tps": 41.1469, "ts": 1788035315.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1051, "ttft": 0.3524, "prefill_tps": 2982.7, "ts": 1788035320.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 1000, "round": 1, "prompt_tokens": 1051, "gen_tokens": 209, "wall_s": 5.488, "decode_tps": 40.5022, "ts": 1788035320.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1051, "ttft": 0.3643, "prefill_tps": 2885.0, "ts": 1788035326.3}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 1000, "round": 2, "prompt_tokens": 1051, "gen_tokens": 221, "wall_s": 5.796, "decode_tps": 40.5048, "ts": 1788035326.3}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2052, "ttft": 0.6844, "prefill_tps": 2998.1, "ts": 1788035332.2}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 2000, "round": 1, "prompt_tokens": 2052, "gen_tokens": 206, "wall_s": 5.909, "decode_tps": 39.237, "ts": 1788035332.2}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2052, "ttft": 0.4221, "prefill_tps": 4861.4, "ts": 1788035338.4}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 2000, "round": 2, "prompt_tokens": 2052, "gen_tokens": 229, "wall_s": 6.24, "decode_tps": 39.1905, "ts": 1788035338.4}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4052, "ttft": 1.086, "prefill_tps": 3731.1, "ts": 1788035345.3}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 4000, "round": 1, "prompt_tokens": 4052, "gen_tokens": 216, "wall_s": 6.894, "decode_tps": 37.0153, "ts": 1788035345.3}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4052, "ttft": 0.3161, "prefill_tps": 12819.5, "ts": 1788035350.4}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 4000, "round": 2, "prompt_tokens": 4052, "gen_tokens": 176, "wall_s": 5.047, "decode_tps": 36.9925, "ts": 1788035350.4}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6052, "ttft": 0.9633, "prefill_tps": 6282.6, "ts": 1788035356.6}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 6000, "round": 1, "prompt_tokens": 6052, "gen_tokens": 185, "wall_s": 6.224, "decode_tps": 34.9737, "ts": 1788035356.6}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6052, "ttft": 0.4516, "prefill_tps": 13401.2, "ts": 1788035363.4}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 6000, "round": 2, "prompt_tokens": 6052, "gen_tokens": 223, "wall_s": 6.801, "decode_tps": 34.9658, "ts": 1788035363.4}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8052, "ttft": 1.1382, "prefill_tps": 7074.1, "ts": 1788035370.7}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 8000, "round": 1, "prompt_tokens": 8052, "gen_tokens": 205, "wall_s": 7.281, "decode_tps": 33.2105, "ts": 1788035370.7}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8052, "ttft": 0.3428, "prefill_tps": 23491.9, "ts": 1788035376.7}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 8000, "round": 2, "prompt_tokens": 8052, "gen_tokens": 191, "wall_s": 6.065, "decode_tps": 33.2029, "ts": 1788035376.7}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12052, "ttft": 1.722, "prefill_tps": 6998.7, "ts": 1788035384.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 12000, "round": 1, "prompt_tokens": 12052, "gen_tokens": 184, "wall_s": 7.804, "decode_tps": 30.0896, "ts": 1788035384.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12052, "ttft": 0.3691, "prefill_tps": 32653.9, "ts": 1788035391.7}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 12000, "round": 2, "prompt_tokens": 12052, "gen_tokens": 207, "wall_s": 7.207, "decode_tps": 30.1266, "ts": 1788035391.7}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16052, "ttft": 1.7957, "prefill_tps": 8939.1, "ts": 1788035400.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 16000, "round": 1, "prompt_tokens": 16052, "gen_tokens": 192, "wall_s": 8.738, "decode_tps": 27.5144, "ts": 1788035400.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16052, "ttft": 0.3976, "prefill_tps": 40370.1, "ts": 1788035408.5}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 16000, "round": 2, "prompt_tokens": 16052, "gen_tokens": 211, "wall_s": 8.031, "decode_tps": 27.5093, "ts": 1788035408.5}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20051, "ttft": 1.879, "prefill_tps": 10671.0, "ts": 1788035419.0}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 20000, "round": 1, "prompt_tokens": 20051, "gen_tokens": 220, "wall_s": 10.519, "decode_tps": 25.348, "ts": 1788035419.0}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20051, "ttft": 0.4236, "prefill_tps": 47331.9, "ts": 1788035427.1}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 20000, "round": 2, "prompt_tokens": 20051, "gen_tokens": 195, "wall_s": 8.075, "decode_tps": 25.3538, "ts": 1788035427.1}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24052, "ttft": 1.9425, "prefill_tps": 12381.9, "ts": 1788035437.6}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 24000, "round": 1, "prompt_tokens": 24052, "gen_tokens": 202, "wall_s": 10.495, "decode_tps": 23.5013, "ts": 1788035437.6}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24052, "ttft": 0.4543, "prefill_tps": 52944.5, "ts": 1788035444.6}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 24000, "round": 2, "prompt_tokens": 24052, "gen_tokens": 155, "wall_s": 7.002, "decode_tps": 23.5199, "ts": 1788035444.6}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32052, "ttft": 3.6157, "prefill_tps": 8864.7, "ts": 1788035457.7}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 32000, "round": 1, "prompt_tokens": 32052, "gen_tokens": 196, "wall_s": 13.118, "decode_tps": 20.5218, "ts": 1788035457.7}
+{"kind": "prefill", "cfg": "A100-Q38-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32052, "ttft": 0.5057, "prefill_tps": 63385.3, "ts": 1788035467.8}
+{"kind": "decode", "cfg": "A100-Q38-mtp-p45450", "target": 32000, "round": 2, "prompt_tokens": 32052, "gen_tokens": 197, "wall_s": 10.06, "decode_tps": 20.5148, "ts": 1788035467.8}
+{"kind": "config_complete", "cfg": "A100-Q38-mtp-p45450", "ok": 22, "err": 0, "ts": 1788035467.8}

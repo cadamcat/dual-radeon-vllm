@@ -1,0 +1,218 @@
+{
+ "what": "The 2026-08-29 ladder campaign on the Radeon host: which kernel served each arm, what speculation the engine actually resolved, and whether vllm#45450's probe fired.",
+ "why": "results-2026-08-29.jsonl carries eight arms across two vLLM images and two attention backends. Two of them differ only in whether #45450 is installed, and the patch cannot act on one of them, so the backend is part of what the row claims and needs its evidence committed rather than asserted.",
+ "arms": {
+  "Q38-tp2": {
+   "serve_log": "logs/Q38-tp2.log",
+   "attn_backend": "ROCM_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN']"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "stock",
+   "p45450_md5": {
+    "triton_unified_attention.py": "49fab3b6",
+    "triton_attn.py": "f0a1379d"
+   }
+  },
+  "Q38-mtp-tp2": {
+   "serve_log": "logs/Q38-mtp-tp2.log",
+   "attn_backend": "ROCM_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN']"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": "method='mtp', model='/models/Qwen3.8-27B-AWQ-INT4', num_spec_tokens=3",
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "stock",
+   "p45450_md5": {
+    "triton_unified_attention.py": "49fab3b6",
+    "triton_attn.py": "f0a1379d"
+   }
+  },
+  "Q38-mtp-p45450-tp2": {
+   "serve_log": "logs/Q38-mtp-p45450-tp2.log",
+   "attn_backend": "ROCM_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN']"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": "method='mtp', model='/models/Qwen3.8-27B-AWQ-INT4', num_spec_tokens=3",
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "9416a868",
+    "triton_attn.py": "8bd13173"
+   }
+  },
+  "Q38-triton-tp2": {
+   "serve_log": "logs/Q38-triton-tp2.log",
+   "attn_backend": "TRITON_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Using TRITON_ATTN backend"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "9416a868",
+    "triton_attn.py": "8bd13173"
+   }
+  },
+  "Q38-mtp-triton-p45450-tp2": {
+   "serve_log": "logs/Q38-mtp-triton-p45450-tp2.log",
+   "attn_backend": "TRITON_ATTN",
+   "attn_backend_draft": "ROCM_ATTN",
+   "attn_backend_evidence": [
+    "Using TRITON_ATTN backend",
+    "Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN']"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": "method='mtp', model='/models/Qwen3.8-27B-AWQ-INT4', num_spec_tokens=3",
+   "probe_3d_spec_active": 2,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "9416a868",
+    "triton_attn.py": "8bd13173"
+   }
+  },
+  "Q38-mtp-triton-tp2": {
+   "serve_log": "logs/Q38-mtp-triton-tp2.log",
+   "attn_backend": "TRITON_ATTN",
+   "attn_backend_draft": "ROCM_ATTN",
+   "attn_backend_evidence": [
+    "Using TRITON_ATTN backend",
+    "Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN']"
+   ],
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "speculative_config": "method='mtp', model='/models/Qwen3.8-27B-AWQ-INT4', num_spec_tokens=3",
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-027",
+   "p45450": "stock",
+   "p45450_md5": {
+    "triton_unified_attention.py": "49fab3b6",
+    "triton_attn.py": "f0a1379d"
+   }
+  },
+  "G31-tp2": {
+   "serve_log": "logs/G31-tp2.log",
+   "attn_backend": "TRITON_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Forcing TRITON_ATTN backend",
+    "Using TRITON_ATTN backend"
+   ],
+   "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": true,
+   "container": "vllm-tp2",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "4a14f86d",
+    "triton_attn.py": "7e275cdc"
+   }
+  },
+  "G31-mtp-p45450-tp2": {
+   "serve_log": "logs/G31-mtp-p45450-tp2.log",
+   "attn_backend": "TRITON_ATTN",
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [
+    "Forcing TRITON_ATTN backend",
+    "Using TRITON_ATTN backend"
+   ],
+   "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+   "speculative_config": "method='mtp', model='/models/gemma-4-31B-it-assistant', num_spec_tokens=3",
+   "probe_3d_spec_active": 2,
+   "reached_startup_complete": true,
+   "container": "vllm-tp2",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "4a14f86d",
+    "triton_attn.py": "7e275cdc"
+   }
+  },
+  "G31-mtp-tp2": {
+   "serve_log": "logs/G31-mtp-tp2.log",
+   "attn_backend": null,
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [],
+   "vllm": null,
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": false,
+   "container": "vllm-027",
+   "p45450": "stock",
+   "p45450_md5": {
+    "triton_unified_attention.py": "49fab3b6",
+    "triton_attn.py": "f0a1379d"
+   }
+  },
+  "G31-tp2-on-027": {
+   "serve_log": "logs/G31-tp2-on-027.log",
+   "attn_backend": null,
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [],
+   "vllm": null,
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": false,
+   "container": "vllm-027",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "9416a868",
+    "triton_attn.py": "8bd13173"
+   }
+  },
+  "MG30-dflash-tp2": {
+   "serve_log": "logs/MG30-dflash-tp2.log",
+   "attn_backend": null,
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [],
+   "vllm": null,
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": false,
+   "container": "vllm-027",
+   "p45450": "stock",
+   "p45450_md5": {
+    "triton_unified_attention.py": "49fab3b6",
+    "triton_attn.py": "f0a1379d"
+   }
+  },
+  "MG30-dflash-method-dflash": {
+   "serve_log": "logs/MG30-dflash-method-dflash.log",
+   "attn_backend": null,
+   "attn_backend_draft": null,
+   "attn_backend_evidence": [],
+   "vllm": null,
+   "speculative_config": null,
+   "probe_3d_spec_active": 0,
+   "reached_startup_complete": false,
+   "container": "vllm-027",
+   "p45450": "patched",
+   "p45450_md5": {
+    "triton_unified_attention.py": "9416a868",
+    "triton_attn.py": "8bd13173"
+   }
+  }
+ }
+}

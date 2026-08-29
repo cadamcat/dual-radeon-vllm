@@ -1684,17 +1684,44 @@ def main():
     sys.path.insert(0, HERE)
     import build_ledger
     led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("benchmarks README, ledger rows", "170", len(led))
+    ck("benchmarks README, ledger rows", "258", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
        == open(os.path.join(HERE, "..", "ledger.jsonl")).read() else 0)
-    ck("benchmarks README, points that are not chart grade", "1",
+    ck("benchmarks README, points that are not chart grade", "29",
        sum(1 for r in led if not r["chart_grade"]))
-    ck("benchmarks README, and it is above the 6% cut", "1",
-       sum(1 for r in led if not r["chart_grade"] and r["range_pct"] > 6.0))
+    ck("benchmarks README, and it is above the cut", "29",
+       sum(1 for r in led if not r["chart_grade"]
+           and r["range_pct"] > build_ledger.RANGE_CUT))
+    # --- the 2026-08-29 campaign's backend column, against its own logs ------
+    # attn_backend is not decoration: it is what says why two rows differing
+    # only in `patches` measure the same thing. A column carrying that has to
+    # be checked against the logs rather than against itself.
+    c29prov = json.load(open(os.path.join(
+        HERE, "..", "campaign-2026-08-29", "provenance.json")))["arms"]
+    c29 = [r for r in led if r["date"] == "2026-08-29"]
+    ck("campaign 0829, every arm has a serve log naming its backend", "0",
+       sum(1 for r in c29 if r["cfg"] not in c29prov
+           or not c29prov[r["cfg"]]["attn_backend_evidence"]))
+    ck("campaign 0829, and the ledger's backend is that log's", "1",
+       1 if all(r["attn_backend"] == c29prov[r["cfg"]]["attn_backend"]
+                for r in c29 if r["cfg"] in c29prov) else 0)
+    # The probe prints once per process when the 3D path serves a step wider
+    # than one token, so TP=2 prints twice. It needs three things at once: the
+    # patch installed, the Triton kernel on the path, and speculation on.
+    # Every arm missing any one of them must print zero -- that is what makes
+    # the two that print a measurement rather than a coincidence.
+    _fired = {k: v["probe_3d_spec_active"] for k, v in c29prov.items()}
+    ck("campaign 0829, the probe fired twice on gemma-4's patched Triton arm",
+       "2", _fired["G31-mtp-p45450-tp2"])
+    ck("campaign 0829, and twice on Qwen3.8's",
+       "2", _fired["Q38-mtp-triton-p45450-tp2"])
+    ck("campaign 0829, and zero everywhere one of its three conditions is missing",
+       "0", sum(v for k, v in _fired.items()
+                if k not in ("G31-mtp-p45450-tp2", "Q38-mtp-triton-p45450-tp2")))
     ck("benchmarks README, points a later session supersedes", "2",
        sum(1 for r in led if r.get("superseded_values")))
-    ck("benchmarks README, ledger range median", "0.12",
+    ck("benchmarks README, ledger range median", "0.17",
        med([r["range_pct"] for r in led if r["range_pct"] is not None]), tol=0.05)
     # a row must be recomputable from the file it names, not merely plausible
     spot = next(r for r in led if r["cfg"] == "B-8B-tp2" and r["ctx"] == 32000
@@ -2845,24 +2872,33 @@ def main():
        1 if XART["fig4"]["spreads"] == xspread else 0)
     ck("measure article, fig4 the cut is build_ledger's", str(build_ledger.RANGE_CUT),
        XART["fig4"]["cut"])
-    ck("measure article, fig4 median", "0.12", XART["fig4"]["median"])
-    ck("measure article, fig4 p95", "2.32", XART["fig4"]["p95"])
-    ck("measure article, fig4 points above the cut", "1", len(XART["fig4"]["above_cut"]))
-    ck("measure article, fig4 which is the ungraded count", "1", XART["fig4"]["ungraded"])
+    ck("measure article, fig4 median", "0.17", XART["fig4"]["median"])
+    ck("measure article, fig4 p95", "14.09", XART["fig4"]["p95"])
+    ck("measure article, fig4 points above the cut", "29", len(XART["fig4"]["above_cut"]))
+    ck("measure article, fig4 which is the ungraded count", "29", XART["fig4"]["ungraded"])
     ck("measure article, fig4 no ledger row is a single run", "0",
        XART["fig4"]["single_run"])
     # the tail is what justifies a cut at 6 rather than a convention, and
     # build_ledger's comment now describes it; both have to stay true
-    ck("measure article, fig4 the tail above 2.5%", "6", len(XART["fig4"]["tail"]))
+    ck("measure article, fig4 the tail above 2.5%", "43", len(XART["fig4"]["tail"]))
+    # The cut has to sit inside the widest break in the tail, not merely above
+    # the quiet part: that is what "chosen from the distribution rather than
+    # picked" means, and it is the property that went stale when this
+    # campaign's speculative arms landed. Stated as the gap itself -- nothing
+    # within a point below the cut, nothing within a point above it -- so it
+    # survives the next campaign moving the numbers without surviving the cut
+    # drifting out of the gap again.
+    _below = [v for v in XART["fig4"]["tail"] if v < XART["fig4"]["cut"]]
+    _above = XART["fig4"]["above_cut"]
     ck("measure article, fig4 the gap the cut sits in", "1",
-       1 if max(v for v in XART["fig4"]["tail"] if v < XART["fig4"]["cut"]) < 5.5
-       and min(XART["fig4"]["above_cut"]) > 15 else 0)
+       1 if _below and _above
+       and XART["fig4"]["cut"] - max(_below) > 1.0
+       and min(_above) - XART["fig4"]["cut"] > 1.0 else 0)
     bl = open(os.path.join(HERE, "build_ledger.py"), encoding="utf-8").read()
     ck("build_ledger, its comment describes the current distribution", "1",
-       1 if "0.00-2.32%" in bl and "2.6, 3.4, 3.5, 4.1, 5.1, and then jump to 16.8" in bl
-       else 0)
-    ck("build_ledger, and says it excludes one point", "1",
-       1 if "excludes the one point" in bl else 0)
+       1 if "5.30, 5.33, 5.97, 6.02, 6.10, and then jump to 9.50" in bl else 0)
+    ck("build_ledger, and says which gap the cut sits in", "1",
+       1 if "6.10 -> 9.50" in bl else 0)
 
     # fig5: why the range rather than a standard deviation
     B5 = XART["fig4"]["bimodal"]

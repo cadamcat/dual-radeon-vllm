@@ -52,16 +52,71 @@ CFG = {
     "D8-27B-tp2": ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
     "F-27B-tp2":  ("gemma-3-27b-it", "w4a16", "sliding window", 2),
     "G-30B-tp2":  ("Muse-Glimmer-30B", "int4", "sliding window 2048", 2),
+    # 2026-08-29. The campaign names its own arms, so a model appears under
+    # several ids that differ in speculation and in which kernel served them.
+    "Q38-tp2":                   ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-mtp-tp2":               ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-mtp-p45450-tp2":        ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-triton-tp2":            ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-mtp-triton-tp2":        ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "Q38-mtp-triton-p45450-tp2": ("Qwen3.8-27B", "AWQ int4", "hybrid SSM", 2),
+    "G31-tp2":                   ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
+    "G31-mtp-p45450-tp2":        ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
+}
+
+# What each 2026-08-29 arm ran with, beyond the model.
+#
+#   spec          handoff 6's descriptor, recording what the *engine* resolved
+#                 rather than what the flag asked for: the gemma arm requests
+#                 method "draft_model" and vLLM reports
+#                 SpeculativeConfig(method='mtp', ...). `drafter` is what keeps
+#                 the two shapes apart -- Qwen3.8 carries its mtp head in its
+#                 own weights, gemma-4 loads a separate assistant checkpoint.
+#                 k is 3 throughout this campaign. Every gemma-4 speculation
+#                 number already published here is k=1, so a point-for-point
+#                 comparison with those is not available.
+#   attn_backend  which kernel actually served the arm, read off the serve log
+#                 named beside it in campaign-2026-08-29/serve-logs/.
+#
+# The backend is a column because without it two rows differing only in
+# `patches` would claim a difference the kernel path makes impossible.
+# vllm#45450 patches triton_unified_attention.py and triton_attn.py; Qwen3.8 on
+# the 0.27 ROCm image is routed to ROCM_ATTN, whose backend file imports
+# chunked_prefill_paged_decode and neither of those. The two Qwen3.8 mtp arms,
+# one patched and one not, agree to a mean of -1.93% -- inside their own
+# 2.0-21.2% run-to-run spread -- and the patch's own probe never prints.
+# `patches` still lists #45450, because it is installed; `attn_backend` is what
+# says it could not act.
+MTP3 = {"method": "mtp", "k": 3}
+DRAFT3 = {"method": "mtp", "drafter": "gemma-4-31B-it-assistant", "k": 3}
+ARMS = {
+    "Q38-tp2":                   (None,   "ROCM_ATTN"),
+    "Q38-mtp-tp2":               (MTP3,   "ROCM_ATTN"),
+    "Q38-mtp-p45450-tp2":        (MTP3,   "ROCM_ATTN"),
+    "Q38-triton-tp2":            (None,   "TRITON_ATTN"),
+    "Q38-mtp-triton-tp2":        (MTP3,   "TRITON_ATTN"),
+    "Q38-mtp-triton-p45450-tp2": (MTP3,   "TRITON_ATTN"),
+    "G31-tp2":                   (None,   "TRITON_ATTN"),
+    "G31-mtp-p45450-tp2":        (DRAFT3, "TRITON_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 
 # Where chart_grade cuts. Chosen from the distribution rather than picked, and
-# restated 2026-08-29 because the distribution moved when the 0.27 rows landed
-# and the bimodal 8K cell gained two more runs: the ranges now run 0.00-2.32%
-# up to p95, then 2.6, 3.4, 3.5, 4.1, 5.1, and then jump to 16.8. The cut sits
-# in that gap, so it excludes the one point known to be unstable and nothing
-# else. verify_doc_figures.py pins the tail so this cannot go stale unnoticed.
-RANGE_CUT = 6.0
+# restated on 2026-08-29 when the ladder campaign's speculative arms landed and
+# moved the tail properly. The distribution is no longer one quiet stretch with
+# a single outlier: of 258 points with more than one run, the ranges climb
+# 0.00 ... 5.30, 5.33, 5.97, 6.02, 6.10, and then jump to 9.50 and stay high,
+# 29 of them above. Twenty-eight of those 29 are speculative rungs, which
+# repeat an order of magnitude worse on this machine than any stock arm does.
+#
+# The widest gap in that region is 6.10 -> 9.50, 3.40 percentage points, and
+# the cut sits in the middle of it. The previous 6.0 was chosen from the
+# distribution as it stood before this campaign and no longer sits in a gap:
+# it stranded 6.02 and 6.10 between itself and the real break. Moving it grades
+# those two rungs and nothing else -- both are 2026-08-29 rows, so no figure
+# published before today changes. verify_doc_figures.py pins the tail and the
+# gap, which is what forced this restatement rather than letting it drift.
+RANGE_CUT = 8.0
 
 CAMPAIGNS = [
     dict(file="results.jsonl", date="2026-07-25", vllm="0.23", rocm="7.14",
@@ -69,6 +124,27 @@ CAMPAIGNS = [
     dict(file="results-2026-08-24.jsonl", date="2026-08-24",
          vllm="0.23.1.dev1+g9ddef7117", rocm="7.14", kernel="7.0.0-30",
          patches=["vllm#45916 split-KV", "window block-skip"]),
+    # One file, two stacks. gemma-4 cannot be served on the 0.27 image at all --
+    # its Quark plugin reads head_dim off a heterogeneous config and dies before
+    # loading -- so its arms ran on the 0.23 container the 08-24 campaign used,
+    # and `per_cfg` carries what differs per arm rather than per file.
+    dict(file="campaign-2026-08-29/results.jsonl", date="2026-08-29",
+         vllm="0.27.1.dev5+gf46a9dfe2", rocm="10.0", kernel="7.0.0-30",
+         patches=["vllm#45916 split-KV"],
+         per_cfg={
+             "Q38-mtp-p45450-tp2": dict(
+                 patches=["vllm#45916 split-KV", "vllm#45450 3D admission"]),
+             "Q38-mtp-triton-p45450-tp2": dict(
+                 patches=["vllm#45916 split-KV", "vllm#45450 3D admission"]),
+             "G31-tp2": dict(
+                 vllm="0.23.1.dev1+g9ddef7117", rocm="7.14",
+                 patches=["vllm#45916 split-KV", "window block-skip",
+                          "vllm#45450 3D admission"]),
+             "G31-mtp-p45450-tp2": dict(
+                 vllm="0.23.1.dev1+g9ddef7117", rocm="7.14",
+                 patches=["vllm#45916 split-KV", "window block-skip",
+                          "vllm#45450 3D admission"]),
+         }),
 ]
 # The probe sources are arm-structured: the same cells measured with and
 # without a patch, so the arm decides `patches` rather than the file does.
@@ -135,11 +211,16 @@ def build():
             name, quant, arch, tp = CFG[cfg]
             vals, superseded = latest_session(pairs)
             extra = {"superseded_values": sorted(superseded)} if superseded else {}
+            over = c.get("per_cfg", {}).get(cfg, {})
+            spec, backend = ARMS.get(cfg, (None, None))
             rows.append(aggregate(
                 vals, **extra, model=name, quant=quant, arch=arch, tp=tp, ctx=target,
-                date=c["date"], vllm=c["vllm"], rocm=c["rocm"],
-                kernel=c["kernel"], patches=c["patches"],
-                harness="campaign-server", source=c["file"], cfg=cfg))
+                date=c["date"], vllm=over.get("vllm", c["vllm"]),
+                rocm=over.get("rocm", c["rocm"]),
+                kernel=over.get("kernel", c["kernel"]),
+                patches=over.get("patches", c["patches"]),
+                harness="campaign-server", source=c["file"], cfg=cfg,
+                spec=spec, attn_backend=backend))
             seen.add((c["file"], cfg, target))
 
     for p in PROBES:
@@ -155,7 +236,8 @@ def build():
                 vals, model=name, quant=quant, arch=arch, tp=tp, ctx=ctx,
                 date=p["date"], vllm=p["vllm"], rocm=p["rocm"],
                 kernel=p["kernel"], patches=p["arms"][arm],
-                harness="probe-t8t64", source=", ".join(p["files"]), cfg=cfg))
+                harness="probe-t8t64", source=", ".join(p["files"]), cfg=cfg,
+                spec=None, attn_backend=None))
 
     rows.sort(key=lambda r: (r["model"], r["tp"], r["date"],
                              ",".join(r["patches"]), r["ctx"]))

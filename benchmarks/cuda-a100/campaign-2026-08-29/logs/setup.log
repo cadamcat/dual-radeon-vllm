@@ -1,0 +1,104 @@
+
+$ pip install -q -U vllm 2>&1 | tail -5
+[176s rc=0]
+libcuml-cu12 26.2.0 requires cuda-toolkit[cublas,cufft,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+numba-cuda 0.22.2 requires cuda-core<1.0.0,>=0.3.2, but you have cuda-core 1.0.1 which is incompatible.
+rmm-cu12 26.2.0 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+libraft-cu12 26.2.0 requires cuda-toolkit[cublas,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+pylibcudf-cu12 26.2.1 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+
+
+
+$ pip uninstall -y -q torchaudio 2>&1 | tail -2
+[1s rc=0]
+
+
+
+$ hf download google/gemma-4-31B-it-qat-w4a16-ct --local-dir /content/models/gemma-4-31B-it-qat-w4a16-ct --max-workers 8
+[60s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-31B-it-qat-w4a16-ct
+
+[90mHint: A new version of huggingface_hub (1.29.0) is available! You are using version 1.28.0.
+To update, run: hf update[0m
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g --claude` to teach your AI agents how to use the `hf` CLI.[0m
+
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 9 files:  11%|█         | 1/9 [00:00<00:02,  3.14it/s]
+Fetching 9 files:  44%|████▍     | 4/9 [00:00<00:00,  9.83it/s]
+Fetching 9 files:  89%|████████▉ | 8/9 [00:01<00:00,  4.75it/s]
+Fetching 9 files: 100%|██████████| 9/9 [00:58<00:00, 10.26s/it]
+Fetching 9 files: 100%|██████████| 9/9 [00:58<00:00,  6.47s/it]
+
+
+$ hf download google/gemma-4-31B-it-assistant --local-dir /content/models/gemma-4-31B-it-assistant --max-workers 8
+[5s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-31B-it-assistant
+
+
+Fetching 7 files:   0%|          | 0/7 [00:00<?, ?it/s]Still waiting to acquire lock on /content/models/gemma-4-31B-it-assistant/.cache/huggingface/.gitignore.lock (elapsed: 0.1 seconds)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 7 files:  14%|█▍        | 1/7 [00:00<00:01,  3.54it/s]
+Fetching 7 files:  71%|███████▏  | 5/7 [00:00<00:00, 11.06it/s]
+Fetching 7 files: 100%|██████████| 7/7 [00:03<00:00,  1.59it/s]
+Fetching 7 files: 100%|██████████| 7/7 [00:03<00:00,  1.98it/s]
+
+
+$ hf download cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit --local-dir /content/models/gemma-4-26B-A4B-AWQ --max-workers 8
+[44s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-26B-A4B-AWQ
+
+
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 13 files:   8%|▊         | 1/13 [00:00<00:03,  3.75it/s]
+Fetching 13 files:  31%|███       | 4/13 [00:00<00:00,  9.56it/s]
+Fetching 13 files:  62%|██████▏   | 8/13 [00:00<00:00,  8.38it/s]
+Fetching 13 files:  69%|██████▉   | 9/13 [00:05<00:03,  1.12it/s]
+Fetching 13 files:  77%|███████▋  | 10/13 [00:07<00:03,  1.21s/it]
+Fetching 13 files:  85%|████████▍ | 11/13 [00:41<00:17,  8.52s/it]
+Fetching 13 files: 100%|██████████| 13/13 [00:42<00:00,  5.32s/it]
+Fetching 13 files: 100%|██████████| 13/13 [00:42<00:00,  3.25s/it]
+
+
+$ hf download google/gemma-4-26B-A4B-it-assistant --local-dir /content/models/gemma-4-26B-A4B-it-assistant --max-workers 8
+[5s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-26B-A4B-it-assistant
+
+
+Fetching 7 files:   0%|          | 0/7 [00:00<?, ?it/s]
+Fetching 7 files:  14%|█▍        | 1/7 [00:00<00:01,  3.99it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 7 files:  43%|████▎     | 3/7 [00:00<00:00,  9.24it/s]
+Fetching 7 files:  71%|███████▏  | 5/7 [00:00<00:00,  8.47it/s]
+Fetching 7 files:  86%|████████▌ | 6/7 [00:01<00:00,  2.95it/s]
+Fetching 7 files: 100%|██████████| 7/7 [00:03<00:00,  1.35it/s]
+Fetching 7 files: 100%|██████████| 7/7 [00:03<00:00,  2.08it/s]
+
+
+$ hf download cyankiwi/Qwen3.8-27B-AWQ-INT4 --local-dir /content/models/Qwen3.8-27B-AWQ-INT4 --max-workers 8
+[54s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/Qwen3.8-27B-AWQ-INT4
+
+
+Fetching 18 files:   0%|          | 0/18 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 18 files:   6%|▌         | 1/18 [00:00<00:04,  3.68it/s]
+Fetching 18 files:  17%|█▋        | 3/18 [00:00<00:02,  6.04it/s]
+Fetching 18 files:  44%|████▍     | 8/18 [00:00<00:00, 11.89it/s]
+Fetching 18 files:  56%|█████▌    | 10/18 [00:01<00:00, 10.53it/s]
+Fetching 18 files:  67%|██████▋   | 12/18 [00:01<00:00,  6.67it/s]
+Fetching 18 files:  72%|███████▏  | 13/18 [00:04<00:03,  1.44it/s]
+Fetching 18 files:  78%|███████▊  | 14/18 [00:18<00:13,  3.30s/it]
+Fetching 18 files:  83%|████████▎ | 15/18 [00:41<00:23,  7.71s/it]
+Fetching 18 files:  89%|████████▉ | 16/18 [00:48<00:15,  7.56s/it]
+Fetching 18 files:  94%|█████████▍| 17/18 [00:52<00:06,  6.45s/it]
+Fetching 18 files: 100%|██████████| 18/18 [00:52<00:00,  4.84s/it]
+Fetching 18 files: 100%|██████████| 18/18 [00:52<00:00,  2.92s/it]
+

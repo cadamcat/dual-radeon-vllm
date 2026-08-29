@@ -1,0 +1,104 @@
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345] 
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1.dev5+gf46a9dfe2.d20260827
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345]   █▄█▀ █     █     █     █  model   /models/gemma-4-31B-it-qat-w4a16-ct
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:345] 
+(APIServer pid=37) INFO 08-29 20:26:19 [api_utils.py:273] non-default args: {'model_tag': '/models/gemma-4-31B-it-qat-w4a16-ct', 'port': 8003, 'model': '/models/gemma-4-31B-it-qat-w4a16-ct', 'max_model_len': 33000, 'hf_overrides': {'allow_global_per_layer_attribute_access': True}, 'tensor_parallel_size': 2, 'max_num_seqs': 16}
+(APIServer pid=37) WARNING 08-29 20:26:19 [envs.py:2128] Unknown vLLM environment variable detected: VLLM_CLONE_MMAP
+(APIServer pid=37) Traceback (most recent call last):
+(APIServer pid=37)   File "/opt/python/bin/vllm", line 10, in <module>
+(APIServer pid=37)     sys.exit(main())
+(APIServer pid=37)              ~~~~^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/main.py", line 97, in main
+(APIServer pid=37)     args.dispatch_function(args)
+(APIServer pid=37)     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/serve.py", line 152, in cmd
+(APIServer pid=37)     uvloop.run(run_server(args))
+(APIServer pid=37)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=37)     return __asyncio.run(
+(APIServer pid=37)            ~~~~~~~~~~~~~^
+(APIServer pid=37)         wrapper(),
+(APIServer pid=37)         ^^^^^^^^^^
+(APIServer pid=37)     ...<2 lines>...
+(APIServer pid=37)         **run_kwargs
+(APIServer pid=37)         ^^^^^^^^^^^^
+(APIServer pid=37)     )
+(APIServer pid=37)     ^
+(APIServer pid=37)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 205, in run
+(APIServer pid=37)     return runner.run(main)
+(APIServer pid=37)            ~~~~~~~~~~^^^^^^
+(APIServer pid=37)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 128, in run
+(APIServer pid=37)     return self._loop.run_until_complete(task)
+(APIServer pid=37)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=37)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=37)     return await main
+(APIServer pid=37)            ^^^^^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 764, in run_server
+(APIServer pid=37)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 778, in run_server_worker
+(APIServer pid=37)     async with build_async_engine_client(
+(APIServer pid=37)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=37)         args,
+(APIServer pid=37)         ^^^^^
+(APIServer pid=37)         client_config=client_config,
+(APIServer pid=37)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)     ) as engine_client:
+(APIServer pid=37)     ^
+(APIServer pid=37)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=37)     return await anext(self.gen)
+(APIServer pid=37)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 132, in build_async_engine_client
+(APIServer pid=37)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=37)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=37)         engine_args,
+(APIServer pid=37)         ^^^^^^^^^^^^
+(APIServer pid=37)         usage_context=usage_context,
+(APIServer pid=37)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)         client_config=client_config,
+(APIServer pid=37)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)     ) as engine:
+(APIServer pid=37)     ^
+(APIServer pid=37)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=37)     return await anext(self.gen)
+(APIServer pid=37)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 156, in build_async_engine_client_from_engine_args
+(APIServer pid=37)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1929, in create_engine_config
+(APIServer pid=37)     model_config = self.create_model_config()
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/quark/online_quantization/vllm/plugin.py", line 193, in patched_create_model_config
+(APIServer pid=37)     return orig_create_model_config(self, *args, **kwargs)
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1686, in create_model_config
+(APIServer pid=37)     return ModelConfig(
+(APIServer pid=37)         model=self.model,
+(APIServer pid=37)     ...<63 lines>...
+(APIServer pid=37)         renderer_num_workers=self.renderer_num_workers,
+(APIServer pid=37)     )
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=37)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=37)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/config/model.py", line 595, in __post_init__
+(APIServer pid=37)     self.model_arch_config = self.get_model_arch_config()
+(APIServer pid=37)                              ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/config/model.py", line 856, in get_model_arch_config
+(APIServer pid=37)     return convertor.convert(
+(APIServer pid=37)            ~~~~~~~~~~~~~~~~~^
+(APIServer pid=37)         supports_multimodal=self._supports_multimodal_for_mm_prefix()
+(APIServer pid=37)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=37)     )
+(APIServer pid=37)     ^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/transformers_utils/model_arch_config_convertor.py", line 378, in convert
+(APIServer pid=37)     head_size=self.get_head_size(),
+(APIServer pid=37)               ~~~~~~~~~~~~~~~~~~^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/vllm/transformers_utils/model_arch_config_convertor.py", line 608, in get_head_size
+(APIServer pid=37)     head_dim = getattr(self.hf_text_config, "head_dim", 0)
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/transformers/configuration_utils.py", line 484, in __getattribute__
+(APIServer pid=37)     return super().__getattribute__(key)
+(APIServer pid=37)            ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+(APIServer pid=37)   File "/opt/python/lib/python3.14/site-packages/transformers/integrations/heterogeneity/configuration_utils.py", line 298, in __getattribute__
+(APIServer pid=37)     raise AmbiguousGlobalPerLayerAttributeError(
+(APIServer pid=37)     ...<5 lines>...
+(APIServer pid=37)     )
+(APIServer pid=37) transformers.integrations.heterogeneity.configuration_utils.AmbiguousGlobalPerLayerAttributeError: 'head_dim' is a per-layer attribute and may vary across layers. Access it via the individual layer configs instead (e.g. config.per_layer_config[i].head_dim). To read the global config value from config.head_dim anyway, set `allow_global_per_layer_attribute_access` to `True` on the config. Warning: only do this if the caller can safely handle heterogeneous configs; code that assumes a homogeneous model may use the global value incorrectly.

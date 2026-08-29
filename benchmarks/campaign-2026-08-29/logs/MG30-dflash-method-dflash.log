@@ -1,0 +1,98 @@
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345] 
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1.dev5+gf46a9dfe2.d20260827
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345]   █▄█▀ █     █     █     █  model   /models/Muse-Glimmer-30B-INT4
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:345] 
+(APIServer pid=7) INFO 08-29 18:16:32 [api_utils.py:273] non-default args: {'model_tag': '/models/Muse-Glimmer-30B-INT4', 'port': 8001, 'model': '/models/Muse-Glimmer-30B-INT4', 'max_model_len': 33000, 'tensor_parallel_size': 2, 'max_num_seqs': 16, 'speculative_config': {'model': '/models/Muse-Glimmer-30B-assistant', 'num_speculative_tokens': 8, 'method': 'dflash'}}
+(APIServer pid=7) WARNING 08-29 18:16:32 [envs.py:2128] Unknown vLLM environment variable detected: VLLM_CLONE_MMAP
+(APIServer pid=7) INFO 08-29 18:16:41 [model.py:645] Resolved architecture: TransformersMultiModalForCausalLM
+(APIServer pid=7) INFO 08-29 18:16:41 [model.py:1883] Using max model len 33000
+(APIServer pid=7) WARNING 08-29 18:16:41 [utils.py:217] TransformersMultiModalForCausalLM has no vLLM implementation, falling back to Transformers implementation. Some features may not be supported and performance may not be optimal.
+(APIServer pid=7) INFO 08-29 18:17:11 [model.py:645] Resolved architecture: TransformersForCausalLM
+(APIServer pid=7) INFO 08-29 18:17:11 [model.py:1883] Using max model len 131072
+(APIServer pid=7) Traceback (most recent call last):
+(APIServer pid=7)   File "/opt/python/bin/vllm", line 10, in <module>
+(APIServer pid=7)     sys.exit(main())
+(APIServer pid=7)              ~~~~^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/main.py", line 97, in main
+(APIServer pid=7)     args.dispatch_function(args)
+(APIServer pid=7)     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/serve.py", line 152, in cmd
+(APIServer pid=7)     uvloop.run(run_server(args))
+(APIServer pid=7)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=7)     return __asyncio.run(
+(APIServer pid=7)            ~~~~~~~~~~~~~^
+(APIServer pid=7)         wrapper(),
+(APIServer pid=7)         ^^^^^^^^^^
+(APIServer pid=7)     ...<2 lines>...
+(APIServer pid=7)         **run_kwargs
+(APIServer pid=7)         ^^^^^^^^^^^^
+(APIServer pid=7)     )
+(APIServer pid=7)     ^
+(APIServer pid=7)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 205, in run
+(APIServer pid=7)     return runner.run(main)
+(APIServer pid=7)            ~~~~~~~~~~^^^^^^
+(APIServer pid=7)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 128, in run
+(APIServer pid=7)     return self._loop.run_until_complete(task)
+(APIServer pid=7)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=7)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=7)     return await main
+(APIServer pid=7)            ^^^^^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 764, in run_server
+(APIServer pid=7)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 778, in run_server_worker
+(APIServer pid=7)     async with build_async_engine_client(
+(APIServer pid=7)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=7)         args,
+(APIServer pid=7)         ^^^^^
+(APIServer pid=7)         client_config=client_config,
+(APIServer pid=7)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)     ) as engine_client:
+(APIServer pid=7)     ^
+(APIServer pid=7)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=7)     return await anext(self.gen)
+(APIServer pid=7)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 132, in build_async_engine_client
+(APIServer pid=7)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=7)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=7)         engine_args,
+(APIServer pid=7)         ^^^^^^^^^^^^
+(APIServer pid=7)         usage_context=usage_context,
+(APIServer pid=7)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)         client_config=client_config,
+(APIServer pid=7)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)     ) as engine:
+(APIServer pid=7)     ^
+(APIServer pid=7)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=7)     return await anext(self.gen)
+(APIServer pid=7)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 156, in build_async_engine_client_from_engine_args
+(APIServer pid=7)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 2248, in create_engine_config
+(APIServer pid=7)     speculative_config = self.create_speculative_config(
+(APIServer pid=7)         target_model_config=model_config,
+(APIServer pid=7)         target_parallel_config=parallel_config,
+(APIServer pid=7)     )
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1829, in create_speculative_config
+(APIServer pid=7)     return SpeculativeConfig(**self.speculative_config)
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=7)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=7)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/config/speculative.py", line 946, in __post_init__
+(APIServer pid=7)     eagle_config = EAGLEConfig(
+(APIServer pid=7)         self.draft_model_config.hf_config,
+(APIServer pid=7)         method=self.method,
+(APIServer pid=7)         model_type="eagle",
+(APIServer pid=7)     )
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/vllm/transformers_utils/configs/eagle.py", line 37, in __init__
+(APIServer pid=7)     self.model.vocab_size
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/transformers/configuration_utils.py", line 484, in __getattribute__
+(APIServer pid=7)     return super().__getattribute__(key)
+(APIServer pid=7)            ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+(APIServer pid=7)   File "/opt/python/lib/python3.14/site-packages/transformers/integrations/heterogeneity/configuration_utils.py", line 312, in __getattribute__
+(APIServer pid=7)     return super().__getattribute__(key)
+(APIServer pid=7)            ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+(APIServer pid=7) AttributeError: 'MuseGlimmerAssistantConfig' object has no attribute 'vocab_size'
