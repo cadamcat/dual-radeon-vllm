@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How much of this is RDNA3 being second-class</title>
+<meta name="description" content="Eight findings sorted by what the evidence supports. Three are architecture-specific, one is AMD-wide, two were proved vendor-neutral by measuring another vendor, and one is not about the GPU at all.">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#867e6a;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border); }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim); }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  .lg .sw { width:9px; height:9px; border-radius:99px; background:currentColor; opacity:.4;
+            transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.cmd { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 42%, transparent); }
+
+  /* ---- the classification, which is the article ---- */
+  .find { border:1px solid var(--border); border-radius:12px; background:var(--surface-2);
+          padding:.95em 1.1em; margin-bottom:.6em; display:grid;
+          grid-template-columns:1fr max-content; gap:.3em 1.1em; align-items:start; }
+  .find.rdna3 { background:var(--red-bg);
+                border-color:color-mix(in srgb, var(--red) 26%, transparent); }
+  .find h4 { margin:0; font-size:1rem; line-height:1.4; }
+  .find h4 a { border-bottom:1px solid transparent; }
+  .find .mag { font-family:var(--mono); font-size:1.15rem; font-weight:800;
+               color:var(--text); text-align:right; white-space:nowrap; }
+  .find.rdna3 .mag { color:var(--red); }
+  .find .unit { font-family:var(--mono); font-size:.66rem; color:var(--text-dim);
+                text-align:right; grid-column:2; max-width:11em; line-height:1.4; }
+  .find .mech { grid-column:1; color:var(--text-2); font-size:.9rem; }
+  .find .why { grid-column:1 / -1; font-size:.83rem; color:var(--text-dim);
+               border-top:1px solid var(--border); padding-top:.5em; margin-top:.35em; }
+  .find .why b { font-family:var(--mono); font-size:.68rem; letter-spacing:.06em;
+                 text-transform:uppercase; color:var(--text-dim); }
+  .find .tags { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:.35em; }
+  .find .tags span { font-family:var(--mono); font-size:.67rem; color:var(--text-dim);
+                     background:var(--surface); border:1px solid var(--border);
+                     border-radius:99px; padding:.12em .6em; }
+  @media (max-width:560px){ .find { grid-template-columns:1fr; }
+                            .find .mag, .find .unit { text-align:left; grid-column:1;
+                                                      max-width:none; } }
+
+  .tally { display:grid; grid-template-columns:repeat(5, 1fr); gap:.55em; margin:1.4em 0; }
+  .tal { border:1px solid var(--border); border-radius:10px; padding:.7em .4em;
+         text-align:center; background:var(--surface-2); }
+  .tal.rdna3 { background:var(--red-bg);
+               border-color:color-mix(in srgb, var(--red) 30%, transparent); }
+  .tal .n { font-family:var(--mono); font-size:1.4rem; font-weight:800; color:var(--text); }
+  .tal.rdna3 .n { color:var(--red); }
+  .tal .l { font-family:var(--mono); font-size:.63rem; color:var(--text-dim);
+            line-height:1.35; margin-top:.2em; }
+  @media (max-width:560px){ .tally { grid-template-columns:repeat(2, 1fr); } }
+
+  /* ---- the one-line gate, side by side ---- */
+  .branch { display:grid; grid-template-columns:1fr 1fr; gap:.9em; margin:1.4em 0 0; }
+  .br { border:1px solid var(--border); border-radius:11px; padding:.95em 1.1em;
+        background:var(--surface-2); }
+  .br.out { background:var(--red-bg);
+            border-color:color-mix(in srgb, var(--red) 30%, transparent); }
+  .br h4 { margin:0 0 .3em; font-family:var(--mono); font-size:.72rem;
+           letter-spacing:.07em; text-transform:uppercase; color:var(--text-dim); }
+  .br.out h4 { color:var(--red); }
+  .br code { font-size:.86em; }
+  .br .c { font-family:var(--mono); font-size:.95rem; color:var(--text); font-weight:700; }
+  .br.out .c { color:var(--red); }
+  @media (max-width:520px){ .branch { grid-template-columns:1fr; } }
+
+  .gaps { display:grid; grid-template-columns:max-content 1fr; column-gap:1.1em;
+          font-size:.86rem; margin-top:1.2em; }
+  .gaps > div { padding:.5em 0; border-bottom:1px solid var(--border); }
+  .gaps > div:nth-last-child(-n+2) { border-bottom:0; }
+  .gaps .k { font-family:var(--mono); font-size:.78rem; color:var(--text); }
+  .gaps .v { color:var(--text-2); font-size:.85rem; }
+  @media (max-width:560px){ .gaps { grid-template-columns:1fr; }
+                            .gaps .k { padding-bottom:0; border-bottom:0; } }
+
+  /* ---- upstream status ---- */
+  .thr { display:grid; grid-template-columns:max-content max-content 1fr max-content;
+         column-gap:.9em; align-items:center; font-size:.85rem; }
+  .thr > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .thr > div:nth-last-child(-n+4) { border-bottom:0; }
+  .thr .h { font-family:var(--mono); font-size:.67rem; letter-spacing:.05em;
+            text-transform:uppercase; color:var(--text-dim);
+            border-bottom:1px solid var(--border-2); }
+  .thr .id { font-family:var(--mono); font-size:.76rem; }
+  .thr .id.ours { color:var(--accent); font-weight:700; }
+  .thr .au { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  .thr .st { font-family:var(--mono); font-size:.72rem; color:var(--text-2); }
+  .thr .st.merged { color:var(--green); font-weight:700; }
+  .thr .wh { font-family:var(--mono); font-size:.7rem; color:var(--text-dim);
+             text-align:right; }
+  @media (max-width:560px){ .thr { grid-template-columns:max-content 1fr max-content; }
+                            .thr .au { display:none; } }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+<nav class="themebar" aria-label="Language and colour theme">
+  <a class="lang" href="rdna3-second-class.html" hreflang="en" aria-current="page">EN</a>
+  <a class="lang" href="rdna3-second-class.zh.html" hreflang="zh">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="Match system">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="Light">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="Dark">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<div class="wrap">
+<header class="top">
+  <div class="kicker">synthesis · RDNA3 · ROCm · vLLM</div>
+  <h1>How much of this is<br>RDNA3 being second-class</h1>
+  <p class="lede">This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel
+  ecosystem, and eight write-ups sit under that heading. Sorting them by what the evidence actually
+  supports, <strong>three of the eight are that</strong>. The rest are AMD-wide, vendor-neutral, or not
+  about the GPU at all — and knowing which is which is the difference between a diagnosis and a
+  grievance.</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100</span>
+    <span class="chip">eight findings · <b>sixteen</b> upstream threads</span>
+    <span class="chip">statuses checked <b>2026-08-29</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>Abstract</h3>
+  <p>The claim is real and it is narrower than it looks. What survives as
+  <strong>architecture-specific</strong> is a small, specific list: a fast attention path this hardware
+  falls off, a native quantised-linear kernel whose type gate excludes a common checkpoint class, and a
+  performance heuristic written into one architecture's branch of one function and not the other's.</p>
+  <p>The purest instance is one line. <code>use_rocm_custom_paged_attention</code> requires
+  <code>gqa_ratio &gt;= 3</code> on gfx11 and <code>&gt;= 1</code> on CDNA, for the same kernel. In the
+  excluded range that kernel is <strong>1.84× to 7.28× faster</strong> than the fallback it is passed
+  over for, and the excluded band overlaps the admitted one. The bound does not separate anything.</p>
+  <p>Four of the eight are <em>not</em> RDNA3 problems, and saying so is what the measurements were for.
+  Two were proved vendor-neutral by measuring another vendor: the same attention gate loses 61 % on an
+  A100 and the single-threaded compile setting is in a file that runs everywhere. One is AMD-wide, at a
+  kernel line AMD named. One is a PCIe capability that hits bare metal too.</p>
+  <p><strong>Half of the sixteen upstream threads belong to other people.</strong> The most useful thing
+  this hardware turned out to be is a device the people fixing these things do not have.</p>
+</div>
+
+<h2><span class="n">1</span>Sorting eight findings by what they are actually about</h2>
+
+<p>Every row below is a separate article, and every number beside it is recomputed from the file that
+article draws. The classification is the only thing here that is a judgement, so it comes with the
+evidence that puts each row where it is.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · what each finding is an instance of
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="tally" id="tally"></div>
+    <div id="finds"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Sorted by axis, not by size. The magnitudes are not comparable to each other — they
+    are ratios of different things, each meaningful only against its own article's baseline — and they
+    are here to say which findings are worth an afternoon rather than to rank them. The three marked as
+    architecture-specific are the ones where the same software makes a different decision on this
+    hardware than on another AMD part.
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>The purest instance is one line</h2>
+
+<p>If "second-class" means anything precise, it means the same software choosing differently for you
+than for someone else, for a reason that does not survive checking. One function in
+<code>vllm/platforms/rocm.py</code> does exactly that:</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · the same kernel, two branches, one condition apart
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="branch" id="branch"></div>
+    <div class="barunit" id="branchnote"></div>
+    <div class="gaps" id="gaps"></div>
+    <div class="barunit" id="gapnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> The bound is a performance heuristic — the pull request that added it says so — and
+    measured on this hardware it is inverted: the excluded range is where the gated-out kernel helps
+    most. Below, the four ecosystem gaps this repository's architecture notes list, extracted from that
+    document. They are the structural version of the same thing: the fast path exists, and the
+    supported-hardware list does not include this part.
+  </figcaption>
+</figure>
+
+<p>Two of those four are worth separating. <strong>AITER and FP8 are Instinct-only by design</strong>,
+and nobody has claimed otherwise; that is a product decision, not a defect. <strong>The absent tuned
+MoE configurations are for no AMD GPU at all</strong>, which makes them an AMD-wide gap rather than an
+RDNA3 one. Only Composable Kernel's forward-only fused attention on RDNA3 sits squarely on the
+architecture axis, alongside the gate above.</p>
+
+<h2><span class="n">3</span>The four that are not this</h2>
+
+<p>The measurements that mattered most were the ones that took a finding <em>off</em> this list.</p>
+
+<div class="note">
+  <span class="lbl">Two were settled by measuring another vendor</span>
+  Speculative decoding collapsing at long context looked like an RDNA3 story until the same model on a
+  rented A100 lost 61 % at 50K through the same Triton kernel — and stopped losing it on a backend
+  without the guard. And a 128-expert MoE recorded at 15 tok/s looked like ROCm's missing tuned kernels
+  until the cause turned out to be a plain assignment in <code>env_override.py</code> that runs on every
+  platform. <a href="speculative-decoding-net-loss.html">One</a> and
+  <a href="moe-written-off-by-eager.html">the other</a>.
+</div>
+
+<div class="note">
+  <span class="lbl">One is AMD-wide, at a line AMD named</span>
+  Weight loading slower than the disk is <code>kfd_svm.c</code> reading the access mode off the VMA, so
+  a read-only copy asks for write access and breaks copy-on-write on every resident page. That file is
+  not architecture-specific, AMD confirmed the mechanism, and a stranger reproduced it on a different
+  card. <a href="weight-loading-19x.html">The article</a>.
+</div>
+
+<div class="note">
+  <span class="lbl">One is not about the GPU at all</span>
+  Every RCCL collective failing at dispatch is a PCIe AtomicOps capability on the root port above the
+  card. It reproduces on bare metal, it has nothing to do with which GPU is plugged in, and for a
+  virtual machine the fix is one line of configuration.
+  <a href="rccl-atomics-hostcall.html">The article</a>.
+</div>
+
+<p>A fifth is worth naming separately because it is about the shape of the machine rather than the
+chip: the 2D attention path launches one workgroup per KV head, so splitting a model across two cards
+halves them, and the starved path starves twice as hard. That is a cost of tensor parallelism, and a
+single card of any vendor running the same kernel does not pay it.
+<a href="a100-vs-two-radeons.html">The article</a>.</p>
+
+<h2><span class="n">4</span>What the hardware turned out to be for</h2>
+
+<p>Sixteen upstream threads came out of this, and the split is the point: eight are ours, and eight are
+other people's, where what this machine contributed was a measurement they could not take.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · every thread, and where it stood on 2026-08-29
+      <span class="prov cmd">check with gh api</span></div>
+    <div class="thr" id="threads"></div>
+    <div class="barunit" id="thrnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Status as read from the API on the date shown, not from memory — these move, and a
+    page that says "open" forever is wrong within weeks. One is merged, by its own author, and it closed
+    the larger half of a problem this repository had spent a month characterising through a different
+    kernel. Two more had gfx11 as their explicit gap: their authors had validated on Instinct and said
+    so in their test plans.
+  </figcaption>
+</figure>
+
+<p>That is the honest summary of what a pair of consumer cards is worth to this ecosystem. Not
+benchmarks — the absolute numbers here are a floor, on a VFIO guest with no peer-to-peer and a cross-die
+PCIe 3.0 path. What it is worth is being the device in the gap: the one a fix's author does not have, on
+which a compile-validation-only test plan can be turned into a runtime result.</p>
+
+<h2><span class="n">5</span>What is not established</h2>
+
+<h3>The classification is a judgement</h3>
+<p>Every magnitude beside it is recomputed, and every "why" line names the evidence, but the assignment
+of a finding to an axis is an argument rather than a measurement. Two of the eight could reasonably be
+argued into a different column: the W4A16 type gate is a plain bug that happens to sit in an
+architecture-specific kernel, and the missing tuned MoE configurations are AMD-wide inside an otherwise
+RDNA3 story.</p>
+
+<h3>One machine, one software generation</h3>
+<p>Everything here is gfx1100 on a VFIO guest, across two vLLM generations and two ROCm versions.
+Whether any of it holds on RDNA4 is not measured; the architecture notes say the ecosystem gap extends
+there, and that sentence is a reading of supported-hardware lists rather than a measurement.</p>
+
+<h3>Whether the gaps are closing</h3>
+<p>One pull request merged during this work and closed half of one finding. That is one data point about
+direction and it is not a trend. Nothing here measures how quickly gfx11 support has moved, only where
+it stood.</p>
+
+<h2><span class="n">6</span>What has changed since</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-07-14 · one of the three narrowed by itself</span>
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged, adding a second
+  native kernel that accepts the checkpoint type the first one refuses. The finding survives — eight of
+  twelve asymmetric configurations still have no kernel on gfx1100 — but its headline example does not:
+  the model that decoded at 11.41 tok/s does 37.32 on current <code>main</code>.
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-20 · one was fixed by a distro, not by a report</span>
+  Canonical shipped the missing kernel commit in <code>7.0.0-30</code>. The Launchpad bug asking for
+  exactly that backport is still untriaged, so it came through the ordinary stable route. Reporting a
+  thing and a thing being fixed are different events, and this repository has one of each.
+</div>
+
+<div class="note warn">
+  <span class="lbl">Statuses expire</span>
+  Figure 3 is a snapshot. Everything in it except one merge was open on 2026-08-29, and the useful thing
+  to do with the page is to check the links rather than trust the column.
+</div>
+
+<div class="foot-note">
+  <p><strong>The eight articles.</strong>
+  <a href="hybrid-ssm-collapse.html">the hybrid-SSM collapse</a> ·
+  <a href="w4a16-two-problems.html">two problems in one model</a> ·
+  <a href="gqa-gate-costs-nothing.html">the gqa gate</a> ·
+  <a href="weight-loading-19x.html">weight loading</a> ·
+  <a href="moe-written-off-by-eager.html">the MoE and eager mode</a> ·
+  <a href="speculative-decoding-net-loss.html">speculative decoding</a> ·
+  <a href="a100-vs-two-radeons.html">two Radeons against an A100</a> ·
+  <a href="rccl-atomics-hostcall.html">the RCCL crash</a>. How any of it was measured is
+  <a href="measuring-decode.html">its own article</a>, and how a negative result was reported is
+  <a href="reporting-a-non-reproduction.html">another</a>.</p>
+  <p>The ecosystem list is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>,
+  and every figure on this page is recomputed from the repository by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in rdna3-second-class.html. The classification is the article's own; every magnitude beside it is recomputed from the file the individual article draws. Derived by site/src/genfig-rdna3.py.",
+ "fig1": {
+  "findings": [
+   {
+    "slug": "hybrid-ssm-collapse",
+    "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
+    "axis": "rdna3",
+    "mechanism": "the few full-attention layers fall off the ROCm paged-attention fast path",
+    "magnitude": 2.851764705882353,
+    "unit": "x lost from 500 to 32K tokens",
+    "why": "the split-KV fallback that fixes it is being added for gfx11 specifically; the path exists elsewhere",
+    "upstream": [
+     "vllm#45916",
+     "vllm#50264"
+    ]
+   },
+   {
+    "slug": "w4a16-two-problems",
+    "title": "Twelve tokens a second was two problems",
+    "axis": "rdna3",
+    "mechanism": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
+    "magnitude": 3.240640785380657,
+    "unit": "x at 1K, symmetric against asymmetric packaging",
+    "why": "eight of twelve asymmetric configurations still have no kernel at all on gfx1100",
+    "upstream": [
+     "vllm#40977"
+    ]
+   },
+   {
+    "slug": "gqa-gate-costs-nothing",
+    "title": "A gate that costs 2 to 7 times and buys nothing",
+    "axis": "rdna3",
+    "mechanism": "the gfx11 branch requires gqa_ratio >= 3; the CDNA branch of the same function requires >= 1",
+    "magnitude": 7.397910508596247,
+    "unit": "x, the excluded range's best case at the kernel",
+    "why": "one line, one architecture, and the reason given for it does not hold here",
+    "upstream": [
+     "vllm#54210",
+     "vllm#50603"
+    ]
+   },
+   {
+    "slug": "weight-loading-19x",
+    "title": "Loading weights was slower than the disk, twice over",
+    "axis": "amd",
+    "mechanism": "KFD reads the access mode off the VMA, so a read-only copy asks for write and breaks copy-on-write",
+    "magnitude": 7.533617021276595,
+    "unit": "x on a checkpoint that does not fit in RAM",
+    "why": "kfd_svm.c is not architecture-specific and AMD confirmed it as such",
+    "upstream": [
+     "ROCm#6523",
+     "vllm#49991"
+    ]
+   },
+   {
+    "slug": "moe-written-off-by-eager",
+    "title": "The fastest model here was written off at 15 tok/s",
+    "axis": "neutral",
+    "mechanism": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
+    "magnitude": 7.188,
+    "unit": "x between eager and compiled on this host",
+    "why": "the assignment is in env_override.py and runs on every platform",
+    "upstream": [
+     "vllm#53891",
+     "vllm#53892"
+    ]
+   },
+   {
+    "slug": "speculative-decoding-net-loss",
+    "title": "One boolean costs 71% on a Radeon and 61% on an A100",
+    "axis": "neutral",
+    "mechanism": "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8",
+    "magnitude": 3.4248587570621467,
+    "unit": "x slower with speculation on at 32K",
+    "why": "measured on an A100 as well, where the same kernel loses 61% at 50K",
+    "upstream": [
+     "vllm#45450",
+     "vllm#48076"
+    ]
+   },
+   {
+    "slug": "a100-vs-two-radeons",
+    "title": "Two consumer Radeons against one A100",
+    "axis": "tp",
+    "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
+    "magnitude": 2.1265703912797864,
+    "unit": "x worse retention on two cards than on one",
+    "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
+    "upstream": []
+   },
+   {
+    "slug": "rccl-atomics-hostcall",
+    "title": "The RCCL crash was never about RCCL",
+    "axis": "platform",
+    "mechanism": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
+    "magnitude": null,
+    "unit": "every collective fails at dispatch",
+    "why": "reproduced on bare metal by someone else; the trigger is the root port, not the GPU",
+    "upstream": [
+     "ROCm#6520"
+    ]
+   }
+  ],
+  "axes": {
+   "rdna3": "RDNA3 specifically",
+   "amd": "AMD-wide",
+   "neutral": "vendor-neutral",
+   "tp": "tensor parallelism",
+   "platform": "platform capability"
+  },
+  "counts": {
+   "rdna3": 3,
+   "amd": 1,
+   "neutral": 2,
+   "tp": 1,
+   "platform": 1
+  },
+  "total": 8,
+  "rdna3_share": 37.5
+ },
+ "fig2": {
+  "gaps": [
+   {
+    "what": "AITER",
+    "why": "(assembly kernels, tuned MoE, MLA, GDN fast paths) — its supported hardware list is Instinct only. vLLM gates it behind is MI3XX, so gfx1100 silently falls back to Triton."
+   },
+   {
+    "what": "Composable Kernel",
+    "why": "— fused attention on RDNA3 is forward-only."
+   },
+   {
+    "what": "fused_moe tuned configs",
+    "why": "— none for any AMD GPU."
+   },
+   {
+    "what": "FP8",
+    "why": "— MI300+ only."
+   }
+  ],
+  "gate": {
+   "gfx11": "gqa_ratio >= 3",
+   "cdna": "gqa_ratio >= 1",
+   "function": "use_rocm_custom_paged_attention",
+   "file": "vllm/platforms/rocm.py"
+  },
+  "measured": {
+   "excluded_low": 1.8372758188208707,
+   "excluded_high": 7.278998789318378,
+   "admitted_low": 2.35359907652533,
+   "admitted_high": 7.397910508596247,
+   "end_to_end_32k": 1.19391074136871
+  },
+  "extends_to_rdna4": true
+ },
+ "fig3": {
+  "threads": [
+   {
+    "id": "vllm#40977",
+    "kind": "PR",
+    "author": "mgehre-amd",
+    "state": "merged",
+    "when": "2026-07-14",
+    "ours": false
+   },
+   {
+    "id": "vllm#45916",
+    "kind": "PR",
+    "author": "feiyehua",
+    "state": "open",
+    "when": "verified here 2026-07-30",
+    "ours": false
+   },
+   {
+    "id": "vllm#45450",
+    "kind": "PR",
+    "author": "jinhuang12",
+    "state": "open, conflicted",
+    "when": "validated here 2026-08-26",
+    "ours": false
+   },
+   {
+    "id": "vllm#53856",
+    "kind": "PR",
+    "author": "aoshen02",
+    "state": "open",
+    "when": "gfx11 evidence supplied 2026-08-28",
+    "ours": false
+   },
+   {
+    "id": "vllm#49588",
+    "kind": "PR",
+    "author": "hec-ovi",
+    "state": "open, draft",
+    "when": "second evidence body 2026-08-24",
+    "ours": false
+   },
+   {
+    "id": "vllm#48076",
+    "kind": "issue",
+    "author": "tuananhlfc",
+    "state": "open",
+    "when": "second trigger posted 2026-08-01",
+    "ours": false
+   },
+   {
+    "id": "vllm#50603",
+    "kind": "issue",
+    "author": "AIwork4me",
+    "state": "open",
+    "when": "measured 2026-08-27",
+    "ours": false
+   },
+   {
+    "id": "vllm#50264",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-30",
+    "ours": true
+   },
+   {
+    "id": "vllm#49991",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-27",
+    "ours": true
+   },
+   {
+    "id": "vllm#53891",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-26",
+    "ours": true
+   },
+   {
+    "id": "vllm#53892",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-26",
+    "ours": true
+   },
+   {
+    "id": "vllm#53930",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-27",
+    "ours": true
+   },
+   {
+    "id": "vllm#54210",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-28",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6520",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-26",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6523",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "fixed by Ubuntu 7.0.0-30",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6565",
+    "kind": "issue",
+    "author": "BoJl4apa",
+    "state": "open",
+    "when": "contrast cell 2026-08-28",
+    "ours": false
+   }
+  ],
+  "checked": "2026-08-29",
+  "ours": 8,
+  "others": 8,
+  "merged": 1
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "axisNames": {
+  "rdna3": "RDNA3 specifically",
+  "amd": "AMD-wide",
+  "neutral": "vendor-neutral",
+  "tp": "tensor parallelism",
+  "platform": "platform capability"
+ },
+ "axisOrder": ["rdna3", "amd", "tp", "neutral", "platform"],
+ "whyLabel": "what puts it there",
+ "tallyUnit": "of {n} findings",
+ "gateH": ["the CDNA branch", "the gfx11 branch"],
+ "gateFn": "the same kernel, chosen by {f} in {p}",
+ "branchNote": "excluded {el}–{eh}× against admitted {al}–{ah}× at the kernel, and {e2}× end to end at 32K on a real model",
+ "gapsNote": "the four gaps this repository's architecture notes list · {r}",
+ "rdna4Yes": "the notes say the gap extends to RDNA4",
+ "thrH": ["thread", "opened by", "state", "this repository"],
+ "thrNote": "{o} ours, {t} other people's, {m} merged · read from the API on {d}",
+ "rdna4No": ""
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function code(s) { return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>"); }
+
+  /* ---------- Figure 1: the classification ---------- */
+  (function () {
+    var tally = document.getElementById("tally");
+    S.axisOrder.forEach(function (a) {
+      var d = el(tally, "tal rv" + (a === "rdna3" ? " rdna3" : ""));
+      el(d, "n", String(F.fig1.counts[a] || 0));
+      el(d, "l", S.axisNames[a]);
+    });
+    var u = el(tally.parentNode, "barunit", fmt(S.tallyUnit, { n: F.fig1.total }));
+    u.style.margin = "-.6em 0 1.2em";
+
+    var box = document.getElementById("finds");
+    var order = {};
+    S.axisOrder.forEach(function (a, i) { order[a] = i; });
+    F.fig1.findings.slice().sort(function (a, b) {
+      return order[a.axis] - order[b.axis] || b.magnitude - a.magnitude;
+    }).forEach(function (f) {
+      var c = el(box, "find rv" + (f.axis === "rdna3" ? " rdna3" : ""));
+      el(c, "", '<h4><a href="' + f.slug + '.html">' + esc(f.title) + "</a></h4>");
+      el(c, "mag", f.magnitude === null ? "—" : f.magnitude.toFixed(2) + "×");
+      el(c, "mech", code(f.mechanism));
+      el(c, "unit", esc(f.unit));
+      var t = el(c, "tags");
+      var s = document.createElement("span");
+      s.textContent = S.axisNames[f.axis];
+      t.appendChild(s);
+      f.upstream.forEach(function (u2) {
+        var x = document.createElement("span");
+        x.textContent = u2;
+        t.appendChild(x);
+      });
+      el(c, "why", "<b>" + S.whyLabel + "</b> · " + code(f.why));
+    });
+  })();
+
+  /* ---------- Figure 2: the two branches, and the ecosystem list ---------- */
+  (function () {
+    var box = document.getElementById("branch");
+    [[S.gateH[0], F.fig2.gate.cdna, false], [S.gateH[1], F.fig2.gate.gfx11, true]]
+      .forEach(function (b) {
+        var c = el(box, "br rv" + (b[2] ? " out" : ""));
+        el(c, "", "<h4>" + b[0] + "</h4>");
+        el(c, "c", "<code>" + esc(b[1]) + "</code>");
+      });
+    var n = document.getElementById("branchnote");
+    el(n, "", fmt(S.gateFn, { f: "<code>" + F.fig2.gate["function"] + "</code>",
+                              p: "<code>" + F.fig2.gate.file + "</code>" }));
+    var m = F.fig2.measured;
+    var b = el(n, "", fmt(S.branchNote, {
+      el: m.excluded_low.toFixed(2), eh: m.excluded_high.toFixed(2),
+      al: m.admitted_low.toFixed(2), ah: m.admitted_high.toFixed(2),
+      e2: m.end_to_end_32k.toFixed(2) }));
+    b.style.marginTop = ".5em"; b.style.color = "var(--text-2)";
+
+    var g = document.getElementById("gaps");
+    F.fig2.gaps.forEach(function (x) {
+      el(g, "k rv", esc(x.what));
+      el(g, "v rv", code(x.why.replace(/^[\s—-]+/, "")));
+    });
+    document.getElementById("gapnote").textContent = fmt(S.gapsNote, {
+      r: F.fig2.extends_to_rdna4 ? S.rdna4Yes : S.rdna4No });
+  })();
+
+  /* ---------- Figure 3: upstream ---------- */
+  (function () {
+    var box = document.getElementById("threads");
+    S.thrH.forEach(function (h) { el(box, "h id", h); });
+    F.fig3.threads.forEach(function (t) {
+      el(box, "id rv" + (t.ours ? " ours" : ""), esc(t.id));
+      el(box, "au rv", esc(t.author));
+      el(box, "st rv" + (t.state === "merged" ? " merged" : ""), esc(t.state));
+      el(box, "wh rv", esc(t.when));
+    });
+    document.getElementById("thrnote").textContent = fmt(S.thrNote, {
+      o: F.fig3.ours, t: F.fig3.others, m: F.fig3.merged, d: F.fig3.checked });
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

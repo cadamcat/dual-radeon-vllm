@@ -1,0 +1,292 @@
+{
+ "_what": "Every figure in rdna3-second-class.html. The classification is the article's own; every magnitude beside it is recomputed from the file the individual article draws. Derived by site/src/genfig-rdna3.py.",
+ "fig1": {
+  "findings": [
+   {
+    "slug": "hybrid-ssm-collapse",
+    "title": "A hybrid-SSM model that decodes slower the longer you talk to it",
+    "axis": "rdna3",
+    "mechanism": "the few full-attention layers fall off the ROCm paged-attention fast path",
+    "magnitude": 2.851764705882353,
+    "unit": "x lost from 500 to 32K tokens",
+    "why": "the split-KV fallback that fixes it is being added for gfx11 specifically; the path exists elsewhere",
+    "upstream": [
+     "vllm#45916",
+     "vllm#50264"
+    ]
+   },
+   {
+    "slug": "w4a16-two-problems",
+    "title": "Twelve tokens a second was two problems",
+    "axis": "rdna3",
+    "mechanism": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
+    "magnitude": 3.240640785380657,
+    "unit": "x at 1K, symmetric against asymmetric packaging",
+    "why": "eight of twelve asymmetric configurations still have no kernel at all on gfx1100",
+    "upstream": [
+     "vllm#40977"
+    ]
+   },
+   {
+    "slug": "gqa-gate-costs-nothing",
+    "title": "A gate that costs 2 to 7 times and buys nothing",
+    "axis": "rdna3",
+    "mechanism": "the gfx11 branch requires gqa_ratio >= 3; the CDNA branch of the same function requires >= 1",
+    "magnitude": 7.397910508596247,
+    "unit": "x, the excluded range's best case at the kernel",
+    "why": "one line, one architecture, and the reason given for it does not hold here",
+    "upstream": [
+     "vllm#54210",
+     "vllm#50603"
+    ]
+   },
+   {
+    "slug": "weight-loading-19x",
+    "title": "Loading weights was slower than the disk, twice over",
+    "axis": "amd",
+    "mechanism": "KFD reads the access mode off the VMA, so a read-only copy asks for write and breaks copy-on-write",
+    "magnitude": 7.533617021276595,
+    "unit": "x on a checkpoint that does not fit in RAM",
+    "why": "kfd_svm.c is not architecture-specific and AMD confirmed it as such",
+    "upstream": [
+     "ROCm#6523",
+     "vllm#49991"
+    ]
+   },
+   {
+    "slug": "moe-written-off-by-eager",
+    "title": "The fastest model here was written off at 15 tok/s",
+    "axis": "neutral",
+    "mechanism": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
+    "magnitude": 7.188,
+    "unit": "x between eager and compiled on this host",
+    "why": "the assignment is in env_override.py and runs on every platform",
+    "upstream": [
+     "vllm#53891",
+     "vllm#53892"
+    ]
+   },
+   {
+    "slug": "speculative-decoding-net-loss",
+    "title": "One boolean costs 71% on a Radeon and 61% on an A100",
+    "axis": "neutral",
+    "mechanism": "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8",
+    "magnitude": 3.4248587570621467,
+    "unit": "x slower with speculation on at 32K",
+    "why": "measured on an A100 as well, where the same kernel loses 61% at 50K",
+    "upstream": [
+     "vllm#45450",
+     "vllm#48076"
+    ]
+   },
+   {
+    "slug": "a100-vs-two-radeons",
+    "title": "Two consumer Radeons against one A100",
+    "axis": "tp",
+    "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
+    "magnitude": 2.1265703912797864,
+    "unit": "x worse retention on two cards than on one",
+    "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
+    "upstream": []
+   },
+   {
+    "slug": "rccl-atomics-hostcall",
+    "title": "The RCCL crash was never about RCCL",
+    "axis": "platform",
+    "mechanism": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
+    "magnitude": null,
+    "unit": "every collective fails at dispatch",
+    "why": "reproduced on bare metal by someone else; the trigger is the root port, not the GPU",
+    "upstream": [
+     "ROCm#6520"
+    ]
+   }
+  ],
+  "axes": {
+   "rdna3": "RDNA3 specifically",
+   "amd": "AMD-wide",
+   "neutral": "vendor-neutral",
+   "tp": "tensor parallelism",
+   "platform": "platform capability"
+  },
+  "counts": {
+   "rdna3": 3,
+   "amd": 1,
+   "neutral": 2,
+   "tp": 1,
+   "platform": 1
+  },
+  "total": 8,
+  "rdna3_share": 37.5
+ },
+ "fig2": {
+  "gaps": [
+   {
+    "what": "AITER",
+    "why": "(assembly kernels, tuned MoE, MLA, GDN fast paths) — its supported hardware list is Instinct only. vLLM gates it behind is MI3XX, so gfx1100 silently falls back to Triton."
+   },
+   {
+    "what": "Composable Kernel",
+    "why": "— fused attention on RDNA3 is forward-only."
+   },
+   {
+    "what": "fused_moe tuned configs",
+    "why": "— none for any AMD GPU."
+   },
+   {
+    "what": "FP8",
+    "why": "— MI300+ only."
+   }
+  ],
+  "gate": {
+   "gfx11": "gqa_ratio >= 3",
+   "cdna": "gqa_ratio >= 1",
+   "function": "use_rocm_custom_paged_attention",
+   "file": "vllm/platforms/rocm.py"
+  },
+  "measured": {
+   "excluded_low": 1.8372758188208707,
+   "excluded_high": 7.278998789318378,
+   "admitted_low": 2.35359907652533,
+   "admitted_high": 7.397910508596247,
+   "end_to_end_32k": 1.19391074136871
+  },
+  "extends_to_rdna4": true
+ },
+ "fig3": {
+  "threads": [
+   {
+    "id": "vllm#40977",
+    "kind": "PR",
+    "author": "mgehre-amd",
+    "state": "merged",
+    "when": "2026-07-14",
+    "ours": false
+   },
+   {
+    "id": "vllm#45916",
+    "kind": "PR",
+    "author": "feiyehua",
+    "state": "open",
+    "when": "verified here 2026-07-30",
+    "ours": false
+   },
+   {
+    "id": "vllm#45450",
+    "kind": "PR",
+    "author": "jinhuang12",
+    "state": "open, conflicted",
+    "when": "validated here 2026-08-26",
+    "ours": false
+   },
+   {
+    "id": "vllm#53856",
+    "kind": "PR",
+    "author": "aoshen02",
+    "state": "open",
+    "when": "gfx11 evidence supplied 2026-08-28",
+    "ours": false
+   },
+   {
+    "id": "vllm#49588",
+    "kind": "PR",
+    "author": "hec-ovi",
+    "state": "open, draft",
+    "when": "second evidence body 2026-08-24",
+    "ours": false
+   },
+   {
+    "id": "vllm#48076",
+    "kind": "issue",
+    "author": "tuananhlfc",
+    "state": "open",
+    "when": "second trigger posted 2026-08-01",
+    "ours": false
+   },
+   {
+    "id": "vllm#50603",
+    "kind": "issue",
+    "author": "AIwork4me",
+    "state": "open",
+    "when": "measured 2026-08-27",
+    "ours": false
+   },
+   {
+    "id": "vllm#50264",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-30",
+    "ours": true
+   },
+   {
+    "id": "vllm#49991",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-27",
+    "ours": true
+   },
+   {
+    "id": "vllm#53891",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-26",
+    "ours": true
+   },
+   {
+    "id": "vllm#53892",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-26",
+    "ours": true
+   },
+   {
+    "id": "vllm#53930",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-27",
+    "ours": true
+   },
+   {
+    "id": "vllm#54210",
+    "kind": "PR",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-08-28",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6520",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "2026-07-26",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6523",
+    "kind": "issue",
+    "author": "cadamcat",
+    "state": "open",
+    "when": "fixed by Ubuntu 7.0.0-30",
+    "ours": true
+   },
+   {
+    "id": "ROCm#6565",
+    "kind": "issue",
+    "author": "BoJl4apa",
+    "state": "open",
+    "when": "contrast cell 2026-08-28",
+    "ours": false
+   }
+  ],
+  "checked": "2026-08-29",
+  "ours": 8,
+  "others": 8,
+  "merged": 1
+ }
+}

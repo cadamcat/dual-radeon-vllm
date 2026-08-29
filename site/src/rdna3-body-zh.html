@@ -1,0 +1,223 @@
+
+<header class="top">
+  <div class="kicker">综述 · RDNA3 · ROCm · vLLM</div>
+  <h1>这里面有多少<br>真的是 RDNA3 二等公民</h1>
+  <p class="lede">这个仓库自己的总结说，RDNA3 在 ROCm 的 kernel 生态里是二等公民，
+  而八篇写作都挂在这个标题下面。按证据真正支持的范围重新分一遍，
+  <strong>八个里有三个是</strong>。其余的要么是 AMD 全线的、要么与厂商无关、
+  要么根本不关 GPU 的事 —— 而分清哪个是哪个，正是诊断和抱怨之间的差别。</p>
+  <div class="meta">
+    <span class="chip">2× <b>RX 7900 XT</b> · gfx1100</span>
+    <span class="chip">八个结论 · <b>十六</b>条上游线程</span>
+    <span class="chip">状态核对于 <b>2026-08-29</b></span>
+  </div>
+</header>
+
+<div class="abstract">
+  <h3>摘要</h3>
+  <p>这个论断是真的，而且比它看起来更窄。作为<strong>架构特有</strong>留下来的是一份很小很具体的清单：
+  一条这台硬件会掉下去的注意力快路径、一个类型门把常见 checkpoint 类别挡在外面的原生量化线性 kernel，
+  以及一条写在某个函数其中一个架构分支里、另一个分支没有的性能启发式。</p>
+  <p>最纯粹的那个实例是一行。<code>use_rocm_custom_paged_attention</code> 在 gfx11 上要求
+  <code>gqa_ratio &gt;= 3</code>，在 CDNA 上要求 <code>&gt;= 1</code>，用的是同一个 kernel。
+  而在被排除的区间里，那个 kernel 比它被越过去换来的兜底<strong>快 1.84 到 7.28 倍</strong>，
+  而且被排除区间与被放行区间重叠。这道界限没有分开任何东西。</p>
+  <p>八个里有四个<em>不是</em> RDNA3 的问题，而把这一点说出来正是那些测量的用途。
+  其中两个是靠在另一个厂商上实测才被证明与厂商无关的：同一道注意力门在 A100 上于 50K 掉 61 %，
+  而那个单线程编译设置在一个每个平台都会跑的文件里。一个是 AMD 全线的，在 AMD 自己指出的那一行上。
+  还有一个是 PCIe 能力位，裸机上一样会中。</p>
+  <p><strong>十六条上游线程里有一半是别人的。</strong>
+  这台硬件最有用的地方，最后证明是：它是那些正在修这些问题的人手上没有的设备。</p>
+</div>
+
+<h2><span class="n">1</span>把八个结论按它们真正关于什么分类</h2>
+
+<p>下面每一行都是一篇独立文章，旁边每一个数字都从那篇文章所依据的文件里重算。
+这里唯一属于判断的东西就是这个分类，所以每一行都附上了把它放在那个位置上的证据。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 每个结论究竟是什么的实例
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="tally" id="tally"></div>
+    <div id="finds"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> 按轴排序，不按大小。这些倍数彼此之间不可比 ——
+    它们是不同东西的比值，各自只在自己那篇文章的基线上才有意义 ——
+    放在这里是为了说明哪些结论值得花一个下午，而不是给它们排名。
+    被标为架构特有的那三个，是同一套软件在这台硬件上做出与另一款 AMD 部件不同决定的那三个。
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>最纯粹的实例是一行</h2>
+
+<p>如果"二等公民"要有一个精确的含义，那就是：同一套软件为你做的选择和为别人做的不同，
+而给出的理由经不起核对。<code>vllm/platforms/rocm.py</code> 里的一个函数正是这样：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 同一个 kernel，两个分支，差一个条件
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="branch" id="branch"></div>
+    <div class="barunit" id="branchnote"></div>
+    <div class="gaps" id="gaps"></div>
+    <div class="barunit" id="gapnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 这个界限是一条性能启发式 —— 加入它的那个 PR 自己这么说 ——
+    而在这台硬件上实测下来它是反的：被排除的那个区间正是被挡住的 kernel 帮助最大的地方。
+    下面是这个仓库的架构笔记列出的四个生态缺口，从那份文档里提取。
+    它们是同一件事的结构性版本：快路径存在，而支持硬件清单里没有这一款。
+  </figcaption>
+</figure>
+
+<p>这四个里有两个值得分开说。<strong>AITER 和 FP8 按设计就是 Instinct 独有</strong>，
+也没有人声称过别的；那是产品决定，不是缺陷。<strong>缺失的 MoE 调优配置对任何 AMD GPU 都缺</strong>，
+这让它成为 AMD 全线的缺口而不是 RDNA3 的。只有 Composable Kernel 在 RDNA3 上融合注意力只有前向这一条，
+和上面那道门一起，实打实落在架构这条轴上。</p>
+
+<h2><span class="n">3</span>不属于这一类的那四个</h2>
+
+<p>最要紧的那些测量，恰恰是把一个结论从这张清单上<em>拿下来</em>的那些。</p>
+
+<div class="note">
+  <span class="lbl">两个是靠在另一个厂商上实测才定的</span>
+  投机解码在长上下文塌陷，看起来像一个 RDNA3 的故事 ——
+  直到同一个模型在一张租来的 A100 上经由同一个 Triton kernel 在 50K 掉了 61 %，
+  而换到一个没有这道门的后端就不掉了。而一个 128 专家的 MoE 被记作 15 tok/s，
+  看起来像 ROCm 缺调优 kernel —— 直到成因查明是 <code>env_override.py</code>
+  里一个每个平台都会执行的普通赋值。<a href="speculative-decoding-net-loss.zh.html">一篇</a>和
+  <a href="moe-written-off-by-eager.zh.html">另一篇</a>。
+</div>
+
+<div class="note">
+  <span class="lbl">一个是 AMD 全线的，在 AMD 自己点名的那一行上</span>
+  加载权重比磁盘还慢，是 <code>kfd_svm.c</code> 从 VMA 上读访问模式，
+  于是一次只读的拷贝去要写权限，把每一个常驻页上的 copy-on-write 都打断。
+  那个文件不是架构特有的，AMD 确认了机理，而且有陌生人在另一块卡上复现了。
+  <a href="weight-loading-19x.zh.html">那篇文章</a>。
+</div>
+
+<div class="note">
+  <span class="lbl">一个根本不关 GPU 的事</span>
+  所有 RCCL 集合通信在 dispatch 阶段失败，是卡上方根端口的 PCIe AtomicOps 能力问题。
+  它在裸机上一样复现，和插的是哪块 GPU 无关，而对虚拟机来说修复是一行配置。
+  <a href="rccl-atomics-hostcall.zh.html">那篇文章</a>。
+</div>
+
+<p>还有第五个值得单独点名，因为它关于机器的形状而不是芯片：2D 注意力路径每个 KV head
+启动一个 workgroup，所以把模型切到两张卡上会把它们减半，被饿着的那条路径被饿得加倍厉害。
+那是张量并行的代价，任何厂商的单卡跑同一个 kernel 都不付这笔钱。
+<a href="a100-vs-two-radeons.zh.html">那篇文章</a>。</p>
+
+<h2><span class="n">4</span>这套硬件最后证明是干什么用的</h2>
+
+<p>这些工作产出了十六条上游线程，而其中的分法才是重点：八条是我们的，
+八条是别人的 —— 在别人那些线程里，这台机器贡献的是一次他们做不到的测量。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 每一条线程，以及它在 2026-08-29 的状态
+      <span class="prov cmd">可用 gh api 自行核对</span></div>
+    <div class="thr" id="threads"></div>
+    <div class="barunit" id="thrnote"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 状态是在标注日期从 API 读的，不是凭记忆写的 —— 这些会变，
+    而一个永远写着"开着"的页面几周内就错了。有一条已合并，由它自己的作者合的，
+    而它关掉的是本仓库花了一个月、经由另一个 kernel 刻画的那个问题里更大的一半。
+    另外两条明确把 gfx11 列为缺口：它们的作者在 Instinct 上验证过，并在测试计划里写明了。
+  </figcaption>
+</figure>
+
+<p>这就是"一对消费级显卡对这个生态值多少"的诚实总结。不是跑分 ——
+这里的绝对数字是下界，跑在一台没有 P2P、走跨 die PCIe 3.0 的 VFIO guest 上。
+它的价值是充当那个缺口里的设备：修复的作者手上没有的那一台，
+让一份"只做过编译验证"的测试计划变成一个运行时结果。</p>
+
+<h2><span class="n">5</span>没有被确立的部分</h2>
+
+<h3>这个分类是一个判断</h3>
+<p>旁边每一个倍数都是重算的，每一条"理由"也点了证据，但把某个结论归到某条轴上，
+是一个论证而不是一次测量。八个里有两个可以合理地被争到另一列去：
+W4A16 那个类型门是一个恰好落在架构特有 kernel 里的普通 bug；
+而缺失的 MoE 调优配置是一个 AMD 全线的缺口，被包在一个原本属于 RDNA3 的故事里。</p>
+
+<h3>一台机器，一代软件</h3>
+<p>这里的一切都是一台 VFIO guest 上的 gfx1100，跨两代 vLLM 和两个 ROCm 版本。
+其中任何一条在 RDNA4 上是否成立，没有测过；架构笔记说这个生态缺口会延伸到那里，
+而那句话是对支持硬件清单的一种读法，不是一次测量。</p>
+
+<h3>这些缺口是否在收窄</h3>
+<p>这段工作期间有一个 PR 合入，关掉了某个结论的一半。那是关于方向的一个数据点，不是一条趋势。
+这里没有任何东西测量 gfx11 的支持推进得有多快，只测了它站在哪。</p>
+
+<h2><span class="n">6</span>此后发生的变化</h2>
+
+<div class="note ok">
+  <span class="lbl">2026-07-14 · 三个里有一个自己变窄了</span>
+  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 合入，
+  加了第二个原生 kernel，它接受第一个拒绝的那种 checkpoint 类型。这个结论还在 ——
+  十二个非对称配置里仍有八个在 gfx1100 上没有 kernel —— 但它的招牌例子没了：
+  那个曾经 11.41 tok/s 的模型，在当前 <code>main</code> 上是 37.32。
+</div>
+
+<div class="note ok">
+  <span class="lbl">2026-08-20 · 有一个是被发行版修的，不是被报告修的</span>
+  Canonical 在 <code>7.0.0-30</code> 里发出了缺失的那个内核 commit。
+  那个专门请求这次 backport 的 Launchpad bug至今未经分诊，所以它是走普通 stable 流程进来的。
+  "报告了一件事"和"一件事被修了"是两个不同的事件，而这个仓库两样各有一个。
+</div>
+
+<div class="note warn">
+  <span class="lbl">状态会过期</span>
+  图 3 是一张快照。除了一次合并之外，里面的一切在 2026-08-29 都还开着；
+  对这一页正确的用法是去点那些链接，而不是相信那一列。
+</div>
+
+<div class="foot-note">
+  <p><strong>那八篇。</strong>
+  <a href="hybrid-ssm-collapse.zh.html">混合 SSM 的塌陷</a> ·
+  <a href="w4a16-two-problems.zh.html">一个模型里的两个问题</a> ·
+  <a href="gqa-gate-costs-nothing.zh.html">gqa 那道门</a> ·
+  <a href="weight-loading-19x.zh.html">加载权重</a> ·
+  <a href="moe-written-off-by-eager.zh.html">MoE 与 eager 模式</a> ·
+  <a href="speculative-decoding-net-loss.zh.html">投机解码</a> ·
+  <a href="a100-vs-two-radeons.zh.html">两张 Radeon 对一张 A100</a> ·
+  <a href="rccl-atomics-hostcall.zh.html">RCCL 崩溃</a>。这些是怎么测出来的，
+  <a href="measuring-decode.zh.html">有自己的一篇</a>；
+  一个否定结论是怎么报告的，<a href="reporting-a-non-reproduction.zh.html">又是一篇</a>。</p>
+  <p>生态清单在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>，
+  而本页每一张图都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从仓库重算。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "axisNames": {
+  "rdna3": "RDNA3 特有",
+  "amd": "AMD 全线",
+  "neutral": "与厂商无关",
+  "tp": "张量并行",
+  "platform": "平台能力"
+ },
+ "axisOrder": ["rdna3", "amd", "tp", "neutral", "platform"],
+ "whyLabel": "把它放在这里的依据",
+ "tallyUnit": "共 {n} 个结论",
+ "gateH": ["CDNA 分支", "gfx11 分支"],
+ "gateFn": "同一个 kernel，由 {p} 里的 {f} 决定",
+ "branchNote": "kernel 层面：被排除 {el}–{eh}× 对被放行 {al}–{ah}×；真实模型上 32K 端到端 {e2}×",
+ "gapsNote": "这个仓库的架构笔记列出的四个缺口 · {r}",
+ "rdna4Yes": "笔记说这个缺口会延伸到 RDNA4",
+ "thrH": ["线程", "开启者", "状态", "本仓库"],
+ "thrNote": "{o} 条是我们的，{t} 条是别人的，{m} 条已合并 · 于 {d} 从 API 读取",
+ "rdna4No": ""
+}</script>
+__SCRIPT__
+</body>
+</html>

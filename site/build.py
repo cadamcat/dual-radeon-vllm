@@ -71,6 +71,7 @@ A_EN, A_ZH = "a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"
 Q_EN, Q_ZH = "gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"
 N_EN, N_ZH = "reporting-a-non-reproduction.html", "reporting-a-non-reproduction.zh.html"
 X_EN, X_ZH = "measuring-decode.html", "measuring-decode.zh.html"
+Z_EN, Z_ZH = "rdna3-second-class.html", "rdna3-second-class.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -234,7 +235,30 @@ if (D / "measure-body-zh.html").exists():
                            "数和极差，以及为什么报极差而不是标准差。",
                       out="articles/" + X_ZH, nav=lang_nav("zh", X_EN, X_ZH), labels=ZH_LABELS))
 
+built.append(page("rdna3-body.html", lang="en", figures="figures-rdna3.json",
+                  extra_css="rdna3-extra.css",
+                  title="How much of this is RDNA3 being second-class",
+                  desc="Eight findings sorted by what the evidence supports. Three are "
+                       "architecture-specific, one is AMD-wide, two were proved vendor-neutral by "
+                       "measuring another vendor, and one is not about the GPU at all.",
+                  out="articles/" + Z_EN, nav=lang_nav("en", Z_EN, Z_ZH), labels=EN_LABELS))
+if (D / "rdna3-body-zh.html").exists():
+    built.append(page("rdna3-body-zh.html", lang="zh-CN", figures="figures-rdna3.json",
+                      extra_css="rdna3-extra.css", script_from="rdna3-body.html",
+                      title="这里面有多少真的是 RDNA3 二等公民",
+                      desc="八个结论按证据支持的范围分类。三个是架构特有的，"
+                           "一个是 AMD 全线的，两个通过在另一个厂商上实测被证明"
+                           "与厂商无关，还有一个根本不是 GPU 的事。",
+                      out="articles/" + Z_ZH, nav=lang_nav("zh", Z_EN, Z_ZH), labels=ZH_LABELS))
+
 articles = {"articles": [
+    {"href": "articles/" + Z_EN, "title": "How much of this is RDNA3 being second-class",
+     "blurb": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel "
+              "ecosystem. Sorting eight findings by what the evidence supports, three of them are "
+              "that, and the measurements that mattered most took findings off the list.",
+     "measured": "reviewed 2026-08-29",
+     "langs": ["EN", "\u4e2d"] if (D / "rdna3-body-zh.html").exists() else ["EN"],
+     "tags": ["synthesis", "RDNA3", "ROCm"]},
     {"href": "articles/" + X_EN, "title": "How to measure decode on a machine like this",
      "blurb": "The two harnesses agree to 0.44%, and finding that out took four identical runs the "
               "first of which read 31% low. What every point carries, where the chart-grade line sits, "
@@ -345,7 +369,7 @@ for p in built:
 # the language pairs must agree on the parts that are not prose
 for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
                  (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH),
-                 (N_EN, N_ZH), (X_EN, X_ZH)):
+                 (N_EN, N_ZH), (X_EN, X_ZH), (Z_EN, Z_ZH)):
     a, b = OUT / "articles" / en, OUT / "articles" / zh
     if not b.exists():
         continue

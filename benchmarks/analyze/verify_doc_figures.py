@@ -758,7 +758,8 @@ def main():
              ["gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"],
              ["reporting-a-non-reproduction.html",
               "reporting-a-non-reproduction.zh.html"],
-             ["measuring-decode.html", "measuring-decode.zh.html"]]
+             ["measuring-decode.html", "measuring-decode.zh.html"],
+             ["rdna3-second-class.html", "rdna3-second-class.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -2860,6 +2861,130 @@ def main():
                1 if h in pages[fn] else 0)
         ck(f"measure article {fn}, states the rule it exists for", "1",
            1 if phrase in " ".join(pages[fn].split()) else 0)
+
+    # --- rdna3-second-class.html ---------------------------------------------
+    # The synthesis. Its classification is an argument, so what is checked is
+    # that every magnitude beside it is the number its own article's file
+    # produces, that every finding links to a page that exists, and that the
+    # count the headline turns on is the count in the data.
+    ZART = json.loads(block(pages["rdna3-second-class.html"], "figures"))
+    zjul = decode(JULY)
+    zab = {(r["arm"], r["ctx"]): r for r in
+           (json.loads(l) for l in
+            open(os.path.join(HERE, "..", "w4a16-symmetry", "w4a16-ab.jsonl")))}
+    zg1 = [json.loads(l) for l in
+           open(os.path.join(HERE, "..", "vllm-50603", "stage1-rocm-paths.jsonl"))]
+    zgr = [r["triton"]["median_ms"] / r["ck"]["median_ms"] for r in zg1]
+    zlf = json.load(open(os.path.join(HERE, "..", "loader-flag-kernel-30.json")))
+    zmm = {(r["model"], r["cache"], r["mode"]): r["median_s"]
+           for r in zlf["medians_seconds"]}
+    zlad = lambda fn: {r["depth"]: r["tok_per_s"] for r in
+                       json.load(open(os.path.join(HERE, "..", "speculative-decoding",
+                                                   fn)))["rows"]}
+    zmtp, zns = zlad("mtp-31b-mtp.json"), zlad("splitkv-31b-stock.json")
+    zstk = zlad("mtp-31b-stock45450.json")
+    ZVD = os.path.join(HERE, "..", "cuda-a100", "45450-validation", "logs")
+    zleg = lambda fn: float(re.search(r"RESULT decode_tok_s=([\d.]+)",
+                                      open(os.path.join(ZVD, fn)).read()).group(1))
+
+    ck("rdna3 article, findings", "8", ZART["fig1"]["total"])
+    ck("rdna3 article, findings listed", "8", len(ZART["fig1"]["findings"]))
+    ck("rdna3 article, the headline count", "3", ZART["fig1"]["counts"]["rdna3"])
+    ck("rdna3 article, and it is the count in the rows", "3",
+       sum(1 for f in ZART["fig1"]["findings"] if f["axis"] == "rdna3"))
+    ck("rdna3 article, four are not this", "4",
+       sum(1 for f in ZART["fig1"]["findings"]
+           if f["axis"] in ("amd", "neutral", "platform")))
+    ck("rdna3 article, every axis it uses is named", "8",
+       sum(1 for f in ZART["fig1"]["findings"] if f["axis"] in ZART["fig1"]["axes"]))
+    # the magnitudes, each against the file its own article draws
+    ZMAG = {
+        "hybrid-ssm-collapse": tps(zjul, "D-27B-tp2", 500) / tps(zjul, "D-27B-tp2", 32000),
+        "w4a16-two-problems": (zab[("sym", 1024)]["decode_tok_s"]
+                               / zab[("asym", 1024)]["decode_tok_s"]),
+        "gqa-gate-costs-nothing": max(zgr),
+        "weight-loading-19x": (zmm[("gemma-4-31B-w4a16", "cold", "baseline")]
+                               / zmm[("gemma-4-31B-w4a16", "cold", "flag")]),
+        "moe-written-off-by-eager": tps(zjul, "E-26B-tp2", 500) / 15.0,
+        "speculative-decoding-net-loss": zns[32768] / zmtp[32768],
+        "a100-vs-two-radeons": ((zleg("C30.log") / zleg("C1K.log"))
+                                / (zstk[32768] / zstk[1024])),
+        "rccl-atomics-hostcall": None,
+    }
+    # .get, not [slug]: a renamed finding must fail this check rather than
+    # crash the file before anything is reported
+    ck("rdna3 article, every magnitude recomputes", "8",
+       sum(1 for f in ZART["fig1"]["findings"]
+           if f["slug"] in ZMAG
+           and ((f["magnitude"] is None and ZMAG[f["slug"]] is None)
+                or (f["magnitude"] is not None and ZMAG[f["slug"]] is not None
+                    and abs(f["magnitude"] - ZMAG[f["slug"]]) < 1e-9))))
+    ck("rdna3 article, and every slug is one this file knows", "8",
+       sum(1 for f in ZART["fig1"]["findings"] if f["slug"] in ZMAG))
+    # every finding must link to a page that exists in both languages
+    ck("rdna3 article, every finding links to a published page", "8",
+       sum(1 for f in ZART["fig1"]["findings"]
+           if os.path.exists(os.path.join(ART, f["slug"] + ".html"))
+           and os.path.exists(os.path.join(ART, f["slug"] + ".zh.html"))))
+    ck("rdna3 article, and the English page links to each of them", "8",
+       sum(1 for f in ZART["fig1"]["findings"]
+           if f'href="{f["slug"]}.html"' in pages["rdna3-second-class.html"]))
+    ck("rdna3 article, the Chinese page links to the Chinese ones", "8",
+       sum(1 for f in ZART["fig1"]["findings"]
+           if f'href="{f["slug"]}.zh.html"' in pages["rdna3-second-class.zh.html"]))
+
+    # fig2: the gate, and the ecosystem list extracted from the notes
+    zan = open(os.path.join(HERE, "..", "..", "docs", "architecture-notes.md"),
+               encoding="utf-8").read()
+    ck("rdna3 article, fig2 gaps", "4", len(ZART["fig2"]["gaps"]))
+    ck("rdna3 article, fig2 gaps are in the notes", "4",
+       sum(1 for g in ZART["fig2"]["gaps"] if g["what"] in zan))
+    ck("rdna3 article, fig2 the notes still extend it to RDNA4", "1",
+       1 if ZART["fig2"]["extends_to_rdna4"] and "extends to RDNA4." in zan else 0)
+    zm = ZART["fig2"]["measured"]
+    ck("rdna3 article, fig2 excluded floor", "1.84", zm["excluded_low"])
+    ck("rdna3 article, fig2 excluded ceiling", "7.28", zm["excluded_high"])
+    ck("rdna3 article, fig2 admitted floor", "2.35", zm["admitted_low"])
+    ck("rdna3 article, fig2 recomputes the excluded floor",
+       repr(min(r["triton"]["median_ms"] / r["ck"]["median_ms"]
+                for r in zg1 if not r["gate_as_shipped"])),
+       zm["excluded_low"], tol=1e-12)
+    ck("rdna3 article, fig2 the bands overlap", "1",
+       1 if zm["excluded_high"] > zm["admitted_low"] else 0)
+    ck("rdna3 article, fig2 end to end at 32K", "1.19", zm["end_to_end_32k"])
+    ck("rdna3 article, fig2 names both branches", "1",
+       1 if ZART["fig2"]["gate"]["gfx11"] == "gqa_ratio >= 3"
+       and ZART["fig2"]["gate"]["cdna"] == "gqa_ratio >= 1" else 0)
+
+    # fig3: the upstream tally, and that it is dated
+    ck("rdna3 article, fig3 threads", "16", len(ZART["fig3"]["threads"]))
+    ck("rdna3 article, fig3 half are ours", "8", ZART["fig3"]["ours"])
+    ck("rdna3 article, fig3 and half are not", "8", ZART["fig3"]["others"])
+    ck("rdna3 article, fig3 the counts add up", "16",
+       ZART["fig3"]["ours"] + ZART["fig3"]["others"])
+    ck("rdna3 article, fig3 one is merged", "1", ZART["fig3"]["merged"])
+    ck("rdna3 article, fig3 says when it was read", "1",
+       1 if ZART["fig3"]["checked"] == "2026-08-29" else 0)
+    ck("rdna3 article, fig3 every thread names an author", "16",
+       sum(1 for s in ZART["fig3"]["threads"] if s["author"]))
+    # every finding's upstream references must appear in the thread table
+    zids = {s["id"] for s in ZART["fig3"]["threads"]}
+    ck("rdna3 article, every cited thread is in the table", "1",
+       1 if all(u in zids for f in ZART["fig1"]["findings"] for u in f["upstream"])
+       else 0)
+
+    for fn, heads in (("rdna3-second-class.html",
+                       ("What is not established", "What has changed since")),
+                      ("rdna3-second-class.zh.html",
+                       ("没有被确立的部分", "此后发生的变化"))):
+        for h in heads:
+            ck(f"rdna3 article {fn}, carries '{h[:22]}'", "1",
+               1 if h in pages[fn] else 0)
+    # the article's own point: it says which findings are NOT this
+    for fn, phrase in (("rdna3-second-class.html", "are <em>not</em> RDNA3 problems"),
+                       ("rdna3-second-class.zh.html", "不是</em> RDNA3 的问题")):
+        ck(f"rdna3 article {fn}, says which are not", "1",
+           1 if phrase in pages[fn] else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
