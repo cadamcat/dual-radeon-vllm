@@ -31,7 +31,12 @@ campaign is no longer the best this machine can do. Every line says which it is.
     log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
     deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there on the
     same model, quantisation and patch, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The
-    checkpoint is what the two sides share; the split and the stack are not. Dashed is the A100.
+    checkpoint is what the two sides share; the split and the stack are not. Every line is one
+    session at one ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across
+    days, and the tooltip carries each one's own. <b>MTP</b> adds the speculative arm of the two
+    models that have one, measured the same day and on the same kernel as their line here, so the
+    button shows what speculation does to <em>that</em> line rather than the fastest speculative run
+    anywhere. Stroke says which is which: solid these two cards, long dash the A100, short dash MTP.
     Hover a point for the run count and the stack it took.
   </figcaption>
 </figure>
@@ -99,11 +104,13 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
- "bestHint": "click a model to add or remove its line · click a machine to overlay it",
+ "bestHint": "click a model to add or remove its line · click a machine to overlay it · MTP adds the speculative arm of the models that have one",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
- "bestUnit": "decode tok/s at batch 1 · each line is that model's fastest measured configuration, not one experiment",
+ "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
+ "bestStroke": "solid: these two cards · long dash: the A100 · short dash: the same line with MTP on",
+ "bestMtp": "MTP",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
@@ -411,6 +418,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
     var machOn = {};
     F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
+    // Speculation is off until asked for. It is a different way of running the
+    // same machine, not a faster reading of the same thing, and on Qwen3.8 it
+    // is a net loss past 8K -- so it does not belong in a default view of what
+    // this machine does.
+    var specOn = false;
+    var hasSpec = F.series.some(function (x) { return x.spec; });
 
     function stack(x) {
       var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
@@ -431,8 +444,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
           "<br>" + esc(stack(x)) + "</span>";
       };
     }
+    // One model can now own four lines -- two machines by two arms -- and they
+    // share a colour, so the stroke has to carry machine and arm both.
+    function stroke(x) {
+      if (x.machine === "rdna3") return x.spec ? "2 4" : null;
+      return x.spec ? "7 4 2 4" : "7 5";
+    }
     var ser = F.series.map(function (x) {
-      return { colour: colour[x.model], dash: x.machine !== "rdna3", tip: tipFor(x),
+      var d = stroke(x);
+      return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
                points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
     });
     var chart = window.lineChart({
@@ -445,9 +465,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     function apply() {
       chart.setLit(function (i) {
         var x = F.series[i];
-        return on[x.model] && machOn[x.machine];
+        return on[x.model] && machOn[x.machine] && (specOn || !x.spec);
       });
       Array.prototype.forEach.call(key.children, function (b, i) {
+        if (i >= models.length) return;      // the MTP button sits after them
         b.classList.toggle("on", on[models[i]]);
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
@@ -482,8 +503,22 @@ topology. The shapes transfer; the levels are the worst case.</p>
       });
       key.appendChild(b);
     });
+    if (hasSpec) {
+      var sb = document.createElement("button");
+      sb.className = "lg";
+      sb.style.setProperty("--c", "var(--accent)");
+      sb.innerHTML = '<span class="sw"></span>' + esc(S.bestMtp);
+      sb.setAttribute("aria-pressed", "false");
+      sb.addEventListener("click", function () {
+        specOn = !specOn;
+        sb.classList.toggle("on", specOn);
+        sb.setAttribute("aria-pressed", String(specOn));
+        apply();
+      });
+      key.appendChild(sb);
+    }
     apply();
-    note.innerHTML = esc(S.bestUnit) + "<br>" +
+    note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +
       esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
                                 v: F.campaign.vllm })) + "<br>" +
       esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),

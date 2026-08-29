@@ -3489,11 +3489,19 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "8", len(XB["series"]))
-    ck("index figure, points", "67", sum(len(x["points"]) for x in XB["series"]))
-    ck("index figure, lines on the Radeons", "7",
+    ck("index figure, series", "11", len(XB["series"]))
+    ck("index figure, points", "121", sum(len(x["points"]) for x in XB["series"]))
+    # every line is one session at the campaign ladder now, not a three-point
+    # probe beside an eleven-rung campaign
+    ck("index figure, and every line is eleven rungs", "1",
+       1 if all(len(x["points"]) == 11 for x in XB["series"]) else 0)
+    ck("index figure, speculative lines", "3",
+       sum(1 for x in XB["series"] if x["spec"]))
+    ck("index figure, and none of them is lit without being asked", "0",
+       sum(1 for x in XB["series"] if x["spec"] and x["lit"]))
+    ck("index figure, lines on the Radeons", "9",
        sum(1 for x in XB["series"] if x["machine"] == "rdna3"))
-    ck("index figure, lines on the A100", "1",
+    ck("index figure, lines on the A100", "2",
        sum(1 for x in XB["series"] if x["machine"] == "a100"))
     ck("index figure, lit without being asked", "4",
        sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "rdna3"))
@@ -3505,16 +3513,19 @@ def main():
             continue
         want = [r for r in XLED
                 if xsid(r) == (x["model"], x["tp"], x["vllm"], tuple(x["patches"]),
-                               x["harness"], x["date"])]
+                               x["harness"], x["date"])
+                and (x.get("cfg") is None or r["cfg"] == x["cfg"])]
         want.sort(key=lambda r: r["ctx"])
-        ck("index figure, %s point count" % x["model"], str(len(want)), len(x["points"]))
-        ck("index figure, %s matches the ledger" % x["model"], "1",
+        tag = x["model"] + (" MTP" if x["spec"] else "")
+        ck("index figure, %s point count" % tag, str(len(want)), len(x["points"]))
+        ck("index figure, %s matches the ledger" % tag, "1",
            1 if len(want) == len(x["points"]) and all(
                r["ctx"] == p["ctx"] and abs(r["decode_tok_s"] - p["tok_s"]) < 1e-9
                and r["chart_grade"] == p["graded"]
                for r, p in zip(want, x["points"])) else 0)
 
     # the two lines the campaign does not represent, against the campaign
+    xrep0 = XB["repro"]
     xcamp = {}
     for r in XLED:
         if r["date"] == XB["campaign"]["date"] and r["tp"] == 2:
@@ -3524,10 +3535,14 @@ def main():
                 if x["model"] == o["model"] and x["machine"] == "rdna3"
                 for p in x["points"]}
         c = xcamp[o["model"]]
-        ck("index figure, %s beats its campaign everywhere" % o["model"], "1",
-           1 if all(mine[d] > c[min(c, key=lambda k: abs(k - d))]
-                    for d in mine
-                    if abs(min(c, key=lambda k: abs(k - d)) - d) / d < 0.06) else 0)
+        ratios = [mine[d] / c[min(c, key=lambda k: abs(k - d))]
+                  for d in mine
+                  if abs(min(c, key=lambda k: abs(k - d)) - d) / d < 0.06]
+        ck("index figure, %s says why it replaces the campaign" % o["model"], "1",
+           1 if o["why"] in ("faster", "reproduces") else 0)
+        ck("index figure, %s is that" % o["model"], "1",
+           1 if (min(ratios) > 1.0 if o["why"] == "faster"
+                 else (1 - min(ratios)) * 100.0 <= xrep0["worst_pct"]) else 0)
         ck("index figure, %s deepest gain" % o["model"],
            "%.2f" % (o["picked_deepest"] / o["campaign_deepest"]),
            o["picked_deepest"] / o["campaign_deepest"])
@@ -3546,11 +3561,12 @@ def main():
        max(abs(xc1[k] - xc2[k]) / max(xc1[k], xc2[k]) * 100 for k in xsh))
     xundrawn = 0
     for x in XB["series"]:
-        if x["machine"] != "rdna3":
-            continue
+        if x["machine"] != "rdna3" or x["spec"]:
+            continue          # a speculative row cannot beat a stock line
         mine = {p["ctx"]: p["tok_s"] for p in x["points"]}
         for r in XLED:
             if (r["model"] != x["model"] or r["tp"] != x["tp"] or r["ctx"] not in mine
+                    or r["spec"] is not None
                     or xsid(r) == (x["model"], x["tp"], x["vllm"], tuple(x["patches"]),
                                    x["harness"], x["date"])):
                 continue
@@ -3562,13 +3578,27 @@ def main():
        1 if all(any(r["model"] == m for r in XLED) for m in XB["omitted"]) else 0)
     ck("index figure, and is not drawn", "0",
        sum(1 for x in XB["series"] if x["model"] in XB["omitted"]))
-    # the A100 legs, read back out of the logs they came from
-    XVD = os.path.join(HERE, "..", "cuda-a100", "45450-validation", "logs")
-    xa = [x for x in XB["series"] if x["machine"] == "a100"][0]
-    for p, fn in zip(xa["points"], ("D1K.log", "D8K.log", "D16K.log", "D30.log", "D50.log")):
-        ck("index figure, A100 %s" % fn, "%.2f" % p["tok_s"],
-           float(re.search(r"RESULT decode_tok_s=([\d.]+)",
-                           open(os.path.join(XVD, fn), encoding="utf-8").read()).group(1)))
+    # the A100 pair, recomputed from the campaign file rather than quoted
+    import collections as _co
+    XA = _co.defaultdict(lambda: _co.defaultdict(list))
+    for line in open(os.path.join(HERE, "..", "cuda-a100", "campaign-2026-08-29",
+                                  "results.jsonl"), encoding="utf-8"):
+        r = json.loads(line)
+        if r.get("kind") == "decode" and r.get("decode_tps"):
+            XA[r["cfg"]][r["target"]].append(r["decode_tps"])
+    for xa in [x for x in XB["series"] if x["machine"] == "a100"]:
+        src = XA[xa["cfg"]]
+        tag = "A100 " + ("MTP" if xa["spec"] else "stock")
+        ck("index figure, %s point count" % tag, str(len(src)), len(xa["points"]))
+        ck("index figure, %s recomputes" % tag, "1",
+           1 if all(abs(sum(src[p["ctx"]]) / len(src[p["ctx"]]) - p["tok_s"]) < 1e-9
+                    for p in xa["points"]) else 0)
+    # the button's promise: each MTP line is its own line's arm, same day and
+    # same kernel, not the fastest speculative run anywhere
+    for pr in XB["mtp_pairs"]:
+        ck("index figure, MTP %s is paired to its own line" % pr["model"], "1",
+           1 if any(x["cfg"] == pr["base_cfg"] and not x["spec"]
+                    and x["machine"] == "rdna3" for x in XB["series"]) else 0)
 
     xis = re.search(r"<script>\n\(function \(\).*?\n</script>", XI[XIP[0]], re.S)
     xiwant = set(re.findall(r'getElementById\("([^"]+)"\)', xis.group(0) if xis else ""))

@@ -824,7 +824,12 @@ campaign is no longer the best this machine can do. Every line says which it is.
     log axis. Four models are lit to start; click any name to add or remove it. The A100 is one model
     deep — only <code>gemma-4-31B</code> has been measured on both — and it was measured there on the
     same model, quantisation and patch, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The
-    checkpoint is what the two sides share; the split and the stack are not. Dashed is the A100.
+    checkpoint is what the two sides share; the split and the stack are not. Every line is one
+    session at one ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across
+    days, and the tooltip carries each one's own. <b>MTP</b> adds the speculative arm of the two
+    models that have one, measured the same day and on the same kernel as their line here, so the
+    button shows what speculation does to <em>that</em> line rather than the fastest speculative run
+    anywhere. Stroke says which is which: solid these two cards, long dash the A100, short dash MTP.
     Hover a point for the run count and the stack it took.
   </figcaption>
 </figure>
@@ -905,6 +910,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant": "int4",
     "arch": "MoE, 128 experts",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "E-26B-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
@@ -1001,6 +1009,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant": "bf16",
     "arch": "dense",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B-8B-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
@@ -1097,6 +1108,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant": "int4",
     "arch": "sliding window 2048",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "G-30B-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
@@ -1193,6 +1207,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant": "w4a16",
     "arch": "sliding window",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "F-27B-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
@@ -1289,6 +1306,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant": "w4a16 QAT",
     "arch": "dense",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "A-12B-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
@@ -1379,32 +1399,91 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "patches": [
      "vllm#45916 split-KV"
     ],
-    "harness": "probe-t8t64",
-    "date": "2026-08-28",
+    "harness": "campaign-server",
+    "date": "2026-08-29",
     "quant": "AWQ int4",
     "arch": "hybrid SSM",
     "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "Q38-triton-tp2",
     "source": "benchmarks/ledger.jsonl",
     "points": [
      {
-      "ctx": 1024,
-      "tok_s": 51.61950396234055,
+      "ctx": 500,
+      "tok_s": 49.78,
       "runs": 2,
-      "range_pct": 0.7207002092390873,
+      "range_pct": 0.08035355564483557,
       "graded": true
      },
      {
-      "ctx": 8192,
-      "tok_s": 44.286645291258964,
-      "runs": 4,
-      "range_pct": 16.793271375671562,
-      "graded": false
+      "ctx": 1000,
+      "tok_s": 49.6,
+      "runs": 2,
+      "range_pct": 0.04032258064515327,
+      "graded": true
      },
      {
-      "ctx": 32768,
-      "tok_s": 36.12291880809809,
+      "ctx": 2000,
+      "tok_s": 49.379999999999995,
       "runs": 2,
-      "range_pct": 5.117549957300597,
+      "range_pct": 0.08100445524503676,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 48.855000000000004,
+      "runs": 2,
+      "range_pct": 0.10234367004401651,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 48.325,
+      "runs": 2,
+      "range_pct": 0.06207966890843483,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 47.695,
+      "runs": 2,
+      "range_pct": 0.10483279169723693,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 46.575,
+      "runs": 2,
+      "range_pct": 0.06441223832528424,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 45.535,
+      "runs": 2,
+      "range_pct": 0.021961128802016058,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.505,
+      "runs": 2,
+      "range_pct": 0.06740815638692536,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.615,
+      "runs": 2,
+      "range_pct": 0.06878367534105499,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.95,
+      "runs": 2,
+      "range_pct": 0.0,
       "graded": true
      }
     ],
@@ -1416,41 +1495,95 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "tp": 2,
     "vllm": "0.23.1.dev1+g9ddef7117",
     "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip",
      "vllm#45450 3D admission"
     ],
-    "harness": "probe-t8t64",
-    "date": "2026-08-26",
+    "harness": "campaign-server",
+    "date": "2026-08-29",
     "quant": "w4a16 QAT",
     "arch": "dense",
-    "spec": true,
-    "source": "benchmarks/speculative-decoding/mtp-31b-p45450.json",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31-tp2",
+    "source": "benchmarks/ledger.jsonl",
     "points": [
      {
-      "ctx": 1024,
-      "tok_s": 74.89,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 500,
+      "tok_s": 42.555,
+      "runs": 2,
+      "range_pct": 0.5874750323111267,
       "graded": true
      },
      {
-      "ctx": 8192,
-      "tok_s": 63.25,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 1000,
+      "tok_s": 41.635,
+      "runs": 2,
+      "range_pct": 0.07205476161883305,
       "graded": true
      },
      {
-      "ctx": 16384,
-      "tok_s": 63.09,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 2000,
+      "tok_s": 40.685,
+      "runs": 2,
+      "range_pct": 0.12289541600099363,
       "graded": true
      },
      {
-      "ctx": 32768,
-      "tok_s": 32.57,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 4000,
+      "tok_s": 39.400000000000006,
+      "runs": 2,
+      "range_pct": 0.10152284263959173,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 37.955,
+      "runs": 2,
+      "range_pct": 0.13173494928203705,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 36.565,
+      "runs": 2,
+      "range_pct": 0.1914399015451943,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 34.965,
+      "runs": 2,
+      "range_pct": 0.028600028600022906,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 33.26,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 31.585,
+      "runs": 2,
+      "range_pct": 0.09498179515593204,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 30.53,
+      "runs": 2,
+      "range_pct": 0.06550933508024753,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 29.134999999999998,
+      "runs": 2,
+      "range_pct": 0.03432297923460293,
       "graded": true
      }
     ],
@@ -1459,53 +1592,403 @@ topology. The shapes transfer; the levels are the worst case.</p>
    },
    {
     "model": "gemma-4-31B-it",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "patches": [
+     "vllm#45916 split-KV",
+     "window block-skip",
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
+     "k": 3
+    },
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31-mtp-p45450-tp2",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 55.22,
+      "runs": 2,
+      "range_pct": 2.680188337558863,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 51.59,
+      "runs": 2,
+      "range_pct": 1.5894553207986046,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 47.555,
+      "runs": 2,
+      "range_pct": 0.23131111344758581,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 45.35,
+      "runs": 2,
+      "range_pct": 2.028665931642782,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 42.905,
+      "runs": 2,
+      "range_pct": 0.5826826710173639,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 42.635000000000005,
+      "runs": 2,
+      "range_pct": 0.8678315937609884,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 39.265,
+      "runs": 2,
+      "range_pct": 1.9100980516999873,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 36.585,
+      "runs": 2,
+      "range_pct": 0.6833401667350008,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 34.795,
+      "runs": 2,
+      "range_pct": 0.8909326052593829,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 33.355000000000004,
+      "runs": 2,
+      "range_pct": 1.1092789686703564,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 31.425,
+      "runs": 2,
+      "range_pct": 1.8138424821002395,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV",
+     "vllm#45450 3D admission"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "AWQ int4",
+    "arch": "hybrid SSM",
+    "spec": true,
+    "spec_desc": {
+     "method": "mtp",
+     "k": 3
+    },
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "Q38-mtp-triton-p45450-tp2",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 75.1,
+      "runs": 2,
+      "range_pct": 28.362183754993342,
+      "graded": false
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 65.56,
+      "runs": 2,
+      "range_pct": 14.093959731543638,
+      "graded": false
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 55.745,
+      "runs": 2,
+      "range_pct": 5.973629921966093,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 59.375,
+      "runs": 2,
+      "range_pct": 24.03368421052632,
+      "graded": false
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 63.989999999999995,
+      "runs": 2,
+      "range_pct": 13.533364588216903,
+      "graded": false
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 47.239999999999995,
+      "runs": 2,
+      "range_pct": 6.096528365791707,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 50.185,
+      "runs": 2,
+      "range_pct": 1.095945003487106,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 46.56,
+      "runs": 2,
+      "range_pct": 33.07560137457044,
+      "graded": false
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 42.855000000000004,
+      "runs": 2,
+      "range_pct": 13.884027534710059,
+      "graded": false
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 40.269999999999996,
+      "runs": 2,
+      "range_pct": 21.95182518003476,
+      "graded": false
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 34.019999999999996,
+      "runs": 2,
+      "range_pct": 0.29394473838918705,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false
+   },
+   {
+    "model": "gemma-4-31B-it",
     "machine": "a100",
     "tp": 1,
     "lit": true,
     "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "A100-G31",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 55.44605,
+      "runs": 2,
+      "range_pct": 13.912442816034678,
+      "graded": false
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 55.17955,
+      "runs": 2,
+      "range_pct": 10.072753402302114,
+      "graded": false
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 57.865750000000006,
+      "runs": 2,
+      "range_pct": 0.0357724560728893,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 55.1913,
+      "runs": 2,
+      "range_pct": 0.7925162117942441,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 53.22985,
+      "runs": 2,
+      "range_pct": 0.006575258055400308,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 51.862399999999994,
+      "runs": 2,
+      "range_pct": 0.006941445054603558,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.96145,
+      "runs": 2,
+      "range_pct": 0.011408796181865176,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.68885,
+      "runs": 2,
+      "range_pct": 0.10715292987773482,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 45.25735,
+      "runs": 2,
+      "range_pct": 0.0015467100923980774,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.9763,
+      "runs": 2,
+      "range_pct": 0.04684341338403123,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 42.5556,
+      "runs": 2,
+      "range_pct": 0.001879893598017971,
+      "graded": true
+     }
+    ]
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "a100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
     "patches": [
      "vllm#45450 3D admission"
     ],
-    "harness": "probe-ids",
-    "date": "2026-08-26",
+    "harness": "campaign-server",
+    "date": "2026-08-29",
     "quant": "w4a16 QAT",
     "arch": "dense",
     "spec": true,
-    "source": "benchmarks/cuda-a100/45450-validation/logs/",
+    "spec_desc": {
+     "method": "mtp",
+     "k": 3
+    },
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "A100-G31-mtp-p45450",
+    "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
-      "ctx": 1024,
-      "tok_s": 110.71,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 500,
+      "tok_s": 48.51745,
+      "runs": 2,
+      "range_pct": 0.17498858658069938,
       "graded": true
      },
      {
-      "ctx": 8192,
-      "tok_s": 75.63,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 1000,
+      "tok_s": 48.03435,
+      "runs": 2,
+      "range_pct": 1.198933679752088,
       "graded": true
      },
      {
-      "ctx": 16384,
-      "tok_s": 72.13,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 2000,
+      "tok_s": 47.2979,
+      "runs": 2,
+      "range_pct": 0.12896978512788082,
       "graded": true
      },
      {
-      "ctx": 30000,
-      "tok_s": 61.03,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 4000,
+      "tok_s": 45.74565,
+      "runs": 2,
+      "range_pct": 0.04612460419733245,
       "graded": true
      },
      {
-      "ctx": 50000,
-      "tok_s": 37.91,
-      "runs": 1,
-      "range_pct": null,
+      "ctx": 6000,
+      "tok_s": 43.939949999999996,
+      "runs": 2,
+      "range_pct": 0.5018212355726261,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 42.58185,
+      "runs": 2,
+      "range_pct": 0.013855668553630273,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 40.6984,
+      "runs": 2,
+      "range_pct": 0.6521140880231155,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 38.70315,
+      "runs": 2,
+      "range_pct": 0.6859906751776095,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 36.60745,
+      "runs": 2,
+      "range_pct": 1.1027809913009528,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 35.4345,
+      "runs": 2,
+      "range_pct": 1.2394700080430077,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 34.02055,
+      "runs": 2,
+      "range_pct": 1.5040909097589683,
       "graded": true
      }
     ]
@@ -1532,17 +2015,142 @@ topology. The shapes transfer; the levels are the worst case.</p>
   "overrides": [
    {
     "model": "Qwen3.8-27B",
-    "min": 3.380713037725606,
-    "max": 4.259034980391134,
+    "min": 3.9260645765091255,
+    "max": 4.111573688592839,
+    "why": "faster",
     "campaign_deepest": 10.684999999999999,
-    "picked_deepest": 36.12291880809809
+    "picked_deepest": 41.95
    },
    {
     "model": "gemma-4-31B-it",
-    "min": 1.1129335383563985,
-    "max": 1.8934573829531813,
+    "min": 0.9933473389355741,
+    "max": 1.0001430205949657,
+    "why": "reproduces",
     "campaign_deepest": 29.265,
-    "picked_deepest": 32.57
+    "picked_deepest": 29.134999999999998
+   }
+  ],
+  "mtp_pairs": [
+   {
+    "model": "gemma-4-31B-it",
+    "base_cfg": "G31-tp2",
+    "mtp_cfg": "G31-mtp-p45450-tp2",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "drafter": "gemma-4-31B-it-assistant",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": 29.76148513688168
+     },
+     {
+      "ctx": 1000,
+      "pct": 23.910171730515195
+     },
+     {
+      "ctx": 2000,
+      "pct": 16.885830158535086
+     },
+     {
+      "ctx": 4000,
+      "pct": 15.101522842639593
+     },
+     {
+      "ctx": 6000,
+      "pct": 13.041759978922407
+     },
+     {
+      "ctx": 8000,
+      "pct": 16.600574319704652
+     },
+     {
+      "ctx": 12000,
+      "pct": 12.298012298012285
+     },
+     {
+      "ctx": 16000,
+      "pct": 9.996993385447993
+     },
+     {
+      "ctx": 20000,
+      "pct": 10.163052081684354
+     },
+     {
+      "ctx": 24000,
+      "pct": 9.253193580085162
+     },
+     {
+      "ctx": 32000,
+      "pct": 7.859962244722851
+     }
+    ],
+    "crosses_zero": false,
+    "at_shortest_pct": 29.76148513688168,
+    "at_deepest_pct": 7.859962244722851
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "base_cfg": "Q38-triton-tp2",
+    "mtp_cfg": "Q38-mtp-triton-p45450-tp2",
+    "attn_backend": "TRITON_ATTN",
+    "date": "2026-08-29",
+    "spec": {
+     "method": "mtp",
+     "k": 3
+    },
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": 50.863800723181996
+     },
+     {
+      "ctx": 1000,
+      "pct": 32.17741935483871
+     },
+     {
+      "ctx": 2000,
+      "pct": 12.889833940866758
+     },
+     {
+      "ctx": 4000,
+      "pct": 21.53310817725922
+     },
+     {
+      "ctx": 6000,
+      "pct": 32.415933781686476
+     },
+     {
+      "ctx": 8000,
+      "pct": -0.9539784044449218
+     },
+     {
+      "ctx": 12000,
+      "pct": 7.750939345142238
+     },
+     {
+      "ctx": 16000,
+      "pct": 2.2510157022071153
+     },
+     {
+      "ctx": 20000,
+      "pct": -3.7074486012807495
+     },
+     {
+      "ctx": 24000,
+      "pct": -7.669379800527354
+     },
+     {
+      "ctx": 32000,
+      "pct": -18.903456495828387
+     }
+    ],
+    "crosses_zero": true,
+    "at_shortest_pct": 50.863800723181996,
+    "at_deepest_pct": -18.903456495828387
    }
   ],
   "omitted": [
@@ -1559,8 +2167,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
    }
   ],
   "ctx_min": 500,
-  "ctx_max": 50000,
-  "fastest": 110.71
+  "ctx_max": 32000,
+  "fastest": 107.66499999999999
  },
  "cards": {
   "hybrid-ssm-collapse": {
@@ -2929,11 +3537,13 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "kLink": "repository link"
 }</script>
 <script type="application/json" id="strings">{
- "bestHint": "click a model to add or remove its line · click a machine to overlay it",
+ "bestHint": "click a model to add or remove its line · click a machine to overlay it · MTP adds the speculative arm of the models that have one",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
- "bestUnit": "decode tok/s at batch 1 · each line is that model's fastest measured configuration, not one experiment",
+ "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
+ "bestStroke": "solid: these two cards · long dash: the A100 · short dash: the same line with MTP on",
+ "bestMtp": "MTP",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
@@ -3241,6 +3851,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
     var machOn = {};
     F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
+    // Speculation is off until asked for. It is a different way of running the
+    // same machine, not a faster reading of the same thing, and on Qwen3.8 it
+    // is a net loss past 8K -- so it does not belong in a default view of what
+    // this machine does.
+    var specOn = false;
+    var hasSpec = F.series.some(function (x) { return x.spec; });
 
     function stack(x) {
       var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
@@ -3261,8 +3877,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
           "<br>" + esc(stack(x)) + "</span>";
       };
     }
+    // One model can now own four lines -- two machines by two arms -- and they
+    // share a colour, so the stroke has to carry machine and arm both.
+    function stroke(x) {
+      if (x.machine === "rdna3") return x.spec ? "2 4" : null;
+      return x.spec ? "7 4 2 4" : "7 5";
+    }
     var ser = F.series.map(function (x) {
-      return { colour: colour[x.model], dash: x.machine !== "rdna3", tip: tipFor(x),
+      var d = stroke(x);
+      return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
                points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
     });
     var chart = window.lineChart({
@@ -3275,9 +3898,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     function apply() {
       chart.setLit(function (i) {
         var x = F.series[i];
-        return on[x.model] && machOn[x.machine];
+        return on[x.model] && machOn[x.machine] && (specOn || !x.spec);
       });
       Array.prototype.forEach.call(key.children, function (b, i) {
+        if (i >= models.length) return;      // the MTP button sits after them
         b.classList.toggle("on", on[models[i]]);
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
@@ -3312,8 +3936,22 @@ topology. The shapes transfer; the levels are the worst case.</p>
       });
       key.appendChild(b);
     });
+    if (hasSpec) {
+      var sb = document.createElement("button");
+      sb.className = "lg";
+      sb.style.setProperty("--c", "var(--accent)");
+      sb.innerHTML = '<span class="sw"></span>' + esc(S.bestMtp);
+      sb.setAttribute("aria-pressed", "false");
+      sb.addEventListener("click", function () {
+        specOn = !specOn;
+        sb.classList.toggle("on", specOn);
+        sb.setAttribute("aria-pressed", String(specOn));
+        apply();
+      });
+      key.appendChild(sb);
+    }
     apply();
-    note.innerHTML = esc(S.bestUnit) + "<br>" +
+    note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +
       esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
                                 v: F.campaign.vllm })) + "<br>" +
       esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),

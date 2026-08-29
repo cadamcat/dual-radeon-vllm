@@ -31,19 +31,22 @@ OMIT = ["Qwen3.6-27B"]
 sid = lambda r: (r["model"], r["tp"], r["vllm"], tuple(r["patches"]), r["harness"], r["date"])
 
 
-def ledger_series(model, tp=2, date=None, vllm=None, patches=None):
+def ledger_series(model, tp=2, date=None, vllm=None, patches=None, cfg=None):
     rows = [r for r in led if r["model"] == model and r["tp"] == tp
             and (date is None or r["date"] == date)
             and (vllm is None or r["vllm"] == vllm)
-            and (patches is None or r["patches"] == patches)]
-    assert rows, (model, tp, date, vllm, patches)
+            and (patches is None or r["patches"] == patches)
+            and (cfg is None or r["cfg"] == cfg)]
+    assert rows, (model, tp, date, vllm, patches, cfg)
     ids = {sid(r) for r in rows}
     assert len(ids) == 1, f"{model}: {len(ids)} series match, not one"
     rows.sort(key=lambda r: r["ctx"])
     i = ids.pop()
     return {"model": model, "tp": tp, "vllm": i[2], "patches": list(i[3]),
             "harness": i[4], "date": i[5], "quant": rows[0]["quant"],
-            "arch": rows[0]["arch"], "spec": False,
+            "arch": rows[0]["arch"], "spec": rows[0]["spec"] is not None,
+            "spec_desc": rows[0]["spec"], "attn_backend": rows[0]["attn_backend"],
+            "cfg": rows[0]["cfg"],
             "source": "benchmarks/ledger.jsonl",
             "points": [{"ctx": r["ctx"], "tok_s": r["decode_tok_s"], "runs": r["runs"],
                         "range_pct": r["range_pct"], "graded": r["chart_grade"]}
@@ -53,42 +56,71 @@ def ledger_series(model, tp=2, date=None, vllm=None, patches=None):
 series = [ledger_series(m, 2, CAMPAIGN) for m in BACKBONE]
 
 # --- the two models the campaign does not represent -------------------------
+# Both from 2026-08-29, eleven rungs and two rounds a cell, neither speculating.
+# They used to be a three-point probe and a four-point k=1 *speculative* arm,
+# which meant one line in a chart captioned "what this machine does today" had
+# MTP on and the rest did not, with nothing on the page saying so. Speculation
+# is a button now, below.
+#
 # Qwen3.8-27B: the campaign ran it on 0.23.1, which has no native gfx1100 W4A16
-# kernel for an asymmetric checkpoint. 0.27 does.
-q38 = ledger_series("Qwen3.8-27B", 2, "2026-08-28", patches=["vllm#45916 split-KV"])
-series.append(q38)
-
-# gemma-4-31B: speculation is a net loss on the stock attention gate and a net
-# win once vllm#45450 admits the verify step to the 3D path.
-spec = json.load(open(B / "speculative-decoding" / "mtp-31b-p45450.json"))
-series.append({
-    "model": "gemma-4-31B-it", "tp": 2, "vllm": "0.23.1.dev1+g9ddef7117",
-    "patches": ["vllm#45450 3D admission"], "harness": "probe-t8t64",
-    "date": "2026-08-26", "quant": "w4a16 QAT", "arch": "dense", "spec": True,
-    "source": "benchmarks/speculative-decoding/mtp-31b-p45450.json",
-    "points": [{"ctx": r["depth"], "tok_s": r["tok_per_s"], "runs": 1,
-                "range_pct": None, "graded": True} for r in spec["rows"]]})
+# kernel for an asymmetric checkpoint. 0.27 does. The kernel is pinned with
+# --attention-backend because ROCm's own selector takes ROCM_ATTN and that is
+# 15.0% slower at 32K -- one flag, no patch, and the check below would fail if
+# the faster of the two were left undrawn.
+series.append(ledger_series("Qwen3.8-27B", 2, "2026-08-29", cfg="Q38-triton-tp2"))
+series.append(ledger_series("gemma-4-31B-it", 2, "2026-08-29", cfg="G31-tp2"))
 
 for s in series:
     s["machine"] = "rdna3"
     s["lit"] = s["model"] in LIT
 
+# --- speculation, as its own layer -----------------------------------------
+# One arm per model that has one, measured the same day as that model's line
+# above and against it as a control. Off until the MTP button is pressed: it is
+# a different way of running the same machine, not a faster reading of the same
+# thing, and on Qwen3.8 it is a net loss past 8K.
+MTP = [("gemma-4-31B-it", "G31-mtp-p45450-tp2"),
+       ("Qwen3.8-27B", "Q38-mtp-triton-p45450-tp2")]
+for model, cfg in MTP:
+    m = ledger_series(model, 2, "2026-08-29", cfg=cfg)
+    m["machine"] = "rdna3"
+    m["lit"] = False
+    assert m["spec"], f"{cfg} is not a speculative arm"
+    series.append(m)
+
 # --- the other machine ------------------------------------------------------
-# Only one model has been measured on both, and it was measured in the same
-# configuration on both, which is what makes the overlay a comparison rather
-# than two unrelated ladders on one pair of axes.
-VD = B / "cuda-a100" / "45450-validation" / "logs"
-leg = lambda fn: float(re.search(r"RESULT decode_tok_s=([\d.]+)",
-                                 open(VD / fn).read()).group(1))
-A100 = [(1024, "D1K.log"), (8192, "D8K.log"), (16384, "D16K.log"),
-        (30000, "D30.log"), (50000, "D50.log")]
-series.append({
-    "model": "gemma-4-31B-it", "machine": "a100", "tp": 1, "lit": True,
-    "vllm": "0.28.0", "patches": ["vllm#45450 3D admission"], "harness": "probe-ids",
-    "date": "2026-08-26", "quant": "w4a16 QAT", "arch": "dense", "spec": True,
-    "source": "benchmarks/cuda-a100/45450-validation/logs/",
-    "points": [{"ctx": c, "tok_s": leg(fn), "runs": 1, "range_pct": None,
-                "graded": True} for c, fn in A100]})
+# Both arms from the 2026-08-29 campaign, eleven rungs and two rounds a cell,
+# the same ladder the Radeon lines use. It used to be five single-run points
+# from a validation log, speculative, with no control beside it -- so the one
+# cross-machine comparison on the front page was between a speculative A100 and
+# a stock Radeon. Now the default is stock against stock and the MTP button
+# moves both.
+import statistics as _st, collections as _ct
+
+def _a100(cfg, spec_desc, lit):
+    by = _ct.defaultdict(list)
+    for line in open(B / "cuda-a100" / "campaign-2026-08-29" / "results.jsonl"):
+        r = json.loads(line)
+        if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] == cfg:
+            by[r["target"]].append(r["decode_tps"])
+    assert len(by) == 11, f"{cfg}: {len(by)} rungs"
+    pts = []
+    for ctx in sorted(by):
+        v = by[ctx]
+        m = _st.mean(v)
+        rng = (max(v) - min(v)) / m * 100.0
+        pts.append({"ctx": ctx, "tok_s": m, "runs": len(v),
+                    "range_pct": rng, "graded": len(v) >= 2 and rng <= 8.0})
+    return {"model": "gemma-4-31B-it", "machine": "a100", "tp": 1, "lit": lit,
+            "vllm": "0.28.0", "patches": ["vllm#45450 3D admission"] if spec_desc else [],
+            "harness": "campaign-server", "date": "2026-08-29", "quant": "w4a16 QAT",
+            "arch": "dense", "spec": bool(spec_desc), "spec_desc": spec_desc,
+            "attn_backend": "TRITON_ATTN", "cfg": cfg,
+            "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
+            "points": pts}
+
+series.append(_a100("A100-G31", None, True))
+series.append(_a100("A100-G31-mtp-p45450", {"method": "mtp", "k": 3}, False))
 
 # --- how well this machine repeats a whole campaign -------------------------
 # The same models were run twice, thirty days apart, on the same box. Their
@@ -113,24 +145,71 @@ assert not all(any(r["model"] == m and r["date"] == PRIOR for r in led) for m in
 # For every model on the Radeons, no other series in the ledger may beat the one
 # chosen here at a depth they share, by more than this machine repeats itself. A
 # faster run that exists and is not drawn would make "today's best" a lie.
-picked = {s["model"]: s for s in series if s["machine"] == "rdna3"}
+# Like against like: a speculative row cannot beat a line drawn without
+# speculation, and does not answer the same question. Each layer is checked
+# against the rows of its own kind, so both the default view and the MTP one
+# have to be the fastest of their sort.
 beaten = []
-for model, s in picked.items():
-    mine = {p["ctx"]: p["tok_s"] for p in s["points"]}
-    for r in led:
-        if r["model"] != model or r["tp"] != s["tp"] or sid(r) == (
-                model, s["tp"], s["vllm"], tuple(s["patches"]), s["harness"], s["date"]):
-            continue
-        if r["ctx"] not in mine:
-            continue
-        slack = max(r["range_pct"] or 0.0, REPRO["worst_pct"]) / 100.0 * r["decode_tok_s"]
-        if r["decode_tok_s"] - mine[r["ctx"]] > slack:
-            beaten.append((model, r["ctx"], round(r["decode_tok_s"], 2),
-                           round(mine[r["ctx"]], 2), r["date"], "+".join(r["patches"])))
+for spec_layer in (False,):
+    picked = {s["model"]: s for s in series
+              if s["machine"] == "rdna3" and s["spec"] == spec_layer}
+    for model, s in picked.items():
+        mine = {p["ctx"]: p["tok_s"] for p in s["points"]}
+        for r in led:
+            if r["model"] != model or r["tp"] != s["tp"]:
+                continue
+            if (r["spec"] is not None) != spec_layer:
+                continue
+            if sid(r) == (model, s["tp"], s["vllm"], tuple(s["patches"]),
+                          s["harness"], s["date"]) and r["cfg"] == s.get("cfg"):
+                continue
+            if r["ctx"] not in mine:
+                continue
+            slack = max(r["range_pct"] or 0.0, REPRO["worst_pct"]) / 100.0 * r["decode_tok_s"]
+            if r["decode_tok_s"] - mine[r["ctx"]] > slack:
+                beaten.append((("MTP " if spec_layer else "") + model, r["ctx"],
+                               round(r["decode_tok_s"], 2), round(mine[r["ctx"]], 2),
+                               r["date"], r["cfg"]))
 assert not beaten, "a faster measurement exists and is not drawn:\n  " + \
                    "\n  ".join(map(str, beaten))
 
-# and the two overrides must actually beat the campaign they replace
+# The MTP layer is held to a different rule, because "the fastest speculative
+# measurement" is not what it answers. Neither Qwen3.8 arm dominates -- ROCM_ATTN
+# is faster at 500 (91.43 against 75.10) and far slower at 32K (24.34 against
+# 34.02) -- so picking by speed would draw an arm whose stock control is not on
+# the chart. What the button is for is what happens to *this line* when MTP goes
+# on, so each speculative series has to be its own line's companion: same day,
+# same kernel, same stack apart from the speculation.
+mtp_pairs = []
+for m in [x for x in series if x["machine"] == "rdna3" and x["spec"]]:
+    base = next(x for x in series
+                if x["machine"] == "rdna3" and not x["spec"] and x["model"] == m["model"])
+    assert m["date"] == base["date"], (m["cfg"], m["date"], base["date"])
+    assert m["attn_backend"] == base["attn_backend"], (m["cfg"], m["attn_backend"])
+    assert m["vllm"] == base["vllm"], (m["cfg"], m["vllm"])
+    mtp_pairs.append({"model": m["model"], "base_cfg": base["cfg"], "mtp_cfg": m["cfg"],
+                      "attn_backend": m["attn_backend"], "date": m["date"],
+                      "spec": m["spec_desc"],
+                      "delta_pct": [
+                          {"ctx": a["ctx"],
+                           "pct": (b["tok_s"] / a["tok_s"] - 1) * 100.0}
+                          for a, b in zip(base["points"], m["points"])]})
+for pr in mtp_pairs:
+    pr["crosses_zero"] = (pr["delta_pct"][0]["pct"] > 0) != (pr["delta_pct"][-1]["pct"] > 0)
+    pr["at_shortest_pct"] = pr["delta_pct"][0]["pct"]
+    pr["at_deepest_pct"] = pr["delta_pct"][-1]["pct"]
+
+# Each override has to earn its place against the campaign line it replaces --
+# but "faster" is not the only way to earn it, and pretending otherwise is what
+# put a speculative arm in this chart without a label. Two reasons count:
+#
+#   faster        Qwen3.8 on 0.27, which the 0.23 campaign had no native
+#                 gfx1100 W4A16 kernel for
+#   reproduces    gemma-4-31B, whose 2026-08-29 line lands within this
+#                 machine's own campaign-to-campaign spread of the 2026-08-24
+#                 one, and is drawn instead because it is the same-day control
+#                 for the MTP arm the button reveals. A pair measured five days
+#                 apart is not a pair.
 over = []
 for model in ("Qwen3.8-27B", "gemma-4-31B-it"):
     camp = ledger_series(model, 2, CAMPAIGN)
@@ -138,8 +217,14 @@ for model in ("Qwen3.8-27B", "gemma-4-31B-it"):
     mine = {p["ctx"]: p["tok_s"] for p in picked[model]["points"]}
     near = [(x, min(c, key=lambda k: abs(k - x))) for x in mine]
     gains = [mine[x] / c[k] for x, k in near if abs(x - k) / x < 0.06]
-    assert gains and min(gains) > 1.0, f"{model}: override does not beat the campaign"
+    assert gains, f"{model}: override shares no depth with the campaign"
+    faster = min(gains) > 1.0
+    reproduces = (1 - min(gains)) * 100.0 <= REPRO["worst_pct"]
+    assert faster or reproduces, (
+        f"{model}: override neither beats the campaign nor reproduces it "
+        f"(worst {(min(gains) - 1) * 100:.2f}% against a {REPRO['worst_pct']:.2f}% spread)")
     over.append({"model": model, "min": min(gains), "max": max(gains),
+                 "why": "faster" if faster else "reproduces",
                  "campaign_deepest": c[max(c)], "picked_deepest": mine[max(mine)]})
 
 for m in OMIT:
@@ -158,6 +243,7 @@ out = {
                      "vllm": series[0]["vllm"], "patches": series[0]["patches"]},
         "repro": REPRO,
         "overrides": over,
+        "mtp_pairs": mtp_pairs,
         "omitted": OMIT,
         "machines": [{"id": "rdna3", "default": True}, {"id": "a100", "default": False}],
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),

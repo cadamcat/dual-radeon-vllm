@@ -29,7 +29,10 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
     默认点亮四个模型，点名字可以加上或去掉任意一条。A100 那边只有一个模型——只有
     <code>gemma-4-31B</code> 在两台机器上都测过——而且那边用的是同一个模型、同一种量化、
     同一个补丁，但那边是 TP=1、vLLM 0.28.0，这边是 TP=2、0.23.1。两边共用的是 checkpoint，
-    拆分方式和软件栈不是。虚线是 A100。
+    拆分方式和软件栈不是。每条线都出自一场会话、同一套阶梯 —— 十一个档位、每格两轮 ——
+    而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。<b>MTP</b> 按钮会加上那两个有投机数据的
+    模型的投机臂，它们与各自那条线同日、同内核测得，所以这个按钮显示的是「<em>这条线</em>开了投机
+    会怎样」，而不是「哪里最快的一次投机」。笔画区分身份：实线是这两张卡，长虚线是 A100，短虚线是 MTP。
     把鼠标停在任意点上可以看到 run 数和它用的软件栈。
   </figcaption>
 </figure>
@@ -87,11 +90,13 @@ campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
- "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来",
+ "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · MTP 会加上有投机数据的那几个模型的投机臂",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
- "bestUnit": "batch 1 的解码 tok/s · 每条线都是那个模型实测最快的配置，不是同一场实验",
+ "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
+ "bestStroke": "实线：这两张卡 · 长虚线：A100 · 短虚线：同一条线开着 MTP",
+ "bestMtp": "MTP",
  "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
  "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
  "bestOmit": "{m} 没有放进来：ledger 里它只有被 split-KV 那批工作取代掉的那次旧运行",
