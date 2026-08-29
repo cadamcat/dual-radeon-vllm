@@ -8,8 +8,15 @@ import verify_doc_figures as V
 led = [json.loads(l) for l in open(R/"benchmarks/ledger.jsonl")]
 
 def key(r):
+    # `spec` and `attn_backend` are in the key for the same reason they are in
+    # gen_best_charts': without them a stock arm and a speculative one measured
+    # the same day, on the same stack and the same patch list, are one group.
+    # The 2026-08-29 campaign is exactly that shape. Neither figure below
+    # selects those rows today, and every older row has both fields null, so
+    # this changes no grouping that exists -- it stops one from forming.
     return (r["model"], r["quant"], r["arch"], r["tp"], r["vllm"],
-            tuple(r["patches"]), r["harness"], r["date"])
+            tuple(r["patches"]), r["harness"], r["date"],
+            json.dumps(r.get("spec"), sort_keys=True), r.get("attn_backend"))
 series = collections.defaultdict(list)
 for r in led: series[key(r)].append(r)
 for v in series.values(): v.sort(key=lambda r: r["ctx"])
