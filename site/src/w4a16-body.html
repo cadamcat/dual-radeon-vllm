@@ -83,16 +83,24 @@ cell. One is <code>symmetric: false</code>, the other <code>symmetric: true</cod
 attention term grows underneath both arms. That is a prediction the ratio on its own cannot make, and
 it is the reason this figure defaults to milliseconds rather than to the larger-looking multiple.</p>
 
-<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · a flat cost
-under a growing one <span class="prov yes">recomputable from repo</span></div>
-<div class="legend" id="v1"></div> <div class="bars" id="dec"></div> </div> <figcaption> <b>Figure
-1.</b> Six cells, one per arm per depth, from <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>.
-In the millisecond view the orange block is the difference between the arms and is drawn to the same
-scale in all three rows, which is the argument: it does not grow. The ratio view is the same six
-numbers read the way a headline reads them. <strong>One container start per cell</strong>, so no
-run-to-run range is quoted here. The one repeat this experiment has moves the symmetric arm by at
-most 1.31 % across container starts, so the 8.2 % spread in the penalty is larger than the noise
-floor but the same order as it. </figcaption> </figure>
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · a flat cost under a growing one
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="bars" id="dec"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Six cells, one per arm per depth, from
+    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>. In the millisecond view the orange block
+    is the difference between the arms and is drawn to the same scale in all three rows, which is
+    the argument: it does not grow. The ratio view is the same six numbers read the way a headline
+    reads them. <strong>One container start per cell</strong>, so no run-to-run range is quoted
+    here. The one repeat this experiment has moves the symmetric arm by at most 1.31 % across
+    container starts, so the 8.2 % spread in the penalty is larger than the noise floor but the same
+    order as it.
+  </figcaption>
+</figure>
 
 <h2><span class="n">4</span>Why one of them gets a native kernel</h2>
 
@@ -174,25 +182,18 @@ the type gate. The same checkpoint that decoded at 11.41 tok/s against Triton de
 <p><a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> is the attention half, and
 this repository's contribution to it is the gfx1100 end-to-end verification rather than the code.</p>
 
-<figure class="rv" id="fig3">
-  <div class="figbox">
-    <div class="figtitle">Figure 3 · the two fixes have opposite context profiles
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="arms"></div>
-    <div class="barunit" id="gainhd"></div>
-    <div class="gains" id="gains"></div>
-  </div>
-  <figcaption>
-    <b>Figure 3.</b> The same asymmetric checkpoint on three stacks. <strong>The two vertical
-    comparisons are not equivalent in kind.</strong> The 0.27 pair is a controlled A/B: one image, one
-    container configuration, one patch apart, two runs per cell, drawn from
-    <code>benchmarks/ledger.jsonl</code>. The step from 0.23.1 to 0.27 crosses ROCm, vLLM and
-    <code>max_num_seqs</code> at once, so it is a statement about stacks rather than about one variable;
-    the controlled measurement of the packaging penalty is Figure 1, not this arrow. A hollow ring after a
-    value marks a cell the ledger declines to grade for chart use. Hover any bar for its run count
-    and range.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · the two fixes
+have opposite context profiles <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="armkey"></div> <svg class="chart" id="arms" role="img"></svg>
+<div class="armid" id="armid"></div> <div class="barunit" id="gainhd"></div>
+<div class="gains" id="gains"></div> </div> <figcaption> <b>Figure 3.</b> The same asymmetric
+checkpoint on three stacks. <strong>The two vertical comparisons are not equivalent in
+kind.</strong> The 0.27 pair is a controlled A/B: one image, one container configuration, one patch
+apart, two runs per cell, drawn from <code>benchmarks/ledger.jsonl</code>. The step from 0.23.1 to
+0.27 crosses ROCm, vLLM and <code>max_num_seqs</code> at once, so it is a statement about stacks
+rather than about one variable; the controlled measurement of the packaging penalty is Figure 1, not
+this arrow. A hollow ring after a value marks a cell the ledger declines to grade for chart use.
+Hover any point for its run count and range. </figcaption> </figure>
 
 <p>A cross-campaign control makes the 0.27 arm worth trusting on its own terms. The 1K stock cell was
 measured twice by the split-KV campaign and once more, weeks apart and by a different script, as the
@@ -337,6 +338,8 @@ RDNA3 while passing the run that was supposed to validate it. </div>
  "f1unitRatio": "how much faster the symmetric checkpoint is, at each context length",
  "f1flat": "penalty {lo}–{hi} ms, spread {sp}% · ratio falls {dr}%",
  "ctxK": "{n}K context",
+ "ctxAxis": "context length",
+ "rateAxis": "decode tok/s",
  "run": "run", "runs": "runs",
  "range": "range", "noRepeat": "one container start, no repeat",
  "ungraded": "ungraded for chart use",
@@ -415,6 +418,8 @@ RDNA3 while passing the run that was supposed to validate it. </div>
     return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; });
   }
   var kctx = function (n) { return fmt(S.ctxK, { n: Math.round(n / 1024) }); };
+  // the chart axis is already titled, so its ticks take the bare depth
+  var ktick = function (n) { return Math.round(n / 1024) + "K"; };
   function runsLine(p) {
     if (p.range_pct === null || p.range_pct === undefined) return S.noRepeat;
     return p.runs + " " + (p.runs > 1 ? S.runs : S.run) + " · " + S.range + " " +
@@ -543,46 +548,42 @@ RDNA3 while passing the run that was supposed to validate it. </div>
     });
   })();
 
-  /* ---------- Figure 3: three stacks, three depths ---------- */
+  /* ---------- Figure 3: three stacks, three depths ----------
+     The title of this figure is "the two fixes have opposite context
+     profiles", and a profile is a shape. Three lines over the same ladder show
+     the two shapes crossing; nine bars make the reader hold three numbers at a
+     time to find them. */
   (function () {
-    var box = document.getElementById("arms");
-    var A = F.fig3.arms;
-    var max = 0;
-    A.forEach(function (a) { a.points.forEach(function (p) { max = Math.max(max, p.tok_s); }); });
-    A[0].points.forEach(function (_, i) {
-      el(box, "head", kctx(A[0].points[i].ctx));
-      A.forEach(function (a) {
-        var p = a.points[i];
-        el(box, "lab rv", S.armLabels[a.id]);
-        var tr = el(box, "track rv");
-        var f = document.createElement("span");
-        f.style.cssText = "display:block;height:100%;width:0;background:var(--" +
-          (a.id === "023" ? "s1" : a.id === "027" ? "s2" : "s3") + ");" +
-          "transition:width 1s cubic-bezier(.22,1,.36,1)";
-        tr.appendChild(f);
-        requestAnimationFrame(function () { f.style.width = (p.tok_s / max * 100) + "%"; });
-        el(box, "val rv", p.tok_s.toFixed(2) + (p.graded ? "" : " ○"));
-        tr.addEventListener("mouseenter", function (e) {
-          showTip(e, '<span class="hd">' + S.armLabels[a.id] + "</span><br>" +
-            kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
-            '<span class="sub">' + runsLine(p) + "<br>max_num_seqs " + a.max_num_seqs +
-            " · " + a.source + "</span>");
-        });
-        tr.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
-        tr.addEventListener("mouseleave", hideTip);
-      });
+    var svg = document.getElementById("arms"), A = F.fig3.arms;
+    var COL = { "023": "var(--s1)", "027": "var(--s2)", "045916": "var(--s3)" };
+    var xs = A[0].points.map(function (p) { return p.ctx; });
+    window.lineChart({
+      el: svg, reduce: reduce, h: 340,
+      legend: document.getElementById("armkey"),
+      x: { values: xs, label: S.ctxAxis, fmt: ktick },
+      y: { label: S.rateAxis, zero: true, fmt: function (v) { return v.toFixed(0); } },
+      series: A.map(function (a) {
+        return { colour: COL[a.id] || "var(--s5)", label: S.armLabels[a.id],
+                 values: a.points.map(function (p) { return p.tok_s; }),
+                 tip: function (i2) {
+                   var p = a.points[i2];
+                   return '<span class="hd">' + S.armLabels[a.id] + "</span><br>" +
+                     kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
+                     (p.graded ? "" : " ○") + "<br>" +
+                     '<span class="sub">' + runsLine(p) + "<br>max_num_seqs " +
+                     a.max_num_seqs + " · " + a.source + "</span>";
+                 } };
+      })
     });
-    var ids = el(box, "armid");
-    ids.style.gridColumn = "1 / -1";
-    ids.style.marginTop = ".9em";
+    var ids = document.getElementById("armid");
     A.forEach(function (a) {
       var bits = [S.armLabels[a.id], "vLLM " + a.vllm, "TP=" + a.tp,
                   a.patches.length ? a.patches.join(" + ") : S.stock,
                   "max_num_seqs " + a.max_num_seqs, a.harness, a.date];
-      var s = document.createElement("span");
-      s.textContent = bits.join(" · ");
-      s.style.whiteSpace = "normal";
-      ids.appendChild(s);
+      var x = document.createElement("span");
+      x.textContent = bits.join(" · ");
+      x.style.whiteSpace = "normal";
+      ids.appendChild(x);
     });
     document.getElementById("gainhd").textContent = S.gainHead;
     var g = document.getElementById("gains");
@@ -592,9 +593,9 @@ RDNA3 while passing the run that was supposed to validate it. </div>
     Object.keys(F.fig3.gain).forEach(function (c) {
       var r = F.fig3.gain[c];
       el(g, "k rv", kctx(Number(c)));
-      var a = el(g, "g1 rv", r.short_fix.toFixed(2) + "×");
-      var b = el(g, "g2 rv", r.long_fix.toFixed(2) + "×");
-      (r.short_fix > r.long_fix ? a : b).classList.add("big");
+      var a2 = el(g, "g1 rv", r.short_fix.toFixed(2) + "×");
+      var b2 = el(g, "g2 rv", r.long_fix.toFixed(2) + "×");
+      (r.short_fix > r.long_fix ? a2 : b2).classList.add("big");
     });
   })();
 

@@ -43,15 +43,22 @@ reason it is that model:</p>
 <code>prompt_tokens</code> rather than the nominal targets, so the two sides sit at the same context
 instead of merely near it.</p>
 
-<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · the campaign's
-number against the probe's <span class="prov yes">recomputable from repo</span></div>
-<div class="agree" id="agree"></div> <div class="barunit" id="agreenote"></div> </div> <figcaption>
-<b>Figure 1.</b> The campaign column is the mean of its two committed rounds for this model on
-2026-08-24; the probe column is the mean of the third and fourth calibration runs, which is where it
-converges. The last column repeats the comparison with the probe generating 512 tokens instead of
-56, which is the campaign's own span. It moves the numbers by at most a further 0.5 point, so the
-span is not where any difference lives, and neither is the server, the streaming, or the sampling
-temperature. </figcaption> </figure>
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · the campaign's number against the probe's
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="agree" id="agree"></div>
+    <div class="barunit" id="agreenote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> The campaign column is the mean of its two committed rounds for this model on
+    2026-08-24; the probe column is the mean of the third and fourth calibration runs, which is
+    where it converges. The last column repeats the comparison with the probe generating 512 tokens
+    instead of 56, which is the campaign's own span. It moves the numbers by at most a further 0.5
+    point, so the span is not where any difference lives, and neither is the server, the streaming,
+    or the sampling temperature.
+  </figcaption>
+</figure>
 
 <h2><span class="n">2</span>The three runs that cost, and what they bought</h2>
 
@@ -154,15 +161,22 @@ mean something, and that is where the argument gets concrete, because one cell h
 <p>The obvious way to check that a kernel change is harmless is to compare generated tokens before and
 after. On this machine that measures the machine rather than the change.</p>
 
-<figure class="rv" id="fig6"> <div class="figbox"> <div class="figtitle">Figure 6 · greedy decoding
-is not reproducible on this box <span class="prov yes">recomputable from repo</span></div>
-<div class="agree" id="nondet"></div> <div class="barunit" id="ndnote"></div> </div> <figcaption>
-<b>Figure 6.</b> Greedy, temperature zero, a warm-up generation of the same prompt at the same depth
-before the measured one, and no code differing between the runs of a cell. It varies across
-processes and inside one process, symmetrically between the two kernel states, so the change under
-test is not the cause. The kernel itself is not the cause either: fixed-input cases run in separate
-processes agree bit for bit. Whatever varies is above the kernel, in the engine, and it is not
-identified. </figcaption> </figure>
+<figure class="rv" id="fig6">
+  <div class="figbox">
+    <div class="figtitle">Figure 6 · greedy decoding is not reproducible on this box
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="agree" id="nondet"></div>
+    <div class="barunit" id="ndnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 6.</b> Greedy, temperature zero, a warm-up generation of the same prompt at the same
+    depth before the measured one, and no code differing between the runs of a cell. It varies
+    across processes and inside one process, symmetrically between the two kernel states, so the
+    change under test is not the cause. The kernel itself is not the cause either: fixed-input cases
+    run in separate processes agree bit for bit. Whatever varies is above the kernel, in the engine,
+    and it is not identified.
+  </figcaption>
+</figure>
 
 <p>So numerical claims in this repository are made against an fp32 reference on fixed inputs, and
 end-to-end changes are argued from rates and from routing recorded inside the workers. Comparing token

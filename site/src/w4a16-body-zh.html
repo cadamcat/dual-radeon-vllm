@@ -179,7 +179,7 @@ SELECTED  TritonW4A16LinearKernel
     取自 <code>benchmarks/ledger.jsonl</code>。从 0.23.1 到 0.27 这一步同时跨过了 ROCm、vLLM
     和 <code>max_num_seqs</code>，所以那是关于两套栈的陈述，不是关于某一个变量的；
     打包罚金的受控测量是图 1，不是这支箭头。数值后面的空心圈标记 ledger 拒绝给出制图评级的格子。
-    把鼠标停在任意一条上可以看到它的 run 数与区间。
+    把鼠标停在任意一个点上可以看到它的 run 数与区间。
   </figcaption>
 </figure>
 
@@ -321,6 +321,8 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
  "f1unitRatio": "在每个上下文长度上，对称 checkpoint 快多少",
  "f1flat": "罚金 {lo}–{hi} ms，散布 {sp}% · 比值下降 {dr}%",
  "ctxK": "{n}K 上下文",
+ "ctxAxis": "上下文长度",
+ "rateAxis": "解码 tok/s",
  "run": "次", "runs": "次",
  "range": "区间", "noRepeat": "只起过一次容器，无重复",
  "ungraded": "未获制图评级",

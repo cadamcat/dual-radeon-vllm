@@ -229,6 +229,9 @@
         transition:opacity .3s, stroke-width .3s; }
   .dot { transition:opacity .3s; cursor:pointer; }
   .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .rule { stroke-width:1.4; opacity:.75; }
+  .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
+  .dot { cursor:default; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
          font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
          border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
@@ -250,6 +253,13 @@
   .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
                 color:var(--text-2); margin:.9em 0 -.1em; }
   .bars .head:first-child { margin-top:0; }
+  /* a group heading spans the whole row. It lived in four articles' own CSS and
+     not in the fifth that used the class, whose rows then each took one cell
+     and walked diagonally down the figure. */
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
   .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
                 margin:-.25em 0 .5em; }
   .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
@@ -316,7 +326,7 @@
                             .ck .nm, .ck .sy, .ck .gs { border-bottom:0; } }
 
   /* ---- figure 3: each arm carries the stack it was measured on ---- */
-  .armid { display:flex; flex-wrap:wrap; gap:.35em; margin:-.15em 0 .55em;
+  .armid { display:flex; flex-wrap:wrap; gap:.35em; margin:.9em 0 .55em;
            grid-column:2 / -1; }
   .armid span { font-family:var(--mono); font-size:.67rem; color:var(--text-dim);
                 background:var(--surface-2); border:1px solid var(--border);
@@ -351,6 +361,9 @@
   /* six group sizes do not fit a phone, so the grid scrolls inside its own
      container rather than reflowing into a shape that loses the axes */
   .covwrap { overflow-x:auto; }
+  /* this legend follows its grid instead of leading it, so the shared
+     .legend margin is on the wrong side and the pills touch the last row */
+  #covlg { margin:1.1em 0 0; }
   .covwrap .cov { min-width:430px; }
   @media (max-width:640px){ .cv { font-size:.63rem; padding:.5em .2em; } }
 
@@ -387,6 +400,224 @@
   </button>
 </nav>
 <script id="chrome">
+/* ---- the shared line chart ----
+   Seven figures across four articles show a few series over an ordered axis --
+   context length, almost always -- and were drawn as grouped bars, which makes
+   a reader assemble the shape out of four lengths. One implementation lives
+   here rather than seven in the bodies, for the same reason .bars .grp does:
+   the copy an article did not have is the one that broke.
+
+   window.lineChart(opts) -> { redraw }
+     el       the <svg class="chart"> to draw into
+     x        {values, label, fmt}          ordered, shared by every series
+     y        {label, fmt, ticks, min, max, zero}
+     series   [{name, colour, values, dash, tip}]   values parallel to x.values
+     rules    [{y, label, colour, dash}]            horizontal reference lines
+     reduce   true to skip the draw-in animation
+   A null in a series' values is a gap, not a zero. */
+window.lineChart = function (opts) {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var el = opts.el, xs = opts.x.values, ser = opts.series, rules = opts.rules || [];
+  var W = opts.w || 760, H = opts.h || 340;
+  var M = opts.m || { t: 16, r: 18, b: 44, l: 62 };
+  var tip = document.querySelector(".tip") || (function () {
+    var t = document.createElement("div");
+    t.className = "tip";
+    document.body.appendChild(t);
+    return t;
+  })();
+
+  function mk(n, a, style) {
+    var e = document.createElementNS(NS, n);
+    for (var k in a) e.setAttribute(k, a[k]);
+    if (style) e.setAttribute("style", style);
+    return e;
+  }
+  function show(ev, html) {
+    tip.innerHTML = html;
+    tip.style.opacity = "1";
+    var r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX + 14, innerWidth - r.width - 10) + "px";
+    tip.style.top = Math.max(8, ev.clientY - r.height - 12) + "px";
+  }
+  function hide() { tip.style.opacity = "0"; }
+
+  var paths = [], dots = [];
+
+  function draw(animate) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    paths = []; dots = [];
+    el.setAttribute("viewBox", "0 0 " + W + " " + H);
+    el.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    var vals = [];
+    ser.forEach(function (s) {
+      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
+    });
+    rules.forEach(function (r) { vals.push(r.y); });
+    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
+    var lo = opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, vals);
+    var hi = opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, vals);
+    if (opts.y.zero && lo > 0) lo = 0;
+    var pad = (hi - lo) * 0.08 || 1;
+    if (opts.y.min === undefined) lo -= pad;
+    if (opts.y.max === undefined) hi += pad;
+    var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
+    // the x axis is ordinal: the depths are a ladder, not a ratio scale, and
+    // spacing them by value buries 1K and 8K against the left edge
+    var X = function (i) {
+      return xs.length === 1 ? (M.l + W - M.r) / 2
+        : M.l + i / (xs.length - 1) * (W - M.l - M.r);
+    };
+
+    var ticks = opts.y.ticks;
+    if (!ticks) {
+      // round tick values, not five equal slices of whatever the data spans:
+      // an axis reading -42, -31, -19, -8, 3 is arithmetic the reader has to do
+      var raw = (hi - lo) / 4;
+      var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+      var step = [1, 2, 2.5, 5, 10].reduce(function (a, m) {
+        return Math.abs(m * mag - raw) < Math.abs(a * mag - raw) ? m : a; }, 1) * mag;
+      ticks = [];
+      for (var t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) ticks.push(t);
+    }
+    var g = mk("g", { "class": "grid" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      g.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+    });
+    el.appendChild(g);
+
+    var ax = mk("g", { "class": "axis" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      var n = mk("text", { x: M.l - 10, y: Y(v) + 3.5, "text-anchor": "end" });
+      n.textContent = (opts.y.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    xs.forEach(function (v, i) {
+      var n = mk("text", { x: X(i), y: H - M.b + 20, "text-anchor": "middle" });
+      n.textContent = (opts.x.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    if (opts.x.label) {
+      var xt = mk("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle",
+                            "class": "ttl" });
+      xt.textContent = opts.x.label;
+      ax.appendChild(xt);
+    }
+    if (opts.y.label) {
+      var yt = mk("text", { x: -(H - M.b + M.t) / 2, y: 15, "text-anchor": "middle",
+                            "class": "ttl", transform: "rotate(-90)" });
+      yt.textContent = opts.y.label;
+      ax.appendChild(yt);
+    }
+    el.appendChild(ax);
+
+    if (opts.band) {
+      // the spread the individual cells occupy, behind the medians: without it
+      // a reader has no scale against which "flat" means anything
+      el.appendChild(mk("rect", { x: M.l, y: Y(opts.band.hi), width: W - M.l - M.r,
+                                  height: Math.abs(Y(opts.band.lo) - Y(opts.band.hi)) },
+                        "fill:var(--surface-3);opacity:.55"));
+    }
+    rules.forEach(function (r) {
+      if (r.y < lo || r.y > hi) return;
+      el.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(r.y), y2: Y(r.y),
+                                  "class": "rule" },
+                        "stroke:" + (r.colour || "var(--border-2)") +
+                        (r.dash === false ? "" : ";stroke-dasharray:5 4")));
+      if (!r.label) return;
+      // a rule label sits where the data often is, so it carries its own
+      // backing rather than printing on top of a line
+      var ry = Y(r.y) < M.t + 18 ? Y(r.y) + 15 : Y(r.y) - 6;
+      var left = r.at === "left";
+      var g2 = mk("g", { "class": "rulab" });
+      var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
+                           "text-anchor": left ? "start" : "end" },
+                 "fill:" + (r.colour || "var(--text-dim)"));
+      n.textContent = r.label;
+      g2.appendChild(n);
+      el.appendChild(g2);
+      var bb = n.getBBox();
+      var bg = mk("rect", { x: bb.x - 4, y: bb.y - 1.5, width: bb.width + 8,
+                            height: bb.height + 3, rx: 3 },
+                  "fill:var(--surface)");
+      g2.insertBefore(bg, n);
+    });
+
+    ser.forEach(function (s) {
+      var d = "", open = false;
+      s.values.forEach(function (v, i) {
+        if (v === null || v === undefined) { open = false; return; }
+        d += (open ? " L" : " M") + X(i) + " " + Y(v);
+        open = true;
+      });
+      var p = mk("path", { "class": "ln", d: d.trim() },
+                 "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
+      el.appendChild(p);
+      paths.push(p);
+      var dg = [];
+      s.values.forEach(function (v, i) {
+        if (v === null || v === undefined) return;
+        var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
+                   "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
+        if (s.tip) {
+          c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
+          c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
+          c.addEventListener("mouseleave", hide);
+        }
+        el.appendChild(c);
+        dg.push(c);
+      });
+      dots.push(dg);
+    });
+
+    if (!animate || opts.reduce) return;
+    // the lines draw themselves in, and every dot created by this redraw is
+    // faded in by this redraw: an observer set up on an earlier pass would
+    // never see these nodes
+    paths.forEach(function (p) {
+      var L = p.getTotalLength();
+      p.style.strokeDasharray = L;
+      p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = "stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)";
+      p.style.strokeDashoffset = "0";
+    });
+    dots.forEach(function (dg) {
+      dg.forEach(function (c, i) {
+        c.style.opacity = "0";
+        setTimeout(function () { c.style.opacity = ""; }, 300 + i * 60);
+      });
+    });
+  }
+
+  if (opts.legend) {
+    // the key belongs to the chart, so a series and its swatch cannot drift and
+    // no article has to carry its own swatch helper for this
+    opts.legend.innerHTML = "";
+    ser.forEach(function (s) {
+      if (!s.label) return;
+      var g = document.createElement("div");
+      g.className = "lg on";
+      g.style.setProperty("--c", s.colour);
+      g.style.cursor = "default";
+      var sw = document.createElement("div");
+      sw.className = "sw";
+      g.appendChild(sw);
+      var t = document.createElement("span");
+      t.textContent = s.label;
+      g.appendChild(t);
+      opts.legend.appendChild(g);
+    });
+  }
+
+  draw(true);
+  return { redraw: draw };
+};
+
 addEventListener("DOMContentLoaded", function () {
   "use strict";
   var bar = document.getElementById("prog"), queued = false;
@@ -607,7 +838,7 @@ SELECTED  TritonW4A16LinearKernel
     取自 <code>benchmarks/ledger.jsonl</code>。从 0.23.1 到 0.27 这一步同时跨过了 ROCm、vLLM
     和 <code>max_num_seqs</code>，所以那是关于两套栈的陈述，不是关于某一个变量的；
     打包罚金的受控测量是图 1，不是这支箭头。数值后面的空心圈标记 ledger 拒绝给出制图评级的格子。
-    把鼠标停在任意一条上可以看到它的 run 数与区间。
+    把鼠标停在任意一个点上可以看到它的 run 数与区间。
   </figcaption>
 </figure>
 
@@ -1114,6 +1345,8 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
  "f1unitRatio": "在每个上下文长度上，对称 checkpoint 快多少",
  "f1flat": "罚金 {lo}–{hi} ms，散布 {sp}% · 比值下降 {dr}%",
  "ctxK": "{n}K 上下文",
+ "ctxAxis": "上下文长度",
+ "rateAxis": "解码 tok/s",
  "run": "次", "runs": "次",
  "range": "区间", "noRepeat": "只起过一次容器，无重复",
  "ungraded": "未获制图评级",
@@ -1192,6 +1425,8 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
     return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; });
   }
   var kctx = function (n) { return fmt(S.ctxK, { n: Math.round(n / 1024) }); };
+  // the chart axis is already titled, so its ticks take the bare depth
+  var ktick = function (n) { return Math.round(n / 1024) + "K"; };
   function runsLine(p) {
     if (p.range_pct === null || p.range_pct === undefined) return S.noRepeat;
     return p.runs + " " + (p.runs > 1 ? S.runs : S.run) + " · " + S.range + " " +
@@ -1320,46 +1555,42 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
     });
   })();
 
-  /* ---------- Figure 3: three stacks, three depths ---------- */
+  /* ---------- Figure 3: three stacks, three depths ----------
+     The title of this figure is "the two fixes have opposite context
+     profiles", and a profile is a shape. Three lines over the same ladder show
+     the two shapes crossing; nine bars make the reader hold three numbers at a
+     time to find them. */
   (function () {
-    var box = document.getElementById("arms");
-    var A = F.fig3.arms;
-    var max = 0;
-    A.forEach(function (a) { a.points.forEach(function (p) { max = Math.max(max, p.tok_s); }); });
-    A[0].points.forEach(function (_, i) {
-      el(box, "head", kctx(A[0].points[i].ctx));
-      A.forEach(function (a) {
-        var p = a.points[i];
-        el(box, "lab rv", S.armLabels[a.id]);
-        var tr = el(box, "track rv");
-        var f = document.createElement("span");
-        f.style.cssText = "display:block;height:100%;width:0;background:var(--" +
-          (a.id === "023" ? "s1" : a.id === "027" ? "s2" : "s3") + ");" +
-          "transition:width 1s cubic-bezier(.22,1,.36,1)";
-        tr.appendChild(f);
-        requestAnimationFrame(function () { f.style.width = (p.tok_s / max * 100) + "%"; });
-        el(box, "val rv", p.tok_s.toFixed(2) + (p.graded ? "" : " ○"));
-        tr.addEventListener("mouseenter", function (e) {
-          showTip(e, '<span class="hd">' + S.armLabels[a.id] + "</span><br>" +
-            kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
-            '<span class="sub">' + runsLine(p) + "<br>max_num_seqs " + a.max_num_seqs +
-            " · " + a.source + "</span>");
-        });
-        tr.addEventListener("mousemove", function (e) { showTip(e, tip.innerHTML); });
-        tr.addEventListener("mouseleave", hideTip);
-      });
+    var svg = document.getElementById("arms"), A = F.fig3.arms;
+    var COL = { "023": "var(--s1)", "027": "var(--s2)", "045916": "var(--s3)" };
+    var xs = A[0].points.map(function (p) { return p.ctx; });
+    window.lineChart({
+      el: svg, reduce: reduce, h: 340,
+      legend: document.getElementById("armkey"),
+      x: { values: xs, label: S.ctxAxis, fmt: ktick },
+      y: { label: S.rateAxis, zero: true, fmt: function (v) { return v.toFixed(0); } },
+      series: A.map(function (a) {
+        return { colour: COL[a.id] || "var(--s5)", label: S.armLabels[a.id],
+                 values: a.points.map(function (p) { return p.tok_s; }),
+                 tip: function (i2) {
+                   var p = a.points[i2];
+                   return '<span class="hd">' + S.armLabels[a.id] + "</span><br>" +
+                     kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s" +
+                     (p.graded ? "" : " ○") + "<br>" +
+                     '<span class="sub">' + runsLine(p) + "<br>max_num_seqs " +
+                     a.max_num_seqs + " · " + a.source + "</span>";
+                 } };
+      })
     });
-    var ids = el(box, "armid");
-    ids.style.gridColumn = "1 / -1";
-    ids.style.marginTop = ".9em";
+    var ids = document.getElementById("armid");
     A.forEach(function (a) {
       var bits = [S.armLabels[a.id], "vLLM " + a.vllm, "TP=" + a.tp,
                   a.patches.length ? a.patches.join(" + ") : S.stock,
                   "max_num_seqs " + a.max_num_seqs, a.harness, a.date];
-      var s = document.createElement("span");
-      s.textContent = bits.join(" · ");
-      s.style.whiteSpace = "normal";
-      ids.appendChild(s);
+      var x = document.createElement("span");
+      x.textContent = bits.join(" · ");
+      x.style.whiteSpace = "normal";
+      ids.appendChild(x);
     });
     document.getElementById("gainhd").textContent = S.gainHead;
     var g = document.getElementById("gains");
@@ -1369,9 +1600,9 @@ HIP kernel 从来没有拿着错的数据跑过，它在门口就把形状挡回
     Object.keys(F.fig3.gain).forEach(function (c) {
       var r = F.fig3.gain[c];
       el(g, "k rv", kctx(Number(c)));
-      var a = el(g, "g1 rv", r.short_fix.toFixed(2) + "×");
-      var b = el(g, "g2 rv", r.long_fix.toFixed(2) + "×");
-      (r.short_fix > r.long_fix ? a : b).classList.add("big");
+      var a2 = el(g, "g1 rv", r.short_fix.toFixed(2) + "×");
+      var b2 = el(g, "g2 rv", r.long_fix.toFixed(2) + "×");
+      (r.short_fix > r.long_fix ? a2 : b2).classList.add("big");
     });
   })();
 

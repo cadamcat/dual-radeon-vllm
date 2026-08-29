@@ -55,23 +55,17 @@ differences here are not separated from noise.</p>
 
 <h2><span class="n">2</span>The gap, and the shape of it</h2>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · how far ahead one A100 is, by context length
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v1"></div>
-    <div class="bars" id="adv"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> The Radeon column is
-    <code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>; the A100 column is the leg logs in
-    <code>benchmarks/cuda-a100/45450-validation/</code>. The grey mark is parity and the amber one is the
-    ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Between them, at 8K and 16K, the
-    measured advantage is <em>smaller</em> than the bandwidth ceilings alone would predict. The last row
-    compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has; every
-    other row is matched exactly.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · how far ahead
+one A100 is, by context length <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v1"></div> <div class="legend" id="v1k"></div>
+<svg class="chart" id="adv" role="img"></svg> <div class="barunit" id="advnote"></div> </div>
+<figcaption> <b>Figure 1.</b> The Radeon column is
+<code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>; the A100 column is the leg logs in
+<code>benchmarks/cuda-a100/45450-validation/</code>. The grey mark is parity and the amber one is
+the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Between them, at 8K and 16K, the
+measured advantage is <em>smaller</em> than the bandwidth ceilings alone would predict. The last
+point compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has;
+every other depth is matched exactly. </figcaption> </figure>
 
 <p>Fourteen per cent apart at 16K is the number worth sitting with. It is not a claim that the hardware
 is equivalent — it is a claim about one regime: single-stream decode, one model, mid-length context,
@@ -126,16 +120,22 @@ speculation worth having is worse on two cards than on one.</p>
 bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
 against 800 GB/s — puts this comparison's model at 63 %:</p>
 
-<figure class="rv" id="fig4"> <div class="figbox"> <div class="figtitle">Figure 4 · realized memory
-bandwidth at decode, per card <span class="prov yes">recomputable from repo</span></div>
-<div class="bars" id="util"></div> </div> <figcaption> <b>Figure 4.</b> Rates from
-<code>benchmarks/results.jsonl</code> at 500 tokens of context, TP=2, against the per-GPU bytes per
-token stated in
-<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md
-§3</a>. Two effects are visible and both are real: at equal quantisation the larger model reaches
-higher utilisation, and the BF16 model reaches higher still. <strong>No equivalent figure was
-measured on the A100</strong>, so the comparison in Figure 1 is against a nominal ceiling on that
-side and a realized one on this side. </figcaption> </figure>
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · realized memory bandwidth at decode, per card
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="util"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context,
+    TP=2, against the per-GPU bytes per token stated in
+    <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md
+    §3</a>. Two effects are visible and both are real: at equal quantisation the larger model
+    reaches higher utilisation, and the BF16 model reaches higher still. <strong>No equivalent
+    figure was measured on the A100</strong>, so the comparison in Figure 1 is against a nominal
+    ceiling on that side and a realized one on this side.
+  </figcaption>
+</figure>
 
 <h2><span class="n">6</span>What is not established</h2>
 
@@ -200,7 +200,10 @@ exactly the two cross was not located, and only four depths were measured.</p>
  "radeons": "2× RX 7900 XT",
  "a100": "one A100 80G",
  "ctxK": "{n}K",
- "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · one run per cell",
+ "ctxAxis": "context length",
+ "f1yAdv": "A100 ÷ Radeons",
+ "f1yRate": "decode tok/s",
+  "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · one run per cell",
  "f1rateUnit": "decode tok/s, MTP on, both through the 3D path",
  "f1par": "parity", "f1nom": "nominal bandwidth ratio",
  "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · the measured advantage is under it at {d}",
@@ -304,15 +307,18 @@ exactly the two cross was not located, and only four depths were measured.</p>
     return tr;
   }
 
-  /* ---------- Figure 1: the advantage, against two reference marks -------- */
+  /* ---------- Figure 1: the advantage, against two reference marks --------
+     A line rather than four bars: the claim is the shape -- the gap closes to
+     16K and then opens again -- and a shape is what a reader should not have to
+     assemble out of four lengths. The two reference marks become rules. */
   (function () {
-    var box = document.getElementById("adv"), vbox = document.getElementById("v1");
-    var mode = 0, first = true;                 /* 0 = advantage, 1 = rates */
+    var svg = document.getElementById("adv"), vbox = document.getElementById("v1");
+    var note = document.getElementById("advnote");
+    var key = document.getElementById("v1k");
+    var mode = 0;                                /* 0 = advantage, 1 = rates */
     var R = F.fig1.rows;
-    var amax = Math.max.apply(null, R.map(function (r) { return r.advantage; })) * 1.06;
-    var rmax = Math.max.apply(null, R.map(function (r) {
-      return Math.max(r.radeons, r.a100); }));
-    function tipFor(r) {
+    function tipFor(i) {
+      var r = R[i];
       return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
         S.radeons + " <b>" + r.radeons.toFixed(2) + "</b> tok/s<br>" +
         S.a100 + " <b>" + r.a100.toFixed(2) + "</b> tok/s<br>" +
@@ -322,48 +328,36 @@ exactly the two cross was not located, and only four depths were measured.</p>
         "</span>";
     }
     function draw() {
-      box.innerHTML = "";
-      R.forEach(function (r) {
-        if (mode) {
-          el(box, "grp", kctx(r.ctx) + (r.matched ? "" :
-             ' <span class="tagline">· ' +
-             fmt(S.f1unmatched, { n: Math.round(r.a100_ctx / 1000) }) + "</span>"));
-          [[S.radeons, r.radeons, "--s1"], [S.a100, r.a100, "--s2"]].forEach(function (a) {
-            el(box, "lab rv", a[0]);
-            var tr = el(box, "track rv");
-            var f = document.createElement("span");
-            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
-              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
-            tr.appendChild(f);
-            grow(f, a[1] / rmax * 100);
-            el(box, "val rv", a[1].toFixed(2));
-            hover(tr, tipFor(r));
-          });
-        } else {
-          refbar(box, kctx(r.ctx) + (r.matched ? "" : " *"), r.advantage, amax, "--s2",
-                 [{ at: 1, cls: "par", title: S.f1par },
-                  { at: F.fig1.nominal_ratio, cls: "nom", title: S.f1nom }],
-                 tipFor(r));
-          el(box, "val rv", r.advantage.toFixed(2) + "×");
-        }
-      });
-      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
-      u.style.gridColumn = "1 / -1";
-      if (!mode) {
-        var m = el(box, "barunit", "");
-        m.style.gridColumn = "1 / -1";
-        m.innerHTML = swatch("--border-2", true) + S.f1par + " &nbsp; " +
-          swatch("--accent", true) + S.f1nom;
-        var n = el(box, "barunit", fmt(S.f1nomNote, {
+      var xs = R.map(function (r) { return r.ctx; });
+      if (mode) {
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
+          legend: key,
+          series: [{ colour: "var(--s1)", label: S.radeons, tip: tipFor,
+                     values: R.map(function (r) { return r.radeons; }) },
+                   { colour: "var(--s2)", label: S.a100, tip: tipFor,
+                     values: R.map(function (r) { return r.a100; }) }]
+        });
+        note.innerHTML = S.f1rateUnit;
+      } else {
+        key.innerHTML = "";
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          y: { label: S.f1yAdv, min: 1, fmt: function (v) { return v.toFixed(2) + "×"; },
+               ticks: [1, 1.2, 1.4, 1.6, 1.8, 2] },
+          rules: [{ y: 1, label: S.f1par, colour: "var(--border-2)" },
+                  { y: F.fig1.nominal_ratio, label: S.f1nom, colour: "var(--accent)" }],
+          series: [{ colour: "var(--s2)", tip: tipFor,
+                     values: R.map(function (r) { return r.advantage; }) }]
+        });
+        note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
-          d: F.fig1.below_nominal.map(kctx).join(" and ") }));
-        n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+          d: F.fig1.below_nominal.map(kctx).join(" and ") }) +
+          "<br>" + S.f1unit;
       }
-      if (!first) {
-        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
-                                     function (e) { e.classList.add("in"); });
-      }
-      first = false;
     }
     [[S.viewAdv, 0], [S.viewRate, 1]].forEach(function (o, i) {
       var b = document.createElement("button");

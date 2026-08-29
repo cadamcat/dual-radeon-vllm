@@ -63,7 +63,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     <code>benchmarks/cuda-a100/45450-validation/</code> 里的分腿日志。
     灰色标记是持平，琥珀色那个是标称显存带宽之比，2039 对 2 × 800 GB/s。
     在两者之间的 8K 和 16K 上，实测领先幅度比单看带宽上限该给的还要<em>小</em>。
-    最后一行是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧能跑到的最长一档；其余每一行都精确对齐。
+    最后一个点是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧能跑到的最长一档；其余每一个深度都精确对齐。
   </figcaption>
 </figure>
 
@@ -194,7 +194,10 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "radeons": "2× RX 7900 XT",
  "a100": "一张 A100 80G",
  "ctxK": "{n}K",
- "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
+ "ctxAxis": "上下文长度",
+ "f1yAdv": "A100 ÷ Radeon",
+ "f1yRate": "解码 tok/s",
+  "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
  "f1rateUnit": "解码 tok/s，开着 MTP，两边都走 3D 路径",
  "f1par": "持平", "f1nom": "标称带宽之比",
  "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",

@@ -81,15 +81,23 @@ means in one sentence.</p>
 right and is what everything above is about. The second is that the fallback degrades with context. That
 one is testable here and does not hold.</p>
 
-<figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · median relative
-error against context length <span class="prov yes">recomputable from repo</span></div>
-<div class="legend" id="v2"></div> <div class="bandwrap"><div class="band" id="band"></div></div>
-<div class="barunit" id="bandnote"></div> </div> <figcaption> <b>Figure 2.</b> Medians over all
-shapes at each length; the shaded zone is the full band across all 90 individual cells. The custom
-kernel sits consistently a little above Triton, which is a different accumulation order rather than
-a defect — both are inside what bf16 gives for a sum this long. The third series is the identical
-Triton source compiled on an A100, and it lands in the same band. That series is what makes this a
-bounded negative rather than an absence of evidence. </figcaption> </figure>
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · median relative error against context length
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v2"></div>
+    <svg class="chart" id="band" role="img"></svg>
+    <div class="barunit" id="bandnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Medians over all shapes at each length; the shaded zone is the full band across
+    all 90 individual cells. The custom kernel sits consistently a little above Triton, which is a
+    different accumulation order rather than a defect — both are inside what bf16 gives for a sum
+    this long. The third series is the identical Triton source compiled on an A100, and it lands in
+    the same band. That series is what makes this a bounded negative rather than an absence of
+    evidence.
+  </figcaption>
+</figure>
 
 <div class="note">
   <span class="lbl">A clean sweep is worth nothing if the instrument is blind</span>
@@ -245,6 +253,8 @@ defensible but unreadable at the same time. </div>
  "gateIn": "admitted",
  "gateOut": "excluded",
  "ctxK": "{n}K",
+ "ctxAxis": "context length",
+ "errAxis": "median relative error",
  "gridNote": "{n} of {t} cells have the gated-out kernel faster · excluded {el}–{eh}×, admitted {al}–{ah}×, and they overlap",
  "scaleLow": "1×", "scaleHigh": "{n}×",
  "scaleLabel": "Triton ÷ custom kernel",
@@ -393,42 +403,32 @@ defensible but unreadable at the same time. </div>
     draw();
   })();
 
-  /* ---------- Figure 2: the accuracy band ---------- */
+  /* ---------- Figure 2: the accuracy band ----------
+     Three series over the same depths, drawn as lines rather than loose dots:
+     the claim is that none of them trends with context, and a flat line says
+     that where a scatter of dots leaves the reader to join them up. The shaded
+     rectangle is the spread of all ninety individual cells. */
   (function () {
-    var box = document.getElementById("band"), vbox = document.getElementById("v2");
+    var svg = document.getElementById("band"), vbox = document.getElementById("v2");
     var NAMES = { rocm_triton: S.sTriton, rocm_ck: S.sCk, a100_triton: S.sA100 };
-    var COL = { rocm_triton: "--s2", rocm_ck: "--s1", a100_triton: "--s3" };
-    var lo = F.fig2.band[0] * 0.92, hi = F.fig2.band[1] * 1.04;
-    var X = F.fig2.series[0].points.map(function (p) { return p.ctx; });
-    var y = function (v) { return (1 - (v - lo) / (hi - lo)) * 100; };
-    var zone = el(box, "zone");
-    zone.style.top = y(F.fig2.band[1]) + "%";
-    zone.style.height = (y(F.fig2.band[0]) - y(F.fig2.band[1])) + "%";
-    // the band's own edges are the only scale this chart needs, and without
-    // them the reader has no idea what "flat" is flat against
-    [[F.fig2.band[1], "top"], [F.fig2.band[0], "bottom"]].forEach(function (e) {
-      var l = el(box, "yl", e[0].toExponential(2));
-      l.style.top = "calc(" + y(e[0]) + "% - .6em)";
-    });
-    X.forEach(function (c, i) {
-      var lab = el(box, "xl", kctx(c));
-      lab.style.left = (i / (X.length - 1) * 100) + "%";
-    });
-    F.fig2.series.forEach(function (s) {
-      s.points.forEach(function (p, i) {
-        var d = el(box, "pt");
-        d.style.left = (i / (X.length - 1) * 100) + "%";
-        d.style.bottom = (100 - y(p.rel)) + "%";
-        d.style.background = "var(" + COL[s.id] + ")";
-        hover(d, '<span class="hd">' + NAMES[s.id] + "</span><br>" + kctx(p.ctx) +
-          " · <b>" + p.rel.toExponential(2) + "</b>");
-      });
-      var b = document.createElement("span");
-      b.className = "lg on";
-      b.style.setProperty("--c", "var(" + COL[s.id] + ")");
-      b.style.cursor = "default";
-      b.innerHTML = '<span class="sw"></span>' + NAMES[s.id];
-      vbox.appendChild(b);
+    var COL = { rocm_triton: "var(--s2)", rocm_ck: "var(--s1)", a100_triton: "var(--s3)" };
+    var xs = F.fig2.series[0].points.map(function (p) { return p.ctx; });
+    window.lineChart({
+      el: svg, reduce: reduce, h: 330, m: { t: 16, r: 18, b: 44, l: 74 },
+      legend: vbox,
+      x: { values: xs, label: S.ctxAxis, fmt: kctx },
+      y: { label: S.errAxis, min: F.fig2.band[0] * 0.94, max: F.fig2.band[1] * 1.04,
+           fmt: function (v) { return v.toExponential(1); } },
+      band: { lo: F.fig2.band[0], hi: F.fig2.band[1] },
+      series: F.fig2.series.map(function (x) {
+        return { colour: COL[x.id], label: NAMES[x.id],
+                 values: x.points.map(function (p) { return p.rel; }),
+                 tip: function (i2) {
+                   var p = x.points[i2];
+                   return '<span class="hd">' + NAMES[x.id] + "</span><br>" +
+                     kctx(p.ctx) + " · <b>" + p.rel.toExponential(2) + "</b>";
+                 } };
+      })
     });
     document.getElementById("bandnote").textContent = fmt(S.bandNote, {
       n: F.fig2.cells, lo: F.fig2.band[0].toExponential(2),

@@ -19,10 +19,6 @@
   .bars .shipped { background:var(--s3); }
   .swatch { display:inline-block; width:9px; height:9px; border-radius:2px;
             vertical-align:baseline; margin-right:.35em; }
-  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
-               color:var(--text); margin:1em 0 .1em; }
-  .bars .grp:first-child { margin-top:0; }
-  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
 
   /* ---- figure 3: two kinds of resident memory in one track ---- */
   .bars .split { display:flex; height:100%; width:100%; }

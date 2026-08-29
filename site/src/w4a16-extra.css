@@ -60,7 +60,7 @@
                             .ck .nm, .ck .sy, .ck .gs { border-bottom:0; } }
 
   /* ---- figure 3: each arm carries the stack it was measured on ---- */
-  .armid { display:flex; flex-wrap:wrap; gap:.35em; margin:-.15em 0 .55em;
+  .armid { display:flex; flex-wrap:wrap; gap:.35em; margin:.9em 0 .55em;
            grid-column:2 / -1; }
   .armid span { font-family:var(--mono); font-size:.67rem; color:var(--text-dim);
                 background:var(--surface-2); border:1px solid var(--border);
@@ -95,5 +95,8 @@
   /* six group sizes do not fit a phone, so the grid scrolls inside its own
      container rather than reflowing into a shape that loses the axes */
   .covwrap { overflow-x:auto; }
+  /* this legend follows its grid instead of leading it, so the shared
+     .legend margin is on the wrong side and the pills touch the last row */
+  #covlg { margin:1.1em 0 0; }
   .covwrap .cov { min-width:430px; }
   @media (max-width:640px){ .cv { font-size:.63rem; padding:.5em .2em; } }

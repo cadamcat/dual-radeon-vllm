@@ -40,15 +40,24 @@ __CHIPS__
 <code>gemma-4-31B-it-assistant</code> at <code>num_speculative_tokens: 1</code>. Decode is isolated from
 prefill by differencing a 64-token generation against an 8-token one at the same depth.</p>
 
-<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · what speculation
-is worth, by context length <span class="prov yes">recomputable from repo</span></div>
-<div class="legend" id="v1"></div> <div class="bars" id="ladder"></div> </div> <figcaption>
-<b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four depths,
-and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>. Hover any
-bar for both rates. The MTP arm was measured a second time five weeks later, as the stock baseline
-of a different comparison. The three long depths reproduce to <strong>0.45 %</strong> and 1K differs
-by 6.0 %, so the end of the ladder that carries the finding is the end that repeats best.
-</figcaption> </figure>
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · what speculation is worth, by context length
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="v1"></div>
+    <div class="legend" id="v1k"></div>
+    <svg class="chart" id="ladder" role="img"></svg>
+    <div class="barunit" id="ladnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> From <code>benchmarks/speculative-decoding/</code>. Monotonic across four
+    depths, and it crosses zero between 1K and 8K — <strong>the crossover was not located</strong>.
+    Hover any point for both rates. The MTP arm was measured a second time five weeks later, as the
+    stock baseline of a different comparison. The three long depths reproduce to <strong>0.45
+    %</strong> and 1K differs by 6.0 %, so the end of the ladder that carries the finding is the end
+    that repeats best.
+  </figcaption>
+</figure>
 
 <p>vLLM's own counter at 32K reads <code>Mean acceptance length: 1.12</code>, 9 accepted of 78 drafted.
 Back-solving the 1K speedup implies roughly 0.46 acceptance there, so acceptance degrades with depth
@@ -88,24 +97,19 @@ apart.</p>
 <code>unified_attention</code> directly with this model's shapes, no model and no speculation, and
 sweeping the number of query rows:</p>
 
-<figure class="rv" id="fig2">
-  <div class="figbox">
-    <div class="figtitle">Figure 2 · query rows against the same kernel, no model
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="sweep"></div>
-  </div>
-  <figcaption>
-    <b>Figure 2.</b> Each bar is the time at two query rows against the same sweep's own one-row time, in
-    per cent; two independent constructions, run separately. At 8K and 32K going from one row to two is
-    free in both. At 1K it is <em>faster</em>, by 39 % and 34 %, because that is where dropping to the 2D
-    kernel stops costing anything and starts saving the segmentation overhead — which is why the gate is
-    not absurd, only too coarse. <strong>The two disagree at 16K</strong>, −0.3 % against −10.4 %, and
-    the cell that moves is the one-row cell, which is measured first in each group; the two-, four- and
-    eight-row cells agree between constructions to 2.2 % there. At 32K, the depth the finding is about,
-    even the one-row cells agree to 0.2 %. Absolute levels differ between constructions by up to 9 % at
-    8K, which is why every bar here is a within-sweep ratio. Hover for all four query lengths.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · query rows
+against the same kernel, no model <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v2"></div> <svg class="chart" id="sweep" role="img"></svg>
+<div class="barunit" id="swnote"></div> </div> <figcaption> <b>Figure 2.</b> Each point is the time
+at two query rows against the same sweep's own one-row time, in per cent; two independent
+constructions, run separately. At 8K and 32K going from one row to two is free in both. At 1K it is
+<em>faster</em>, by 39 % and 34 %, because that is where dropping to the 2D kernel stops costing
+anything and starts saving the segmentation overhead — which is why the gate is not absurd, only too
+coarse. <strong>The two disagree at 16K</strong>, −0.3 % against −10.4 %, and the cell that moves is
+the one-row cell, which is measured first in each group; the two-, four- and eight-row cells agree
+between constructions to 2.2 % there. At 32K, the depth the finding is about, even the one-row cells
+agree to 0.2 %. Absolute levels differ between constructions by up to 9 % at 8K, which is why every
+point here is a within-sweep ratio. Hover for all four query lengths. </figcaption> </figure>
 
 <p>Two more explanations were tested and dropped. <strong>KV-head starvation</strong>: the collapse in
 <a href="hybrid-ssm-collapse.html">the hybrid-SSM article</a> comes from having 4 KV heads, but this
@@ -140,7 +144,9 @@ FA4. That makes the prediction testable for the price of an hour of rented time.
   <div class="figbox">
     <div class="figtitle">Figure 3 · the same model on one A100 80G
       <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="vendor"></div>
+    <div class="legend" id="v3"></div>
+    <svg class="chart" id="vendor" role="img"></svg>
+    <div class="barunit" id="vnote"></div>
   </div>
   <figcaption>
     <b>Figure 3.</b> From <code>benchmarks/cuda-a100/gemma4-mtp-backend-matrix.json</code>, vLLM 0.28.0,
@@ -169,7 +175,9 @@ are sized per token.</p>
   <div class="figbox">
     <div class="figtitle">Figure 4 · the same ladder through vllm#45450's admission
       <span class="prov yes">recomputable from repo</span></div>
-    <div class="bars" id="recover"></div>
+    <div class="legend" id="v4"></div>
+    <svg class="chart" id="recover" role="img"></svg>
+    <div class="barunit" id="rcnote"></div>
   </div>
   <figcaption>
     <b>Figure 4.</b> Stock against the PR's mechanism, both with MTP on, same machine and session.
@@ -285,7 +293,13 @@ is what supports it, not either measurement alone.</p>
  "nospec": "no speculation",
  "mtp": "MTP",
  "ctxK": "{n}K",
- "f1unit": "per cent, MTP against no speculation at the same depth · zero is the mark in each track",
+ "ctxAxis": "context length",
+ "kvAxis": "KV length",
+ "yDelta": "per cent change",
+ "yRate": "decode tok/s",
+ "f1zero": "no change",
+ "f2zero": "free",
+ "f1unit": "per cent, MTP against no speculation at the same depth",
  "f1rateUnit": "decode tok/s · one process per cell",
  "f1repeat": "the MTP arm re-measured five weeks later: 1K differs {a}%, 8K–32K within {b}%",
  "f1cross": "monotonic across four depths, and it crosses zero between 1K and 8K",
@@ -399,16 +413,17 @@ is what supports it, not either measurement alone.</p>
     return tr;
   }
 
-  /* ---------- Figure 1: the ladder ---------- */
+  /* ---------- Figure 1: the ladder ----------
+     A line, not four bars: the claim is that the change is monotonic and
+     crosses zero between 1K and 8K, and a crossing is a thing a line does. */
   (function () {
-    var box = document.getElementById("ladder"), vbox = document.getElementById("v1");
-    var mode = 0, first = true;                 /* 0 = delta, 1 = rates */
+    var svg = document.getElementById("ladder"), vbox = document.getElementById("v1");
+    var note = document.getElementById("ladnote");
+    var key = document.getElementById("v1k");
+    var mode = 0;                                /* 0 = delta, 1 = rates */
     var R = F.fig1.rows;
-    var span = Math.max.apply(null, R.map(function (r) {
-      return Math.abs(r.delta_pct); })) * 1.05;
-    var rmax = Math.max.apply(null, R.map(function (r) {
-      return Math.max(r.nospec, r.mtp); }));
-    function tipFor(r) {
+    function tipFor(i) {
+      var r = R[i];
       return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
         S.nospec + " <b>" + r.nospec.toFixed(2) + "</b> tok/s<br>" +
         S.mtp + " <b>" + r.mtp.toFixed(2) + "</b> tok/s<br>" +
@@ -416,40 +431,34 @@ is what supports it, not either measurement alone.</p>
         " (" + r.repeat_spread_pct.toFixed(2) + "%)</span>";
     }
     function draw() {
-      box.innerHTML = "";
-      R.forEach(function (r) {
-        if (mode) {
-          [[S.nospec, r.nospec, "--s2"], [S.mtp, r.mtp, "--s1"]].forEach(function (a, i) {
-            if (i === 0) el(box, "grp", kctx(r.ctx));
-            el(box, "lab rv", a[0]);
-            var tr = el(box, "track rv");
-            var f = document.createElement("span");
-            f.style.cssText = "display:block;height:100%;width:0;background:var(" +
-              a[2] + ");transition:width 1s cubic-bezier(.22,1,.36,1)";
-            tr.appendChild(f);
-            grow(f, a[1] / rmax * 100);
-            el(box, "val rv", a[1].toFixed(2));
-            hover(tr, tipFor(r));
-          });
-        } else {
-          diverging(box, kctx(r.ctx), r.delta_pct, span, { tip: tipFor(r) });
-        }
-      });
-      var u = el(box, "barunit", mode ? S.f1rateUnit : S.f1unit);
-      u.style.gridColumn = "1 / -1";
-      if (!mode) {
-        var c = el(box, "barunit", S.f1cross);
-        c.style.gridColumn = "1 / -1"; c.style.color = "var(--text-2)";
+      var xs = R.map(function (r) { return r.ctx; });
+      if (mode) {
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
+          legend: key,
+          series: [{ colour: "var(--s2)", label: S.nospec, tip: tipFor,
+                     values: R.map(function (r) { return r.nospec; }) },
+                   { colour: "var(--s1)", label: S.mtp, tip: tipFor,
+                     values: R.map(function (r) { return r.mtp; }) }]
+        });
+        note.innerHTML = S.f1rateUnit;
+      } else {
+        key.innerHTML = "";
+        window.lineChart({
+          el: svg, reduce: reduce, h: 330,
+          x: { values: xs, label: S.ctxAxis, fmt: kctx },
+          y: { label: S.yDelta, fmt: function (v) { return v.toFixed(0) + "%"; } },
+          rules: [{ y: 0, label: S.f1zero, colour: "var(--border-2)" }],
+          series: [{ colour: "var(--accent)", tip: tipFor,
+                     values: R.map(function (r) { return r.delta_pct; }) }]
+        });
+        note.innerHTML = S.f1cross + "<br>" + S.f1unit;
       }
-      var rp = el(box, "barunit", fmt(S.f1repeat, {
+      note.innerHTML += "<br>" + fmt(S.f1repeat, {
         a: F.fig1.repeat_1k_pct.toFixed(1),
-        b: F.fig1.repeat_worst_long_pct.toFixed(2) }));
-      rp.style.gridColumn = "1 / -1";
-      if (!first) {
-        Array.prototype.forEach.call(box.querySelectorAll(".rv"),
-                                     function (e) { e.classList.add("in"); });
-      }
-      first = false;
+        b: F.fig1.repeat_worst_long_pct.toFixed(2) });
     }
     [[S.viewDelta, 0], [S.viewRate, 1]].forEach(function (o, i) {
       var b = document.createElement("button");
@@ -479,36 +488,37 @@ is what supports it, not either measurement alone.</p>
     });
   })();
 
-  /* ---------- Figure 2: query rows, no model ---------- */
+  /* ---------- Figure 2: query rows, no model ----------
+     Two constructions over the same KV ladder. As bars the reader compares
+     eight lengths; as two lines the one thing that matters -- they agree
+     everywhere except 16K -- is a fork. */
   (function () {
-    var box = document.getElementById("sweep");
-    var pcts = [];
-    F.fig2.sweeps.forEach(function (s) {
-      s.rows.forEach(function (r) {
-        pcts.push((r.us[1] / r.us[0] - 1) * 100.0);
-      });
+    var svg = document.getElementById("sweep"), note = document.getElementById("swnote");
+    var SW = F.fig2.sweeps;
+    var xs = SW[0].rows.map(function (r) { return r.kv; });
+    function series(s, colour, label) {
+      return { colour: colour, label: label,
+               values: s.rows.map(function (r) { return (r.us[1] / r.us[0] - 1) * 100.0; }),
+               tip: function (i) {
+                 var r = s.rows[i];
+                 return '<span class="hd">' + kctx(r.kv) + " KV · " + s.file + "</span><br>" +
+                   F.fig2.q_lens.map(function (q, j) {
+                     return fmt(S.qlen, { n: q }) + " <b>" + r.us[j].toFixed(1) + "</b> µs";
+                   }).join("<br>");
+               } };
+    }
+    window.lineChart({
+      el: svg, reduce: reduce, h: 320,
+      x: { values: xs, label: S.kvAxis, fmt: kctx },
+      y: { label: S.yDelta, fmt: function (v) { return v.toFixed(0) + "%"; } },
+      rules: [{ y: 0, label: S.f2zero, at: "left", colour: "var(--border-2)" }],
+      legend: document.getElementById("v2"),
+      series: [series(SW[0], "var(--s2)", S.sweepA), series(SW[1], "var(--s4)", S.sweepB)]
     });
-    var span = Math.max.apply(null, pcts.map(Math.abs)) * 1.08;
-    F.fig2.sweeps[0].rows.forEach(function (_, i) {
-      var kv = F.fig2.sweeps[0].rows[i].kv;
-      el(box, "grp", kctx(kv) + ' <span class="tagline">· KV</span>');
-      F.fig2.sweeps.forEach(function (s) {
-        var r = s.rows[i];
-        var v = (r.us[1] / r.us[0] - 1) * 100.0;
-        diverging(box, s.id === "A" ? S.sweepA : S.sweepB, v, span, {
-          tip: '<span class="hd">' + kctx(kv) + " KV · " + s.file + "</span><br>" +
-            F.fig2.q_lens.map(function (q, j) {
-              return fmt(S.qlen, { n: q }) + " <b>" + r.us[j].toFixed(1) + "</b> µs";
-            }).join("<br>") });
-      });
-    });
-    var u = el(box, "barunit", S.f2unit);
-    u.style.gridColumn = "1 / -1";
-    var n = el(box, "barunit", fmt(S.f2note, {
-      a: F.fig2.q1_to_q2_32k_pct[0].toFixed(2),
-      b: F.fig2.q1_to_q2_32k_pct[1].toFixed(2),
-      c: Math.max.apply(null, F.fig2.worst_across_q_32k_pct).toFixed(1) }));
-    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+    note.innerHTML = S.f2unit + "<br>" +
+      fmt(S.f2note, { a: F.fig2.q1_to_q2_32k_pct[0].toFixed(2),
+                      b: F.fig2.q1_to_q2_32k_pct[1].toFixed(2),
+                      c: Math.max.apply(null, F.fig2.worst_across_q_32k_pct).toFixed(1) });
   })();
 
   /* ---------- the per-call distribution ---------- */
@@ -531,69 +541,81 @@ is what supports it, not either measurement alone.</p>
     });
   })();
 
-  /* ---------- Figure 3: the A100 ---------- */
+  /* ---------- Figure 3: the A100 ----------
+     One line per backend across the two depths measured there, so the thing
+     the section claims -- FlashInfer stops paying somewhere between them -- is
+     a slope rather than four bars to subtract. The auto row has no 50K cell,
+     which is a gap in its line and not a zero. */
   (function () {
-    var box = document.getElementById("vendor");
-    var C = F.fig3.cells;
-    var span = Math.max(Math.abs(F.fig3.rocm_reference_pct),
-                        Math.max.apply(null, C.map(function (c) {
-                          return Math.abs(c.delta_pct); }))) * 1.06;
-    var seen = {};
+    var svg = document.getElementById("vendor"), note = document.getElementById("vnote");
+    var lg = document.getElementById("v3"), C = F.fig3.cells;
+    var xs = [], backs = [];
     C.forEach(function (c) {
-      if (!seen[c.ctx]) {
-        seen[c.ctx] = 1;
-        el(box, "grp", kctx(c.ctx) + ' <span class="tagline">· A100</span>');
-      }
-      diverging(box, c.label, c.delta_pct, span, {
-        ref: c.backend === "triton_forced" ? F.fig3.rocm_reference_pct : undefined,
-        refLabel: S.f3ref,
-        tip: '<span class="hd">' + c.label + " · " + kctx(c.ctx) + "</span><br>" +
-          S.nospec + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
-          S.mtp + " <b>" + c.mtp.toFixed(2) + "</b> tok/s<br>" +
-          '<span class="sub">session ' + c.session + "</span>" });
+      if (xs.indexOf(c.ctx) < 0) xs.push(c.ctx);
+      if (backs.indexOf(c.backend) < 0) backs.push(c.backend);
     });
-    var u = el(box, "barunit", S.f3unit);
-    u.style.gridColumn = "1 / -1";
-    var r = el(box, "barunit", "");
-    r.style.gridColumn = "1 / -1";
-    r.innerHTML = '<span class="swatch" style="background:var(--text-dim)"></span>' +
-      S.f3ref + " " + F.fig3.rocm_reference_pct.toFixed(1) + " %";
-    var n = el(box, "barunit", fmt(S.f3note, {
-      g: F.fig3.machine, v: F.fig3.vllm }));
-    n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
+    xs.sort(function (a, b) { return a - b; });
+    var COL = ["var(--s1)", "var(--s2)", "var(--s3)"];
+    var ser = backs.map(function (bk, bi) {
+      var cells = xs.map(function (x) {
+        var hit = null;
+        C.forEach(function (c) { if (c.backend === bk && c.ctx === x) hit = c; });
+        return hit;
+      });
+      return { colour: COL[bi % COL.length],
+               values: cells.map(function (c) { return c ? c.delta_pct : null; }),
+               tip: function (i) {
+                 var c = cells[i];
+                 if (!c) return "";
+                 return '<span class="hd">' + c.label + " · " + kctx(c.ctx) + "</span><br>" +
+                   S.nospec + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+                   S.mtp + " <b>" + c.mtp.toFixed(2) + "</b> tok/s<br>" +
+                   '<span class="sub">session ' + c.session + "</span>";
+               }, label: cells[0] ? cells[0].label : bk };
+    });
+    window.lineChart({
+      el: svg, reduce: reduce, h: 330,
+      x: { values: xs, label: S.ctxAxis, fmt: kctx },
+      y: { label: S.yDelta, fmt: function (v) { return v.toFixed(0) + "%"; } },
+      rules: [{ y: 0, colour: "var(--border-2)" },
+              { y: F.fig3.rocm_reference_pct, label: S.f3ref, colour: "var(--text-dim)" }],
+      legend: lg, series: ser
+    });
+    note.innerHTML = S.f3unit + "<br>" + S.f3ref + " " +
+      F.fig3.rocm_reference_pct.toFixed(1) + " %<br>" +
+      fmt(S.f3note, { g: F.fig3.machine, v: F.fig3.vllm });
   })();
 
-  /* ---------- Figure 4: with the admission ---------- */
+  /* ---------- Figure 4: with the admission ----------
+     Two lines: what the section is about is the gap widening with depth, from
+     1.34x to 3.70x, which is the distance between them rather than any one
+     bar's length. */
   (function () {
-    var box = document.getElementById("recover");
-    var R = F.fig4.rows;
-    var max = Math.max.apply(null, R.map(function (r) {
-      return Math.max(r.stock, r.ported); }));
-    R.forEach(function (r) {
-      el(box, "grp", kctx(r.ctx) + ' <span class="tagline">· ' +
-         r.ratio.toFixed(2) + "×</span>");
-      [[S.stock, r.stock, "--s1"], [S.ported, r.ported, "--s3"]].forEach(function (a) {
-        el(box, "lab rv", a[0]);
-        var tr = el(box, "track rv");
-        var f = document.createElement("span");
-        f.style.cssText = "display:block;height:100%;width:0;background:var(" + a[2] +
-          ");transition:width 1s cubic-bezier(.22,1,.36,1)";
-        tr.appendChild(f);
-        grow(f, a[1] / max * 100);
-        el(box, "val rv", a[1].toFixed(2));
-        hover(tr, '<span class="hd">' + kctx(r.ctx) + "</span><br>" + a[0] +
-          " <b>" + a[1].toFixed(2) + "</b> tok/s<br><span class=\"sub\">" +
-          r.ratio.toFixed(2) + "× between them</span>");
-      });
+    var svg = document.getElementById("recover"), note = document.getElementById("rcnote");
+    var lg = document.getElementById("v4"), R = F.fig4.rows;
+    function tipFor(key) {
+      return function (i) {
+        var r = R[i];
+        return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
+          S.stock + " <b>" + r.stock.toFixed(2) + "</b> tok/s<br>" +
+          S.ported + " <b>" + r.ported.toFixed(2) + "</b> tok/s<br>" +
+          '<span class="sub">' + r.ratio.toFixed(2) + "× between them</span>";
+      };
+    }
+    window.lineChart({
+      el: svg, reduce: reduce, h: 330,
+      x: { values: R.map(function (r) { return r.ctx; }), label: S.ctxAxis, fmt: kctx },
+      y: { label: S.yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
+      legend: lg,
+      series: [{ colour: "var(--s1)", label: S.stock, tip: tipFor("stock"),
+                 values: R.map(function (r) { return r.stock; }) },
+               { colour: "var(--s3)", label: S.ported, tip: tipFor("ported"),
+                 values: R.map(function (r) { return r.ported; }) }]
     });
-    var u = el(box, "barunit", fmt(S.f4unit, { a: S.stock, b: S.ported }));
-    u.style.gridColumn = "1 / -1";
-    var h = el(box, "barunit", fmt(S.f4note, {
-      h: F.fig4.hand_forced_32k.toFixed(2),
-      p: F.fig4.hand_vs_ported_pct.toFixed(1) }));
-    h.style.gridColumn = "1 / -1"; h.style.color = "var(--text-2)";
-    var c = el(box, "barunit", fmt(S.f4correct, { n: F.fig4.correctness.cases }));
-    c.style.gridColumn = "1 / -1";
+    note.innerHTML = fmt(S.f4unit, { a: S.stock, b: S.ported }) + "<br>" +
+      fmt(S.f4note, { h: F.fig4.hand_forced_32k.toFixed(2),
+                      p: F.fig4.hand_vs_ported_pct.toFixed(1) }) + "<br>" +
+      fmt(S.f4correct, { n: F.fig4.correctness.cases });
   })();
 
   /* ---------- reveal ---------- */

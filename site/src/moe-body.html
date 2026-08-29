@@ -87,14 +87,21 @@ of context, with power bouncing between the cards". Compiled it is 59.91, and th
 
 <h2><span class="n">3</span>Where twenty-six minutes goes</h2>
 
-<figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · every engine
-start in the campaign <span class="prov yes">recomputable from repo</span></div>
-<div class="bars" id="inits"></div> </div> <figcaption> <b>Figure 2.</b> All eight starts, in the
-order they ran. Two of them exceed twenty minutes while the other six are under two, and on those
-two the weight-loading share is 3.4 % and 0.4 % of the total. Whatever is expensive, it is not the
-model coming off disk. The one repeated configuration is the 12B at TP=1, started twice eight
-minutes apart: 59.67 s then 33.36 s. That is the only cold-against-warm pair the campaign contains,
-and it is not one of the two slow ones. </figcaption> </figure>
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · every engine start in the campaign
+    <span class="prov yes">recomputable from repo</span></div>
+    <div class="bars" id="inits"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> All eight starts, in the order they ran. Two of them exceed twenty minutes
+    while the other six are under two, and on those two the weight-loading share is 3.4 % and 0.4 %
+    of the total. Whatever is expensive, it is not the model coming off disk. The one repeated
+    configuration is the 12B at TP=1, started twice eight minutes apart: 59.67 s then 33.36 s. That
+    is the only cold-against-warm pair the campaign contains, and it is not one of the two slow
+    ones.
+  </figcaption>
+</figure>
 
 <p>The reason it is one core is a single line, run on every <code>import vllm</code>:</p>
 

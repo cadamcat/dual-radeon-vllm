@@ -229,6 +229,9 @@
         transition:opacity .3s, stroke-width .3s; }
   .dot { transition:opacity .3s; cursor:pointer; }
   .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .rule { stroke-width:1.4; opacity:.75; }
+  .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
+  .dot { cursor:default; }
   .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
          font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
          border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
@@ -250,6 +253,13 @@
   .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
                 color:var(--text-2); margin:.9em 0 -.1em; }
   .bars .head:first-child { margin-top:0; }
+  /* a group heading spans the whole row. It lived in four articles' own CSS and
+     not in the fifth that used the class, whose rows then each took one cell
+     and walked diagonally down the figure. */
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
   .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
                 margin:-.25em 0 .5em; }
   .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
@@ -287,6 +297,224 @@
   </button>
 </nav>
 <script id="chrome">
+/* ---- the shared line chart ----
+   Seven figures across four articles show a few series over an ordered axis --
+   context length, almost always -- and were drawn as grouped bars, which makes
+   a reader assemble the shape out of four lengths. One implementation lives
+   here rather than seven in the bodies, for the same reason .bars .grp does:
+   the copy an article did not have is the one that broke.
+
+   window.lineChart(opts) -> { redraw }
+     el       the <svg class="chart"> to draw into
+     x        {values, label, fmt}          ordered, shared by every series
+     y        {label, fmt, ticks, min, max, zero}
+     series   [{name, colour, values, dash, tip}]   values parallel to x.values
+     rules    [{y, label, colour, dash}]            horizontal reference lines
+     reduce   true to skip the draw-in animation
+   A null in a series' values is a gap, not a zero. */
+window.lineChart = function (opts) {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var el = opts.el, xs = opts.x.values, ser = opts.series, rules = opts.rules || [];
+  var W = opts.w || 760, H = opts.h || 340;
+  var M = opts.m || { t: 16, r: 18, b: 44, l: 62 };
+  var tip = document.querySelector(".tip") || (function () {
+    var t = document.createElement("div");
+    t.className = "tip";
+    document.body.appendChild(t);
+    return t;
+  })();
+
+  function mk(n, a, style) {
+    var e = document.createElementNS(NS, n);
+    for (var k in a) e.setAttribute(k, a[k]);
+    if (style) e.setAttribute("style", style);
+    return e;
+  }
+  function show(ev, html) {
+    tip.innerHTML = html;
+    tip.style.opacity = "1";
+    var r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX + 14, innerWidth - r.width - 10) + "px";
+    tip.style.top = Math.max(8, ev.clientY - r.height - 12) + "px";
+  }
+  function hide() { tip.style.opacity = "0"; }
+
+  var paths = [], dots = [];
+
+  function draw(animate) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    paths = []; dots = [];
+    el.setAttribute("viewBox", "0 0 " + W + " " + H);
+    el.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    var vals = [];
+    ser.forEach(function (s) {
+      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
+    });
+    rules.forEach(function (r) { vals.push(r.y); });
+    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
+    var lo = opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, vals);
+    var hi = opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, vals);
+    if (opts.y.zero && lo > 0) lo = 0;
+    var pad = (hi - lo) * 0.08 || 1;
+    if (opts.y.min === undefined) lo -= pad;
+    if (opts.y.max === undefined) hi += pad;
+    var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
+    // the x axis is ordinal: the depths are a ladder, not a ratio scale, and
+    // spacing them by value buries 1K and 8K against the left edge
+    var X = function (i) {
+      return xs.length === 1 ? (M.l + W - M.r) / 2
+        : M.l + i / (xs.length - 1) * (W - M.l - M.r);
+    };
+
+    var ticks = opts.y.ticks;
+    if (!ticks) {
+      // round tick values, not five equal slices of whatever the data spans:
+      // an axis reading -42, -31, -19, -8, 3 is arithmetic the reader has to do
+      var raw = (hi - lo) / 4;
+      var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+      var step = [1, 2, 2.5, 5, 10].reduce(function (a, m) {
+        return Math.abs(m * mag - raw) < Math.abs(a * mag - raw) ? m : a; }, 1) * mag;
+      ticks = [];
+      for (var t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) ticks.push(t);
+    }
+    var g = mk("g", { "class": "grid" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      g.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+    });
+    el.appendChild(g);
+
+    var ax = mk("g", { "class": "axis" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      var n = mk("text", { x: M.l - 10, y: Y(v) + 3.5, "text-anchor": "end" });
+      n.textContent = (opts.y.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    xs.forEach(function (v, i) {
+      var n = mk("text", { x: X(i), y: H - M.b + 20, "text-anchor": "middle" });
+      n.textContent = (opts.x.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    if (opts.x.label) {
+      var xt = mk("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle",
+                            "class": "ttl" });
+      xt.textContent = opts.x.label;
+      ax.appendChild(xt);
+    }
+    if (opts.y.label) {
+      var yt = mk("text", { x: -(H - M.b + M.t) / 2, y: 15, "text-anchor": "middle",
+                            "class": "ttl", transform: "rotate(-90)" });
+      yt.textContent = opts.y.label;
+      ax.appendChild(yt);
+    }
+    el.appendChild(ax);
+
+    if (opts.band) {
+      // the spread the individual cells occupy, behind the medians: without it
+      // a reader has no scale against which "flat" means anything
+      el.appendChild(mk("rect", { x: M.l, y: Y(opts.band.hi), width: W - M.l - M.r,
+                                  height: Math.abs(Y(opts.band.lo) - Y(opts.band.hi)) },
+                        "fill:var(--surface-3);opacity:.55"));
+    }
+    rules.forEach(function (r) {
+      if (r.y < lo || r.y > hi) return;
+      el.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(r.y), y2: Y(r.y),
+                                  "class": "rule" },
+                        "stroke:" + (r.colour || "var(--border-2)") +
+                        (r.dash === false ? "" : ";stroke-dasharray:5 4")));
+      if (!r.label) return;
+      // a rule label sits where the data often is, so it carries its own
+      // backing rather than printing on top of a line
+      var ry = Y(r.y) < M.t + 18 ? Y(r.y) + 15 : Y(r.y) - 6;
+      var left = r.at === "left";
+      var g2 = mk("g", { "class": "rulab" });
+      var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
+                           "text-anchor": left ? "start" : "end" },
+                 "fill:" + (r.colour || "var(--text-dim)"));
+      n.textContent = r.label;
+      g2.appendChild(n);
+      el.appendChild(g2);
+      var bb = n.getBBox();
+      var bg = mk("rect", { x: bb.x - 4, y: bb.y - 1.5, width: bb.width + 8,
+                            height: bb.height + 3, rx: 3 },
+                  "fill:var(--surface)");
+      g2.insertBefore(bg, n);
+    });
+
+    ser.forEach(function (s) {
+      var d = "", open = false;
+      s.values.forEach(function (v, i) {
+        if (v === null || v === undefined) { open = false; return; }
+        d += (open ? " L" : " M") + X(i) + " " + Y(v);
+        open = true;
+      });
+      var p = mk("path", { "class": "ln", d: d.trim() },
+                 "stroke:" + s.colour + (s.dash ? ";stroke-dasharray:6 5" : ""));
+      el.appendChild(p);
+      paths.push(p);
+      var dg = [];
+      s.values.forEach(function (v, i) {
+        if (v === null || v === undefined) return;
+        var c = mk("circle", { "class": "dot", cx: X(i), cy: Y(v), r: 4.2 },
+                   "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
+        if (s.tip) {
+          c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
+          c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
+          c.addEventListener("mouseleave", hide);
+        }
+        el.appendChild(c);
+        dg.push(c);
+      });
+      dots.push(dg);
+    });
+
+    if (!animate || opts.reduce) return;
+    // the lines draw themselves in, and every dot created by this redraw is
+    // faded in by this redraw: an observer set up on an earlier pass would
+    // never see these nodes
+    paths.forEach(function (p) {
+      var L = p.getTotalLength();
+      p.style.strokeDasharray = L;
+      p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = "stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)";
+      p.style.strokeDashoffset = "0";
+    });
+    dots.forEach(function (dg) {
+      dg.forEach(function (c, i) {
+        c.style.opacity = "0";
+        setTimeout(function () { c.style.opacity = ""; }, 300 + i * 60);
+      });
+    });
+  }
+
+  if (opts.legend) {
+    // the key belongs to the chart, so a series and its swatch cannot drift and
+    // no article has to carry its own swatch helper for this
+    opts.legend.innerHTML = "";
+    ser.forEach(function (s) {
+      if (!s.label) return;
+      var g = document.createElement("div");
+      g.className = "lg on";
+      g.style.setProperty("--c", s.colour);
+      g.style.cursor = "default";
+      var sw = document.createElement("div");
+      sw.className = "sw";
+      g.appendChild(sw);
+      var t = document.createElement("span");
+      t.textContent = s.label;
+      g.appendChild(t);
+      opts.legend.appendChild(g);
+    });
+  }
+
+  draw(true);
+  return { redraw: draw };
+};
+
 addEventListener("DOMContentLoaded", function () {
   "use strict";
   var bar = document.getElementById("prog"), queued = false;
