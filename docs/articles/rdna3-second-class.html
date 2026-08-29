@@ -678,25 +678,21 @@ addEventListener("DOMContentLoaded", function () {
   </div>
 </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>The claim is real and it is narrower than it looks. What survives as
-  <strong>architecture-specific</strong> is a small, specific list: a fast attention path this
-  hardware falls off, a native quantised-linear kernel whose type gate excludes a common checkpoint
-  class, and a performance heuristic written into one architecture's branch of one function and not
-  the other's.</p>
-  <p>The purest instance is one line. <code>use_rocm_custom_paged_attention</code> requires
-  <code>gqa_ratio &gt;= 3</code> on gfx11 and <code>&gt;= 1</code> on CDNA, for the same kernel. In
-  the excluded range that kernel is <strong>1.84× to 7.28× faster</strong> than the fallback it is
-  passed over for, and the excluded band overlaps the admitted one. The bound does not separate
-  anything.</p>
-  <p>Four of the eight are <em>not</em> RDNA3 problems, and saying so is what the measurements were
-  for. Two were proved vendor-neutral by measuring another vendor: the same attention gate loses 61
-  % at 50K on an A100, and the single-threaded compile setting is in a file that runs everywhere.
-  One is AMD-wide, at a kernel line AMD named. One is a PCIe capability that hits bare metal
-  too.</p>
-  <p><strong>Half of the sixteen upstream threads belong to other people.</strong> The most useful
-  thing this hardware turned out to be is a device the people fixing these things do not have.</p>
+<div class="abstract"> <h3>Abstract</h3> <p>The claim is real and it is narrower than it looks. What
+survives as <strong>architecture-specific</strong> is a small, specific list: a fast attention path
+this hardware falls off, a native quantised-linear kernel whose type gate excludes a common
+checkpoint class, and a performance heuristic written into one architecture's branch of one function
+and not the other's.</p> <p>The purest instance is one line.
+<code>use_rocm_custom_paged_attention</code> requires <code>gqa_ratio &gt;= 3</code> on gfx11 and
+<code>&gt;= 1</code> on CDNA, for the same kernel. In the excluded range that kernel is
+<strong>1.84× to 7.28× faster</strong> than the fallback it is passed over for, and the excluded
+band overlaps the admitted one. The bound does not separate anything.</p> <p>Four of the eight are
+<em>not</em> RDNA3 problems, and saying so is what the measurements were for. Two are vendor-neutral
+on two different kinds of evidence: the same attention gate was measured on an A100, where it loses
+61 % at 50K, and the single-threaded compile setting was traced to a file that runs everywhere. One
+is AMD-wide, at a kernel line AMD named. One is a PCIe capability that hits bare metal too.</p>
+<p><strong>Half of the sixteen upstream threads belong to other people.</strong> The most useful
+thing this hardware turned out to be is a device the people fixing these things do not have.</p>
 </div>
 
 <h2><span class="n">1</span>Sorting eight findings by what they are actually about</h2>
@@ -784,8 +780,8 @@ architecture axis, alongside the gate above.</p>
 <p>A fifth is worth naming separately because it is about the shape of the machine rather than the
 chip: the 2D attention path launches one workgroup per KV head, so splitting a model across two
 cards halves the KV heads, and the starved path starves twice as hard. That is a cost of tensor
-parallelism, and a single card of any vendor running the same kernel does not pay it.
-<a href="a100-vs-two-radeons.html">The article</a>.</p>
+parallelism, and the single-card control measured here — an A100 running the same kernel — does not
+pay it. <a href="a100-vs-two-radeons.html">The article</a>.</p>
 
 <h2><span class="n">4</span>What the hardware turned out to be for</h2>
 

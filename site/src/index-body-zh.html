@@ -15,15 +15,15 @@ __CHIPS__
 
 <div class="cards" id="cards"></div>
 
-<h2><span class="n">2</span>它们各自是什么时候测的</h2>
+<h2><span class="n">2</span>它们各自记的是哪一天</h2>
 
-<p>文章上的日期是测量发生的日期，不是撰写的日期。三篇出自七月最后一周，然后四周什么都没有，
-接着七天里出了八篇：第二批基本上是在第一批搞错了的条件下重测一遍。跨两个日期的条形，
-说明这篇文章的证据来自两次分开的测量。</p>
+<p>文章上的日期是证据取得的日期，不是撰写的日期。十一篇里有三篇记在七月最后一周，八篇记在八月最后一周。
+机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，之后三周没有再跑——第二批基本上是在第一批搞错了的
+条件下重测一遍。跨两个日期的条形，说明这篇文章的证据来自两次分开的测量，而不是中间一直在跑。</p>
 
 <figure class="rv" id="figtl">
   <div class="figbox">
-    <div class="figtitle">图 1 · 测量日期
+    <div class="figtitle">图 1 · 每篇文章带的日期
       <span class="prov yes">与文章上标注的日期同源</span></div>
     <div class="legend" id="tlkey"></div>
     <div class="tl" id="tl"></div>
@@ -41,11 +41,10 @@ __CHIPS__
 而一个 3.9× 到 5.6× 的加载提速，在把 page cache 真正控制住之后被撤回了。
 所以每篇文章都以「此后发生的变化」一节收尾，那一节只往后追加，不回头改写。</p>
 
-<p>每张图都带一个来源标记。<span class="prov yes">recomputable from repo</span> 表示
+<p>每张图都带一个来源标记。<span class="prov yes">可由仓库重算</span> 表示
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-会把这个值对照它的源文件检查一遍，两者不一致就非零退出——和守着仓库自身文档的是同一套检查。
-<span class="prov no">raw output not committed</span> 表示这个数字抄自一次原始输出没有入库的运行，
-无法重算。</p>
+会把这个值对照它的源文件检查一遍，两者不一致就非零退出——和守着仓库自身文档的是同一套检查。 <span class="prov no">原始输出未入库</span>
+表示这个数字抄自一次原始输出没有入库的运行， 无法重算。</p>
 
 <p>这里的绝对速率是下限，不是这套硬件的跑分：这是一台 VFIO 虚拟机，两张卡之间没有 P2P，
 走的是跨 die 的 PCIe 3.0，是刻意挑的最不利拓扑。形状搬得到别的机器上，绝对值是最坏情况。</p>
@@ -63,7 +62,7 @@ __CHIPS__
  "estLabel": "确立了",
  "tlKinds": {"measured": "本机实测", "reported": "上报上游",
              "reviewed": "重读状态"},
- "tlNote": "{a} 至 {b} · 前后 {d} 天 · {n} 篇"
+ "tlNote": "{a} 至 {b} · 相隔 {d} 天 · {n} 篇"
 }</script>
 __SCRIPT__
 </body>

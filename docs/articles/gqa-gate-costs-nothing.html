@@ -653,21 +653,17 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-<header class="top">
-  <div class="kicker">RDNA3 · paged attention · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>The excluded kernel wins all sixty cells,<br>and the two bands overlap</h1>
-  <p class="sub">A gate that costs 2 to 7 times and buys nothing</p>
-  <p class="lede">On gfx11, vLLM's ROCm custom paged-attention kernel is enabled only when the
-  query-to-KV head ratio is at least 3. In the excluded range the same kernel is
-  <strong>1.70× to 7.28× faster</strong> than the Triton fallback it is passed over for, and
-  numerically equivalent to it. Sixty cells, two vLLM versions, no exception.</p>
-  <div class="meta">
-    <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
+<header class="top"> <div class="kicker">RDNA3 · paged attention · vLLM · measured on 2× RX 7900
+XT</div> <h1>The excluded kernel wins all sixty cells,<br>and the two bands overlap</h1>
+<p class="sub">A gate that costs 2 to 7 times and buys nothing</p> <p class="lede">On gfx11, vLLM's
+ROCm custom paged-attention kernel is enabled only when the query-to-KV head ratio is at least 3. In
+the excluded range the same kernel is <strong>1.70× to 7.28× faster</strong> than the Triton
+fallback it is passed over for, and numerically equivalent to it inside what bf16 gives for a sum
+this long. Sixty cells, two vLLM versions, no exception.</p> <div class="meta">     <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-stack" title="stack" style="--i:1">vLLM <b>0.23.1</b> and <b>0.27.1</b></span>
     <span class="chip k-hardware" title="hardware" style="--i:2">plus an <b>A100</b> running the same Triton text</span>
     <span class="chip k-upstream" title="upstream" style="--i:3">proposed as <b>vllm#54210</b></span>
-    <span class="chip k-date" title="date" style="--i:4">measured <b>2026-08-28</b></span>
-  </div>
+    <span class="chip k-date" title="date" style="--i:4">measured <b>2026-08-28</b></span> </div>
 </header>
 
 <div class="abstract">
@@ -710,24 +706,16 @@ module and the launch mirrors the dispatch's argument list.</p>
 
 <h2><span class="n">2</span>Sixty cells, and no exception</h2>
 
-<figure class="rv" id="fig1">
-  <div class="figbox">
-    <div class="figtitle">Figure 1 · Triton time ÷ custom-kernel time, per shape and depth
-      <span class="prov yes">recomputable from repo</span></div>
-    <div class="legend" id="v1"></div>
-    <div class="gridwrap"><div class="cgrid" id="grid"></div></div>
-    <div class="scale" id="scale"></div>
-    <div class="barunit" id="gridnote"></div>
-  </div>
-  <figcaption>
-    <b>Figure 1.</b> Above 1.0 means the gated-out kernel is the faster one. The rows the gate
-    <em>admits</em> are the control: they show the advantage it was written to capture. The rows it
-    excludes show the same advantage, at the same magnitude, being declined. Hover any cell for the two
-    times behind it. The newer image is uniformly a little lower because the Triton fallback got faster,
-    not because the custom kernel got slower; the two 0.27 rounds are 2.3 % apart at the median and
-    5.8 % at worst.
-  </figcaption>
-</figure>
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · Triton time ÷
+custom-kernel time, per shape and depth <span class="prov yes">recomputable from repo</span></div>
+<div class="legend" id="v1"></div> <div class="gridwrap"><div class="cgrid" id="grid"></div></div>
+<div class="scale" id="scale"></div> <div class="barunit" id="gridnote"></div> </div> <figcaption>
+<b>Figure 1.</b> Above 1.0 means the gated-out kernel is the faster one. The rows the gate
+<em>admits</em> are the control: they show the advantage it was written to capture. The rows it
+excludes show the same advantage, at the same magnitude, being declined. Hover any cell for the two
+times behind it. The newer image is a little lower in twenty-eight of the thirty paired cells. Both
+arms moved between the images and this comparison separates neither; the two 0.27 rounds are 2.3 %
+apart at the median and 5.8 % at worst. </figcaption> </figure>
 
 <p>The bands are the argument, not the maxima. On 0.23.1 the excluded ratios span 1.84× to 7.28× and the
 admitted ones 2.35× to 7.40×; on 0.27 it is 1.70× to 6.05× against 2.20× to 6.05×.
@@ -888,6 +876,15 @@ looked wrong against a ladder that spans 32×. It is not: that figure pools the 
 against the two longest, whose centres are about 16× apart. Read end to end instead the move is
 1.03×. Both derivations are now written down and both are checked, because the sentence was
 defensible but unreadable at the same time. </div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · figure 1's caption attributed a move the data does not attribute</span>
+  It said the newer image sits "uniformly a little lower because the Triton fallback got faster, not
+  because the custom kernel got slower". Neither half holds: two of the thirty paired cells are
+  <em>higher</em> on the newer image, and across the thirty the Triton time falls in 21 while the
+  custom kernel's time <em>rises</em> in 25. Both arms moved. The caption now says so, and
+  <code>verify_doc_figures.py</code> pins both counts.
+</div>
 
 <div class="foot-note">
   <p><strong>Every cell.</strong> The probes, the JSONL they wrote and the container logs are in

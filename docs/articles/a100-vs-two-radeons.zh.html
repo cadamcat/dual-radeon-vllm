@@ -623,8 +623,7 @@ addEventListener("DOMContentLoaded", function () {
   <h1>与 A100 的差距是 U 形的，<br>而两端都关于把工作拆开</h1>
   <p class="sub">两张消费级 Radeon 对一张 A100</p>
   <p class="lede">同一个 31B 模型的 batch-1 解码，两边各走自己那条健康路径：A100 在 1K 上下文领先
-  1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，
-  两端的成因不同，而且都不是价格差。</p>
+  1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，两端与不同的开销相符，而且都不是标称带宽之比。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-hardware" title="硬件" style="--i:1">一张 <b>A100-SXM4-80GB</b> · TP=1</span>
@@ -633,22 +632,15 @@ addEventListener("DOMContentLoaded", function () {
   </div>
 </header>
 
-<div class="abstract">
-  <h3>摘要</h3>
-  <p>batch-1 解码是带宽受限的，而两边的标称上限比价格接近得多：两张 800 GB/s 对一张 2.0 TB/s 是
-  <strong>1.27×</strong>。实测的领先幅度在 8K 和 16K 上<em>低于</em>这个数，在两端高于它。</p>
-  <p><strong>短端付的税是张量并行。</strong>那里每一步的时间足够短，TP=2 那个固定的 all-reduce
-  下限占掉可见的一块；而单卡不做这件事，也就不付这笔钱。长端 KV 扫描占主导，实到带宽的差距被放大；
-  Radeon 在这个模型上跑到自身 800 GB/s 的 63 %。</p>
-  <p>同一张表还能读出两件事，两件都关于张量并行，而不关于任何一个厂商。
-  <strong>被饿着的那条注意力路径，被切开之后饿得更厉害</strong>：它的 2D launch grid
-  是每个 KV head 一个 workgroup，所以两张卡各看到 8 个，单卡看到 16 个，
-  而从 1K 到 30–32K 的保留率是 <strong>15.8 % 对 33.6 %</strong>。以及
-  <strong>投机的经济性被侵蚀</strong>：每一次草稿步仍然要付同一个 all-reduce 下限，
-  所以投机相对不投机的净收益是<strong>这边 +7.5 %，那边 +39.2 %</strong>。</p>
-  <p>这里没有覆盖的是 A100 完胜的地盘。prefill 和批量吞吐是计算受限的，
-  而那边的对手是已经只跑到标称峰值约 37 % 的 RDNA3 WMMA。那里该预期的是倍数，不是百分比。</p>
-</div>
+<div class="abstract"> <h3>摘要</h3> <p>batch-1 解码是带宽受限的，而两边的标称上限只差 <strong>1.27×</strong>：两张 800 GB/s
+对一张 2.0 TB/s。实测的领先幅度在 8K 和 16K 上<em>低于</em>这个数，在两端高于它。</p>
+<p><strong>短端付的税是张量并行。</strong>那里每一步的时间足够短，TP=2 那个固定的 all-reduce 下限占掉可见的一块；而单卡不做这件事，也就不付这笔钱。长端 KV
+扫描占主导，实到带宽的差距被放大； Radeon 在这个模型上跑到自身 800 GB/s 的 63 %。</p> <p>同一张表还能读出两件事，两件都关于张量并行，而不关于任何一个厂商。
+<strong>被饿着的那条注意力路径，被切开之后饿得更厉害</strong>：它的 2D launch grid 是每个 KV head 一个 workgroup，所以两张卡各看到 8 个，单卡看到
+16 个， 而从 1K 到 30–32K 的保留率是 <strong>15.8 % 对 33.6 %</strong>。以及
+<strong>投机的经济性被侵蚀</strong>：每一次草稿步仍然要付同一个 all-reduce 下限， 所以投机相对不投机的净收益是<strong>这边 +7.5 %，那边 +39.2
+%</strong>。</p> <p>这里没有覆盖的是 A100 完胜的地盘。prefill 和批量吞吐是计算受限的， 而那边的对手是已经只跑到标称峰值约 37 % 的 RDNA3
+WMMA。那里该预期的是倍数，不是百分比。</p> </div>
 
 <h2><span class="n">1</span>比的是什么</h2>
 
@@ -718,7 +710,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <h2><span class="n">4</span>它同样侵蚀投机</h2>
 
-<p>MTP 草稿模型只有四层宽，所以多出来的那次前向很便宜。不便宜的是：每一次草稿步仍然是一步，
+<p>MTP 草稿模型只有四层深，所以多出来的那次前向很便宜。不便宜的是：每一次草稿步仍然是一步，
 而 TP=2 下的一步无论挂着多大的模型，都要付那个 all-reduce 下限。
 这个下限不随草稿模型变小，所以让投机划算的那笔账，在两张卡上比在一张卡上更难算平。</p>
 

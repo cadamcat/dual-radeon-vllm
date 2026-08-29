@@ -1,34 +1,27 @@
-<header class="top">
-  <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against one A100 80G</div>
-  <h1>The gap to an A100 is U-shaped,<br>and both ends are about the split</h1>
-  <p class="sub">Two consumer Radeons against one A100</p>
-  <p class="lede">On batch-1 decode of the same 31B model, on each platform's own healthy path, the
-  A100 is 1.48× ahead at 1K of context, <strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The
-  gap is U-shaped, the two ends have different causes, and neither of them is the price difference.</p>
-  <div class="meta">
-__CHIPS__
-  </div>
-</header>
+<header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against
+one A100 80G</div> <h1>The gap to an A100 is U-shaped,<br>and both ends are about the split</h1>
+<p class="sub">Two consumer Radeons against one A100</p> <p class="lede">On batch-1 decode of the
+same 31B model, on each platform's own healthy path, the A100 is 1.48× ahead at 1K of context,
+<strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The gap is U-shaped, the two ends are
+consistent with different costs, and neither of them is the nominal bandwidth ratio.</p>
+<div class="meta"> __CHIPS__ </div> </header>
 
-<div class="abstract">
-  <h3>Abstract</h3>
-  <p>Batch-1 decode is bandwidth-bound, and the nominal ceilings are closer than the price is: two
-  cards at 800 GB/s against one at 2.0 TB/s is <strong>1.27×</strong>. The measured advantage sits
-  <em>below</em> that at 8K and 16K and above it at both ends.</p>
-  <p><strong>At the short end the tax is tensor parallelism.</strong> The step time is small enough that
-  TP=2's fixed all-reduce floor is a visible fraction of it, and the single card pays nothing for
-  something it does not do. At the long end the KV scan dominates and realized bandwidth compounds; the
-  Radeons reach 63 % of their 800 GB/s on this model.</p>
-  <p>Two further readings come out of the same table, and both are about tensor parallelism rather than
-  about either vendor. <strong>The starved attention path starves harder when split</strong>: its 2D
-  launch grid is one workgroup per KV head, so two cards see 8 each against the single card's 16, and
-  retention from 1K to 30–32K is <strong>15.8 % against 33.6 %</strong>. And
-  <strong>speculation's economics erode</strong>: every draft step pays the same all-reduce floor, so
-  the net win over no speculation is <strong>+7.5 % here against +39.2 %</strong> there.</p>
-  <p>What this does not cover is where the A100 wins outright. Prefill and batched throughput are
-  compute-bound, and there the comparison is against RDNA3 WMMA that already realizes about 37 % of
-  nominal peak. Expect multiples, not percentages.</p>
-</div>
+<div class="abstract"> <h3>Abstract</h3> <p>Batch-1 decode is bandwidth-bound, and the nominal
+ceilings are only <strong>1.27×</strong> apart: two cards at 800 GB/s against one at 2.0 TB/s. The
+measured advantage sits <em>below</em> that at 8K and 16K and above it at both ends.</p>
+<p><strong>At the short end the tax is tensor parallelism.</strong> The step time is small enough
+that TP=2's fixed all-reduce floor is a visible fraction of it, and the single card pays nothing for
+something it does not do. At the long end the KV scan dominates and realized bandwidth compounds;
+the Radeons reach 63 % of their 800 GB/s on this model.</p> <p>Two further readings come out of the
+same table, and both are about tensor parallelism rather than about either vendor. <strong>The
+starved attention path starves harder when split</strong>: its 2D launch grid is one workgroup per
+KV head, so two cards see 8 each against the single card's 16, and retention from 1K to 30–32K is
+<strong>15.8 % against 33.6 %</strong>. And <strong>speculation's economics erode</strong>: every
+draft step pays the same all-reduce floor, so the net win over no speculation is <strong>+7.5 % here
+against +39.2 %</strong> there.</p> <p>What this does not cover is where the A100 wins outright.
+Prefill and batched throughput are compute-bound, and there the comparison is against RDNA3 WMMA
+that already realizes about 37 % of nominal peak. None of that is measured here; if it is
+compute-bound, the expectation is multiples rather than percentages.</p> </div>
 
 <h2><span class="n">1</span>What is being compared</h2>
 
@@ -67,10 +60,10 @@ measured advantage is <em>smaller</em> than the bandwidth ceilings alone would p
 point compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has;
 every other depth is matched exactly. </figcaption> </figure>
 
-<p>Fourteen per cent apart at 16K is the number worth sitting with. It is not a claim that the hardware
-is equivalent — it is a claim about one regime: single-stream decode, one model, mid-length context,
-each side on its best available path. Move to prefill or to batch and the same two machines are not
-close.</p>
+<p>The A100 being fourteen per cent ahead at 16K is the number worth sitting with. It is not a claim
+that the hardware is equivalent — it is a claim about one regime: single-stream decode, one model,
+mid-length context, each side on its best available path. Move to prefill or to batch and the same
+two machines are not close.</p>
 
 <h2><span class="n">3</span>The split is what costs, not the silicon</h2>
 
@@ -95,9 +88,9 @@ The starved path is therefore starved twice as hard by the parallelism, and it s
 
 <h2><span class="n">4</span>And it erodes speculation too</h2>
 
-<p>The MTP drafter is four layers wide, so the extra forward pass is cheap. What is not cheap is that
-every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the model
-attached to it costs. The floor does not shrink with the drafter, so the arithmetic that makes
+<p>The MTP drafter is four layers deep, so the extra forward pass is cheap. What is not cheap is
+that every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the
+model attached to it costs. The floor does not shrink with the drafter, so the arithmetic that makes
 speculation worth having is worse on two cards than on one.</p>
 
 <figure class="rv" id="fig3">
@@ -155,10 +148,9 @@ each side runs the stack it actually uses; two different operating environments,
 rented Colab VM whose cross-session variance is unquantified. The campaign-grade version of this
 comparison has not been run.</p>
 
-<h3>Why 16K is the minimum</h3>
-<p>The U is described, not explained at its bottom. That the short end is dominated by a fixed
-per-step cost and the long end by the KV scan is consistent with every measurement here, but where
-exactly the two cross was not located, and only four depths were measured.</p>
+<h3>Why 16K is the minimum</h3> <p>The U is described, not explained at its bottom. That the short
+end is dominated by a fixed per-step cost and the long end by the KV scan is consistent with every
+measurement here, but the crossing itself was not located, and only four depths were measured.</p>
 
 <h2><span class="n">7</span>What has changed since</h2>
 

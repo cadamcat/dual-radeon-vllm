@@ -654,22 +654,19 @@ addEventListener("DOMContentLoaded", function () {
 </script>
 <div class="wrap">
 
-<header class="top">
-  <div class="kicker">RDNA3 · paged attention · vLLM · 实测于 2× RX 7900 XT</div>
-  <h1>被排除的 kernel 在六十个格子里全赢，<br>而两个区间还互相重叠</h1>
-  <p class="sub">一道 2 到 7 倍的门，什么也没换来</p>
-  <p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention kernel 只在 query 与 KV
-  head 之比至少为 3 时才启用。而在被排除的那个区间里，同一个 kernel
-  比它被越过去换来的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>，数值上又与之等价。
-  六十个格子、两个 vLLM 版本，无一例外。</p>
-  <div class="meta">
-    <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
+<header class="top"> <div class="kicker">RDNA3 · paged attention · vLLM · 实测于 2× RX 7900 XT</div>
+
+<h1>被排除的 kernel 在六十个格子里全赢，<br>而两个区间还互相重叠</h1> <p class="sub">一道 2 到 7 倍的门，什么也没换来</p>
+
+<p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention kernel 只在 query head 与 KV head 的比值至少为 3
+
+时才启用。而在被排除的那个区间里，同一个 kernel 比它被越过去换来的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>，在这么长的求和上，数值也在 bf16
+
+给得起的范围内与之等价。 六十个格子、两个 vLLM 版本，无一例外。</p> <div class="meta">     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-stack" title="软件栈" style="--i:1">vLLM <b>0.23.1</b> 与 <b>0.27.1</b></span>
     <span class="chip k-hardware" title="硬件" style="--i:2">外加一张跑同一份 Triton 源码的 <b>A100</b></span>
     <span class="chip k-upstream" title="上游" style="--i:3">已提为 <b>vllm#54210</b></span>
-    <span class="chip k-date" title="日期" style="--i:4">实测 <b>2026-08-28</b></span>
-  </div>
-</header>
+    <span class="chip k-date" title="日期" style="--i:4">实测 <b>2026-08-28</b></span> </div> </header>
 
 <div class="abstract">
   <h3>摘要</h3>
@@ -719,8 +716,7 @@ CUDA 对照编译的是同一份 Triton 文本：kernel 被原样提取到一个
   <figcaption>
     <b>图 1.</b> 大于 1.0 表示被挡在外面的那个 kernel 更快。这道门<em>放行</em>的那几行是对照：
     它们展示的正是这道门当初想抓住的收益。而它排除掉的那几行，收益一样大、量级也一样，却被拦在门外。
-    把鼠标停在任意格子上可以看到背后的两个耗时。较新的镜像整体低一点，
-    是因为 Triton 兜底变快了，不是定制 kernel 变慢了；0.27 的两轮中位相差 2.3 %，最差 5.8 %。
+    把鼠标停在任意格子上可以看到背后的两个耗时。较新的镜像在三十对格子里有二十八对低一点。两条臂在两个镜像之间都动了，这次对比谁也没分开；0.27 的两轮中位数相差 2.3 %，最差 5.8 %。
   </figcaption>
 </figure>
 
@@ -877,6 +873,14 @@ vllm#53856 把它归因于 sleep 模式和分配器行为。这个探针是故�
   它不是：那个数字把最短的两个深度汇总起来对比最长的两个，两者的中心大约相差 16 倍。
   按端到端读，这个变化是 1.03 倍。两种推导现在都写下来了，两个也都有检查 ——
   因为那句话同时既站得住、又读不出来。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-29 · 图 1 的说明把一处变化归给了数据并不支持的原因</span>
+  原文说较新的镜像"整体低一点，是因为 Triton 兜底变快了，不是定制 kernel 变慢了"。两半都不成立：
+  三十对格子里有两对在新镜像上反而<em>更高</em>，而这三十对里 Triton 的时间只在 21 对上变快，
+  定制 kernel 的时间却在 25 对上<em>变慢</em>。两条臂都动了。说明已改成这样，
+  <code>verify_doc_figures.py</code> 把这两个计数都钉住了。
 </div>
 
 <div class="foot-note">

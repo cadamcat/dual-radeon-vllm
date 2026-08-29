@@ -3128,6 +3128,26 @@ def main():
            sum(1 for lg, fn in zip(("en", "zh"), pr)
                if '<p class="sub">%s</p>' % (a.get("sub") or {}).get(lg) in XPAGES[fn]))
 
+    # figure 1's caption said the newer image is uniformly lower because the
+    # fallback got faster and not because the custom kernel got slower. Both
+    # halves are false in the data it draws, so both counts are pinned.
+    QV = json.loads(xblock(XPAGES["gqa-gate-costs-nothing.html"], "figures"))["fig1"]["versions"]
+    q0 = {(r["shape"], c["ctx"]): c for r in QV[0]["rows"] for c in r["cells"]}
+    q1 = {(r["shape"], c["ctx"]): c for r in QV[1]["rows"] for c in r["cells"]}
+    ck("gqa article, paired cells across the two images", "30", len(q0))
+    ck("gqa article, cells where the newer ratio is higher", "2",
+       sum(1 for k in q0 if q1[k]["ratio"] > q0[k]["ratio"]))
+    ck("gqa article, cells where the Triton fallback got faster", "21",
+       sum(1 for k in q0 if q1[k]["triton_ms"] < q0[k]["triton_ms"]))
+    ck("gqa article, cells where the custom kernel got slower", "25",
+       sum(1 for k in q0 if q1[k]["ck_ms"] > q0[k]["ck_ms"]))
+    for fn, phrase in (("gqa-gate-costs-nothing.html",
+                        "Both arms moved between the images and this comparison separates neither"),
+                       ("gqa-gate-costs-nothing.zh.html",
+                        "\u4e24\u6761\u81c2\u5728\u4e24\u4e2a\u955c\u50cf\u4e4b\u95f4\u90fd\u52a8\u4e86")):
+        ck(f"gqa article {fn}, the caption no longer attributes it", "1",
+           1 if fl(phrase) in flat[fn] else 0)
+
     # --- a shared script reaches for ids that must exist in both bodies ------
     # The Chinese page takes the English script byte for byte, so a container
     # renamed on one side and not the other leaves getElementById returning null
@@ -3168,6 +3188,22 @@ def main():
         # only reach a reader through this block
         ck("index %s, carries the article data" % fn, "1",
            1 if xblock(XI[fn], "articles") else 0)
+    # the index prose names the sittings and the gap between them, which is a
+    # claim about the timeline drawn directly below it
+    XSIT = sorted({d for a in AJ for d in (a.get("dates") or [])})
+    xday = lambda d: (int(d[:4]), int(d[5:7]), int(d[8:10]))
+    ck("index, distinct sitting dates on the timeline", "9", len(XSIT))
+    ck("index, the sittings before the long gap", "4",
+       sum(1 for d in XSIT if d <= "2026-08-01"))
+    ck("index, the long gap is three weeks", "22",
+       xday(XSIT[4])[2] - xday(XSIT[3])[2])
+    for fn, phrase in (("index.html",
+                        "on 25, 26 and 28 July and on 1 August, then not again for three weeks"),
+                       ("index.zh.html",
+                        "\u5728 7 \u6708 25\u300126\u300128 \u65e5\u548c 8 \u6708 1 \u65e5\u8dd1\u7684")):
+        ck("index %s, the prose names the sittings" % fn, "1",
+           1 if fl(phrase) in re.sub(r"\s+", " ", XI[fn]) else 0)
+
     ck("index, the two versions share one data block", "1",
        1 if xblock(XI[XIP[0]], "articles") == xblock(XI[XIP[1]], "articles") else 0)
     ck("index, the data block is the file on disk", "1",
