@@ -26,6 +26,30 @@
   .card-est > span { font-family:var(--mono); font-size:.63rem; letter-spacing:.11em;
                      text-transform:uppercase; color:var(--accent); font-weight:700;
                      flex:0 0 auto; padding-top:.15em; }
+  /* --- the small figure each card carries -------------------------------
+     Drawn from that article's own figures-*.json. Not interactive: the whole
+     card is one link, so nothing inside it may take a click. */
+  .card-fig { margin:.85em 0 .2em; padding:.7em .8em .55em;
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; }
+  .card-fig svg { display:block; width:100%; height:74px; overflow:visible; }
+  .card-fig .cf-unit { font-family:var(--mono); font-size:.63rem; letter-spacing:.06em;
+    color:var(--text-dim); margin-top:.45em; }
+  .cf-line { fill:none; stroke:var(--m1); stroke-width:2;
+    stroke-linejoin:round; stroke-linecap:round; }
+  .cf-line.bad { stroke:var(--red); }
+  .cf-dot { fill:var(--m1); }
+  .cf-dot.bad { fill:var(--red); }
+  .cf-rule { stroke:var(--border-2); stroke-width:1; stroke-dasharray:3 3; }
+  .cf-rows { display:grid; gap:.3em; }
+  .cf-row { display:grid; grid-template-columns:minmax(0,9.6em) 1fr auto; gap:.55em;
+    align-items:center; font-family:var(--mono); font-size:.66rem; color:var(--text-dim); }
+  .cf-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cf-track { height:9px; background:var(--border); border-radius:5px; overflow:hidden; }
+  .cf-fill { display:block; height:100%; background:var(--m1); border-radius:5px; }
+  .cf-fill.bad { background:var(--red); }
+  .cf-v { color:var(--text-2); }
+  .cf-ok { color:var(--green); }
+  .cf-no { color:var(--red); }
   .card-chips { display:flex; flex-wrap:wrap; gap:.4em; margin-top:.9em; }
   .card-chips .chip { font-size:.68rem; padding:.24em .7em; }
 

@@ -307,6 +307,30 @@
   .card-est > span { font-family:var(--mono); font-size:.63rem; letter-spacing:.11em;
                      text-transform:uppercase; color:var(--accent); font-weight:700;
                      flex:0 0 auto; padding-top:.15em; }
+  /* --- the small figure each card carries -------------------------------
+     Drawn from that article's own figures-*.json. Not interactive: the whole
+     card is one link, so nothing inside it may take a click. */
+  .card-fig { margin:.85em 0 .2em; padding:.7em .8em .55em;
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; }
+  .card-fig svg { display:block; width:100%; height:74px; overflow:visible; }
+  .card-fig .cf-unit { font-family:var(--mono); font-size:.63rem; letter-spacing:.06em;
+    color:var(--text-dim); margin-top:.45em; }
+  .cf-line { fill:none; stroke:var(--m1); stroke-width:2;
+    stroke-linejoin:round; stroke-linecap:round; }
+  .cf-line.bad { stroke:var(--red); }
+  .cf-dot { fill:var(--m1); }
+  .cf-dot.bad { fill:var(--red); }
+  .cf-rule { stroke:var(--border-2); stroke-width:1; stroke-dasharray:3 3; }
+  .cf-rows { display:grid; gap:.3em; }
+  .cf-row { display:grid; grid-template-columns:minmax(0,9.6em) 1fr auto; gap:.55em;
+    align-items:center; font-family:var(--mono); font-size:.66rem; color:var(--text-dim); }
+  .cf-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cf-track { height:9px; background:var(--border); border-radius:5px; overflow:hidden; }
+  .cf-fill { display:block; height:100%; background:var(--m1); border-radius:5px; }
+  .cf-fill.bad { background:var(--red); }
+  .cf-v { color:var(--text-2); }
+  .cf-ok { color:var(--green); }
+  .cf-no { color:var(--red); }
   .card-chips { display:flex; flex-wrap:wrap; gap:.4em; margin-top:.9em; }
   .card-chips .chip { font-size:.68rem; padding:.24em .7em; }
 
@@ -720,15 +744,7 @@ addEventListener("DOMContentLoaded", function () {
   </div>
 </header>
 
-<h2><span class="n">1</span>Articles</h2>
-
-<p>Eleven write-ups, newest first. Under each title is the line that article used to lead with; under
-that, what it establishes, in the words the synthesis piece uses to classify it, so the two cannot
-describe a finding differently.</p>
-
-<div class="cards" id="cards"></div>
-
-<h2><span class="n">2</span>What this machine does today</h2>
+<h2><span class="n">1</span>What this machine does today</h2>
 
 <p>One line per model, each of them that model's fastest measured configuration rather than a common
 one. Five of the seven come from a single campaign on one stack and are directly comparable; the other
@@ -754,6 +770,15 @@ campaign is no longer the best this machine can do. Every line says which it is.
     Hover a point for the run count and the stack it took.
   </figcaption>
 </figure>
+
+<h2><span class="n">2</span>Articles</h2>
+
+<p>Eleven write-ups, newest first by the date on the card — the last day evidence for that article
+was taken here, reported upstream or re-read. Under each title is the line that article used to lead
+with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
+two cannot describe a finding differently.</p>
+
+<div class="cards" id="cards"></div>
 
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
@@ -1478,6 +1503,408 @@ topology. The shapes transfer; the levels are the worst case.</p>
   "ctx_min": 500,
   "ctx_max": 50000,
   "fastest": 110.71
+ },
+ "cards": {
+  "hybrid-ssm-collapse": {
+   "form": "line",
+   "unit": "cTokS",
+   "xlog": true,
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       500,
+       12.120000000000001
+      ],
+      [
+       1000,
+       11.649999999999999
+      ],
+      [
+       2000,
+       10.99
+      ],
+      [
+       4000,
+       10.03
+      ],
+      [
+       6000,
+       9.27
+      ],
+      [
+       8000,
+       8.53
+      ],
+      [
+       12000,
+       7.24
+      ],
+      [
+       16000,
+       6.345000000000001
+      ],
+      [
+       20000,
+       5.67
+      ],
+      [
+       24000,
+       5.08
+      ],
+      [
+       32000,
+       4.25
+      ]
+     ],
+     "kind": "bad"
+    }
+   ],
+   "src": "figures.json fig1"
+  },
+  "a100-vs-two-radeons": {
+   "form": "line",
+   "unit": "cAdv",
+   "xlog": true,
+   "rule": 1.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       1.47830150887969
+      ],
+      [
+       8192,
+       1.1957312252964427
+      ],
+      [
+       16384,
+       1.1432873672531303
+      ],
+      [
+       32768,
+       1.8738102548357385
+      ]
+     ]
+    }
+   ],
+   "src": "figures-a100.json fig1"
+  },
+  "speculative-decoding-net-loss": {
+   "form": "line",
+   "unit": "cPct",
+   "xlog": true,
+   "rule": 0.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       36.87240902809765
+      ],
+      [
+       8192,
+       -14.037397945746633
+      ],
+      [
+       16384,
+       -32.36961451247166
+      ],
+      [
+       32768,
+       -70.80171560541075
+      ]
+     ]
+    }
+   ],
+   "src": "figures-spec.json fig1"
+  },
+  "w4a16-two-problems": {
+   "form": "line",
+   "unit": "cMs",
+   "xlog": true,
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       60.16792569841658
+      ],
+      [
+       8192,
+       58.03071175302779
+      ],
+      [
+       32768,
+       62.79169235910689
+      ]
+     ]
+    }
+   ],
+   "src": "figures-w4a16.json fig1"
+  },
+  "measuring-decode": {
+   "form": "line",
+   "unit": "cRun",
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       1,
+       54.81156134326944
+      ],
+      [
+       2,
+       75.0474233233901
+      ],
+      [
+       3,
+       79.09117737183264
+      ],
+      [
+       4,
+       79.1489049678122
+      ]
+     ]
+    }
+   ],
+   "src": "figures-measure.json fig2"
+  },
+  "gqa-gate-costs-nothing": {
+   "form": "line",
+   "unit": "cRatio",
+   "xlog": true,
+   "rule": 1.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       2.0566375663891474
+      ],
+      [
+       2048,
+       2.2833838630312258
+      ],
+      [
+       4096,
+       2.870312200761237
+      ],
+      [
+       8192,
+       2.512962696196673
+      ],
+      [
+       16384,
+       4.110769965467451
+      ],
+      [
+       32768,
+       4.829520235162114
+      ]
+     ]
+    },
+    {
+     "pts": [
+      [
+       1024,
+       2.312339653395059
+      ],
+      [
+       2048,
+       2.4182078719381446
+      ],
+      [
+       4096,
+       3.2118707197607126
+      ],
+      [
+       8192,
+       3.8606171570208914
+      ],
+      [
+       16384,
+       6.525235804291858
+      ],
+      [
+       32768,
+       7.278998789318378
+      ]
+     ]
+    },
+    {
+     "pts": [
+      [
+       1024,
+       2.1397195799460507
+      ],
+      [
+       2048,
+       2.2401581293984263
+      ],
+      [
+       4096,
+       1.8372758188208707
+      ],
+      [
+       8192,
+       1.8833531027937764
+      ],
+      [
+       16384,
+       2.712422601982096
+      ],
+      [
+       32768,
+       2.863281182924803
+      ]
+     ]
+    }
+   ],
+   "src": "figures-gqa.json fig1"
+  },
+  "moe-written-off-by-eager": {
+   "form": "bars",
+   "unit": "cTokS",
+   "bars": [
+    {
+     "label": "gemma-4-26B-A4B",
+     "v": 107.82
+    },
+    {
+     "label": "Qwen3-8B",
+     "v": 79.58500000000001
+    },
+    {
+     "label": "gemma-4-12B-it",
+     "v": 59.905
+    },
+    {
+     "label": "gemma-4-31B-it",
+     "v": 43.155
+    },
+    {
+     "label": "Qwen3.6-27B",
+     "v": 12.120000000000001
+    },
+    {
+     "label": "gemma-4-26B-A4B",
+     "note": "@cEager",
+     "v": 15.0,
+     "kind": "bad"
+    }
+   ],
+   "src": "figures-moe.json fig1"
+  },
+  "weight-loading-19x": {
+   "form": "bars",
+   "unit": "cMsLog",
+   "log": true,
+   "bars": [
+    {
+     "label": "-28 stock",
+     "v": 16019.6,
+     "kind": "bad"
+    },
+    {
+     "label": "-28 +342981f",
+     "v": 17.0,
+     "kind": null
+    },
+    {
+     "label": "-30 stock",
+     "v": 15.3,
+     "kind": null
+    }
+   ],
+   "src": "figures-loader.json fig1"
+  },
+  "rdna3-second-class": {
+   "form": "bars",
+   "unit": "cFindings",
+   "bars": [
+    {
+     "label": "@cRdna3",
+     "v": 3,
+     "kind": "bad"
+    },
+    {
+     "label": "@cNotRdna3",
+     "v": 5
+    }
+   ],
+   "src": "figures-rdna3.json fig1"
+  },
+  "reporting-a-non-reproduction": {
+   "form": "bars",
+   "unit": "cInits",
+   "bars": [
+    {
+     "label": "default",
+     "v": 20
+    },
+    {
+     "label": "p2pdisable",
+     "v": 20
+    },
+    {
+     "label": "prod",
+     "v": 20
+    },
+    {
+     "label": "ch1",
+     "v": 15
+    },
+    {
+     "label": "ch4",
+     "v": 15
+    },
+    {
+     "label": "ch8",
+     "v": 15
+    },
+    {
+     "label": "ch16",
+     "v": 15
+    },
+    {
+     "label": "shmoff",
+     "v": 15
+    }
+   ],
+   "src": "figures-6565.json fig1"
+  },
+  "rccl-atomics-hostcall": {
+   "form": "status",
+   "unit": "cHostcall",
+   "rows": [
+    {
+     "label": "ROCm 7.0 (2.26.6)",
+     "ok": true,
+     "note": "0"
+    },
+    {
+     "label": "ROCm 7.1.1 (2.27.7-b38)",
+     "ok": true,
+     "note": "0"
+    },
+    {
+     "label": "ROCm 7.2+ (2.27.7-b43+)",
+     "ok": false,
+     "note": "N"
+    },
+    {
+     "label": "ROCm 7.13 / 7.14 (2.30.4)",
+     "ok": false,
+     "note": "N"
+    }
+   ],
+   "src": "figures-rccl.json shipped"
+  }
  }
 }</script>
 <script type="application/json" id="articles">{
@@ -1543,77 +1970,6 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "synthesis",
     "RDNA3",
     "ROCm"
-   ]
-  },
-  {
-   "slug": "measuring-decode",
-   "href": {
-    "en": "articles/measuring-decode.html",
-    "zh": "articles/measuring-decode.zh.html"
-   },
-   "title": {
-    "en": "Two harnesses agree to 0.44 %, and the first of four runs read 31 % low",
-    "zh": "两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %"
-   },
-   "sub": {
-    "en": "How to measure decode on a machine like this",
-    "zh": "在这样一台机器上怎么测 decode"
-   },
-   "blurb": {
-    "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
-    "zh": "两套 harness 吻合到 0.44%，而弄清这一点用了四次相同的运行，其中第一次低了 31%。每个点带什么、制图级的线划在哪里，以及有一格里极差和标准差对方向的判断相反。"
-   },
-   "establishes": {
-    "en": "a decode number needs a run count and a range beside it, because this machine's first run is not its steady state",
-    "zh": "一个解码数字旁边得写上运行次数和极差，因为这台机器的第一次运行不是稳态"
-   },
-   "dates": [
-    "2026-08-26"
-   ],
-   "date": "2026-08-26",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelCalibrated",
-     "v": [
-      "Qwen3-8B",
-      "bf16"
-     ]
-    },
-    {
-     "kind": "scale",
-     "w": "scaleLedgerRows",
-     "v": [
-      "170"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-08-26"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "methodology",
-    "calibration",
-    "nondeterminism"
    ]
   },
   {
@@ -1763,6 +2119,149 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "paged attention",
     "gqa_ratio",
     "vllm#54210"
+   ]
+  },
+  {
+   "slug": "w4a16-two-problems",
+   "href": {
+    "en": "articles/w4a16-two-problems.html",
+    "zh": "articles/w4a16-two-problems.zh.html"
+   },
+   "title": {
+    "en": "A flat 60 ms per step, under a cost that grows with context",
+    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
+   },
+   "sub": {
+    "en": "Twelve tokens a second was two problems",
+    "zh": "12 tok/s 是两个问题"
+   },
+   "blurb": {
+    "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
+    "zh": "同一个模型家族的两种打包，在1K 上差 3.24×，在32K 上差 1.27×。把它当毫秒而不是倍数来读，就是一笔固定开销压在一笔增长开销下面，而两者各自有自己的上游修复。"
+   },
+   "establishes": {
+    "en": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
+    "zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel"
+   },
+   "dates": [
+    "2026-08-27"
+   ],
+   "date": "2026-08-27",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmTwo",
+     "v": [
+      "0.23.1.dev",
+      "0.27.1.dev5"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelDot",
+     "v": [
+      "Qwen3.8-27B",
+      "compressed-tensors int4"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-27"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "W4A16",
+    "kernel selection",
+    "vllm#40977"
+   ]
+  },
+  {
+   "slug": "measuring-decode",
+   "href": {
+    "en": "articles/measuring-decode.html",
+    "zh": "articles/measuring-decode.zh.html"
+   },
+   "title": {
+    "en": "Two harnesses agree to 0.44 %, and the first of four runs read 31 % low",
+    "zh": "两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %"
+   },
+   "sub": {
+    "en": "How to measure decode on a machine like this",
+    "zh": "在这样一台机器上怎么测 decode"
+   },
+   "blurb": {
+    "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
+    "zh": "两套 harness 吻合到 0.44%，而弄清这一点用了四次相同的运行，其中第一次低了 31%。每个点带什么、制图级的线划在哪里，以及有一格里极差和标准差对方向的判断相反。"
+   },
+   "establishes": {
+    "en": "a decode number needs a run count and a range beside it, because this machine's first run is not its steady state",
+    "zh": "一个解码数字旁边得写上运行次数和极差，因为这台机器的第一次运行不是稳态"
+   },
+   "dates": [
+    "2026-08-26"
+   ],
+   "date": "2026-08-26",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelCalibrated",
+     "v": [
+      "Qwen3-8B",
+      "bf16"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleLedgerRows",
+     "v": [
+      "170"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-26"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "methodology",
+    "calibration",
+    "nondeterminism"
    ]
   },
   {
@@ -1982,149 +2481,6 @@ topology. The shapes transfer; the levels are the worst case.</p>
    ]
   },
   {
-   "slug": "moe-written-off-by-eager",
-   "href": {
-    "en": "articles/moe-written-off-by-eager.html",
-    "zh": "articles/moe-written-off-by-eager.zh.html"
-   },
-   "title": {
-    "en": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
-    "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
-   },
-   "sub": {
-    "en": "The fastest model here was written off at 15 tok/s",
-    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
-   },
-   "blurb": {
-    "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
-    "zh": "torch.compile 只给了二十分钟，而它需要二十六，于是这次运行被压进 eager 模式，一个 128 专家的 MoE 被记作 15 tok/s。编译之后是 107.8，而这个开关路上还凭空造出了两个定性结论。"
-   },
-   "establishes": {
-    "en": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
-    "zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉"
-   },
-   "dates": [
-    "2026-07-25"
-   ],
-   "date": "2026-07-25",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelExperts",
-     "v": [
-      "gemma-4-26B-A4B",
-      "128"
-     ]
-    },
-    {
-     "kind": "platform",
-     "w": "platHostCores",
-     "v": [
-      "8"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-07-25"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "MoE",
-    "torch.compile",
-    "vllm#53892"
-   ]
-  },
-  {
-   "slug": "w4a16-two-problems",
-   "href": {
-    "en": "articles/w4a16-two-problems.html",
-    "zh": "articles/w4a16-two-problems.zh.html"
-   },
-   "title": {
-    "en": "A flat 60 ms per step, under a cost that grows with context",
-    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
-   },
-   "sub": {
-    "en": "Twelve tokens a second was two problems",
-    "zh": "12 tok/s 是两个问题"
-   },
-   "blurb": {
-    "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
-    "zh": "同一个模型家族的两种打包，在1K 上差 3.24×，在32K 上差 1.27×。把它当毫秒而不是倍数来读，就是一笔固定开销压在一笔增长开销下面，而两者各自有自己的上游修复。"
-   },
-   "establishes": {
-    "en": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
-    "zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel"
-   },
-   "dates": [
-    "2026-08-27"
-   ],
-   "date": "2026-08-27",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "stack",
-     "w": "stackVllmTwo",
-     "v": [
-      "0.23.1.dev",
-      "0.27.1.dev5"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelDot",
-     "v": [
-      "Qwen3.8-27B",
-      "compressed-tensors int4"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-08-27"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "W4A16",
-    "kernel selection",
-    "vllm#40977"
-   ]
-  },
-  {
    "slug": "rccl-atomics-hostcall",
    "href": {
     "en": "articles/rccl-atomics-hostcall.html",
@@ -2199,6 +2555,77 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "PCIe atomics",
     "hostcall",
     "ROCm#6520"
+   ]
+  },
+  {
+   "slug": "moe-written-off-by-eager",
+   "href": {
+    "en": "articles/moe-written-off-by-eager.html",
+    "zh": "articles/moe-written-off-by-eager.zh.html"
+   },
+   "title": {
+    "en": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
+    "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
+   },
+   "sub": {
+    "en": "The fastest model here was written off at 15 tok/s",
+    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
+   },
+   "blurb": {
+    "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
+    "zh": "torch.compile 只给了二十分钟，而它需要二十六，于是这次运行被压进 eager 模式，一个 128 专家的 MoE 被记作 15 tok/s。编译之后是 107.8，而这个开关路上还凭空造出了两个定性结论。"
+   },
+   "establishes": {
+    "en": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
+    "zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉"
+   },
+   "dates": [
+    "2026-07-25"
+   ],
+   "date": "2026-07-25",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelExperts",
+     "v": [
+      "gemma-4-26B-A4B",
+      "128"
+     ]
+    },
+    {
+     "kind": "platform",
+     "w": "platHostCores",
+     "v": [
+      "8"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-07-25"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "MoE",
+    "torch.compile",
+    "vllm#53892"
    ]
   },
   {
@@ -2328,6 +2755,22 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
  "estLabel": "establishes",
+ "cTokS": "decode tok/s at batch 1 · higher is better",
+ "cAdv": "how many times ahead one A100 is, against context",
+ "cPct": "per cent change from turning speculation on, against context",
+ "cMs": "milliseconds per decode step the packaging costs, against context",
+ "cRun": "decode tok/s over four identical runs, back to back",
+ "cRatio": "the excluded kernel against the fallback it is passed over for",
+ "cMsLog": "milliseconds for one 32 MiB host-to-device copy · log scale",
+ "cFindings": "findings, by what the evidence supports",
+ "cInits": "cold communicator initialisations, all correct",
+ "cHostcall": "what the shipped library declares, and what it does",
+ "cRdna3": "RDNA3's",
+ "cNotRdna3": "not RDNA3's",
+ "cEager": "eager",
+ "cWorks": "works",
+ "cFails": "fails",
+ "cHostcallN": "hostcall {n}",
  "tlKinds": {"measured": "measured here", "reported": "reported upstream",
              "reviewed": "statuses re-read"},
  "tlNote": "{a} to {b} · {d} days end to end · {n} articles"
@@ -2405,6 +2848,107 @@ topology. The shapes transfer; the levels are the worst case.</p>
     return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
   }
 
+  /* ---------- the small figure on each card ----------
+     One per article, drawn from that article's own figures-*.json so a card and
+     the page it links to cannot disagree. Deliberately not interactive: the
+     whole card is a single link, so nothing in here takes a click or a hover.
+     A label of the form "@key" is a strings-table lookup, because it is prose;
+     a bare label is a machine string and is the same in both languages. */
+  var CARDFIG = JSON.parse(document.getElementById("bestdata").textContent).cards || {};
+
+  /* Every strings key is named literally here rather than looked up through a
+     variable, because the build check asserts that the script references each
+     key it declares -- an indirect S[k] would hide an unused or misspelt one. */
+  var CFUNIT = {
+    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
+    cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
+    cInits: S.cInits, cHostcall: S.cHostcall
+  };
+  var CFLABEL = { cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager };
+
+  function cfLabel(s) {
+    return s && s.charAt(0) === "@" ? (CFLABEL[s.slice(1)] || s.slice(1)) : s;
+  }
+
+  function cfLine(c) {
+    var W = 260, H = 74, PX = 6, PY = 8;
+    var all = [];
+    c.series.forEach(function (s) { s.pts.forEach(function (p) { all.push(p); }); });
+    var xs = all.map(function (p) { return c.xlog ? Math.log(p[0]) : p[0]; });
+    var ys = all.map(function (p) { return p[1]; });
+    if (c.rule !== undefined) ys.push(c.rule);
+    // where the claim is about the level rather than the shape, anchor at zero:
+    // a sparkline scaled to its own range turns an 8 % spread into a canyon,
+    // which is the opposite of what the w4a16 card is there to show
+    if (c.y0 !== undefined) ys.push(c.y0);
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; }
+    var px = function (v) {
+      var t = x1 - x0 < 1e-9 ? 0.5 : ((c.xlog ? Math.log(v) : v) - x0) / (x1 - x0);
+      return PX + t * (W - 2 * PX);
+    };
+    var py = function (v) { return H - PY - (v - y0) / (y1 - y0) * (H - 2 * PY); };
+    var out = "";
+    if (c.rule !== undefined) {
+      out += '<line class="cf-rule" x1="' + PX + '" x2="' + (W - PX) +
+             '" y1="' + py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
+    }
+    c.series.forEach(function (s) {
+      var k = s.kind === "bad" ? " bad" : "";
+      out += '<polyline class="cf-line' + k + '" points="' +
+             s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
+                  .join(" ") + '"/>';
+      s.pts.forEach(function (p) {
+        out += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
+               '" cy="' + py(p[1]).toFixed(1) + '" r="2.4"/>';
+      });
+    });
+    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" ' +
+           'aria-hidden="true" focusable="false">' + out + "</svg>";
+  }
+
+  function cfBars(c) {
+    var vs = c.bars.map(function (b) { return b.v; });
+    var top = Math.max.apply(null, vs);
+    var scale = function (v) {
+      if (!c.log) return v / top * 100;
+      return Math.log10(Math.max(v, 1e-3) + 1) / Math.log10(top + 1) * 100;
+    };
+    return '<div class="cf-rows">' + c.bars.map(function (b) {
+      var k = b.kind === "bad" ? " bad" : "";
+      return '<div class="cf-row"><span class="cf-name">' + esc(cfLabel(b.label)) + "</span>" +
+             '<span class="cf-track"><i class="cf-fill' + k + '" style="width:' +
+             scale(b.v).toFixed(1) + '%"></i></span><span class="cf-v' + k + '">' +
+             esc(fmtnum(b.v)) + (b.note ? " " + esc(cfLabel(b.note)) : "") + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function cfStatus(c) {
+    return '<div class="cf-rows">' + c.rows.map(function (r) {
+      return '<div class="cf-row"><span class="cf-name">' + esc(r.label) + "</span>" +
+             '<span class="cf-v">' + S.cHostcallN.replace("{n}", esc(r.note)) + "</span>" +
+             '<span class="' + (r.ok ? "cf-ok" : "cf-no") + '">' +
+             (r.ok ? S.cWorks : S.cFails) + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function fmtnum(v) {
+    if (v === Math.round(v)) return String(v);
+    if (v >= 1000) return String(Math.round(v));
+    if (v >= 100) return v.toFixed(0);
+    if (v >= 10) return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
+  function cardFig(slug) {
+    var c = CARDFIG[slug];
+    if (!c) return "";
+    var body = c.form === "line" ? cfLine(c) : c.form === "bars" ? cfBars(c) : cfStatus(c);
+    return '<div class="card-fig">' + body +
+           '<div class="cf-unit">' + esc(CFUNIT[c.unit] || "") + "</div></div>";
+  }
+
   /* ---------- the cards ---------- */
   var box = document.getElementById("cards");
   A.forEach(function (a) {
@@ -2420,6 +2964,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
       '<p class="card-est"><span>' + esc(S.estLabel) + "</span>" +
       esc(a.establishes[LANG]) + "</p>" +
       "<p>" + esc(a.blurb[LANG]) + "</p>" +
+      cardFig(a.slug) +
       '<div class="card-chips">' + rest.map(chip).join("") + "</div>" +
       '<div class="card-foot"><span class="card-tags">' +
       a.tags.map(function (t) { return "<span>" + esc(t) + "</span>"; }).join("") +

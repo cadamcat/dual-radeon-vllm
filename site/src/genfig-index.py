@@ -178,3 +178,86 @@ print("overrides:", [(o["model"], round(o["min"], 2), round(o["max"], 2)) for o 
 print(f'the two campaigns agree on {REPRO["cells"]} cells to '
       f'{REPRO["worst_pct"]:.2f}% at worst, {REPRO["median_pct"]:.2f}% median')
 print("no faster measurement is left undrawn")
+
+# --- one small figure per article card -------------------------------------
+# Each card's numbers are read out of that article's own figures-*.json, so a
+# card and the page it links to cannot disagree about what the article found --
+# the same rule the one-line summary already follows. Nothing here is typed.
+D = pathlib.Path(__file__).parent
+fig = lambda n: json.load(open(D / n))
+
+A_HYB, A_A100, A_SPEC = fig("figures.json"), fig("figures-a100.json"), fig("figures-spec.json")
+A_W4, A_MEAS, A_MOE = fig("figures-w4a16.json"), fig("figures-measure.json"), fig("figures-moe.json")
+A_LOAD, A_RCCL, A_RD = fig("figures-loader.json"), fig("figures-rccl.json"), fig("figures-rdna3.json")
+A_GQA, A_65 = fig("figures-gqa.json"), fig("figures-6565.json")
+
+# the hybrid collapse: the one series the article is named after
+_hyb = [s for s in A_HYB["fig1"]["series"] if s["arch"] == "hybrid SSM"][0]
+# gqa: the shapes the gate excludes, every ratio above parity
+_gqa023 = A_GQA["fig1"]["versions"][0]
+_gqaex = [r for r in _gqa023["rows"] if not r["admitted"]]
+
+cards = {
+ "hybrid-ssm-collapse": {
+   "form": "line", "unit": "cTokS", "xlog": True, "y0": 0,
+   "series": [{"pts": [[p["ctx"], p["tok_s"]] for p in _hyb["points"]], "kind": "bad"}],
+   "src": "figures.json fig1"},
+ "a100-vs-two-radeons": {
+   "form": "line", "unit": "cAdv", "xlog": True, "rule": 1.0,
+   "series": [{"pts": [[r["ctx"], r["advantage"]] for r in A_A100["fig1"]["rows"]]}],
+   "src": "figures-a100.json fig1"},
+ "speculative-decoding-net-loss": {
+   "form": "line", "unit": "cPct", "xlog": True, "rule": 0.0,
+   "series": [{"pts": [[r["ctx"], r["delta_pct"]] for r in A_SPEC["fig1"]["rows"]]}],
+   "src": "figures-spec.json fig1"},
+ "w4a16-two-problems": {
+   "form": "line", "unit": "cMs", "xlog": True, "y0": 0,
+   "series": [{"pts": [[c["ctx"], c["penalty_ms"]] for c in A_W4["fig1"]["cells"]]}],
+   "src": "figures-w4a16.json fig1"},
+ "measuring-decode": {
+   "form": "line", "unit": "cRun", "y0": 0,
+   "series": [{"pts": [[i + 1, v] for i, v in enumerate(A_MEAS["fig2"]["rows"][0]["runs"])]}],
+   "src": "figures-measure.json fig2"},
+ "gqa-gate-costs-nothing": {
+   "form": "line", "unit": "cRatio", "xlog": True, "rule": 1.0,
+   "series": [{"pts": [[c["ctx"], c["ratio"]] for c in r["cells"]]} for r in _gqaex],
+   "src": "figures-gqa.json fig1"},
+ "moe-written-off-by-eager": {
+   "form": "bars", "unit": "cTokS",
+   "bars": ([{"label": b["model"], "v": b["tok_s"]} for b in A_MOE["fig1"]["bars"]]
+            + [{"label": A_MOE["fig1"]["bars"][0]["model"], "note": "@cEager",
+                "v": A_MOE["fig1"]["eager"]["tok_s"], "kind": "bad"}]),
+   "src": "figures-moe.json fig1"},
+ "weight-loading-19x": {
+   "form": "bars", "unit": "cMsLog", "log": True,
+   # the article calls these kernels -28 and -30; the label is derived from the
+   # kernel string rather than typed, and says which of the two -28s this is
+   "bars": [{"label": re.search(r"-\d+", s["kernel"]).group(0)
+                      + (" stock" if s["shipped"] else " +342981f"),
+             "v": [c for c in s["cases"] if c["key"] == "rw_p_resident"][0]["ms"],
+             "kind": "bad" if i == 0 else None}
+            for i, s in enumerate(A_LOAD["fig1"]["states"])],
+   "src": "figures-loader.json fig1"},
+ "rdna3-second-class": {
+   "form": "bars", "unit": "cFindings",
+   "bars": [{"label": "@cRdna3", "v": A_RD["fig1"]["counts"]["rdna3"], "kind": "bad"},
+            {"label": "@cNotRdna3",
+             "v": A_RD["fig1"]["total"] - A_RD["fig1"]["counts"]["rdna3"]}],
+   "src": "figures-rdna3.json fig1"},
+ "reporting-a-non-reproduction": {
+   "form": "bars", "unit": "cInits",
+   "bars": [{"label": a["arm"], "v": a["n"]} for a in A_65["fig1"]["arms"]],
+   "src": "figures-6565.json fig1"},
+ "rccl-atomics-hostcall": {
+   "form": "status", "unit": "cHostcall",
+   "rows": [{"label": s["rccl"], "ok": s["behaviour"] == "works",
+             "note": "0" if s["hostcall"] == "0" else "N"}
+            for s in A_RCCL["shipped"]],
+   "src": "figures-rccl.json shipped"},
+}
+out["cards"] = cards
+json.dump(out, open(D / "figures-index.json", "w"), ensure_ascii=False, indent=1)
+print(f"cards: {len(cards)} "
+      f"({sum(1 for c in cards.values() if c['form'] == 'line')} line, "
+      f"{sum(1 for c in cards.values() if c['form'] == 'bars')} bars, "
+      f"{sum(1 for c in cards.values() if c['form'] == 'status')} status)")

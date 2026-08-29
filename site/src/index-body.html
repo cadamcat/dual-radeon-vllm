@@ -9,15 +9,7 @@ __CHIPS__
   </div>
 </header>
 
-<h2><span class="n">1</span>Articles</h2>
-
-<p>Eleven write-ups, newest first. Under each title is the line that article used to lead with; under
-that, what it establishes, in the words the synthesis piece uses to classify it, so the two cannot
-describe a finding differently.</p>
-
-<div class="cards" id="cards"></div>
-
-<h2><span class="n">2</span>What this machine does today</h2>
+<h2><span class="n">1</span>What this machine does today</h2>
 
 <p>One line per model, each of them that model's fastest measured configuration rather than a common
 one. Five of the seven come from a single campaign on one stack and are directly comparable; the other
@@ -43,6 +35,15 @@ campaign is no longer the best this machine can do. Every line says which it is.
     Hover a point for the run count and the stack it took.
   </figcaption>
 </figure>
+
+<h2><span class="n">2</span>Articles</h2>
+
+<p>Eleven write-ups, newest first by the date on the card — the last day evidence for that article
+was taken here, reported upstream or re-read. Under each title is the line that article used to lead
+with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
+two cannot describe a finding differently.</p>
+
+<div class="cards" id="cards"></div>
 
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
@@ -110,6 +111,22 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
  "estLabel": "establishes",
+ "cTokS": "decode tok/s at batch 1 · higher is better",
+ "cAdv": "how many times ahead one A100 is, against context",
+ "cPct": "per cent change from turning speculation on, against context",
+ "cMs": "milliseconds per decode step the packaging costs, against context",
+ "cRun": "decode tok/s over four identical runs, back to back",
+ "cRatio": "the excluded kernel against the fallback it is passed over for",
+ "cMsLog": "milliseconds for one 32 MiB host-to-device copy · log scale",
+ "cFindings": "findings, by what the evidence supports",
+ "cInits": "cold communicator initialisations, all correct",
+ "cHostcall": "what the shipped library declares, and what it does",
+ "cRdna3": "RDNA3's",
+ "cNotRdna3": "not RDNA3's",
+ "cEager": "eager",
+ "cWorks": "works",
+ "cFails": "fails",
+ "cHostcallN": "hostcall {n}",
  "tlKinds": {"measured": "measured here", "reported": "reported upstream",
              "reviewed": "statuses re-read"},
  "tlNote": "{a} to {b} · {d} days end to end · {n} articles"
@@ -187,6 +204,107 @@ topology. The shapes transfer; the levels are the worst case.</p>
     return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
   }
 
+  /* ---------- the small figure on each card ----------
+     One per article, drawn from that article's own figures-*.json so a card and
+     the page it links to cannot disagree. Deliberately not interactive: the
+     whole card is a single link, so nothing in here takes a click or a hover.
+     A label of the form "@key" is a strings-table lookup, because it is prose;
+     a bare label is a machine string and is the same in both languages. */
+  var CARDFIG = JSON.parse(document.getElementById("bestdata").textContent).cards || {};
+
+  /* Every strings key is named literally here rather than looked up through a
+     variable, because the build check asserts that the script references each
+     key it declares -- an indirect S[k] would hide an unused or misspelt one. */
+  var CFUNIT = {
+    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
+    cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
+    cInits: S.cInits, cHostcall: S.cHostcall
+  };
+  var CFLABEL = { cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager };
+
+  function cfLabel(s) {
+    return s && s.charAt(0) === "@" ? (CFLABEL[s.slice(1)] || s.slice(1)) : s;
+  }
+
+  function cfLine(c) {
+    var W = 260, H = 74, PX = 6, PY = 8;
+    var all = [];
+    c.series.forEach(function (s) { s.pts.forEach(function (p) { all.push(p); }); });
+    var xs = all.map(function (p) { return c.xlog ? Math.log(p[0]) : p[0]; });
+    var ys = all.map(function (p) { return p[1]; });
+    if (c.rule !== undefined) ys.push(c.rule);
+    // where the claim is about the level rather than the shape, anchor at zero:
+    // a sparkline scaled to its own range turns an 8 % spread into a canyon,
+    // which is the opposite of what the w4a16 card is there to show
+    if (c.y0 !== undefined) ys.push(c.y0);
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; }
+    var px = function (v) {
+      var t = x1 - x0 < 1e-9 ? 0.5 : ((c.xlog ? Math.log(v) : v) - x0) / (x1 - x0);
+      return PX + t * (W - 2 * PX);
+    };
+    var py = function (v) { return H - PY - (v - y0) / (y1 - y0) * (H - 2 * PY); };
+    var out = "";
+    if (c.rule !== undefined) {
+      out += '<line class="cf-rule" x1="' + PX + '" x2="' + (W - PX) +
+             '" y1="' + py(c.rule).toFixed(1) + '" y2="' + py(c.rule).toFixed(1) + '"/>';
+    }
+    c.series.forEach(function (s) {
+      var k = s.kind === "bad" ? " bad" : "";
+      out += '<polyline class="cf-line' + k + '" points="' +
+             s.pts.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); })
+                  .join(" ") + '"/>';
+      s.pts.forEach(function (p) {
+        out += '<circle class="cf-dot' + k + '" cx="' + px(p[0]).toFixed(1) +
+               '" cy="' + py(p[1]).toFixed(1) + '" r="2.4"/>';
+      });
+    });
+    return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" ' +
+           'aria-hidden="true" focusable="false">' + out + "</svg>";
+  }
+
+  function cfBars(c) {
+    var vs = c.bars.map(function (b) { return b.v; });
+    var top = Math.max.apply(null, vs);
+    var scale = function (v) {
+      if (!c.log) return v / top * 100;
+      return Math.log10(Math.max(v, 1e-3) + 1) / Math.log10(top + 1) * 100;
+    };
+    return '<div class="cf-rows">' + c.bars.map(function (b) {
+      var k = b.kind === "bad" ? " bad" : "";
+      return '<div class="cf-row"><span class="cf-name">' + esc(cfLabel(b.label)) + "</span>" +
+             '<span class="cf-track"><i class="cf-fill' + k + '" style="width:' +
+             scale(b.v).toFixed(1) + '%"></i></span><span class="cf-v' + k + '">' +
+             esc(fmtnum(b.v)) + (b.note ? " " + esc(cfLabel(b.note)) : "") + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function cfStatus(c) {
+    return '<div class="cf-rows">' + c.rows.map(function (r) {
+      return '<div class="cf-row"><span class="cf-name">' + esc(r.label) + "</span>" +
+             '<span class="cf-v">' + S.cHostcallN.replace("{n}", esc(r.note)) + "</span>" +
+             '<span class="' + (r.ok ? "cf-ok" : "cf-no") + '">' +
+             (r.ok ? S.cWorks : S.cFails) + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function fmtnum(v) {
+    if (v === Math.round(v)) return String(v);
+    if (v >= 1000) return String(Math.round(v));
+    if (v >= 100) return v.toFixed(0);
+    if (v >= 10) return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
+  function cardFig(slug) {
+    var c = CARDFIG[slug];
+    if (!c) return "";
+    var body = c.form === "line" ? cfLine(c) : c.form === "bars" ? cfBars(c) : cfStatus(c);
+    return '<div class="card-fig">' + body +
+           '<div class="cf-unit">' + esc(CFUNIT[c.unit] || "") + "</div></div>";
+  }
+
   /* ---------- the cards ---------- */
   var box = document.getElementById("cards");
   A.forEach(function (a) {
@@ -202,6 +320,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
       '<p class="card-est"><span>' + esc(S.estLabel) + "</span>" +
       esc(a.establishes[LANG]) + "</p>" +
       "<p>" + esc(a.blurb[LANG]) + "</p>" +
+      cardFig(a.slug) +
       '<div class="card-chips">' + rest.map(chip).join("") + "</div>" +
       '<div class="card-foot"><span class="card-tags">' +
       a.tags.map(function (t) { return "<span>" + esc(t) + "</span>"; }).join("") +

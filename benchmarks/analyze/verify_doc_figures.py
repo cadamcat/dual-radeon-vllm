@@ -3104,6 +3104,7 @@ def main():
        == ["rdna3-second-class"] else 0)
 
     ck("index, one record per article", "11", len(AJ))
+
     ck("index, every record's dates come from its date chip", "0",
        sum(1 for a in AJ if a.get("dates") != (XDC.get(a.get("slug")) or [{}])[0].get("v")))
     ck("index, every record's kind comes from its date chip", "0",
@@ -3251,6 +3252,86 @@ def main():
     # figure rests on -- that nothing faster is left undrawn -- is re-derived
     # here rather than taken from the script that emitted it.
     XB = json.loads(xblock(XI["index.html"], "bestdata"))["best"]
+    # --- the small figure each card carries --------------------------------
+    # Every card's numbers are read out of that article's own figures-*.json by
+    # genfig-index.py, so the card and the page it links to cannot disagree.
+    # These re-derive the same values from the same files and compare, exactly
+    # as the article figures are compared to the ledger.
+    XCARD = json.loads(xblock(XI["index.html"], "bestdata"))["cards"]
+    _sd = os.path.join(HERE, "..", "..", "site", "src")
+    _af = lambda n: json.load(open(os.path.join(_sd, n), encoding="utf-8"))
+    ck("index cards, one per article", "11", len(XCARD))
+    ck("index cards, every article has one", "0",
+       sum(1 for a in AJ if a["slug"] not in XCARD))
+
+    _hyb = [s for s in _af("figures.json")["fig1"]["series"] if s["arch"] == "hybrid SSM"][0]
+    _gqa = [r for r in _af("figures-gqa.json")["fig1"]["versions"][0]["rows"]
+            if not r["admitted"]]
+    WANT = {
+      "hybrid-ssm-collapse": [[p["ctx"], p["tok_s"]] for p in _hyb["points"]],
+      "a100-vs-two-radeons": [[r["ctx"], r["advantage"]]
+                              for r in _af("figures-a100.json")["fig1"]["rows"]],
+      "speculative-decoding-net-loss": [[r["ctx"], r["delta_pct"]]
+                                        for r in _af("figures-spec.json")["fig1"]["rows"]],
+      "w4a16-two-problems": [[c["ctx"], c["penalty_ms"]]
+                             for c in _af("figures-w4a16.json")["fig1"]["cells"]],
+      "measuring-decode": [[i + 1, v] for i, v in
+                           enumerate(_af("figures-measure.json")["fig2"]["rows"][0]["runs"])],
+    }
+    # a missing card must fail the check above rather than throw here
+    _card = lambda s: XCARD.get(s) or {"series": [], "bars": [], "rows": []}
+    for slug, want in WANT.items():
+        got = [p for s in _card(slug).get("series", []) for p in s["pts"]]
+        ck("index card %s, points" % slug, str(len(want)), len(got))
+        ck("index card %s, matches its article's data" % slug, "1",
+           1 if len(want) == len(got) and all(
+               abs(a[0] - b[0]) < 1e-9 and abs(a[1] - b[1]) < 1e-9
+               for a, b in zip(want, got)) else 0)
+    ck("index card gqa, one line per excluded shape", str(len(_gqa)),
+       len(_card("gqa-gate-costs-nothing")["series"]))
+    ck("index card gqa, every ratio is the article's", "1",
+       1 if all(abs(c["ratio"] - p[1]) < 1e-9 and c["ctx"] == p[0]
+                for r, s in zip(_gqa, _card("gqa-gate-costs-nothing")["series"])
+                for c, p in zip(r["cells"], s["pts"])) else 0)
+
+    _moe = _af("figures-moe.json")["fig1"]
+    ck("index card moe, bars", str(len(_moe["bars"]) + 1),
+       len(_card("moe-written-off-by-eager")["bars"]))
+    ck("index card moe, the compiled bars are the article's", "1",
+       1 if all(abs(b["tok_s"] - c["v"]) < 1e-9
+                for b, c in zip(_moe["bars"],
+                                _card("moe-written-off-by-eager")["bars"])) else 0)
+    ck("index card moe, and the eager bar is the one marked", "1",
+       1 if _card("moe-written-off-by-eager")["bars"][-1:] and
+       _card("moe-written-off-by-eager")["bars"][-1]["v"] == _moe["eager"]["tok_s"]
+       and _card("moe-written-off-by-eager")["bars"][-1]["kind"] == "bad" else 0)
+
+    _ld = _af("figures-loader.json")["fig1"]["states"]
+    ck("index card loader, one bar per kernel state", str(len(_ld)),
+       len(_card("weight-loading-19x")["bars"]))
+    ck("index card loader, each is that state's rw-p resident case", "1",
+       1 if all(abs([c for c in s["cases"] if c["key"] == "rw_p_resident"][0]["ms"] - b["v"])
+                < 1e-9 for s, b in zip(_ld, _card("weight-loading-19x")["bars"])) else 0)
+
+    _rd = _af("figures-rdna3.json")["fig1"]
+    ck("index card rdna3, the RDNA3 count", str(_rd["counts"]["rdna3"]),
+       (_card("rdna3-second-class")["bars"][0:1] or [{"v": -1}])[0]["v"])
+    ck("index card rdna3, and the rest of the eight",
+       str(_rd["total"] - _rd["counts"]["rdna3"]),
+       (_card("rdna3-second-class")["bars"][1:2] or [{"v": -1}])[0]["v"])
+
+    _65 = _af("figures-6565.json")["fig1"]["arms"]
+    ck("index card 6565, one bar per arm", str(len(_65)),
+       len(_card("reporting-a-non-reproduction")["bars"]))
+    ck("index card 6565, and they sum to the sweep", "135",
+       sum(b["v"] for b in _card("reporting-a-non-reproduction")["bars"]))
+
+    _rc = _af("figures-rccl.json")["shipped"]
+    ck("index card rccl, one row per shipped library", str(len(_rc)),
+       len(_card("rccl-atomics-hostcall")["rows"]))
+    ck("index card rccl, and each keeps its behaviour", "1",
+       1 if all((s["behaviour"] == "works") == r["ok"]
+                for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
     ck("index figure, series", "8", len(XB["series"]))
     ck("index figure, points", "67", sum(len(x["points"]) for x in XB["series"]))

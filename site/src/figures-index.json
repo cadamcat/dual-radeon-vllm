@@ -671,5 +671,407 @@
   "ctx_min": 500,
   "ctx_max": 50000,
   "fastest": 110.71
+ },
+ "cards": {
+  "hybrid-ssm-collapse": {
+   "form": "line",
+   "unit": "cTokS",
+   "xlog": true,
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       500,
+       12.120000000000001
+      ],
+      [
+       1000,
+       11.649999999999999
+      ],
+      [
+       2000,
+       10.99
+      ],
+      [
+       4000,
+       10.03
+      ],
+      [
+       6000,
+       9.27
+      ],
+      [
+       8000,
+       8.53
+      ],
+      [
+       12000,
+       7.24
+      ],
+      [
+       16000,
+       6.345000000000001
+      ],
+      [
+       20000,
+       5.67
+      ],
+      [
+       24000,
+       5.08
+      ],
+      [
+       32000,
+       4.25
+      ]
+     ],
+     "kind": "bad"
+    }
+   ],
+   "src": "figures.json fig1"
+  },
+  "a100-vs-two-radeons": {
+   "form": "line",
+   "unit": "cAdv",
+   "xlog": true,
+   "rule": 1.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       1.47830150887969
+      ],
+      [
+       8192,
+       1.1957312252964427
+      ],
+      [
+       16384,
+       1.1432873672531303
+      ],
+      [
+       32768,
+       1.8738102548357385
+      ]
+     ]
+    }
+   ],
+   "src": "figures-a100.json fig1"
+  },
+  "speculative-decoding-net-loss": {
+   "form": "line",
+   "unit": "cPct",
+   "xlog": true,
+   "rule": 0.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       36.87240902809765
+      ],
+      [
+       8192,
+       -14.037397945746633
+      ],
+      [
+       16384,
+       -32.36961451247166
+      ],
+      [
+       32768,
+       -70.80171560541075
+      ]
+     ]
+    }
+   ],
+   "src": "figures-spec.json fig1"
+  },
+  "w4a16-two-problems": {
+   "form": "line",
+   "unit": "cMs",
+   "xlog": true,
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       60.16792569841658
+      ],
+      [
+       8192,
+       58.03071175302779
+      ],
+      [
+       32768,
+       62.79169235910689
+      ]
+     ]
+    }
+   ],
+   "src": "figures-w4a16.json fig1"
+  },
+  "measuring-decode": {
+   "form": "line",
+   "unit": "cRun",
+   "y0": 0,
+   "series": [
+    {
+     "pts": [
+      [
+       1,
+       54.81156134326944
+      ],
+      [
+       2,
+       75.0474233233901
+      ],
+      [
+       3,
+       79.09117737183264
+      ],
+      [
+       4,
+       79.1489049678122
+      ]
+     ]
+    }
+   ],
+   "src": "figures-measure.json fig2"
+  },
+  "gqa-gate-costs-nothing": {
+   "form": "line",
+   "unit": "cRatio",
+   "xlog": true,
+   "rule": 1.0,
+   "series": [
+    {
+     "pts": [
+      [
+       1024,
+       2.0566375663891474
+      ],
+      [
+       2048,
+       2.2833838630312258
+      ],
+      [
+       4096,
+       2.870312200761237
+      ],
+      [
+       8192,
+       2.512962696196673
+      ],
+      [
+       16384,
+       4.110769965467451
+      ],
+      [
+       32768,
+       4.829520235162114
+      ]
+     ]
+    },
+    {
+     "pts": [
+      [
+       1024,
+       2.312339653395059
+      ],
+      [
+       2048,
+       2.4182078719381446
+      ],
+      [
+       4096,
+       3.2118707197607126
+      ],
+      [
+       8192,
+       3.8606171570208914
+      ],
+      [
+       16384,
+       6.525235804291858
+      ],
+      [
+       32768,
+       7.278998789318378
+      ]
+     ]
+    },
+    {
+     "pts": [
+      [
+       1024,
+       2.1397195799460507
+      ],
+      [
+       2048,
+       2.2401581293984263
+      ],
+      [
+       4096,
+       1.8372758188208707
+      ],
+      [
+       8192,
+       1.8833531027937764
+      ],
+      [
+       16384,
+       2.712422601982096
+      ],
+      [
+       32768,
+       2.863281182924803
+      ]
+     ]
+    }
+   ],
+   "src": "figures-gqa.json fig1"
+  },
+  "moe-written-off-by-eager": {
+   "form": "bars",
+   "unit": "cTokS",
+   "bars": [
+    {
+     "label": "gemma-4-26B-A4B",
+     "v": 107.82
+    },
+    {
+     "label": "Qwen3-8B",
+     "v": 79.58500000000001
+    },
+    {
+     "label": "gemma-4-12B-it",
+     "v": 59.905
+    },
+    {
+     "label": "gemma-4-31B-it",
+     "v": 43.155
+    },
+    {
+     "label": "Qwen3.6-27B",
+     "v": 12.120000000000001
+    },
+    {
+     "label": "gemma-4-26B-A4B",
+     "note": "@cEager",
+     "v": 15.0,
+     "kind": "bad"
+    }
+   ],
+   "src": "figures-moe.json fig1"
+  },
+  "weight-loading-19x": {
+   "form": "bars",
+   "unit": "cMsLog",
+   "log": true,
+   "bars": [
+    {
+     "label": "-28 stock",
+     "v": 16019.6,
+     "kind": "bad"
+    },
+    {
+     "label": "-28 +342981f",
+     "v": 17.0,
+     "kind": null
+    },
+    {
+     "label": "-30 stock",
+     "v": 15.3,
+     "kind": null
+    }
+   ],
+   "src": "figures-loader.json fig1"
+  },
+  "rdna3-second-class": {
+   "form": "bars",
+   "unit": "cFindings",
+   "bars": [
+    {
+     "label": "@cRdna3",
+     "v": 3,
+     "kind": "bad"
+    },
+    {
+     "label": "@cNotRdna3",
+     "v": 5
+    }
+   ],
+   "src": "figures-rdna3.json fig1"
+  },
+  "reporting-a-non-reproduction": {
+   "form": "bars",
+   "unit": "cInits",
+   "bars": [
+    {
+     "label": "default",
+     "v": 20
+    },
+    {
+     "label": "p2pdisable",
+     "v": 20
+    },
+    {
+     "label": "prod",
+     "v": 20
+    },
+    {
+     "label": "ch1",
+     "v": 15
+    },
+    {
+     "label": "ch4",
+     "v": 15
+    },
+    {
+     "label": "ch8",
+     "v": 15
+    },
+    {
+     "label": "ch16",
+     "v": 15
+    },
+    {
+     "label": "shmoff",
+     "v": 15
+    }
+   ],
+   "src": "figures-6565.json fig1"
+  },
+  "rccl-atomics-hostcall": {
+   "form": "status",
+   "unit": "cHostcall",
+   "rows": [
+    {
+     "label": "ROCm 7.0 (2.26.6)",
+     "ok": true,
+     "note": "0"
+    },
+    {
+     "label": "ROCm 7.1.1 (2.27.7-b38)",
+     "ok": true,
+     "note": "0"
+    },
+    {
+     "label": "ROCm 7.2+ (2.27.7-b43+)",
+     "ok": false,
+     "note": "N"
+    },
+    {
+     "label": "ROCm 7.13 / 7.14 (2.30.4)",
+     "ok": false,
+     "note": "N"
+    }
+   ],
+   "src": "figures-rccl.json shipped"
+  }
  }
 }

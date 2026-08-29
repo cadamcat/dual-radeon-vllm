@@ -472,6 +472,10 @@ for a in ART:
         "chips": CHIPS[a["slug"]],
         "langs": ["EN", "中"] if zh else ["EN"],
         "tags": a["tags"]})
+# Newest first, by the last date the article's own date chip carries -- which is
+# the only date a card prints. Ties keep the order ART lists them in, which is
+# the order they were written, because sort is stable.
+records.sort(key=lambda r: r["date"], reverse=True)
 articles = {"articles": records}
 AJSON = json.dumps(articles, ensure_ascii=False, indent=1)
 if CHECK:

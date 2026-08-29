@@ -64,77 +64,6 @@
    ]
   },
   {
-   "slug": "measuring-decode",
-   "href": {
-    "en": "articles/measuring-decode.html",
-    "zh": "articles/measuring-decode.zh.html"
-   },
-   "title": {
-    "en": "Two harnesses agree to 0.44 %, and the first of four runs read 31 % low",
-    "zh": "两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %"
-   },
-   "sub": {
-    "en": "How to measure decode on a machine like this",
-    "zh": "在这样一台机器上怎么测 decode"
-   },
-   "blurb": {
-    "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
-    "zh": "两套 harness 吻合到 0.44%，而弄清这一点用了四次相同的运行，其中第一次低了 31%。每个点带什么、制图级的线划在哪里，以及有一格里极差和标准差对方向的判断相反。"
-   },
-   "establishes": {
-    "en": "a decode number needs a run count and a range beside it, because this machine's first run is not its steady state",
-    "zh": "一个解码数字旁边得写上运行次数和极差，因为这台机器的第一次运行不是稳态"
-   },
-   "dates": [
-    "2026-08-26"
-   ],
-   "date": "2026-08-26",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelCalibrated",
-     "v": [
-      "Qwen3-8B",
-      "bf16"
-     ]
-    },
-    {
-     "kind": "scale",
-     "w": "scaleLedgerRows",
-     "v": [
-      "170"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-08-26"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "methodology",
-    "calibration",
-    "nondeterminism"
-   ]
-  },
-  {
    "slug": "reporting-a-non-reproduction",
    "href": {
     "en": "articles/reporting-a-non-reproduction.html",
@@ -281,6 +210,149 @@
     "paged attention",
     "gqa_ratio",
     "vllm#54210"
+   ]
+  },
+  {
+   "slug": "w4a16-two-problems",
+   "href": {
+    "en": "articles/w4a16-two-problems.html",
+    "zh": "articles/w4a16-two-problems.zh.html"
+   },
+   "title": {
+    "en": "A flat 60 ms per step, under a cost that grows with context",
+    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
+   },
+   "sub": {
+    "en": "Twelve tokens a second was two problems",
+    "zh": "12 tok/s 是两个问题"
+   },
+   "blurb": {
+    "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
+    "zh": "同一个模型家族的两种打包，在1K 上差 3.24×，在32K 上差 1.27×。把它当毫秒而不是倍数来读，就是一笔固定开销压在一笔增长开销下面，而两者各自有自己的上游修复。"
+   },
+   "establishes": {
+    "en": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
+    "zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel"
+   },
+   "dates": [
+    "2026-08-27"
+   ],
+   "date": "2026-08-27",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmTwo",
+     "v": [
+      "0.23.1.dev",
+      "0.27.1.dev5"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelDot",
+     "v": [
+      "Qwen3.8-27B",
+      "compressed-tensors int4"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-27"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "W4A16",
+    "kernel selection",
+    "vllm#40977"
+   ]
+  },
+  {
+   "slug": "measuring-decode",
+   "href": {
+    "en": "articles/measuring-decode.html",
+    "zh": "articles/measuring-decode.zh.html"
+   },
+   "title": {
+    "en": "Two harnesses agree to 0.44 %, and the first of four runs read 31 % low",
+    "zh": "两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %"
+   },
+   "sub": {
+    "en": "How to measure decode on a machine like this",
+    "zh": "在这样一台机器上怎么测 decode"
+   },
+   "blurb": {
+    "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
+    "zh": "两套 harness 吻合到 0.44%，而弄清这一点用了四次相同的运行，其中第一次低了 31%。每个点带什么、制图级的线划在哪里，以及有一格里极差和标准差对方向的判断相反。"
+   },
+   "establishes": {
+    "en": "a decode number needs a run count and a range beside it, because this machine's first run is not its steady state",
+    "zh": "一个解码数字旁边得写上运行次数和极差，因为这台机器的第一次运行不是稳态"
+   },
+   "dates": [
+    "2026-08-26"
+   ],
+   "date": "2026-08-26",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelCalibrated",
+     "v": [
+      "Qwen3-8B",
+      "bf16"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleLedgerRows",
+     "v": [
+      "170"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-08-26"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "methodology",
+    "calibration",
+    "nondeterminism"
    ]
   },
   {
@@ -500,149 +572,6 @@
    ]
   },
   {
-   "slug": "moe-written-off-by-eager",
-   "href": {
-    "en": "articles/moe-written-off-by-eager.html",
-    "zh": "articles/moe-written-off-by-eager.zh.html"
-   },
-   "title": {
-    "en": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
-    "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
-   },
-   "sub": {
-    "en": "The fastest model here was written off at 15 tok/s",
-    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
-   },
-   "blurb": {
-    "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
-    "zh": "torch.compile 只给了二十分钟，而它需要二十六，于是这次运行被压进 eager 模式，一个 128 专家的 MoE 被记作 15 tok/s。编译之后是 107.8，而这个开关路上还凭空造出了两个定性结论。"
-   },
-   "establishes": {
-    "en": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
-    "zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉"
-   },
-   "dates": [
-    "2026-07-25"
-   ],
-   "date": "2026-07-25",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelExperts",
-     "v": [
-      "gemma-4-26B-A4B",
-      "128"
-     ]
-    },
-    {
-     "kind": "platform",
-     "w": "platHostCores",
-     "v": [
-      "8"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-07-25"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "MoE",
-    "torch.compile",
-    "vllm#53892"
-   ]
-  },
-  {
-   "slug": "w4a16-two-problems",
-   "href": {
-    "en": "articles/w4a16-two-problems.html",
-    "zh": "articles/w4a16-two-problems.zh.html"
-   },
-   "title": {
-    "en": "A flat 60 ms per step, under a cost that grows with context",
-    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
-   },
-   "sub": {
-    "en": "Twelve tokens a second was two problems",
-    "zh": "12 tok/s 是两个问题"
-   },
-   "blurb": {
-    "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
-    "zh": "同一个模型家族的两种打包，在1K 上差 3.24×，在32K 上差 1.27×。把它当毫秒而不是倍数来读，就是一笔固定开销压在一笔增长开销下面，而两者各自有自己的上游修复。"
-   },
-   "establishes": {
-    "en": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
-    "zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel"
-   },
-   "dates": [
-    "2026-08-27"
-   ],
-   "date": "2026-08-27",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "stack",
-     "w": "stackVllmTwo",
-     "v": [
-      "0.23.1.dev",
-      "0.27.1.dev5"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelDot",
-     "v": [
-      "Qwen3.8-27B",
-      "compressed-tensors int4"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-08-27"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "W4A16",
-    "kernel selection",
-    "vllm#40977"
-   ]
-  },
-  {
    "slug": "rccl-atomics-hostcall",
    "href": {
     "en": "articles/rccl-atomics-hostcall.html",
@@ -717,6 +646,77 @@
     "PCIe atomics",
     "hostcall",
     "ROCm#6520"
+   ]
+  },
+  {
+   "slug": "moe-written-off-by-eager",
+   "href": {
+    "en": "articles/moe-written-off-by-eager.html",
+    "zh": "articles/moe-written-off-by-eager.zh.html"
+   },
+   "title": {
+    "en": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
+    "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
+   },
+   "sub": {
+    "en": "The fastest model here was written off at 15 tok/s",
+    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
+   },
+   "blurb": {
+    "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",
+    "zh": "torch.compile 只给了二十分钟，而它需要二十六，于是这次运行被压进 eager 模式，一个 128 专家的 MoE 被记作 15 tok/s。编译之后是 107.8，而这个开关路上还凭空造出了两个定性结论。"
+   },
+   "establishes": {
+    "en": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
+    "zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉"
+   },
+   "dates": [
+    "2026-07-25"
+   ],
+   "date": "2026-07-25",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelExperts",
+     "v": [
+      "gemma-4-26B-A4B",
+      "128"
+     ]
+    },
+    {
+     "kind": "platform",
+     "w": "platHostCores",
+     "v": [
+      "8"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-07-25"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "MoE",
+    "torch.compile",
+    "vllm#53892"
    ]
   },
   {
