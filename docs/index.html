@@ -313,6 +313,10 @@
   #tlkey .lg.k-reported { color:var(--s1); }
   #tlkey .lg.k-reviewed { color:var(--s5); }
   @media (max-width:640px) {
+    /* the label beside the summary leaves about thirty characters a line on a
+       phone; above it, the summary gets the whole card */
+    .card-est { display:block; }
+    .card-est > span { display:block; margin-bottom:.15em; }
     .tl { --tlw:118px; column-gap:.6em; }
     .tllab { font-size:.75rem; }
     .tldate { font-size:.66rem; }
