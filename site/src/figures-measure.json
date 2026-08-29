@@ -496,6 +496,95 @@
    33.07560137457044,
    35.11518015357354
   ],
+  "campaign": {
+   "date": "2026-08-29",
+   "arms": [
+    {
+     "cfg": "G31-mtp-p45450-tp2",
+     "model": "gemma-4-31B-it",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 2.680188337558863
+    },
+    {
+     "cfg": "G31-tp2",
+     "model": "gemma-4-31B-it",
+     "spec": false,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.5874750323111267
+    },
+    {
+     "cfg": "Q38-mtp-p45450-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 8,
+     "worst_range_pct": 14.645695924234744
+    },
+    {
+     "cfg": "Q38-mtp-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 7,
+     "worst_range_pct": 21.163402513884826
+    },
+    {
+     "cfg": "Q38-mtp-triton-p45450-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 7,
+     "worst_range_pct": 33.07560137457044
+    },
+    {
+     "cfg": "Q38-mtp-triton-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 6,
+     "worst_range_pct": 35.11518015357354
+    },
+    {
+     "cfg": "Q38-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": false,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.11390818999887065
+    },
+    {
+     "cfg": "Q38-triton-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": false,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.10483279169723693
+    }
+   ],
+   "nospec_arms": 3,
+   "nospec_rungs": 33,
+   "nospec_ungraded": 0,
+   "nospec_worst_range_pct": 0.5874750323111267,
+   "spec_arms": 5,
+   "spec_rungs": 55,
+   "spec_ungraded": 28,
+   "spec_arms_fully_graded": [
+    "G31-mtp-p45450-tp2"
+   ],
+   "ungraded_all_one_model": true,
+   "ungraded_model": "Qwen3.8-27B"
+  },
   "ungraded_cells": [
    {
     "model": "Qwen3.8-27B",

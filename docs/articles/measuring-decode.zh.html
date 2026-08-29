@@ -802,6 +802,13 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
+<p><strong>为什么这一列必须跟着点走，一个下午就给出了最清楚的例子。</strong>2026-08-29 那次
+campaign 在同一台机器上测了八条阶梯 —— 同样的十一个档位、每格两轮、同一场会话。不带投机的三条臂，
+33 个档位里有 <b>0</b> 个越过那道线，最差的极差是 <b>0.59 %</b>。带投机的五条臂，55 个档位里越线的有
+<b>28</b> 个。这不是在说投机本身：<code>gemma-4-31B</code> 的投机臂每一档都够评级，最差极差 2.68 %。
+那 28 个全部属于 <code>Qwen3.8-27B</code> —— 两个注意力后端上都有，打没打补丁都有。
+如果只报均值，那 28 个格子会和另外 60 个一样平静，而由它们画出来的每一张图都会显得同样安稳。</p>
+
 <h2><span class="n">5</span>为什么报极差而不是标准差</h2>
 
 <p>这里几乎每个格子都只有两次 run。在 n=2 时，样本标准差就是极差除以根号二 ——
@@ -1422,6 +1429,95 @@ TP=1 没测，而源头在 kernel 之上，但没有进一步定位。</p>
    33.07560137457044,
    35.11518015357354
   ],
+  "campaign": {
+   "date": "2026-08-29",
+   "arms": [
+    {
+     "cfg": "G31-mtp-p45450-tp2",
+     "model": "gemma-4-31B-it",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 2.680188337558863
+    },
+    {
+     "cfg": "G31-tp2",
+     "model": "gemma-4-31B-it",
+     "spec": false,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.5874750323111267
+    },
+    {
+     "cfg": "Q38-mtp-p45450-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 8,
+     "worst_range_pct": 14.645695924234744
+    },
+    {
+     "cfg": "Q38-mtp-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 7,
+     "worst_range_pct": 21.163402513884826
+    },
+    {
+     "cfg": "Q38-mtp-triton-p45450-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 7,
+     "worst_range_pct": 33.07560137457044
+    },
+    {
+     "cfg": "Q38-mtp-triton-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": true,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 6,
+     "worst_range_pct": 35.11518015357354
+    },
+    {
+     "cfg": "Q38-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": false,
+     "attn_backend": "ROCM_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.11390818999887065
+    },
+    {
+     "cfg": "Q38-triton-tp2",
+     "model": "Qwen3.8-27B",
+     "spec": false,
+     "attn_backend": "TRITON_ATTN",
+     "rungs": 11,
+     "ungraded": 0,
+     "worst_range_pct": 0.10483279169723693
+    }
+   ],
+   "nospec_arms": 3,
+   "nospec_rungs": 33,
+   "nospec_ungraded": 0,
+   "nospec_worst_range_pct": 0.5874750323111267,
+   "spec_arms": 5,
+   "spec_rungs": 55,
+   "spec_ungraded": 28,
+   "spec_arms_fully_graded": [
+    "G31-mtp-p45450-tp2"
+   ],
+   "ungraded_all_one_model": true,
+   "ungraded_model": "Qwen3.8-27B"
+  },
   "ungraded_cells": [
    {
     "model": "Qwen3.8-27B",

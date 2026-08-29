@@ -87,6 +87,40 @@ fig4 = {"rows": len(led), "with_range": len(spreads),
 # the gap the cut sits in, which is why it is a cut and not a convention
 tail = [s for s in spreads if s > 2.5]
 fig4["tail"] = tail
+
+# ---- what the 2026-08-29 campaign is a case of ----------------------------
+# The article's subject is that a range travels with a point. This campaign is
+# the cleanest case of why: eight arms, one ladder, and the ungraded rungs all
+# land in one place. Not "speculation is unstable" -- gemma-4's speculative arm
+# is graded at every rung. Speculation on *this model* is.
+_c29 = [r for r in led if r["date"] == "2026-08-29"]
+_arms = {}
+for r in _c29:
+    a = _arms.setdefault(r["cfg"], {"cfg": r["cfg"], "model": r["model"],
+                                    "spec": r["spec"] is not None,
+                                    "attn_backend": r["attn_backend"],
+                                    "rungs": 0, "ungraded": 0, "worst_range_pct": 0.0})
+    a["rungs"] += 1
+    a["ungraded"] += 0 if r["chart_grade"] else 1
+    a["worst_range_pct"] = max(a["worst_range_pct"], r["range_pct"] or 0.0)
+_arms = [_arms[k] for k in sorted(_arms)]
+_nospec = [a for a in _arms if not a["spec"]]
+_spec = [a for a in _arms if a["spec"]]
+fig4["campaign"] = {
+    "date": "2026-08-29", "arms": _arms,
+    "nospec_arms": len(_nospec),
+    "nospec_rungs": sum(a["rungs"] for a in _nospec),
+    "nospec_ungraded": sum(a["ungraded"] for a in _nospec),
+    "nospec_worst_range_pct": max(a["worst_range_pct"] for a in _nospec),
+    "spec_arms": len(_spec),
+    "spec_rungs": sum(a["rungs"] for a in _spec),
+    "spec_ungraded": sum(a["ungraded"] for a in _spec),
+    # the one speculative arm that is graded throughout, which is what stops
+    # this being a statement about speculation as such
+    "spec_arms_fully_graded": [a["cfg"] for a in _spec if a["ungraded"] == 0],
+    "ungraded_all_one_model": len({a["model"] for a in _spec if a["ungraded"]}) == 1,
+    "ungraded_model": sorted({a["model"] for a in _spec if a["ungraded"]})[0],
+}
 bad = [r for r in led if not r["chart_grade"]]
 fig4["ungraded_cells"] = [{"model": r["model"], "ctx": r["ctx"], "runs": r["runs"],
                            "range_pct": r["range_pct"], "values": sorted(r["values"]),

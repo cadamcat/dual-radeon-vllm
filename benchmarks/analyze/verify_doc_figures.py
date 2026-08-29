@@ -2960,6 +2960,25 @@ def main():
     ck("measure article, fig4 which is the ungraded count", "29", XART["fig4"]["ungraded"])
     ck("measure article, fig4 no ledger row is a single run", "0",
        XART["fig4"]["single_run"])
+
+    # --- the 2026-08-29 campaign as this article's own case study ------------
+    MC = XART["fig4"]["campaign"]
+    ck("measure article, the campaign is eight arms", "8", len(MC["arms"]))
+    ck("measure article, and every arm is eleven rungs", "1",
+       1 if all(a["rungs"] == 11 for a in MC["arms"]) else 0)
+    ck("measure article, three of them do not speculate", "3", MC["nospec_arms"])
+    ck("measure article, and none of their 33 rungs is above the cut", "0",
+       MC["nospec_ungraded"])
+    ck("measure article, their worst range", "0.59", MC["nospec_worst_range_pct"],
+       tol=0.005)
+    ck("measure article, five of them do", "5", MC["spec_arms"])
+    ck("measure article, and 28 of their 55 rungs are above it", "28",
+       MC["spec_ungraded"])
+    # the sentence that stops this being a claim about speculation as such
+    ck("measure article, one speculative arm is graded throughout", "1",
+       len(MC["spec_arms_fully_graded"]))
+    ck("measure article, and every ungraded rung is one model's", "1",
+       1 if MC["ungraded_all_one_model"] else 0)
     # the tail is what justifies a cut at 6 rather than a convention, and
     # build_ledger's comment now describes it; both have to stay true
     ck("measure article, fig4 the tail above 2.5%", "43", len(XART["fig4"]["tail"]))
