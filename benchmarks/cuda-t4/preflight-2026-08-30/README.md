@@ -28,8 +28,23 @@ touching the compute path.
 
 ## What actually fails
 
-gemma-4's `head_dim` is **256**. Turing reports 49 152 bytes of shared memory
-per block and **65 536 per SM**.
+gemma-4's head dimensions are **heterogeneous**, and the one that matters is not
+the one this file first named. Measured 2026-08-30 by constructing vLLM 0.28.0's
+own `ModelConfig` against this checkpoint (`headsize.jsonl`, `check_head.py`):
+
+    config.json     head_dim 256 (sliding) · global_head_dim 512 (full)
+                    16 attention heads · 8 KV heads · 48 layers
+                    = 40 sliding_attention + 8 full_attention
+    model_arch_config.head_size            512
+    per-layer head sizes                   {256, 512}
+
+So the value the kernel is sized for is **512**, not the 256 this README
+originally gave; 256 is the sliding layers' local value. Turing reports 49 152
+bytes of shared memory per block and **65 536 per SM**.
+
+This matters beyond pedantry: vllm#39018, the open fix for this failure, gates
+on `head_size_padded >= 512`, so the corrected value is what puts this case
+inside its scope rather than outside.
 
 | backend | selector | outcome | log |
 |---|---|---|---|
