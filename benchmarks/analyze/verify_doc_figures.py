@@ -4452,6 +4452,41 @@ def main():
     ck("T4 preflight, the sampler names the capability it lacks", "1",
        1 if "unsupported compute capability 7.5" in _tri else 0)
 
+    # --- hybrid fig5: section 6's prefill claim, now with data under it ------
+    # The prose said "throughput improves with length, 805 -> 880 tok/s" from
+    # two hand-typed numbers, one model, one machine, one stack. Both numbers
+    # are right; the generalisation to the architecture is what these check.
+    _F = json.load(open(os.path.join(HERE, "..", "..", "site", "src", "figures.json")))
+    _f5 = _F["fig5"]["series"]
+    ck("hybrid fig5, lines", "6", len(_f5))
+    ck("hybrid fig5, hybrid lines", "3", _F["fig5"]["hybrid_lines"])
+    ck("hybrid fig5, and only one of them rises", "1",
+       sum(1 for x in _f5 if x["arch"] == "hybrid SSM" and x["change_pct"] > 0))
+    ck("hybrid fig5, and it is Qwen3.6", "1",
+       1 if _F["fig5"]["hybrid_that_rises"] == "Qwen3.6-27B" else 0)
+    _q36 = next(x for x in _f5 if x["model"] == "Qwen3.6-27B")
+    ck("hybrid fig5, the rise the prose quotes", "9.9", _q36["change_pct"], 0.01)
+    ck("hybrid fig5, from this rate", "802", _q36["shallow_tok_s"], 0.01)
+    ck("hybrid fig5, to this one", "881", _q36["deep_tok_s"], 0.01)
+    # its sibling, same architecture in the ledger's own column, on two machines
+    for mach, want in (("RX 7900 XT", "-7.5"), ("A100-SXM4-80GB", "-8.1")):
+        x = next(x for x in _f5 if x["model"] == "Qwen3.8-27B" and x["machine"] == mach)
+        ck("hybrid fig5, Qwen3.8 on %s" % mach, want, x["change_pct"], 0.01)
+    ck("hybrid fig5, so the sibling falls on both machines", "2",
+       sum(1 for x in _f5 if x["model"] == "Qwen3.8-27B" and x["change_pct"] < 0))
+    # the half of the contrast that does hold, and now on two machines
+    ck("hybrid fig5, dense lines", "3", sum(1 for x in _f5 if x["arch"] == "dense"))
+    ck("hybrid fig5, and every one loses more than 30%", "3",
+       sum(1 for x in _f5 if x["arch"] == "dense" and x["change_pct"] < -30))
+    ck("hybrid fig5, the worst of them", "-42.8",
+       min(x["change_pct"] for x in _f5 if x["arch"] == "dense"), 0.01)
+    # every line recomputes from the projection
+    _pfix = {(r["machine"], r["cfg"], r["date"], r["ctx"]): r for r in XPFROWS}
+    ck("hybrid fig5, lines that do not match prefill.jsonl", "0",
+       sum(1 for x in _f5
+           if abs(_pfix[(x["machine"], x["cfg"], x["date"],
+                         x["deep_ctx"])]["prefill_tok_s"] - x["deep_tok_s"]) > 1e-9))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

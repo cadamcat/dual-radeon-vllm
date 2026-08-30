@@ -76,6 +76,51 @@ fig3 = {"vllm_hybrid_slope_us": round(V.slope_us(jul, "D-27B-tp2"), 3),
         "llamacpp": lc,
         "dense_band_us": [0.118, 0.339]}
 
+# --- section 6's prefill claim, which had no data behind it -----------------
+# "Prefill behaves as the architecture promises: throughput improves with
+# length, 805 -> 880 tok/s" was two numbers typed into the prose, from one
+# model, on one machine, on one stack. Both numbers are right -- 805.0 and
+# 882.6, best of each rung's two rounds, which is how this repository reports
+# prefill -- and the generalisation from them is not.
+#
+# Qwen3.8-27B is the same architecture in the ledger's own `arch` column and it
+# declines: -7.5 % on these cards and -8.1 % on an A100. So what §6 measured is
+# one hybrid model on one stack, and the contrast it draws with dense models is
+# the half that holds -- dense loses 35-43 % on both machines.
+#
+# Built from prefill.jsonl so the claim is data rather than typing, and so the
+# A100 half exists at all: that machine's 2026-08-29 prefill was measured
+# through a warm prefix cache and only became usable on 2026-08-30.
+sys.path.insert(0, str(R / "benchmarks" / "analyze"))
+import build_prefill as _bp
+_PF = [json.loads(l) for l in open(R / "benchmarks" / "prefill.jsonl")]
+_fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
+
+_FIG5 = [("hybrid SSM", "Qwen3.6-27B", "RX 7900 XT", "D-27B-tp2", "2026-07-25"),
+         ("hybrid SSM", "Qwen3.8-27B", "RX 7900 XT", "Q38-tp2", "2026-08-29"),
+         ("hybrid SSM", "Qwen3.8-27B", "A100-SXM4-80GB", "Q38", "2026-08-30"),
+         ("dense", "gemma-4-31B-it", "RX 7900 XT", "G31-tp2", "2026-08-29"),
+         ("dense", "gemma-4-31B-it", "A100-SXM4-80GB", "G31", "2026-08-30"),
+         ("dense", "gemma-4-12B-it", "A100-SXM4-80GB", "G12", "2026-08-30")]
+fig5 = []
+for arch, model, machine, cfg, date in _FIG5:
+    rs = sorted([r for r in _PF if r["cfg"] == cfg and r["machine"] == machine
+                 and r["date"] == date and r["chart_grade"]], key=lambda r: r["ctx"])
+    assert rs, (machine, cfg, date)
+    f = _fits[(machine, cfg, date)]
+    lo, hi = rs[0], rs[-1]
+    fig5.append({"arch": arch, "model": model, "machine": machine, "cfg": cfg,
+                 "date": date, "attn_backend": rs[0]["attn_backend"],
+                 "shallow_ctx": lo["ctx"], "deep_ctx": hi["ctx"],
+                 "shallow_tok_s": lo["prefill_tok_s"],
+                 "deep_tok_s": hi["prefill_tok_s"],
+                 "change_pct": (hi["prefill_tok_s"] / lo["prefill_tok_s"] - 1) * 100.0,
+                 "c_ns_tok2": f.get("c_ns_tok2")})
+# the one that improves is one of three hybrid lines
+_rise = [x for x in fig5 if x["arch"] == "hybrid SSM" and x["change_pct"] > 0]
+assert len(_rise) == 1 and _rise[0]["model"] == "Qwen3.6-27B", _rise
+assert all(x["change_pct"] < -30 for x in fig5 if x["arch"] == "dense"), fig5
+
 out = {
  "_what": "Every figure in hybrid-ssm-collapse.html. Checked against the data "
           "files by benchmarks/analyze/verify_doc_figures.py; edit the data, not this.",
@@ -98,9 +143,15 @@ out = {
             {"name": "kernel_paged_attention_2d", "layers": "16 full", "us_1k": 356.664, "us_32k": 10095.188}]},
  "fig3": fig3,
  "fig4": {"caption_source": "benchmarks/hybrid-splitkv-027/", "series": fig4},
+ "fig5": {"caption_source": "benchmarks/prefill.jsonl", "series": fig5,
+          "hybrid_that_rises": _rise[0]["model"],
+          "hybrid_lines": sum(1 for x in fig5 if x["arch"] == "hybrid SSM")},
 }
 json.dump(out, open(pathlib.Path(__file__).parent / "figures.json", "w"), indent=1)
 print(f"fig1 series: {[s['model'] for s in fig1]}")
 print(f"fig4 series: {[(s['model'], '+'.join(s['patches']) or 'stock') for s in fig4]}")
 print(f"fig3: vllm={fig3['vllm_hybrid_slope_us']}  rocm={lc['rocm']['slope_us']}  vulkan={lc['vulkan']['slope_us']}")
+for x in fig5:
+    print(f"fig5 {x['arch']:<11} {x['model']:<15} {x['machine']:<15} "
+          f"{x['shallow_tok_s']:6.0f} -> {x['deep_tok_s']:6.0f}  {x['change_pct']:+6.1f}%")
 print(f"bytes: {len(json.dumps(out))}")

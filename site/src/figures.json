@@ -895,5 +895,96 @@
     ]
    }
   ]
+ },
+ "fig5": {
+  "caption_source": "benchmarks/prefill.jsonl",
+  "series": [
+   {
+    "arch": "hybrid SSM",
+    "model": "Qwen3.6-27B",
+    "machine": "RX 7900 XT",
+    "cfg": "D-27B-tp2",
+    "date": "2026-07-25",
+    "attn_backend": null,
+    "shallow_ctx": 500,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 802.3543990086741,
+    "deep_tok_s": 881.4624738314111,
+    "change_pct": 9.859492877521037,
+    "c_ns_tok2": 8.74595021438967
+   },
+   {
+    "arch": "hybrid SSM",
+    "model": "Qwen3.8-27B",
+    "machine": "RX 7900 XT",
+    "cfg": "Q38-tp2",
+    "date": "2026-08-29",
+    "attn_backend": "ROCM_ATTN",
+    "shallow_ctx": 1000,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 1047.2164213314318,
+    "deep_tok_s": 968.9756474214739,
+    "change_pct": -7.471308921080755,
+    "c_ns_tok2": 3.4283510218247906
+   },
+   {
+    "arch": "hybrid SSM",
+    "model": "Qwen3.8-27B",
+    "machine": "A100-SXM4-80GB",
+    "cfg": "Q38",
+    "date": "2026-08-30",
+    "attn_backend": "FLASH_ATTN",
+    "shallow_ctx": 1000,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 3105.791962174941,
+    "deep_tok_s": 2855.183103359196,
+    "change_pct": -8.069080668244343,
+    "c_ns_tok2": 1.4462363901342088
+   },
+   {
+    "arch": "dense",
+    "model": "gemma-4-31B-it",
+    "machine": "RX 7900 XT",
+    "cfg": "G31-tp2",
+    "date": "2026-08-29",
+    "attn_backend": "TRITON_ATTN",
+    "shallow_ctx": 500,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 857.5163398692811,
+    "deep_tok_s": 555.1902277068695,
+    "change_pct": -35.25601765308611,
+    "c_ns_tok2": 29.060775378009133
+   },
+   {
+    "arch": "dense",
+    "model": "gemma-4-31B-it",
+    "machine": "A100-SXM4-80GB",
+    "cfg": "G31",
+    "date": "2026-08-30",
+    "attn_backend": "TRITON_ATTN",
+    "shallow_ctx": 1000,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 2619.6017584690976,
+    "deep_tok_s": 1497.999578858707,
+    "change_pct": -42.81575151582804,
+    "c_ns_tok2": 9.131068785787285
+   },
+   {
+    "arch": "dense",
+    "model": "gemma-4-12B-it",
+    "machine": "A100-SXM4-80GB",
+    "cfg": "G12",
+    "date": "2026-08-30",
+    "attn_backend": "TRITON_ATTN",
+    "shallow_ctx": 1000,
+    "deep_ctx": 32000,
+    "shallow_tok_s": 6321.372854914196,
+    "deep_tok_s": 3819.6656763432006,
+    "change_pct": -39.575377627443444,
+    "c_ns_tok2": 3.6211326531346764
+   }
+  ],
+  "hybrid_that_rises": "Qwen3.6-27B",
+  "hybrid_lines": 3
  }
 }
