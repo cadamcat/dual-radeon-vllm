@@ -4036,10 +4036,10 @@ def main():
     import build_prefill as _bpf
     XP = XFIG["prefill"]
     XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
-    ck("prefill figure, lines", "14", len(XP["series"]))
+    ck("prefill figure, lines", "17", len(XP["series"]))
     ck("prefill figure, machines", "4", len({x["machine"] for x in XP["series"]}))
     ck("prefill figure, models", "7", len({x["model"] for x in XP["series"]}))
-    ck("prefill figure, single-card lines", "7",
+    ck("prefill figure, single-card lines", "10",
        sum(1 for x in XP["series"] if x["tp"] == 1))
     ck("prefill figure, and lines on the pair", "7",
        sum(1 for x in XP["series"] if x["tp"] == 2))
@@ -4061,7 +4061,7 @@ def main():
     # campaign, whose serve logs were not kept and which therefore records
     # neither. The flag is not the discriminator; repeatability is, and no
     # ungraded rung is drawn.
-    ck("prefill figure, lines measured with prefix caching off", "5",
+    ck("prefill figure, lines measured with prefix caching off", "8",
        sum(1 for x in XP["series"] if x["prefix_caching"] is False))
     ck("prefill figure, lines that had it on and show no hits", "2",
        sum(1 for x in XP["series"] if x["prefix_caching"] is True))
@@ -4069,11 +4069,18 @@ def main():
        sum(1 for x in XP["series"] if x["prefix_caching"] is None))
     # this column is for what was read: five logs survive and all five say
     # TRITON_ATTN, and none of the six records anything else
-    ck("prefill figure, lines recording TRITON_ATTN", "7",
+    ck("prefill figure, lines recording TRITON_ATTN", "8",
        sum(1 for x in XP["series"] if x["attn_backend"] == "TRITON_ATTN"))
-    ck("prefill figure, and none records a different backend", "0",
+    # Two lines do record a different one, and it is not an anomaly: vLLM sends
+    # Qwen3.8 and Muse-Glimmer to FLASH_ATTN on the A100 and to TRITON_ATTN (or
+    # an unrecorded backend) on the Radeons. That is why `backend_mixed` exists
+    # -- a c ratio across those lines is a kernel difference as well as a card
+    # one, and the figure has to say so rather than let it be assumed.
+    ck("prefill figure, lines recording FLASH_ATTN", "2",
+       sum(1 for x in XP["series"] if x["attn_backend"] == "FLASH_ATTN"))
+    ck("prefill figure, and no line records anything else", "0",
        sum(1 for x in XP["series"]
-           if x["attn_backend"] not in (None, "TRITON_ATTN")))
+           if x["attn_backend"] not in (None, "TRITON_ATTN", "FLASH_ATTN")))
     # Which rung each line had to drop, and it is not one story. On the four
     # CUDA lines it is the shallowest -- the cold engine's first request, which
     # the runner did not discard until 2026-08-30. On both Radeon lines it is
@@ -4081,7 +4088,7 @@ def main():
     # 1 slower than round 2 each time, and this repository does not know why.
     _drop = {(x["machine"], x["model"]): [d["ctx"] for d in x["dropped"]]
              for x in XP["series"]}
-    ck("prefill figure, lines dropping their shallowest rung", "6",
+    ck("prefill figure, lines dropping their shallowest rung", "9",
        sum(1 for d in _drop.values() if d == [500]))
     ck("prefill figure, lines dropping the 4000 rung", "4",
        sum(1 for d in _drop.values() if d == [4000]))
@@ -4108,6 +4115,25 @@ def main():
     ck("prefill figure, points that do not match prefill.jsonl", "0", _bad_pts)
     # a rung whose two rounds disagree is not a measurement; none may be drawn
     ck("prefill figure, ungraded rungs drawn", "0", _ungraded)
+
+    # Which models can be compared across machines without also comparing
+    # kernels. Three states, because "no contradiction recorded" is not the same
+    # claim as "known to be the same kernel", and only the first is true where a
+    # serve log did not survive a reclaim.
+    _bm = {m["model"]: m for m in XP["backend_mixed"]}
+    ck("prefill figure, models drawn on more than one machine", "6", len(_bm))
+    ck("prefill figure, and one is known to differ in kernel", "1",
+       sum(1 for m in _bm.values() if m["kernel"] == "different"))
+    ck("prefill figure, and that one is Qwen3.8", "1",
+       1 if _bm["Qwen3.8-27B"]["kernel"] == "different" else 0)
+    ck("prefill figure, models known to share a kernel", "1",
+       sum(1 for m in _bm.values() if m["kernel"] == "same"))
+    # the cleanest cross-machine comparison in the repository, and it is the
+    # model a100-vs-two-radeons is about
+    ck("prefill figure, and that one is gemma-4-31B", "1",
+       1 if _bm["gemma-4-31B-it"]["kernel"] == "same" else 0)
+    ck("prefill figure, the rest have a backend nobody recorded", "4",
+       sum(1 for m in _bm.values() if m["kernel"] == "unknown"))
 
     # The argument. Against one 7900 XT the A100 leads on both terms and leads
     # by more on the quadratic; the L4 is BEHIND on the linear term and ahead on

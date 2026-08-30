@@ -703,6 +703,339 @@
     ]
    },
    {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "model": "gemma-4-31B-it",
+    "date": "2026-08-30",
+    "lit": false,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": -7.072772270662673,
+     "b_us_tok": 375.3968825116025,
+     "c_ns_tok2": 9.131068785787285,
+     "r2": 0.9999997876084521,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 12.967696955612368
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 2619.6017584690976,
+      "ttft_s": 0.3867,
+      "runs": 2,
+      "range_pct": 0.05171967933798241
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 2562.372708757637,
+      "ttft_s": 0.7856000000000001,
+      "runs": 2,
+      "range_pct": 0.38187372708757666
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 2439.142987387935,
+      "ttft_s": 1.6452499999999999,
+      "runs": 2,
+      "range_pct": 0.05470293268499626
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 2330.0331311878786,
+      "ttft_s": 2.5806500000000003,
+      "runs": 2,
+      "range_pct": 0.08137484742216072
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 2233.1219954016583,
+      "ttft_s": 3.58825,
+      "runs": 2,
+      "range_pct": 0.05295060266146486
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 2064.9053749763652,
+      "ttft_s": 5.8177,
+      "runs": 2,
+      "range_pct": 0.10313354074634697
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 1916.8751571160085,
+      "ttft_s": 8.3537,
+      "runs": 2,
+      "range_pct": 0.0574595688138127
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 1792.307933423189,
+      "ttft_s": 11.16605,
+      "runs": 2,
+      "range_pct": 0.06537674468590729
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 1682.1009274566393,
+      "ttft_s": 14.2756,
+      "runs": 2,
+      "range_pct": 0.025217854240805932
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 1497.999578858707,
+      "ttft_s": 21.3705,
+      "runs": 2,
+      "range_pct": 0.030883694812937595
+     }
+    ]
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "model": "Qwen3.8-27B",
+    "date": "2026-08-30",
+    "lit": false,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": 18.135054363854252,
+     "b_us_tok": 303.2123550198574,
+     "c_ns_tok2": 1.4462363901342088,
+     "r2": 0.9999988896502918,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 15.9283466473009
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1051,
+      "tok_s": 3105.791962174941,
+      "ttft_s": 0.3384,
+      "runs": 2,
+      "range_pct": 0.2955082742316788
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 3136.176066024759,
+      "ttft_s": 0.6543,
+      "runs": 2,
+      "range_pct": 0.27510316368638604
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 3194.7017779004223,
+      "ttft_s": 1.2683499999999999,
+      "runs": 2,
+      "range_pct": 0.023652777230257185
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 3181.9137749737115,
+      "ttft_s": 1.9020000000000001,
+      "runs": 2,
+      "range_pct": 0.031545741324929336
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 3152.2079549013465,
+      "ttft_s": 2.5544000000000002,
+      "runs": 2,
+      "range_pct": 0.3523332289382985
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 3101.2698943684627,
+      "ttft_s": 3.8861499999999998,
+      "runs": 2,
+      "range_pct": 0.04374509475959587
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 3052.4364154979794,
+      "ttft_s": 5.25875,
+      "runs": 2,
+      "range_pct": 0.09317803660564276
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 3001.6691741704653,
+      "ttft_s": 6.67995,
+      "runs": 2,
+      "range_pct": 0.022455257898637816
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 2946.9531283502724,
+      "ttft_s": 8.16165,
+      "runs": 2,
+      "range_pct": 0.21686791273825
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 2855.183103359196,
+      "ttft_s": 11.2259,
+      "runs": 2,
+      "range_pct": 0.1051140665781732
+     }
+    ]
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-08-30",
+    "lit": false,
+    "cfg": "MG30",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": 8.767563920115121,
+     "b_us_tok": 290.1463102807825,
+     "c_ns_tok2": 0.6696261362485373,
+     "r2": 0.9999989510971085,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 15.505090054815977
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1055,
+      "tok_s": 3343.3687212803043,
+      "ttft_s": 0.31555,
+      "runs": 2,
+      "range_pct": 0.22183489145936744
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2055,
+      "tok_s": 3358.391894100343,
+      "ttft_s": 0.6119,
+      "runs": 2,
+      "range_pct": 0.359535871874486
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4055,
+      "tok_s": 3393.021504476613,
+      "ttft_s": 1.1951,
+      "runs": 2,
+      "range_pct": 0.05020500376536975
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6055,
+      "tok_s": 3383.248589149019,
+      "ttft_s": 1.7897,
+      "runs": 2,
+      "range_pct": 0.033525171816501866
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8055,
+      "tok_s": 3367.826904985889,
+      "ttft_s": 2.39175,
+      "runs": 2,
+      "range_pct": 0.07943974077558326
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12055,
+      "tok_s": 3346.101534959891,
+      "ttft_s": 3.6027,
+      "runs": 2,
+      "range_pct": 0.03330835206927771
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16055,
+      "tok_s": 3320.476096915297,
+      "ttft_s": 4.8351500000000005,
+      "runs": 2,
+      "range_pct": 0.02275006980135261
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 3288.3248481271057,
+      "ttft_s": 6.0988500000000005,
+      "runs": 2,
+      "range_pct": 0.027874107413700593
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24055,
+      "tok_s": 3257.101849595147,
+      "ttft_s": 7.385400000000001,
+      "runs": 2,
+      "range_pct": 0.07853332250114828
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32055,
+      "tok_s": 3206.221399814958,
+      "ttft_s": 9.99775,
+      "runs": 2,
+      "range_pct": 0.06101372808881993
+     }
+    ]
+   },
+   {
     "machine": "rdna3",
     "machine_name": "RX 7900 XT",
     "model": "gemma-4-12B-it",
@@ -1554,6 +1887,83 @@
    "prefill_gain": 1.4045321161474869,
    "decode_gain": 1.1502604880723883
   },
+  "backend_mixed": [
+   {
+    "model": "Muse-Glimmer-30B",
+    "backends": [
+     "FLASH_ATTN"
+    ],
+    "kernel": "unknown",
+    "machines": [
+     "a100",
+     "rdna3"
+    ],
+    "unrecorded": 1
+   },
+   {
+    "model": "Qwen3-8B",
+    "backends": [],
+    "kernel": "unknown",
+    "machines": [
+     "rdna3",
+     "rdna3-1"
+    ],
+    "unrecorded": 2
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "backends": [
+     "FLASH_ATTN",
+     "TRITON_ATTN"
+    ],
+    "kernel": "different",
+    "machines": [
+     "a100",
+     "rdna3"
+    ],
+    "unrecorded": 0
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "backends": [
+     "TRITON_ATTN"
+    ],
+    "kernel": "unknown",
+    "machines": [
+     "a100",
+     "l4",
+     "rdna3",
+     "rdna3-1"
+    ],
+    "unrecorded": 2
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "backends": [
+     "TRITON_ATTN"
+    ],
+    "kernel": "unknown",
+    "machines": [
+     "a100",
+     "l4",
+     "rdna3",
+     "rdna3-1"
+    ],
+    "unrecorded": 1
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "backends": [
+     "TRITON_ATTN"
+    ],
+    "kernel": "same",
+    "machines": [
+     "a100",
+     "rdna3"
+    ],
+    "unrecorded": 0
+   }
+  ],
   "ticks": [
    500,
    1000,

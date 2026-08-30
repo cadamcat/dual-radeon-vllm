@@ -13,10 +13,18 @@ import json, os, subprocess, sys, time
 LOG = "/content/setup.log"
 D = "/content/work"
 
-MODELS = [
-    ("google/gemma-4-12B-it-qat-w4a16-ct", "gemma-4-12B-it-qat-w4a16-ct"),
-    ("cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit", "gemma-4-26B-A4B-AWQ"),
-]
+# Overridable so one script serves both halves of the round. The first pass
+# fetched the two models the spine needed; the second fetches the three whose
+# prefill the 2026-08-29 campaign recorded through a warm cache and therefore
+# never measured.
+_SETS = {
+    "spine": [("google/gemma-4-12B-it-qat-w4a16-ct", "gemma-4-12B-it-qat-w4a16-ct"),
+              ("cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit", "gemma-4-26B-A4B-AWQ")],
+    "rest":  [("google/gemma-4-31B-it-qat-w4a16-ct", "gemma-4-31B-it-qat-w4a16-ct"),
+              ("cyankiwi/Qwen3.8-27B-AWQ-INT4", "Qwen3.8-27B-AWQ-INT4"),
+              ("RedHatAI/Muse-Glimmer-30B-INT4", "Muse-Glimmer-30B-INT4")],
+}
+MODELS = _SETS[os.environ.get("BENCH_MODELS", "spine")]
 
 
 def complete(d):
@@ -80,9 +88,38 @@ if __name__ == "__main__":
         sz = subprocess.run(["du", "-sh", d], capture_output=True, text=True).stdout.split()[0] if ok else "-"
         print(f"  {'ok  ' if ok else 'FAIL'} {local:34s} {sz:>7s}  {time.time()-t0:5.0f}s", flush=True)
 
+    # Fetch the book here rather than leaving it to the run. cut_prompts.py
+    # caches it too, but only for the families whose tokenizer is on this VM,
+    # and on 2026-08-30 an un-retried fetch inside ladder_for() timed out on a
+    # healthy A100 whose engine had already started and warmed up -- 231 s of
+    # engine start thrown away for a text file. `ladder_for` reads this path.
+    print("=== source text ===", flush=True)
+    import urllib.request
+    book = f"{D}/.gutenberg-1228.txt"
+    if os.path.exists(book) and os.path.getsize(book) > 400000:
+        print(f"  have  {book}", flush=True)
+    else:
+        for attempt in range(3):
+            for url in ("https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+                        "https://www.gutenberg.org/files/1228/1228-0.txt"):
+                try:
+                    txt = urllib.request.urlopen(url, timeout=180).read()
+                    if len(txt) > 400000:
+                        open(book, "wb").write(txt)
+                        print(f"  ok    {len(txt)} bytes from {url}", flush=True)
+                        break
+                except Exception as e:
+                    print(f"  retry {url}: {e!r}", flush=True)
+            if os.path.exists(book):
+                break
+            time.sleep(10)
+        else:
+            print("  FAIL  could not fetch the book", flush=True)
+
     print("=== ladders ===", flush=True)
     r = subprocess.run([sys.executable, f"{D}/cut_prompts.py", "--models-dir", "/content/models",
-                        "--only", "gemma,gemma26b", "--out", D],
+                        "--only", os.environ.get("BENCH_LADDERS", "gemma,gemma26b"),
+                        "--out", D],
                        capture_output=True, text=True, cwd=D)
     print(r.stdout[-2500:], flush=True)
     if r.returncode != 0:

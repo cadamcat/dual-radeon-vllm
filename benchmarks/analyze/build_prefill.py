@@ -71,6 +71,11 @@ CFG_CUDA = {
     # what separates the L4's G12 from the A100's, so the id does not repeat it.
     "G12":                     ("gemma-4-12B-it",  "w4a16 QAT", "dense", 1),
     "G26A4B":                  ("gemma-4-26B-A4B", "int4 AWQ",  "MoE, 128 experts", 1),
+    # 2026-08-30, second pass: the three whose prefill the 2026-08-29 campaign
+    # measured through a warm prefix cache and therefore never measured.
+    "G31":                     ("gemma-4-31B-it",  "w4a16 QAT", "dense", 1),
+    "Q38":                     ("Qwen3.8-27B",     "int4 AWQ",  "hybrid SSM", 1),
+    "MG30":                    ("Muse-Glimmer-30B", "int4",     "sliding window 2048", 1),
 }
 
 MTP3 = "mtp k=3"
@@ -99,6 +104,12 @@ ARMS_CUDA = {
     "E26-tp1-u95":            (None,    "TRITON_ATTN"),
     "G12":                    (None,    "TRITON_ATTN"),
     "G26A4B":                 (None,    "TRITON_ATTN"),
+    # read from this run's own model_meta, not inferred: the 2026-08-29 campaign
+    # recorded no backend at all, and Muse-Glimmer's was null there because its
+    # serve log went with a reclaimed VM.
+    "G31":                    (None,    "TRITON_ATTN"),
+    "Q38":                    (None,    "FLASH_ATTN"),
+    "MG30":                   (None,    "FLASH_ATTN"),
 }
 
 # Every prefill source, and the machine it ran on. The Radeon entries mirror

@@ -32,6 +32,7 @@ TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
 GEN = 512
 MML = 33000
 
+# BENCH_CFGS picks a subset by id, as the Radeon runner does.
 CFGS = [
     # 2026-08-30. The spine's model, on the same stack and the same ladder as
     # A100-G12, so the two rows differ in the card and nothing else.
@@ -42,6 +43,18 @@ CFGS = [
     # campaign has measured mns 16 against default at under 0.7 % on this
     # family (campaign handoff §3), and the row records it either way.
     dict(id="G26A4B", model="gemma-4-26B-A4B-AWQ", mns=16),
+    # The three whose prefill the 2026-08-29 campaign recorded through a warm
+    # prefix cache: 0 of 11 rungs chart-grade on each, spreads to 192 %. Only
+    # the stock arms are re-measured. Speculation changes what happens after the
+    # first token, not the forward pass over the prompt, so a speculative arm's
+    # prefill answers no question this round is asking; the decode rows those
+    # arms produced were never in doubt and stand.
+    #
+    # mns follows the 2026-08-29 configurations for the two that had it, so the
+    # only difference from those rows is the cache flag.
+    dict(id="G31", model="gemma-4-31B-it-qat-w4a16-ct"),
+    dict(id="Q38", model="Qwen3.8-27B-AWQ-INT4", mns=16),
+    dict(id="MG30", model="Muse-Glimmer-30B-INT4", mns=16),
 ]
 
 # gemma-4 registers image, video and audio. vLLM only drops the mm-prefix
@@ -385,7 +398,9 @@ def run_cfg(cfg, done):
 
 if __name__ == "__main__":
     os.makedirs(D, exist_ok=True)
-    want = sys.argv[1].split(",") if len(sys.argv) > 1 else None
+    want = (sys.argv[1].split(",") if len(sys.argv) > 1
+            else (os.environ["BENCH_CFGS"].split(",")
+                  if os.environ.get("BENCH_CFGS") else None))
     import vllm
     # Record the stack. Nothing in the 2026-08-29 A100 logs names a torch or a
     # CUDA version, and the L4's were lost with its VM, so both had to be left

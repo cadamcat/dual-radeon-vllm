@@ -541,6 +541,13 @@ PF_LINES = [
     ("rdna3-1", "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp1"),
     ("l4",      "L4",             "gemma-4-12B-it",   "2026-08-30", "G12"),
     ("l4",      "L4",             "gemma-4-26B-A4B",  "2026-08-30", "G26A4B"),
+    # 2026-08-30, second pass. The 2026-08-29 A100 campaign measured these three
+    # through a warm prefix cache, so they had no usable prefill until they were
+    # measured again; each now has a card-against-cards line where before it had
+    # only the pair's.
+    ("a100",    "A100-SXM4-80GB", "gemma-4-31B-it",   "2026-08-30", "G31"),
+    ("a100",    "A100-SXM4-80GB", "Qwen3.8-27B",      "2026-08-30", "Q38"),
+    ("a100",    "A100-SXM4-80GB", "Muse-Glimmer-30B", "2026-08-30", "MG30"),
     # the pair, one line per model, the configurations Figure 1 draws
     ("rdna3",   "RX 7900 XT",     "gemma-4-12B-it",   "2026-08-24", "A-12B-tp2"),
     ("rdna3",   "RX 7900 XT",     "gemma-4-26B-A4B",  "2026-08-24", "E-26B-tp2"),
@@ -657,6 +664,28 @@ assert backend_tradeoff["prefill_gain"] > 1 and backend_tradeoff["decode_gain"] 
 # cannot state what these cards do.
 _l4_12 = next(c for c in pf_cmp if c["machine"] == "l4" and c["model"] == "gemma-4-12B-it")
 assert _l4_12["b_ratio"] < 1.0 < _l4_12["c_ratio"], _l4_12
+# Where a model's lines do not share a kernel, the difference between them is
+# not only the card. gemma-4 goes to TRITON_ATTN on both machines, so those
+# comparisons are clean; Qwen3.8 and Muse-Glimmer run FLASH_ATTN on the A100
+# and TRITON_ATTN (or an unrecorded backend) on the Radeons, and a reader who
+# reads their c ratio as hardware would be reading a kernel as well. The figure
+# says which is which rather than leaving it to be noticed.
+pf_backend_mixed = []
+for model in sorted({x["model"] for x in pf_series}):
+    got = [x for x in pf_series if x["model"] == model]
+    known = {x["attn_backend"] for x in got if x["attn_backend"]}
+    if len(got) > 1:
+        unrec = sum(1 for x in got if not x["attn_backend"])
+        # three states, not two. "No contradiction recorded" is not the same
+        # claim as "known to be the same kernel", and only the first of those
+        # is true where a serve log did not survive.
+        kind = ("different" if len(known) > 1
+                else "same" if unrec == 0 and len(known) == 1
+                else "unknown")
+        pf_backend_mixed.append({
+            "model": model, "backends": sorted(known), "kernel": kind,
+            "machines": sorted(x["machine"] for x in got), "unrecorded": unrec})
+
 PF_TICKS = [c for c in sorted({p["ctx"] for x in pf_series for p in x["points"]})
             if c in {500 * 2 ** i for i in range(8)}]
 
@@ -684,6 +713,7 @@ out = {
         "compare": pf_cmp,
         "tp_gain": tp_gain,
         "backend_tradeoff": backend_tradeoff,
+        "backend_mixed": pf_backend_mixed,
         "ticks": PF_TICKS,
         "ctx_min": min(p["tokens"] for x in pf_series for p in x["points"]),
         "ctx_max": max(p["tokens"] for x in pf_series for p in x["points"]),

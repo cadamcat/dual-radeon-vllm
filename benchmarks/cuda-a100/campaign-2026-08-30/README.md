@@ -4,16 +4,38 @@
 configurations and **none of it is a prefill measurement**. This is the
 correction, for the two models the 2026-08-30 round needs.
 
-Two configurations, eleven rungs, two rounds: **22 measurements each, 0 errors**.
+**Five** configurations, in two passes on two VMs, eleven rungs and two rounds
+each: **22 measurements per configuration, 0 errors**. The first pass took the
+two models the 2026-08-30 round's spine needed; the second took the three whose
+prefill the 2026-08-29 campaign had recorded through a warm cache and therefore
+never measured.
 
     NVIDIA A100-SXM4-80GB · 81920 MiB · sm80 · driver 580.82.07
     vLLM 0.28.0 · torch 2.13.0+cu130 · transformers 5.15.1 · CUDA 13.0
     TRITON_ATTN · MarlinLinearKernel · enable_prefix_caching=False
 
-| cfg | model | KV | reaches |
-|---|---|--:|--:|
-| `G12` | gemma-4-12B-it w4a16 QAT | 60.61 GiB | 965 712 tok |
-| `G26A4B` | gemma-4-26B-A4B int4 AWQ | 53.99 GiB | 1 106 907 tok |
+| cfg | model | backend | KV | reaches |
+|---|---|---|--:|--:|
+| `G12` | gemma-4-12B-it w4a16 QAT | TRITON_ATTN | 60.61 GiB | 965 712 tok |
+| `G26A4B` | gemma-4-26B-A4B int4 AWQ | TRITON_ATTN | 53.99 GiB | 1 106 907 tok |
+| `G31` | gemma-4-31B-it w4a16 QAT | TRITON_ATTN | 49.28 GiB | 252 587 tok |
+| `Q38` | Qwen3.8-27B int4 AWQ | **FLASH_ATTN** | 49.59 GiB | 743 217 tok |
+| `MG30` | Muse-Glimmer-30B int4 | **FLASH_ATTN** | 48.23 GiB | 2 493 233 tok |
+
+**Only the stock arms were re-measured.** Speculation changes what happens after
+the first token, not the forward pass over the prompt, so a speculative arm's
+prefill answers no question this round asked; the decode those arms produced was
+never in doubt and stands.
+
+The `backend` column is read from each run's own `model_meta`, and two of these
+are the first record of it: the 2026-08-29 campaign captured no backend at all —
+its regex matched one of the two forms vLLM 0.28 writes — and Muse-Glimmer's
+serve log went with a reclaimed VM. **vLLM sends Qwen3.8 and Muse-Glimmer to
+FLASH_ATTN here and gemma-4 to TRITON_ATTN**, which matters for the cross-machine
+comparison: a `c` ratio between an A100 FLASH_ATTN line and a Radeon TRITON_ATTN
+one is a kernel difference as well as a card one. `gemma-4-31B` is the only model
+in this repository whose lines on both machines are recorded and on the same
+kernel.
 
 ## What was wrong with the old rows
 

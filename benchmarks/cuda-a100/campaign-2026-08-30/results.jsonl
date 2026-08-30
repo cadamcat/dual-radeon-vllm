@@ -91,3 +91,142 @@
 {"kind": "prefill", "cfg": "G26A4B", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 4.3715, "prefill_tps": 7323.0, "ts": 1788066684.2}
 {"kind": "decode", "cfg": "G26A4B", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 509, "wall_s": 9.158, "decode_tps": 106.1348, "ts": 1788066684.2}
 {"kind": "config_complete", "cfg": "G26A4B", "ok": 22, "err": 0, "ts": 1788066684.2}
+{"kind": "run_meta", "machine": "A100-SXM4-80GB", "vllm": "0.28.0", "torch": "2.13.0+cu130", "transformers": "5.15.1", "cuda": "13.0", "gpu": "NVIDIA A100-SXM4-80GB, 81920 MiB, 8.0, 580.82.07", "ts": 1788088511.9}
+{"kind": "model_meta", "cfg": "G31", "machine": "A100-SXM4-80GB", "vram_total_mib": 81920, "init_engine_s": "237.07", "model_load_s": "12.185749", "kv_gib": "49.28", "kv_tokens": "252587", "backend": "TRITON_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "ts": 1788088833.9}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 0.2291, "prefill_tps": 2239.5, "ts": 1788088851.2}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 506, "wall_s": 8.867, "decode_tps": 58.466, "ts": 1788088851.2}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.2012, "prefill_tps": 2550.0, "ts": 1788088860.0}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 507, "wall_s": 8.842, "decode_tps": 58.5566, "ts": 1788088860.0}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 0.3868, "prefill_tps": 2618.8, "ts": 1788088869.1}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 506, "wall_s": 9.12, "decode_tps": 57.8223, "ts": 1788088869.1}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 0.3866, "prefill_tps": 2620.3, "ts": 1788088878.3}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 507, "wall_s": 9.117, "decode_tps": 57.9582, "ts": 1788088878.3}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2013, "ttft": 0.7871, "prefill_tps": 2557.5, "ts": 1788088887.9}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2013, "gen_tokens": 509, "wall_s": 9.649, "decode_tps": 57.3243, "ts": 1788088887.9}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2013, "ttft": 0.7841, "prefill_tps": 2567.3, "ts": 1788088897.6}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2013, "gen_tokens": 506, "wall_s": 9.646, "decode_tps": 56.9823, "ts": 1788088897.6}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4013, "ttft": 1.6457, "prefill_tps": 2438.5, "ts": 1788088908.5}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4013, "gen_tokens": 512, "wall_s": 10.901, "decode_tps": 55.2102, "ts": 1788088908.5}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4013, "ttft": 1.6448, "prefill_tps": 2439.7, "ts": 1788088919.4}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4013, "gen_tokens": 511, "wall_s": 10.9, "decode_tps": 55.1042, "ts": 1788088919.4}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 2.5817, "prefill_tps": 2329.1, "ts": 1788088931.6}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 12.217, "decode_tps": 53.0356, "ts": 1788088931.6}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 2.5796, "prefill_tps": 2331.0, "ts": 1788088943.8}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 12.214, "decode_tps": 53.039, "ts": 1788088943.8}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8013, "ttft": 3.5892, "prefill_tps": 2232.5, "ts": 1788088957.3}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 13.488, "decode_tps": 51.622, "ts": 1788088957.3}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8013, "ttft": 3.5873, "prefill_tps": 2233.7, "ts": 1788088970.8}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8013, "gen_tokens": 512, "wall_s": 13.482, "decode_tps": 51.6414, "ts": 1788088970.8}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 5.8207, "prefill_tps": 2063.8, "ts": 1788088986.9}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 16.083, "decode_tps": 49.7947, "ts": 1788088986.9}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 5.8147, "prefill_tps": 2066.0, "ts": 1788089002.9}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 16.079, "decode_tps": 49.7864, "ts": 1788089002.9}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16013, "ttft": 8.3561, "prefill_tps": 1916.3, "ts": 1788089022.0}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16013, "gen_tokens": 512, "wall_s": 19.114, "decode_tps": 47.5007, "ts": 1788089022.0}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16013, "ttft": 8.3513, "prefill_tps": 1917.4, "ts": 1788089041.2}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16013, "gen_tokens": 512, "wall_s": 19.11, "decode_tps": 47.4965, "ts": 1788089041.2}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 11.1697, "prefill_tps": 1791.7, "ts": 1788089063.7}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 22.5, "decode_tps": 45.1016, "ts": 1788089063.7}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 11.1624, "prefill_tps": 1792.9, "ts": 1788089086.1}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 22.492, "decode_tps": 45.1024, "ts": 1788089086.1}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 14.2774, "prefill_tps": 1681.9, "ts": 1788089112.1}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 512, "wall_s": 25.936, "decode_tps": 43.83, "ts": 1788089112.1}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24013, "ttft": 14.2738, "prefill_tps": 1682.3, "ts": 1788089138.0}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24013, "gen_tokens": 512, "wall_s": 25.931, "decode_tps": 43.8348, "ts": 1788089138.0}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32013, "ttft": 21.3672, "prefill_tps": 1498.2, "ts": 1788089171.4}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32013, "gen_tokens": 512, "wall_s": 33.418, "decode_tps": 42.4027, "ts": 1788089171.4}
+{"kind": "prefill", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32013, "ttft": 21.3738, "prefill_tps": 1497.8, "ts": 1788089204.9}
+{"kind": "decode", "cfg": "G31", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32013, "gen_tokens": 512, "wall_s": 33.422, "decode_tps": 42.4133, "ts": 1788089204.9}
+{"kind": "config_complete", "cfg": "G31", "ok": 22, "err": 0, "ts": 1788089204.9}
+{"kind": "model_meta", "cfg": "Q38", "machine": "A100-SXM4-80GB", "vram_total_mib": 81920, "init_engine_s": "183.33", "model_load_s": "15.940976", "kv_gib": "49.59", "kv_tokens": "743217", "backend": "FLASH_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "ts": 1788089519.0}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 552, "ttft": 0.223, "prefill_tps": 2475.3, "ts": 1788089529.1}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 7.553, "decode_tps": 69.7135, "ts": 1788089529.1}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 552, "ttft": 0.1901, "prefill_tps": 2904.4, "ts": 1788089536.6}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 7.52, "decode_tps": 69.7128, "ts": 1788089536.6}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1051, "ttft": 0.3379, "prefill_tps": 3110.5, "ts": 1788089544.3}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 7.677, "decode_tps": 69.6243, "ts": 1788089544.3}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1051, "ttft": 0.3389, "prefill_tps": 3101.4, "ts": 1788089551.9}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 7.678, "decode_tps": 69.6255, "ts": 1788089551.9}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2052, "ttft": 0.6552, "prefill_tps": 3131.7, "ts": 1788089560.0}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 8.045, "decode_tps": 69.1518, "ts": 1788089560.0}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2052, "ttft": 0.6534, "prefill_tps": 3140.5, "ts": 1788089568.0}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 8.044, "decode_tps": 69.1453, "ts": 1788089568.0}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4052, "ttft": 1.2682, "prefill_tps": 3195.0, "ts": 1788089576.7}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 8.707, "decode_tps": 68.692, "ts": 1788089576.7}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4052, "ttft": 1.2685, "prefill_tps": 3194.3, "ts": 1788089585.4}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 8.708, "decode_tps": 68.6892, "ts": 1788089585.4}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6052, "ttft": 1.9023, "prefill_tps": 3181.4, "ts": 1788089594.8}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 9.4, "decode_tps": 68.1501, "ts": 1788089594.8}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6052, "ttft": 1.9017, "prefill_tps": 3182.5, "ts": 1788089604.2}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 9.401, "decode_tps": 68.1431, "ts": 1788089604.2}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8052, "ttft": 2.5499, "prefill_tps": 3157.8, "ts": 1788089614.3}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 10.061, "decode_tps": 68.0354, "ts": 1788089614.3}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8052, "ttft": 2.5589, "prefill_tps": 3146.7, "ts": 1788089624.4}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 10.07, "decode_tps": 68.0288, "ts": 1788089624.4}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12052, "ttft": 3.887, "prefill_tps": 3100.6, "ts": 1788089635.9}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12052, "gen_tokens": 512, "wall_s": 11.518, "decode_tps": 66.964, "ts": 1788089635.9}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12052, "ttft": 3.8853, "prefill_tps": 3102.0, "ts": 1788089647.4}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12052, "gen_tokens": 512, "wall_s": 11.513, "decode_tps": 66.9946, "ts": 1788089647.4}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16052, "ttft": 5.2612, "prefill_tps": 3051.0, "ts": 1788089660.4}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16052, "gen_tokens": 512, "wall_s": 12.971, "decode_tps": 66.2831, "ts": 1788089660.4}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16052, "ttft": 5.2563, "prefill_tps": 3053.9, "ts": 1788089673.3}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16052, "gen_tokens": 512, "wall_s": 12.967, "decode_tps": 66.2687, "ts": 1788089673.3}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20051, "ttft": 6.6807, "prefill_tps": 3001.3, "ts": 1788089687.8}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20051, "gen_tokens": 512, "wall_s": 14.487, "decode_tps": 65.4574, "ts": 1788089687.8}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20051, "ttft": 6.6792, "prefill_tps": 3002.0, "ts": 1788089702.3}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20051, "gen_tokens": 512, "wall_s": 14.497, "decode_tps": 65.3631, "ts": 1788089702.3}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24052, "ttft": 8.1528, "prefill_tps": 2950.1, "ts": 1788089718.4}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24052, "gen_tokens": 512, "wall_s": 16.059, "decode_tps": 64.6336, "ts": 1788089718.4}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24052, "ttft": 8.1705, "prefill_tps": 2943.8, "ts": 1788089734.5}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24052, "gen_tokens": 512, "wall_s": 16.075, "decode_tps": 64.645, "ts": 1788089734.5}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32052, "ttft": 11.22, "prefill_tps": 2856.7, "ts": 1788089753.7}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32052, "gen_tokens": 512, "wall_s": 19.257, "decode_tps": 63.5808, "ts": 1788089753.7}
+{"kind": "prefill", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32052, "ttft": 11.2318, "prefill_tps": 2853.7, "ts": 1788089773.0}
+{"kind": "decode", "cfg": "Q38", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32052, "gen_tokens": 512, "wall_s": 19.276, "decode_tps": 63.5268, "ts": 1788089773.0}
+{"kind": "config_complete", "cfg": "Q38", "ok": 22, "err": 0, "ts": 1788089773.0}
+{"kind": "model_meta", "cfg": "MG30", "machine": "A100-SXM4-80GB", "vram_total_mib": 81920, "init_engine_s": "101.38", "model_load_s": "11.833092", "kv_gib": "48.23", "kv_tokens": "2493233", "backend": "FLASH_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "ts": 1788089952.1}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 555, "ttft": 0.2064, "prefill_tps": 2689.0, "ts": 1788089965.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 500, "round": 1, "prompt_tokens": 555, "gen_tokens": 511, "wall_s": 7.824, "decode_tps": 66.9492, "ts": 1788089965.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 555, "ttft": 0.1767, "prefill_tps": 3140.2, "ts": 1788089973.0}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 500, "round": 2, "prompt_tokens": 555, "gen_tokens": 511, "wall_s": 7.787, "decode_tps": 67.0113, "ts": 1788089973.0}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1055, "ttft": 0.3152, "prefill_tps": 3347.2, "ts": 1788089981.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 1000, "round": 1, "prompt_tokens": 1055, "gen_tokens": 511, "wall_s": 8.189, "decode_tps": 64.7697, "ts": 1788089981.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1055, "ttft": 0.3159, "prefill_tps": 3339.8, "ts": 1788089989.3}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 1000, "round": 2, "prompt_tokens": 1055, "gen_tokens": 511, "wall_s": 8.19, "decode_tps": 64.7693, "ts": 1788089989.3}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2055, "ttft": 0.613, "prefill_tps": 3352.3, "ts": 1788089998.3}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 2000, "round": 1, "prompt_tokens": 2055, "gen_tokens": 511, "wall_s": 8.914, "decode_tps": 61.4402, "ts": 1788089998.3}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2055, "ttft": 0.6108, "prefill_tps": 3364.4, "ts": 1788090007.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 2000, "round": 2, "prompt_tokens": 2055, "gen_tokens": 511, "wall_s": 8.912, "decode_tps": 61.4359, "ts": 1788090007.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4055, "ttft": 1.1954, "prefill_tps": 3392.2, "ts": 1788090016.7}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 4000, "round": 1, "prompt_tokens": 4055, "gen_tokens": 508, "wall_s": 9.518, "decode_tps": 60.9195, "ts": 1788090016.7}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4055, "ttft": 1.1948, "prefill_tps": 3394.0, "ts": 1788090026.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 4000, "round": 2, "prompt_tokens": 4055, "gen_tokens": 508, "wall_s": 9.517, "decode_tps": 60.9235, "ts": 1788090026.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6055, "ttft": 1.7894, "prefill_tps": 3383.9, "ts": 1788090036.3}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 6000, "round": 1, "prompt_tokens": 6055, "gen_tokens": 511, "wall_s": 10.115, "decode_tps": 61.2589, "ts": 1788090036.3}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6055, "ttft": 1.79, "prefill_tps": 3382.6, "ts": 1788090046.4}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 6000, "round": 2, "prompt_tokens": 6055, "gen_tokens": 511, "wall_s": 10.115, "decode_tps": 61.2598, "ts": 1788090046.4}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8055, "ttft": 2.3927, "prefill_tps": 3366.6, "ts": 1788090057.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 8000, "round": 1, "prompt_tokens": 8055, "gen_tokens": 511, "wall_s": 10.723, "decode_tps": 61.2199, "ts": 1788090057.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8055, "ttft": 2.3908, "prefill_tps": 3369.1, "ts": 1788090067.9}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 8000, "round": 2, "prompt_tokens": 8055, "gen_tokens": 511, "wall_s": 10.723, "decode_tps": 61.2091, "ts": 1788090067.9}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12055, "ttft": 3.6033, "prefill_tps": 3345.6, "ts": 1788090079.9}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 12000, "round": 1, "prompt_tokens": 12055, "gen_tokens": 511, "wall_s": 11.961, "decode_tps": 61.0238, "ts": 1788090079.9}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12055, "ttft": 3.6021, "prefill_tps": 3346.7, "ts": 1788090091.8}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 12000, "round": 2, "prompt_tokens": 12055, "gen_tokens": 511, "wall_s": 11.961, "decode_tps": 61.0093, "ts": 1788090091.8}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16055, "ttft": 4.8346, "prefill_tps": 3320.9, "ts": 1788090105.0}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 16000, "round": 1, "prompt_tokens": 16055, "gen_tokens": 511, "wall_s": 13.2, "decode_tps": 60.9679, "ts": 1788090105.0}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16055, "ttft": 4.8357, "prefill_tps": 3320.1, "ts": 1788090118.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 16000, "round": 2, "prompt_tokens": 16055, "gen_tokens": 511, "wall_s": 13.203, "decode_tps": 60.952, "ts": 1788090118.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20055, "ttft": 6.0997, "prefill_tps": 3287.9, "ts": 1788090132.7}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 20000, "round": 1, "prompt_tokens": 20055, "gen_tokens": 511, "wall_s": 14.477, "decode_tps": 60.8792, "ts": 1788090132.7}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20055, "ttft": 6.098, "prefill_tps": 3288.8, "ts": 1788090147.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 20000, "round": 2, "prompt_tokens": 20055, "gen_tokens": 511, "wall_s": 14.477, "decode_tps": 60.8673, "ts": 1788090147.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24055, "ttft": 7.3825, "prefill_tps": 3258.4, "ts": 1788090163.0}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 24000, "round": 1, "prompt_tokens": 24055, "gen_tokens": 511, "wall_s": 15.795, "decode_tps": 60.6236, "ts": 1788090163.0}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24055, "ttft": 7.3883, "prefill_tps": 3255.8, "ts": 1788090178.8}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 24000, "round": 2, "prompt_tokens": 24055, "gen_tokens": 511, "wall_s": 15.801, "decode_tps": 60.6214, "ts": 1788090178.8}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32055, "ttft": 9.9947, "prefill_tps": 3207.2, "ts": 1788090197.2}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 32000, "round": 1, "prompt_tokens": 32055, "gen_tokens": 508, "wall_s": 18.408, "decode_tps": 60.259, "ts": 1788090197.2}
+{"kind": "prefill", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32055, "ttft": 10.0008, "prefill_tps": 3205.3, "ts": 1788090215.6}
+{"kind": "decode", "cfg": "MG30", "machine": "A100-SXM4-80GB", "target": 32000, "round": 2, "prompt_tokens": 32055, "gen_tokens": 508, "wall_s": 18.414, "decode_tps": 60.2616, "ts": 1788090215.6}
+{"kind": "config_complete", "cfg": "MG30", "ok": 22, "err": 0, "ts": 1788090215.6}
