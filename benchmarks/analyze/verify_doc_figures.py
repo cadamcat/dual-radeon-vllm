@@ -4229,6 +4229,59 @@ def main():
     ck("benchmarks.md s4, and c gains more on all three", "3",
        sum(1 for g in _tg2.values() if g["c_gain"] > g["b_gain"]))
 
+    # --- the T4 pre-flight, which is evidence for an upstream report --------
+    # Its README states what three backends did on sm75. Every number is read
+    # back out of preflight.jsonl and the serve logs it cites, because the
+    # report will quote them and a number nothing recomputes is how this
+    # repository has been wrong before.
+    _T4 = os.path.join(HERE, "..", "cuda-t4", "preflight-2026-08-30")
+    _t4rows = [json.loads(l) for l in open(os.path.join(_T4, "preflight.jsonl"))
+               if l.strip()]
+    ck("T4 preflight, engine starts recorded", "3", len(_t4rows))
+    ck("T4 preflight, and every one crashed", "3",
+       sum(1 for r in _t4rows if r.get("status") == "crash"))
+    # W4A16 is not the wall: it loads, and it takes Marlin
+    ck("T4 preflight, and every one loaded W4A16 on Marlin", "3",
+       sum(1 for r in _t4rows if r.get("wna16_kernel") == "MarlinLinearKernel"))
+    # memory is not the wall either
+    _u90 = [r for r in _t4rows if r.get("util") is None]
+    _u95 = [r for r in _t4rows if r.get("util") == "0.95"]
+    ck("T4 preflight, KV at the default utilisation", "0.65", float(_u90[0]["kv_gib"]))
+    ck("T4 preflight, and at util 0.95 with one sequence", "3.5",
+       float(_u95[0]["kv_gib"]))
+    ck("T4 preflight, which is this many tokens", "55809",
+       float(_u95[0]["kv_tokens"]))
+    ck("T4 preflight, more than the deepest rung needs", "1",
+       1 if float(_u95[0]["kv_tokens"]) > 33000 else 0)
+    ck("T4 preflight, weights resident", "8.28", float(_t4rows[0]["weights_gib"]))
+
+    def _t4log(name):
+        return open(os.path.join(_T4, "logs", name), errors="ignore").read()
+
+    _tri, _flex, _fa = (_t4log("serve-T4-G12-triton.log"),
+                        _t4log("serve-T4-G12-flex.log"),
+                        _t4log("serve-T4-G12-flash.log"))
+    # the shared-memory ceiling and what each backend asked for
+    ck("T4 preflight, Turing's shared-memory ceiling", "65536",
+       float(re.search(r"Hardware limit:?\s*(\d+)", _tri).group(1)))
+    ck("T4 preflight, what TRITON_ATTN asked for", "98304",
+       float(re.search(r"Required: (\d+)", _tri).group(1)))
+    ck("T4 preflight, what FLEX_ATTENTION asked for", "163840",
+       float(re.search(r"Required: (\d+)", _flex).group(1)))
+    ck("T4 preflight, both are over the ceiling", "2",
+       sum(1 for t in (_tri, _flex)
+           if float(re.search(r"Required: (\d+)", t).group(1))
+           > float(re.search(r"Hardware limit:?\s*(\d+)", t).group(1))))
+    # the selector accepted the two that cannot run and rejected the one that says so
+    ck("T4 preflight, backends the selector accepted", "2",
+       sum(1 for t in (_tri, _flex) if "Using AttentionBackendEnum." in t))
+    ck("T4 preflight, and FLASH_ATTN is the one it rejected", "1",
+       1 if "compute capability not supported" in _fa
+       and "Using AttentionBackendEnum." not in _fa else 0)
+    # the sampler, a different subsystem, is honest about sm75
+    ck("T4 preflight, the sampler names the capability it lacks", "1",
+       1 if "unsupported compute capability 7.5" in _tri else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

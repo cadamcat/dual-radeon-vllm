@@ -1,0 +1,35 @@
+
+$ pip install -q -U vllm 2>&1 | tail -5
+[186s rc=0]
+libcuml-cu12 26.2.0 requires cuda-toolkit[cublas,cufft,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+numba-cuda 0.22.2 requires cuda-core<1.0.0,>=0.3.2, but you have cuda-core 1.0.1 which is incompatible.
+rmm-cu12 26.2.0 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+libraft-cu12 26.2.0 requires cuda-toolkit[cublas,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+pylibcudf-cu12 26.2.1 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+
+
+
+$ pip uninstall -y -q torchaudio 2>&1 | tail -2
+[1s rc=0]
+
+
+
+$ hf download google/gemma-4-12B-it-qat-w4a16-ct --local-dir /content/models/gemma-4-12B-it-qat-w4a16-ct --max-workers 8
+[28s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-12B-it-qat-w4a16-ct
+
+[90mHint: A new version of huggingface_hub (1.29.0) is available! You are using version 1.28.0.
+To update, run: hf update[0m
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g --claude` to teach your AI agents how to use the `hf` CLI.[0m
+
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Still waiting to acquire lock on /content/models/gemma-4-12B-it-qat-w4a16-ct/.cache/huggingface/.gitignore.lock (elapsed: 0.1 seconds)
+Still waiting to acquire lock on /content/models/gemma-4-12B-it-qat-w4a16-ct/.cache/huggingface/.gitignore.lock (elapsed: 0.1 seconds)
+
+Fetching 10 files:  20%|██        | 2/10 [00:00<00:00, 11.53it/s]
+Fetching 10 files:  90%|█████████ | 9/10 [00:00<00:00, 11.24it/s]
+Fetching 10 files:  90%|█████████ | 9/10 [00:20<00:00, 11.24it/s]
+Fetching 10 files: 100%|██████████| 10/10 [00:27<00:00,  3.89s/it]
+Fetching 10 files: 100%|██████████| 10/10 [00:27<00:00,  2.70s/it]
+
