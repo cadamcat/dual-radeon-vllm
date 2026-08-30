@@ -1679,6 +1679,130 @@
    "model": "gemma-4-31B-it",
    "weights_gb": 22,
    "card_gb": 20
+  },
+  "sessions": {
+   "model": "gemma-4-31B-it",
+   "rungs": 11,
+   "cut": 2000,
+   "deep_worst": 0.44483093724932976,
+   "shallow_worst": 5.52834692462314,
+   "a": "2026-08-29",
+   "b": "2026-08-30"
+  },
+  "pair": [
+   {
+    "model": "gemma-4-12B-it",
+    "radeon_cfg": "A-12B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "G12",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 322.5917424166407,
+    "radeon_c": 10.868129413731756,
+    "a100_b": 145.69501602306957,
+    "a100_c": 3.6211326531346764,
+    "b": 2.214157705748569,
+    "c": 3.0013066227561787,
+    "rungs": 10
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "radeon_cfg": "E-26B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "G26A4B",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 250.26045591547765,
+    "radeon_c": 6.869769079619109,
+    "a100_b": 62.5736212374676,
+    "a100_c": 2.2977239240669407,
+    "b": 3.9994561760416008,
+    "c": 2.9898148370495745,
+    "rungs": 10
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "radeon_cfg": "G31-tp2",
+    "radeon_date": "2026-08-29",
+    "a100_cfg": "G31",
+    "a100_date": "2026-08-30",
+    "radeon_backend": "TRITON_ATTN",
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 868.7073601787611,
+    "radeon_c": 29.060775378009133,
+    "a100_b": 375.3968825116025,
+    "a100_c": 9.131068785787285,
+    "b": 2.3141038209125555,
+    "c": 3.1826258305317867,
+    "rungs": 10
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "radeon_cfg": "Q38-triton-tp2",
+    "radeon_date": "2026-08-29",
+    "a100_cfg": "Q38",
+    "a100_date": "2026-08-30",
+    "radeon_backend": "TRITON_ATTN",
+    "a100_backend": "FLASH_ATTN",
+    "radeon_b": 846.1560835819542,
+    "radeon_c": 18.443415242101082,
+    "a100_b": 303.2123550198574,
+    "a100_c": 1.4462363901342088,
+    "b": 2.790638539536225,
+    "c": 12.752697531272572,
+    "rungs": 10
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "radeon_cfg": "G-30B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "MG30",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "FLASH_ATTN",
+    "radeon_b": 602.4025955428759,
+    "radeon_c": 12.727601145081392,
+    "a100_b": 290.1463102807825,
+    "a100_c": 0.6696261362485373,
+    "b": 2.07620284731491,
+    "c": 19.00702564625918,
+    "rungs": 10
+   }
+  ],
+  "pair_split": {
+   "triton": {
+    "n": 3,
+    "c_min": 2.9898148370495745,
+    "c_max": 3.1826258305317867,
+    "b_min": 2.214157705748569,
+    "b_max": 3.9994561760416008
+   },
+   "flash": {
+    "n": 2,
+    "c_min": 12.752697531272572,
+    "c_max": 19.00702564625918,
+    "b_min": 2.07620284731491,
+    "b_max": 2.790638539536225
+   },
+   "b_overlaps": true,
+   "c_separates": true,
+   "b_max_scale": 3.9994561760416008,
+   "c_max_scale": 19.00702564625918
+  },
+  "flag": {
+   "model": "Qwen3.8-27B",
+   "date": "2026-08-29",
+   "pinned_cfg": "Q38-triton-tp2",
+   "pinned_backend": "TRITON_ATTN",
+   "pinned_c": 18.443415242101082,
+   "pinned_ratio": 12.752697531272572,
+   "default_cfg": "Q38-tp2",
+   "default_backend": "ROCM_ATTN",
+   "default_c": 3.4283510218247906,
+   "default_ratio": 2.370532953818597,
+   "swing": 5.379675279658003
   }
  }
 }

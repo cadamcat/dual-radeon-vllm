@@ -394,6 +394,117 @@ split = {"ladders": ladders, "second": second, "percard": percard,
          "no_single_card": {"model": "gemma-4-31B-it", "weights_gb": 22,
                             "card_gb": 20}}
 
+# ---- the pair against one A100, at prefill --------------------------------
+# The third step had decode and no prefill: the 2026-08-29 A100 session ran with
+# prefix caching on and none of its prefill survives the repeatability cut. The
+# 2026-08-30 pass re-took it for all five models the pair also runs, so the
+# comparison the article is named for now exists at both jobs.
+#
+# These are not one session per machine the way the single-card figures are --
+# the A100's prefill is a later re-measurement by construction, and the pair's
+# ladders are the campaigns that measured each model. Each side is internally
+# one run; the pairing across machines is by model, and every row says which
+# runs it is.
+#
+# What comes out of it is not about either vendor. Group the five by the kernel
+# the A100 served them with -- recorded in every case, and checked against the
+# serve log beside it -- and c splits in two: about 3x where the A100 is on the
+# same Triton unified-attention family the Radeons are, and 13x to 19x where it
+# is on FlashAttention. b does not split at all. The quadratic term is a
+# property of the attention kernel and not of the card, which is why the same
+# Radeon, the same model and the same day answer this question two different
+# ways depending on one flag.
+PAIR_ARMS = [
+    ("gemma-4-12B-it",   ("A-12B-tp2",      "2026-08-24"), ("G12",    "2026-08-30")),
+    ("gemma-4-26B-A4B",  ("E-26B-tp2",      "2026-08-24"), ("G26A4B", "2026-08-30")),
+    ("gemma-4-31B-it",   ("G31-tp2",        "2026-08-29"), ("G31",    "2026-08-30")),
+    ("Qwen3.8-27B",      ("Q38-triton-tp2", "2026-08-29"), ("Q38",    "2026-08-30")),
+    ("Muse-Glimmer-30B", ("G-30B-tp2",      "2026-08-24"), ("MG30",   "2026-08-30")),
+]
+# The same model and machine on the other backend, one flag apart, same day.
+# This is what makes the reading above a demonstration rather than a
+# correlation across five models that differ in more than their kernel.
+PAIR_ALT = ("Qwen3.8-27B", ("Q38-tp2", "2026-08-29"))
+
+
+def _fit(machine, cfg, date):
+    f = FITS.get((machine, cfg, date))
+    assert f and "b_us_tok" in f, (machine, cfg, date, f and f.get("note"))
+    return f
+
+
+def _bk(machine, cfg, date):
+    r = [x for x in PRE if x["machine"] == machine and x["cfg"] == cfg
+         and x["date"] == date]
+    return r[0]["attn_backend"] if r else None
+
+
+pair = []
+for model, (rcfg, rdate), (acfg, adate) in PAIR_ARMS:
+    r = _fit("RX 7900 XT", rcfg, rdate)
+    a = _fit("A100-SXM4-80GB", acfg, adate)
+    pair.append({"model": model, "radeon_cfg": rcfg, "radeon_date": rdate,
+                 "a100_cfg": acfg, "a100_date": adate,
+                 "radeon_backend": _bk("RX 7900 XT", rcfg, rdate),
+                 "a100_backend": _bk("A100-SXM4-80GB", acfg, adate),
+                 "radeon_b": r["b_us_tok"], "radeon_c": r["c_ns_tok2"],
+                 "a100_b": a["b_us_tok"], "a100_c": a["c_ns_tok2"],
+                 "b": r["b_us_tok"] / a["b_us_tok"],
+                 "c": r["c_ns_tok2"] / a["c_ns_tok2"],
+                 "rungs": min(r["rungs"], a["rungs"])})
+_tri = [x for x in pair if x["a100_backend"] == "TRITON_ATTN"]
+_fa = [x for x in pair if x["a100_backend"] == "FLASH_ATTN"]
+assert len(_tri) == 3 and len(_fa) == 2, (len(_tri), len(_fa))
+pair_split = {
+    "triton": {"n": len(_tri), "c_min": min(x["c"] for x in _tri),
+               "c_max": max(x["c"] for x in _tri),
+               "b_min": min(x["b"] for x in _tri), "b_max": max(x["b"] for x in _tri)},
+    "flash": {"n": len(_fa), "c_min": min(x["c"] for x in _fa),
+              "c_max": max(x["c"] for x in _fa),
+              "b_min": min(x["b"] for x in _fa), "b_max": max(x["b"] for x in _fa)},
+}
+# b does not split the way c does: the two groups' b ranges overlap and the
+# quadratic ones do not come near each other
+pair_split["b_overlaps"] = (pair_split["triton"]["b_min"] <= pair_split["flash"]["b_max"]
+                            and pair_split["flash"]["b_min"] <= pair_split["triton"]["b_max"])
+pair_split["c_separates"] = pair_split["triton"]["c_max"] < pair_split["flash"]["c_min"]
+
+_am, (_acfg, _adate) = PAIR_ALT
+_alt = _fit("RX 7900 XT", _acfg, _adate)
+_altA = next(x for x in pair if x["model"] == _am)
+flag = {"model": _am, "date": _adate,
+        "pinned_cfg": _altA["radeon_cfg"], "pinned_backend": _altA["radeon_backend"],
+        "pinned_c": _altA["radeon_c"], "pinned_ratio": _altA["c"],
+        "default_cfg": _acfg, "default_backend": _bk("RX 7900 XT", _acfg, _adate),
+        "default_c": _alt["c_ns_tok2"],
+        "default_ratio": _alt["c_ns_tok2"] / _altA["a100_c"]}
+flag["swing"] = flag["pinned_ratio"] / flag["default_ratio"]
+# c reaches 19 and b stops at 4, so one scale across both would draw every b bar
+# as a stub. The comparison that matters is within a term, and the note says the
+# two tracks are scaled separately.
+pair_split["b_max_scale"] = max(x["b"] for x in pair)
+pair_split["c_max_scale"] = max(x["c"] for x in pair)
+# The two A100 sessions on the model Figure 3 and Figure 4 share. Figure 3's
+# A100 decode is the 2026-08-29 campaign and Figure 4's A100 prefill is the
+# 2026-08-30 pass, so what the note in section 1 owes a reader is how far apart
+# the two sessions are on the one thing both of them measured.
+_s29 = {r["ctx"]: r["decode_tok_s"] for r in DEC
+        if r["machine"] == "A100-SXM4-80GB" and r["cfg"] == "A100-G31"
+        and r["date"] == "2026-08-29" and r["spec"] is None}
+_s30 = {r["ctx"]: r["decode_tok_s"] for r in DEC
+        if r["machine"] == "A100-SXM4-80GB" and r["cfg"] == "G31"
+        and r["date"] == "2026-08-30" and r["spec"] is None}
+_sh = sorted(set(_s29) & set(_s30))
+_d = {c: abs(_s30[c] / _s29[c] - 1) * 100.0 for c in _sh}
+sessions = {"model": "gemma-4-31B-it", "rungs": len(_sh), "cut": 2000,
+            "deep_worst": max(v for c, v in _d.items() if c > 2000),
+            "shallow_worst": max(v for c, v in _d.items() if c <= 1000),
+            "a": "2026-08-29", "b": "2026-08-30"}
+split["sessions"] = sessions
+split["pair"] = pair
+split["pair_split"] = pair_split
+split["flag"] = flag
+
 # ---- the realized-bandwidth side, recomputed rather than quoted -----------
 jul = V.decode(str(R / "benchmarks" / "results.jsonl"))
 GIB = 1024 ** 3 / 1e9          # GiB -> GB

@@ -37,12 +37,17 @@ A100-SXM4-80GB</strong> 和<strong>一张 L4</strong>。三个模型，而且不
 在那之前的任何一步里都不出现。</p>
 
 <div class="note">
-  <span class="lbl">同一台机器的解码与 prefill 取自同一场会话</span>
-  这篇文章的核心论断是「第二张卡在 prefill 上值的钱和在解码上不一样」，
-  所以要是这两个数取自不同的运行，就等于把一条会话边界放进了比较本身。因此下面每一条臂的两个数字都来自同一次运行。
-  这也是为什么 A100 取的是 <strong>2026-08-30</strong> 而不是 08-29：早一场有解码，但它的 prefill
-  十一个档位里 0 个过闸 —— 当时开着 prefix caching，而这套阶梯每一档都是下一档的严格前缀，
-  于是重复的那一轮什么都没算。首页是按图各自取的，那边的 A100 解码来自早一场；在 MoE 上两场差 2.2 %。
+  <span class="lbl">解码和 prefill 各自取自哪里</span>
+  前三步只要同一次运行里两个数都有，就都取自同一次运行 ——
+  因为它们要说的正是「第二张卡在两件事上值的钱不一样」，而把这两个数读自不同会话，
+  就等于把一条会话边界放进了比较本身。这也是那里的 A100 取 <strong>2026-08-30</strong>
+  而不是 08-29 的原因：早一场有解码，但它的 prefill 十一个档位里 0 个过闸 ——
+  当时开着 prefix caching，而这套阶梯每一档都是下一档的严格前缀，于是重复的那一轮什么都没算。
+  <br><br>
+  这是偏好，不是死规则。图 3 两边都用 2026-08-29 那场，因为只有那一场把两条投机臂互相测了；
+  而图 4 的 A100 prefill 按其性质就是一次补测 —— 第一遍根本没有产出能用的。
+  每个比较的每一侧都是一次运行；两侧不同天的地方，图上会写出来。
+  在这个模型上，两场 A100 在 2 K 以上吻合到 0.4 %，最浅的两档差 5.5 %。
 </div>
 
 <p>31B 那一步的配置和以前一样：同一个 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>，batch 1，
@@ -170,6 +175,39 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 而它最深的邻居比的是两个不同的深度。这个形状没有在重测里活下来；它背后的数字仍留在页面上，
 因为悄悄撤掉一张图比把它说过的话摆出来更糟。</p>
 
+<p><strong>现在 prefill 那一半也有了。</strong>直到 2026-08-30 之前，这个对比的 A100 一侧没有可用的
+prefill：测它解码的那场开着 prefix caching，而这套阶梯每一档都是下一档的前缀，
+于是重复的那一轮什么都没算，没有一档过得了重复性这一关。关掉缓存重测，覆盖这一对也跑的五个模型，
+它说出了解码那一半没说的事：</p>
+
+<figure class="rv" id="figk"> <div class="figbox">
+  <div class="figtitle">图 4 · 两张 Radeon 对一张 A100 的 prefill，按 A100 用的 kernel 分组
+    <span class="prov yes">可由仓库重算</span></div>
+  <div class="bars" id="kern"></div>
+  <div class="barunit" id="kernnote"></div> </div>
+<figcaption> <b>图 4.</b> 每根条是这一对的系数除以 A100 的，所以越高表示 A100 领先越多，刻线是持平。
+两项各用自己的刻度 —— <code>c</code> 到 19 而 <code>b</code> 只到 4 —— 因为要比的是同一项之内。
+分组依据是 vLLM 在 A100 上选的后端，五个模型都有记录，并且与旁边那份 serve log 核对过；
+Radeon 一侧五个里记录了三个，没有留下日志的那几场 campaign 写的是 null 而不是一个猜测。</figcaption>
+</figure>
+
+<p><strong>算力项不在乎路径上是哪个 kernel，而 attention 项几乎就只是这件事。</strong>
+五个模型上，A100 在 <code>b</code> 上领先 2.08× 到 4.00×，两个 kernel 分组的区间互相重叠。
+到了 <code>c</code> 上两组根本挨不着：A100 与 Radeon 同在 Triton unified-attention 那一族的三个模型
+是 2.99× 到 3.18×，而 A100 走 FlashAttention 的那两个是 12.75× 和 19.01×。</p>
+
+<p>五个模型之间不同的不止是 kernel，所以那还只是相关。下面是同一台机器、同一天、同一个模型里的同一件事。
+Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以用一个 flag 钉到
+<code>TRITON_ATTN</code>。钉住之后它的 <code>c</code> 是 18.44 ns/token²，A100 领先 12.75×；
+不动它，<code>c</code> 是 3.43，A100 领先 2.37×。一个 flag、没有补丁，
+「A100 在长提示上领先多少」这个问题的答案挪了 <strong>5.38×</strong>。
+这个 flag 正是这个仓库直到 2026-08-30 都称为「免费」的那一个；它在 32 K 上买到 1.15× 的解码，
+卖掉的就是这个。</p>
+
+<p>这些都不会让 A100 变慢。它在每个模型、两项上都领先。它们的意思是：
+「数据中心卡快多少」这个单一数字并不是两张卡的属性 —— 在二次项上它大部分是
+「两边各自落到了哪个 attention kernel」的属性，而在这套硬件上，那由一张路由表和一个命令行 flag 决定。</p>
+
 <h2><span class="n">6</span>付代价的是切分，不是硅片</h2>
 
 <p>2D 注意力路径 —— 也就是原版 vLLM 下投机会掉进去的那条 —— 每个 KV head 启动一个 workgroup。
@@ -178,13 +216,13 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 
 <figure class="rv" id="fig2">
   <div class="figbox">
-    <div class="figtitle">图 4 · 2D 路径从 1K 到 30–32K 保住了多少
+    <div class="figtitle">图 5 · 2D 路径从 1K 到 30–32K 保住了多少
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="ret"></div>
     <div class="wgs" id="wgs"></div>
   </div>
   <figcaption>
-    <b>图 4.</b> 两个平台上都是原版 vLLM 开投机，所以两边都在 2D 路径上。
+    <b>图 5.</b> 两个平台上都是原版 vLLM 开投机，所以两边都在 2D 路径上。
     下面两张卡片是 batch 1 下的 launch grid
     <code>(total_num_q_blocks, num_kv_heads)</code>：workgroup 数是 KV head
     怎么切的性质，不是厂商的性质。同一次塌陷、同一个 kernel，在两张卡上大约翻倍。
@@ -199,12 +237,12 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">图 5 · 投机走上健康路径之后值多少
+    <div class="figtitle">图 6 · 投机走上健康路径之后值多少
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="econ"></div>
   </div>
   <figcaption>
-    <b>图 5.</b> 投机对不投机，两边都走 3D 路径，各取该平台测过的最长深度。
+    <b>图 6.</b> 投机对不投机，两边都走 3D 路径，各取该平台测过的最长深度。
     不投机的基线来自不同的文件 —— 这边是 <code>splitkv-31b-stock.json</code>，
     那边是后端矩阵里被强制默认的那一列 —— 而且都是单次运行。
     这里比的是<em>收益</em>，不是速率本身。
@@ -219,12 +257,12 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">图 6 · 解码时每张卡实到的显存带宽
+    <div class="figtitle">图 7 · 解码时每张卡实到的显存带宽
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="util"></div>
   </div>
   <figcaption>
-    <b>图 6.</b> 速率取自 <code>benchmarks/results.jsonl</code> 在 500 token 上下文、TP=2 下的值，
+    <b>图 7.</b> 速率取自 <code>benchmarks/results.jsonl</code> 在 500 token 上下文、TP=2 下的值，
     每张 GPU 每 token 的字节数取自
     <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md §3</a>。
     两个效应都真实可见：同样的量化下更大的模型实到更高，而 BF16 那个还要更高。
@@ -242,14 +280,13 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负值。所以够短的提示落在这些拟合
 描述的范围之外。</p>
 
-<h3>单卡上的 gemma-4-31B，以及 A100 上它的 prefill</h3>
+<h3>单卡上的 gemma-4-31B</h3>
 <p>31B 没有单卡这一行，在这台机器上也不可能有 —— 22 GB 的权重，20 GB 的卡。
-它同样没有可用的 A100 prefill：2026-08-29 那场开着 prefix caching，132 个 prefill 档位里
-130 个过不了重复性这一关，而 2026-08-30 的重测只覆盖了 12B 和 MoE 两个模型。
-所以 31B 在这里只出现在解码上，文章其余部分那个三步比较由另外两个模型承担。</p>
+所以前两步由另外两个模型承担，31B 从第三步起才出现 ——
+在那里，这一对卡本来就是这台机器跑得动它的唯一方式。</p>
 
 <h3>A100 自己的实到带宽</h3>
-<p>图 6 只有 Radeon 这边，没有对应的一半。图 3 里那个 1.27× 是两个规格书数字的比值，
+<p>图 7 只有 Radeon 这边，没有对应的一半。图 3 里那个 1.27× 是两个规格书数字的比值，
 读者应当把它当成"单靠带宽差能解释的上界"，而不是任何一侧被拿去对照过的预测。</p>
 
 <h3>每边一套栈，每种卡各一张</h3>
@@ -269,7 +306,7 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
   <span class="lbl">2026-08-26 · 这个对比才变得可能</span>
   在 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
   的机制被移植到两套栈之前，两个平台在投机下都卡在 2D 路径上，
-  那样的对比测的会是一个共同的 bug。图 4 就是那个对比的样子 ——
+  那样的对比测的会是一个共同的 bug。图 5 就是那个对比的样子 ——
   留着它，是因为它本身就是关于张量并行的发现，而不是一个该丢掉的假象。
 </div>
 
@@ -295,7 +332,7 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
   A100 的分腿、日志以及让两边可比的那次移植在
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>；
-  图 6 背后的七月 campaign 是
+  图 7 背后的七月 campaign 是
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>。
   本页每一张图都由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
@@ -315,8 +352,18 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
  "s1par": "一张 RX 7900 XT",
  "s1unit": "batch 1 的解码 tok/s，除以同深度下一张 RX 7900 XT 的值 · 每格两轮 · MoE 那两条线到一张卡的 KV 用尽处为止",
  "s1second": "在这个模型上，第二张卡：解码 {n} 个深度上买到 {lo}× 到 {hi}×，prefill 在 {d} 上买到 {w}× 的墙钟时间",
+ "kTriton": "A100 走 TRITON_ATTN",
+ "kFlash": "A100 走 FLASH_ATTN",
+ "kPar": "与两张 RX 7900 XT 持平",
+ "kAhead": "A100 领先这一对",
+ "kCells": "这一对 {r} 对 A100 {a} {u}",
+ "kArms": "{rc} · {rd} · {rb} 对 {ac} · {ad} · {ab}",
+ "kNoLog": "后端未记录",
+ "kUnit": "这一对的系数 ÷ A100 的，所以越高表示 A100 领先越多 · 两项各用自己的刻度，因为 c 到 19 而 b 只到 4 · 刻线是持平",
+ "kSplit": "c 按 kernel 分成两组而 b 不分：A100 与 Radeon 同在 Triton 那一族时是 {tlo}× 到 {thi}×，A100 走 FlashAttention 时是 {flo}× 和 {fhi}× —— 而五个模型在 b 上都是 {blo}× 到 {bhi}×，两组互相重叠",
+ "kFlag": "而在一台机器、一天、一个模型之内：{m} 走 {db} 时 c 是 {dc}，A100 领先 {dr}×；钉到 {pb} 之后 c 是 {pc}，A100 领先 {pr}×。一个 flag 把答案挪了 {s}×",
  "termsB": "b · 算力",
- "termsC": "c · attention",
+ "termsC": "c · 注意力",
  "unitB": "µs/token",
  "unitC": "ns/token²",
  "termsPar": "与一张 RX 7900 XT 持平",

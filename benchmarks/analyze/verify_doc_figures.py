@@ -2673,6 +2673,51 @@ def main():
     ck("a100 article, and ceiling", "1.48", max(x["b_gain"] for x in ASP["second"]))
     ck("a100 article, the second card on c, floor", "1.91",
        min(x["c_gain"] for x in ASP["second"]))
+
+    # --- the pair at prefill, and the kernel it splits by --------------------
+    # Every arm of Figure 4 against the fit build_prefill reports, and the
+    # reading the figure exists for: b does not split by which attention kernel
+    # the A100 used and c does, cleanly enough that the two groups' ranges do
+    # not touch.
+    for x in ASP["pair"]:
+        r = AFIT[("RX 7900 XT", x["radeon_cfg"], x["radeon_date"])]
+        a = AFIT[("A100-SXM4-80GB", x["a100_cfg"], x["a100_date"])]
+        ck("a100 article, pair %s recomputes" % x["model"], "1",
+           1 if abs(x["b"] - r["b_us_tok"] / a["b_us_tok"]) < 1e-9
+                and abs(x["c"] - r["c_ns_tok2"] / a["c_ns_tok2"]) < 1e-9 else 0)
+        # the grouping is by a backend read off a serve log, not by a guess
+        ck("a100 article, pair %s names the A100's backend" % x["model"], "1",
+           1 if x["a100_backend"] in ("TRITON_ATTN", "FLASH_ATTN") else 0)
+    APS = ASP["pair_split"]
+    ck("a100 article, models where the A100 is on Triton", "3", APS["triton"]["n"])
+    ck("a100 article, and where it is on FlashAttention", "2", APS["flash"]["n"])
+    ck("a100 article, c on Triton, floor", "2.99", APS["triton"]["c_min"])
+    ck("a100 article, and ceiling", "3.18", APS["triton"]["c_max"])
+    ck("a100 article, c on FlashAttention, floor", "12.75", APS["flash"]["c_min"])
+    ck("a100 article, and ceiling", "19.01", APS["flash"]["c_max"])
+    ck("a100 article, the two c groups do not touch", "1",
+       1 if APS["c_separates"] else 0)
+    ck("a100 article, and the b groups do", "1", 1 if APS["b_overlaps"] else 0)
+    ck("a100 article, b across all five, floor", "2.08",
+       min(x["b"] for x in ASP["pair"]))
+    ck("a100 article, and ceiling", "4.00", max(x["b"] for x in ASP["pair"]))
+
+    # one machine, one day, one model, one flag -- which is what turns the five
+    # models above from a correlation into a demonstration
+    AFG = ASP["flag"]
+    ck("a100 article, Qwen3.8 on its default backend, c", "3.43", AFG["default_c"])
+    ck("a100 article, and the A100 ahead by", "2.37", AFG["default_ratio"])
+    ck("a100 article, pinned to Triton, c", "18.44", AFG["pinned_c"])
+    ck("a100 article, and the A100 ahead by", "12.75", AFG["pinned_ratio"])
+    ck("a100 article, so one flag moves the answer by", "5.38", AFG["swing"])
+    ck("a100 article, and the two arms are the same day", "1",
+       1 if AFG["date"] == next(x["radeon_date"] for x in ASP["pair"]
+                                if x["model"] == AFG["model"]) else 0)
+
+    # what section 1 owes the reader for pairing two A100 sessions
+    ASS = ASP["sessions"]
+    ck("a100 article, the two A100 sessions past 2K", "0.4", ASS["deep_worst"])
+    ck("a100 article, and at the two shallowest rungs", "5.5", ASS["shallow_worst"])
     ck("a100 article, and ceiling", "2.22", max(x["c_gain"] for x in ASP["second"]))
     # the README quoted the 12B's number for the 31B's comparison until 2026-08-29
     ck("README, the utilisation it cites is this comparison's model", "1",

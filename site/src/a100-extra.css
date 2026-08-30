@@ -53,10 +53,12 @@
      term, so it needs a wider label column than the 150px the other bar
      figures use and two heading levels the .lab default right-alignment is
      wrong for. */
-  #terms { --labw:176px; }
-  @media (max-width:640px){ #terms { --labw:150px; } }
-  #terms .lab.hd2 { text-align:left; color:var(--text); font-weight:600;
+  #terms, #kern { --labw:190px; }
+  @media (max-width:640px){ #terms, #kern { --labw:150px; } }
+  #terms .lab.hd2, #kern .lab.hd2 {
+                    text-align:left; color:var(--text); font-weight:600;
                     font-size:.85rem; margin-top:.9em; padding-bottom:.2em;
                     border-bottom:1px solid var(--border); }
-  #terms .lab.hd2:first-child { margin-top:0; }
-  #terms .lab.hd3 { text-align:left; color:var(--text-dim); margin-top:.35em; }
+  #terms .lab.hd2:first-child, #kern .lab.hd2:first-child { margin-top:0; }
+  #terms .lab.hd3, #kern .lab.hd3 {
+                    text-align:left; color:var(--text-dim); margin-top:.35em; }

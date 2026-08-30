@@ -337,13 +337,15 @@
      term, so it needs a wider label column than the 150px the other bar
      figures use and two heading levels the .lab default right-alignment is
      wrong for. */
-  #terms { --labw:176px; }
-  @media (max-width:640px){ #terms { --labw:150px; } }
-  #terms .lab.hd2 { text-align:left; color:var(--text); font-weight:600;
+  #terms, #kern { --labw:190px; }
+  @media (max-width:640px){ #terms, #kern { --labw:150px; } }
+  #terms .lab.hd2, #kern .lab.hd2 {
+                    text-align:left; color:var(--text); font-weight:600;
                     font-size:.85rem; margin-top:.9em; padding-bottom:.2em;
                     border-bottom:1px solid var(--border); }
-  #terms .lab.hd2:first-child { margin-top:0; }
-  #terms .lab.hd3 { text-align:left; color:var(--text-dim); margin-top:.35em; }
+  #terms .lab.hd2:first-child, #kern .lab.hd2:first-child { margin-top:0; }
+  #terms .lab.hd3, #kern .lab.hd3 {
+                    text-align:left; color:var(--text-dim); margin-top:.35em; }
 
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
@@ -818,15 +820,19 @@ card, so the pair is the only way this box runs it. The 31B is therefore the mod
 and of nothing before it.</p>
 
 <div class="note">
-  <span class="lbl">Decode and prefill for a machine come from one session</span>
-  This article's central claim is that the second card is worth something different at prefill than
-  at decode, so reading the two off different runs would put a session boundary inside the
-  comparison. Every arm below therefore takes both numbers from the same run. That is what fixes the
-  A100 on <strong>2026-08-30</strong> rather than 2026-08-29: the earlier session has decode, but
-  its prefill is 0 of 11 rungs chart-grade — prefix caching was on and every rung of this ladder is a
-  strict prefix of the next, so a repeat was charged for nothing. The front page picks per figure
-  instead and draws A100 decode from the earlier session; on the mixture-of-experts the two sessions
-  differ by 2.2 %.
+  <span class="lbl">Where decode and prefill come from</span>
+  The first three steps take both numbers from the same run wherever one exists, because the claim
+  they make is that the second card is worth something different at the two jobs and reading those
+  off different sessions would put a session boundary inside the comparison. That is what fixes the
+  A100 on <strong>2026-08-30</strong> rather than 2026-08-29 there: the earlier session has decode,
+  but its prefill is 0 of 11 rungs chart-grade — prefix caching was on and every rung of this ladder
+  is a strict prefix of the next, so a repeat was charged for nothing.
+  <br><br>
+  It is a preference and not a rule. Figure 3 is the 2026-08-29 campaign on both sides because that
+  is the one that measured two speculative arms against each other, and Figure 4's A100 prefill is
+  a later re-measurement by construction — the first pass produced none that survives. Each side of
+  each comparison is one run; where the two sides are different days, the figure says so. The two
+  A100 sessions agree to 0.4 % on this model past 2 K, and to 5.5 % at the two shallowest rungs.
 </div>
 
 <p>The 31B step keeps the configuration it always had: the same checkpoint,
@@ -965,6 +971,44 @@ looked like a minimum is one cell of one run, and its deepest neighbour compares
 depths. The shape did not survive being measured again; the numbers behind it are still on the page
 because retracting a figure quietly is worse than showing what it said.</p>
 
+<p><strong>And now at prefill too.</strong> The A100 side of this comparison had no usable prefill
+until 2026-08-30: the session that measured its decode ran with prefix caching on, over a ladder
+whose every rung is a prefix of the next, so a repeat was charged for nothing and none of it survived
+the repeatability cut. Re-taken with the cache off, for the five models the pair also runs, it says
+something the decode half does not:</p>
+
+<figure class="rv" id="figk"> <div class="figbox">
+  <div class="figtitle">Figure 4 · two Radeons against one A100 at prefill, by the kernel the A100 used
+    <span class="prov yes">recomputable from repo</span></div>
+  <div class="bars" id="kern"></div>
+  <div class="barunit" id="kernnote"></div> </div>
+<figcaption> <b>Figure 4.</b> Each bar is the pair's coefficient divided by the A100's, so higher
+means the A100 is further ahead, and the mark is parity. The two terms are scaled separately —
+<code>c</code> reaches 19 and <code>b</code> stops at 4 — because what is being compared is within a
+term. The grouping is by the backend vLLM chose on the A100, which is recorded and checked against
+the serve log beside it for all five; the Radeon side records one for three of the five and the
+campaigns that did not keep a log carry null rather than a guess. </figcaption> </figure>
+
+<p><strong>The compute term does not care which kernel is on the path, and the attention term is
+almost nothing else.</strong> Across all five models the A100 is 2.08× to 4.00× ahead on
+<code>b</code>, and the two kernel groups' ranges overlap. On <code>c</code> they do not come near
+each other: 2.99× to 3.18× on the three models the A100 serves through the same Triton
+unified-attention family the Radeons are on, and 12.75× and 19.01× on the two it serves through
+FlashAttention.</p>
+
+<p>Five models differ in more than their kernel, so that is a correlation. Here is the same thing
+inside one machine, one day and one model. Qwen3.8-27B on these cards is routed to
+<code>ROCM_ATTN</code> by default and can be pinned to <code>TRITON_ATTN</code> with a flag. Pinned,
+its <code>c</code> is 18.44 ns/token² and the A100 is 12.75× ahead. Left alone, its <code>c</code>
+is 3.43 and the A100 is 2.37× ahead. One flag, no patch, and the answer to "how far ahead is the
+A100 on long prompts" moves by <strong>5.38×</strong>. That flag is the one this repository called
+free until 2026-08-30; it buys 1.15× of decode at 32 K and sells this.</p>
+
+<p>None of which makes the A100 slower than it is. It is ahead on every model and both terms. What
+it does mean is that a single number for "how much faster is the datacentre card" is not a property
+of the two cards: on the quadratic term it is mostly a property of which attention kernel each side
+ended up on, and on this hardware that is decided by a routing table and one command-line flag.</p>
+
 <h2><span class="n">6</span>The split is what costs, not the silicon</h2>
 
 <p>The 2D attention path — the one speculation falls into on stock vLLM — launches one workgroup per KV
@@ -973,13 +1017,13 @@ The starved path is therefore starved twice as hard by the parallelism, and it s
 
 <figure class="rv" id="fig2">
   <div class="figbox">
-    <div class="figtitle">Figure 4 · what the 2D path keeps, from 1K out to 30–32K
+    <div class="figtitle">Figure 5 · what the 2D path keeps, from 1K out to 30–32K
       <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="ret"></div>
     <div class="wgs" id="wgs"></div>
   </div>
   <figcaption>
-    <b>Figure 4.</b> Stock vLLM under speculation on both platforms, so both are on the 2D path. The
+    <b>Figure 5.</b> Stock vLLM under speculation on both platforms, so both are on the 2D path. The
     cards below are the launch grid <code>(total_num_q_blocks, num_kv_heads)</code> at batch 1: the
     workgroup count is a property of how the KV heads are split, not of the vendor. The same collapse,
     the same kernel, and about twice the damage on two cards.
@@ -995,12 +1039,12 @@ speculation worth having is worse on two cards than on one.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">Figure 5 · what speculation is worth once it is on the healthy path
+    <div class="figtitle">Figure 6 · what speculation is worth once it is on the healthy path
       <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="econ"></div>
   </div>
   <figcaption>
-    <b>Figure 5.</b> Speculation against no speculation, both through the 3D path, at each platform's
+    <b>Figure 6.</b> Speculation against no speculation, both through the 3D path, at each platform's
     longest measured depth. The no-speculation baselines come from different files —
     <code>splitkv-31b-stock.json</code> here, the backend matrix's forced-default column there — and both
     are single runs. What is being compared is the <em>gain</em>, not the rates.
@@ -1015,12 +1059,12 @@ against 800 GB/s — puts this comparison's model at 63 %:</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">Figure 6 · realized memory bandwidth at decode, per card
+    <div class="figtitle">Figure 7 · realized memory bandwidth at decode, per card
     <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="util"></div>
   </div>
   <figcaption>
-    <b>Figure 6.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context,
+    <b>Figure 7.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context,
     TP=2, against the per-GPU bytes per token stated in
     <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md
     §3</a>. Two effects are visible and both are real: at equal quantisation the larger model
@@ -1040,15 +1084,13 @@ constant <code>a</code> is fitted and never quoted, because on one arm it moved 
 99.8 ms between two campaigns a month apart and on another it came out negative. A short enough
 prompt is therefore outside what these fits describe.</p>
 
-<h3>gemma-4-31B on one card, and on the A100 at prefill</h3>
+<h3>gemma-4-31B on one card</h3>
 <p>The 31B has no single-card row and cannot have one on this box — 22 GB of weights, 20 GB of card.
-It also has no usable A100 prefill: the 2026-08-29 session ran with prefix caching on and 130 of its
-132 prefill rungs fail the repeatability cut, and the 2026-08-30 re-run covered only the 12B and the
-mixture-of-experts. So the 31B appears here in decode only, and the three-step comparison the rest of
-the article makes is carried by the other two models.</p>
+So the first two steps are carried by the other two models, and the 31B appears only from the third
+step on, where the pair is the only way this machine runs it at all.</p>
 
 <h3>The A100's own realized bandwidth</h3>
-<p>Figure 6 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 3 is a ratio of
+<p>Figure 7 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 3 is a ratio of
 datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
 can explain, not as a prediction either side was measured against.</p>
 
@@ -1069,7 +1111,7 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
   <span class="lbl">2026-08-26 · the comparison became possible</span>
   Before <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s mechanism was ported
   to both stacks, both platforms were stuck on the 2D path under speculation and the comparison would
-  have measured a shared bug. Figure 4 is what that comparison looks like, kept because it is the finding
+  have measured a shared bug. Figure 5 is what that comparison looks like, kept because it is the finding
   about tensor parallelism rather than an artefact to discard.
 </div>
 
@@ -1096,7 +1138,7 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
   the A100 legs, their logs and the port that made both sides comparable are in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>;
-  the July campaign behind Figure 6 is
+  the July campaign behind Figure 7 is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>.
   Every figure here is recomputed from those files by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
@@ -2787,6 +2829,130 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
    "model": "gemma-4-31B-it",
    "weights_gb": 22,
    "card_gb": 20
+  },
+  "sessions": {
+   "model": "gemma-4-31B-it",
+   "rungs": 11,
+   "cut": 2000,
+   "deep_worst": 0.44483093724932976,
+   "shallow_worst": 5.52834692462314,
+   "a": "2026-08-29",
+   "b": "2026-08-30"
+  },
+  "pair": [
+   {
+    "model": "gemma-4-12B-it",
+    "radeon_cfg": "A-12B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "G12",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 322.5917424166407,
+    "radeon_c": 10.868129413731756,
+    "a100_b": 145.69501602306957,
+    "a100_c": 3.6211326531346764,
+    "b": 2.214157705748569,
+    "c": 3.0013066227561787,
+    "rungs": 10
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "radeon_cfg": "E-26B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "G26A4B",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 250.26045591547765,
+    "radeon_c": 6.869769079619109,
+    "a100_b": 62.5736212374676,
+    "a100_c": 2.2977239240669407,
+    "b": 3.9994561760416008,
+    "c": 2.9898148370495745,
+    "rungs": 10
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "radeon_cfg": "G31-tp2",
+    "radeon_date": "2026-08-29",
+    "a100_cfg": "G31",
+    "a100_date": "2026-08-30",
+    "radeon_backend": "TRITON_ATTN",
+    "a100_backend": "TRITON_ATTN",
+    "radeon_b": 868.7073601787611,
+    "radeon_c": 29.060775378009133,
+    "a100_b": 375.3968825116025,
+    "a100_c": 9.131068785787285,
+    "b": 2.3141038209125555,
+    "c": 3.1826258305317867,
+    "rungs": 10
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "radeon_cfg": "Q38-triton-tp2",
+    "radeon_date": "2026-08-29",
+    "a100_cfg": "Q38",
+    "a100_date": "2026-08-30",
+    "radeon_backend": "TRITON_ATTN",
+    "a100_backend": "FLASH_ATTN",
+    "radeon_b": 846.1560835819542,
+    "radeon_c": 18.443415242101082,
+    "a100_b": 303.2123550198574,
+    "a100_c": 1.4462363901342088,
+    "b": 2.790638539536225,
+    "c": 12.752697531272572,
+    "rungs": 10
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "radeon_cfg": "G-30B-tp2",
+    "radeon_date": "2026-08-24",
+    "a100_cfg": "MG30",
+    "a100_date": "2026-08-30",
+    "radeon_backend": null,
+    "a100_backend": "FLASH_ATTN",
+    "radeon_b": 602.4025955428759,
+    "radeon_c": 12.727601145081392,
+    "a100_b": 290.1463102807825,
+    "a100_c": 0.6696261362485373,
+    "b": 2.07620284731491,
+    "c": 19.00702564625918,
+    "rungs": 10
+   }
+  ],
+  "pair_split": {
+   "triton": {
+    "n": 3,
+    "c_min": 2.9898148370495745,
+    "c_max": 3.1826258305317867,
+    "b_min": 2.214157705748569,
+    "b_max": 3.9994561760416008
+   },
+   "flash": {
+    "n": 2,
+    "c_min": 12.752697531272572,
+    "c_max": 19.00702564625918,
+    "b_min": 2.07620284731491,
+    "b_max": 2.790638539536225
+   },
+   "b_overlaps": true,
+   "c_separates": true,
+   "b_max_scale": 3.9994561760416008,
+   "c_max_scale": 19.00702564625918
+  },
+  "flag": {
+   "model": "Qwen3.8-27B",
+   "date": "2026-08-29",
+   "pinned_cfg": "Q38-triton-tp2",
+   "pinned_backend": "TRITON_ATTN",
+   "pinned_c": 18.443415242101082,
+   "pinned_ratio": 12.752697531272572,
+   "default_cfg": "Q38-tp2",
+   "default_backend": "ROCM_ATTN",
+   "default_c": 3.4283510218247906,
+   "default_ratio": 2.370532953818597,
+   "swing": 5.379675279658003
   }
  }
 }</script>
@@ -2799,6 +2965,16 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
  "s1par": "one RX 7900 XT",
  "s1unit": "decode tok/s at batch 1, divided by one RX 7900 XT's at the same depth · two rounds a cell · the mixture-of-experts lines stop where one card runs out of KV",
  "s1second": "the second card, on this model: {lo}× to {hi}× across {n} depths at decode, and {w}× of prefill wall time at {d}",
+ "kTriton": "A100 on TRITON_ATTN",
+ "kFlash": "A100 on FLASH_ATTN",
+ "kPar": "parity with two RX 7900 XT",
+ "kAhead": "the A100 ahead of the pair",
+ "kCells": "pair {r} against A100 {a} {u}",
+ "kArms": "{rc} · {rd} · {rb} against {ac} · {ad} · {ab}",
+ "kNoLog": "backend not recorded",
+ "kUnit": "the pair's coefficient ÷ the A100's, so higher means the A100 is further ahead · the two terms carry their own scale, because c reaches 19 and b stops at 4 · the mark is parity",
+ "kSplit": "c splits by kernel and b does not: {tlo}× to {thi}× where the A100 is on the same Triton family the Radeons are, {flo}× and {fhi}× where it is on FlashAttention — against {blo}× to {bhi}× on b across all five, the two groups overlapping",
+ "kFlag": "and inside one machine, one day and one model: {m} on {db} has c {dc} and the A100 is {dr}× ahead; pinned to {pb} it has c {pc} and the A100 is {pr}× ahead. One flag moves the answer by {s}×",
  "termsB": "b · compute",
  "termsC": "c · attention",
  "unitB": "µs/token",
@@ -3226,7 +3402,54 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
     draw();
   })();
 
-  /* ---------- Figure 4: retention, and the workgroup arithmetic ---------- */
+  /* ---------- Figure 4: the pair against one A100, grouped by kernel -------
+     The two terms carry their own scale. c reaches 19 and b stops at 4, and one
+     scale across both draws every b bar as a stub -- which would hide the
+     control, and the control is half the finding: b does not split by kernel
+     and c does. */
+  (function () {
+    var box = document.getElementById("kern");
+    var note = document.getElementById("kernnote");
+    var SP = F.split, PS = SP.pair_split;
+    var GROUPS = [["TRITON_ATTN", S.kTriton], ["FLASH_ATTN", S.kFlash]];
+    var SCALE = { c: PS.c_max_scale * 1.08, b: PS.b_max_scale * 1.08 };
+    var COL = { c: "--s2", b: "--s1" };
+    GROUPS.forEach(function (g) {
+      var rows = SP.pair.filter(function (x) { return x.a100_backend === g[0]; });
+      el(box, "lab rv hd2", g[1]).style.gridColumn = "1 / -1";
+      [["c", S.termsC, S.unitC], ["b", S.termsB, S.unitB]].forEach(function (o) {
+        el(box, "lab rv hd3", o[1]).style.gridColumn = "1 / -1";
+        rows.forEach(function (x) {
+          var v = x[o[0]];
+          refbar(box, x.model, v, SCALE[o[0]], COL[o[0]],
+                 [{ at: 1, cls: "par", title: S.kPar }],
+                 '<span class="hd">' + x.model + "</span><br><b>" + v.toFixed(2) +
+                 "×</b> " + S.kAhead + "<br><span class=\"sub\">" +
+                 fmt(S.kCells, { r: (o[0] === "c" ? x.radeon_c : x.radeon_b).toFixed(2),
+                                 a: (o[0] === "c" ? x.a100_c : x.a100_b).toFixed(2),
+                                 u: o[2] }) + "<br>" +
+                 fmt(S.kArms, { rc: x.radeon_cfg, rd: x.radeon_date,
+                                rb: x.radeon_backend || S.kNoLog,
+                                ac: x.a100_cfg, ad: x.a100_date, ab: x.a100_backend }) +
+                 "</span>");
+          el(box, "val rv", v.toFixed(2) + "×");
+        });
+      });
+    });
+    note.innerHTML = S.kUnit + "<br>" +
+      fmt(S.kSplit, { tlo: PS.triton.c_min.toFixed(2), thi: PS.triton.c_max.toFixed(2),
+                      flo: PS.flash.c_min.toFixed(2), fhi: PS.flash.c_max.toFixed(2),
+                      blo: Math.min(PS.triton.b_min, PS.flash.b_min).toFixed(2),
+                      bhi: Math.max(PS.triton.b_max, PS.flash.b_max).toFixed(2) }) +
+      "<br>" + fmt(S.kFlag, { m: SP.flag.model,
+                              db: SP.flag.default_backend, dc: SP.flag.default_c.toFixed(2),
+                              dr: SP.flag.default_ratio.toFixed(2),
+                              pb: SP.flag.pinned_backend, pc: SP.flag.pinned_c.toFixed(2),
+                              pr: SP.flag.pinned_ratio.toFixed(2),
+                              s: SP.flag.swing.toFixed(2) });
+  })();
+
+  /* ---------- Figure 5: retention, and the workgroup arithmetic ---------- */
   (function () {
     var box = document.getElementById("ret");
     var max = Math.max.apply(null, F.fig2.retention.map(function (r) { return r.pct; })) * 1.1;
@@ -3261,7 +3484,7 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
     });
   })();
 
-  /* ---------- Figure 5: speculation's economics ---------- */
+  /* ---------- Figure 6: speculation's economics ---------- */
   (function () {
     var box = document.getElementById("econ");
     var max = Math.max.apply(null, F.fig3.cases.map(function (c) {
@@ -3287,7 +3510,7 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
     n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
   })();
 
-  /* ---------- Figure 6: realized bandwidth ---------- */
+  /* ---------- Figure 7: realized bandwidth ---------- */
   (function () {
     var box = document.getElementById("util");
     F.bandwidth.rows.forEach(function (r) {
