@@ -1,0 +1,23 @@
+{"kind": "note", "cfg": "B8-tp1-u95", "note": "kv_max_len=8240, mml->8157", "ts": 1788104782.7}
+{"kind": "model_meta", "cfg": "B8-tp1-u95", "weights_s": "8.08", "model_load_s": "9.483023", "init_engine_s": "62.73", "kv_gib": "1.13", "kv_tokens": "8236", "concurrency": "1.01", "mml": 8157, "util": 0.95, "ts": 1788104903.2}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 500, "round": 1, "prompt_tokens": 511, "ttft": 0.1245, "prefill_tps": 4103.5, "ts": 1788104904.1}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 500, "round": 2, "prompt_tokens": 511, "ttft": 0.1275, "prefill_tps": 4006.7, "ts": 1788104905.2}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 500, "round": 1, "prompt_tokens": 514, "ttft": 0.1407, "completion_tokens": 512, "decode_tps": 46.64, "pw_sum_min": 267, "pw_sum_max": 269, "p1_max": 258, "p2_max": 11, "v1_g": 17.64, "v2_g": 0.03, "ts": 1788104917.3}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.1393, "completion_tokens": 512, "decode_tps": 46.64, "pw_sum_min": 269, "pw_sum_max": 273, "p1_max": 262, "p2_max": 11, "v1_g": 17.64, "v2_g": 0.03, "ts": 1788104929.4}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 1000, "round": 1, "prompt_tokens": 981, "ttft": 0.2275, "prefill_tps": 4312.0, "ts": 1788104930.6}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 1000, "round": 2, "prompt_tokens": 981, "ttft": 0.2264, "prefill_tps": 4332.2, "ts": 1788104931.8}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 1000, "round": 1, "prompt_tokens": 981, "ttft": 0.2257, "completion_tokens": 512, "decode_tps": 46.32, "pw_sum_min": 275, "pw_sum_max": 276, "p1_max": 265, "p2_max": 11, "v1_g": 17.68, "v2_g": 0.03, "ts": 1788104944.1}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 1000, "round": 2, "prompt_tokens": 981, "ttft": 0.227, "completion_tokens": 512, "decode_tps": 46.34, "pw_sum_min": 275, "pw_sum_max": 276, "p1_max": 265, "p2_max": 11, "v1_g": 17.68, "v2_g": 0.03, "ts": 1788104956.3}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 2000, "round": 1, "prompt_tokens": 2028, "ttft": 0.4731, "prefill_tps": 4286.6, "ts": 1788104957.8}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 2000, "round": 2, "prompt_tokens": 2027, "ttft": 0.4697, "prefill_tps": 4315.1, "ts": 1788104959.3}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 2000, "round": 1, "prompt_tokens": 2030, "ttft": 0.4773, "completion_tokens": 512, "decode_tps": 45.82, "pw_sum_min": 275, "pw_sum_max": 276, "p1_max": 265, "p2_max": 11, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788104971.9}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 2000, "round": 2, "prompt_tokens": 2029, "ttft": 0.4684, "completion_tokens": 512, "decode_tps": 45.82, "pw_sum_min": 275, "pw_sum_max": 277, "p1_max": 265, "p2_max": 12, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788104984.5}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 4000, "round": 1, "prompt_tokens": 4046, "ttft": 0.9982, "prefill_tps": 4053.2, "ts": 1788104986.5}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 4000, "round": 2, "prompt_tokens": 4044, "ttft": 1.0, "prefill_tps": 4043.8, "ts": 1788104988.5}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 4000, "round": 1, "prompt_tokens": 4042, "ttft": 0.9974, "completion_tokens": 512, "decode_tps": 45.0, "pw_sum_min": 276, "pw_sum_max": 276, "p1_max": 265, "p2_max": 11, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788105001.9}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 4000, "round": 2, "prompt_tokens": 4045, "ttft": 0.9995, "completion_tokens": 512, "decode_tps": 44.98, "pw_sum_min": 275, "pw_sum_max": 277, "p1_max": 265, "p2_max": 12, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788105015.3}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 6000, "round": 1, "prompt_tokens": 5963, "ttft": 1.5669, "prefill_tps": 3805.7, "ts": 1788105017.8}
+{"kind": "prefill", "cfg": "B8-tp1-u95", "target": 6000, "round": 2, "prompt_tokens": 5962, "ttft": 1.5626, "prefill_tps": 3815.4, "ts": 1788105020.4}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 6000, "round": 1, "prompt_tokens": 5961, "ttft": 1.5688, "completion_tokens": 512, "decode_tps": 44.14, "pw_sum_min": 276, "pw_sum_max": 278, "p1_max": 266, "p2_max": 12, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788105034.5}
+{"kind": "decode", "cfg": "B8-tp1-u95", "target": 6000, "round": 2, "prompt_tokens": 5960, "ttft": 1.5754, "completion_tokens": 512, "decode_tps": 44.15, "pw_sum_min": 275, "pw_sum_max": 276, "p1_max": 265, "p2_max": 11, "v1_g": 17.82, "v2_g": 0.03, "ts": 1788105048.7}
+{"kind": "config_complete", "cfg": "B8-tp1-u95", "mml": 8157, "util": 0.95, "ok": 20, "err": 0, "ts": 1788105049.7}

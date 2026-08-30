@@ -1,0 +1,47 @@
+17:13:52 | === L4 run start, vllm 0.28.0, torch 2.13.0+cu130, cuda 13.0 ===
+17:16:34 | B8: KV holds only 32000 tok -> retry mml 31680
+17:20:08 | B8: warmup ok
+17:20:43 | B8: 500 r1 16.61 tok/s
+17:21:14 | B8: 500 r2 16.60 tok/s
+17:21:46 | B8: 1000 r1 16.51 tok/s
+17:22:17 | B8: 1000 r2 16.50 tok/s
+17:22:49 | B8: 2000 r1 16.33 tok/s
+17:23:21 | B8: 2000 r2 16.33 tok/s
+17:23:54 | B8: 4000 r1 16.04 tok/s
+17:24:27 | B8: 4000 r2 16.03 tok/s
+17:25:01 | B8: 6000 r1 15.74 tok/s
+17:25:36 | B8: 6000 r2 15.74 tok/s
+17:26:12 | B8: 8000 r1 15.46 tok/s
+17:26:47 | B8: 8000 r2 15.46 tok/s
+17:27:26 | B8: 12000 r1 14.92 tok/s
+17:28:04 | B8: 12000 r2 14.92 tok/s
+17:28:46 | B8: 16000 r1 14.41 tok/s
+17:29:27 | B8: 16000 r2 14.41 tok/s
+17:30:12 | B8: 20000 r1 13.94 tok/s
+17:30:57 | B8: 20000 r2 13.94 tok/s
+17:31:45 | B8: 24000 r1 13.49 tok/s
+17:32:33 | B8: 24000 r2 13.49 tok/s
+17:32:33 | B8: target 32000 exceeds mml, stop
+17:32:33 | B8: COMPLETE (20 ok, 0 err)
+17:36:37 | Q38S: still starting (4 min)
+17:37:37 | Q38S: KV holds only 10192 tok -> retry mml 10090
+17:41:41 | Q38S: still starting (4 min)
+17:42:57 | Q38S: warmup ok
+17:43:32 | Q38S: 500 r1 15.95 tok/s
+17:44:05 | Q38S: 500 r2 15.93 tok/s
+17:44:38 | Q38S: 1000 r1 15.88 tok/s
+17:45:12 | Q38S: 1000 r2 15.86 tok/s
+17:45:47 | Q38S: 2000 r1 15.81 tok/s
+17:46:22 | Q38S: 2000 r2 15.80 tok/s
+17:46:59 | Q38S: 4000 r1 15.64 tok/s
+17:47:37 | Q38S: 4000 r2 15.63 tok/s
+17:48:17 | Q38S: 6000 r1 15.51 tok/s
+17:48:58 | Q38S: 6000 r2 15.51 tok/s
+17:49:41 | Q38S: 8000 r1 15.39 tok/s
+17:50:24 | Q38S: 8000 r2 15.39 tok/s
+17:50:24 | Q38S: target 12000 exceeds mml, stop
+17:50:24 | Q38S: COMPLETE (12 ok, 0 err)
+17:54:23 | G31: no room for KV -> retry mml 16500
+17:58:02 | G31: no room for KV -> retry mml 8250
+18:00:51 | G31: no room for KV -> retry mml 4125
+18:03:31 | G31: no room for KV -> retry mml 2062

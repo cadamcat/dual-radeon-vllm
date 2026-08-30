@@ -1,0 +1,76 @@
+{"kind": "run_meta", "machine": "L4", "vllm": "0.28.0", "torch": "2.13.0+cu130", "transformers": "5.15.1", "cuda": "13.0", "gpu": "NVIDIA L4, 23034 MiB, 8.9, 580.82.07", "ts": 1788110032.1}
+{"kind": "note", "cfg": "B8", "note": "kv_max_len=32000, mml->31680", "ts": 1788110194.2}
+{"kind": "model_meta", "cfg": "B8", "machine": "L4", "vram_total_mib": 23034, "init_engine_s": "161.64", "model_load_s": "9.478827", "kv_gib": "4.4", "kv_tokens": "32000", "backend": "FLASH_ATTN", "prefix_caching": "False", "mml": 31680, "util": 0.95, "ts": 1788110408.3}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 508, "ttft": 0.1562, "prefill_tps": 3251.9, "ts": 1788110443.8}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 508, "gen_tokens": 512, "wall_s": 30.927, "decode_tps": 16.6066, "ts": 1788110443.8}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 508, "ttft": 0.1622, "prefill_tps": 3131.9, "ts": 1788110474.8}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 508, "gen_tokens": 512, "wall_s": 30.953, "decode_tps": 16.5958, "ts": 1788110474.8}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1008, "ttft": 0.3104, "prefill_tps": 3247.6, "ts": 1788110506.0}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1008, "gen_tokens": 512, "wall_s": 31.259, "decode_tps": 16.511, "ts": 1788110506.0}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1008, "ttft": 0.3148, "prefill_tps": 3201.6, "ts": 1788110537.3}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1008, "gen_tokens": 512, "wall_s": 31.277, "decode_tps": 16.504, "ts": 1788110537.3}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 2000, "round": 1, "prompt_tokens": 2008, "ttft": 0.5864, "prefill_tps": 3424.3, "ts": 1788110569.2}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 2000, "round": 1, "prompt_tokens": 2008, "gen_tokens": 512, "wall_s": 31.873, "decode_tps": 16.333, "ts": 1788110569.2}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 2000, "round": 2, "prompt_tokens": 2008, "ttft": 0.6068, "prefill_tps": 3309.3, "ts": 1788110601.1}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 2000, "round": 2, "prompt_tokens": 2008, "gen_tokens": 512, "wall_s": 31.898, "decode_tps": 16.3306, "ts": 1788110601.1}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 4000, "round": 1, "prompt_tokens": 4008, "ttft": 1.2691, "prefill_tps": 3158.2, "ts": 1788110634.2}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 4000, "round": 1, "prompt_tokens": 4008, "gen_tokens": 512, "wall_s": 33.136, "decode_tps": 16.0352, "ts": 1788110634.2}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 4000, "round": 2, "prompt_tokens": 4008, "ttft": 1.2607, "prefill_tps": 3179.3, "ts": 1788110667.4}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 4000, "round": 2, "prompt_tokens": 4008, "gen_tokens": 512, "wall_s": 33.139, "decode_tps": 16.0299, "ts": 1788110667.4}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 6000, "round": 1, "prompt_tokens": 6008, "ttft": 2.0335, "prefill_tps": 2954.5, "ts": 1788110701.9}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 6000, "round": 1, "prompt_tokens": 6008, "gen_tokens": 512, "wall_s": 34.503, "decode_tps": 15.7379, "ts": 1788110701.9}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 6000, "round": 2, "prompt_tokens": 6008, "ttft": 2.0319, "prefill_tps": 2956.8, "ts": 1788110736.4}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 6000, "round": 2, "prompt_tokens": 6008, "gen_tokens": 512, "wall_s": 34.499, "decode_tps": 15.7389, "ts": 1788110736.4}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 8000, "round": 1, "prompt_tokens": 8008, "ttft": 2.7031, "prefill_tps": 2962.6, "ts": 1788110772.1}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 8000, "round": 1, "prompt_tokens": 8008, "gen_tokens": 512, "wall_s": 35.762, "decode_tps": 15.4572, "ts": 1788110772.1}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 8000, "round": 2, "prompt_tokens": 8008, "ttft": 2.7308, "prefill_tps": 2932.5, "ts": 1788110807.9}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 8000, "round": 2, "prompt_tokens": 8008, "gen_tokens": 512, "wall_s": 35.789, "decode_tps": 15.4574, "ts": 1788110807.9}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 12000, "round": 1, "prompt_tokens": 12008, "ttft": 4.2128, "prefill_tps": 2850.3, "ts": 1788110846.4}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 12000, "round": 1, "prompt_tokens": 12008, "gen_tokens": 512, "wall_s": 38.471, "decode_tps": 14.9163, "ts": 1788110846.4}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 12000, "round": 2, "prompt_tokens": 12008, "ttft": 4.2511, "prefill_tps": 2824.6, "ts": 1788110884.9}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 12000, "round": 2, "prompt_tokens": 12008, "gen_tokens": 512, "wall_s": 38.506, "decode_tps": 14.9174, "ts": 1788110884.9}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 16000, "round": 1, "prompt_tokens": 16008, "ttft": 5.99, "prefill_tps": 2672.4, "ts": 1788110926.3}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 16000, "round": 1, "prompt_tokens": 16008, "gen_tokens": 512, "wall_s": 41.448, "decode_tps": 14.4113, "ts": 1788110926.3}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 16000, "round": 2, "prompt_tokens": 16008, "ttft": 6.1183, "prefill_tps": 2616.4, "ts": 1788110967.9}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 16000, "round": 2, "prompt_tokens": 16008, "gen_tokens": 512, "wall_s": 41.578, "decode_tps": 14.4108, "ts": 1788110967.9}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 20000, "round": 1, "prompt_tokens": 20008, "ttft": 7.9284, "prefill_tps": 2523.6, "ts": 1788111012.5}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 20000, "round": 1, "prompt_tokens": 20008, "gen_tokens": 512, "wall_s": 44.586, "decode_tps": 13.9397, "ts": 1788111012.5}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 20000, "round": 2, "prompt_tokens": 20008, "ttft": 8.0065, "prefill_tps": 2499.0, "ts": 1788111057.2}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 20000, "round": 2, "prompt_tokens": 20008, "gen_tokens": 512, "wall_s": 44.664, "decode_tps": 13.9398, "ts": 1788111057.2}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 24000, "round": 1, "prompt_tokens": 24008, "ttft": 10.1519, "prefill_tps": 2364.9, "ts": 1788111105.2}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 24000, "round": 1, "prompt_tokens": 24008, "gen_tokens": 512, "wall_s": 48.026, "decode_tps": 13.492, "ts": 1788111105.2}
+{"kind": "prefill", "cfg": "B8", "machine": "L4", "target": 24000, "round": 2, "prompt_tokens": 24008, "ttft": 10.0698, "prefill_tps": 2384.2, "ts": 1788111153.1}
+{"kind": "decode", "cfg": "B8", "machine": "L4", "target": 24000, "round": 2, "prompt_tokens": 24008, "gen_tokens": 512, "wall_s": 47.949, "decode_tps": 13.4902, "ts": 1788111153.1}
+{"kind": "config_complete", "cfg": "B8", "ok": 20, "err": 0, "ts": 1788111153.2}
+{"kind": "note", "cfg": "Q38S", "note": "kv_max_len=10192, mml->10090", "ts": 1788111457.3}
+{"kind": "model_meta", "cfg": "Q38S", "machine": "L4", "vram_total_mib": 23034, "init_engine_s": "176.31", "model_load_s": "34.629821", "kv_gib": "0.78", "kv_tokens": "10090", "backend": "FLASH_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "mml": 10090, "util": 0.95, "ts": 1788111776.4}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 552, "ttft": 0.5851, "prefill_tps": 943.5, "ts": 1788111812.8}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 32.622, "decode_tps": 15.9506, "ts": 1788111812.8}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 552, "ttft": 0.645, "prefill_tps": 855.8, "ts": 1788111845.5}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 552, "gen_tokens": 512, "wall_s": 32.732, "decode_tps": 15.9256, "ts": 1788111845.5}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1051, "ttft": 1.2059, "prefill_tps": 871.6, "ts": 1788111878.9}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 33.391, "decode_tps": 15.8769, "ts": 1788111878.9}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1051, "ttft": 1.2417, "prefill_tps": 846.4, "ts": 1788111912.4}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1051, "gen_tokens": 512, "wall_s": 33.46, "decode_tps": 15.8605, "ts": 1788111912.4}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 2000, "round": 1, "prompt_tokens": 2052, "ttft": 2.4639, "prefill_tps": 832.8, "ts": 1788111947.2}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 2000, "round": 1, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 34.782, "decode_tps": 15.8114, "ts": 1788111947.2}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 2000, "round": 2, "prompt_tokens": 2052, "ttft": 2.5126, "prefill_tps": 816.7, "ts": 1788111982.0}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 2000, "round": 2, "prompt_tokens": 2052, "gen_tokens": 512, "wall_s": 34.863, "decode_tps": 15.7958, "ts": 1788111982.0}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 4000, "round": 1, "prompt_tokens": 4052, "ttft": 4.9136, "prefill_tps": 824.6, "ts": 1788112019.6}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 4000, "round": 1, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 37.583, "decode_tps": 15.6415, "ts": 1788112019.6}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 4000, "round": 2, "prompt_tokens": 4052, "ttft": 5.0293, "prefill_tps": 805.7, "ts": 1788112057.3}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 4000, "round": 2, "prompt_tokens": 4052, "gen_tokens": 512, "wall_s": 37.715, "decode_tps": 15.6336, "ts": 1788112057.3}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 6000, "round": 1, "prompt_tokens": 6052, "ttft": 7.5625, "prefill_tps": 800.3, "ts": 1788112097.8}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 6000, "round": 1, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 40.504, "decode_tps": 15.5122, "ts": 1788112097.8}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 6000, "round": 2, "prompt_tokens": 6052, "ttft": 7.4501, "prefill_tps": 812.3, "ts": 1788112138.2}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 6000, "round": 2, "prompt_tokens": 6052, "gen_tokens": 512, "wall_s": 40.386, "decode_tps": 15.515, "ts": 1788112138.2}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 8000, "round": 1, "prompt_tokens": 8052, "ttft": 10.0051, "prefill_tps": 804.8, "ts": 1788112181.4}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 8000, "round": 1, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 43.207, "decode_tps": 15.3906, "ts": 1788112181.4}
+{"kind": "prefill", "cfg": "Q38S", "machine": "L4", "target": 8000, "round": 2, "prompt_tokens": 8052, "ttft": 9.9453, "prefill_tps": 809.6, "ts": 1788112224.6}
+{"kind": "decode", "cfg": "Q38S", "machine": "L4", "target": 8000, "round": 2, "prompt_tokens": 8052, "gen_tokens": 512, "wall_s": 43.14, "decode_tps": 15.3939, "ts": 1788112224.6}
+{"kind": "config_complete", "cfg": "Q38S", "ok": 12, "err": 0, "ts": 1788112224.6}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->16500", "ts": 1788112463.7}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->8250", "ts": 1788112682.8}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->4125", "ts": 1788112852.0}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->2062", "ts": 1788113011.1}
+{"kind": "config_failed", "cfg": "G31", "why": "startup retries exhausted", "ts": 1788113011.1}

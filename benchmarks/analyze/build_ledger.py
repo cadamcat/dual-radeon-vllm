@@ -82,6 +82,12 @@ CFG = {
     # 0.92 (1536 tokens, recorded as a config_failed in the same file), and
     # 0.95 buys 13 149 -- seven rungs, not eleven.
     "E26-tp1-u95":               ("gemma-4-26B-A4B", "int4 AWQ", "MoE, 128 experts", 1),
+    # 2026-08-30, on the 0.27 image and fully stock. Same reason for carrying
+    # the utilisation in the id: it is the only Qwen3-8B row not measured at
+    # 0.90. Raising it did not lift the July ceiling -- 8 236 tokens against
+    # 8 442 -- because the weights are 15.27 GiB on 0.27 rather than the 14.02
+    # that 0.23 reported, and this model's activation overhead is 2.58 GiB.
+    "B8-tp1-u95":                ("Qwen3-8B", "bf16", "dense", 1),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -119,6 +125,12 @@ ARMS = {
     "G31-tp2":                   (None,   "TRITON_ATTN"),
     "G31-mtp-p45450-tp2":        (DRAFT3, "TRITON_ATTN"),
     "E26-tp1-u95":               (None,   "TRITON_ATTN"),
+    # ROCM_ATTN, and it is the case vllm#54438 deliberately leaves alone:
+    # Qwen3-8B is head_dim 128 with gqa_ratio 4, so it satisfies
+    # `use_rocm_custom_paged_attention` on RDNA and gets the actual HIP kernel
+    # rather than a second Triton one. Read from the serve log's
+    # `Overriding with ROCM_ATTN out of potential backends` line.
+    "B8-tp1-u95":                (None,   "ROCM_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 
@@ -172,6 +184,15 @@ CAMPAIGNS = [
     dict(file="campaign-2026-08-30/results.jsonl", date="2026-08-30",
          vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
          kernel="7.0.0-30", patches=[]),
+    # `campaign-2026-08-30b` (Qwen3-8B on one card, 0.27 image) is DELIBERATELY
+    # not here. This file is the Radeon box's decode projection as it stood,
+    # and its 265 rows and the distribution statistics published from them --
+    # the median range, the tail, and the gap `RANGE_CUT` sits in -- are quoted
+    # in the front page and in the measure article. New work goes into
+    # `prefill.jsonl` and `decode.jsonl`, which carry a `machine` column and
+    # take their sources from `build_prefill.SOURCES`; that arm reaches
+    # `decode.jsonl` from there. `CFG` and `ARMS` above still name it, because
+    # `build_prefill.meta_for` and `arm_for` look here first.
 ]
 # The probe sources are arm-structured: the same cells measured with and
 # without a patch, so the arm decides `patches` rather than the file does.

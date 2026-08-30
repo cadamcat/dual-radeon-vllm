@@ -93,6 +93,20 @@ CFG_CUDA = {
     "G31":                     ("gemma-4-31B-it",  "w4a16 QAT", "dense", 1),
     "Q38":                     ("Qwen3.8-27B",     "int4 AWQ",  "hybrid SSM", 1),
     "MG30":                    ("Muse-Glimmer-30B", "int4",     "sliding window 2048", 1),
+    # 2026-08-30, the four-machine round.
+    "B8":                      ("Qwen3-8B",        "bf16",      "dense", 1),
+    # **A different checkpoint, not a different arm of `Q38`.** `Q38` is
+    # cyankiwi's AWQ; this is RedHatAI/Qwen3.8-27B, compressed-tensors with
+    # symmetric int4 at group 128. On gfx1100 the two land on different kernels
+    # and differ by 1.27-3.24x on decode (`w4a16-symmetry/w4a16-ab.jsonl`), so
+    # they must not share a table row anywhere.
+    "Q38S":                    ("Qwen3.8-27B",     "int4 sym CT", "hybrid SSM", 1),
+    # `--enforce-eager`, which is a different engine and therefore its own
+    # configuration: gemma-4-31B does not start on a 23 GiB L4 without it. Four
+    # capacity retries from mml 33000 down to 2062 all reported no room for KV
+    # at all; eager at the same utilisation gave a 2020-token pool on the first
+    # try, because what was consuming the budget was the CUDA graphs.
+    "G31-eager":               ("gemma-4-31B-it",  "w4a16 QAT", "dense", 1),
 }
 
 MTP3 = "mtp k=3"
@@ -196,6 +210,45 @@ SOURCES = [
     dict(file="cuda-a100/campaign-2026-08-30/results.jsonl",
          machine="A100-SXM4-80GB", date="2026-08-30", vllm="0.28.0", rocm=None,
          cuda="13.0", driver="580.82.07", kernel=None, patches=[],
+         prefix_caching=False),
+    # 2026-08-30, the four-machine round. Qwen3-8B on ONE 7900 XT at util 0.95,
+    # on the 0.27 image and **fully stock**: the container's
+    # `triton_unified_attention.py`, `triton_attn.py` and
+    # `chunked_prefill_paged_decode.py` were restored to the image's own bytes
+    # and asserted by md5 before the run, so this row carries no patches.
+    #
+    # It was run to lift the July ladder's 6 000 ceiling by raising utilisation
+    # and did not: the pool came out at 1.13 GiB and 8 236 tokens against July's
+    # 8 442, and the runner stepped `max_model_len` to 8 157. Five rungs.
+    #
+    # `rocm` is the image tag (`rocm/vllm:rocm10.0.0_ubuntu24.04_...`). `kernel`
+    # is **carried from `campaign-2026-08-30`** -- the same box, the same day,
+    # no reboot between them -- and is not read from this run's own log, which
+    # records neither. `enable_prefix_caching=True` and, as on every Radeon arm,
+    # it produced no hits: the serve log is 0.0 % at every one of its samples.
+    dict(file="campaign-2026-08-30b/results.jsonl", machine="RX 7900 XT",
+         date="2026-08-30", vllm="0.27.1.dev5+gf46a9dfe2.d20260827", rocm="10.0",
+         cuda=None, kernel="7.0.0-30", patches=[], prefix_caching=True),
+    # 2026-08-30. The L4's second pass, after `cuda_run.py` gained the capacity
+    # retry the Radeon runner has had since rev2. `B8` reaches 24 000 rather
+    # than 32 000 because the retry stepped `max_model_len` to 31 680; `Q38S`
+    # reaches 8 000 on a 10 090-token pool. `G31` is a `config_failed` row in
+    # the same file -- it is measured in `campaign-2026-08-30c` instead, and
+    # only with `--enforce-eager`.
+    dict(file="cuda-l4/campaign-2026-08-30b/results.jsonl", machine="L4",
+         date="2026-08-30", vllm="0.28.0", rocm=None, cuda="13.0",
+         driver="580.82.07", kernel=None, patches=[], prefix_caching=False),
+    # 2026-08-30. The fifth machine, which the pre-flight had recorded as a
+    # wall. **These are the only rows in either projection measured with a
+    # patch that changes an attention kernel's tile size**: without vllm#39018
+    # the engine does not start at all on sm75, dying at kernel load asking
+    # 98 304 bytes of shared memory against Turing's 65 536. The patch halves
+    # `TILE_PREFILL` on the head_size 512 layers only, so `c` on these rows is
+    # not comparable with any other machine's; decode is untouched, which the
+    # recorder confirmed in both states.
+    dict(file="cuda-t4/campaign-2026-08-30/results.jsonl", machine="T4",
+         date="2026-08-30", vllm="0.28.0", rocm=None, cuda="13.0",
+         driver="580.82.07", kernel=None, patches=["vllm#39018"],
          prefix_caching=False),
     dict(file="cuda-a100/campaign-2026-08-29/results.jsonl", prefix_caching=True,
          machine="A100-SXM4-80GB", date="2026-08-29", vllm="0.28.0",
