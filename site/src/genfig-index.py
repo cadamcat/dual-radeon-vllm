@@ -473,16 +473,37 @@ import build_prefill as _bp
 
 _PF = [json.loads(l) for l in open(B / "prefill.jsonl")]
 
-# machine id here is the figure's, and matches Figure 1's so a reader carries
-# the same stroke and the same name between the two.
+# Machine id here is the figure's, and matches Figure 1's so a reader carries
+# the same stroke and the same name between the two. The TP=2 lines are the
+# same configurations Figure 1 draws, model for model and day for day, so the
+# two figures describe the same runs rather than two picks of the same box.
+#
+# Everything in this repository that has a chart-grade prefill ladder is here.
+# Prefill was recorded beside decode in every campaign since July and had never
+# been drawn; there is no reason for eight models' worth of it to sit unread.
 PF_LINES = [
-    ("a100",    "A100-SXM4-80GB", "gemma-4-12B-it",  "2026-08-30", "G12"),
-    ("a100",    "A100-SXM4-80GB", "gemma-4-26B-A4B", "2026-08-30", "G26A4B"),
-    ("rdna3-1", "RX 7900 XT",     "gemma-4-12B-it",  "2026-08-24", "A-12B-tp1"),
-    ("rdna3-1", "RX 7900 XT",     "gemma-4-26B-A4B", "2026-08-30", "E26-tp1-u95"),
-    ("l4",      "L4",             "gemma-4-12B-it",  "2026-08-30", "G12"),
-    ("l4",      "L4",             "gemma-4-26B-A4B", "2026-08-30", "G26A4B"),
+    # one card
+    ("a100",    "A100-SXM4-80GB", "gemma-4-12B-it",   "2026-08-30", "G12"),
+    ("a100",    "A100-SXM4-80GB", "gemma-4-26B-A4B",  "2026-08-30", "G26A4B"),
+    ("rdna3-1", "RX 7900 XT",     "gemma-4-12B-it",   "2026-08-24", "A-12B-tp1"),
+    ("rdna3-1", "RX 7900 XT",     "gemma-4-26B-A4B",  "2026-08-30", "E26-tp1-u95"),
+    ("rdna3-1", "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp1"),
+    ("l4",      "L4",             "gemma-4-12B-it",   "2026-08-30", "G12"),
+    ("l4",      "L4",             "gemma-4-26B-A4B",  "2026-08-30", "G26A4B"),
+    # the pair, one line per model, the configurations Figure 1 draws
+    ("rdna3",   "RX 7900 XT",     "gemma-4-12B-it",   "2026-08-24", "A-12B-tp2"),
+    ("rdna3",   "RX 7900 XT",     "gemma-4-26B-A4B",  "2026-08-24", "E-26B-tp2"),
+    ("rdna3",   "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp2"),
+    ("rdna3",   "RX 7900 XT",     "Muse-Glimmer-30B", "2026-08-24", "G-30B-tp2"),
+    ("rdna3",   "RX 7900 XT",     "gemma-3-27b-it",   "2026-08-24", "F-27B-tp2"),
+    ("rdna3",   "RX 7900 XT",     "Qwen3.8-27B",      "2026-08-29", "Q38-triton-tp2"),
+    ("rdna3",   "RX 7900 XT",     "gemma-4-31B-it",   "2026-08-29", "G31-tp2"),
 ]
+# Lit to start: the two models every machine ran, which is the comparison the
+# figure exists to make. The other five are the pair's alone and are one click
+# away; lighting fourteen lines at once would be showing everything and saying
+# nothing.
+PF_LIT = {"gemma-4-12B-it", "gemma-4-26B-A4B"}
 
 _fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
 pf_series = []
@@ -497,6 +518,7 @@ for mid, machine, model, date, cfg in PF_LINES:
     quant, arch = _QA[model]
     pf_series.append({
         "machine": mid, "machine_name": machine, "model": model, "date": date,
+        "lit": model in PF_LIT,
         "cfg": cfg, "quant": quant, "quant_label": qlabel(quant), "arch": arch,
         "tp": rows[0]["tp"], "vllm": rows[0]["vllm"],
         "attn_backend": rows[0]["attn_backend"],
@@ -515,16 +537,70 @@ for mid, machine, model, date, cfg in PF_LINES:
 # The comparison the figure exists to make: against one 7900 XT, how much of
 # each machine's advantage is the linear term and how much the quadratic. b is
 # GEMM throughput -- the compute -- and c is how badly attention scales, and on
-# these six lines they do not move together.
+# these lines they do not move together. Card against card only; the pair is a
+# different question and is answered below.
 pf_cmp = []
 for model in ("gemma-4-12B-it", "gemma-4-26B-A4B"):
     ref = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3-1")
     for x in pf_series:
-        if x["model"] != model or x["machine"] == "rdna3-1":
+        if x["model"] != model or x["machine"] in ("rdna3-1", "rdna3"):
             continue
         pf_cmp.append({"model": model, "machine": x["machine"],
                        "b_ratio": ref["fit"]["b_us_tok"] / x["fit"]["b_us_tok"],
                        "c_ratio": ref["fit"]["c_ns_tok2"] / x["fit"]["c_ns_tok2"]})
+
+# --- what the second card buys, which is not what section 4 said it did -----
+# docs/benchmarks.md's section 4 priced the second card off the fitted
+# intercept -- "+76 ms, 72 all-reduces at 1.05 ms each" -- and that was
+# withdrawn on 2026-08-30 because `a` does not survive being measured twice.
+# What does survive is b and c, and three models here have both topologies, so
+# the claim can be made on the coefficients that reproduce instead of the one
+# that does not. It is the same shape on all three: the second card buys about
+# half again on compute and about twice on attention, because attention needs
+# no communication and the GEMMs do.
+tp_gain = []
+for model in ("gemma-4-12B-it", "gemma-4-26B-A4B", "Qwen3-8B"):
+    one = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3-1")
+    two = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3")
+    tp_gain.append({"model": model,
+                    "one_cfg": one["cfg"], "two_cfg": two["cfg"],
+                    "b_gain": one["fit"]["b_us_tok"] / two["fit"]["b_us_tok"],
+                    "c_gain": one["fit"]["c_ns_tok2"] / two["fit"]["c_ns_tok2"]})
+assert all(g["c_gain"] > g["b_gain"] for g in tp_gain), tp_gain
+
+# --- the flag that is not free ----------------------------------------------
+# The 2026-08-29 campaign found that pinning Qwen3.8 to TRITON_ATTN is worth
+# 15.0 % of decode at 32 K against the backend ROCm picks for itself, and this
+# repository has been calling that "nothing but a flag". Both arms recorded
+# prefill too, on the same day, differing in that flag and nothing else -- and
+# prefill goes the other way and by more. It is a trade, not a free win.
+_bt = {}
+for cfg in ("Q38-tp2", "Q38-triton-tp2"):
+    pre = {r["ctx"]: r for r in _PF if r["cfg"] == cfg and r["chart_grade"]}
+    dec = {r["ctx"]: r for r in json.loads("[" + ",".join(
+        open(B / "decode.jsonl").read().strip().splitlines()) + "]")
+        if r["cfg"] == cfg and r["chart_grade"]}
+    _bt[cfg] = (pre, dec)
+_deep = max(set(_bt["Q38-tp2"][0]) & set(_bt["Q38-triton-tp2"][0]))
+_deep_d = max(set(_bt["Q38-tp2"][1]) & set(_bt["Q38-triton-tp2"][1]))
+backend_tradeoff = {
+    "model": "Qwen3.8-27B", "date": "2026-08-29", "ctx": _deep, "ctx_decode": _deep_d,
+    "rocm_cfg": "Q38-tp2", "triton_cfg": "Q38-triton-tp2",
+    "prefill_rocm": _bt["Q38-tp2"][0][_deep]["prefill_tok_s"],
+    "prefill_triton": _bt["Q38-triton-tp2"][0][_deep]["prefill_tok_s"],
+    "decode_rocm": _bt["Q38-tp2"][1][_deep_d]["decode_tok_s"],
+    "decode_triton": _bt["Q38-triton-tp2"][1][_deep_d]["decode_tok_s"],
+    "c_rocm": next(f for f in _bp.fits(_PF)
+                   if f["cfg"] == "Q38-tp2")["c_ns_tok2"],
+    "c_triton": next(f for f in _bp.fits(_PF)
+                     if f["cfg"] == "Q38-triton-tp2")["c_ns_tok2"],
+}
+backend_tradeoff["prefill_gain"] = (backend_tradeoff["prefill_rocm"]
+                                    / backend_tradeoff["prefill_triton"])
+backend_tradeoff["decode_gain"] = (backend_tradeoff["decode_triton"]
+                                   / backend_tradeoff["decode_rocm"])
+# the two go opposite ways, which is the whole point of recording it
+assert backend_tradeoff["prefill_gain"] > 1 and backend_tradeoff["decode_gain"] > 1
 # The L4 is behind one 7900 XT on the linear term and ahead on the quadratic --
 # the one crossing in the set, and the reason a single prefill tok/s number
 # cannot state what these cards do.
@@ -534,7 +610,10 @@ PF_TICKS = [c for c in sorted({p["ctx"] for x in pf_series for p in x["points"]}
             if c in {500 * 2 ** i for i in range(8)}]
 
 _lit_models = [m for m in dict.fromkeys(x["model"] for x in series if x["lit"])]
-_pf_models = [x["model"] for x in pf_series]
+# The models Figure 2 lights by default, not every model it draws: once it drew
+# all seven, "a Figure 2 model" stopped distinguishing anything and the pair
+# that has to be legible without a click fell back onto m1/m7, 17.8 apart.
+_pf_models = sorted(PF_LIT)
 _tail = [m for m in dict.fromkeys(x["model"] for x in series) if m not in _lit_models]
 MODEL_ORDER = _lit_models + sorted(_tail, key=lambda m: (m not in _pf_models,
                                                          _tail.index(m)))
@@ -552,6 +631,8 @@ out = {
     "prefill": {
         "series": pf_series,
         "compare": pf_cmp,
+        "tp_gain": tp_gain,
+        "backend_tradeoff": backend_tradeoff,
         "ticks": PF_TICKS,
         "ctx_min": min(p["tokens"] for x in pf_series for p in x["points"]),
         "ctx_max": max(p["tokens"] for x in pf_series for p in x["points"]),
@@ -583,14 +664,14 @@ out = {
         # between the two figures. Lit models first -- they take the four
         # furthest apart in both themes -- then the rest.
         #
-        # Within the tail, the models Figure 2 draws come first, and that is not
-        # cosmetic. colour[m] is var(--m{i%7+1}) and the palette's closest pair
+        # Within the tail, the models Figure 2 *lights by default* come first,
+        # and that is not cosmetic. colour[m] is var(--m{i%7+1}) and the palette's closest pair
         # by CIE76 is m1 against m7 at dE 17.8, where every other pair is 40 or
         # more. Figure 2 has exactly two models on one chart, one of them lit
         # here and so on m1; leaving the other at the end of the tail put it on
-        # m7 and drew both of that figure's models in the same blue. Pulling it
-        # forward costs Figure 1 nothing -- it swaps two models that are both
-        # off in the default view -- and gives Figure 2 a pair 78.7 apart.
+        # m7 and drew both of that figure's lit models in the same blue. Pulling
+        # it forward costs Figure 1 nothing -- it swaps two models that are both
+        # off in its default view -- and gives Figure 2 a pair 78.7 apart.
         "model_order": MODEL_ORDER,
         "ctx_ticks": CTX_TICKS,
         "fastest": max(p["tok_s"] for s in series for p in s["points"]),

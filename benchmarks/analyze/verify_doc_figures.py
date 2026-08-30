@@ -3865,11 +3865,24 @@ def main():
     import build_prefill as _bpf
     XP = XFIG["prefill"]
     XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
-    ck("prefill figure, lines", "6", len(XP["series"]))
-    ck("prefill figure, machines", "3", len({x["machine"] for x in XP["series"]}))
-    ck("prefill figure, models", "2", len({x["model"] for x in XP["series"]}))
-    ck("prefill figure, and every line is one card", "6",
+    ck("prefill figure, lines", "14", len(XP["series"]))
+    ck("prefill figure, machines", "4", len({x["machine"] for x in XP["series"]}))
+    ck("prefill figure, models", "7", len({x["model"] for x in XP["series"]}))
+    ck("prefill figure, single-card lines", "7",
        sum(1 for x in XP["series"] if x["tp"] == 1))
+    ck("prefill figure, and lines on the pair", "7",
+       sum(1 for x in XP["series"] if x["tp"] == 2))
+    # eight lit: the two models every machine ran, on all four machines
+    ck("prefill figure, lit to start", "8",
+       sum(1 for x in XP["series"] if x["lit"]))
+    ck("prefill figure, and they are the models every machine ran", "2",
+       len({x["model"] for x in XP["series"] if x["lit"]}))
+    # every model this repository has a chart-grade prefill ladder for is drawn
+    ck("prefill figure, models with a fittable ladder left undrawn", "0",
+       len({f["model"] for f in _bpf.fits(XPFROWS)
+            if f.get("rungs", 0) >= 4 and "b_us_tok" in f
+            and f["machine"] == "RX 7900 XT" and f["spec"] is None}
+           - {x["model"] for x in XP["series"]} - {"Qwen3.6-27B"}))
     # The whole reason the A100 was re-run. Four of the six lines are the CUDA
     # campaigns and had the cache off; one is the Radeon MoE, whose 0.23
     # container has it ON and produced no hits anyway -- its rounds agree to
@@ -3877,15 +3890,15 @@ def main():
     # campaign, whose serve logs were not kept and which therefore records
     # neither. The flag is not the discriminator; repeatability is, and no
     # ungraded rung is drawn.
-    ck("prefill figure, lines measured with prefix caching off", "4",
+    ck("prefill figure, lines measured with prefix caching off", "5",
        sum(1 for x in XP["series"] if x["prefix_caching"] is False))
-    ck("prefill figure, lines that had it on and show no hits", "1",
+    ck("prefill figure, lines that had it on and show no hits", "2",
        sum(1 for x in XP["series"] if x["prefix_caching"] is True))
-    ck("prefill figure, lines with no log to say", "1",
+    ck("prefill figure, lines with no log to say", "7",
        sum(1 for x in XP["series"] if x["prefix_caching"] is None))
     # this column is for what was read: five logs survive and all five say
     # TRITON_ATTN, and none of the six records anything else
-    ck("prefill figure, lines recording TRITON_ATTN", "5",
+    ck("prefill figure, lines recording TRITON_ATTN", "7",
        sum(1 for x in XP["series"] if x["attn_backend"] == "TRITON_ATTN"))
     ck("prefill figure, and none records a different backend", "0",
        sum(1 for x in XP["series"]
@@ -3897,11 +3910,11 @@ def main():
     # 1 slower than round 2 each time, and this repository does not know why.
     _drop = {(x["machine"], x["model"]): [d["ctx"] for d in x["dropped"]]
              for x in XP["series"]}
-    ck("prefill figure, CUDA lines dropping their shallowest rung", "3",
-       sum(1 for (m, _), d in _drop.items() if m in ("a100", "l4") and d == [500]))
-    ck("prefill figure, Radeon lines dropping the 4000 rung", "2",
-       sum(1 for (m, _), d in _drop.items() if m == "rdna3-1" and d == [4000]))
-    ck("prefill figure, lines dropping nothing", "1",
+    ck("prefill figure, lines dropping their shallowest rung", "6",
+       sum(1 for d in _drop.values() if d == [500]))
+    ck("prefill figure, lines dropping the 4000 rung", "4",
+       sum(1 for d in _drop.values() if d == [4000]))
+    ck("prefill figure, lines dropping nothing", "4",
        sum(1 for d in _drop.values() if not d))
 
     _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
@@ -3976,13 +3989,63 @@ def main():
 
     _slot = {m: i % 7 + 1 for i, m in enumerate(XB["model_order"])}
     _pf_models = sorted({x["model"] for x in XP["series"]})
-    ck("prefill figure, its two models are two palette slots", "2",
+    _pf_lit = sorted({x["model"] for x in XP["series"] if x["lit"]})
+    # Colour carries the model and stroke carries the machine, so a (machine,
+    # model) pair drawn twice would be two lines a reader cannot tell apart at
+    # all. Fourteen lines, fourteen distinct pairs -- verified in the page as
+    # fourteen distinct (stroke-dasharray, stroke) combinations.
+    ck("prefill figure, lines drawn identically to another", "0",
+       len(XP["series"]) - len({(x["machine"], x["model"]) for x in XP["series"]}))
+
+    ck("prefill figure, its models are one palette slot each", str(len(_pf_models)),
        len({_slot[m] for m in _pf_models}))
-    if len(_pf_models) == 2 and all(_slot[m] in _pal for m in _pf_models):
-        ck("prefill figure, and far enough apart to tell at stroke width", "78.7",
-           _de(_pal[_slot[_pf_models[0]]], _pal[_slot[_pf_models[1]]]), 0.01)
-        ck("prefill figure, which the palette's closest pair is not", "1",
-           1 if _de(_pal[_slot[_pf_models[0]]], _pal[_slot[_pf_models[1]]]) >= 40 else 0)
+    # The default view is what has to be legible without a click, so the lit
+    # models are the ones held to a distance. m1 against m7 is 17.8 and every
+    # other pair is 40 or more; the first draft drew both lit models in exactly
+    # that pair.
+    _worst = min((_de(_pal[_slot[a]], _pal[_slot[b]])
+                  for i, a in enumerate(_pf_lit) for b in _pf_lit[i + 1:]),
+                 default=None)
+    ck("prefill figure, the lit models are far enough apart to tell", "78.7",
+       _worst, 0.01)
+    ck("prefill figure, which the palette's closest pair is not", "1",
+       1 if _worst >= 40 else 0)
+
+    # What the second card buys, on the coefficients that reproduce. This is the
+    # replacement for the claim docs/benchmarks.md section 4 withdrew, and the
+    # shape is the point: c gains more than b on every model, because attention
+    # needs no communication and the GEMMs do.
+    _tg = {g["model"]: g for g in XP["tp_gain"]}
+    ck("prefill figure, models with both topologies", "3", len(_tg))
+    ck("prefill figure, and c gains more than b on every one", "3",
+       sum(1 for g in _tg.values() if g["c_gain"] > g["b_gain"]))
+    ck("prefill figure, second card on the 12B, b", "1.48",
+       _tg["gemma-4-12B-it"]["b_gain"], 0.01)
+    ck("prefill figure, and its c", "2.22", _tg["gemma-4-12B-it"]["c_gain"], 0.01)
+    ck("prefill figure, second card on the MoE, b", "1.44",
+       _tg["gemma-4-26B-A4B"]["b_gain"], 0.01)
+    ck("prefill figure, and the MoE's c", "1.91",
+       _tg["gemma-4-26B-A4B"]["c_gain"], 0.01)
+    ck("prefill figure, second card on Qwen3-8B, b", "1.23",
+       _tg["Qwen3-8B"]["b_gain"], 0.01)
+    ck("prefill figure, and Qwen3-8B's c", "2.08", _tg["Qwen3-8B"]["c_gain"], 0.01)
+
+    # The flag this repository called free. Same model, same day, same stack,
+    # one flag: it buys decode at depth and sells prefill at depth, and the two
+    # directions are what makes it a trade rather than a win.
+    _bt = XP["backend_tradeoff"]
+    ck("prefill figure, the Triton flag buys decode at 32K", "1.15",
+       _bt["decode_gain"], 0.01)
+    ck("prefill figure, and sells prefill at 32K", "1.40",
+       _bt["prefill_gain"], 0.01)
+    ck("prefill figure, and the two go opposite ways", "1",
+       1 if _bt["prefill_gain"] > 1 and _bt["decode_gain"] > 1 else 0)
+    ck("prefill figure, the backend's quadratic term, ROCm", "3.43",
+       _bt["c_rocm"], 0.01)
+    ck("prefill figure, and Triton's", "18.44", _bt["c_triton"], 0.01)
+    # both arms are the same model on the same day, or it is not one flag
+    ck("prefill figure, and the pair differs only in the flag", "1",
+       1 if _bt["date"] == "2026-08-29" and _bt["model"] == "Qwen3.8-27B" else 0)
 
     # the machine ids have to be Figure 1's, or a reader carrying a stroke or a
     # colour between the two figures is carrying it to the wrong line

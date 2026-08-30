@@ -7,6 +7,7 @@
     "machine_name": "A100-SXM4-80GB",
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
+    "lit": true,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -117,6 +118,7 @@
     "machine_name": "A100-SXM4-80GB",
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
+    "lit": true,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -230,6 +232,7 @@
     "machine_name": "RX 7900 XT",
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
+    "lit": true,
     "cfg": "A-12B-tp1",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -340,6 +343,7 @@
     "machine_name": "RX 7900 XT",
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
+    "lit": true,
     "cfg": "E26-tp1-u95",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -414,10 +418,74 @@
     ]
    },
    {
+    "machine": "rdna3-1",
+    "machine_name": "RX 7900 XT",
+    "model": "Qwen3-8B",
+    "date": "2026-08-24",
+    "lit": false,
+    "cfg": "B-8B-tp1",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": 28.944613298217458,
+     "b_us_tok": 244.537530313874,
+     "c_ns_tok2": 17.82846674664255,
+     "r2": 0.9998709807340846,
+     "rungs": 4
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 18.239795918367356
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 980,
+      "tok_s": 3335.6024506466983,
+      "ttft_s": 0.2938,
+      "runs": 2,
+      "range_pct": 1.2933968686181163
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2030,
+      "tok_s": 3455.3191489361707,
+      "ttft_s": 0.5874999999999999,
+      "runs": 2,
+      "range_pct": 0.2042553191489326
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4044,
+      "tok_s": 3068.052499810333,
+      "ttft_s": 1.3181,
+      "runs": 2,
+      "range_pct": 0.04552006676275957
+     },
+     {
+      "ctx": 6000,
+      "tokens": 5961,
+      "tok_s": 2814.2482826995256,
+      "ttft_s": 2.11815,
+      "runs": 2,
+      "range_pct": 0.06137431248965535
+     }
+    ]
+   },
+   {
     "machine": "l4",
     "machine_name": "L4",
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
+    "lit": true,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -528,6 +596,7 @@
     "machine_name": "L4",
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
+    "lit": true,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -632,6 +701,792 @@
       "range_pct": 0.15897408722378856
      }
     ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "gemma-4-12B-it",
+    "date": "2026-08-24",
+    "lit": true,
+    "cfg": "A-12B-tp2",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": 99.81847649154308,
+     "b_us_tok": 322.5917424166407,
+     "c_ns_tok2": 10.868129413731756,
+     "r2": 0.9999924906251758,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 71.95096468621578
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 970,
+      "tok_s": 2272.194893417662,
+      "ttft_s": 0.4269,
+      "runs": 2,
+      "range_pct": 6.93370812836729
+     },
+     {
+      "ctx": 2000,
+      "tokens": 1992,
+      "tok_s": 2476.2259929144134,
+      "ttft_s": 0.80445,
+      "runs": 2,
+      "range_pct": 5.034495618124182
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4007,
+      "tok_s": 2482.728709067815,
+      "ttft_s": 1.61395,
+      "runs": 2,
+      "range_pct": 2.633290994144799
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6006,
+      "tok_s": 2465.5172413793102,
+      "ttft_s": 2.436,
+      "runs": 2,
+      "range_pct": 1.4367816091954082
+     },
+     {
+      "ctx": 8000,
+      "tokens": 7982,
+      "tok_s": 2360.805075346416,
+      "ttft_s": 3.38105,
+      "runs": 2,
+      "range_pct": 0.29280844708004966
+     },
+     {
+      "ctx": 12000,
+      "tokens": 11984,
+      "tok_s": 2170.522979397781,
+      "ttft_s": 5.52125,
+      "runs": 2,
+      "range_pct": 0.824088748019011
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16011,
+      "tok_s": 1985.5156933989756,
+      "ttft_s": 8.0639,
+      "runs": 2,
+      "range_pct": 0.05208397921602288
+     },
+     {
+      "ctx": 20000,
+      "tokens": 19982,
+      "tok_s": 1831.0859415449045,
+      "ttft_s": 10.91265,
+      "runs": 2,
+      "range_pct": 0.028407398752822464
+     },
+     {
+      "ctx": 24000,
+      "tokens": 23962,
+      "tok_s": 1704.7706115247388,
+      "ttft_s": 14.05585,
+      "runs": 2,
+      "range_pct": 0.15011543236446437
+     },
+     {
+      "ctx": 32000,
+      "tokens": 31957,
+      "tok_s": 1484.5802391996635,
+      "ttft_s": 21.52595,
+      "runs": 2,
+      "range_pct": 0.12589455982198597
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-08-24",
+    "lit": true,
+    "cfg": "E-26B-tp2",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": 111.27481121677971,
+     "b_us_tok": 250.26045591547765,
+     "c_ns_tok2": 6.869769079619109,
+     "r2": 0.9999783793770356,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 4000,
+      "range_pct": 28.683504232330883
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 521,
+      "tok_s": 1731.7600132956625,
+      "ttft_s": 0.30084999999999995,
+      "runs": 2,
+      "range_pct": 4.8861558916403505
+     },
+     {
+      "ctx": 1000,
+      "tokens": 970,
+      "tok_s": 2972.72448666871,
+      "ttft_s": 0.3263,
+      "runs": 2,
+      "range_pct": 1.8387986515476573
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2044,
+      "tok_s": 3172.4352009933264,
+      "ttft_s": 0.6443,
+      "runs": 2,
+      "range_pct": 0.9933260903305853
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6044,
+      "tok_s": 3221.576675017323,
+      "ttft_s": 1.8761,
+      "runs": 2,
+      "range_pct": 0.596983103246089
+     },
+     {
+      "ctx": 8000,
+      "tokens": 7982,
+      "tok_s": 3137.4552887072045,
+      "ttft_s": 2.5441000000000003,
+      "runs": 2,
+      "range_pct": 0.07075193585157037
+     },
+     {
+      "ctx": 12000,
+      "tokens": 11984,
+      "tok_s": 2922.2140941233847,
+      "ttft_s": 4.101,
+      "runs": 2,
+      "range_pct": 0.4437941965374352
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16046,
+      "tok_s": 2720.3065134099616,
+      "ttft_s": 5.8986,
+      "runs": 2,
+      "range_pct": 0.1254534974400793
+     },
+     {
+      "ctx": 20000,
+      "tokens": 19981,
+      "tok_s": 2534.8235353817267,
+      "ttft_s": 7.8826,
+      "runs": 2,
+      "range_pct": 0.1293989292872824
+     },
+     {
+      "ctx": 24000,
+      "tokens": 23962,
+      "tok_s": 2383.9939509710284,
+      "ttft_s": 10.0512,
+      "runs": 2,
+      "range_pct": 0.1651544094237543
+     },
+     {
+      "ctx": 32000,
+      "tokens": 31940,
+      "tok_s": 2111.6657300585107,
+      "ttft_s": 15.125499999999999,
+      "runs": 2,
+      "range_pct": 0.19701828038742406
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "Qwen3-8B",
+    "date": "2026-08-24",
+    "lit": false,
+    "cfg": "B-8B-tp2",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": 30.549953200764513,
+     "b_us_tok": 198.62447897235532,
+     "c_ns_tok2": 8.582084666945343,
+     "r2": 0.9999967863814119,
+     "rungs": 11
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 514,
+      "tok_s": 3689.877961234745,
+      "ttft_s": 0.1393,
+      "runs": 2,
+      "range_pct": 1.7229002153625363
+     },
+     {
+      "ctx": 1000,
+      "tokens": 980,
+      "tok_s": 3938.1153305203934,
+      "ttft_s": 0.24885000000000002,
+      "runs": 2,
+      "range_pct": 0.8438818565400917
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2030,
+      "tok_s": 4434.735117422174,
+      "ttft_s": 0.45775,
+      "runs": 2,
+      "range_pct": 0.5898416166029571
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4044,
+      "tok_s": 4191.107886827651,
+      "ttft_s": 0.9649,
+      "runs": 2,
+      "range_pct": 0.145092755725989
+     },
+     {
+      "ctx": 6000,
+      "tokens": 5962,
+      "tok_s": 3925.725949825509,
+      "ttft_s": 1.5187,
+      "runs": 2,
+      "range_pct": 0.11852242049121114
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8009,
+      "tok_s": 3686.7908025870606,
+      "ttft_s": 2.17235,
+      "runs": 2,
+      "range_pct": 0.19794232052846886
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12060,
+      "tok_s": 3271.928158658672,
+      "ttft_s": 3.6859,
+      "runs": 2,
+      "range_pct": 0.03798258227298206
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16026,
+      "tok_s": 2953.8019186994866,
+      "ttft_s": 5.42555,
+      "runs": 2,
+      "range_pct": 0.0718821133341282
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20032,
+      "tok_s": 2689.7977817761903,
+      "ttft_s": 7.4474,
+      "runs": 2,
+      "range_pct": 0.11547654214893112
+     },
+     {
+      "ctx": 24000,
+      "tokens": 23992,
+      "tok_s": 2462.7512972248883,
+      "ttft_s": 9.74195,
+      "runs": 2,
+      "range_pct": 0.08725152561858489
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32012,
+      "tok_s": 2108.264922731419,
+      "ttft_s": 15.18405,
+      "runs": 2,
+      "range_pct": 0.001975757456021794
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-08-24",
+    "lit": false,
+    "cfg": "G-30B-tp2",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": 52.27728843986426,
+     "b_us_tok": 602.4025955428759,
+     "c_ns_tok2": 12.727601145081392,
+     "r2": 0.999996663782665,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 9.099756690997577
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1022,
+      "tok_s": 1469.4464414090583,
+      "ttft_s": 0.6955,
+      "runs": 2,
+      "range_pct": 1.4953271028037332
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2064,
+      "tok_s": 1535.8857015291885,
+      "ttft_s": 1.34385,
+      "runs": 2,
+      "range_pct": 0.8111024295866288
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4079,
+      "tok_s": 1485.6768224945822,
+      "ttft_s": 2.7455499999999997,
+      "runs": 2,
+      "range_pct": 0.32416091493508153
+     },
+     {
+      "ctx": 6000,
+      "tokens": 5999,
+      "tok_s": 1451.9271495129183,
+      "ttft_s": 4.13175,
+      "runs": 2,
+      "range_pct": 0.01210140981423665
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8072,
+      "tok_s": 1409.2178770949722,
+      "ttft_s": 5.728,
+      "runs": 2,
+      "range_pct": 0.38407821229050704
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12080,
+      "tok_s": 1317.640899224468,
+      "ttft_s": 9.1679,
+      "runs": 2,
+      "range_pct": 0.18324807207757424
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16076,
+      "tok_s": 1232.1228750555667,
+      "ttft_s": 13.0474,
+      "runs": 2,
+      "range_pct": 0.07664362248417146
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 1160.4559657447055,
+      "ttft_s": 17.282,
+      "runs": 2,
+      "range_pct": 0.031246383520435284
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24064,
+      "tok_s": 1097.7926903539405,
+      "ttft_s": 21.92035,
+      "runs": 2,
+      "range_pct": 0.10538152903580215
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32108,
+      "tok_s": 987.2777448938019,
+      "ttft_s": 32.52175,
+      "runs": 2,
+      "range_pct": 0.06364971134701529
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "gemma-3-27b-it",
+    "date": "2026-08-24",
+    "lit": false,
+    "cfg": "F-27B-tp2",
+    "quant": "w4a16",
+    "quant_label": "W4A16",
+    "arch": "sliding window",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": null,
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "fit": {
+     "a_ms": -17.740239396460183,
+     "b_us_tok": 627.8926993685435,
+     "c_ns_tok2": 14.388238729935193,
+     "r2": 0.9999630806219442,
+     "rungs": 11
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 490,
+      "tok_s": 1437.16087402845,
+      "ttft_s": 0.34095,
+      "runs": 2,
+      "range_pct": 0.3226279513125225
+     },
+     {
+      "ctx": 1000,
+      "tokens": 965,
+      "tok_s": 1478.0211364680654,
+      "ttft_s": 0.6529,
+      "runs": 2,
+      "range_pct": 0.9802419972430634
+     },
+     {
+      "ctx": 2000,
+      "tokens": 1990,
+      "tok_s": 1535.1976856316296,
+      "ttft_s": 1.2962500000000001,
+      "runs": 2,
+      "range_pct": 0.038572806171644734
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4004,
+      "tok_s": 1421.9507431148675,
+      "ttft_s": 2.81585,
+      "runs": 2,
+      "range_pct": 6.871814904913251
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6002,
+      "tok_s": 1430.341737762738,
+      "ttft_s": 4.196199999999999,
+      "runs": 2,
+      "range_pct": 0.02859730232114456
+     },
+     {
+      "ctx": 8000,
+      "tokens": 7978,
+      "tok_s": 1361.201160211568,
+      "ttft_s": 5.861,
+      "runs": 2,
+      "range_pct": 0.07848490018768021
+     },
+     {
+      "ctx": 12000,
+      "tokens": 11981,
+      "tok_s": 1261.6758458735694,
+      "ttft_s": 9.496099999999998,
+      "runs": 2,
+      "range_pct": 0.056865450026851554
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16007,
+      "tok_s": 1167.103531496192,
+      "ttft_s": 13.715150000000001,
+      "runs": 2,
+      "range_pct": 0.013853293620564856
+     },
+     {
+      "ctx": 20000,
+      "tokens": 19976,
+      "tok_s": 1088.9367385319852,
+      "ttft_s": 18.3445,
+      "runs": 2,
+      "range_pct": 0.23985390716561875
+     },
+     {
+      "ctx": 24000,
+      "tokens": 23958,
+      "tok_s": 1022.8822840016139,
+      "ttft_s": 23.42205,
+      "runs": 2,
+      "range_pct": 0.04397565541872237
+     },
+     {
+      "ctx": 32000,
+      "tokens": 31952,
+      "tok_s": 920.9449254643347,
+      "ttft_s": 34.6948,
+      "runs": 2,
+      "range_pct": 0.22769982821633392
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "Qwen3.8-27B",
+    "date": "2026-08-29",
+    "lit": false,
+    "cfg": "Q38-triton-tp2",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "campaign-2026-08-29/results.jsonl",
+    "fit": {
+     "a_ms": 283.974299440232,
+     "b_us_tok": 846.1560835819542,
+     "c_ns_tok2": 18.443415242101082,
+     "r2": 0.9999624309767275,
+     "rungs": 11
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 560,
+      "tok_s": 834.326579261025,
+      "ttft_s": 0.6712,
+      "runs": 2,
+      "range_pct": 5.065554231227656
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1028,
+      "tok_s": 977.7439604337073,
+      "ttft_s": 1.0514000000000001,
+      "runs": 2,
+      "range_pct": 1.8261365797983529
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2079,
+      "tok_s": 938.7699810349499,
+      "ttft_s": 2.2146,
+      "runs": 2,
+      "range_pct": 1.806195249706495
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4102,
+      "tok_s": 976.6317869599895,
+      "ttft_s": 4.20015,
+      "runs": 2,
+      "range_pct": 0.5975977048438776
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6022,
+      "tok_s": 979.553328887226,
+      "ttft_s": 6.1477,
+      "runs": 2,
+      "range_pct": 0.06181173446980213
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8070,
+      "tok_s": 959.5719381688466,
+      "ttft_s": 8.41,
+      "runs": 2,
+      "range_pct": 0.8513674197384078
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12121,
+      "tok_s": 913.9509282019575,
+      "ttft_s": 13.2622,
+      "runs": 2,
+      "range_pct": 0.14175626969883443
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16100,
+      "tok_s": 863.1573868312205,
+      "ttft_s": 18.65245,
+      "runs": 2,
+      "range_pct": 0.0026806130025751828
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20114,
+      "tok_s": 814.7723567191174,
+      "ttft_s": 24.68665,
+      "runs": 2,
+      "range_pct": 0.3568730467681811
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24083,
+      "tok_s": 767.89159027501,
+      "ttft_s": 31.3625,
+      "runs": 2,
+      "range_pct": 0.06759665205261166
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32127,
+      "tok_s": 689.8921258413744,
+      "ttft_s": 46.56815,
+      "runs": 2,
+      "range_pct": 0.052611065717655066
+     }
+    ]
+   },
+   {
+    "machine": "rdna3",
+    "machine_name": "RX 7900 XT",
+    "model": "gemma-4-31B-it",
+    "date": "2026-08-29",
+    "lit": false,
+    "cfg": "G31-tp2",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": true,
+    "source": "campaign-2026-08-29/results.jsonl",
+    "fit": {
+     "a_ms": 115.15017109644413,
+     "b_us_tok": 868.7073601787611,
+     "c_ns_tok2": 29.060775378009133,
+     "r2": 0.9999966815238704,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 4000,
+      "range_pct": 8.766871815389674
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 492,
+      "tok_s": 857.5163398692811,
+      "ttft_s": 0.57375,
+      "runs": 2,
+      "range_pct": 2.806100217864924
+     },
+     {
+      "ctx": 1000,
+      "tokens": 971,
+      "tok_s": 1042.9085441168575,
+      "ttft_s": 0.9310499999999999,
+      "runs": 2,
+      "range_pct": 0.5262875248375507
+     },
+     {
+      "ctx": 2000,
+      "tokens": 1992,
+      "tok_s": 1006.4926862542001,
+      "ttft_s": 1.97915,
+      "runs": 2,
+      "range_pct": 0.5305307834171211
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6006,
+      "tok_s": 935.7545163476594,
+      "ttft_s": 6.41835,
+      "runs": 2,
+      "range_pct": 0.3225127953445935
+     },
+     {
+      "ctx": 8000,
+      "tokens": 7982,
+      "tok_s": 888.2212207199689,
+      "ttft_s": 8.9865,
+      "runs": 2,
+      "range_pct": 0.6565403661047046
+     },
+     {
+      "ctx": 12000,
+      "tokens": 11984,
+      "tok_s": 816.0458140540467,
+      "ttft_s": 14.68545,
+      "runs": 2,
+      "range_pct": 0.4337626698534875
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16010,
+      "tok_s": 745.750711514186,
+      "ttft_s": 21.4683,
+      "runs": 2,
+      "range_pct": 0.20309013755165253
+     },
+     {
+      "ctx": 20000,
+      "tokens": 19980,
+      "tok_s": 686.7477954811446,
+      "ttft_s": 29.093649999999997,
+      "runs": 2,
+      "range_pct": 0.07321185207081304
+     },
+     {
+      "ctx": 24000,
+      "tokens": 23962,
+      "tok_s": 636.8409372686959,
+      "ttft_s": 37.62635,
+      "runs": 2,
+      "range_pct": 0.02737443307682213
+     },
+     {
+      "ctx": 32000,
+      "tokens": 31956,
+      "tok_s": 555.1902277068695,
+      "ttft_s": 57.55865,
+      "runs": 2,
+      "range_pct": 0.015462489130646778
+     }
+    ]
    }
   ],
   "compare": [
@@ -660,6 +1515,45 @@
     "c_ratio": 2.3729667008008275
    }
   ],
+  "tp_gain": [
+   {
+    "model": "gemma-4-12B-it",
+    "one_cfg": "A-12B-tp1",
+    "two_cfg": "A-12B-tp2",
+    "b_gain": 1.4848227816944466,
+    "c_gain": 2.2227015501570144
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "one_cfg": "E26-tp1-u95",
+    "two_cfg": "E-26B-tp2",
+    "b_gain": 1.4384701117900927,
+    "c_gain": 1.9113012281515669
+   },
+   {
+    "model": "Qwen3-8B",
+    "one_cfg": "B-8B-tp1",
+    "two_cfg": "B-8B-tp2",
+    "b_gain": 1.23115504986628,
+    "c_gain": 2.0774051338960176
+   }
+  ],
+  "backend_tradeoff": {
+   "model": "Qwen3.8-27B",
+   "date": "2026-08-29",
+   "ctx": 32000,
+   "ctx_decode": 32000,
+   "rocm_cfg": "Q38-tp2",
+   "triton_cfg": "Q38-triton-tp2",
+   "prefill_rocm": 968.9756474214739,
+   "prefill_triton": 689.8921258413744,
+   "decode_rocm": 36.47,
+   "decode_triton": 41.95,
+   "c_rocm": 3.4283510218247906,
+   "c_triton": 18.443415242101082,
+   "prefill_gain": 1.4045321161474869,
+   "decode_gain": 1.1502604880723883
+  },
   "ticks": [
    500,
    1000,
@@ -669,8 +1563,8 @@
    16000,
    32000
   ],
-  "ctx_min": 494,
-  "ctx_max": 32013
+  "ctx_min": 490,
+  "ctx_max": 32127
  },
  "best": {
   "series": [

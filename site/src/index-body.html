@@ -53,7 +53,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">Figure 2 · prefill throughput on one card, two models, three vendors
+    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, four machines
       <span class="prov yes">recomputable from repo</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -62,24 +62,28 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     <div class="barunit" id="prenote"></div>
   </div>
   <figcaption>
-    <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each card
-    <em>generates</em>; this is how fast it reads the prompt, on <em>one</em> card of each kind, for
-    the two models all three have run. Colour and stroke are Figure 1's, so a line means the same
-    thing in both. Prefill is not one number: split the time into a fixed cost, a linear term and
-    attention's quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while
-    <b>c</b> is how badly attention scales. Against one RX 7900 XT the A100 is 3.3× on b and 6.7× on
-    c for the dense 12B, so <em>the gap in attention is twice the gap in compute</em>. The L4 is the
-    interesting one: it is <b>slower than one 7900 XT on b</b> (0.90×) and 3.0× better on c, which
-    is why its curve starts below the Radeon's and ends above it. A single prefill tok/s number
-    states none of that. Hover a point for the run count and that line's fitted coefficients.
-    Only rungs whose two rounds agree are drawn, and the one each line drops is not one story. On
-    three of the four CUDA lines it is the shallowest, and it is the harness rather than the card:
-    the first request to a freshly started engine pays for the first CUDA-graph replay and the first
-    allocation out of the KV pool, and until 2026-08-30 the CUDA runner measured that request
-    instead of discarding it. On <em>both</em> Radeon lines it is the 4 000 rung — two models, two
-    campaigns, round 1 slower than round 2 each time — and this repository does not know why. The
-    MoE on one 7900 XT stops at 12 K for a reason it does know: 16.96 GiB of weights leave 0.93 GiB
-    of KV, which is 13 149 tokens.
+    <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each machine
+    <em>generates</em>; this is how fast it reads the prompt. Every model this repository has a
+    chart-grade prefill ladder for is here — seven models, fourteen lines, four machines — because
+    prefill was recorded beside decode in every campaign since July and had never been drawn.
+    Colour and stroke are Figure 1's, so a line means the same thing in both. Lit to start are the
+    two models all four machines ran; the other five are the pair's alone and are one click away.
+    Prefill is not one number: split the time into a fixed cost, a linear term and attention's
+    quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while <b>c</b> is
+    how badly attention scales. Three things fall out that a single prefill tok/s cannot say.
+    <b>Card against card</b>: the A100 is 3.3× on b and 6.7× on c against one 7900 XT for the dense
+    12B, so the gap in attention is twice the gap in compute; the L4 is <em>slower</em> on b (0.90×)
+    and 3.0× better on c, which is why its curve starts below the Radeon's and ends above it.
+    <b>The second card</b>: on all three models that have both topologies it buys 1.2–1.5× on b and
+    1.9–2.2× on c — attention parallelises better than the GEMMs do, because it needs no
+    communication. <b>And the flag is a trade</b>: pinning Qwen3.8 to <code>TRITON_ATTN</code>, which
+    this repository has been calling free, is worth 1.15× of decode at 32 K and <em>costs</em> 1.40×
+    of prefill there. Hover a point for the run count and that line's fitted coefficients.
+    Only rungs whose two rounds agree are drawn, and the one each line drops is not one story: six
+    lines drop their shallowest, which on the CUDA cards is the cold engine's first request the
+    runner did not discard until 2026-08-30, and four Radeon lines drop the 4 000 rung — round 1
+    slower than round 2 each time — which this repository does not explain. The MoE on one 7900 XT
+    stops at 12 K for a reason it does know: 16.96 GiB of weights leave 0.93 GiB of KV, 13 149 tokens.
   </figcaption>
 </figure>
 
@@ -153,15 +157,17 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
  "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · short dash: the same line with speculation on",
  "bestCapped": "{m} stops at {k} because {w}",
- "preHint": "click a model or a machine to add or remove its lines · every line is one card",
+ "preHint": "click a model or a machine to add or remove its lines · two models ran on all four machines and are lit; the other five are the pair\u2019s alone",
  "preAxisX": "prompt tokens",
  "preAxisY": "prefill tok/s",
- "preUnit": "prefill tok/s on one card · only rungs whose two rounds agree are drawn",
- "preStroke": "stroke is the machine, as in Figure 1 · long dash: the A100 · dotted: one RX 7900 XT · dash-dot: the L4",
+ "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, four machines, every chart-grade ladder this repository has",
+ "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4",
  "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "against one RX 7900 XT on {m}: {x} is {b}× on b and {c}× on c",
  "preDropped": "{n} rung dropped, rounds {r}% apart",
  "preNote": "b is compute and c is how badly attention scales; the two do not move together",
+ "preTpGain": "the second card buys {m} {b}× on b and {c}× on c — attention parallelises better than the GEMMs, because it needs no communication",
+ "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
@@ -676,13 +682,22 @@ topology. The shapes transfer; the levels are the worst case.</p>
     BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
     var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
 
-    var models = [], machines = [];
-    F.series.forEach(function (x) {
-      if (models.indexOf(x.model) < 0) models.push(x.model);
-      if (machines.indexOf(x.machine) < 0) machines.push(x.machine);
+    // Models in Figure 1's colour order so the two figures agree; machines in
+    // Figure 1's row order for the same reason.
+    var models = BB.model_order.filter(function (m) {
+      return F.series.some(function (x) { return x.model === m; });
     });
+    var machines = BB.machines.map(function (m) { return m.id; })
+      .filter(function (id) {
+        return F.series.some(function (x) { return x.machine === id; });
+      });
+    // Every machine is on -- comparing them is the point -- but only the two
+    // models every machine ran are lit, because fourteen lines at once is
+    // showing everything and saying nothing.
     var on = {}, machOn = {};
-    models.forEach(function (m) { on[m] = true; });
+    models.forEach(function (m) {
+      on[m] = F.series.some(function (x) { return x.model === m && x.lit; });
+    });
     machines.forEach(function (m) { machOn[m] = true; });
 
     function tipFor(x) {
@@ -761,13 +776,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
     });
     apply();
     // The ratios are the figure's argument, so they are written under it rather
-    // than left to be read off two curves by eye.
+    // than left to be read off fourteen curves by eye.
     var lines = [esc(S.preStroke), esc(S.preUnit), esc(S.preNote)];
     F.compare.forEach(function (c) {
       lines.push(esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
                                        b: c.b_ratio.toFixed(2),
                                        c: c.c_ratio.toFixed(2) })));
     });
+    F.tp_gain.forEach(function (g) {
+      lines.push(esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
+                                        c: g.c_gain.toFixed(2) })));
+    });
+    var bt = F.backend_tradeoff;
+    lines.push(esc(fmt(S.preTrade, { m: bt.model, k: kctx(bt.ctx),
+                                     p: bt.prefill_gain.toFixed(2),
+                                     d: bt.decode_gain.toFixed(2) })));
     note.innerHTML = lines.join("<br>");
   })();
 
