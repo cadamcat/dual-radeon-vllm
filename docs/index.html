@@ -515,6 +515,39 @@
    attention kernel was patched, and `.tip .sub` dims everything it wraps. */
 .tip .warn { color:var(--red); font-weight:700; }
 
+/* ---------- figure captions with more to say than a sentence ----------
+   Figures 1 and 2 carry what a reader has to know to not misread them: which
+   machines, why four lines stop early, why one is drawn on different terms,
+   what is deliberately absent. As one paragraph that was 612 and 570 words of
+   unbroken prose and nobody would read it.
+
+   A term list instead: short bold label, then the point. On a wide screen the
+   labels sit in their own column so the eye can skip down them; below 700px
+   they stack, because a 9em column and a 3-word label do not coexist on a
+   phone. The lede stays a plain sentence — a figure should still be readable
+   by someone who reads only its first line. */
+figcaption .caplede { margin:0 0 .95em; color:var(--text-2); }
+/* NOT `.lede`: that class is the page intro at 1.13rem, and inside a
+   .87rem caption it renders larger than the prose it introduces. */
+figcaption .capnotes { display:grid; grid-template-columns:9.5em 1fr;
+                       column-gap:1.3em; row-gap:.62em; margin:0; }
+figcaption .capnotes dt { color:var(--text-2); font-weight:600;
+                          font-size:.94em; line-height:1.5; }
+figcaption .capnotes dd { margin:0; }
+@media (max-width:700px) {
+  figcaption .capnotes { grid-template-columns:1fr; row-gap:.3em; }
+  figcaption .capnotes dt { margin-top:.55em; }
+  figcaption .capnotes dd { margin:0 0 .35em; }
+}
+
+/* ---------- the note block under Figure 2 ----------
+   It was eleven sentences of 12px monospace, seven of them one frame with
+   different numbers in it. Two labelled groups instead: the lead-in carries
+   the sentence, the rows carry only the numbers, and the clause each row used
+   to repeat now lives once in the caption. */
+.barunit .nhead { display:block; margin:.7em 0 .15em; color:var(--text-2); }
+.barunit .nrow  { display:block; padding-left:1.4em; }
+
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
@@ -1114,45 +1147,43 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     <div class="barunit" id="bestnote"></div>
   </div>
   <figcaption>
-    <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
-    log axis. Four models are lit to start; click any name to add or remove it, and the machine row
-    above to overlay another card. Five machines are offered and four of them are a
-    <em>single</em> card: one A100 80G, one of these 7900 XTs, one L4 24G and one Tesla T4 16G. The
-    same checkpoints
-    throughout — TP=1 on vLLM 0.28.0 for the CUDA cards against TP=2 on 0.23.1 for the pair. The
-    checkpoint is what the machines share; the split and the stack are not. The T4 is here at all
-    only because of <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>: without
-    it the engine does not start on sm75, dying at kernel load asking 98 304 bytes of shared memory
-    against Turing's 65 536. That patch changes prefill's tile size and nothing else, so this figure
-    reads its line on the same terms as every other; Figure 2 does not, and says so. Four of the
-    single-card
-    lines stop early, and that is the measurement rather than a gap: a card that cannot hold the KV
-    for the next rung cannot measure it, and the tooltip on those lines says how many tokens its KV
-    held. The shortest is two rungs — gemma-4-31B does not start on the L4 at all with CUDA graphs
-    on, and <code>--enforce-eager</code> buys it 2.51 GiB, a 2 020-token pool and those two rungs.
-    Every line is one session at one
-    ladder — up to eleven rungs, two rounds a cell — rather than a best-of stitched across days, and
-    the tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
-    measured the same day and on the same kernel as the line it sits beside, so it shows what
-    speculation does to <em>that</em> line rather than the fastest speculative run anywhere. It is
-    named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
-    Muse-Glimmer's assistant is a block-diffusion drafter and not MTP. Which way it goes is not one
-    answer — on these cards both arms start ahead and one stays ahead all the way to 32 K, while on
-    the A100 all four lose at every depth. One model carries a second switch, <b>ROCM_ATTN</b>: Qwen3.8's line is drawn on the backend this
-    repository pins with a flag because it is 15 % faster at 32 K, and the switch adds the backend the
-    runtime picks for itself. That flag is a trade rather than a free win — it sells prefill to buy
-    decode, by more than it buys (Figure 2) — and the switch is the half the front page used to leave
-    out. Stroke says which is which: solid these two cards, long
-    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation, dot-dash the
-    alternative backend, dash-dot-dot the T4. Hover a point for the run count and the stack it took.
-    The vertical axis fits
-    what is lit, so switching a line on can move it. Two series this repository measured are
-    deliberately absent, each because of this chart's own grammar rather than the data: the L4's
-    Qwen3.8-27B is a <em>different checkpoint</em> from the one already drawn — symmetric
-    compressed-tensors against AWQ, 1.27–3.24× apart on decode on gfx1100 — and a legend keyed on
-    the model name would put both behind one entry; and Qwen3-8B on one 7900 XT on vLLM 0.27 decodes
-    identically to the line already drawn, to 0.21 % at every rung, while swapping it in would turn
-    Figure 2's second-card comparison into a stack comparison.
+    <p class="caplede"><b>Figure 1.</b> Decode rate at batch 1 against context length, log axis. The
+    default view is 2&times; RX 7900 XT at tensor parallelism 2; the machine row above the chart
+    overlays the others.</p>
+    <dl class="capnotes">
+      <dt>Five machines</dt>
+      <dd>Four of them a <em>single</em> card: one A100 80G, one of these 7900 XTs, one L4 24G and
+        one Tesla T4 16G. The checkpoint is what they share &mdash; TP=1 on vLLM 0.28.0 for the CUDA
+        cards against TP=2 on 0.23.1 for the pair. The split and the stack are not shared, and every
+        line's tooltip carries its own.</dd>
+      <dt>The T4</dt>
+      <dd>It is here at all only because of
+        <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>: without it the
+        engine dies at kernel load asking 98&nbsp;304 bytes of shared memory against Turing's
+        65&nbsp;536. That patch changes prefill's tile size and nothing else, so this figure reads
+        its line on the same terms as every other. Figure 2 does not, and says so.</dd>
+      <dt>Lines that stop</dt>
+      <dd>Four do, and each stop is arithmetic rather than an abandoned run: a card that cannot hold
+        the KV for the next rung cannot measure it, and the tooltip says how many tokens its KV held.
+        The shortest is two rungs &mdash; gemma-4-31B does not start on the L4 at all with CUDA
+        graphs on, and <code>--enforce-eager</code> buys it 2.51&nbsp;GiB and a 2&nbsp;020-token
+        pool.</dd>
+      <dt>The switches</dt>
+      <dd>Each is named for what the engine resolved rather than for the button. Speculation shows
+        what happens to <em>that</em> line &mdash; same day, same kernel &mdash; and one arm says
+        <b>DFlash</b> because Muse-Glimmer's drafter is block-diffusion and not MTP. It does not go
+        one way: on these cards both arms start ahead and one stays ahead to 32&nbsp;K, while on the
+        A100 all four lose at every depth. Qwen3.8's second switch, <b>ROCM_ATTN</b>, adds the
+        backend the runtime picks for itself; the flag this repository pins instead buys decode and
+        sells prefill by more (Figure 2).</dd>
+      <dt>Deliberately absent</dt>
+      <dd>Two series this repository measured. The L4's Qwen3.8-27B is a <em>different checkpoint</em>
+        from the one drawn &mdash; symmetric compressed-tensors against AWQ, 1.27&ndash;3.24&times;
+        apart on decode on gfx1100 &mdash; and a legend keyed on the model name would put both behind
+        one entry. Qwen3-8B on one 7900 XT under vLLM 0.27 decodes identically to the line already
+        there, to 0.21&nbsp;% at every rung, and swapping it in would turn Figure 2's second-card
+        comparison into a stack comparison.</dd>
+    </dl>
   </figcaption>
 </figure>
 
@@ -1167,40 +1198,47 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     <div class="barunit" id="prenote"></div>
   </div>
   <figcaption>
-    <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each machine
-    <em>generates</em>; this is how fast it reads the prompt. Every model this repository has a
-    chart-grade prefill ladder for is here — seven models, nineteen lines, five machines — because
-    prefill was recorded beside decode in every campaign since July and had never been drawn.
-    Colour and stroke are Figure 1's, so a line means the same thing in both. Lit to start are the
-    two models four of the five machines ran; the other five are the pair's alone and are one click
-    away. The dense 12B is the one model every machine here has run.
-    Prefill is not one number: split the time into a fixed cost, a linear term and attention's
-    quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while <b>c</b> is
-    how badly attention scales. Three things fall out that a single prefill tok/s cannot say.
-    <b>Card against card</b>: the A100 is 3.3× on b and 6.7× on c against one 7900 XT for the dense
-    12B, so the gap in attention is twice the gap in compute; the L4 is <em>slower</em> on b (0.90×)
-    and 3.0× better on c, which is why its curve starts below the Radeon's and ends above it.
-    <b>The second card</b>: on all three models that have both topologies it buys 1.2–1.5× on b and
-    1.9–2.2× on c — attention parallelises better than the GEMMs do, because it needs no
-    communication. <b>And the flag is a trade</b>: pinning Qwen3.8 to <code>TRITON_ATTN</code>, which
-    this repository has been calling free, is worth 1.15× of decode at 32 K and <em>costs</em> 1.40×
-    of prefill there. Hover a point for the run count and that line's fitted coefficients.
-    <b>One line is drawn on different terms and says so where its coefficients are read.</b> The T4
-    runs gemma-4-12B only with <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>
-    applied, and that patch halves <code>TILE_PREFILL</code> on the head_size 512 layers — which is
-    the quadratic term this figure decomposes. So its <b>c</b> is this card <em>with a different
-    kernel</em>, not this card against the others, and it is left out of the ratios above. Its
-    <b>b</b> is not determined by its ladder either: the 32 000 rung was measured on a second VM,
-    the two agree to 4.61 % there, and swapping which one supplies it moves <b>b</b> by 29.9 % and
-    <b>c</b> by 12.8 %. That is because this curve is quadratic-dominated in a way no other line
-    here is — 224 s of c·S² against 97 s of b·S at 32 K — so the linear term absorbs the
-    uncertainty, the way <b>a</b> does on every other line. It is drawn because the ladder is real
-    and the card is the fifth machine; it is off until asked for.
-    Only rungs whose two rounds agree are drawn, and the one each line drops is not one story: six
-    lines drop their shallowest, which on the CUDA cards is the cold engine's first request the
-    runner did not discard until 2026-08-30, and four Radeon lines drop the 4 000 rung — round 1
-    slower than round 2 each time — which this repository does not explain. The MoE on one 7900 XT
-    stops at 12 K for a reason it does know: 16.96 GiB of weights leave 0.93 GiB of KV, 13 149 tokens.
+    <p class="caplede"><b>Figure 2.</b> The other half of the same question: Figure 1 is how fast each
+    machine <em>generates</em>, this is how fast it reads the prompt. Seven models, nineteen lines,
+    five machines &mdash; every chart-grade prefill ladder this repository has, recorded beside
+    decode since July and never drawn until now. Colour and stroke are Figure 1's.</p>
+    <dl class="capnotes">
+      <dt>Why two terms</dt>
+      <dd>Prefill is not one number. Split the time into a fixed cost, a linear term and attention's
+        quadratic one &mdash; <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> &mdash; and
+        <b>b</b> is compute while <b>c</b> is how badly attention scales. Hover a point for that
+        line's fitted pair.</dd>
+      <dt>Card against card</dt>
+      <dd>On the dense 12B the A100 is 3.3&times; on <b>b</b> and 6.7&times; on <b>c</b> against one
+        7900 XT, so the gap in attention is twice the gap in compute. The L4 is <em>slower</em> on
+        <b>b</b> (0.90&times;) and 3.0&times; better on <b>c</b>, which is why its curve starts below
+        the Radeon's and ends above it.</dd>
+      <dt>The second card</dt>
+      <dd>On all three models with both topologies it buys 1.2&ndash;1.5&times; on <b>b</b> and
+        1.9&ndash;2.2&times; on <b>c</b>. Attention parallelises better than the GEMMs because it
+        needs no communication.</dd>
+      <dt>The flag is a trade</dt>
+      <dd>Pinning Qwen3.8 to <code>TRITON_ATTN</code>, which this repository called free until
+        2026-08-30, is worth 1.15&times; of decode at 32&nbsp;K and <em>costs</em> 1.40&times; of
+        prefill there.</dd>
+      <dt>One line is different</dt>
+      <dd>The T4 runs gemma-4-12B only with
+        <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>, which halves
+        <code>TILE_PREFILL</code> on the head_size 512 layers &mdash; the quadratic term this figure
+        decomposes. Its <b>c</b> is this card <em>with a different kernel</em>, so it is off until
+        asked for and left out of the ratios above. Its <b>b</b> is not determined by its own ladder
+        either: the 32&nbsp;K rung came from a second VM, the two agree to 4.61&nbsp;%, and swapping
+        which supplies it moves <b>b</b> by 29.9&nbsp;%. This curve is quadratic-dominated where no
+        other here is &mdash; 224&nbsp;s against 97&nbsp;s at 32&nbsp;K &mdash; so the linear term
+        absorbs the uncertainty, as <b>a</b> does everywhere.</dd>
+      <dt>Dropped rungs</dt>
+      <dd>Only rungs whose two rounds agree are drawn, and the one each line drops is not one story:
+        six drop their shallowest, which on the CUDA cards is the cold engine's first request the
+        runner did not discard until 2026-08-30, and four Radeon lines drop the 4&nbsp;000 rung
+        &mdash; round 1 slower than round 2 each time &mdash; which this repository does not explain.
+        The MoE on one 7900 XT stops at 12&nbsp;K for a reason it does know: 16.96&nbsp;GiB of
+        weights leave 0.93&nbsp;GiB of KV, 13&nbsp;149 tokens.</dd>
+    </dl>
   </figcaption>
 </figure>
 
@@ -8148,11 +8186,13 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, five machines, every chart-grade ladder this repository has",
  "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4",
  "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
- "preRatio": "against one RX 7900 XT on {m}: {x} is {b}× on b and {c}× on c",
+ "preRatio": "{m} on {x}  b {b}×  c {c}×",
  "preDropped": "{n} rung dropped, rounds {r}% apart",
  "preCaveat": "{p} halves this kernel's tile size, so c is a kernel difference and not only a card one · b is undetermined by ±{b}% · drawn, and left out of the ratios",
  "preNote": "b is compute and c is how badly attention scales; the two do not move together",
- "preTpGain": "the second card buys {m} {b}× on b and {c}× on c — attention parallelises better than the GEMMs, because it needs no communication",
+ "preHeadCards": "each card against one RX 7900 XT, same model:",
+ "preHeadTp": "and what the second card buys, same stack, same day:",
+ "preTpGain": "{m}  b {b}×  c {c}×",
  "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
@@ -8815,14 +8855,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
     // The ratios are the figure's argument, so they are written under it rather
     // than left to be read off fourteen curves by eye.
     var lines = [esc(S.preStroke), esc(S.preUnit), esc(S.preNote)];
+    // Eleven sentences of 12px monospace is a paragraph, not a note. The seven
+    // that are one句 frame with different numbers become two labelled groups,
+    // and the clause they each repeated now lives once, in the caption.
+    lines.push('<span class="nhead">' + esc(S.preHeadCards) + "</span>");
     F.compare.forEach(function (c) {
-      lines.push(esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
+      lines.push('<span class="nrow">' +
+                 esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
                                        b: c.b_ratio.toFixed(2),
-                                       c: c.c_ratio.toFixed(2) })));
+                                       c: c.c_ratio.toFixed(2) })) + "</span>");
     });
+    lines.push('<span class="nhead">' + esc(S.preHeadTp) + "</span>");
     F.tp_gain.forEach(function (g) {
-      lines.push(esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
-                                        c: g.c_gain.toFixed(2) })));
+      lines.push('<span class="nrow">' +
+                 esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
+                                        c: g.c_gain.toFixed(2) })) + "</span>");
     });
     var bt = F.backend_tradeoff;
     lines.push(esc(fmt(S.preTrade, { m: bt.model, k: kctx(bt.ctx),

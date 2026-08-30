@@ -515,6 +515,39 @@
    attention kernel was patched, and `.tip .sub` dims everything it wraps. */
 .tip .warn { color:var(--red); font-weight:700; }
 
+/* ---------- figure captions with more to say than a sentence ----------
+   Figures 1 and 2 carry what a reader has to know to not misread them: which
+   machines, why four lines stop early, why one is drawn on different terms,
+   what is deliberately absent. As one paragraph that was 612 and 570 words of
+   unbroken prose and nobody would read it.
+
+   A term list instead: short bold label, then the point. On a wide screen the
+   labels sit in their own column so the eye can skip down them; below 700px
+   they stack, because a 9em column and a 3-word label do not coexist on a
+   phone. The lede stays a plain sentence — a figure should still be readable
+   by someone who reads only its first line. */
+figcaption .caplede { margin:0 0 .95em; color:var(--text-2); }
+/* NOT `.lede`: that class is the page intro at 1.13rem, and inside a
+   .87rem caption it renders larger than the prose it introduces. */
+figcaption .capnotes { display:grid; grid-template-columns:9.5em 1fr;
+                       column-gap:1.3em; row-gap:.62em; margin:0; }
+figcaption .capnotes dt { color:var(--text-2); font-weight:600;
+                          font-size:.94em; line-height:1.5; }
+figcaption .capnotes dd { margin:0; }
+@media (max-width:700px) {
+  figcaption .capnotes { grid-template-columns:1fr; row-gap:.3em; }
+  figcaption .capnotes dt { margin-top:.55em; }
+  figcaption .capnotes dd { margin:0 0 .35em; }
+}
+
+/* ---------- the note block under Figure 2 ----------
+   It was eleven sentences of 12px monospace, seven of them one frame with
+   different numbers in it. Two labelled groups instead: the lead-in carries
+   the sentence, the rows carry only the numbers, and the clause each row used
+   to repeat now lives once in the caption. */
+.barunit .nhead { display:block; margin:.7em 0 .15em; color:var(--text-2); }
+.barunit .nrow  { display:block; padding-left:1.4em; }
+
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
   .rv.in { opacity:1; transform:none; }
@@ -1112,34 +1145,34 @@ addEventListener("DOMContentLoaded", function () {
     <div class="barunit" id="bestnote"></div>
   </div>
   <figcaption>
-    <b>图 1.</b> 2× RX 7900 XT、张量并行 2 上的解码速率，横轴是上下文长度，取对数。
-    默认点亮四个模型，点名字可以加上或去掉任意一条，点上面那一行机器名可以把别的卡叠上来。
-    一共五台机器，其中四台是<em>单</em>卡：一张 A100 80G、一张这里的 7900 XT、一张 L4 24G、一张 Tesla T4 16G。
-    checkpoint 自始至终相同 —— CUDA 那几张是 TP=1、vLLM 0.28.0，这一对是 TP=2、0.23.1。
-    机器之间共用的是 checkpoint，拆分方式和软件栈不是。T4 能出现在这里完全是因为
-    <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>：没有它，引擎在 sm75 上根本起不来，
-    会在内核加载时要 98 304 字节共享内存，而 Turing 只有 65 536。那个补丁只改预填充的 tile 大小，
-    所以本图读它那条线的方式和读别的线完全一样；图 2 不是，图 2 会说明。
-    有四条单卡线提前结束，那是测量结果而不是缺口：
-    卡装不下下一档的 KV 就测不了它，这些线的悬浮提示会说它的 KV 装得下多少 token。
-    最短的一条只有两档 —— gemma-4-31B 在 L4 上开着 CUDA graph 根本起不来，
-    <code>--enforce-eager</code> 给它换回 2.51 GiB、一个 2 020 token 的池子，以及这两档。
-    每条线都出自一场会话、同一套阶梯 —— 最多十一个档位、每格两轮 ——
-    而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。模型旁边的小开关会加上这个模型的投机臂，
-    它与旁边那条线同日、同内核测得，所以它显示的是「<em>这条线</em>开了投机会怎样」，
-    而不是「哪里最快的一次投机」。开关上写的是这条臂实际解析出的方法，所以其中一个写的是
-    <b>DFlash</b>：Muse-Glimmer 的助手模型是块扩散草稿模型，不是 MTP。投机到底划不划算并没有一个统一答案 ——
-    在这两张卡上，两条臂在最短档都领先，其中一条一路领先到 32K；而在 A100 上，四条臂在每一档都是净亏。
-    有一个模型带第二个开关 <b>ROCM_ATTN</b>：Qwen3.8 那条线画的是本仓库用一个 flag 钉住的后端——因为它在 32K 上快 15%——
-    而这个开关加上的是运行时自己选的那个后端。那个 flag 是一笔交易而不是白拿：它卖掉预填充来买解码，而且卖得比买得多
-    （见图 2），这半边是首页原来漏掉的。笔画区分身份：实线是这两张卡，长虚线是 A100，点线是其中一张卡，点划线是 L4，
-    短虚线是投机，点划线（密）是另一个后端，双点划线是 T4。
-    把鼠标停在任意点上可以看到 run 数和它用的软件栈。纵轴只按点亮的线取值域，所以多点亮一条线可能会让它变。
-    有两条本仓库测过的线被<em>刻意</em>排除在外，理由都出在这张图自己的语法而不是数据：
-    L4 上那条 Qwen3.8-27B 是<em>另一个 checkpoint</em>（对称 compressed-tensors，不是 AWQ，
-    在 gfx1100 上解码相差 1.27–3.24×），而图例是按模型名索引的，画上去会把两者塞进同一个条目；
-    单张 7900 XT 上 vLLM 0.27 的 Qwen3-8B 解码与已画的那条逐档吻合到 0.21%，
-    而把它换进来会让图 2 的「第二张卡买到什么」变成一次跨栈比较。
+    <p class="caplede"><b>图 1.</b> 批量 1 的解码速率对上下文长度，横轴取对数。默认视图是 2&times; RX 7900 XT、
+    张量并行 2；图上方那一行机器名可以把别的卡叠上来。</p>
+    <dl class="capnotes">
+      <dt>五台机器</dt>
+      <dd>其中四台是<em>单</em>卡：一张 A100 80G、一张这里的 7900 XT、一张 L4 24G、一张 Tesla T4 16G。
+        机器之间共用的是 checkpoint —— CUDA 那几张是 TP=1、vLLM 0.28.0，这一对是 TP=2、0.23.1。
+        拆分方式和软件栈不共用，每条线的悬浮提示带着它自己的那一套。</dd>
+      <dt>那张 T4</dt>
+      <dd>它能出现在这里完全是因为
+        <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>：没有它，引擎在 sm75 上
+        会在内核加载时要 98&nbsp;304 字节共享内存，而 Turing 只有 65&nbsp;536。那个补丁只改预填充的
+        tile 大小，所以本图读它的方式和读别的线完全一样；图 2 不是，图 2 会说明。</dd>
+      <dt>提前结束的线</dt>
+      <dd>有四条，每一条的停点都是算术而不是半途而废：卡装不下下一档的 KV 就测不了它，悬浮提示会说它的
+        KV 装得下多少 token。最短的只有两档 —— gemma-4-31B 在 L4 上开着 CUDA graph 根本起不来，
+        <code>--enforce-eager</code> 给它换回 2.51&nbsp;GiB 和一个 2&nbsp;020 token 的池子。</dd>
+      <dt>那两种开关</dt>
+      <dd>开关上写的都是引擎实际解析出的东西，而不是按钮的名字。投机臂显示的是「<em>这条线</em>开了投机
+        会怎样」—— 同日、同内核 —— 其中一个写 <b>DFlash</b>，因为 Muse-Glimmer 的草稿模型是块扩散而不是
+        MTP。划不划算没有统一答案：在这两张卡上两条臂都从最短档就领先，其中一条一路领先到 32&nbsp;K；
+        而在 A100 上四条臂每一档都是净亏。Qwen3.8 还带第二个开关 <b>ROCM_ATTN</b>，加的是运行时自己选的
+        后端；本仓库用 flag 钉住的那个买到解码、却卖掉更多预填充（见图 2）。</dd>
+      <dt>刻意不画的</dt>
+      <dd>两条本仓库测过的线。L4 上那条 Qwen3.8-27B 是<em>另一个 checkpoint</em>（对称 compressed-tensors
+        而非 AWQ，在 gfx1100 上解码相差 1.27&ndash;3.24&times;），而图例按模型名索引，画上去会把两者塞进
+        同一个条目。单张 7900 XT 上 vLLM 0.27 的 Qwen3-8B 与已画那条逐档吻合到 0.21&nbsp;%，而换进来会让
+        图 2 的「第二张卡买到什么」变成一次跨栈比较。</dd>
+    </dl>
   </figcaption>
 </figure>
 
@@ -1154,30 +1187,38 @@ addEventListener("DOMContentLoaded", function () {
     <div class="barunit" id="prenote"></div>
   </div>
   <figcaption>
-    <b>图 2.</b> 同一个问题的另一半。图 1 是每台机器<em>生成</em>得多快，这张是它读提示词读得多快。
-    本仓库凡是有 chart-grade 预填充阶梯的模型都在这里——七个模型、十九条线、五台机器——因为自七月起
-    每场 campaign 都在 decode 旁边记了 prefill，却从来没有画过。颜色和线型沿用图 1，所以一条线在两图
-    里是同一件事。默认点亮的是五台机器里有四台跑过的那两个模型，其余五个只有那对卡跑过，点一下即可加上。
-    稠密 12B 是这里唯一每台机器都跑过的模型。
-    预填充不是一个数：把时间拆成固定开销、线性项和 attention 的二次项——<code>T(S) = a + b·S + c·S²</code>
-    ——<b>b</b> 是算力，<b>c</b> 是 attention 随长度恶化得多快。由此得到三件单独一个 tok/s 说不出的事。
-    <b>卡对卡</b>：稠密 12B 上 A100 对一张 7900 XT 在 b 上领先 3.3×、c 上 6.7×，即 attention 的差距是
-    算力差距的两倍；L4 在 b 上反而<em>更慢</em>（0.90×）、在 c 上好 3.0×，所以它的曲线起点在 Radeon
-    之下、终点在其之上。<b>第二张卡</b>：三个同时有两种拓扑的模型上，它买到 b 的 1.2–1.5× 和 c 的
-    1.9–2.2×——attention 比 GEMM 更容易并行，因为它不需要通信。<b>而那个 flag 是一笔交易</b>：把
-    Qwen3.8 钉在 <code>TRITON_ATTN</code> 上——本仓库一直称之为「免费」——在 32K 处 decode 快 1.15×，
-    prefill 却<em>亏掉</em> 1.40×。悬停可看轮数和该条线拟合出的系数。
-    <b>有一条线是按另一套条件画的，而且在它的系数被读到的地方就说明了这一点。</b>T4 要跑
-    gemma-4-12B 非得打上 <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a> 不可，
-    而那个补丁把 head_size 512 那些层的 <code>TILE_PREFILL</code> 减半——那正是本图所分解的二次项。
-    所以它的 <b>c</b> 是这张卡<em>换了内核</em>之后的结果，不是这张卡对别的卡，它也因此被排除在上面那组比值之外。
-    它的 <b>b</b> 同样没有被自己的阶梯确定住：32 000 那一档是在第二台 VM 上测的，两台在那一档相差 4.61%，
-    而换成由哪一台提供这一档，<b>b</b> 会动 29.9%、<b>c</b> 会动 12.8%。原因是这条曲线二次项主导的程度是
-    这里独一份的——32K 处 c·S² 是 224 s，而 b·S 只有 97 s——所以线性项把不确定性全吸收了，
-    就像 <b>a</b> 在其他每条线上那样。画它是因为阶梯是真的、卡是第五台机器；默认关着，要看得自己点开。只画两轮一致的档位，而每条线丢掉
-    的那一档并非同一个原因：六条线丢的是最浅一档，在 CUDA 卡上那是冷引擎的第一次请求，runner 直到
-    2026-08-30 才把它丢弃；四条 Radeon 线丢的是 4000 档，每次都是第一轮比第二轮慢，本仓库不知道原因。
-    MoE 在一张 7900 XT 上停在 12K 则是知道原因的：16.96 GiB 权重之后只剩 0.93 GiB 的 KV，13 149 个 token。
+    <p class="caplede"><b>图 2.</b> 同一个问题的另一半：图 1 是每台机器<em>生成</em>得多快，这张是它读提示词
+    读得多快。七个模型、十九条线、五台机器 —— 本仓库所有 chart-grade 的预填充阶梯。自七月起每场 campaign
+    都在 decode 旁边记了 prefill，却从没画过。颜色和线型沿用图 1。</p>
+    <dl class="capnotes">
+      <dt>为什么拆两项</dt>
+      <dd>预填充不是一个数。把时间拆成固定开销、线性项和 attention 的二次项 ——
+        <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> —— <b>b</b> 是算力，<b>c</b> 是 attention
+        随长度恶化得多快。悬停可看该条线拟合出的这一对系数。</dd>
+      <dt>卡对卡</dt>
+      <dd>稠密 12B 上，A100 对一张 7900 XT 在 <b>b</b> 上领先 3.3&times;、<b>c</b> 上 6.7&times;，即
+        attention 的差距是算力差距的两倍。L4 在 <b>b</b> 上反而<em>更慢</em>（0.90&times;）、在 <b>c</b>
+        上好 3.0&times;，所以它的曲线起点在 Radeon 之下、终点在其之上。</dd>
+      <dt>第二张卡</dt>
+      <dd>三个同时有两种拓扑的模型上，它买到 <b>b</b> 的 1.2&ndash;1.5&times; 和 <b>c</b> 的
+        1.9&ndash;2.2&times;。attention 比 GEMM 更容易并行，因为它不需要通信。</dd>
+      <dt>那个 flag 是交易</dt>
+      <dd>把 Qwen3.8 钉在 <code>TRITON_ATTN</code> 上 —— 本仓库直到 2026-08-30 都称之为「免费」——
+        在 32&nbsp;K 处 decode 快 1.15&times;，prefill 却<em>亏掉</em> 1.40&times;。</dd>
+      <dt>有一条线不一样</dt>
+      <dd>T4 要跑 gemma-4-12B 非有
+        <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a> 不可，而它把 head_size
+        512 那些层的 <code>TILE_PREFILL</code> 减半 —— 那正是本图所分解的二次项。所以它的 <b>c</b> 是这张
+        卡<em>换了内核</em>之后的结果，默认关着、也被排除在上面那组比值之外。它的 <b>b</b> 同样没被自己的
+        阶梯确定住：32&nbsp;K 那一档来自第二台 VM，两台在那一档相差 4.61&nbsp;%，换成由哪一台提供，
+        <b>b</b> 会动 29.9&nbsp;%。这条曲线二次项主导的程度是这里独一份的 —— 32&nbsp;K 处 224&nbsp;s 对
+        97&nbsp;s —— 所以线性项把不确定性全吸收了，就像 <b>a</b> 在每条线上那样。</dd>
+      <dt>被丢弃的档位</dt>
+      <dd>只画两轮一致的档位，而每条线丢掉的那一档并非同一个原因：六条丢的是最浅一档，在 CUDA 卡上那是
+        冷引擎的第一次请求，runner 直到 2026-08-30 才把它丢弃；四条 Radeon 线丢的是 4&nbsp;000 档，每次都是
+        第一轮比第二轮慢，本仓库不知道原因。MoE 在一张 7900 XT 上停在 12&nbsp;K 则是知道原因的：
+        16.96&nbsp;GiB 权重之后只剩 0.93&nbsp;GiB 的 KV，13&nbsp;149 个 token。</dd>
+    </dl>
   </figcaption>
 </figure>
 
@@ -8115,11 +8156,13 @@ addEventListener("DOMContentLoaded", function () {
  "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 七个模型、五台机器，本仓库所有 chart-grade 的阶梯",
  "preStroke": "线型表示机器，与图 1 一致 · 实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 双点划线：T4",
  "preFit": "拟合：b {b} µs/tok · c {c} ns/tok² · r² {r}",
- "preRatio": "在 {m} 上对一张 RX 7900 XT：{x} 的 b 是 {b}×，c 是 {c}×",
+ "preRatio": "{m} 在 {x}  b {b}×  c {c}×",
  "preDropped": "丢弃 {n} 档，两轮相差 {r}%",
  "preCaveat": "{p} 把这个内核的 tile 减半，所以 c 是内核差异而不只是卡的差异 · b 有 ±{b}% 不确定 · 画出来，但不进比值",
  "preNote": "b 是算力，c 是 attention 随长度恶化的速度；两者并不同向",
- "preTpGain": "第二张卡给 {m} 带来 b {b}×、c {c}× —— attention 比 GEMM 更容易并行，因为它不需要通信",
+ "preHeadCards": "各卡对一张 RX 7900 XT，同一模型：",
+ "preHeadTp": "第二张卡买到什么，同栈同日：",
+ "preTpGain": "{m}  b {b}×  c {c}×",
  "preTrade": "而那个 flag 是一笔交易：把 {m} 钉在 TRITON_ATTN 上，{k} 处 decode 快 {d}×，prefill 反方向差 {p}×",
  "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
  "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
@@ -8782,14 +8825,21 @@ addEventListener("DOMContentLoaded", function () {
     // The ratios are the figure's argument, so they are written under it rather
     // than left to be read off fourteen curves by eye.
     var lines = [esc(S.preStroke), esc(S.preUnit), esc(S.preNote)];
+    // Eleven sentences of 12px monospace is a paragraph, not a note. The seven
+    // that are one句 frame with different numbers become two labelled groups,
+    // and the clause they each repeated now lives once, in the caption.
+    lines.push('<span class="nhead">' + esc(S.preHeadCards) + "</span>");
     F.compare.forEach(function (c) {
-      lines.push(esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
+      lines.push('<span class="nrow">' +
+                 esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
                                        b: c.b_ratio.toFixed(2),
-                                       c: c.c_ratio.toFixed(2) })));
+                                       c: c.c_ratio.toFixed(2) })) + "</span>");
     });
+    lines.push('<span class="nhead">' + esc(S.preHeadTp) + "</span>");
     F.tp_gain.forEach(function (g) {
-      lines.push(esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
-                                        c: g.c_gain.toFixed(2) })));
+      lines.push('<span class="nrow">' +
+                 esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
+                                        c: g.c_gain.toFixed(2) })) + "</span>");
     });
     var bt = F.backend_tradeoff;
     lines.push(esc(fmt(S.preTrade, { m: bt.model, k: kctx(bt.ctx),

@@ -165,3 +165,36 @@
    only: Figure 2 is the only chart in this repository that draws a line whose
    attention kernel was patched, and `.tip .sub` dims everything it wraps. */
 .tip .warn { color:var(--red); font-weight:700; }
+
+/* ---------- figure captions with more to say than a sentence ----------
+   Figures 1 and 2 carry what a reader has to know to not misread them: which
+   machines, why four lines stop early, why one is drawn on different terms,
+   what is deliberately absent. As one paragraph that was 612 and 570 words of
+   unbroken prose and nobody would read it.
+
+   A term list instead: short bold label, then the point. On a wide screen the
+   labels sit in their own column so the eye can skip down them; below 700px
+   they stack, because a 9em column and a 3-word label do not coexist on a
+   phone. The lede stays a plain sentence — a figure should still be readable
+   by someone who reads only its first line. */
+figcaption .caplede { margin:0 0 .95em; color:var(--text-2); }
+/* NOT `.lede`: that class is the page intro at 1.13rem, and inside a
+   .87rem caption it renders larger than the prose it introduces. */
+figcaption .capnotes { display:grid; grid-template-columns:9.5em 1fr;
+                       column-gap:1.3em; row-gap:.62em; margin:0; }
+figcaption .capnotes dt { color:var(--text-2); font-weight:600;
+                          font-size:.94em; line-height:1.5; }
+figcaption .capnotes dd { margin:0; }
+@media (max-width:700px) {
+  figcaption .capnotes { grid-template-columns:1fr; row-gap:.3em; }
+  figcaption .capnotes dt { margin-top:.55em; }
+  figcaption .capnotes dd { margin:0 0 .35em; }
+}
+
+/* ---------- the note block under Figure 2 ----------
+   It was eleven sentences of 12px monospace, seven of them one frame with
+   different numbers in it. Two labelled groups instead: the lead-in carries
+   the sentence, the rows carry only the numbers, and the clause each row used
+   to repeat now lives once in the caption. */
+.barunit .nhead { display:block; margin:.7em 0 .15em; color:var(--text-2); }
+.barunit .nrow  { display:block; padding-left:1.4em; }

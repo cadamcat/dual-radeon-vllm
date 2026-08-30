@@ -4110,6 +4110,34 @@ def main():
         ck("index %s, has every id its script asks for" % fn, "0",
            len(xiwant - set(re.findall(r'\sid="([^"]+)"', XI[fn]))))
 
+    # --- the index's two long captions --------------------------------------
+    # They were 612 and 570 words of unbroken prose, which is a wall rather than
+    # a caption, and were restructured into a lede plus labelled blocks. The two
+    # languages have to carry the same blocks or one of them is saying less than
+    # the other, which is the drift the language-pair rule exists to catch.
+    _caps = {}
+    for _lang, _fn in (("en", "index.html"), ("zh", "index.zh.html")):
+        _t = XI[_fn]
+        _caps[_lang] = [len(re.findall(r"<dt>", _c))
+                        for _c in re.findall(r"<figcaption>(.*?)</figcaption>", _t, re.S)
+                        if "capnotes" in _c]
+    ck("index captions, structured ones in en", "2", len(_caps["en"]))
+    ck("index captions, and the same number in zh", str(len(_caps["en"])),
+       len(_caps["zh"]))
+    ck("index captions, the two languages carry the same blocks", "1",
+       1 if _caps["en"] == _caps["zh"] else 0)
+    ck("index captions, and every structured one opens with a lede", "4",
+       sum(1 for _f in XIP
+           for _c in re.findall(r"<figcaption>(.*?)</figcaption>", XI[_f], re.S)
+           if "capnotes" in _c and 'class="caplede"' in _c))
+    # a caption that grew back into a wall is the thing this replaced
+    for _lang, _fn in (("en", "index.html"), ("zh", "index.zh.html")):
+        _worst = max(len(re.sub(r"<[^>]+>", " ", _c).split())
+                     for _c in re.findall(r"<figcaption>(.*?)</figcaption>",
+                                          XI[_fn], re.S))
+        ck("index captions, longest one in %s stays under 500 words" % _lang, "1",
+           1 if _worst < 500 else 0)
+
     ck("index, the two versions share one data block", "1",
        1 if xblock(XI[XIP[0]], "articles") == xblock(XI[XIP[1]], "articles") else 0)
     ck("index, the data block is the file on disk", "1",
