@@ -77,7 +77,8 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
         h = h.replace("__LANG_NAV__", nav)
     h = (h.replace("__LANG__", lang).replace("__TITLE__", title).replace("__DESC__", desc)
           .replace("__NAVLABEL__", labels[0]).replace("__T_AUTO__", labels[1])
-          .replace("__T_LIGHT__", labels[2]).replace("__T_DARK__", labels[3]))
+          .replace("__T_LIGHT__", labels[2]).replace("__T_DARK__", labels[3])
+          .replace("__TOCLABEL__", labels[5]))
     b = (D / body).read_text()
     if script_from:                       # reuse the English script verbatim
         m = re.search(r"<script>\n\(function \(\).*?\n</script>\n", (D / script_from).read_text(), re.S)
@@ -118,10 +119,12 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
 MISMATCH = []
 TITLES = {}
 SUBS = {}
-EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups")
+EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups",
+             "sections of this page")
 ZH_LABELS = ("语言与配色主题", "跟随系统",
-             "浅色", "深色", "全部文章")
-IDX_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups")
+             "浅色", "深色", "全部文章", "本页目录")
+IDX_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups",
+              "sections of this page")
 IDX_LABELS_ZH = ZH_LABELS
 
 H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"

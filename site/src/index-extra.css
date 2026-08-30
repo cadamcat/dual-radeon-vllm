@@ -161,29 +161,3 @@
   .lgs.na { opacity:.4; cursor:default; }
   .lgs.na:hover { border-color:var(--border); }
 
-  /* The section rail. This page is four sections, two figures and eleven cards
-     long, and at any width wide enough to have a left margin that margin is
-     empty. The rail says what is on the page and where in it the reader is.
-     The marker slides between sections rather than jumping, which is the only
-     part of this that is animation rather than information -- and it is the
-     first thing prefers-reduced-motion takes away.
-
-     It is hidden below 1260px: .wrap is 880px centred, so a 168px rail with a
-     gap needs about 1256px of viewport before it stops overlapping the text. */
-  .toc { position:fixed; top:50%; transform:translateY(-50%);
-         left:calc((100vw - 880px) / 2 - 176px); width:168px; z-index:40;
-         font-family:var(--mono); font-size:.75rem; display:none;
-         max-height:72vh; overflow-y:auto; }
-  @media (min-width:1260px){ .toc { display:block; } }
-  .toc ol { list-style:none; margin:0; padding:0 0 0 13px; position:relative;
-            border-left:1px solid var(--border); }
-  .toc .mark { position:absolute; left:-1px; width:2px; top:0; height:0;
-               background:var(--accent); border-radius:1px;
-               transition:top .34s cubic-bezier(.22,1,.36,1),
-                          height .34s cubic-bezier(.22,1,.36,1); }
-  .toc a { display:block; padding:.44em 0; color:var(--text-dim); border-bottom:0;
-           line-height:1.34; transition:color .2s; }
-  .toc a:hover { color:var(--text-2); }
-  .toc a[aria-current] { color:var(--accent); }
-  .toc a .n { display:inline-block; width:1.5em; opacity:.55; font-weight:600; }
-  @media (prefers-reduced-motion:reduce){ .toc .mark { transition:none; } }

@@ -4049,6 +4049,30 @@ def main():
         ck("index %s, headings for the rail to list" % fn, "4",
            len(re.findall(r"<h2><span class=\"n\">", XI[fn])))
 
+    # The rail lives in the shared head now, so every page has one -- and every
+    # page therefore needs its label in its own language and no leftover slot.
+    # A slot that survived would render the placeholder as the accessible name.
+    XLBL = {"en": "sections of this page", "zh": "本页目录"}
+    for a in AJ:
+        for lg, fn in (("en", a["href"]["en"].split("/")[-1]),
+                       ("zh", a["href"]["zh"].split("/")[-1])):
+            ck("article %s, %s labels its rail" % (a["slug"], lg), "1",
+               XPAGES[fn].count('nav.setAttribute("aria-label", "%s")' % XLBL[lg]))
+            # three sections is the floor the rail draws at all
+            ck("article %s, %s sections for the rail" % (a["slug"], lg), "1",
+               1 if len(re.findall(r"<h2><span class=\"n\">", XPAGES[fn])) >= 3 else 0)
+    for fn, lg in zip(XIP, ("en", "zh")):
+        ck("index %s, labels its rail" % fn, "1",
+           XI[fn].count('nav.setAttribute("aria-label", "%s")' % XLBL[lg]))
+    ck("site, pages with an unfilled slot", "0",
+       sum(1 for t in list(XPAGES.values()) + list(XI.values())
+           if re.search(r"__[A-Z][A-Z_]*__", t)))
+    # the index numbered two different figures "Figure 2" until the rail listed
+    # them one under the other and made it obvious
+    for fn, pat in zip(XIP, (r"Figure (\d+) &middot;|Figure (\d+) ·", r"图 (\d+) ·")):
+        xnums = [int(m) for m in re.findall(r'figtitle">(?:Figure|图) (\d+)', XI[fn])]
+        ck("index %s, figure numbers are distinct" % fn, str(len(xnums)), len(set(xnums)))
+
     ck("index, the strings tables have the same keys", "1",
        1 if xkeys[0] == xkeys[1] and xkeys[0] else 0)
     for k in sorted(xkeys[0]):

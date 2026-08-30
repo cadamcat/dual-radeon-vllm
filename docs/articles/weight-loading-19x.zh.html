@@ -238,6 +238,57 @@
             opacity:.4; transition:opacity .25s, box-shadow .25s; }
   .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
   .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  /* The section rail. Every page here is long -- the shortest article is seven
+     sections and four figures -- and at any width wide enough to have a left
+     margin that margin is empty. The rail says what is on the page and where in
+     it the reader is.
+
+     Two levels. The first is the page's own <h2>. The second is everything
+     under one: its <h3> sub-headings and its figures, and on the index the
+     eleven article cards, which are <h3> inside a link and so come out of the
+     same rule. Only the section being read has its second level open, which is
+     what keeps a rail four lines long on a page with eighteen entries.
+
+     Hidden below 1280px: .wrap is 880px centred, so a 180px rail plus a gap
+     needs about that much viewport before it starts overlapping the text. */
+  .toc { position:fixed; top:50%; transform:translateY(-50%);
+         left:calc((100vw - 880px) / 2 - 196px); width:180px; z-index:40;
+         font-family:var(--mono); font-size:.75rem; display:none;
+         max-height:76vh; overflow-y:auto; overscroll-behavior:contain; }
+  @media (min-width:1280px){ .toc { display:block; } }
+  .toc ol { list-style:none; margin:0; padding:0; }
+  .toc > ol { padding-left:13px; border-left:1px solid var(--border); position:relative; }
+  .toc .mark { position:absolute; left:-1px; width:2px; top:0; height:0;
+               background:var(--accent); border-radius:1px;
+               transition:top .34s cubic-bezier(.22,1,.36,1),
+                          height .34s cubic-bezier(.22,1,.36,1); }
+  .toc a { display:block; padding:.4em 0; color:var(--text-dim); border-bottom:0;
+           line-height:1.34; transition:color .2s; }
+  .toc a:hover { color:var(--text-2); }
+  .toc a[aria-current] { color:var(--accent); }
+  .toc .n { display:inline-block; width:1.5em; opacity:.55; font-weight:600; }
+  /* Opened by grid rather than by a measured height. A height in pixels has to
+     be read off the element, and reading it while the rail is display:none --
+     which it is on any page loaded below 1280px -- gives zero, and the zero
+     then sticks until something else resizes. 0fr to 1fr needs no measurement
+     and cannot be stale. */
+  .toc .sub { display:grid; grid-template-rows:0fr; opacity:0;
+              transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1), opacity .22s; }
+  .toc li.on > .sub { grid-template-rows:1fr; opacity:1; }
+  .toc .sub > ol { overflow:hidden; min-height:0; }
+  /* A figure title is a sentence and an article title is a finding; at 180px
+     either runs to four lines and the rail stops being scannable. Two lines,
+     and the whole of it is on the link's title attribute. */
+  .toc .sub a { padding:.28em 0 .28em 1em; font-size:.95em; position:relative;
+                display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                overflow:hidden; }
+  .toc .sub a::before { content:"·"; position:absolute; left:.15em; opacity:.45; }
+  /* an entry that leaves the page is marked as one: under "Articles" on the
+     index every child is another page, not a place to scroll to */
+  .toc .sub a.out::before { content:"\2192"; font-size:.9em; opacity:.5; }
+  @media (prefers-reduced-motion:reduce){
+    .toc .mark, .toc .sub, .toc a { transition:none; } }
+
   .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
 
   svg.chart { width:100%; height:auto; display:block; overflow:visible; }
@@ -735,6 +786,12 @@ window.lineChart = function (opts) {
 
 if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
 
+function esc0(s) {
+  return String(s).replace(/[&<>]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+  });
+}
+
 addEventListener("DOMContentLoaded", function () {
   "use strict";
   var bar = document.getElementById("prog"), queued = false;
@@ -750,6 +807,138 @@ addEventListener("DOMContentLoaded", function () {
   }, { passive: true });
   addEventListener("resize", draw, { passive: true });
   draw();
+
+  /* ---------- the section rail ----------
+     Built from the page's own headings, so it cannot list a section that is not
+     there or miss one that is, and it carries no text of its own but its label:
+     a first-level entry is an <h2>, a second-level one is an <h3> or a figure
+     title under it. That makes it identical on both language versions, which
+     share this file.
+
+     It is built here rather than in a body script because every page has one
+     and none of them should have to know that. This runs on DOMContentLoaded,
+     after the body scripts that create the index's cards, so those cards' own
+     <h3> titles are in the document by the time it looks.
+
+     Which section is current is a scroll question and not a visibility one, so
+     it is a throttled scroll listener rather than an IntersectionObserver: a
+     reader is in the last section whose heading has passed a line a third of
+     the way down, including when two headings are on screen and when none is. */
+  (function () {
+    var wrap = document.querySelector(".wrap");
+    if (!wrap) return;
+    var h2s = [].slice.call(wrap.querySelectorAll("h2"));
+    if (h2s.length < 3) return;
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function label(el) {
+      // a figure title carries a provenance badge; the rail wants the title
+      var c = el.cloneNode(true), b = c.querySelector(".prov");
+      if (b) b.remove();
+      return c.textContent.replace(/\s+/g, " ").trim();
+    }
+    var nav = document.createElement("nav");
+    nav.className = "toc";
+    nav.setAttribute("aria-label", "本页目录");
+    var root = document.createElement("ol");
+    var mark = document.createElement("div");
+    mark.className = "mark";
+    mark.setAttribute("aria-hidden", "true");
+    root.appendChild(mark);
+
+    // every candidate child, in document order, assigned to the h2 above it
+    var kids = [].slice.call(wrap.querySelectorAll("h3, .figtitle"));
+    var tops = [], subs = [], links = [];
+    h2s.forEach(function (h, i) {
+      if (!h.id) h.id = "sec" + (i + 1);
+      var num = h.querySelector(".n"), n = num ? num.textContent : "";
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.innerHTML = '<span class="n">' + esc0(n) + "</span>" + esc0(label(h).slice(n.length));
+      li.appendChild(a);
+      var box = document.createElement("div");
+      box.className = "sub";
+      var ol = document.createElement("ol");
+      box.appendChild(ol);
+      li.appendChild(box);
+      root.appendChild(li);
+      tops.push({ h: h, li: li, a: a, ol: ol });
+      links.push(a);
+      subs.push(ol);
+    });
+    function ownerOf(el) {
+      var k = -1;
+      for (var i = 0; i < h2s.length; i++) {
+        if (h2s[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) k = i;
+      }
+      return k;
+    }
+    kids.forEach(function (el, i) {
+      var k = ownerOf(el);
+      if (k < 0) return;                       // the abstract, above every section
+      var card = el.closest ? el.closest("a.card") : null;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      if (card) { a.href = card.getAttribute("href"); a.className = "out"; }
+      else {
+        var host = el.classList.contains("figtitle")
+          ? (el.closest ? el.closest("figure") : null) : el;
+        if (host && !host.id) host.id = "sub" + (i + 1);
+        a.href = "#" + (host ? host.id : tops[k].h.id);
+      }
+      a.textContent = label(el);
+      a.title = a.textContent;
+      li.appendChild(a);
+      subs[k].appendChild(li);
+    });
+
+    nav.appendChild(root);
+    document.body.appendChild(nav);
+
+    var cur = -1, timer = 0;
+    function place() {
+      var a = links[cur];
+      mark.style.top = a.offsetTop + "px";
+      mark.style.height = a.offsetHeight + "px";
+    }
+    function open(k) {
+      tops.forEach(function (t, i) { t.li.classList.toggle("on", i === k); });
+      // the open list changes where every entry below it sits, and the mark
+      // points at one of them, so it has to follow the layout rather than be
+      // placed once against a layout that is still moving
+      place();
+      if (reduce) return;
+      cancelAnimationFrame(timer);
+      var until = Date.now() + 380;
+      (function step() {
+        place();
+        if (Date.now() < until) timer = requestAnimationFrame(step);
+      })();
+    }
+    function sync() {
+      var line = innerHeight * 0.3, k = 0;
+      for (var i = 0; i < h2s.length; i++) {
+        if (h2s[i].getBoundingClientRect().top <= line) k = i;
+      }
+      if (k === cur) return;
+      cur = k;
+      links.forEach(function (a, i) {
+        if (i === k) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+      open(k);
+    }
+    var q = false;
+    addEventListener("scroll", function () {
+      if (q) return;
+      q = true;
+      requestAnimationFrame(function () { q = false; sync(); });
+    }, { passive: true });
+    // a resize re-wraps labels, which moves every entry under the one that grew
+    addEventListener("resize", function () { if (cur >= 0) place(); }, { passive: true });
+    sync();
+  })();
 
   // The section numbers settle in with their heading. Headings come from the
   // source and are never redrawn, so one observer over them cannot miss a node
