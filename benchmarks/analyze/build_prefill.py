@@ -107,6 +107,11 @@ CFG_CUDA = {
     # at all; eager at the same utilisation gave a 2020-token pool on the first
     # try, because what was consuming the budget was the CUDA graphs.
     "G31-eager":               ("gemma-4-31B-it",  "w4a16 QAT", "dense", 1),
+    # Same fallback, same reason, if Qwen3.8 needs it too. Present so a run that
+    # takes the eager branch does not stop the projection with a KeyError:
+    # `meta_for` raises on an unknown id by design, and the id a run produces is
+    # not known until the run has produced it.
+    "Q38-eager":               ("Qwen3.8-27B",     "int4 AWQ",  "hybrid SSM", 1),
 }
 
 MTP3 = "mtp k=3"
@@ -246,6 +251,16 @@ SOURCES = [
     # `TILE_PREFILL` on the head_size 512 layers only, so `c` on these rows is
     # not comparable with any other machine's; decode is untouched, which the
     # recorder confirmed in both states.
+    # 2026-08-30, the L4's third pass: the two arms the second could not fit,
+    # at `max_num_seqs=1` with an `--enforce-eager` fallback. `G31` needed the
+    # fallback and becomes `G31-eager`, which is its own configuration and not
+    # an arm of `G31` -- a different engine. Four capacity retries from
+    # mml 33000 to 2062 all reported `Available KV cache memory: -0.8 GiB`; eager
+    # at the same utilisation reported 1.71 GiB, 2 020 tokens. The 2.51 GiB
+    # between them is CUDA graphs, and both serve logs are in `logs/`.
+    dict(file="cuda-l4/campaign-2026-08-30c/results.jsonl", machine="L4",
+         date="2026-08-30", vllm="0.28.0", rocm=None, cuda="13.0",
+         driver="580.82.07", kernel=None, patches=[], prefix_caching=False),
     dict(file="cuda-t4/campaign-2026-08-30/results.jsonl", machine="T4",
          date="2026-08-30", vllm="0.28.0", rocm=None, cuda="13.0",
          driver="580.82.07", kernel=None, patches=["vllm#39018"],

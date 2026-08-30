@@ -1,0 +1,6 @@
+19:04:27 | === T4 run start, vllm 0.28.0, torch 2.13.0+cu130, cuda 13.0 ===
+19:08:30 | G12: warmup ok
+19:14:53 | G12: 32000 r1 8.99 tok/s
+19:21:08 | G12: 32000 r2 8.98 tok/s
+19:21:08 | G12: COMPLETE (22 ok, 0 err)
+19:21:08 | === T4 run end ===

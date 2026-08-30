@@ -1,0 +1,40 @@
+{"kind": "run_meta", "machine": "T4", "vllm": "0.28.0", "torch": "2.13.0+cu130", "transformers": "5.15.1", "cuda": "13.0", "gpu": "Tesla T4, 15360 MiB, 7.5, 580.82.07", "ts": 1788107378.6}
+{"kind": "model_meta", "cfg": "G12", "machine": "T4", "vram_total_mib": 15360, "init_engine_s": "106.48", "model_load_s": "42.688639", "kv_gib": "3.5", "kv_tokens": "55809", "backend": "TRITON_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "mml": 33000, "util": 0.95, "ts": 1788107615.8}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 0.8654, "prefill_tps": 592.8, "ts": 1788107649.4}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 508, "wall_s": 25.367, "decode_tps": 20.6923, "ts": 1788107649.4}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.7664, "prefill_tps": 669.4, "ts": 1788107675.2}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 508, "wall_s": 25.792, "decode_tps": 20.2589, "ts": 1788107675.2}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 1.9359, "prefill_tps": 523.3, "ts": 1788107704.5}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 512, "wall_s": 29.358, "decode_tps": 18.6345, "ts": 1788107704.5}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 1.9807, "prefill_tps": 511.4, "ts": 1788107733.9}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 512, "wall_s": 29.387, "decode_tps": 18.6455, "ts": 1788107733.9}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 2000, "round": 1, "prompt_tokens": 2012, "ttft": 5.0258, "prefill_tps": 400.3, "ts": 1788107768.4}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 2000, "round": 1, "prompt_tokens": 2012, "gen_tokens": 512, "wall_s": 34.49, "decode_tps": 17.3432, "ts": 1788107768.4}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 2000, "round": 2, "prompt_tokens": 2012, "ttft": 5.2759, "prefill_tps": 381.4, "ts": 1788107804.2}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 2000, "round": 2, "prompt_tokens": 2012, "gen_tokens": 512, "wall_s": 35.799, "decode_tps": 16.7412, "ts": 1788107804.2}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 4000, "round": 1, "prompt_tokens": 4010, "ttft": 12.8875, "prefill_tps": 311.2, "ts": 1788107847.3}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 4000, "round": 1, "prompt_tokens": 4010, "gen_tokens": 512, "wall_s": 43.035, "decode_tps": 16.9497, "ts": 1788107847.3}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 4000, "round": 2, "prompt_tokens": 4010, "ttft": 12.9359, "prefill_tps": 310.0, "ts": 1788107890.8}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 4000, "round": 2, "prompt_tokens": 4010, "gen_tokens": 512, "wall_s": 43.576, "decode_tps": 16.6775, "ts": 1788107890.8}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 6000, "round": 1, "prompt_tokens": 6013, "ttft": 22.5298, "prefill_tps": 266.9, "ts": 1788107946.5}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 6000, "round": 1, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 55.634, "decode_tps": 15.436, "ts": 1788107946.5}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 6000, "round": 2, "prompt_tokens": 6013, "ttft": 22.5042, "prefill_tps": 267.2, "ts": 1788108002.1}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 6000, "round": 2, "prompt_tokens": 6013, "gen_tokens": 512, "wall_s": 55.607, "decode_tps": 15.4367, "ts": 1788108002.1}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 8000, "round": 1, "prompt_tokens": 8011, "ttft": 34.0442, "prefill_tps": 235.3, "ts": 1788108072.4}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 8000, "round": 1, "prompt_tokens": 8011, "gen_tokens": 512, "wall_s": 70.366, "decode_tps": 14.0685, "ts": 1788108072.4}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 8000, "round": 2, "prompt_tokens": 8011, "ttft": 34.0718, "prefill_tps": 235.1, "ts": 1788108142.8}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 8000, "round": 2, "prompt_tokens": 8011, "gen_tokens": 512, "wall_s": 70.394, "decode_tps": 14.0684, "ts": 1788108142.8}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 12000, "round": 1, "prompt_tokens": 12013, "ttft": 63.3711, "prefill_tps": 189.6, "ts": 1788108246.1}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 12000, "round": 1, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 103.212, "decode_tps": 12.8261, "ts": 1788108246.1}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 12000, "round": 2, "prompt_tokens": 12013, "ttft": 63.1518, "prefill_tps": 190.2, "ts": 1788108349.0}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 12000, "round": 2, "prompt_tokens": 12013, "gen_tokens": 512, "wall_s": 102.958, "decode_tps": 12.8371, "ts": 1788108349.0}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 16000, "round": 1, "prompt_tokens": 16012, "ttft": 100.3624, "prefill_tps": 159.5, "ts": 1788108491.4}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 16000, "round": 1, "prompt_tokens": 16012, "gen_tokens": 512, "wall_s": 142.396, "decode_tps": 12.1571, "ts": 1788108491.4}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 16000, "round": 2, "prompt_tokens": 16012, "ttft": 99.8979, "prefill_tps": 160.3, "ts": 1788108633.3}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 16000, "round": 2, "prompt_tokens": 16012, "gen_tokens": 512, "wall_s": 141.879, "decode_tps": 12.1721, "ts": 1788108633.3}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 20000, "round": 1, "prompt_tokens": 20013, "ttft": 144.9038, "prefill_tps": 138.1, "ts": 1788108826.1}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 20000, "round": 1, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 192.852, "decode_tps": 10.6572, "ts": 1788108826.1}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 20000, "round": 2, "prompt_tokens": 20013, "ttft": 145.3661, "prefill_tps": 137.7, "ts": 1788109019.4}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 20000, "round": 2, "prompt_tokens": 20013, "gen_tokens": 512, "wall_s": 193.272, "decode_tps": 10.6667, "ts": 1788109019.4}
+{"kind": "prefill", "cfg": "G12", "machine": "T4", "target": 24000, "round": 1, "prompt_tokens": 24013, "ttft": 198.035, "prefill_tps": 121.3, "ts": 1788109269.5}
+{"kind": "decode", "cfg": "G12", "machine": "T4", "target": 24000, "round": 1, "prompt_tokens": 24013, "gen_tokens": 512, "wall_s": 250.112, "decode_tps": 9.8123, "ts": 1788109269.5}
