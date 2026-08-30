@@ -67,6 +67,10 @@ CFG_CUDA = {
     # 2026-08-30, one 7900 XT. The id carries its utilisation because no other
     # row in either projection was measured at 0.95.
     "E26-tp1-u95":             ("gemma-4-26B-A4B", "int4 AWQ",  "MoE, 128 experts", 1),
+    # 2026-08-30. The CUDA runner names its arms by model alone; `machine` is
+    # what separates the L4's G12 from the A100's, so the id does not repeat it.
+    "G12":                     ("gemma-4-12B-it",  "w4a16 QAT", "dense", 1),
+    "G26A4B":                  ("gemma-4-26B-A4B", "int4 AWQ",  "MoE, 128 experts", 1),
 }
 
 MTP3 = "mtp k=3"
@@ -93,6 +97,8 @@ ARMS_CUDA = {
     "A100-Q38-mtp":           (MTP3,    "FLASH_ATTN"),
     "A100-Q38-mtp-p45450":    (MTP3,    "FLASH_ATTN"),
     "E26-tp1-u95":            (None,    "TRITON_ATTN"),
+    "G12":                    (None,    "TRITON_ATTN"),
+    "G26A4B":                 (None,    "TRITON_ATTN"),
 }
 
 # Every prefill source, and the machine it ran on. The Radeon entries mirror
@@ -141,9 +147,16 @@ SOURCES = [
     dict(file="campaign-2026-08-30/results.jsonl", machine="RX 7900 XT",
          date="2026-08-30", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
          cuda=None, kernel="7.0.0-30", patches=[], prefix_caching=True),
+    # 2026-08-30. The spine's fourth machine, and the first CUDA rows in this
+    # repository measured with prefix caching off. Both configurations are 11
+    # rungs x 2 rounds, 22 measurements, 0 errors. `driver` is from nvidia-smi
+    # on the VM; no log records a torch or CUDA version, so those stay null.
+    dict(file="cuda-l4/campaign-2026-08-30/results.jsonl", machine="L4",
+         date="2026-08-30", vllm="0.28.0", rocm=None, cuda=None,
+         driver="580.82.07", kernel=None, patches=[], prefix_caching=False),
     dict(file="cuda-a100/campaign-2026-08-29/results.jsonl", prefix_caching=True,
          machine="A100-SXM4-80GB", date="2026-08-29", vllm="0.28.0",
-         rocm=None, cuda="13.0", kernel=None, patches=[],
+         rocm=None, cuda=None, driver=None, kernel=None, patches=[],
          per_cfg={
              "A100-G31-mtp-p45450":    dict(patches=["vllm#45450 3D admission"]),
              "A100-G26A4B-mtp-p45450": dict(patches=["vllm#45450 3D admission"]),
@@ -228,6 +241,7 @@ def build():
                 machine=s["machine"], model=name, quant=quant, arch=arch, tp=tp,
                 ctx=target, date=s["date"], vllm=over.get("vllm", s["vllm"]),
                 rocm=over.get("rocm", s["rocm"]), cuda=over.get("cuda", s["cuda"]),
+                driver=over.get("driver", s.get("driver")),
                 kernel=over.get("kernel", s["kernel"]),
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,

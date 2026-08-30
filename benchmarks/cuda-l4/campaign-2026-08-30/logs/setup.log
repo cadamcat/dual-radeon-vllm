@@ -1,0 +1,50 @@
+
+$ pip install -q -U vllm 2>&1 | tail -5
+[183s rc=0]
+libcuml-cu12 26.2.0 requires cuda-toolkit[cublas,cufft,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+numba-cuda 0.22.2 requires cuda-core<1.0.0,>=0.3.2, but you have cuda-core 1.0.1 which is incompatible.
+rmm-cu12 26.2.0 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+libraft-cu12 26.2.0 requires cuda-toolkit[cublas,curand,cusolver,cusparse]==12.*, but you have cuda-toolkit 13.0.3.0 which is incompatible.
+pylibcudf-cu12 26.2.1 requires cuda-python<13.0,>=12.9.2, but you have cuda-python 13.3.1 which is incompatible.
+
+
+
+$ pip uninstall -y -q torchaudio 2>&1 | tail -2
+[1s rc=0]
+
+
+
+$ hf download google/gemma-4-12B-it-qat-w4a16-ct --local-dir /content/models/gemma-4-12B-it-qat-w4a16-ct --max-workers 8
+[29s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-12B-it-qat-w4a16-ct
+
+[90mHint: A new version of huggingface_hub (1.29.0) is available! You are using version 1.28.0.
+To update, run: hf update[0m
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g --claude` to teach your AI agents how to use the `hf` CLI.[0m
+
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 10 files:  10%|█         | 1/10 [00:00<00:01,  5.64it/s]
+Fetching 10 files:  70%|███████   | 7/10 [00:00<00:00, 23.19it/s]
+Fetching 10 files:  90%|█████████ | 9/10 [00:20<00:00, 23.19it/s]
+Fetching 10 files: 100%|██████████| 10/10 [00:27<00:00,  3.58s/it]
+Fetching 10 files: 100%|██████████| 10/10 [00:27<00:00,  2.77s/it]
+
+
+$ hf download cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit --local-dir /content/models/gemma-4-26B-A4B-AWQ --max-workers 8
+[46s rc=0]
+[32m✓ Downloaded[0m
+  path: /content/models/gemma-4-26B-A4B-AWQ
+
+
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]
+Fetching 13 files:   8%|▊         | 1/13 [00:00<00:01,  8.51it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 13 files:  46%|████▌     | 6/13 [00:00<00:00, 24.97it/s]
+Fetching 13 files:  69%|██████▉   | 9/13 [00:00<00:00, 11.32it/s]
+Fetching 13 files:  77%|███████▋  | 10/13 [00:19<00:00, 11.32it/s]
+Fetching 13 files:  85%|████████▍ | 11/13 [00:43<00:12,  6.27s/it]
+Fetching 13 files:  92%|█████████▏| 12/13 [00:43<00:05,  5.22s/it]
+Fetching 13 files: 100%|██████████| 13/13 [00:45<00:00,  3.48s/it]
+
