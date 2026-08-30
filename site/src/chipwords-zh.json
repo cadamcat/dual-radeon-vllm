@@ -2,7 +2,7 @@
  "hwPair": "2× <b>{0}</b> · {1}",
  "hwTriple": "2× <b>{0}</b> · {1} · {2}",
  "hwPairVfio": "2× <b>{0}</b> · {1} · VFIO 直通",
- "hwA100Tp1": "一张 <b>{0}</b> · TP=1",
+ "hwOneCardTp1": "一张 <b>{0}</b> · TP=1",
  "hwAndA100": "以及一张 <b>{0}</b> · CUDA",
  "hwPlusA100": "外加一张跑同一份 Triton 源码的 <b>{0}</b>",
  "hwAgainstBare": "对照 <b>2× {0}</b> 裸机",
@@ -18,7 +18,6 @@
  "modelDot": "<b>{0}</b> · {1}",
  "modelExperts": "<b>{0}</b> · {1} 专家",
  "modelMtpAssistant": "<b>{0}</b> + 官方 MTP 助手",
- "modelMtpOn": "<b>{0}</b> {1} · 开着 MTP",
  "modelCalibrated": "用 <b>{0}</b> · {1} 标定",
  "scaleLedgerRows": "<b>{0}</b> 条 ledger 记录",
  "scaleFindings": "<b>{0}</b> 个结论 · <b>{1}</b> 条上游 issue 与 PR",
@@ -37,5 +36,7 @@
  "kScale": "规模",
  "kUpstream": "上游",
  "kDate": "日期",
- "kLink": "仓库链接"
+ "kLink": "仓库链接",
+ "hwOneAndTwo": "1× 与 2× <b>{0}</b> · {1}",
+ "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>"
 }

@@ -76,7 +76,7 @@ FINDINGS = [
      "unit": "x slower with speculation on at 32K",
      "why": "measured on an A100 as well, where the same kernel loses 61% at 50K",
      "upstream": ["vllm#45450", "vllm#48076"]},
-    {"slug": "a100-vs-two-radeons", "title": "Two consumer RX 7900 XTs against one A100",
+    {"slug": "a100-vs-two-radeons", "title": "The second card buys 1.1\u00d7 at decode and 1.9\u00d7 at prefill",
      "axis": "tp", "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
      "magnitude": (leg30 / leg1k) / (stk[32768] / stk[1024]),
      "unit": "x worse retention on two cards than on one",
@@ -126,7 +126,7 @@ ZH = {
         "unit": "\u00d7\uff0c32K \u4e0a\u5f00\u6295\u673a\u6bd4\u4e0d\u5f00\u6162",
         "why": "\u5728 A100 \u4e0a\u4e5f\u6d4b\u4e86\uff0c\u540c\u4e00\u4e2a kernel \u5728 50K \u4e0a\u635f\u5931 61%"},
     "a100-vs-two-radeons": {
-        "title": "\u4e24\u5f20\u6d88\u8d39\u7ea7 Radeon 7900 XT \u5bf9\u4e00\u5f20 A100",
+        "title": "\u7b2c\u4e8c\u5f20\u5361\u5728\u89e3\u7801\u4e0a\u53ea\u4e70\u5230 1.1\xd7\uff0c\u5728 prefill \u4e0a\u4e70\u5230 1.9\xd7",
         "mechanism": "2D \u6ce8\u610f\u529b\u8def\u5f84\u6bcf\u4e2a KV head \u8d77\u4e00\u4e2a workgroup\uff0c\u5f20\u91cf\u5e76\u884c\u628a\u5b83\u4eec\u51cf\u534a",
         "unit": "\u00d7\uff0c\u4e24\u5361\u7684\u4fdd\u6301\u7387\u6bd4\u5355\u5361\u5dee",
         "why": "\u8fd9\u662f\u62c6\u5206\u5de5\u4f5c\u7684\u6027\u8d28\uff0c\u4e0d\u662f\u7845\u7247\u7684\uff1b\u5355\u5f20 A100 \u8dd1\u7684\u662f\u540c\u4e00\u4e2a kernel"},

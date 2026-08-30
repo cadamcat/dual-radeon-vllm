@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>两张消费级 Radeon 7900 XT 对一张 A100</title>
+<title>第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×</title>
 <meta name="description" content="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，而两端都关于张量并行，不关于硅片本身。">
 <style>
   /* ===================== theme =====================
@@ -332,6 +332,18 @@
   #v1 .lg.camp::before { content:""; align-self:center; width:1px; height:1.5em;
                          margin-right:.75em; background:var(--border);
                          display:inline-block; }
+
+  /* Figure 2 labels a machine on every row and groups them under a model and a
+     term, so it needs a wider label column than the 150px the other bar
+     figures use and two heading levels the .lab default right-alignment is
+     wrong for. */
+  #terms { --labw:176px; }
+  @media (max-width:640px){ #terms { --labw:150px; } }
+  #terms .lab.hd2 { text-align:left; color:var(--text); font-weight:600;
+                    font-size:.85rem; margin-top:.9em; padding-bottom:.2em;
+                    border-bottom:1px solid var(--border); }
+  #terms .lab.hd2:first-child { margin-top:0; }
+  #terms .lab.hd3 { text-align:left; color:var(--text-dim); margin-top:.35em; }
 
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
@@ -764,34 +776,57 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 
 <header class="top">
-  <div class="kicker">RDNA3 · CUDA · 张量并行 · 2× RX 7900 XT 对一张 A100 80G</div>
-  <h1>两张消费级 Radeon 7900 XT<br>对一张 A100</h1>
-  <p class="sub">差距是 U 形的，而两端都关于把工作拆开</p>
-  <p class="lede">同一个 31B 模型的 batch-1 解码，两边各走自己那条健康路径：A100 在 1K 上下文领先
-  1.48×，<strong>16K 上领先 1.14×</strong>，32K 上领先 1.87×。差距是 U 形的，两端与不同的开销相符，而且都不是标称带宽之比。</p>
+  <div class="kicker">RDNA3 · CUDA · 张量并行 · 一张卡、两张卡、一张 A100、一张 L4</div>
+  <h1>第二张卡在解码上只买到 1.1×，<br>在 prefill 上买到 1.9×</h1>
+  <p class="sub">一张 7900 XT、两张、一张 A100、一张 L4，同一套阶梯</p>
+  <p class="lede">给 batch-1 解码再加一张消费级卡，只值 <strong>1.11× 到 1.23×</strong>，
+  再没有更多。而在 prefill 上，同一张卡把 32 K 提示从 40.1 秒压到 21.5 秒 —— <strong>1.87×</strong>。
+  同样两张卡、同一天，变的只是你让它们做哪件事。</p>
   <div class="meta">
-    <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
+    <span class="chip k-hardware" title="硬件" style="--i:0">1× 与 2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-hardware" title="硬件" style="--i:1">一张 <b>A100-SXM4-80GB</b> · TP=1</span>
-    <span class="chip k-model" title="模型" style="--i:2"><b>gemma-4-31B</b> w4a16 · 开着 MTP</span>
-    <span class="chip k-date" title="日期" style="--i:3">实测 <b>2026-08-26</b></span>
+    <span class="chip k-hardware" title="硬件" style="--i:2">一张 <b>L4</b> · TP=1</span>
+    <span class="chip k-model" title="模型" style="--i:3"><b>gemma-4-12B</b>、<b>gemma-4-26B-A4B</b> 与 <b>gemma-4-31B</b></span>
+    <span class="chip k-date" title="日期" style="--i:4">实测 <b>2026-08-26</b> 与 <b>2026-08-30</b></span>
   </div>
 </header>
 
-<div class="abstract"> <h3>摘要</h3> <p>batch-1 解码是带宽受限的，而两边的标称上限只差 <strong>1.27×</strong>：两张 800 GB/s
-对一张 2.0 TB/s。实测的领先幅度在 8K 和 16K 上<em>低于</em>这个数，在两端高于它。</p>
-<p><strong>短端付的税是张量并行。</strong>那里每一步的时间足够短，TP=2 那个固定的 all-reduce 下限占掉可见的一块；而单卡不做这件事，也就不付这笔钱。长端 KV
-扫描占主导，实到带宽的差距被放大； Radeon 在这个模型上跑到自身 800 GB/s 的 63 %。</p> <p>同一张表还能读出两件事，两件都关于张量并行，而不关于任何一个厂商。
-<strong>被饿着的那条注意力路径，被切开之后饿得更厉害</strong>：它的 2D launch grid 是每个 KV head 一个 workgroup，所以两张卡各看到 8 个，单卡看到
-16 个， 而从 1K 到 30–32K 的保留率是 <strong>15.8 % 对 33.6 %</strong>。以及
-<strong>投机的经济性被侵蚀</strong>：每一次草稿步仍然要付同一个 all-reduce 下限， 所以投机相对不投机的净收益是<strong>这边 +7.5 %，那边 +39.2
-%</strong>。</p> <p>这里没有覆盖的是 A100 完胜的地盘。prefill 和批量吞吐是计算受限的， 而那边的对手是已经只跑到标称峰值约 37 % 的 RDNA3
-WMMA。那里该预期的是倍数，不是百分比。</p> </div>
+<div class="abstract"> <h3>摘要</h3> <p>这篇文章原来问的是一个问题 —— 两张消费级卡对一张 A100 ——
+而这个问题里其实捆着三个。这一轮把每张卡单独测了一遍，于是三个问题分得开：一张消费级卡对一张数据中心卡值多少，
+第二张消费级卡再买到什么，然后才是这一对值多少。</p>
+<p><strong>第二张卡在解码上几乎不起作用。</strong>横跨十一个深度、两个模型，它买到
+<strong>1.11× 到 1.23×</strong>。batch 1 下一步解码既是带宽受限又很短，而 TP=2 每一步都要付一次固定的
+all-reduce，所以第二张卡的带宽大半花在了跟第一张说话上。<strong>而在 prefill 上同一张卡买到 1.56× 到 1.87×</strong>
+的墙钟时间，因为 attention 的并行完全不需要通信。</p>
+<p><strong>prefill 是两项，而且两项不同向。</strong>拟合 T(S) = a + bS + cS²，对一张 7900 XT，
+A100 在稠密的 12B 上是 <strong>b 3.3×、c 6.7×</strong>：attention 尺度上的差距是算力差距的两倍。
+而在 MoE 上——它每个 token 只激活 26B 里的 4B，算力项本来就小——两个差距一样大，
+<strong>5.75× 与 5.71×</strong>。至于 L4，一张数据中心卡，在 b 上<em>比</em>消费级的 7900 XT
+还慢（0.90×），在 c 上好 3.0×。「数据中心对消费级」根本不是一条轴。</p>
+<p>这一对对一张 A100 是第三步，也是这篇文章最初站的地方。不带投机时，A100 在一套十一档的阶梯上
+每一档都领先 <strong>1.30× 到 1.46×</strong> —— 平的，完全不是四个单次点暗示的那个 U。</p> </div>
 
 <h2><span class="n">1</span>比的是什么</h2>
 
-<p>同一个 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>，同一个官方 MTP 助手，
-<code>num_speculative_tokens: 1</code>，batch 1，greedy，解码用 64 token 生成减 8 token
-生成的差分隔离出来。两个平台上注意力后端都是 <code>TRITON_ATTN</code> ——
+<p>四台机器：<strong>一张 RX 7900 XT</strong>、<strong>两张、TP=2</strong>、<strong>一张
+A100-SXM4-80GB</strong> 和<strong>一张 L4</strong>。三个模型，而且不是每个模型都在每台机器上都有，
+因为其中两处缺口是算术，不是遗漏。<code>gemma-4-26B-A4B</code> 在一张 7900 XT 上到 12 000 token
+为止：16.96 GiB 权重驻留在一张 19.98 GiB 的卡上，即使 util 开到 0.95 也只剩 0.93 GiB 的 KV，
+要到 32 K 得开到约 0.97。而 <code>gemma-4-31B-it</code> 根本没有单卡这一行 ——
+22 GB 的权重塞不进一张 20 GB 的卡，所以这台机器上只能用一对卡跑它。31B 因此是第三步的模型，
+在那之前的任何一步里都不出现。</p>
+
+<div class="note">
+  <span class="lbl">同一台机器的解码与 prefill 取自同一场会话</span>
+  这篇文章的核心论断是「第二张卡在 prefill 上值的钱和在解码上不一样」，
+  所以要是这两个数取自不同的运行，就等于把一条会话边界放进了比较本身。因此下面每一条臂的两个数字都来自同一次运行。
+  这也是为什么 A100 取的是 <strong>2026-08-30</strong> 而不是 08-29：早一场有解码，但它的 prefill
+  十一个档位里 0 个过闸 —— 当时开着 prefix caching，而这套阶梯每一档都是下一档的严格前缀，
+  于是重复的那一轮什么都没算。首页是按图各自取的，那边的 A100 解码来自早一场；在 MoE 上两场差 2.2 %。
+</div>
+
+<p>31B 那一步的配置和以前一样：同一个 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>，batch 1，
+greedy，两个平台上注意力后端都是 <code>TRITON_ATTN</code> ——
 这个模型 head 维度不齐，只要 FA4 不可用就会被强制走它，gfx1100 和 A100 都是这种情况。</p>
 
 <div class="note warn">
@@ -803,15 +838,84 @@ WMMA。那里该预期的是倍数，不是百分比。</p> </div>
   以相同方式移植到两套栈上。
 </div>
 
-<p><strong>两边都是每格一次运行。</strong>这些是探测不是 campaign：单进程，没有格内采样。
-Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 token，
-所以只有那一对不是精确对齐的，图上标了出来。这里第三位数字的差别没有和噪声分开。</p>
+<p><strong>prefill 是拟合出来的，不是抄一个数。</strong>单独一个 prefill tok/s 什么都没说：
+S 个 token 的提示，首 token 时间走 T(S) = a + bS + cS²，而这篇文章比的两台机器在一项上差三倍、
+在另一项上差近七倍。下面的拟合就是 `build_prefill.fits()` 的，和 <code>prefill.jsonl --fits</code>
+报的是同一套，只在 chart-grade 档位上做。常数项 <code>a</code> 拟合了但从不引用：
+同一条臂在两场 campaign 之间它从 9.8 ms 变成 99.8 ms，这套阶梯测不了它。</p>
 
-<h2><span class="n">2</span>差距，以及它的形状</h2>
+<h2><span class="n">2</span>一张卡对一张卡</h2>
+
+<p>先把张量并行完全拿掉：一张 7900 XT、一张 A100、一张 L4，同一套阶梯、同样两个模型。
+A100 领先，幅度取决于模型，并且随深度收窄。L4 则根本没有领先。</p>
+
+<figure class="rv" id="figs"> <div class="figbox">
+  <div class="figtitle">图 1 · 相对一张 RX 7900 XT 的解码速率，按上下文长度
+    <span class="prov yes">可由仓库重算</span></div>
+  <div class="legend" id="s1"></div> <div class="legend" id="s1k"></div>
+  <svg class="chart" id="single" role="img"></svg>
+  <div class="barunit" id="singlenote"></div> </div>
+<figcaption> <b>图 1.</b> 每条线都是那台机器的解码速率除以同深度下一张 7900 XT 的，
+所以灰色那条持平线就是读者可能已经有的那张卡。全部每格两轮。第二张卡也画在这里，
+因为「再买一张」正是被比较的选项之一，而它恰好是其中最弱的一个。MoE 那两条线到 12 000 为止：
+那是一张卡的 KV 用尽的地方，再往后没有比值可画。</figcaption> </figure>
+
+<p><strong>L4 是一张在这件事上输给消费级卡的数据中心卡。</strong>两个模型、每一个深度上，
+它都只有一张 7900 XT 的 0.54× 到 0.68×。它换来的是平坦 —— 32 K 上它保住 500-token 速率的 89 %，
+而 A100 只保住 62 % —— 但那是一张显存慢的小卡的属性，不是优势。这张图该带走的一句是：
+「数据中心」不是一个档次。而下一张图才是 L4 挣回位置的地方。</p>
+
+<h2><span class="n">3</span>第二张卡买到了什么</h2>
+
+<p>第二张 7900 XT 是图 1 里最平的那条线。稠密模型上跨十一个深度，它买到
+<strong>1.13× 到 1.23×</strong>；MoE 上跨七个深度，<strong>1.11× 到 1.12×</strong>。
+它甚至不是单调的：12B 上它先升到 6 000 token 处的 1.23×，再落到 32 K 的 1.13×。</p>
+
+<p>原因是 batch 1 下一步解码既带宽受限又很短。把权重切开让每张卡少读一半字节，收益全在这里；
+但此后每一步都以一次 all-reduce 收尾，而这笔开销不随切分变小，batch 1 下又只有一个 token
+的工作量去摊它。第二张卡在带宽上贡献的，大半花在了线上。</p>
+
+<p><strong>prefill 是相反的情形，而且是同样两张卡。</strong>对提示做 attention
+是按 head 并行的，完全不需要通信，而提示又长到让每步的固定开销变成舍入误差。
+把两条臂都拟合出来、再在各自能到的最深档位上把两项加回去：稠密模型 <strong>32 K 上 40.1 秒变
+21.5 秒</strong>，<strong>1.87×</strong>；MoE <strong>12 K 上 6.21 秒变 3.99 秒</strong>，
+<strong>1.56×</strong>。同样的硬件、同一天，收益是解码的四到七倍。</p>
+
+<h2><span class="n">4</span>prefill 是两项，而且两项不同向</h2>
+
+<p>线性项 <code>b</code> 是 GEMM 吞吐 —— 机器乘得多快。二次项 <code>c</code> 是
+attention 随提示长度恶化得多快。一个 prefill tok/s 数字是这两项在某一个提示长度上的加权平均，
+而权重随每一个提示长度改变。分开拟合之后，两项对同一对机器说的是不同的话：</p>
+
+<figure class="rv" id="figp"> <div class="figbox">
+  <div class="figtitle">图 2 · prefill 的两项，相对一张 RX 7900 XT
+    <span class="prov yes">可由仓库重算</span></div>
+  <div class="bars" id="terms"></div>
+  <div class="barunit" id="termsnote"></div> </div>
+<figcaption> <b>图 2.</b> 每根条是一张 7900 XT 的系数除以那台机器的，所以越高越快，
+1.0 处的刻线是与一张消费级卡持平。<code>b</code> 的单位是每 token 提示的微秒，
+<code>c</code> 是每 token 平方的纳秒；两者都来自 <code>build_prefill.fits()</code>，
+只在 chart-grade 档位上拟合，画出来的每一条臂 r² ≥ 0.9999。常数项拟合了但不画，
+因为这套阶梯测不了它。</figcaption> </figure>
+
+<p>三条读法，没有一条经得起被平均成一个数字：</p>
+
+<p><strong>稠密模型上，A100 在 attention 上的优势是它在算力上优势的两倍</strong> ——
+6.67× 对 3.29×。不管是什么在 prefill 上限制着 7900 XT，主要都不是乘法器。</p>
+
+<p><strong>MoE 上两者合并成一个数</strong>，5.71× 对 5.75×。这个模型每 token 只激活 26B
+里的 4B，所以 GEMM 项在两台机器上都很小，两者之比也就不再是关于 GEMM 的了。</p>
+
+<p><strong>L4 在 b 上比消费级卡还慢，在 c 上好三倍。</strong>0.90× 与 3.01×。
+这就是为什么它在 32 K 提示上比 7900 XT 快 1.58×，而在够短的提示上会输：两条曲线会相交，
+「哪张卡 prefill 更快」是一个关于提示长度的问题。作为对照，第二张卡在 b 上买到 1.44–1.48×、
+在 c 上买到 1.91–2.22× —— 二次项比线性项买得多，这和上面那两个墙钟数字说的是同一件事。</p>
+
+<h2><span class="n">5</span>两张卡对一张 A100</h2>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
-    <div class="figtitle">图 1 · 一张 A100 对两张 Radeon，按上下文长度
+    <div class="figtitle">图 3 · 一张 A100 对两张 Radeon，按上下文长度
       <span class="prov yes">可由仓库重算</span></div>
     <div class="legend" id="v1"></div>
     <div class="legend" id="v1k"></div>
@@ -819,21 +923,19 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     <div class="barunit" id="advnote"></div>
   </div>
   <figcaption>
-    <b>图 1.</b> Radeon 那一列是
-    <code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>；A100 那一列是
-    <code>benchmarks/cuda-a100/45450-validation/</code> 里的分腿日志。
+    <b>图 3.</b> 十一个对齐档位、每格两轮、每台机器一场会话，来自
+    <code>benchmarks/campaign-2026-08-29/</code> 与
+    <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>。
     灰色标记是持平，琥珀色那个是标称显存带宽之比，2039 对 2 × 800 GB/s。
-    在两者之间的 8K 和 16K 上，实测领先幅度比单看带宽上限该给的还要<em>小</em>。
-    最后一个点是 Radeon 的 32K 对 A100 的 30K —— 那是那一侧能跑到的最长一档；其余每一个深度都精确对齐。
-    「2026-08-29 的阶梯」那个开关会在这四个点旁边并上另一次测量：十一个对齐档位、每格两轮、
-    k=3 而不是 k=1，走 campaign 那套 harness。它默认关着，因为那是<em>另一个配置</em>，
-    而不是这条曲线上的更多点。
+    实线是两边都不投机的那一臂 —— 这篇文章原来的标题问的就是它；短虚线是同一对运行开了 MTP。
+    「2026-08-26 的探针」那个开关会加上这篇文章最初依据的四个单次点 —— k=1、每格一轮，
+    最深那格是 Radeon 的 32K 对 A100 的 30K，因为那是那一侧当时能跑到的最长一档。
+    它的 U 形是四个点的形状，而它背后这套阶梯并没有 U。
   </figcaption>
 </figure>
 
-<p><strong>那个领先，正是投机在 A100 身上的代价。</strong>上面两条线都开着 MTP，因为那是 RDNA3
-那篇写下来时所在的配置。2026-08-29 把<em>两条臂</em>各测了十一个对齐档位之后，图景分开了：
-不带投机时，A100 在每个深度都领先 1.30× 到 1.46×，平坦而乏味。开了 MTP，这个领先就没了 ——
+<p><strong>那个领先，正是投机在 A100 身上的代价。</strong>实线是两边都不投机的那一臂，而它是平的：
+A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那个标题所问问题的全部答案。开了 MTP，这个领先就没了 ——
 500 档 0.88×，2K 到 8K 持平，到 32K 也只有 1.08×。Radeon 并没有变快，是 A100 在投机上付出得更多。
 而且不是因为它草稿猜得差：它的接受长度是两者中<em>更好</em>的那个，每步 1.92–2.07 对 1.46–1.53。
 它亏在成本上 —— 一个投机步在它身上要花掉 2.40–2.57 个普通解码步，而同样一步在 Radeon 上只要
@@ -842,11 +944,13 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 <code>benchmarks/campaign-2026-08-29/</code> 和
 <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>。</p>
 
-<p>16K 上只差 14 %，这个数字值得停一下。它不是说两套硬件等价 —— 它是关于某一个工况的陈述：
-单流解码、一个模型、中等长度上下文、两边各在自己现有的最佳路径上。
-换到 prefill 或换到批量，这两台机器就不接近了。</p>
+<p><strong>那个 U 是四个点。</strong>把探针打开，它确实在那儿 —— 1K 上 1.48×，到 16K 降到
+1.14×，再回到 32K 的 1.87× —— 这篇文章就是为它取的名。而同一对机器、十一个对齐档位、每格两轮，
+给出的是平的 1.30× 到 1.46×。那个看起来像谷底的 16K 点是一次运行的一个格子，
+而它最深的邻居比的是两个不同的深度。这个形状没有在重测里活下来；它背后的数字仍留在页面上，
+因为悄悄撤掉一张图比把它说过的话摆出来更糟。</p>
 
-<h2><span class="n">3</span>付代价的是切分，不是硅片</h2>
+<h2><span class="n">6</span>付代价的是切分，不是硅片</h2>
 
 <p>2D 注意力路径 —— 也就是原版 vLLM 下投机会掉进去的那条 —— 每个 KV head 启动一个 workgroup。
 这个模型有 16 个。单卡上一个 rank 看到全部；切到两张卡上，每个 rank 看到八个。
@@ -854,20 +958,20 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <figure class="rv" id="fig2">
   <div class="figbox">
-    <div class="figtitle">图 2 · 2D 路径从 1K 到 30–32K 保住了多少
+    <div class="figtitle">图 4 · 2D 路径从 1K 到 30–32K 保住了多少
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="ret"></div>
     <div class="wgs" id="wgs"></div>
   </div>
   <figcaption>
-    <b>图 2.</b> 两个平台上都是原版 vLLM 开投机，所以两边都在 2D 路径上。
+    <b>图 4.</b> 两个平台上都是原版 vLLM 开投机，所以两边都在 2D 路径上。
     下面两张卡片是 batch 1 下的 launch grid
     <code>(total_num_q_blocks, num_kv_heads)</code>：workgroup 数是 KV head
     怎么切的性质，不是厂商的性质。同一次塌陷、同一个 kernel，在两张卡上大约翻倍。
   </figcaption>
 </figure>
 
-<h2><span class="n">4</span>它同样侵蚀投机</h2>
+<h2><span class="n">7</span>它同样侵蚀投机</h2>
 
 <p>MTP 草稿模型只有四层深，所以多出来的那次前向很便宜。不便宜的是：每一次草稿步仍然是一步，
 而 TP=2 下的一步无论挂着多大的模型，都要付那个 all-reduce 下限。
@@ -875,19 +979,19 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">图 3 · 投机走上健康路径之后值多少
+    <div class="figtitle">图 5 · 投机走上健康路径之后值多少
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="econ"></div>
   </div>
   <figcaption>
-    <b>图 3.</b> 投机对不投机，两边都走 3D 路径，各取该平台测过的最长深度。
+    <b>图 5.</b> 投机对不投机，两边都走 3D 路径，各取该平台测过的最长深度。
     不投机的基线来自不同的文件 —— 这边是 <code>splitkv-31b-stock.json</code>，
     那边是后端矩阵里被强制默认的那一列 —— 而且都是单次运行。
     这里比的是<em>收益</em>，不是速率本身。
   </figcaption>
 </figure>
 
-<h2><span class="n">5</span>两张卡实际跑到了多少</h2>
+<h2><span class="n">8</span>两张卡实际跑到了多少</h2>
 
 <p>标称之比假定两边都跑满上限，而两边都没有。从七月那次 campaign 重算实到带宽 ——
 解码速率乘以每张 GPU 每 token 搬的权重字节，除以 800 GB/s ——
@@ -895,48 +999,67 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">图 4 · 解码时每张卡实到的显存带宽
+    <div class="figtitle">图 6 · 解码时每张卡实到的显存带宽
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="util"></div>
   </div>
   <figcaption>
-    <b>图 4.</b> 速率取自 <code>benchmarks/results.jsonl</code> 在 500 token 上下文、TP=2 下的值，
+    <b>图 6.</b> 速率取自 <code>benchmarks/results.jsonl</code> 在 500 token 上下文、TP=2 下的值，
     每张 GPU 每 token 的字节数取自
     <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md §3</a>。
     两个效应都真实可见：同样的量化下更大的模型实到更高，而 BF16 那个还要更高。
     <strong>A100 那边没有测过对应的数字</strong>，
-    所以图 1 里的对比在那一侧是对着标称上限，在这一侧是对着实到值。
+    所以图 3 里的对比在那一侧是对着标称上限，在这一侧是对着实到值。
   </figcaption>
 </figure>
 
-<h2><span class="n">6</span>没有被确立的部分</h2>
+<h2><span class="n">9</span>没有被确立的部分</h2>
 
-<h3>单流解码之外的一切</h3>
-<p>prefill 和批量吞吐是计算受限的，这里完全没有测。这台硬件上 prefill 只跑到标称 FP16
-峰值的约 37 %，而 A100 的 tensor core 是另一个量级的东西。那里诚实的预期是倍数而非百分比，
-而且那是预期，不是测量。</p>
+<h3>批量吞吐，以及 prefill 的常数项</h3>
+<p>这里的一切都是 batch 1。批量吞吐是另一个 regime，完全没有测；一旦解码不再是带宽受限的，
+第二张卡那个 1.1× 就没有理由继续成立，这一页上别的东西也一样。prefill <em>确实</em>测了，
+但只测了它的两个形状项：常数 <code>a</code> 拟合了却从不引用，因为同一条臂在相隔一个月的两场
+campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负值。所以够短的提示落在这些拟合
+描述的范围之外。</p>
+
+<h3>单卡上的 gemma-4-31B，以及 A100 上它的 prefill</h3>
+<p>31B 没有单卡这一行，在这台机器上也不可能有 —— 22 GB 的权重，20 GB 的卡。
+它同样没有可用的 A100 prefill：2026-08-29 那场开着 prefix caching，132 个 prefill 档位里
+130 个过不了重复性这一关，而 2026-08-30 的重测只覆盖了 12B 和 MoE 两个模型。
+所以 31B 在这里只出现在解码上，文章其余部分那个三步比较由另外两个模型承担。</p>
 
 <h3>A100 自己的实到带宽</h3>
-<p>图 4 只有 Radeon 这边，没有对应的一半。图 1 里那个 1.27× 是两个规格书数字的比值，
+<p>图 6 只有 Radeon 这边，没有对应的一半。图 3 里那个 1.27× 是两个规格书数字的比值，
 读者应当把它当成"单靠带宽差能解释的上界"，而不是任何一侧被拿去对照过的预测。</p>
 
-<h3>只有一个模型，每边一套栈，每格一次运行</h3>
+<h3>每边一套栈，每种卡各一张</h3>
 <p>两个不同的 vLLM 版本，因为每一侧跑的都是它今天真正在跑的那套；
-两个不同的运行环境，其中一个是租来的 Colab VM，会话之间的方差没有量化。
-这个对比的 campaign 级版本没有做过。</p>
+不同的运行环境，其中两个是租来的 Colab VM，会话之间的方差没有量化。
+而且 A100 和 L4 各只有一张、各只测过一次：这里没有任何东西能把一款卡和这一张卡分开。</p>
 
-<h3>为什么最小值在 16K</h3>
-<p>这个 U 只是描述出来了，谷底没有解释。短端由固定的每步开销主导、长端由 KV 扫描主导，
-和这里每一个测量都一致；但两者究竟在哪里交叉没有定位，而且只测了四个深度。</p>
+<h3>第二张卡为什么是这个表现</h3>
+<p>「batch 1 下一步解码短到让一次固定的 all-reduce 吃掉第二张卡大半带宽，而 attention
+的并行不需要它」——这个说法和这一页上每一个测量都一致，但没有任何一个测量证明它。
+这里没有给任何一次 all-reduce 计过时。三条曾经试图给那个下限一个数字的已发表结论，
+已在 2026-08-30 撤回，因为它们所依赖的那一项这套阶梯测不了。</p>
 
-<h2><span class="n">7</span>此后发生的变化</h2>
+<h2><span class="n">10</span>此后发生的变化</h2>
 
 <div class="note ok">
   <span class="lbl">2026-08-26 · 这个对比才变得可能</span>
   在 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
   的机制被移植到两套栈之前，两个平台在投机下都卡在 2D 路径上，
-  那样的对比测的会是一个共同的 bug。图 2 就是那个对比的样子 ——
+  那样的对比测的会是一个共同的 bug。图 4 就是那个对比的样子 ——
   留着它，是因为它本身就是关于张量并行的发现，而不是一个该丢掉的假象。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-30 · 那个 U 是四个点，文章按取代它的东西重写了</span>
+  这篇文章原来的论点是「两张消费级卡对一张 A100」，而它的头图是四个单次格子，
+  最深那格比的是 32 K 对 30 K。同样两台机器、2026-08-29 测的十一个对齐档位，
+  在那四个点做出 U 的地方是平的。2026-08-30 的单卡一轮在同一套阶梯上测了一张 7900 XT、
+  一张 A100 和一张 L4 的解码与 prefill，把原来那个问题拆成了三个。
+  文章现在按顺序问这三个；图 3 就是原来那张，改画在阶梯上，探针收进了一个开关。
 </div>
 
 <div class="note warn">
@@ -952,7 +1075,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
   A100 的分腿、日志以及让两边可比的那次移植在
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>；
-  图 4 背后的七月 campaign 是
+  图 6 背后的七月 campaign 是
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>。
   本页每一张图都由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
@@ -1487,12 +1610,1181 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
   "peak_gb_s": 800.0,
   "subject": "C-31B-tp2",
   "subject_pct": 62.7870800019456
+ },
+ "split": {
+  "ladders": [
+   {
+    "machine": "one",
+    "machine_name": "RX 7900 XT",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "A-12B-tp1",
+    "date": "2026-08-24",
+    "tp": 1,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 50.56,
+      "runs": 2,
+      "range_pct": 0.19778481012658505,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 48.705,
+      "runs": 2,
+      "range_pct": 2.3611538856380223,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.010000000000005,
+      "runs": 2,
+      "range_pct": 4.12414080399916,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 46.335,
+      "runs": 2,
+      "range_pct": 2.0502859609366633,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 44.225,
+      "runs": 2,
+      "range_pct": 0.06783493499152321,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 43.625,
+      "runs": 2,
+      "range_pct": 2.498567335243561,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 42.349999999999994,
+      "runs": 2,
+      "range_pct": 0.09445100354191063,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 40.085,
+      "runs": 2,
+      "range_pct": 0.6735686665835001,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 38.650000000000006,
+      "runs": 2,
+      "range_pct": 1.7593790426908138,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 37.98,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.715,
+      "runs": 2,
+      "range_pct": 0.136184120931511,
+      "graded": true,
+      "vs_one": 1.0
+     }
+    ],
+    "fit": {
+     "b_us_tok": 478.99156832673486,
+     "c_ns_tok2": 24.156608095208618,
+     "r2": 0.9999944680801438,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "two",
+    "machine_name": "RX 7900 XT",
+    "cards": 2,
+    "model": "gemma-4-12B-it",
+    "cfg": "A-12B-tp2",
+    "date": "2026-08-24",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.89,
+      "runs": 2,
+      "range_pct": 0.5343129069961601,
+      "graded": true,
+      "vs_one": 1.1845332278481013
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.345,
+      "runs": 2,
+      "range_pct": 0.5656011654811866,
+      "graded": true,
+      "vs_one": 1.1979262909352222
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 57.345,
+      "runs": 2,
+      "range_pct": 1.1683669020838812,
+      "graded": true,
+      "vs_one": 1.1944386586127889
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 55.515,
+      "runs": 2,
+      "range_pct": 2.2876699990993354,
+      "graded": true,
+      "vs_one": 1.1981223696989316
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.255,
+      "runs": 2,
+      "range_pct": 0.05529444290848979,
+      "graded": true,
+      "vs_one": 1.2267947993216506
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 52.05,
+      "runs": 2,
+      "range_pct": 0.6916426512968289,
+      "graded": true,
+      "vs_one": 1.1931232091690545
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.085,
+      "runs": 2,
+      "range_pct": 0.3870836304369924,
+      "graded": true,
+      "vs_one": 1.1590318772136956
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.095,
+      "runs": 2,
+      "range_pct": 0.9130480942775236,
+      "graded": true,
+      "vs_one": 1.1748783834352001
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.68,
+      "runs": 2,
+      "range_pct": 0.26857654431514,
+      "graded": true,
+      "vs_one": 1.1560155239327294
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.5,
+      "runs": 2,
+      "range_pct": 1.6551724137931008,
+      "graded": true,
+      "vs_one": 1.1453396524486572
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.44499999999999,
+      "runs": 2,
+      "range_pct": 0.16889854023404582,
+      "graded": true,
+      "vs_one": 1.128830178401198
+     }
+    ],
+    "fit": {
+     "b_us_tok": 322.5917424166407,
+     "c_ns_tok2": 10.868129413731756,
+     "r2": 0.9999924906251758,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "G12",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 114.9045,
+      "runs": 2,
+      "range_pct": 0.09312080901966356,
+      "graded": true,
+      "vs_one": 2.2726364715189873
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 113.0873,
+      "runs": 2,
+      "range_pct": 0.0005305635557586892,
+      "graded": true,
+      "vs_one": 2.321882763576635
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 109.83815,
+      "runs": 2,
+      "range_pct": 0.8160188422692812,
+      "graded": true,
+      "vs_one": 2.2878181628827323
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 104.46940000000001,
+      "runs": 2,
+      "range_pct": 0.02852509921566383,
+      "graded": true,
+      "vs_one": 2.2546541491313263
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 98.95580000000001,
+      "runs": 2,
+      "range_pct": 0.04891072579879187,
+      "graded": true,
+      "vs_one": 2.237553420011306
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 94.0204,
+      "runs": 2,
+      "range_pct": 0.016592143832606612,
+      "graded": true,
+      "vs_one": 2.1551954154727793
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.71535,
+      "runs": 2,
+      "range_pct": 0.028292736262674954,
+      "graded": true,
+      "vs_one": 2.094813459268005
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.09375,
+      "runs": 2,
+      "range_pct": 0.03839037232043008,
+      "graded": true,
+      "vs_one": 2.0729387551453162
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 77.1842,
+      "runs": 2,
+      "range_pct": 0.0031094446790851057,
+      "graded": true,
+      "vs_one": 1.9970038809831823
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 74.3214,
+      "runs": 2,
+      "range_pct": 0.054089400899335435,
+      "graded": true,
+      "vs_one": 1.9568562401263825
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 71.24785,
+      "runs": 2,
+      "range_pct": 0.016702258383933178,
+      "graded": true,
+      "vs_one": 1.9405651641018655
+     }
+    ],
+    "fit": {
+     "b_us_tok": 145.69501602306957,
+     "c_ns_tok2": 3.6211326531346764,
+     "r2": 0.999999548873335,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "G12",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 28.23865,
+      "runs": 2,
+      "range_pct": 0.2199113626182588,
+      "graded": true,
+      "vs_one": 0.5585176028481013
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 27.862949999999998,
+      "runs": 2,
+      "range_pct": 0.16473488988064655,
+      "graded": true,
+      "vs_one": 0.5720757622420696
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 27.83615,
+      "runs": 2,
+      "range_pct": 0.055682987769511784,
+      "graded": true,
+      "vs_one": 0.5797990002082899
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 27.6943,
+      "runs": 2,
+      "range_pct": 0.03249766197375196,
+      "graded": true,
+      "vs_one": 0.5976972051365058
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 27.48625,
+      "runs": 2,
+      "range_pct": 0.03529037245895206,
+      "graded": true,
+      "vs_one": 0.6215093273035612
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 27.18065,
+      "runs": 2,
+      "range_pct": 0.019499165766816855,
+      "graded": true,
+      "vs_one": 0.6230521489971347
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 26.8021,
+      "runs": 2,
+      "range_pct": 0.014177993515426961,
+      "graded": true,
+      "vs_one": 0.6328713105076742
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 26.30875,
+      "runs": 2,
+      "range_pct": 0.020145388891522044,
+      "graded": true,
+      "vs_one": 0.6563240613695897
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 25.7738,
+      "runs": 2,
+      "range_pct": 0.02793534519551243,
+      "graded": true,
+      "vs_one": 0.6668512289780077
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 25.4854,
+      "runs": 2,
+      "range_pct": 0.08475440840639328,
+      "graded": true,
+      "vs_one": 0.6710215903106899
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 25.07405,
+      "runs": 2,
+      "range_pct": 0.11206805442280769,
+      "graded": true,
+      "vs_one": 0.6829374914884924
+     }
+    ],
+    "fit": {
+     "b_us_tok": 534.6580963953218,
+     "c_ns_tok2": 8.030794975570148,
+     "r2": 0.9999889026787383,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "one",
+    "machine_name": "RX 7900 XT",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "E26-tp1-u95",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+    "prefix_caching": true,
+    "source": "campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 96.94,
+      "runs": 2,
+      "range_pct": 0.1856818650711851,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 94.85499999999999,
+      "runs": 2,
+      "range_pct": 0.01054240683148502,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 93.155,
+      "runs": 2,
+      "range_pct": 0.010734796843959964,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 89.755,
+      "runs": 2,
+      "range_pct": 0.2562531335301699,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 86.375,
+      "runs": 2,
+      "range_pct": 0.68306801736614,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 83.16999999999999,
+      "runs": 2,
+      "range_pct": 0.09618852951785296,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 79.08500000000001,
+      "runs": 2,
+      "range_pct": 0.06322311437061029,
+      "graded": true,
+      "vs_one": 1.0
+     }
+    ],
+    "fit": {
+     "b_us_tok": 359.9921859973767,
+     "c_ns_tok2": 13.130198078993663,
+     "r2": 0.9999883647893757,
+     "rungs": 6
+    }
+   },
+   {
+    "machine": "two",
+    "machine_name": "RX 7900 XT",
+    "cards": 2,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "E-26B-tp2",
+    "date": "2026-08-24",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.66499999999999,
+      "runs": 2,
+      "range_pct": 1.2910416569915948,
+      "graded": true,
+      "vs_one": 1.1106354446049103
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.74,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true,
+      "vs_one": 1.1147540983606559
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.08,
+      "runs": 2,
+      "range_pct": 0.019215987701777702,
+      "graded": true,
+      "vs_one": 1.1172776555203692
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 99.715,
+      "runs": 2,
+      "range_pct": 0.11031439602868116,
+      "graded": true,
+      "vs_one": 1.11096874825915
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 95.995,
+      "runs": 2,
+      "range_pct": 0.30209906765978045,
+      "graded": true,
+      "vs_one": 1.1113748191027497
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.63,
+      "runs": 2,
+      "range_pct": 0.043182554248090525,
+      "graded": true,
+      "vs_one": 1.1137429361548636
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.15,
+      "runs": 2,
+      "range_pct": 0.13613159387406729,
+      "graded": true,
+      "vs_one": 1.114623506353923
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.105,
+      "runs": 2,
+      "range_pct": 0.15642861440346004,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 78.82,
+      "runs": 2,
+      "range_pct": 0.5328596802841941,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 75.93,
+      "runs": 2,
+      "range_pct": 0.42144080073753104,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.86500000000001,
+      "runs": 2,
+      "range_pct": 0.09606807109038273,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 250.26045591547765,
+     "c_ns_tok2": 6.869769079619109,
+     "r2": 0.9999783793770356,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "G26A4B",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 164.63445000000002,
+      "runs": 2,
+      "range_pct": 0.7871378074272967,
+      "graded": true,
+      "vs_one": 1.6983128739426452
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 162.44715000000002,
+      "runs": 2,
+      "range_pct": 0.5816660987896616,
+      "graded": true,
+      "vs_one": 1.7125839439143962
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 159.10719999999998,
+      "runs": 2,
+      "range_pct": 0.009050501800041019,
+      "graded": true,
+      "vs_one": 1.70798346841286
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 151.6189,
+      "runs": 2,
+      "range_pct": 0.014641974054684474,
+      "graded": true,
+      "vs_one": 1.6892529664085567
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 144.35685,
+      "runs": 2,
+      "range_pct": 0.043572577262516364,
+      "graded": true,
+      "vs_one": 1.671280463096961
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 137.74374999999998,
+      "runs": 2,
+      "range_pct": 0.023449339806700654,
+      "graded": true,
+      "vs_one": 1.6561710953468798
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 130.3467,
+      "runs": 2,
+      "range_pct": 0.02148117290274323,
+      "graded": true,
+      "vs_one": 1.6481848643864194
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 122.74125000000001,
+      "runs": 2,
+      "range_pct": 0.004318026743243368,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 114.6357,
+      "runs": 2,
+      "range_pct": 0.01919122925928952,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 110.59405,
+      "runs": 2,
+      "range_pct": 0.0362587318214636,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 106.13749999999999,
+      "runs": 2,
+      "range_pct": 0.0050877399599524396,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 62.5736212374676,
+     "c_ns_tok2": 2.2977239240669407,
+     "r2": 0.9999812027105862,
+     "rungs": 11
+    }
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "G26A4B",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 52.4223,
+      "runs": 2,
+      "range_pct": 0.26248371399195797,
+      "graded": true,
+      "vs_one": 0.5407705797400454
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 51.4234,
+      "runs": 2,
+      "range_pct": 0.4628243173341311,
+      "graded": true,
+      "vs_one": 0.5421264034579095
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 51.342150000000004,
+      "runs": 2,
+      "range_pct": 0.14861083924221377,
+      "graded": true,
+      "vs_one": 0.5511475497826204
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 51.048249999999996,
+      "runs": 2,
+      "range_pct": 0.0029383965170207732,
+      "graded": true,
+      "vs_one": 0.5687510445100551
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 50.45195,
+      "runs": 2,
+      "range_pct": 0.04182197120229647,
+      "graded": true,
+      "vs_one": 0.5841036179450072
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 49.6911,
+      "runs": 2,
+      "range_pct": 0.1308081326434668,
+      "graded": true,
+      "vs_one": 0.5974642298905857
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 48.681200000000004,
+      "runs": 2,
+      "range_pct": 0.06902048429373116,
+      "graded": true,
+      "vs_one": 0.6155554150597459
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.46055,
+      "runs": 2,
+      "range_pct": 0.015381195540297678,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 46.125299999999996,
+      "runs": 2,
+      "range_pct": 0.028617700047489696,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 45.2917,
+      "runs": 2,
+      "range_pct": 0.01413062437488391,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 44.093,
+      "runs": 2,
+      "range_pct": 0.032204658335779665,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 204.36695961880213,
+     "c_ns_tok2": 5.533241606198052,
+     "r2": 0.9999787725525956,
+     "rungs": 10
+    }
+   }
+  ],
+  "second": [
+   {
+    "model": "gemma-4-12B-it",
+    "decode": [
+     {
+      "ctx": 500,
+      "gain": 1.1845332278481013
+     },
+     {
+      "ctx": 1000,
+      "gain": 1.1979262909352222
+     },
+     {
+      "ctx": 2000,
+      "gain": 1.1944386586127889
+     },
+     {
+      "ctx": 4000,
+      "gain": 1.1981223696989316
+     },
+     {
+      "ctx": 6000,
+      "gain": 1.2267947993216506
+     },
+     {
+      "ctx": 8000,
+      "gain": 1.1931232091690545
+     },
+     {
+      "ctx": 12000,
+      "gain": 1.1590318772136956
+     },
+     {
+      "ctx": 16000,
+      "gain": 1.1748783834352001
+     },
+     {
+      "ctx": 20000,
+      "gain": 1.1560155239327294
+     },
+     {
+      "ctx": 24000,
+      "gain": 1.1453396524486572
+     },
+     {
+      "ctx": 32000,
+      "gain": 1.128830178401198
+     }
+    ],
+    "decode_min": 1.128830178401198,
+    "decode_max": 1.2267947993216506,
+    "decode_at_shortest": 1.1845332278481013,
+    "decode_at_deepest": 1.128830178401198,
+    "b_gain": 1.4848227816944466,
+    "c_gain": 2.2227015501570144,
+    "depths": 11,
+    "wall": {
+     "ctx": 32000,
+     "one_s": 40.06409687594915,
+     "two_s": 21.451900276993822,
+     "gain": 1.8676246094112254
+    }
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "decode": [
+     {
+      "ctx": 500,
+      "gain": 1.1106354446049103
+     },
+     {
+      "ctx": 1000,
+      "gain": 1.1147540983606559
+     },
+     {
+      "ctx": 2000,
+      "gain": 1.1172776555203692
+     },
+     {
+      "ctx": 4000,
+      "gain": 1.11096874825915
+     },
+     {
+      "ctx": 6000,
+      "gain": 1.1113748191027497
+     },
+     {
+      "ctx": 8000,
+      "gain": 1.1137429361548636
+     },
+     {
+      "ctx": 12000,
+      "gain": 1.114623506353923
+     }
+    ],
+    "decode_min": 1.1106354446049103,
+    "decode_max": 1.1172776555203692,
+    "decode_at_shortest": 1.1106354446049103,
+    "decode_at_deepest": 1.114623506353923,
+    "b_gain": 1.4384701117900927,
+    "c_gain": 1.9113012281515669,
+    "depths": 7,
+    "wall": {
+     "ctx": 12000,
+     "one_s": 6.210654755343608,
+     "two_s": 3.9923722184508836,
+     "gain": 1.5556301906522785
+    }
+   }
+  ],
+  "percard": [
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "b_ratio": 3.2876318037597843,
+    "c_ratio": 6.671008882896672,
+    "terms_separate": 2.0291228705317934
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "l4",
+    "b_ratio": 0.8958838771097043,
+    "c_ratio": 3.007997112202907,
+    "terms_separate": 3.357574780681723
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "b_ratio": 5.753098172650137,
+    "c_ratio": 5.7144367699986285,
+    "terms_separate": 0.9932798986752386
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "l4",
+    "b_ratio": 1.761498955941099,
+    "c_ratio": 2.3729667008008275,
+    "terms_separate": 1.3471292121958969
+   }
+  ],
+  "retention": [
+   {
+    "machine": "one",
+    "model": "gemma-4-12B-it",
+    "pct": 72.61669303797468,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "two",
+    "model": "gemma-4-12B-it",
+    "pct": 69.20187009517448,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "a100",
+    "model": "gemma-4-12B-it",
+    "pct": 62.00614423281942,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "l4",
+    "model": "gemma-4-12B-it",
+    "pct": 88.7933736209061,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "one",
+    "model": "gemma-4-26B-A4B",
+    "pct": 81.58139055085621,
+    "from_ctx": 500,
+    "to_ctx": 12000
+   },
+   {
+    "machine": "two",
+    "model": "gemma-4-26B-A4B",
+    "pct": 67.67751822783636,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "a100",
+    "model": "gemma-4-26B-A4B",
+    "pct": 64.46858479498061,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "l4",
+    "model": "gemma-4-26B-A4B",
+    "pct": 84.11115117039887,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   }
+  ],
+  "crossover": {
+   "ctx": 32000,
+   "model": "gemma-4-12B-it",
+   "one_s": 40.06409687594915,
+   "l4_s": 25.332593139634128,
+   "l4_gain": 1.5815237174936834
+  },
+  "terms": [
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "two",
+    "b": 1.4848227816944466,
+    "c": 2.2227015501570144,
+    "b_us_tok": 322.5917424166407,
+    "c_ns_tok2": 10.868129413731756,
+    "rungs": 10,
+    "r2": 0.9999924906251758
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "b": 3.2876318037597843,
+    "c": 6.671008882896672,
+    "b_us_tok": 145.69501602306957,
+    "c_ns_tok2": 3.6211326531346764,
+    "rungs": 10,
+    "r2": 0.999999548873335
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "l4",
+    "b": 0.8958838771097043,
+    "c": 3.007997112202907,
+    "b_us_tok": 534.6580963953218,
+    "c_ns_tok2": 8.030794975570148,
+    "rungs": 10,
+    "r2": 0.9999889026787383
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "two",
+    "b": 1.4384701117900927,
+    "c": 1.9113012281515669,
+    "b_us_tok": 250.26045591547765,
+    "c_ns_tok2": 6.869769079619109,
+    "rungs": 10,
+    "r2": 0.9999783793770356
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "b": 5.753098172650137,
+    "c": 5.7144367699986285,
+    "b_us_tok": 62.5736212374676,
+    "c_ns_tok2": 2.2977239240669407,
+    "rungs": 11,
+    "r2": 0.9999812027105862
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "l4",
+    "b": 1.761498955941099,
+    "c": 2.3729667008008275,
+    "b_us_tok": 204.36695961880213,
+    "c_ns_tok2": 5.533241606198052,
+    "rungs": 10,
+    "r2": 0.9999787725525956
+   }
+  ],
+  "terms_max": 6.671008882896672,
+  "one_ref": {
+   "gemma-4-12B-it": {
+    "b_us_tok": 478.99156832673486,
+    "c_ns_tok2": 24.156608095208618
+   },
+   "gemma-4-26B-A4B": {
+    "b_us_tok": 359.9921859973767,
+    "c_ns_tok2": 13.130198078993663
+   }
+  },
+  "models": [
+   "gemma-4-12B-it",
+   "gemma-4-26B-A4B"
+  ],
+  "arms": {
+   "one|gemma-4-12B-it": [
+    "A-12B-tp1",
+    "2026-08-24"
+   ],
+   "two|gemma-4-12B-it": [
+    "A-12B-tp2",
+    "2026-08-24"
+   ],
+   "a100|gemma-4-12B-it": [
+    "G12",
+    "2026-08-30"
+   ],
+   "l4|gemma-4-12B-it": [
+    "G12",
+    "2026-08-30"
+   ],
+   "one|gemma-4-26B-A4B": [
+    "E26-tp1-u95",
+    "2026-08-30"
+   ],
+   "two|gemma-4-26B-A4B": [
+    "E-26B-tp2",
+    "2026-08-24"
+   ],
+   "a100|gemma-4-26B-A4B": [
+    "G26A4B",
+    "2026-08-30"
+   ],
+   "l4|gemma-4-26B-A4B": [
+    "G26A4B",
+    "2026-08-30"
+   ]
+  },
+  "no_single_card": {
+   "model": "gemma-4-31B-it",
+   "weights_gb": 22,
+   "card_gb": 20
+  }
  }
 }</script>
 <script type="application/json" id="strings">{
  "viewAdv": "A100 领先多少",
  "viewRate": "解码 tok/s",
- "viewCamp": "2026-08-29 的阶梯",
+ "viewProbe": "2026-08-26 的探针",
+ "mach": {"one": "一张 RX 7900 XT", "two": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G", "l4": "一张 L4"},
+ "s1yAdv": "× 一张 RX 7900 XT",
+ "s1par": "一张 RX 7900 XT",
+ "s1unit": "batch 1 的解码 tok/s，除以同深度下一张 RX 7900 XT 的值 · 每格两轮 · MoE 那两条线到一张卡的 KV 用尽处为止",
+ "s1second": "在这个模型上，第二张卡：解码 {n} 个深度上买到 {lo}× 到 {hi}×，prefill 在 {d} 上买到 {w}× 的墙钟时间",
+ "termsB": "b · 算力",
+ "termsC": "c · attention",
+ "unitB": "µs/token",
+ "unitC": "ns/token²",
+ "termsPar": "与一张 RX 7900 XT 持平",
+ "termsFit": "{n} 个档位，r² {r}",
+ "termsUnit": "一张 RX 7900 XT 的系数 ÷ 这台机器的，所以越高越快 · 每条轨道上的刻线是与一张卡持平 · 由 build_prefill.fits() 只在 chart-grade 档位上拟合",
  "campBase": "2026-08-26 · MTP k=1",
  "campRuns": "{n} 次运行，极差 {r}%",
  "noSpecLab": "不投机",
@@ -1507,15 +2799,16 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
  "campRMtp": "2026-08-29 · Radeon，MTP k=3",
  "campANospec": "2026-08-29 · A100，不带投机",
  "campAMtp": "2026-08-29 · A100，MTP k=3",
- "campNote": "虚线：十一个对齐档位、每格两轮、k=3，走 campaign 那套 harness——和上面那四个单次 k=1 的点是<em>另一个配置</em>，不是同一条曲线上的更多点。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}×。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
+ "campNote": "十一个对齐档位、每格两轮、k=3，每台机器一场会话。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}× —— 平的，完全不是 U 形。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
+ "probeNote": "长虚线：这篇文章最初依据的 2026-08-26 探针 —— 四个格子、每格一轮、k=1，最深那格是两张卡的 32K 对 A100 的 30K。它的 U 形是四个点的形状，其中两个点各只有一次测量",
  "radeons": "2× RX 7900 XT",
  "a100": "一张 A100 80G",
  "ctxK": "{n}K",
  "ctxAxis": "上下文长度",
  "f1yAdv": "A100 ÷ Radeon",
  "f1yRate": "解码 tok/s",
-  "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 每格一次运行",
- "f1rateUnit": "batch 1 的解码 tok/s，两边都走 3D 路径 · 每条线都写明自己是哪一次测量，图例说明笔画",
+  "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 阶梯每格两轮，探针每格一轮",
+ "f1rateUnit": "batch 1 的解码 tok/s · 实线是不带投机的那一臂，短虚线是同一次运行开了 MTP，长虚线是 2026-08-26 的探针",
  "f1par": "持平", "f1nom": "标称带宽之比",
  "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",
  "f1unmatched": "对 A100 的 {n}K，那是它最长的一条腿",
@@ -1622,7 +2915,112 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     return tr;
   }
 
-  /* ---------- Figure 1: the advantage, against two reference marks --------
+  /* ---------- Figure 1: every machine against one 7900 XT ----------------
+     A ratio and not a rate, because the question is "how many of the card I
+     have is this card worth" and the rates span 25 to 165 tok/s, which on one
+     linear axis buries the L4 and on a log one makes a 1.1x gap look like a
+     2x one. Parity is a rule, so the card a reader owns is a line on the page
+     rather than an arithmetic step they have to do. */
+  (function () {
+    var svg = document.getElementById("single");
+    var vbox = document.getElementById("s1"), key = document.getElementById("s1k");
+    var note = document.getElementById("singlenote");
+    var SP = F.split, models = SP.models, mi = 0;
+    var COL = { two: "var(--s1)", a100: "var(--s2)", l4: "var(--s5)" };
+    function lad(mid, model) {
+      return SP.ladders.filter(function (l) {
+        return l.machine === mid && l.model === model; })[0];
+    }
+    function tipFor(l) {
+      return function (i) {
+        var p = l.points[i];
+        return '<span class="hd">' + S.mach[l.machine] + " · " + kctx(p.ctx) +
+          "</span><br><b>" + p.vs_one.toFixed(3) + "×</b> " + S.s1par +
+          "<br><span class=\"sub\">" + p.tok_s.toFixed(2) + " tok/s · " +
+          fmt(S.campRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "</span>";
+      };
+    }
+    function draw() {
+      var model = models[mi];
+      var ser = ["two", "a100", "l4"].map(function (mid) {
+        var l = lad(mid, model);
+        var pts = l.points.filter(function (p) { return p.vs_one !== null; });
+        return { colour: COL[mid], label: S.mach[mid], tip: tipFor(l),
+                 dash: mid === "two", dashPattern: "2 4",
+                 points: pts.map(function (p) { return [p.ctx, p.vs_one]; }) };
+      });
+      window.lineChart({
+        el: svg, reduce: reduce, h: 330, legend: key,
+        x: { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
+             ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] },
+        y: { label: S.s1yAdv, min: 0, fmt: function (v) { return v.toFixed(1) + "×"; } },
+        rules: [{ y: 1, label: S.s1par, colour: "var(--border-2)" }],
+        series: ser
+      });
+      var sc = SP.second.filter(function (s) { return s.model === model; })[0];
+      note.innerHTML = S.s1unit + "<br>" +
+        fmt(S.s1second, { lo: sc.decode_min.toFixed(2), hi: sc.decode_max.toFixed(2),
+                          n: sc.depths, w: sc.wall.gain.toFixed(2),
+                          d: kctx(sc.wall.ctx) });
+    }
+    var segS = document.createElement("span");
+    segS.className = "seg";
+    var mBtns = [];
+    models.forEach(function (m, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (i === mi ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + m;
+      b.setAttribute("aria-pressed", String(i === mi));
+      b.addEventListener("click", function () {
+        mi = i;
+        mBtns.forEach(function (x) {
+          x.b.classList.toggle("on", x.i === mi);
+          x.b.setAttribute("aria-pressed", String(x.i === mi));
+        });
+        draw();
+      });
+      segS.appendChild(b);
+      mBtns.push({ b: b, i: i });
+    });
+    vbox.appendChild(segS);
+    draw();
+  })();
+
+  /* ---------- Figure 2: prefill's two terms --------------------------------
+     Bars and not a curve: what is being compared is two coefficients per arm,
+     and a coefficient has no shape. The mark on every track is parity with one
+     7900 XT, which is what makes the L4's b bar -- the only one that lands
+     short of it -- readable as the finding it is rather than as a small
+     number. */
+  (function () {
+    var box = document.getElementById("terms");
+    var note = document.getElementById("termsnote");
+    var SP = F.split, max = SP.terms_max * 1.08;
+    var COL = { two: "--s1", a100: "--s2", l4: "--s5" };
+    // Grouped by term and not by machine. The comparison this figure exists to
+    // make is three machines on one term, and interleaving b with c put the
+    // machine name on every row, where it did not fit the label column.
+    SP.models.forEach(function (model) {
+      el(box, "lab rv hd2", model).style.gridColumn = "1 / -1";
+      [["b", S.termsB, S.unitB], ["c", S.termsC, S.unitC]].forEach(function (o) {
+        el(box, "lab rv hd3", o[1]).style.gridColumn = "1 / -1";
+        SP.terms.filter(function (t) { return t.model === model; }).forEach(function (t) {
+          var v = t[o[0]], raw = o[0] === "b" ? t.b_us_tok : t.c_ns_tok2;
+          refbar(box, S.mach[t.machine], v, max, COL[t.machine],
+                 [{ at: 1, cls: "par", title: S.termsPar }],
+                 '<span class="hd">' + S.mach[t.machine] + " · " + model +
+                 "</span><br><b>" + v.toFixed(2) + "×</b> " + S.s1par +
+                 "<br><span class=\"sub\">" + o[1] + " = " + raw.toFixed(2) + " " + o[2] +
+                 " · " + fmt(S.termsFit, { n: t.rungs, r: t.r2.toFixed(5) }) + "</span>");
+          el(box, "val rv", v.toFixed(2) + "×");
+        });
+      });
+    });
+    note.innerHTML = S.termsUnit;
+  })();
+
+  /* ---------- Figure 3: the advantage, against two reference marks --------
      A line rather than four bars: the claim is the shape -- the gap closes to
      16K and then opens again -- and a shape is what a reader should not have to
      assemble out of four lengths. The two reference marks become rules. */
@@ -1631,14 +3029,21 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     var note = document.getElementById("advnote");
     var key = document.getElementById("v1k");
     var mode = 0;                                /* 0 = advantage, 1 = rates */
-    var campOn = false;                          /* the 2026-08-29 ladder */
+    /* The eleven-rung campaign is the figure now, and the four points this
+       article was first written against are the option. It used to be the
+       other way round, which meant the first chart on the page was the weakest
+       evidence on it: four single-run cells, one of them comparing 32 768
+       tokens against 30 000 because that was the longest leg the A100 side had.
+       The campaign is eleven matched rungs, two rounds a cell, both arms, one
+       session -- and it carries the arm the probe does not have, which is the
+       one where nobody is speculating. */
+    var probeOn = false;                         /* the 2026-08-26 probe */
     var R = F.fig1.rows, K = F.fig1.campaign, C = K.rows;
     function xAxis() {
       // the two ladders do not share rungs, so the axis has to be the real
       // number line rather than four evenly spaced categories
       return { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
-               ticks: campOn ? [500, 1000, 2000, 4000, 8000, 16000, 32000]
-                             : [1000, 2000, 4000, 8000, 16000, 32000] };
+               ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] };
       // fixed in both states on purpose: toggling the ladder must not slide the
       // four points the article was written against out from under the reader
     }
@@ -1690,51 +3095,63 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
           x: xAxis(),
           y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
           legend: key,
-          // both lines say which measurement they are, ladder or no ladder:
-          // they are k=1 and single-run, which the platform name does not say
-          series: [{ colour: "var(--s1)", label: S.campBaseR, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
-                   { colour: "var(--s2)", label: S.campBaseA, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.a100]; }) }].concat(
-            campOn ? [
-              { colour: "var(--s1)", dash: true, label: S.campRNospec,
-                tip: campTip("radeons_nospec", S.campRNospec),
-                points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
-              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
-                tip: campTip("radeons_mtp", S.campRMtp),
-                points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, label: S.campANospec,
-                tip: campTip("a100_nospec", S.campANospec),
-                points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
-                tip: campTip("a100_mtp", S.campAMtp),
-                points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
+          // the campaign's four lines are the figure; the probe's two are the
+          // option, and both say which measurement they are rather than only
+          // which machine, because the difference between them is the point
+          series: [
+            { colour: "var(--s1)", label: S.campRNospec,
+              tip: campTip("radeons_nospec", S.campRNospec),
+              points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
+            { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
+              tip: campTip("radeons_mtp", S.campRMtp),
+              points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
+            { colour: "var(--s2)", label: S.campANospec,
+              tip: campTip("a100_nospec", S.campANospec),
+              points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
+            { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
+              tip: campTip("a100_mtp", S.campAMtp),
+              points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }].concat(
+            probeOn ? [
+              { colour: "var(--s3)", dash: true, dashPattern: "7 5", label: S.campBaseR,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
+              { colour: "var(--s4)", dash: true, dashPattern: "7 5", label: S.campBaseA,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.a100]; }) }] : [])
         });
-        note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");
+        note.innerHTML = S.f1rateUnit + "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote : "");
       } else {
         key.innerHTML = "";
         window.lineChart({
           el: svg, reduce: reduce, h: 330,
           x: xAxis(),
-          y: { label: S.f1yAdv, min: campOn ? 0.8 : 1,
+          y: { label: S.f1yAdv, min: 0.8,
                fmt: function (v) { return v.toFixed(2) + "×"; },
-               ticks: campOn ? [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2]
-                             : [1, 1.2, 1.4, 1.6, 1.8, 2] },
-          legend: campOn ? key : null,
+               ticks: [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2] },
+          legend: key,
           rules: [{ y: 1, label: S.f1par, colour: "var(--border-2)" },
                   { y: F.fig1.nominal_ratio, label: S.f1nom, colour: "var(--accent)" }],
-          series: [{ colour: "var(--s2)", label: campOn ? S.campBase : null, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.advantage]; }) }].concat(
-            campOn ? [
-              { colour: "var(--s3)", dash: true, label: S.campNospec, tip: campAdv("nospec"),
-                points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
-              { colour: "var(--s4)", dash: true, label: S.campMtp, tip: campAdv("mtp"),
-                points: C.map(function (r) { return [r.ctx, r.advantage_mtp]; }) }] : [])
+          // the two arms of the campaign, and the probe behind them if asked
+          // for. Solid is the arm nobody is speculating on, which is the one
+          // the probe never measured and the one that answers the question the
+          // article's title asks.
+          series: [
+            { colour: "var(--s3)", label: S.campNospec, tip: campAdv("nospec"),
+              points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
+            { colour: "var(--s4)", dash: true, dashPattern: "2 4", label: S.campMtp,
+              tip: campAdv("mtp"),
+              points: C.map(function (r) { return [r.ctx, r.advantage_mtp]; }) }].concat(
+            probeOn ? [
+              { colour: "var(--s2)", dash: true, dashPattern: "7 5", label: S.campBase,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.advantage]; }) }] : [])
         });
         note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
           d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
-          "<br>" + S.f1unit + (campOn ? "<br>" + campNote() : "");
+          "<br>" + S.f1unit + "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote : "");
       }
     }
     /* Two of these three controls are exclusive views of the same data and the
@@ -1766,21 +3183,21 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
       modeBtns.push({ b: b, v: o[1] });
     });
     vbox.appendChild(seg);
-    /* The 2026-08-29 ladder is off until asked for. It is a different
-       configuration -- k=3, the campaign harness, eleven matched rungs, two
-       rounds -- so it sits beside the four points above rather than extending
-       them, and a reader who has not asked for it sees the figure this article
-       was written against. */
+    /* The 2026-08-26 probe is off until asked for. It is the measurement this
+       article was first written against and it is the weaker one: four cells,
+       one run each, k=1, and its deepest cell compares two different depths. It
+       is kept because a reader should be able to see what it said, not because
+       it adds points to the ladder beside it. */
     (function () {
       var b = document.createElement("button");
       b.className = "lg camp";
       b.style.setProperty("--c", "var(--s3)");
-      b.innerHTML = '<span class="sw"></span>' + S.viewCamp;
+      b.innerHTML = '<span class="sw"></span>' + S.viewProbe;
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        campOn = !campOn;
-        b.classList.toggle("on", campOn);
-        b.setAttribute("aria-pressed", String(campOn));
+        probeOn = !probeOn;
+        b.classList.toggle("on", probeOn);
+        b.setAttribute("aria-pressed", String(probeOn));
         draw();
       });
       vbox.appendChild(b);
@@ -1788,7 +3205,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     draw();
   })();
 
-  /* ---------- Figure 2: retention, and the workgroup arithmetic ---------- */
+  /* ---------- Figure 4: retention, and the workgroup arithmetic ---------- */
   (function () {
     var box = document.getElementById("ret");
     var max = Math.max.apply(null, F.fig2.retention.map(function (r) { return r.pct; })) * 1.1;
@@ -1823,7 +3240,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     });
   })();
 
-  /* ---------- Figure 3: speculation's economics ---------- */
+  /* ---------- Figure 5: speculation's economics ---------- */
   (function () {
     var box = document.getElementById("econ");
     var max = Math.max.apply(null, F.fig3.cases.map(function (c) {
@@ -1849,7 +3266,7 @@ Radeon 这边的档位是 2 的幂，A100 那边最长的一条腿是 30 000 tok
     n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
   })();
 
-  /* ---------- Figure 4: realized bandwidth ---------- */
+  /* ---------- Figure 6: realized bandwidth ---------- */
   (function () {
     var box = document.getElementById("util");
     F.bandwidth.rows.forEach(function (r) {

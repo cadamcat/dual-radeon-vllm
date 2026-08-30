@@ -523,5 +523,1162 @@
   "peak_gb_s": 800.0,
   "subject": "C-31B-tp2",
   "subject_pct": 62.7870800019456
+ },
+ "split": {
+  "ladders": [
+   {
+    "machine": "one",
+    "machine_name": "RX 7900 XT",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "A-12B-tp1",
+    "date": "2026-08-24",
+    "tp": 1,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 50.56,
+      "runs": 2,
+      "range_pct": 0.19778481012658505,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 48.705,
+      "runs": 2,
+      "range_pct": 2.3611538856380223,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.010000000000005,
+      "runs": 2,
+      "range_pct": 4.12414080399916,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 46.335,
+      "runs": 2,
+      "range_pct": 2.0502859609366633,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 44.225,
+      "runs": 2,
+      "range_pct": 0.06783493499152321,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 43.625,
+      "runs": 2,
+      "range_pct": 2.498567335243561,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 42.349999999999994,
+      "runs": 2,
+      "range_pct": 0.09445100354191063,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 40.085,
+      "runs": 2,
+      "range_pct": 0.6735686665835001,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 38.650000000000006,
+      "runs": 2,
+      "range_pct": 1.7593790426908138,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 37.98,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.715,
+      "runs": 2,
+      "range_pct": 0.136184120931511,
+      "graded": true,
+      "vs_one": 1.0
+     }
+    ],
+    "fit": {
+     "b_us_tok": 478.99156832673486,
+     "c_ns_tok2": 24.156608095208618,
+     "r2": 0.9999944680801438,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "two",
+    "machine_name": "RX 7900 XT",
+    "cards": 2,
+    "model": "gemma-4-12B-it",
+    "cfg": "A-12B-tp2",
+    "date": "2026-08-24",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 59.89,
+      "runs": 2,
+      "range_pct": 0.5343129069961601,
+      "graded": true,
+      "vs_one": 1.1845332278481013
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 58.345,
+      "runs": 2,
+      "range_pct": 0.5656011654811866,
+      "graded": true,
+      "vs_one": 1.1979262909352222
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 57.345,
+      "runs": 2,
+      "range_pct": 1.1683669020838812,
+      "graded": true,
+      "vs_one": 1.1944386586127889
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 55.515,
+      "runs": 2,
+      "range_pct": 2.2876699990993354,
+      "graded": true,
+      "vs_one": 1.1981223696989316
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 54.255,
+      "runs": 2,
+      "range_pct": 0.05529444290848979,
+      "graded": true,
+      "vs_one": 1.2267947993216506
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 52.05,
+      "runs": 2,
+      "range_pct": 0.6916426512968289,
+      "graded": true,
+      "vs_one": 1.1931232091690545
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 49.085,
+      "runs": 2,
+      "range_pct": 0.3870836304369924,
+      "graded": true,
+      "vs_one": 1.1590318772136956
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.095,
+      "runs": 2,
+      "range_pct": 0.9130480942775236,
+      "graded": true,
+      "vs_one": 1.1748783834352001
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 44.68,
+      "runs": 2,
+      "range_pct": 0.26857654431514,
+      "graded": true,
+      "vs_one": 1.1560155239327294
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 43.5,
+      "runs": 2,
+      "range_pct": 1.6551724137931008,
+      "graded": true,
+      "vs_one": 1.1453396524486572
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 41.44499999999999,
+      "runs": 2,
+      "range_pct": 0.16889854023404582,
+      "graded": true,
+      "vs_one": 1.128830178401198
+     }
+    ],
+    "fit": {
+     "b_us_tok": 322.5917424166407,
+     "c_ns_tok2": 10.868129413731756,
+     "r2": 0.9999924906251758,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "G12",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 114.9045,
+      "runs": 2,
+      "range_pct": 0.09312080901966356,
+      "graded": true,
+      "vs_one": 2.2726364715189873
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 113.0873,
+      "runs": 2,
+      "range_pct": 0.0005305635557586892,
+      "graded": true,
+      "vs_one": 2.321882763576635
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 109.83815,
+      "runs": 2,
+      "range_pct": 0.8160188422692812,
+      "graded": true,
+      "vs_one": 2.2878181628827323
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 104.46940000000001,
+      "runs": 2,
+      "range_pct": 0.02852509921566383,
+      "graded": true,
+      "vs_one": 2.2546541491313263
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 98.95580000000001,
+      "runs": 2,
+      "range_pct": 0.04891072579879187,
+      "graded": true,
+      "vs_one": 2.237553420011306
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 94.0204,
+      "runs": 2,
+      "range_pct": 0.016592143832606612,
+      "graded": true,
+      "vs_one": 2.1551954154727793
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.71535,
+      "runs": 2,
+      "range_pct": 0.028292736262674954,
+      "graded": true,
+      "vs_one": 2.094813459268005
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.09375,
+      "runs": 2,
+      "range_pct": 0.03839037232043008,
+      "graded": true,
+      "vs_one": 2.0729387551453162
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 77.1842,
+      "runs": 2,
+      "range_pct": 0.0031094446790851057,
+      "graded": true,
+      "vs_one": 1.9970038809831823
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 74.3214,
+      "runs": 2,
+      "range_pct": 0.054089400899335435,
+      "graded": true,
+      "vs_one": 1.9568562401263825
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 71.24785,
+      "runs": 2,
+      "range_pct": 0.016702258383933178,
+      "graded": true,
+      "vs_one": 1.9405651641018655
+     }
+    ],
+    "fit": {
+     "b_us_tok": 145.69501602306957,
+     "c_ns_tok2": 3.6211326531346764,
+     "r2": 0.999999548873335,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "cards": 1,
+    "model": "gemma-4-12B-it",
+    "cfg": "G12",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 28.23865,
+      "runs": 2,
+      "range_pct": 0.2199113626182588,
+      "graded": true,
+      "vs_one": 0.5585176028481013
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 27.862949999999998,
+      "runs": 2,
+      "range_pct": 0.16473488988064655,
+      "graded": true,
+      "vs_one": 0.5720757622420696
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 27.83615,
+      "runs": 2,
+      "range_pct": 0.055682987769511784,
+      "graded": true,
+      "vs_one": 0.5797990002082899
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 27.6943,
+      "runs": 2,
+      "range_pct": 0.03249766197375196,
+      "graded": true,
+      "vs_one": 0.5976972051365058
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 27.48625,
+      "runs": 2,
+      "range_pct": 0.03529037245895206,
+      "graded": true,
+      "vs_one": 0.6215093273035612
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 27.18065,
+      "runs": 2,
+      "range_pct": 0.019499165766816855,
+      "graded": true,
+      "vs_one": 0.6230521489971347
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 26.8021,
+      "runs": 2,
+      "range_pct": 0.014177993515426961,
+      "graded": true,
+      "vs_one": 0.6328713105076742
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 26.30875,
+      "runs": 2,
+      "range_pct": 0.020145388891522044,
+      "graded": true,
+      "vs_one": 0.6563240613695897
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 25.7738,
+      "runs": 2,
+      "range_pct": 0.02793534519551243,
+      "graded": true,
+      "vs_one": 0.6668512289780077
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 25.4854,
+      "runs": 2,
+      "range_pct": 0.08475440840639328,
+      "graded": true,
+      "vs_one": 0.6710215903106899
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 25.07405,
+      "runs": 2,
+      "range_pct": 0.11206805442280769,
+      "graded": true,
+      "vs_one": 0.6829374914884924
+     }
+    ],
+    "fit": {
+     "b_us_tok": 534.6580963953218,
+     "c_ns_tok2": 8.030794975570148,
+     "r2": 0.9999889026787383,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "one",
+    "machine_name": "RX 7900 XT",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "E26-tp1-u95",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+    "prefix_caching": true,
+    "source": "campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 96.94,
+      "runs": 2,
+      "range_pct": 0.1856818650711851,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 94.85499999999999,
+      "runs": 2,
+      "range_pct": 0.01054240683148502,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 93.155,
+      "runs": 2,
+      "range_pct": 0.010734796843959964,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 89.755,
+      "runs": 2,
+      "range_pct": 0.2562531335301699,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 86.375,
+      "runs": 2,
+      "range_pct": 0.68306801736614,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 83.16999999999999,
+      "runs": 2,
+      "range_pct": 0.09618852951785296,
+      "graded": true,
+      "vs_one": 1.0
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 79.08500000000001,
+      "runs": 2,
+      "range_pct": 0.06322311437061029,
+      "graded": true,
+      "vs_one": 1.0
+     }
+    ],
+    "fit": {
+     "b_us_tok": 359.9921859973767,
+     "c_ns_tok2": 13.130198078993663,
+     "r2": 0.9999883647893757,
+     "rungs": 6
+    }
+   },
+   {
+    "machine": "two",
+    "machine_name": "RX 7900 XT",
+    "cards": 2,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "E-26B-tp2",
+    "date": "2026-08-24",
+    "tp": 2,
+    "vllm": "0.23.1.dev1+g9ddef7117",
+    "prefix_caching": null,
+    "source": "results-2026-08-24.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 107.66499999999999,
+      "runs": 2,
+      "range_pct": 1.2910416569915948,
+      "graded": true,
+      "vs_one": 1.1106354446049103
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 105.74,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true,
+      "vs_one": 1.1147540983606559
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 104.08,
+      "runs": 2,
+      "range_pct": 0.019215987701777702,
+      "graded": true,
+      "vs_one": 1.1172776555203692
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 99.715,
+      "runs": 2,
+      "range_pct": 0.11031439602868116,
+      "graded": true,
+      "vs_one": 1.11096874825915
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 95.995,
+      "runs": 2,
+      "range_pct": 0.30209906765978045,
+      "graded": true,
+      "vs_one": 1.1113748191027497
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 92.63,
+      "runs": 2,
+      "range_pct": 0.043182554248090525,
+      "graded": true,
+      "vs_one": 1.1137429361548636
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 88.15,
+      "runs": 2,
+      "range_pct": 0.13613159387406729,
+      "graded": true,
+      "vs_one": 1.114623506353923
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.105,
+      "runs": 2,
+      "range_pct": 0.15642861440346004,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 78.82,
+      "runs": 2,
+      "range_pct": 0.5328596802841941,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 75.93,
+      "runs": 2,
+      "range_pct": 0.42144080073753104,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 72.86500000000001,
+      "runs": 2,
+      "range_pct": 0.09606807109038273,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 250.26045591547765,
+     "c_ns_tok2": 6.869769079619109,
+     "r2": 0.9999783793770356,
+     "rungs": 10
+    }
+   },
+   {
+    "machine": "a100",
+    "machine_name": "A100-SXM4-80GB",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "G26A4B",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-a100/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 164.63445000000002,
+      "runs": 2,
+      "range_pct": 0.7871378074272967,
+      "graded": true,
+      "vs_one": 1.6983128739426452
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 162.44715000000002,
+      "runs": 2,
+      "range_pct": 0.5816660987896616,
+      "graded": true,
+      "vs_one": 1.7125839439143962
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 159.10719999999998,
+      "runs": 2,
+      "range_pct": 0.009050501800041019,
+      "graded": true,
+      "vs_one": 1.70798346841286
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 151.6189,
+      "runs": 2,
+      "range_pct": 0.014641974054684474,
+      "graded": true,
+      "vs_one": 1.6892529664085567
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 144.35685,
+      "runs": 2,
+      "range_pct": 0.043572577262516364,
+      "graded": true,
+      "vs_one": 1.671280463096961
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 137.74374999999998,
+      "runs": 2,
+      "range_pct": 0.023449339806700654,
+      "graded": true,
+      "vs_one": 1.6561710953468798
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 130.3467,
+      "runs": 2,
+      "range_pct": 0.02148117290274323,
+      "graded": true,
+      "vs_one": 1.6481848643864194
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 122.74125000000001,
+      "runs": 2,
+      "range_pct": 0.004318026743243368,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 114.6357,
+      "runs": 2,
+      "range_pct": 0.01919122925928952,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 110.59405,
+      "runs": 2,
+      "range_pct": 0.0362587318214636,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 106.13749999999999,
+      "runs": 2,
+      "range_pct": 0.0050877399599524396,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 62.5736212374676,
+     "c_ns_tok2": 2.2977239240669407,
+     "r2": 0.9999812027105862,
+     "rungs": 11
+    }
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "cards": 1,
+    "model": "gemma-4-26B-A4B",
+    "cfg": "G26A4B",
+    "date": "2026-08-30",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30/results.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 52.4223,
+      "runs": 2,
+      "range_pct": 0.26248371399195797,
+      "graded": true,
+      "vs_one": 0.5407705797400454
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 51.4234,
+      "runs": 2,
+      "range_pct": 0.4628243173341311,
+      "graded": true,
+      "vs_one": 0.5421264034579095
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 51.342150000000004,
+      "runs": 2,
+      "range_pct": 0.14861083924221377,
+      "graded": true,
+      "vs_one": 0.5511475497826204
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 51.048249999999996,
+      "runs": 2,
+      "range_pct": 0.0029383965170207732,
+      "graded": true,
+      "vs_one": 0.5687510445100551
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 50.45195,
+      "runs": 2,
+      "range_pct": 0.04182197120229647,
+      "graded": true,
+      "vs_one": 0.5841036179450072
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 49.6911,
+      "runs": 2,
+      "range_pct": 0.1308081326434668,
+      "graded": true,
+      "vs_one": 0.5974642298905857
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 48.681200000000004,
+      "runs": 2,
+      "range_pct": 0.06902048429373116,
+      "graded": true,
+      "vs_one": 0.6155554150597459
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 47.46055,
+      "runs": 2,
+      "range_pct": 0.015381195540297678,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 46.125299999999996,
+      "runs": 2,
+      "range_pct": 0.028617700047489696,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 45.2917,
+      "runs": 2,
+      "range_pct": 0.01413062437488391,
+      "graded": true,
+      "vs_one": null
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 44.093,
+      "runs": 2,
+      "range_pct": 0.032204658335779665,
+      "graded": true,
+      "vs_one": null
+     }
+    ],
+    "fit": {
+     "b_us_tok": 204.36695961880213,
+     "c_ns_tok2": 5.533241606198052,
+     "r2": 0.9999787725525956,
+     "rungs": 10
+    }
+   }
+  ],
+  "second": [
+   {
+    "model": "gemma-4-12B-it",
+    "decode": [
+     {
+      "ctx": 500,
+      "gain": 1.1845332278481013
+     },
+     {
+      "ctx": 1000,
+      "gain": 1.1979262909352222
+     },
+     {
+      "ctx": 2000,
+      "gain": 1.1944386586127889
+     },
+     {
+      "ctx": 4000,
+      "gain": 1.1981223696989316
+     },
+     {
+      "ctx": 6000,
+      "gain": 1.2267947993216506
+     },
+     {
+      "ctx": 8000,
+      "gain": 1.1931232091690545
+     },
+     {
+      "ctx": 12000,
+      "gain": 1.1590318772136956
+     },
+     {
+      "ctx": 16000,
+      "gain": 1.1748783834352001
+     },
+     {
+      "ctx": 20000,
+      "gain": 1.1560155239327294
+     },
+     {
+      "ctx": 24000,
+      "gain": 1.1453396524486572
+     },
+     {
+      "ctx": 32000,
+      "gain": 1.128830178401198
+     }
+    ],
+    "decode_min": 1.128830178401198,
+    "decode_max": 1.2267947993216506,
+    "decode_at_shortest": 1.1845332278481013,
+    "decode_at_deepest": 1.128830178401198,
+    "b_gain": 1.4848227816944466,
+    "c_gain": 2.2227015501570144,
+    "depths": 11,
+    "wall": {
+     "ctx": 32000,
+     "one_s": 40.06409687594915,
+     "two_s": 21.451900276993822,
+     "gain": 1.8676246094112254
+    }
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "decode": [
+     {
+      "ctx": 500,
+      "gain": 1.1106354446049103
+     },
+     {
+      "ctx": 1000,
+      "gain": 1.1147540983606559
+     },
+     {
+      "ctx": 2000,
+      "gain": 1.1172776555203692
+     },
+     {
+      "ctx": 4000,
+      "gain": 1.11096874825915
+     },
+     {
+      "ctx": 6000,
+      "gain": 1.1113748191027497
+     },
+     {
+      "ctx": 8000,
+      "gain": 1.1137429361548636
+     },
+     {
+      "ctx": 12000,
+      "gain": 1.114623506353923
+     }
+    ],
+    "decode_min": 1.1106354446049103,
+    "decode_max": 1.1172776555203692,
+    "decode_at_shortest": 1.1106354446049103,
+    "decode_at_deepest": 1.114623506353923,
+    "b_gain": 1.4384701117900927,
+    "c_gain": 1.9113012281515669,
+    "depths": 7,
+    "wall": {
+     "ctx": 12000,
+     "one_s": 6.210654755343608,
+     "two_s": 3.9923722184508836,
+     "gain": 1.5556301906522785
+    }
+   }
+  ],
+  "percard": [
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "b_ratio": 3.2876318037597843,
+    "c_ratio": 6.671008882896672,
+    "terms_separate": 2.0291228705317934
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "l4",
+    "b_ratio": 0.8958838771097043,
+    "c_ratio": 3.007997112202907,
+    "terms_separate": 3.357574780681723
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "b_ratio": 5.753098172650137,
+    "c_ratio": 5.7144367699986285,
+    "terms_separate": 0.9932798986752386
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "l4",
+    "b_ratio": 1.761498955941099,
+    "c_ratio": 2.3729667008008275,
+    "terms_separate": 1.3471292121958969
+   }
+  ],
+  "retention": [
+   {
+    "machine": "one",
+    "model": "gemma-4-12B-it",
+    "pct": 72.61669303797468,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "two",
+    "model": "gemma-4-12B-it",
+    "pct": 69.20187009517448,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "a100",
+    "model": "gemma-4-12B-it",
+    "pct": 62.00614423281942,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "l4",
+    "model": "gemma-4-12B-it",
+    "pct": 88.7933736209061,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "one",
+    "model": "gemma-4-26B-A4B",
+    "pct": 81.58139055085621,
+    "from_ctx": 500,
+    "to_ctx": 12000
+   },
+   {
+    "machine": "two",
+    "model": "gemma-4-26B-A4B",
+    "pct": 67.67751822783636,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "a100",
+    "model": "gemma-4-26B-A4B",
+    "pct": 64.46858479498061,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   },
+   {
+    "machine": "l4",
+    "model": "gemma-4-26B-A4B",
+    "pct": 84.11115117039887,
+    "from_ctx": 500,
+    "to_ctx": 32000
+   }
+  ],
+  "crossover": {
+   "ctx": 32000,
+   "model": "gemma-4-12B-it",
+   "one_s": 40.06409687594915,
+   "l4_s": 25.332593139634128,
+   "l4_gain": 1.5815237174936834
+  },
+  "terms": [
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "two",
+    "b": 1.4848227816944466,
+    "c": 2.2227015501570144,
+    "b_us_tok": 322.5917424166407,
+    "c_ns_tok2": 10.868129413731756,
+    "rungs": 10,
+    "r2": 0.9999924906251758
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "a100",
+    "b": 3.2876318037597843,
+    "c": 6.671008882896672,
+    "b_us_tok": 145.69501602306957,
+    "c_ns_tok2": 3.6211326531346764,
+    "rungs": 10,
+    "r2": 0.999999548873335
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "l4",
+    "b": 0.8958838771097043,
+    "c": 3.007997112202907,
+    "b_us_tok": 534.6580963953218,
+    "c_ns_tok2": 8.030794975570148,
+    "rungs": 10,
+    "r2": 0.9999889026787383
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "two",
+    "b": 1.4384701117900927,
+    "c": 1.9113012281515669,
+    "b_us_tok": 250.26045591547765,
+    "c_ns_tok2": 6.869769079619109,
+    "rungs": 10,
+    "r2": 0.9999783793770356
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "a100",
+    "b": 5.753098172650137,
+    "c": 5.7144367699986285,
+    "b_us_tok": 62.5736212374676,
+    "c_ns_tok2": 2.2977239240669407,
+    "rungs": 11,
+    "r2": 0.9999812027105862
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "l4",
+    "b": 1.761498955941099,
+    "c": 2.3729667008008275,
+    "b_us_tok": 204.36695961880213,
+    "c_ns_tok2": 5.533241606198052,
+    "rungs": 10,
+    "r2": 0.9999787725525956
+   }
+  ],
+  "terms_max": 6.671008882896672,
+  "one_ref": {
+   "gemma-4-12B-it": {
+    "b_us_tok": 478.99156832673486,
+    "c_ns_tok2": 24.156608095208618
+   },
+   "gemma-4-26B-A4B": {
+    "b_us_tok": 359.9921859973767,
+    "c_ns_tok2": 13.130198078993663
+   }
+  },
+  "models": [
+   "gemma-4-12B-it",
+   "gemma-4-26B-A4B"
+  ],
+  "arms": {
+   "one|gemma-4-12B-it": [
+    "A-12B-tp1",
+    "2026-08-24"
+   ],
+   "two|gemma-4-12B-it": [
+    "A-12B-tp2",
+    "2026-08-24"
+   ],
+   "a100|gemma-4-12B-it": [
+    "G12",
+    "2026-08-30"
+   ],
+   "l4|gemma-4-12B-it": [
+    "G12",
+    "2026-08-30"
+   ],
+   "one|gemma-4-26B-A4B": [
+    "E26-tp1-u95",
+    "2026-08-30"
+   ],
+   "two|gemma-4-26B-A4B": [
+    "E-26B-tp2",
+    "2026-08-24"
+   ],
+   "a100|gemma-4-26B-A4B": [
+    "G26A4B",
+    "2026-08-30"
+   ],
+   "l4|gemma-4-26B-A4B": [
+    "G26A4B",
+    "2026-08-30"
+   ]
+  },
+  "no_single_card": {
+   "model": "gemma-4-31B-it",
+   "weights_gb": 22,
+   "card_gb": 20
+  }
  }
 }

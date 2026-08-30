@@ -2,7 +2,7 @@
  "hwPair": "2× <b>{0}</b> · {1}",
  "hwTriple": "2× <b>{0}</b> · {1} · {2}",
  "hwPairVfio": "2× <b>{0}</b> · {1} · VFIO guest",
- "hwA100Tp1": "one <b>{0}</b> · TP=1",
+ "hwOneCardTp1": "one <b>{0}</b> · TP=1",
  "hwAndA100": "and one <b>{0}</b> · CUDA",
  "hwPlusA100": "plus an <b>{0}</b> running the same Triton text",
  "hwAgainstBare": "against <b>2× {0}</b> on bare metal",
@@ -18,7 +18,6 @@
  "modelDot": "<b>{0}</b> · {1}",
  "modelExperts": "<b>{0}</b> · {1} experts",
  "modelMtpAssistant": "<b>{0}</b> + official MTP assistant",
- "modelMtpOn": "<b>{0}</b> {1} · MTP on",
  "modelCalibrated": "calibrated on <b>{0}</b> · {1}",
  "scaleLedgerRows": "<b>{0}</b> ledger rows",
  "scaleFindings": "<b>{0}</b> findings · <b>{1}</b> upstream threads",
@@ -37,5 +36,7 @@
  "kScale": "scale",
  "kUpstream": "upstream",
  "kDate": "date",
- "kLink": "repository link"
+ "kLink": "repository link",
+ "hwOneAndTwo": "1× and 2× <b>{0}</b> · {1}",
+ "modelThree": "<b>{0}</b>, <b>{1}</b> and <b>{2}</b>"
 }

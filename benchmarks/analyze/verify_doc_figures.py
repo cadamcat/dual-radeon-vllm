@@ -2565,6 +2565,115 @@ def main():
        AART["bandwidth"]["subject_pct"])
     ck("a100 article, fig4 the 12B", "38.4",
        next(r["pct"] for r in AART["bandwidth"]["rows"] if r["cfg"] == "A-12B-tp2"))
+
+    # --- the three steps -----------------------------------------------------
+    # Everything the rewritten article claims about one card, the second card
+    # and the two terms of prefill, recomputed from the projections rather than
+    # read back out of the figure it feeds.
+    ASP = AART["split"]
+    ADEC = [json.loads(l) for l in
+            open(os.path.join(HERE, "..", "decode.jsonl"), encoding="utf-8")]
+    APRE = [json.loads(l) for l in
+            open(os.path.join(HERE, "..", "prefill.jsonl"), encoding="utf-8")]
+    import build_prefill as _abp
+    AFIT = {(f["machine"], f["cfg"], f["date"]): f for f in _abp.fits(APRE)}
+
+    # The rule the article states in its own §1: decode and prefill for a
+    # machine and a model come from one session. If that ever stops being true
+    # the article is comparing across a session boundary while saying it is not.
+    for k, (cfg, date) in ASP["arms"].items():
+        mid, model = k.split("|")
+        mach = {"one": "RX 7900 XT", "two": "RX 7900 XT",
+                "a100": "A100-SXM4-80GB", "l4": "L4"}[mid]
+        ck("a100 article, %s %s decode and prefill are one session" % (mid, model), "1",
+           1 if any(r["machine"] == mach and r["cfg"] == cfg and r["date"] == date
+                    and r["spec"] is None for r in ADEC)
+                and (mach, cfg, date) in AFIT else 0)
+
+    for l in ASP["ladders"]:
+        want = sorted([r for r in ADEC if r["machine"] == l["machine_name"]
+                       and r["cfg"] == l["cfg"] and r["date"] == l["date"]
+                       and r["spec"] is None], key=lambda r: r["ctx"])
+        tag = "%s %s" % (l["machine"], l["model"])
+        ck("a100 article, %s ladder recomputes" % tag, "1",
+           1 if len(want) == len(l["points"]) and all(
+               a["ctx"] == b["ctx"] and abs(a["decode_tok_s"] - b["tok_s"]) < 1e-9
+               for a, b in zip(want, l["points"])) else 0)
+
+    # The headline: what the second card is worth, and that it is worth much
+    # more at prefill than at decode. Both halves are pinned, and so is the fact
+    # that the decode gain is not monotone -- quoting either end alone would
+    # hide that it rises to 1.23x at 6 000 before falling back.
+    A12 = next(x for x in ASP["second"] if x["model"] == "gemma-4-12B-it")
+    A26 = next(x for x in ASP["second"] if x["model"] == "gemma-4-26B-A4B")
+    ck("a100 article, the second card at decode, dense floor", "1.13", A12["decode_min"])
+    ck("a100 article, and its ceiling", "1.23", A12["decode_max"])
+    ck("a100 article, the second card at decode, MoE floor", "1.11", A26["decode_min"])
+    ck("a100 article, and its ceiling", "1.12", A26["decode_max"])
+    ck("a100 article, the decode gain is not monotone", "1",
+       1 if A12["decode_max"] > A12["decode_at_shortest"]
+            and A12["decode_max"] > A12["decode_at_deepest"] else 0)
+    ck("a100 article, prefill wall time on the dense model, one card", "40.1",
+       A12["wall"]["one_s"])
+    ck("a100 article, and on two", "21.5", A12["wall"]["two_s"])
+    ck("a100 article, so the second card buys", "1.87", A12["wall"]["gain"])
+    ck("a100 article, prefill wall time on the MoE, one card", "6.21", A26["wall"]["one_s"])
+    ck("a100 article, and on two", "3.99", A26["wall"]["two_s"])
+    ck("a100 article, so the second card buys", "1.56", A26["wall"]["gain"])
+    ck("a100 article, the second card is worth more at prefill than at decode", "2",
+       sum(1 for x in ASP["second"] if x["wall"]["gain"] > x["decode_max"]))
+
+    # prefill's two terms, and the contrast the article is built on: they come
+    # apart by two on the dense model and not at all on the mixture-of-experts
+    for t in ASP["terms"]:
+        f = AFIT[({"one": "RX 7900 XT", "two": "RX 7900 XT",
+                   "a100": "A100-SXM4-80GB", "l4": "L4"}[t["machine"]],) +
+                 tuple(ASP["arms"]["%s|%s" % (t["machine"], t["model"])])]
+        ref = AFIT[("RX 7900 XT",) + tuple(ASP["arms"]["one|%s" % t["model"]])]
+        ck("a100 article, %s %s b against one card" % (t["machine"], t["model"]), "1",
+           1 if abs(t["b"] - ref["b_us_tok"] / f["b_us_tok"]) < 1e-9 else 0)
+        ck("a100 article, %s %s c against one card" % (t["machine"], t["model"]), "1",
+           1 if abs(t["c"] - ref["c_ns_tok2"] / f["c_ns_tok2"]) < 1e-9 else 0)
+    _apc = {(r["model"], r["machine"]): r for r in ASP["percard"]}
+    ck("a100 article, A100 over one card on b, dense", "3.29",
+       _apc[("gemma-4-12B-it", "a100")]["b_ratio"])
+    ck("a100 article, and on c", "6.67", _apc[("gemma-4-12B-it", "a100")]["c_ratio"])
+    ck("a100 article, so attention is twice compute there", "2.03",
+       _apc[("gemma-4-12B-it", "a100")]["terms_separate"])
+    ck("a100 article, A100 over one card on b, MoE", "5.75",
+       _apc[("gemma-4-26B-A4B", "a100")]["b_ratio"])
+    ck("a100 article, and on c", "5.71", _apc[("gemma-4-26B-A4B", "a100")]["c_ratio"])
+    ck("a100 article, so the two terms do not separate there", "0.99",
+       _apc[("gemma-4-26B-A4B", "a100")]["terms_separate"])
+    ck("a100 article, the L4 is slower than one consumer card on b", "0.90",
+       _apc[("gemma-4-12B-it", "l4")]["b_ratio"])
+    ck("a100 article, and three times better on c", "3.01",
+       _apc[("gemma-4-12B-it", "l4")]["c_ratio"])
+
+    # and the claim §2 leads with: a datacentre card that loses at this job
+    _al4 = [p["vs_one"] for l in ASP["ladders"] if l["machine"] == "l4"
+            for p in l["points"] if p["vs_one"] is not None]
+    ck("a100 article, the L4 never reaches one 7900 XT at decode", "0",
+       sum(1 for v in _al4 if v >= 1.0))
+    ck("a100 article, its floor", "0.54", min(_al4))
+    ck("a100 article, and its ceiling", "0.68", max(_al4))
+    _aret = {(r["machine"], r["model"]): r["pct"] for r in ASP["retention"]}
+    ck("a100 article, what the L4 retains to 32K", "88.8",
+       _aret[("l4", "gemma-4-12B-it")])
+    ck("a100 article, and what the A100 retains", "62.0",
+       _aret[("a100", "gemma-4-12B-it")])
+    # b and c point opposite ways on the L4, so putting them back together at a
+    # long enough prompt reverses the card that is behind on the linear term
+    ck("a100 article, the L4 over one card on a 32K prompt", "1.58",
+       ASP["crossover"]["l4_gain"])
+    ck("a100 article, and it is behind that card on b", "1",
+       1 if _apc[("gemma-4-12B-it", "l4")]["b_ratio"] < 1.0 else 0)
+    ck("a100 article, the second card on b, floor", "1.44",
+       min(x["b_gain"] for x in ASP["second"]))
+    ck("a100 article, and ceiling", "1.48", max(x["b_gain"] for x in ASP["second"]))
+    ck("a100 article, the second card on c, floor", "1.91",
+       min(x["c_gain"] for x in ASP["second"]))
+    ck("a100 article, and ceiling", "2.22", max(x["c_gain"] for x in ASP["second"]))
     # the README quoted the 12B's number for the 31B's comparison until 2026-08-29
     ck("README, the utilisation it cites is this comparison's model", "1",
        1 if "reach 63 % of their 800 GB/s" in rm else 0)
@@ -3372,7 +3481,7 @@ def main():
     # claim about the timeline drawn directly below it
     XSIT = sorted({d for a in AJ for d in (a.get("dates") or [])})
     xday = lambda d: (int(d[:4]), int(d[5:7]), int(d[8:10]))
-    ck("index, distinct sitting dates on the timeline", "9", len(XSIT))
+    ck("index, distinct sitting dates on the timeline", "10", len(XSIT))
     ck("index, the sittings before the long gap", "4",
        sum(1 for d in XSIT if d <= "2026-08-01"))
     ck("index, the long gap is three weeks", "22",

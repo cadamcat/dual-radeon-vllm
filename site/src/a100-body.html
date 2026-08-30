@@ -1,36 +1,58 @@
-<header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · 2× RX 7900 XT against
-one A100 80G</div> <h1>Two consumer RX 7900 XTs<br>against one A100</h1>
-<p class="sub">The gap is U-shaped, and both ends are about the split</p>
-<p class="lede">On batch-1 decode of the
-same 31B model, on each platform's own healthy path, the A100 is 1.48× ahead at 1K of context,
-<strong>1.14× ahead at 16K</strong>, and 1.87× ahead at 32K. The gap is U-shaped, the two ends are
-consistent with different costs, and neither of them is the nominal bandwidth ratio.</p>
+<header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · one card, two cards,
+one A100 and one L4</div> <h1>The second card buys 1.1× at decode<br>and 1.9× at prefill</h1>
+<p class="sub">One 7900 XT, two of them, one A100 and one L4, on the same ladder</p>
+<p class="lede">Adding a second consumer card to a batch-1 decode is worth
+<strong>1.11× to 1.23×</strong> and no more. On prefill the same second card cuts a 32 K prompt from
+40.1 s to 21.5 s — <strong>1.87×</strong>. These are the same two cards on the same day; what
+changed is which of the two things you asked them to do.</p>
 <div class="meta"> __CHIPS__ </div> </header>
 
-<div class="abstract"> <h3>Abstract</h3> <p>Batch-1 decode is bandwidth-bound, and the nominal
-ceilings are only <strong>1.27×</strong> apart: two cards at 800 GB/s against one at 2.0 TB/s. The
-measured advantage sits <em>below</em> that at 8K and 16K and above it at both ends.</p>
-<p><strong>At the short end the tax is tensor parallelism.</strong> The step time is small enough
-that TP=2's fixed all-reduce floor is a visible fraction of it, and the single card pays nothing for
-something it does not do. At the long end the KV scan dominates and realized bandwidth compounds;
-the Radeons reach 63 % of their 800 GB/s on this model.</p> <p>Two further readings come out of the
-same table, and both are about tensor parallelism rather than about either vendor. <strong>The
-starved attention path starves harder when split</strong>: its 2D launch grid is one workgroup per
-KV head, so two cards see 8 each against the single card's 16, and retention from 1K to 30–32K is
-<strong>15.8 % against 33.6 %</strong>. And <strong>speculation's economics erode</strong>: every
-draft step pays the same all-reduce floor, so the net win over no speculation is <strong>+7.5 % here
-against +39.2 %</strong> there.</p> <p>What this does not cover is where the A100 wins outright.
-Prefill and batched throughput are compute-bound, and there the comparison is against RDNA3 WMMA
-that already realizes about 37 % of nominal peak. None of that is measured here; if it is
-compute-bound, the expectation is multiples rather than percentages.</p> </div>
+<div class="abstract"> <h3>Abstract</h3> <p>This article used to ask one question — two consumer
+cards against one A100 — and that question bundles three. This round measured each card on its own,
+so they come apart: what one consumer card is worth against one datacentre card, what a second
+consumer card then buys, and only then what the pair is worth.</p>
+<p><strong>The second card is nearly free of effect at decode.</strong> Across eleven depths and two
+models it buys <strong>1.11× to 1.23×</strong>. At batch 1 a decode step is bandwidth-bound and
+short, and TP=2 pays a fixed all-reduce on every one of them, so most of the second card's bandwidth
+is spent talking to the first. <strong>At prefill the same card buys 1.56× to 1.87×</strong> of
+wall time, because attention parallelises with no communication at all.</p>
+<p><strong>Prefill is two terms and they do not move together.</strong> Fitting T(S) = a + bS + cS²,
+against one 7900 XT the A100 is <strong>3.3× on b and 6.7× on c</strong> for the dense 12B: the gap
+in attention scaling is twice the gap in compute. On the mixture-of-experts, whose 4B active
+parameters shrink the compute term, the two gaps are the same — <strong>5.75× and 5.71×</strong>.
+And the L4, a datacentre card, is <em>slower</em> than a consumer 7900 XT on b (0.90×) and 3.0×
+better on c. "Datacentre against consumer" is not one axis.</p>
+<p>The pair against one A100 is then the third step, and it is where this article started. Without
+speculation the A100 leads by <strong>1.30× to 1.46×</strong> at every depth of an eleven-rung
+ladder — flat, and nothing like the U four single-run points suggested.</p> </div>
 
 <h2><span class="n">1</span>What is being compared</h2>
 
-<p>The same checkpoint, <code>gemma-4-31B-it-qat-w4a16-ct</code>, with the same official MTP assistant
-at <code>num_speculative_tokens: 1</code>, batch 1, greedy, decode isolated by differencing a 64-token
-generation against an 8-token one. On both platforms the attention backend is
-<code>TRITON_ATTN</code> — this model's heterogeneous head dimensions force it whenever FA4 is
-unavailable, which is true of gfx1100 and of an A100 alike.</p>
+<p>Four machines: <strong>one RX 7900 XT</strong>, <strong>two of them at TP=2</strong>, <strong>one
+A100-SXM4-80GB</strong> and <strong>one L4</strong>. Three models, and not every model on every
+machine, because two of the gaps are arithmetic rather than omissions. <code>gemma-4-26B-A4B</code>
+stops at 12 000 tokens on one 7900 XT: 16.96 GiB of weights resident on a 19.98 GiB card leaves
+0.93 GiB of KV even at utilisation 0.95, and 32 K would need about 0.97. And
+<code>gemma-4-31B-it</code> has no single-card row at all — 22 GB of weights do not go into a 20 GB
+card, so the pair is the only way this box runs it. The 31B is therefore the model of the third step
+and of nothing before it.</p>
+
+<div class="note">
+  <span class="lbl">Decode and prefill for a machine come from one session</span>
+  This article's central claim is that the second card is worth something different at prefill than
+  at decode, so reading the two off different runs would put a session boundary inside the
+  comparison. Every arm below therefore takes both numbers from the same run. That is what fixes the
+  A100 on <strong>2026-08-30</strong> rather than 2026-08-29: the earlier session has decode, but
+  its prefill is 0 of 11 rungs chart-grade — prefix caching was on and every rung of this ladder is a
+  strict prefix of the next, so a repeat was charged for nothing. The front page picks per figure
+  instead and draws A100 decode from the earlier session; on the mixture-of-experts the two sessions
+  differ by 2.2 %.
+</div>
+
+<p>The 31B step keeps the configuration it always had: the same checkpoint,
+<code>gemma-4-31B-it-qat-w4a16-ct</code>, batch 1, greedy, and on both platforms the attention
+backend is <code>TRITON_ATTN</code> — this model's heterogeneous head dimensions force it whenever
+FA4 is unavailable, which is true of gfx1100 and of an A100 alike.</p>
 
 <div class="note warn">
   <span class="lbl">Each side is on its healthy path, and that took a patch</span>
@@ -42,32 +64,111 @@ unavailable, which is true of gfx1100 and of an A100 alike.</p>
   stacks.
 </div>
 
-<p><strong>One run per cell on both sides.</strong> These are probes, not campaigns: single processes,
-no within-cell samples. The Radeons' rungs are powers of two and the A100's longest leg is 30 000
-tokens, so that pair is the only one not matched exactly, and the figure says which. Third-digit
-differences here are not separated from noise.</p>
+<p><strong>Prefill is fitted, not quoted.</strong> A single prefill tok/s number states nothing: the
+time to first token over a prompt of S tokens goes as T(S) = a + bS + cS², and the two machines this
+article compares differ by three times on one term and nearly seven on the other. The fits below are
+`build_prefill.fits()`'s, the same ones <code>prefill.jsonl --fits</code> reports, over chart-grade
+rungs only. The constant <code>a</code> is fitted but never quoted: it moved from 9.8 ms to 99.8 ms
+across two campaigns of the same arm, so this ladder does not measure it.</p>
 
-<h2><span class="n">2</span>The gap, and the shape of it</h2>
+<h2><span class="n">2</span>One card against one card</h2>
 
-<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · one A100 against
+<p>Start with no tensor parallelism anywhere: one 7900 XT, one A100, one L4, the same ladder, the
+same two models. The A100 leads, by a factor that depends on the model and shrinks with depth. The
+L4 does not lead at all.</p>
+
+<figure class="rv" id="figs"> <div class="figbox">
+  <div class="figtitle">Figure 1 · decode rate against one RX 7900 XT, by context length
+    <span class="prov yes">recomputable from repo</span></div>
+  <div class="legend" id="s1"></div> <div class="legend" id="s1k"></div>
+  <svg class="chart" id="single" role="img"></svg>
+  <div class="barunit" id="singlenote"></div> </div>
+<figcaption> <b>Figure 1.</b> Every line is that machine's decode rate divided by one 7900 XT's at
+the same depth, so the grey rule at parity is the card a reader may already own. Two rounds a cell
+throughout. The second card is drawn here too, because "buy another one" is one of the options being
+compared and it turns out to be the weakest of them. The mixture-of-experts lines stop at 12 000:
+that is where one card runs out of KV, and there is no ratio to draw past it. </figcaption> </figure>
+
+<p><strong>The L4 is a datacentre card that loses to a consumer card at this job.</strong> It runs
+at 0.54× to 0.68× of one 7900 XT across both models and every depth. What it has instead is
+flatness — it retains 89 % of its 500-token rate at 32 K where the A100 retains 62 % — and that is a
+property of a small card with slow memory, not an advantage. The line worth taking from this figure
+is that "datacentre" is not a tier, and the next figure is where the L4 earns its place.</p>
+
+<h2><span class="n">3</span>What the second card buys</h2>
+
+<p>The second 7900 XT is the flattest line in Figure 1. Across eleven depths on the dense model it
+buys <strong>1.13× to 1.23×</strong>, and across seven on the mixture-of-experts
+<strong>1.11× to 1.12×</strong>. It is not even monotone: on the 12B it rises to 1.23× at 6 000
+tokens before falling to 1.13× at 32 K.</p>
+
+<p>The reason is that a batch-1 decode step is both bandwidth-bound and short. Splitting the weights
+halves the bytes each card reads, which is the whole gain; but every step then ends in an all-reduce
+whose cost does not shrink with the split, and at batch 1 there is only one token's worth of work to
+amortise it over. What the second card contributes in bandwidth it largely spends on the wire.</p>
+
+<p><strong>Prefill is the opposite case, and it is the same two cards.</strong> Attention over a
+prompt parallelises across heads with no communication at all, and the prompt is long enough that
+the per-step floor is a rounding error. Fitting both arms and putting the two terms back together at
+the deepest rung each pair reached: <strong>40.1 s to 21.5 s at 32 K</strong> on the dense model,
+<strong>1.87×</strong>; and <strong>6.21 s to 3.99 s at 12 K</strong> on the mixture-of-experts,
+<strong>1.56×</strong>. Same hardware, same day, four to seven times the gain.</p>
+
+<h2><span class="n">4</span>Prefill is two terms, and they do not move together</h2>
+
+<p>The linear term <code>b</code> is GEMM throughput — how fast the machine multiplies. The
+quadratic term <code>c</code> is how badly attention scales with prompt length. A prefill tok/s
+number is a weighted average of the two at one prompt length, and the weighting changes with every
+prompt. Fitted separately, the two terms say different things about the same pair of machines:</p>
+
+<figure class="rv" id="figp"> <div class="figbox">
+  <div class="figtitle">Figure 2 · prefill's two terms, against one RX 7900 XT
+    <span class="prov yes">recomputable from repo</span></div>
+  <div class="bars" id="terms"></div>
+  <div class="barunit" id="termsnote"></div> </div>
+<figcaption> <b>Figure 2.</b> Each bar is one 7900 XT's coefficient divided by that machine's, so
+higher is faster and the mark at 1.0 is parity with one consumer card. <code>b</code> is µs per
+token of prompt and <code>c</code> is ns per token squared; both come from
+<code>build_prefill.fits()</code> over chart-grade rungs, r² ≥ 0.9999 on every arm drawn. The
+constant term is fitted and not shown, because this ladder does not measure it. </figcaption>
+</figure>
+
+<p>Three readings, and none of them survives being averaged into one number:</p>
+
+<p><strong>On the dense model the A100's attention advantage is twice its compute advantage</strong>
+— 6.67× against 3.29×. Whatever is limiting the 7900 XT at prefill, it is not mainly the
+multiplier.</p>
+
+<p><strong>On the mixture-of-experts the two collapse together</strong>, 5.71× against 5.75×. The
+model activates 4B of its 26B parameters per token, so the GEMM term is small on both machines and
+the ratio between them stops being about the GEMMs at all.</p>
+
+<p><strong>The L4 is slower than a consumer card on b and three times better on c.</strong> 0.90× and
+3.01×. That is why it is 1.58× faster than a 7900 XT on a 32 K prompt and would lose on a short one:
+the two curves cross, and which card is "faster at prefill" is a question about prompt length. The
+second card, for comparison, buys 1.44–1.48× on b and 1.91–2.22× on c — more of the quadratic term
+than the linear one, which is the same fact the wall-clock numbers above state.</p>
+
+<h2><span class="n">5</span>Two cards against one A100</h2>
+
+<figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 3 · one A100 against
 two Radeons, by context length <span class="prov yes">recomputable from repo</span></div>
 <div class="legend" id="v1"></div> <div class="legend" id="v1k"></div>
 <svg class="chart" id="adv" role="img"></svg> <div class="barunit" id="advnote"></div> </div>
-<figcaption> <b>Figure 1.</b> The Radeon column is
-<code>benchmarks/speculative-decoding/mtp-31b-p45450.json</code>; the A100 column is the leg logs in
-<code>benchmarks/cuda-a100/45450-validation/</code>. The grey mark is parity and the amber one is
-the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Between them, at 8K and 16K, the
-measured advantage is <em>smaller</em> than the bandwidth ceilings alone would predict. The last
-point compares the Radeons at 32K against the A100 at 30K, which is the longest leg that side has;
-every other depth is matched exactly. The <em>2026-08-29 ladder</em> control puts a second
-measurement beside these four: eleven matched rungs, two rounds a cell, k=3 rather than k=1, on the
-campaign harness. It is off by default because it is a different configuration and not more points
-on this one. </figcaption> </figure>
+<figcaption> <b>Figure 3.</b> Eleven matched rungs, two rounds a cell, one session on each machine,
+from <code>benchmarks/campaign-2026-08-29/</code> and
+<code>benchmarks/cuda-a100/campaign-2026-08-29/</code>. The grey mark is parity and the amber one is
+the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Solid is the arm with no
+speculation on either side, which is the comparison the article's title used to be about; short dash
+is the same pair of runs with MTP on. The <em>2026-08-26 probe</em> switch adds the four single-run
+points this article was first written against — k=1, one run a cell, and a deepest cell that
+compares the Radeons at 32K against the A100 at 30K because that was the longest leg that side had.
+Its U is the shape of four points, and the ladder behind it does not have one. </figcaption>
+</figure>
 
-<p><strong>The lead is what speculation costs the A100.</strong> Both lines above have MTP on,
-because that is the configuration the RDNA3 write-up arrived at. Measured again on 2026-08-29 with
-<em>both</em> arms and eleven matched rungs, the picture separates. Without speculation the A100 is
-ahead by 1.30× to 1.46× at every depth, flat and unremarkable. Switch MTP on and that lead is gone:
+<p><strong>The lead is what speculation costs the A100.</strong> The solid line is the arm nobody is
+speculating on, and it is flat: the A100 is ahead by 1.30× to 1.46× at every depth, and that is the
+whole answer to the question this article's title used to ask. Switch MTP on and that lead is gone:
 0.88× at 500 tokens, level from 2K through 8K, and only 1.08× at 32K. The Radeons do not get faster.
 The A100 gives up more by speculating — and not because it drafts badly. Its acceptance is the
 <em>better</em> of the two, 1.92–2.07 tokens a step against 1.46–1.53. It loses because a
@@ -77,12 +178,14 @@ fixed price of drafting and verifying four tokens is a much larger fraction of w
 doing. Both figures are in <code>benchmarks/campaign-2026-08-29/</code> and
 <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>.</p>
 
-<p>The A100 being fourteen per cent ahead at 16K is the number worth sitting with. It is not a claim
-that the hardware is equivalent — it is a claim about one regime: single-stream decode, one model,
-mid-length context, each side on its best available path. Move to prefill or to batch and the same
-two machines are not close.</p>
+<p><strong>The U was four points.</strong> Turn the probe on and it is there — 1.48× at 1K, down to
+1.14× at 16K, back to 1.87× at 32K — and this article was named for it. Eleven matched rungs of the
+same pair of machines, two rounds a cell, produce a flat 1.30× to 1.46× instead. The 16K point that
+looked like a minimum is one cell of one run, and its deepest neighbour compares two different
+depths. The shape did not survive being measured again; the numbers behind it are still on the page
+because retracting a figure quietly is worse than showing what it said.</p>
 
-<h2><span class="n">3</span>The split is what costs, not the silicon</h2>
+<h2><span class="n">6</span>The split is what costs, not the silicon</h2>
 
 <p>The 2D attention path — the one speculation falls into on stock vLLM — launches one workgroup per KV
 head. This model has 16. On one card a rank sees all of them; split across two, each rank sees eight.
@@ -90,20 +193,20 @@ The starved path is therefore starved twice as hard by the parallelism, and it s
 
 <figure class="rv" id="fig2">
   <div class="figbox">
-    <div class="figtitle">Figure 2 · what the 2D path keeps, from 1K out to 30–32K
+    <div class="figtitle">Figure 4 · what the 2D path keeps, from 1K out to 30–32K
       <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="ret"></div>
     <div class="wgs" id="wgs"></div>
   </div>
   <figcaption>
-    <b>Figure 2.</b> Stock vLLM under speculation on both platforms, so both are on the 2D path. The
+    <b>Figure 4.</b> Stock vLLM under speculation on both platforms, so both are on the 2D path. The
     cards below are the launch grid <code>(total_num_q_blocks, num_kv_heads)</code> at batch 1: the
     workgroup count is a property of how the KV heads are split, not of the vendor. The same collapse,
     the same kernel, and about twice the damage on two cards.
   </figcaption>
 </figure>
 
-<h2><span class="n">4</span>And it erodes speculation too</h2>
+<h2><span class="n">7</span>And it erodes speculation too</h2>
 
 <p>The MTP drafter is four layers deep, so the extra forward pass is cheap. What is not cheap is
 that every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the
@@ -112,19 +215,19 @@ speculation worth having is worse on two cards than on one.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">Figure 3 · what speculation is worth once it is on the healthy path
+    <div class="figtitle">Figure 5 · what speculation is worth once it is on the healthy path
       <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="econ"></div>
   </div>
   <figcaption>
-    <b>Figure 3.</b> Speculation against no speculation, both through the 3D path, at each platform's
+    <b>Figure 5.</b> Speculation against no speculation, both through the 3D path, at each platform's
     longest measured depth. The no-speculation baselines come from different files —
     <code>splitkv-31b-stock.json</code> here, the backend matrix's forced-default column there — and both
     are single runs. What is being compared is the <em>gain</em>, not the rates.
   </figcaption>
 </figure>
 
-<h2><span class="n">5</span>What the cards actually realize</h2>
+<h2><span class="n">8</span>What the cards actually realize</h2>
 
 <p>The nominal ratio assumes both sides reach their ceiling, but neither does. Recomputing realized
 bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
@@ -132,51 +235,72 @@ against 800 GB/s — puts this comparison's model at 63 %:</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">Figure 4 · realized memory bandwidth at decode, per card
+    <div class="figtitle">Figure 6 · realized memory bandwidth at decode, per card
     <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="util"></div>
   </div>
   <figcaption>
-    <b>Figure 4.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context,
+    <b>Figure 6.</b> Rates from <code>benchmarks/results.jsonl</code> at 500 tokens of context,
     TP=2, against the per-GPU bytes per token stated in
     <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">benchmarks.md
     §3</a>. Two effects are visible and both are real: at equal quantisation the larger model
     reaches higher utilisation, and the BF16 model reaches higher still. <strong>No equivalent
-    figure was measured on the A100</strong>, so the comparison in Figure 1 is against a nominal
+    figure was measured on the A100</strong>, so the comparison in Figure 3 is against a nominal
     ceiling on that side and a realized one on this side.
   </figcaption>
 </figure>
 
-<h2><span class="n">6</span>What is not established</h2>
+<h2><span class="n">9</span>What is not established</h2>
 
-<h3>Anything outside single-stream decode</h3>
-<p>Prefill and batched throughput are compute-bound and are not measured here at all. On this hardware
-prefill saturates at about 37 % of nominal FP16 peak, and the A100's tensor cores are a different class
-of thing. The honest expectation there is multiples rather than percentages, and it is an expectation,
-not a measurement.</p>
+<h3>Batched throughput, and prefill's constant term</h3>
+<p>Everything here is batch 1. Batched throughput is a different regime and is not measured at all;
+where decode stops being bandwidth-bound the second card's 1.1× has no reason to hold, and neither
+does anything else on this page. Prefill <em>is</em> measured now, but only its two shape terms: the
+constant <code>a</code> is fitted and never quoted, because on one arm it moved from 9.8 ms to
+99.8 ms between two campaigns a month apart and on another it came out negative. A short enough
+prompt is therefore outside what these fits describe.</p>
+
+<h3>gemma-4-31B on one card, and on the A100 at prefill</h3>
+<p>The 31B has no single-card row and cannot have one on this box — 22 GB of weights, 20 GB of card.
+It also has no usable A100 prefill: the 2026-08-29 session ran with prefix caching on and 130 of its
+132 prefill rungs fail the repeatability cut, and the 2026-08-30 re-run covered only the 12B and the
+mixture-of-experts. So the 31B appears here in decode only, and the three-step comparison the rest of
+the article makes is carried by the other two models.</p>
 
 <h3>The A100's own realized bandwidth</h3>
-<p>Figure 4 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 1 is a ratio of
+<p>Figure 6 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 3 is a ratio of
 datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
 can explain, not as a prediction either side was measured against.</p>
 
-<h3>One model, one stack per side, one run per cell</h3> <p>Two different vLLM versions, because
-each side runs the stack it actually uses; two different operating environments, one of them a
-rented Colab VM whose cross-session variance is unquantified. The campaign-grade version of this
-comparison has not been run.</p>
+<h3>One stack per side, and one card of each kind</h3> <p>Two different vLLM versions, because each
+side runs the stack it actually uses; two different operating environments, two of them rented Colab
+VMs whose cross-session variance is unquantified. And there is one A100 and one L4, each measured
+once: nothing here separates a card from its instance.</p>
 
-<h3>Why 16K is the minimum</h3> <p>The U is described, not explained at its bottom. That the short
-end is dominated by a fixed per-step cost and the long end by the KV scan is consistent with every
-measurement here, but the crossing itself was not located, and only four depths were measured.</p>
+<h3>Why the second card behaves as it does</h3> <p>That a batch-1 decode step is short enough for a
+fixed all-reduce to eat most of a second card's bandwidth, and that attention parallelises without
+one, is consistent with every measurement on this page and is not demonstrated by any of them. No
+all-reduce was timed here. The three published claims that did try to put a number on that floor
+were withdrawn on 2026-08-30, because the term they rested on is not measurable from this ladder.</p>
 
-<h2><span class="n">7</span>What has changed since</h2>
+<h2><span class="n">10</span>What has changed since</h2>
 
 <div class="note ok">
   <span class="lbl">2026-08-26 · the comparison became possible</span>
   Before <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s mechanism was ported
   to both stacks, both platforms were stuck on the 2D path under speculation and the comparison would
-  have measured a shared bug. Figure 2 is what that comparison looks like, kept because it is the finding
+  have measured a shared bug. Figure 4 is what that comparison looks like, kept because it is the finding
   about tensor parallelism rather than an artefact to discard.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-30 · the U was four points, and the article was rebuilt around what replaced it</span>
+  This article's thesis was "two consumer cards against one A100", and its lead figure was four
+  single-run cells whose deepest one compared 32 K against 30 K. Eleven matched rungs of the same two
+  machines, measured 2026-08-29, are flat where those four made a U. On 2026-08-30 the single-card
+  round measured one 7900 XT, one A100 and one L4 on the same ladder for both decode and prefill,
+  which splits the original question into three. The article now asks them in order; Figure 3 is the
+  old one, redrawn on the ladder, with the probe behind a switch.
 </div>
 
 <div class="note warn">
@@ -192,7 +316,7 @@ measurement here, but the crossing itself was not located, and only four depths 
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
   the A100 legs, their logs and the port that made both sides comparable are in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>;
-  the July campaign behind Figure 4 is
+  the July campaign behind Figure 6 is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>.
   Every figure here is recomputed from those files by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
@@ -206,7 +330,19 @@ measurement here, but the crossing itself was not located, and only four depths 
 <script type="application/json" id="strings">{
  "viewAdv": "how far ahead the A100 is",
  "viewRate": "decode tok/s",
- "viewCamp": "2026-08-29 ladder",
+ "viewProbe": "2026-08-26 probe",
+ "mach": {"one": "one RX 7900 XT", "two": "2× RX 7900 XT · TP=2", "a100": "one A100 80G", "l4": "one L4"},
+ "s1yAdv": "× one RX 7900 XT",
+ "s1par": "one RX 7900 XT",
+ "s1unit": "decode tok/s at batch 1, divided by one RX 7900 XT's at the same depth · two rounds a cell · the mixture-of-experts lines stop where one card runs out of KV",
+ "s1second": "the second card, on this model: {lo}× to {hi}× across {n} depths at decode, and {w}× of prefill wall time at {d}",
+ "termsB": "b · compute",
+ "termsC": "c · attention",
+ "unitB": "µs/token",
+ "unitC": "ns/token²",
+ "termsPar": "parity with one RX 7900 XT",
+ "termsFit": "{n} rungs, r² {r}",
+ "termsUnit": "one RX 7900 XT's coefficient ÷ this machine's, so higher is faster · the mark on each track is parity with one card · fitted by build_prefill.fits() over chart-grade rungs only",
  "campBase": "2026-08-26 · MTP k=1",
  "campRuns": "{n} runs, range {r}%",
  "noSpecLab": "no speculation",
@@ -221,15 +357,16 @@ measurement here, but the crossing itself was not located, and only four depths 
  "campRMtp": "2026-08-29 · Radeons, MTP k=3",
  "campANospec": "2026-08-29 · A100, no speculation",
  "campAMtp": "2026-08-29 · A100, MTP k=3",
- "campNote": "dashed: eleven matched rungs, two rounds a cell, k=3 on the campaign harness — a different configuration from the four single-run k=1 points above, not more of them. Without speculation the A100 leads {lo}× to {hi}× at every depth. With MTP on it starts <em>behind</em>, {at500}× at 500 tokens, and reaches only {mtp32}× at 32K: the lead is what speculation costs it",
+ "campNote": "eleven matched rungs, two rounds a cell, k=3, one session a machine. Without speculation the A100 leads {lo}× to {hi}× at every depth — flat, and nothing like a U. With MTP on it starts <em>behind</em>, {at500}× at 500 tokens, and reaches only {mtp32}× at 32K: the lead is what speculation costs it",
+ "probeNote": "long dash: the 2026-08-26 probe this article was first written against — four cells, one run each, k=1, and its deepest cell is the Radeons at 32K against the A100 at 30K. Its U is the shape of four points, two of which are one measurement apiece",
  "radeons": "2× RX 7900 XT",
  "a100": "one A100 80G",
  "ctxK": "{n}K",
  "ctxAxis": "context length",
  "f1yAdv": "A100 ÷ Radeons",
  "f1yRate": "decode tok/s",
-  "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · one run per cell",
- "f1rateUnit": "decode tok/s at batch 1, both platforms through the 3D path · each line says which measurement it is, and the key says which stroke",
+  "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · two rounds a cell on the ladder, one on the probe",
+ "f1rateUnit": "decode tok/s at batch 1 · solid is the arm with no speculation, short dash the same run with MTP on, long dash the 2026-08-26 probe",
  "f1par": "parity", "f1nom": "nominal bandwidth ratio",
  "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · the measured advantage is under it at {d}",
  "f1unmatched": "against the A100 at {n}K, its longest leg",
@@ -336,7 +473,112 @@ measurement here, but the crossing itself was not located, and only four depths 
     return tr;
   }
 
-  /* ---------- Figure 1: the advantage, against two reference marks --------
+  /* ---------- Figure 1: every machine against one 7900 XT ----------------
+     A ratio and not a rate, because the question is "how many of the card I
+     have is this card worth" and the rates span 25 to 165 tok/s, which on one
+     linear axis buries the L4 and on a log one makes a 1.1x gap look like a
+     2x one. Parity is a rule, so the card a reader owns is a line on the page
+     rather than an arithmetic step they have to do. */
+  (function () {
+    var svg = document.getElementById("single");
+    var vbox = document.getElementById("s1"), key = document.getElementById("s1k");
+    var note = document.getElementById("singlenote");
+    var SP = F.split, models = SP.models, mi = 0;
+    var COL = { two: "var(--s1)", a100: "var(--s2)", l4: "var(--s5)" };
+    function lad(mid, model) {
+      return SP.ladders.filter(function (l) {
+        return l.machine === mid && l.model === model; })[0];
+    }
+    function tipFor(l) {
+      return function (i) {
+        var p = l.points[i];
+        return '<span class="hd">' + S.mach[l.machine] + " · " + kctx(p.ctx) +
+          "</span><br><b>" + p.vs_one.toFixed(3) + "×</b> " + S.s1par +
+          "<br><span class=\"sub\">" + p.tok_s.toFixed(2) + " tok/s · " +
+          fmt(S.campRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "</span>";
+      };
+    }
+    function draw() {
+      var model = models[mi];
+      var ser = ["two", "a100", "l4"].map(function (mid) {
+        var l = lad(mid, model);
+        var pts = l.points.filter(function (p) { return p.vs_one !== null; });
+        return { colour: COL[mid], label: S.mach[mid], tip: tipFor(l),
+                 dash: mid === "two", dashPattern: "2 4",
+                 points: pts.map(function (p) { return [p.ctx, p.vs_one]; }) };
+      });
+      window.lineChart({
+        el: svg, reduce: reduce, h: 330, legend: key,
+        x: { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
+             ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] },
+        y: { label: S.s1yAdv, min: 0, fmt: function (v) { return v.toFixed(1) + "×"; } },
+        rules: [{ y: 1, label: S.s1par, colour: "var(--border-2)" }],
+        series: ser
+      });
+      var sc = SP.second.filter(function (s) { return s.model === model; })[0];
+      note.innerHTML = S.s1unit + "<br>" +
+        fmt(S.s1second, { lo: sc.decode_min.toFixed(2), hi: sc.decode_max.toFixed(2),
+                          n: sc.depths, w: sc.wall.gain.toFixed(2),
+                          d: kctx(sc.wall.ctx) });
+    }
+    var segS = document.createElement("span");
+    segS.className = "seg";
+    var mBtns = [];
+    models.forEach(function (m, i) {
+      var b = document.createElement("button");
+      b.className = "lg" + (i === mi ? " on" : "");
+      b.style.setProperty("--c", "var(--accent)");
+      b.innerHTML = '<span class="sw"></span>' + m;
+      b.setAttribute("aria-pressed", String(i === mi));
+      b.addEventListener("click", function () {
+        mi = i;
+        mBtns.forEach(function (x) {
+          x.b.classList.toggle("on", x.i === mi);
+          x.b.setAttribute("aria-pressed", String(x.i === mi));
+        });
+        draw();
+      });
+      segS.appendChild(b);
+      mBtns.push({ b: b, i: i });
+    });
+    vbox.appendChild(segS);
+    draw();
+  })();
+
+  /* ---------- Figure 2: prefill's two terms --------------------------------
+     Bars and not a curve: what is being compared is two coefficients per arm,
+     and a coefficient has no shape. The mark on every track is parity with one
+     7900 XT, which is what makes the L4's b bar -- the only one that lands
+     short of it -- readable as the finding it is rather than as a small
+     number. */
+  (function () {
+    var box = document.getElementById("terms");
+    var note = document.getElementById("termsnote");
+    var SP = F.split, max = SP.terms_max * 1.08;
+    var COL = { two: "--s1", a100: "--s2", l4: "--s5" };
+    // Grouped by term and not by machine. The comparison this figure exists to
+    // make is three machines on one term, and interleaving b with c put the
+    // machine name on every row, where it did not fit the label column.
+    SP.models.forEach(function (model) {
+      el(box, "lab rv hd2", model).style.gridColumn = "1 / -1";
+      [["b", S.termsB, S.unitB], ["c", S.termsC, S.unitC]].forEach(function (o) {
+        el(box, "lab rv hd3", o[1]).style.gridColumn = "1 / -1";
+        SP.terms.filter(function (t) { return t.model === model; }).forEach(function (t) {
+          var v = t[o[0]], raw = o[0] === "b" ? t.b_us_tok : t.c_ns_tok2;
+          refbar(box, S.mach[t.machine], v, max, COL[t.machine],
+                 [{ at: 1, cls: "par", title: S.termsPar }],
+                 '<span class="hd">' + S.mach[t.machine] + " · " + model +
+                 "</span><br><b>" + v.toFixed(2) + "×</b> " + S.s1par +
+                 "<br><span class=\"sub\">" + o[1] + " = " + raw.toFixed(2) + " " + o[2] +
+                 " · " + fmt(S.termsFit, { n: t.rungs, r: t.r2.toFixed(5) }) + "</span>");
+          el(box, "val rv", v.toFixed(2) + "×");
+        });
+      });
+    });
+    note.innerHTML = S.termsUnit;
+  })();
+
+  /* ---------- Figure 3: the advantage, against two reference marks --------
      A line rather than four bars: the claim is the shape -- the gap closes to
      16K and then opens again -- and a shape is what a reader should not have to
      assemble out of four lengths. The two reference marks become rules. */
@@ -345,14 +587,21 @@ measurement here, but the crossing itself was not located, and only four depths 
     var note = document.getElementById("advnote");
     var key = document.getElementById("v1k");
     var mode = 0;                                /* 0 = advantage, 1 = rates */
-    var campOn = false;                          /* the 2026-08-29 ladder */
+    /* The eleven-rung campaign is the figure now, and the four points this
+       article was first written against are the option. It used to be the
+       other way round, which meant the first chart on the page was the weakest
+       evidence on it: four single-run cells, one of them comparing 32 768
+       tokens against 30 000 because that was the longest leg the A100 side had.
+       The campaign is eleven matched rungs, two rounds a cell, both arms, one
+       session -- and it carries the arm the probe does not have, which is the
+       one where nobody is speculating. */
+    var probeOn = false;                         /* the 2026-08-26 probe */
     var R = F.fig1.rows, K = F.fig1.campaign, C = K.rows;
     function xAxis() {
       // the two ladders do not share rungs, so the axis has to be the real
       // number line rather than four evenly spaced categories
       return { scale: "log", min: 450, max: 35000, label: S.ctxAxis, fmt: kctx,
-               ticks: campOn ? [500, 1000, 2000, 4000, 8000, 16000, 32000]
-                             : [1000, 2000, 4000, 8000, 16000, 32000] };
+               ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000] };
       // fixed in both states on purpose: toggling the ladder must not slide the
       // four points the article was written against out from under the reader
     }
@@ -404,51 +653,63 @@ measurement here, but the crossing itself was not located, and only four depths 
           x: xAxis(),
           y: { label: S.f1yRate, zero: true, fmt: function (v) { return v.toFixed(0); } },
           legend: key,
-          // both lines say which measurement they are, ladder or no ladder:
-          // they are k=1 and single-run, which the platform name does not say
-          series: [{ colour: "var(--s1)", label: S.campBaseR, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
-                   { colour: "var(--s2)", label: S.campBaseA, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.a100]; }) }].concat(
-            campOn ? [
-              { colour: "var(--s1)", dash: true, label: S.campRNospec,
-                tip: campTip("radeons_nospec", S.campRNospec),
-                points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
-              { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
-                tip: campTip("radeons_mtp", S.campRMtp),
-                points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, label: S.campANospec,
-                tip: campTip("a100_nospec", S.campANospec),
-                points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
-              { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
-                tip: campTip("a100_mtp", S.campAMtp),
-                points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }] : [])
+          // the campaign's four lines are the figure; the probe's two are the
+          // option, and both say which measurement they are rather than only
+          // which machine, because the difference between them is the point
+          series: [
+            { colour: "var(--s1)", label: S.campRNospec,
+              tip: campTip("radeons_nospec", S.campRNospec),
+              points: C.map(function (r) { return [r.ctx, r.radeons_nospec.tok_s]; }) },
+            { colour: "var(--s1)", dash: true, dashPattern: "2 4", label: S.campRMtp,
+              tip: campTip("radeons_mtp", S.campRMtp),
+              points: C.map(function (r) { return [r.ctx, r.radeons_mtp.tok_s]; }) },
+            { colour: "var(--s2)", label: S.campANospec,
+              tip: campTip("a100_nospec", S.campANospec),
+              points: C.map(function (r) { return [r.ctx, r.a100_nospec.tok_s]; }) },
+            { colour: "var(--s2)", dash: true, dashPattern: "2 4", label: S.campAMtp,
+              tip: campTip("a100_mtp", S.campAMtp),
+              points: C.map(function (r) { return [r.ctx, r.a100_mtp.tok_s]; }) }].concat(
+            probeOn ? [
+              { colour: "var(--s3)", dash: true, dashPattern: "7 5", label: S.campBaseR,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.radeons]; }) },
+              { colour: "var(--s4)", dash: true, dashPattern: "7 5", label: S.campBaseA,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.a100]; }) }] : [])
         });
-        note.innerHTML = S.f1rateUnit + (campOn ? "<br>" + campNote() : "");
+        note.innerHTML = S.f1rateUnit + "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote : "");
       } else {
         key.innerHTML = "";
         window.lineChart({
           el: svg, reduce: reduce, h: 330,
           x: xAxis(),
-          y: { label: S.f1yAdv, min: campOn ? 0.8 : 1,
+          y: { label: S.f1yAdv, min: 0.8,
                fmt: function (v) { return v.toFixed(2) + "×"; },
-               ticks: campOn ? [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2]
-                             : [1, 1.2, 1.4, 1.6, 1.8, 2] },
-          legend: campOn ? key : null,
+               ticks: [0.8, 1, 1.2, 1.4, 1.6, 1.8, 2] },
+          legend: key,
           rules: [{ y: 1, label: S.f1par, colour: "var(--border-2)" },
                   { y: F.fig1.nominal_ratio, label: S.f1nom, colour: "var(--accent)" }],
-          series: [{ colour: "var(--s2)", label: campOn ? S.campBase : null, tip: tipFor,
-                     points: R.map(function (r) { return [r.ctx, r.advantage]; }) }].concat(
-            campOn ? [
-              { colour: "var(--s3)", dash: true, label: S.campNospec, tip: campAdv("nospec"),
-                points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
-              { colour: "var(--s4)", dash: true, label: S.campMtp, tip: campAdv("mtp"),
-                points: C.map(function (r) { return [r.ctx, r.advantage_mtp]; }) }] : [])
+          // the two arms of the campaign, and the probe behind them if asked
+          // for. Solid is the arm nobody is speculating on, which is the one
+          // the probe never measured and the one that answers the question the
+          // article's title asks.
+          series: [
+            { colour: "var(--s3)", label: S.campNospec, tip: campAdv("nospec"),
+              points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
+            { colour: "var(--s4)", dash: true, dashPattern: "2 4", label: S.campMtp,
+              tip: campAdv("mtp"),
+              points: C.map(function (r) { return [r.ctx, r.advantage_mtp]; }) }].concat(
+            probeOn ? [
+              { colour: "var(--s2)", dash: true, dashPattern: "7 5", label: S.campBase,
+                tip: tipFor,
+                points: R.map(function (r) { return [r.ctx, r.advantage]; }) }] : [])
         });
         note.innerHTML = fmt(S.f1nomNote, {
           n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
           d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
-          "<br>" + S.f1unit + (campOn ? "<br>" + campNote() : "");
+          "<br>" + S.f1unit + "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote : "");
       }
     }
     /* Two of these three controls are exclusive views of the same data and the
@@ -480,21 +741,21 @@ measurement here, but the crossing itself was not located, and only four depths 
       modeBtns.push({ b: b, v: o[1] });
     });
     vbox.appendChild(seg);
-    /* The 2026-08-29 ladder is off until asked for. It is a different
-       configuration -- k=3, the campaign harness, eleven matched rungs, two
-       rounds -- so it sits beside the four points above rather than extending
-       them, and a reader who has not asked for it sees the figure this article
-       was written against. */
+    /* The 2026-08-26 probe is off until asked for. It is the measurement this
+       article was first written against and it is the weaker one: four cells,
+       one run each, k=1, and its deepest cell compares two different depths. It
+       is kept because a reader should be able to see what it said, not because
+       it adds points to the ladder beside it. */
     (function () {
       var b = document.createElement("button");
       b.className = "lg camp";
       b.style.setProperty("--c", "var(--s3)");
-      b.innerHTML = '<span class="sw"></span>' + S.viewCamp;
+      b.innerHTML = '<span class="sw"></span>' + S.viewProbe;
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        campOn = !campOn;
-        b.classList.toggle("on", campOn);
-        b.setAttribute("aria-pressed", String(campOn));
+        probeOn = !probeOn;
+        b.classList.toggle("on", probeOn);
+        b.setAttribute("aria-pressed", String(probeOn));
         draw();
       });
       vbox.appendChild(b);
@@ -502,7 +763,7 @@ measurement here, but the crossing itself was not located, and only four depths 
     draw();
   })();
 
-  /* ---------- Figure 2: retention, and the workgroup arithmetic ---------- */
+  /* ---------- Figure 4: retention, and the workgroup arithmetic ---------- */
   (function () {
     var box = document.getElementById("ret");
     var max = Math.max.apply(null, F.fig2.retention.map(function (r) { return r.pct; })) * 1.1;
@@ -537,7 +798,7 @@ measurement here, but the crossing itself was not located, and only four depths 
     });
   })();
 
-  /* ---------- Figure 3: speculation's economics ---------- */
+  /* ---------- Figure 5: speculation's economics ---------- */
   (function () {
     var box = document.getElementById("econ");
     var max = Math.max.apply(null, F.fig3.cases.map(function (c) {
@@ -563,7 +824,7 @@ measurement here, but the crossing itself was not located, and only four depths 
     n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
   })();
 
-  /* ---------- Figure 4: realized bandwidth ---------- */
+  /* ---------- Figure 6: realized bandwidth ---------- */
   (function () {
     var box = document.getElementById("util");
     F.bandwidth.rows.forEach(function (r) {

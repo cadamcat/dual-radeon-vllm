@@ -45,10 +45,11 @@
  ],
 
  "a100-vs-two-radeons": [
-  {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
-  {"kind": "hardware", "w": "hwA100Tp1", "v": ["A100-SXM4-80GB"]},
-  {"kind": "model", "w": "modelMtpOn", "v": ["gemma-4-31B", "w4a16"]},
-  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-26"]}
+  {"kind": "hardware", "w": "hwOneAndTwo", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "hardware", "w": "hwOneCardTp1", "v": ["A100-SXM4-80GB"]},
+  {"kind": "hardware", "w": "hwOneCardTp1", "v": ["L4"]},
+  {"kind": "model", "w": "modelThree", "v": ["gemma-4-12B", "gemma-4-26B-A4B", "gemma-4-31B"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasuredTwo", "v": ["2026-08-26", "2026-08-30"]}
  ],
 
  "gqa-gate-costs-nothing": [

@@ -6112,6 +6112,87 @@ addEventListener("DOMContentLoaded", function () {
 <script type="application/json" id="articles">{
  "articles": [
   {
+   "slug": "a100-vs-two-radeons",
+   "href": {
+    "en": "articles/a100-vs-two-radeons.html",
+    "zh": "articles/a100-vs-two-radeons.zh.html"
+   },
+   "title": {
+    "en": "The second card buys 1.1× at decode and 1.9× at prefill",
+    "zh": "第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×"
+   },
+   "sub": {
+    "en": "One 7900 XT, two of them, one A100 and one L4, on the same ladder",
+    "zh": "一张 7900 XT、两张、一张 A100、一张 L4，同一套阶梯"
+   },
+   "blurb": {
+    "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, and the L4 is slower than a consumer card on prefill's linear term.",
+    "zh": "一张 7900 XT、两张、一张 A100、一张 L4 跑同一套阶梯。第二张消费级卡在 batch-1 解码上值 1.11×–1.23×，在 prefill 墙钟时间上值 1.56×–1.87×；而 L4 在 prefill 的线性项上比消费级卡还慢。"
+   },
+   "establishes": {
+    "en": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
+    "zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半"
+   },
+   "dates": [
+    "2026-08-26",
+    "2026-08-30"
+   ],
+   "date": "2026-08-30",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwOneAndTwo",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwOneCardTp1",
+     "v": [
+      "A100-SXM4-80GB"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwOneCardTp1",
+     "v": [
+      "L4"
+     ]
+    },
+    {
+     "kind": "model",
+     "w": "modelThree",
+     "v": [
+      "gemma-4-12B",
+      "gemma-4-26B-A4B",
+      "gemma-4-31B"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasuredTwo",
+     "v": [
+      "2026-08-26",
+      "2026-08-30"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "A100",
+    "tensor parallelism",
+    "prefill",
+    "L4"
+   ]
+  },
+  {
    "slug": "rdna3-second-class",
    "href": {
     "en": "articles/rdna3-second-class.html",
@@ -6464,77 +6545,6 @@ addEventListener("DOMContentLoaded", function () {
     "methodology",
     "calibration",
     "nondeterminism"
-   ]
-  },
-  {
-   "slug": "a100-vs-two-radeons",
-   "href": {
-    "en": "articles/a100-vs-two-radeons.html",
-    "zh": "articles/a100-vs-two-radeons.zh.html"
-   },
-   "title": {
-    "en": "Two consumer RX 7900 XTs against one A100",
-    "zh": "两张消费级 Radeon 7900 XT 对一张 A100"
-   },
-   "sub": {
-    "en": "The gap is U-shaped, and both ends are about the split",
-    "zh": "差距是 U 形的，而两端都关于把工作拆开"
-   },
-   "blurb": {
-    "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, 1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about splitting the work across two cards.",
-    "zh": "同一个 31B 模型的 batch-1 解码，两边都跑在各自的健康路径上：1K 相差 1.48×，16K 是 1.14×，32K 是 1.87×。两端的成因不同，而都关于把工作拆到两张卡上。"
-   },
-   "establishes": {
-    "en": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
-    "zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半"
-   },
-   "dates": [
-    "2026-08-26"
-   ],
-   "date": "2026-08-26",
-   "kind": "measured",
-   "chips": [
-    {
-     "kind": "hardware",
-     "w": "hwTriple",
-     "v": [
-      "RX 7900 XT",
-      "gfx1100",
-      "TP=2"
-     ]
-    },
-    {
-     "kind": "hardware",
-     "w": "hwA100Tp1",
-     "v": [
-      "A100-SXM4-80GB"
-     ]
-    },
-    {
-     "kind": "model",
-     "w": "modelMtpOn",
-     "v": [
-      "gemma-4-31B",
-      "w4a16"
-     ]
-    },
-    {
-     "kind": "date",
-     "tl": "measured",
-     "w": "dMeasured",
-     "v": [
-      "2026-08-26"
-     ]
-    }
-   ],
-   "langs": [
-    "EN",
-    "中"
-   ],
-   "tags": [
-    "A100",
-    "tensor parallelism",
-    "bandwidth"
    ]
   },
   {
@@ -6907,7 +6917,7 @@ addEventListener("DOMContentLoaded", function () {
  "hwPair": "2× <b>{0}</b> · {1}",
  "hwTriple": "2× <b>{0}</b> · {1} · {2}",
  "hwPairVfio": "2× <b>{0}</b> · {1} · VFIO 直通",
- "hwA100Tp1": "一张 <b>{0}</b> · TP=1",
+ "hwOneCardTp1": "一张 <b>{0}</b> · TP=1",
  "hwAndA100": "以及一张 <b>{0}</b> · CUDA",
  "hwPlusA100": "外加一张跑同一份 Triton 源码的 <b>{0}</b>",
  "hwAgainstBare": "对照 <b>2× {0}</b> 裸机",
@@ -6923,7 +6933,6 @@ addEventListener("DOMContentLoaded", function () {
  "modelDot": "<b>{0}</b> · {1}",
  "modelExperts": "<b>{0}</b> · {1} 专家",
  "modelMtpAssistant": "<b>{0}</b> + 官方 MTP 助手",
- "modelMtpOn": "<b>{0}</b> {1} · 开着 MTP",
  "modelCalibrated": "用 <b>{0}</b> · {1} 标定",
  "scaleLedgerRows": "<b>{0}</b> 条 ledger 记录",
  "scaleFindings": "<b>{0}</b> 个结论 · <b>{1}</b> 条上游 issue 与 PR",
@@ -6942,7 +6951,9 @@ addEventListener("DOMContentLoaded", function () {
  "kScale": "规模",
  "kUpstream": "上游",
  "kDate": "日期",
- "kLink": "仓库链接"
+ "kLink": "仓库链接",
+ "hwOneAndTwo": "1× 与 2× <b>{0}</b> · {1}",
+ "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>"
 }</script>
 <script type="application/json" id="strings">{
  "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · 模型旁边的小开关会加上这个模型的投机臂，开关上写的是它实际跑的那种方法",

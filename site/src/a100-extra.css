@@ -48,3 +48,15 @@
   #v1 .lg.camp::before { content:""; align-self:center; width:1px; height:1.5em;
                          margin-right:.75em; background:var(--border);
                          display:inline-block; }
+
+  /* Figure 2 labels a machine on every row and groups them under a model and a
+     term, so it needs a wider label column than the 150px the other bar
+     figures use and two heading levels the .lab default right-alignment is
+     wrong for. */
+  #terms { --labw:176px; }
+  @media (max-width:640px){ #terms { --labw:150px; } }
+  #terms .lab.hd2 { text-align:left; color:var(--text); font-weight:600;
+                    font-size:.85rem; margin-top:.9em; padding-bottom:.2em;
+                    border-bottom:1px solid var(--border); }
+  #terms .lab.hd2:first-child { margin-top:0; }
+  #terms .lab.hd3 { text-align:left; color:var(--text-dim); margin-top:.35em; }

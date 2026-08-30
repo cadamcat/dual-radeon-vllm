@@ -215,7 +215,7 @@ if (D / "spec-body-zh.html").exists():
 
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
-                  title='Two consumer RX 7900 XTs against one A100',
+                  title='The second card buys 1.1× at decode and 1.9× at prefill',
                   desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
                        "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
                        "parallelism rather than about the silicon.",
@@ -223,7 +223,7 @@ built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title='两张消费级 Radeon 7900 XT 对一张 A100',
+                      title='第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×',
                       desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
                            "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
                            "而两端都关于张量并行，不关于硅片本身。",
@@ -374,16 +374,16 @@ ART = [
          "排除的区间在两边都与被放行"
          "的区间重叠。"}},
  {"slug": "a100-vs-two-radeons", "en": A_EN, "zh": A_ZH, "zhbody": "a100-body-zh.html",
-  "tags": ["A100", "tensor parallelism", "bandwidth"],
+  "tags": ["A100", "tensor parallelism", "prefill", "L4"],
   "blurb": {
-   "en": "Batch-1 decode of the same 31B model, each side on its healthy path: 1.48x apart at 1K, "
-         "1.14x at 16K, 1.87x at 32K. The two ends have different causes and both are about "
-         "splitting the work across two cards.",
-   "zh": "同一个 31B 模型的 batch-1 解码，两边"
-         "都跑在各自的健康路径上：1K "
-         "相差 1.48×，16K 是 1.14×，32K 是 1.87×。"
-         "两端的成因不同，而都关于把"
-         "工作拆到两张卡上。"}},
+   "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer "
+         "card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, "
+         "and the L4 is slower than a consumer card on prefill's linear term.",
+   "zh": "一张 7900 XT、两张、一张 A100、一张 L4 "
+         "跑同一套阶梯。第二张消费级卡在 batch-1 "
+         "解码上值 1.11×–1.23×，在 prefill "
+         "墙钟时间上值 1.56×–1.87×；而 L4 在 "
+         "prefill 的线性项上比消费级卡还慢。"}},
  {"slug": "speculative-decoding-net-loss", "en": S_EN, "zh": S_ZH, "zhbody": "spec-body-zh.html",
   "tags": ["speculative decoding", "Triton attention", "vllm#45450"],
   "blurb": {
