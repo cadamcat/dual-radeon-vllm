@@ -1,0 +1,174 @@
+{
+ "what": "Does --enforce-eager remove the greedy non-determinism of gfx1100-greedy-nondeterminism.json? Measured 2026-08-30 on the same box, same container and same harness. No.",
+ "why": "vllm#50603's reporter could not reproduce either symptom on a rebuilt vLLM 0.25.1 with enforce_eager on. The published cells here ran with it OFF -- nondet.py never passes it, and the run logs record enforce_eager=False with 58 `Capturing CUDA graph` lines -- so CUDA graphs were an axis that differed between the two results and had never been tested.",
+ "method": "nondet_eager.py, identical to nondet.py in every constant (the two files' MODELS/DEPTHS/NGEN/REPEATS blocks diff empty) except that it passes enforce_eager. One engine per cell, a warm-up generate, then eight identical greedy generations. vLLM 0.23.1.dev1+g9ddef7117, ROCm 7.14 container, TP=2, util 0.92, max_num_seqs 128.",
+ "answer": "No cell that varied with graphs on became stable with eager, and one cell that was stable became unstable.",
+ "pairs": [
+  {
+   "model": "gemma3",
+   "depth": 512,
+   "graphs": 1,
+   "eager": 1,
+   "varied_with_graphs": false,
+   "varied_with_eager": false
+  },
+  {
+   "model": "gemma3",
+   "depth": 8192,
+   "graphs": 5,
+   "eager": 2,
+   "varied_with_graphs": true,
+   "varied_with_eager": true
+  },
+  {
+   "model": "muse",
+   "depth": 512,
+   "graphs": 5,
+   "eager": 5,
+   "varied_with_graphs": true,
+   "varied_with_eager": true
+  },
+  {
+   "model": "muse",
+   "depth": 8192,
+   "graphs": 1,
+   "eager": 3,
+   "varied_with_graphs": false,
+   "varied_with_eager": true
+  }
+ ],
+ "cells": [
+  {
+   "model": "gemma3",
+   "enforce_eager": false,
+   "depth": 512,
+   "repeats": 8,
+   "distinct": 1,
+   "first_divergence_vs_run0": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "model": "gemma3",
+   "enforce_eager": false,
+   "depth": 8192,
+   "repeats": 8,
+   "distinct": 5,
+   "first_divergence_vs_run0": [
+    31,
+    5,
+    4,
+    4,
+    2,
+    4,
+    null
+   ]
+  },
+  {
+   "model": "gemma3",
+   "enforce_eager": true,
+   "depth": 512,
+   "repeats": 8,
+   "distinct": 1,
+   "first_divergence_vs_run0": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "model": "gemma3",
+   "enforce_eager": true,
+   "depth": 8192,
+   "repeats": 8,
+   "distinct": 2,
+   "first_divergence_vs_run0": [
+    null,
+    null,
+    null,
+    null,
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "model": "muse",
+   "enforce_eager": false,
+   "depth": 512,
+   "repeats": 8,
+   "distinct": 5,
+   "first_divergence_vs_run0": [
+    9,
+    9,
+    23,
+    23,
+    9,
+    23,
+    9
+   ]
+  },
+  {
+   "model": "muse",
+   "enforce_eager": false,
+   "depth": 8192,
+   "repeats": 8,
+   "distinct": 1,
+   "first_divergence_vs_run0": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "model": "muse",
+   "enforce_eager": true,
+   "depth": 512,
+   "repeats": 8,
+   "distinct": 5,
+   "first_divergence_vs_run0": [
+    9,
+    null,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "model": "muse",
+   "enforce_eager": true,
+   "depth": 8192,
+   "repeats": 8,
+   "distinct": 3,
+   "first_divergence_vs_run0": [
+    null,
+    null,
+    3,
+    null,
+    40,
+    null,
+    null
+   ]
+  }
+ ],
+ "tp_axis_not_testable": "vllm#50603's reporter ran one W7900D (48 GB). Muse-Glimmer-30B-INT4 is 21 GB and gemma-3-27b-it-w4a16 is 19 GB on disk against 19.98 GiB of card here, so neither runs at TP=1 on this box and the topology axis cannot be tested from here.",
+ "not_established": "One process per cell, so the distinct counts themselves carry the run-to-run spread the original campaign documented (2-3 of 8 at one depth across four engines). What is read here is the binary -- varies or does not -- not the count.",
+ "kernel_state": "Left exactly as found: the window-skip patch present, 3 `first_block` sites. The original campaign found the effect symmetric between kernel states, so it is not a variable.",
+ "control_reproduces": "muse at 512 gave 5 distinct of 8 with graphs on, inside the 5-to-8 band the published within-process cells recorded across four independent engines."
+}

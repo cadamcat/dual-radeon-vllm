@@ -1165,7 +1165,7 @@ the GPU over together with its audio function, which takes exactly that branch.<
 
 <ul>
   <li>cards behind a consumer chipset switch, on bare metal — this is the case
-  <a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a>'s independent bare-metal reproduction
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a>'s independent bare-metal reproduction
   hit, and no amount of VM configuration helps it</li>
   <li>hosts whose root ports do not advertise completer support at all</li>
   <li>QEMU older than 8.1.0</li>
@@ -1192,7 +1192,7 @@ tested here.</p>
 
 <h3>What AMD intends</h3>
 <p>Whether the hostcall dependency is kept or removed is an upstream decision, and
-<a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a> is open. On RCCL 2.30.4 the declaration
+<a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> is open. On RCCL 2.30.4 the declaration
 survives a build with zero hostcall-calling instructions — <code>NDEBUG</code> removes every
 <code>__ockl_*</code> symbol and the metadata entry is still emitted during the device link — so removing
 the device-side <code>assert()</code> would no longer be sufficient on current RCCL.</p>
@@ -1226,10 +1226,10 @@ multifunction and not when passed as a single function. </div>
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/root-cause.md">docs/root-cause.md</a>;
   the VM half is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/vfio-atomics.md">docs/vfio-atomics.md</a>.</p>
-  <p>Reported upstream as <a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a>, where
+  <p>Reported upstream as <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a>, where
   @adderek independently reproduced it on bare metal with IOMMU disabled, and @bkvargyas contributed the
   switch-versus-atomics trade-off from the other side of it. Related:
-  <a href="https://github.com/ROCm/ROCm/issues/6074">ROCm#6074</a>,
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6074">ROCm#6074</a>,
   <a href="https://github.com/vllm-project/vllm/issues/38587">vllm#38587</a>.</p>
 </div>
 </div>

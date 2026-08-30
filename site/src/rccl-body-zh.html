@@ -170,7 +170,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <ul>
   <li>裸机上挂在消费级芯片组交换端口后面的显卡 —— 这正是
-  <a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a> 里那次独立裸机复现遇到的情况，
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 里那次独立裸机复现遇到的情况，
   再怎么改虚拟机配置也没用</li>
   <li>根端口本身就不广告 completer 支持的主机</li>
   <li>早于 8.1.0 的 QEMU</li>
@@ -196,7 +196,7 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <h3>AMD 打算怎么办</h3>
 <p>hostcall 依赖是保留还是移除，是上游的决定，
-<a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a> 仍然开着。
+<a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 仍然开着。
 在 RCCL 2.30.4 上，即使构建出的设备镜像里一条会调用 hostcall 的指令都没有，
 那个声明依然存在 —— <code>NDEBUG</code> 清掉了所有 <code>__ockl_*</code> 符号，
 元数据条目仍然在设备链接阶段被写入 —— 所以在当前 RCCL 上，
@@ -231,9 +231,9 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/root-cause.md">docs/root-cause.md</a>；
   虚拟机那一半在
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/vfio-atomics.md">docs/vfio-atomics.md</a>。</p>
-  <p>已作为 <a href="https://github.com/ROCm/ROCm/issues/6520">ROCm#6520</a> 上报，
+  <p>已作为 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 上报，
   @adderek 在关闭 IOMMU 的裸机上独立复现，@bkvargyas 从另一侧补上了"交换机与 atomics 不可兼得"的取舍。
-  相关：<a href="https://github.com/ROCm/ROCm/issues/6074">ROCm#6074</a>、
+  相关：<a href="https://github.com/ROCm/legacy-rocm-build/issues/6074">ROCm#6074</a>、
   <a href="https://github.com/vllm-project/vllm/issues/38587">vllm#38587</a>。</p>
 </div>
 </div>

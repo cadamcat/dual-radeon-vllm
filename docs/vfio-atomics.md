@@ -82,7 +82,7 @@ lspci -vv -s <root port> | grep AtomicOpsCap
 If the root port above your card reports `32bit- 64bit-`, this page does not
 apply to you and the rebuilt RCCL is still the fix. That is the case for a card
 behind a consumer chipset switch, which is why
-[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520)'s bare-metal reproduction
+[ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520)'s bare-metal reproduction
 is not solved by any amount of VM configuration.
 
 ## 3. Then who is the rebuild for

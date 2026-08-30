@@ -23,7 +23,7 @@ Three things, each usable on its own:
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | Seven model architectures across eleven context lengths on **five machines** — two consumer Radeons together and apart, a rented A100 80G, an L4 24G and a Tesla T4 16G — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
-| 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
+| 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
 
@@ -56,7 +56,7 @@ of the others, a one-line report either way is genuinely useful.
 
 The failure is **not** limited to virtual machines: @adderek independently reproduced
 it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
-board) in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520). Their machine is also
+board) in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520). Their machine is also
 a useful shape to know about — one GPU affected because it sits behind the chipset,
 one healthy because it is CPU-direct. On mainstream boards the second
 full-length slot is often wired to the chipset rather than the CPU, so a
@@ -581,7 +581,7 @@ the host across five boots and never reported atomics missing, while in the
 guest it reports it for both GPUs every time. What breaks these machines is a
 chipset downstream port that reports `Routing-`: it cuts off every slot behind
 it, while a CPU-attached slot on the same board is fine. @adderek's B550 in
-[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520) has one GPU of each kind
+[ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520) has one GPU of each kind
 and only the chipset-attached one is affected.
 
 **Why does a VM lack them?** QEMU's emulated `pcie-root-port` reports
@@ -715,8 +715,8 @@ docs/
 ```
 
 **Reported upstream:** the RCCL root cause is
-[ROCm/ROCm#6520](https://github.com/ROCm/ROCm/issues/6520), with a pointer on
-[#6074](https://github.com/ROCm/ROCm/issues/6074). The passthrough caveat behind
+[ROCm/ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520), with a pointer on
+[#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074). The passthrough caveat behind
 it went to `pve-devel` on 2026-08-24 as a two-patch `pve-docs` series. The SSM
 behaviour is written up in `docs/` but not filed; see
 [open-questions.md](docs/open-questions.md) for what is claimed and how strongly.

@@ -57,7 +57,7 @@ which passes; an earlier version of this script called that a failure.
 
 Where the break sits decides whether reslotting can help. A switch port that
 refuses to route kills every slot below it while CPU-attached lanes still work —
-that is @adderek's B550 in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520),
+that is @adderek's B550 in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520),
 `00:01.2 Routing+` above `03:00.0 Routing-`, with one affected GPU and one
 healthy one in the same machine. A root port without completer support cannot be
 worked around by moving the card. In a QEMU guest it can be worked around

@@ -1067,7 +1067,7 @@ overlayfs 对 ext4、每次拷贝换新设备分配、1–256 MiB 尺寸扫描�
 
 <h2><span class="n">3</span>为什么一次读会去要写</h2>
 
-<p>AMD 在 <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a>
+<p>AMD 在 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>
 上确认了机理并指出了位置。这条链在上游代码里是三跳：</p>
 
 <div class="hops" id="hops"></div>
@@ -1216,7 +1216,7 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   <code>7.0.0-30.30~24.04.1</code>，在 noble-updates 和 noble-security 里。
   那些一秒的窗口没有了：同一天、同一台机器、同一个复现器二进制，
   升级前 16 019.3 ms，升级后 15.3。
-  <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> 上有这次测量。
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 上有这次测量。
 </div>
 
 <div class="note ok">
@@ -1230,7 +1230,7 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
 <div class="note">
   <span class="lbl">仍然开着</span>
   可写映射这个惩罚本身没有被上面任何一件事碰到，在 <code>-30</code> 上值 4.8×。
-  <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> 开着；
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 开着；
   <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 开着，
   它的头条数字需要换成上面那个实测区间。<code>ROC_FORCE_STAGED_D2H</code>
   本可以完全绕开这次拷贝，但 @ashetaia-amd 说 ROCm/rocm-systems#6676
@@ -1266,7 +1266,7 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/loader-flag-kernel-30.json"><code>loader-flag-kernel-30.json</code></a>，
   89 格，每格都带自己的 page cache 状态。完整的调查过程，包括本仓库第一次搞错的那个成因，在
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>。</p>
-  <p>已上报为 <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a>，
+  <p>已上报为 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>，
   @ashetaia-amd 在那里确认了 copy-on-write 触发条件并指出了 <code>kfd_svm.c</code>，
   @shineday999 贡献了裸机复现；以及向 Ubuntu 上报为
   <a href="https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985">LP#2161985</a>。

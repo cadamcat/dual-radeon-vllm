@@ -3195,6 +3195,70 @@ def main():
        N6["within_process_varying"])
     ck("measure article, fig6 the worst cell", "8", N6["worst_distinct_of_8"])
 
+    # --- a repository that was renamed under our links ----------------------
+    # 2026-08-30: `ROCm/ROCm` became `ROCm/legacy-rocm-build`. GitHub redirects
+    # the repository root and **not** the deep issue links, so every
+    # `github.com/ROCm/ROCm/issues/N` in this repository 404'd for a reader the
+    # day it happened -- 51 of them, across the README, four docs and four
+    # published article pages. They were rewritten; this is what stops one
+    # coming back, and it is static, so it costs nothing and needs no network.
+    _renamed = []
+    for _root, _dirs, _files in os.walk(os.path.join(HERE, "..", "..")):
+        _dirs[:] = [d for d in _dirs if d not in (".git", "__pycache__", "node_modules")]
+        for _fn in _files:
+            if not _fn.endswith((".md", ".html", ".json", ".py")):
+                continue
+            _p = os.path.join(_root, _fn)
+            # this file names the old path in order to look for it, so it is the
+            # one file that must not count itself -- the same shape as a pgrep
+            # pattern matching the shell that runs pgrep
+            if os.path.realpath(_p) == os.path.realpath(__file__):
+                continue
+            try:
+                if "github.com/ROCm/ROCm/" in open(_p, encoding="utf-8").read():
+                    _renamed.append(os.path.relpath(_p, os.path.join(HERE, "..", "..")))
+            except Exception:
+                pass
+    ck("links, none point at the repository GitHub renamed on 2026-08-30", "0",
+       len(_renamed))
+
+    # --- the enforce_eager A/B, 2026-08-30 ---------------------------------
+    # The claim the directory exists to make is a binary one, so it is gated as
+    # a binary: no cell that varied with graphs on became stable with eager.
+    # Every count is recomputed from the token sequences rather than read off
+    # the summary the run wrote.
+    XEA = json.load(open(os.path.join(HERE, "..", "gfx1100-greedy-eager-ab",
+                                      "eager-ab.json")))
+    ck("eager A/B, cells", "8", len(XEA["cells"]))
+    ck("eager A/B, pairs", "4", len(XEA["pairs"]))
+    for _c in XEA["cells"]:
+        _f = os.path.join(HERE, "..", "gfx1100-greedy-eager-ab",
+                          "nondet-eager-%s-e%d-p1.json"
+                          % (_c["model"], int(_c["enforce_eager"])))
+        _r = next(r for r in json.load(open(_f))["rows"] if r["depth"] == _c["depth"])
+        ck("eager A/B, %s e%d ctx%d recomputes from its sequences"
+           % (_c["model"], int(_c["enforce_eager"]), _c["depth"]),
+           str(_c["distinct"]), len({tuple(x) for x in _r["seqs"]}))
+        ck("eager A/B, and %s e%d ctx%d is eight repeats"
+           % (_c["model"], int(_c["enforce_eager"]), _c["depth"]),
+           "8", len(_r["seqs"]))
+    ck("eager A/B, cells that varied with graphs on", "2",
+       sum(1 for p_ in XEA["pairs"] if p_["varied_with_graphs"]))
+    ck("eager A/B, and how many of those eager made stable", "0",
+       sum(1 for p_ in XEA["pairs"]
+           if p_["varied_with_graphs"] and not p_["varied_with_eager"]))
+    ck("eager A/B, cells eager made unstable that were not", "1",
+       sum(1 for p_ in XEA["pairs"]
+           if not p_["varied_with_graphs"] and p_["varied_with_eager"]))
+    # the control has to reproduce the published cells or it is measuring
+    # something else: muse at 512 with graphs on, inside the recorded 5-to-8 band
+    _ctl = next(p_ for p_ in XEA["pairs"]
+                if p_["model"] == "muse" and p_["depth"] == 512)
+    ck("eager A/B, the control reproduces the published band", "1",
+       1 if 5 <= _ctl["graphs"] <= 8 else 0)
+    ck("eager A/B, and it is the band the earlier campaign recorded", "8",
+       xnd["within_process"]["cells"][0]["generations"])
+
     for fn, heads, phrase in (
             ("measuring-decode.html",
              ("What is not established", "What has changed since"),

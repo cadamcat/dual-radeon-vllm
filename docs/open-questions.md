@@ -172,7 +172,7 @@ conclusively in AMD's pipeline, not the source. The counting one-liner is in
 ## 2. Does this reproduce on bare metal? — **ANSWERED: yes**
 
 > **Closed 2026-08-25.** @adderek reproduced it on bare metal with IOMMU
-> entirely disabled, in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520);
+> entirely disabled, in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520);
 > [root-cause.md](root-cause.md) has carried that since, listing
 > VFIO/virtualisation as **not necessary** to the mechanism. This section still
 > asked a reader to go and settle it, which it should not have. The reasoning
@@ -191,7 +191,7 @@ Neither reporter posted `AMD_LOG_LEVEL=4` output, so the
 
 What would have closed it, and did: `AMD_LOG_LEVEL=4` output from a bare-metal
 dual-Radeon box. @adderek's is in
-[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520).
+[ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520).
 
 ---
 
@@ -200,7 +200,7 @@ dual-Radeon box. @adderek's is in
 We applied `NDEBUG` globally, which removes both hostcall sources at once (device
 `assert()` and, indirectly, the trace path), and never tested `-DCOLLTRACE=OFF` on its
 own. @adderek did, on RCCL 2.27.7 at tag `rocm-7.2.4`, and posted the counts in
-[ROCm#6520](https://github.com/ROCm/ROCm/issues/6520):
+[ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520):
 
 | build | `__assert_fail` | `__ockl_fprintf` | `hidden_hostcall_buffer` | collectives |
 |---|---|---|---|---|
@@ -525,7 +525,7 @@ in the README as a snapshot, not a guarantee.
 > ### The COW reading was right, and AMD gave the line — 2026-07-27
 >
 > @ashetaia-amd confirmed the mechanism in
-> [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523) and named the site. We
+> [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523) and named the site. We
 > traced the whole chain in the upstream tree afterwards; all three hops are real:
 >
 > ```c
@@ -577,8 +577,8 @@ in the README as a snapshot, not a guarantee.
 > userspace, same container image, same reproducer, only the kernel ABI swapped —
 > so **passthrough is not the ingredient**, which was the leading suspicion both
 > here and at AMD. It also reproduces @loreggia's boundary in
-> [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952) from a different distro on
-> a different card, and [ROCm#6508](https://github.com/ROCm/ROCm/issues/6508)
+> [ROCm#5952](https://github.com/ROCm/legacy-rocm-build/issues/5952) from a different distro on
+> a different card, and [ROCm#6508](https://github.com/ROCm/legacy-rocm-build/issues/6508)
 > reports a KFD work queue deadlock specific to the same `-28`.
 >
 > **This is the kernel Ubuntu ships today.** `linux-image-generic-hwe-24.04`
@@ -706,7 +706,7 @@ in the README as a snapshot, not a guarantee.
 > ### Still open
 >
 > - **`HSA_USE_SVM=0` is not the lever.** Suggested by
->   [ROCm#2433](https://github.com/ROCm/ROCm/issues/2433); measured here it leaves the
+>   [ROCm#2433](https://github.com/ROCm/legacy-rocm-build/issues/2433); measured here it leaves the
 >   pathological case unchanged (16 036 vs 16 020 ms) and makes the read-only fast
 >   path *worse* (8 905 → 844 MiB/s).
 > - **A 17× asymmetry between the two TP ranks** in a single load (~190 ms vs ~11 ms
@@ -716,13 +716,13 @@ in the README as a snapshot, not a guarantee.
 >   **Closed 2026-07-30, by someone else.** We never had such a machine: our
 >   bare-metal row is a Proxmox `7.0.14` build, so it said nothing about
 >   Ubuntu's `-28` outside a VM. @shineday999 reported one in
->   [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523) — RX 7900 XTX,
+>   [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523) — RX 7900 XTX,
 >   ROCm 7.2.1, `7.0.0-28`, no virtualisation — with the same pathology and the
 >   same integer window counts. What remains untested is a module as *Canonical*
 >   ships it: both of us ran either a self-built module or a userspace
 >   workaround.
 >
-> **Reported upstream as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523)**, where
+> **Reported upstream as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)**, where
 > AMD confirmed the copy-on-write trigger and named `kfd_svm.c`, and to Ubuntu as
 > [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)
 > against `linux-hwe-7.0`, asking for the backport. Our first attempt at a
@@ -841,8 +841,8 @@ Checked 2026-07-26, so that nobody repeats the search:
 | candidate | verdict |
 |---|---|
 | [safetensors#183](https://github.com/huggingface/safetensors/issues/183) and [diffusers#2507](https://github.com/huggingface/diffusers/issues/2507), "loading directly to GPU is slower than to CPU then moving" | Not the same. Both are NVIDIA V100 / CUDA 11.6 from 2023, and the gap is 1.2x. Our mechanism is in `kfd_ioctl_svm`/`hmm_range_fault`, which does not exist on NVIDIA, and our gap is 4x to 4400x. The same shape of symptom, an unrelated cause. |
-| [ROCm#2433](https://github.com/ROCm/ROCm/issues/2433), an SVM change in ROCm 5.6 that slowed `hipHostRegister`, fixed by `HSA_USE_SVM=0` | Not the same, and tested: `HSA_USE_SVM=0` leaves the pathological case untouched (16 036 ms against 16 020 ms) and makes the read-only fast path *worse* (8 905 → 844 MiB/s). |
-| [ROCm#5952](https://github.com/ROCm/ROCm/issues/5952), SVM mapping failure during sequential model loads on RDNA3 | Possibly the same subsystem. Theirs crashes, ours crawls, but both are `svm_range_*` in amdgpu during weight loading on RDNA3, and their log says "VRAM loading crawls extremely slowly". Notably bare metal. |
+| [ROCm#2433](https://github.com/ROCm/legacy-rocm-build/issues/2433), an SVM change in ROCm 5.6 that slowed `hipHostRegister`, fixed by `HSA_USE_SVM=0` | Not the same, and tested: `HSA_USE_SVM=0` leaves the pathological case untouched (16 036 ms against 16 020 ms) and makes the read-only fast path *worse* (8 905 → 844 MiB/s). |
+| [ROCm#5952](https://github.com/ROCm/legacy-rocm-build/issues/5952), SVM mapping failure during sequential model loads on RDNA3 | Possibly the same subsystem. Theirs crashes, ours crawls, but both are `svm_range_*` in amdgpu during weight loading on RDNA3, and their log says "VRAM loading crawls extremely slowly". Notably bare metal. |
 
 No existing report of the writable-mapping performance cliff was found.
 

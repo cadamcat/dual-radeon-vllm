@@ -71,7 +71,7 @@ the next person from re-running them.
 |---|---|---|
 | Guest RAM too small | ❌ | Raised 16 G → 22 G, identical signature; no OOM in dmesg, headroom at crash |
 | NUMA asymmetry | ❌ | Two public bare-metal reports are single-NUMA desktops (7800X3D, 13900K) and reproduce |
-| VFIO/virtualization itself | ❌ **not necessary** | independently reproduced on bare metal with IOMMU entirely disabled, by @adderek in [ROCm#6520](https://github.com/ROCm/ROCm/issues/6520): 2× RX 7900 XTX on a B550 board, same failure, same fix. Their machine has one affected GPU (chipset-attached) and one healthy one (CPU-direct) |
+| VFIO/virtualization itself | ❌ **not necessary** | independently reproduced on bare metal with IOMMU entirely disabled, by @adderek in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520): 2× RX 7900 XTX on a B550 board, same failure, same fix. Their machine has one affected GPU (chipset-attached) and one healthy one (CPU-direct) |
 | vLLM version | ❌ | 0.19.1 and 0.23 fail, 0.11.2 passes — it is only the caller |
 | RCCL version regression (b38 ↔ b81) | ❌ *as the primary cause* | Our own **b38 built from source** still failed — because our build did not get `NDEBUG` to the device pass either. The variable is hostcall, not version |
 | Guest kernel too old (6.8) | ❌ | Upgraded to HWE 7.0.0-28, identical signature |

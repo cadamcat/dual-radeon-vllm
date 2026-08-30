@@ -98,7 +98,7 @@ retry, and per-tensor timings of 1005, 1042 and 1522 ms are one, one and one-and
 <h2><span class="n">3</span>Why a read asks for write</h2>
 
 <p>AMD confirmed the mechanism on
-<a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> and named the site. The chain is three
+<a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> and named the site. The chain is three
 hops in the upstream tree:</p>
 
 <div class="hops" id="hops"></div>
@@ -255,7 +255,7 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
   <span class="lbl">2026-08-20 · Canonical shipped the missing commit</span>
   <code>7.0.0-30.30~24.04.1</code>, in noble-updates and noble-security. The one-second windows are
   gone: 16 019.3 ms before the upgrade and 15.3 after, on the same machine and the same reproducer
-  binary the same day. <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> carries the
+  binary the same day. <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> carries the
   measurement.
 </div>
 
@@ -270,7 +270,7 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
 <div class="note">
   <span class="lbl">Still open</span>
   The writable-mapping penalty itself is untouched by any of this and is worth 4.8× on <code>-30</code>.
-  <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a> is open;
+  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> is open;
   <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> is open and needs its headline
   number replaced with the measured band above. <code>ROC_FORCE_STAGED_D2H</code> would sidestep the
   copy entirely, but @ashetaia-amd states that the long-term fix taken in ROCm/rocm-systems#6676 does not
@@ -309,7 +309,7 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
   89 cells with their per-cell page-cache state. The full investigation, including the cause this
   repository got wrong first, is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>.</p>
-  <p>Reported as <a href="https://github.com/ROCm/ROCm/issues/6523">ROCm#6523</a>, where @ashetaia-amd
+  <p>Reported as <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>, where @ashetaia-amd
   confirmed the copy-on-write trigger and named <code>kfd_svm.c</code>, and @shineday999 contributed the
   bare-metal reproduction; and to Ubuntu as
   <a href="https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985">LP#2161985</a>.
