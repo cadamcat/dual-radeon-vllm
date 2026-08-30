@@ -1,0 +1,132 @@
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333] 
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333]        █     █     █▄   ▄█
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.28.0
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333]   █▄█▀ █     █     █     █  model   /content/models/gemma-4-31B-it-qat-w4a16-ct
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:333] 
+(APIServer pid=8285) INFO 08-30 18:52:30 [api_utils.py:272] non-default args: {'model_tag': '/content/models/gemma-4-31B-it-qat-w4a16-ct', 'model': '/content/models/gemma-4-31B-it-qat-w4a16-ct', 'max_model_len': 4125, 'gpu_memory_utilization': 0.95, 'enable_prefix_caching': False, 'limit_mm_per_prompt': {'image': 0, 'video': 0, 'audio': 0}, 'max_num_seqs': 1}
+(APIServer pid=8285) INFO 08-30 18:52:30 [model.py:672] Resolved architecture: Gemma4ForConditionalGeneration
+(APIServer pid=8285) INFO 08-30 18:52:30 [model.py:1965] Using max model len 4125
+(APIServer pid=8285) [transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+(APIServer pid=8285) INFO 08-30 18:52:34 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(APIServer pid=8285) INFO 08-30 18:52:34 [model.py:875] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(APIServer pid=8285) INFO 08-30 18:52:35 [config.py:242] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend.
+(APIServer pid=8285) INFO 08-30 18:52:35 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=8493) INFO 08-30 18:52:56 [core.py:122] Initializing a V1 LLM engine (v0.28.0) with config: model='/content/models/gemma-4-31B-it-qat-w4a16-ct', speculative_config=None, tokenizer='/content/models/gemma-4-31B-it-qat-w4a16-ct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=4125, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=compressed-tensors, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/content/models/gemma-4-31B-it-qat-w4a16-ct, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::qwen_gdn_attention_core_fused_norm_packed', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 2, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=8493) [transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+(EngineCore pid=8493) INFO 08-30 18:53:00 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(EngineCore pid=8493) INFO 08-30 18:53:00 [parallel_state.py:1638] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_13ff43c60fae4cb59a642c8106f83265 backend=nccl
+(EngineCore pid=8493) INFO 08-30 18:53:00 [parallel_state.py:1982] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=8493) INFO 08-30 18:53:00 [gpu_worker.py:396] Using V2 Model Runner
+(EngineCore pid=8493) INFO 08-30 18:53:01 [model_runner.py:358] Loading model from scratch...
+(EngineCore pid=8493) INFO 08-30 18:53:01 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=8493) INFO 08-30 18:53:01 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(EngineCore pid=8493) INFO 08-30 18:53:01 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+(EngineCore pid=8493) INFO 08-30 18:53:01 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+[rank0]:[W830 18:53:04.780454256 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2818572288 bytes (free: 1834090496, total: 23659151360).
+(EngineCore pid=8493) INFO 08-30 18:53:04 [weight_utils.py:858] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 21.67 GiB. Available RAM: 47.69 GiB.
+(EngineCore pid=8493) INFO 08-30 18:53:04 [weight_utils.py:881] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=8493) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(EngineCore pid=8493) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:05<00:00,  5.38s/it]
+(EngineCore pid=8493) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:05<00:00,  5.38s/it]
+(EngineCore pid=8493) 
+(EngineCore pid=8493) INFO 08-30 18:53:10 [default_loader.py:430] Loading weights took 5.80 seconds
+[rank0]:[W830 18:53:10.904038354 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 58720256 bytes (free: 26345472, total: 23659151360).
+[rank0]:[W830 18:53:10.912777239 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 117440512 bytes (free: 26345472, total: 23659151360).
+(EngineCore pid=8493) INFO 08-30 18:53:12 [model_runner.py:380] Model loading took 18.7 GiB memory and 10.908938 seconds
+(EngineCore pid=8493) INFO 08-30 18:53:12 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=8493) INFO 08-30 18:53:44 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/c8d59ce25e/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=8493) INFO 08-30 18:53:44 [backends.py:1155] Dynamo bytecode transform time: 30.04 s
+(EngineCore pid=8493) INFO 08-30 18:54:35 [backends.py:393] Compiling a graph for compile range (1, 2048) takes 50.24 s
+(EngineCore pid=8493) INFO 08-30 18:54:49 [backends.py:920] collected artifacts: 61 entries, 5 artifacts, 15213312 bytes total
+(EngineCore pid=8493) INFO 08-30 18:54:49 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/ceb939ecbc6c3ef0ec15f57d41bb41a0c50c1a970af6b0bb9b70c9b6c7f2a56d/rank_0_0/model
+(EngineCore pid=8493) INFO 08-30 18:54:49 [monitor.py:53] torch.compile took 95.37 s in total
+(EngineCore pid=8493) INFO 08-30 18:54:50 [monitor.py:81] Initial profiling/warmup run took 0.68 s
+(EngineCore pid=8493) INFO 08-30 18:54:54 [gpu_worker.py:578] Available KV cache memory: -0.8 GiB
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346] EngineCore failed to start.
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346] Traceback (most recent call last):
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     super().__init__(
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         vllm_config,
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         ^^^^^^^^^^^^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ...<3 lines>...
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         internal_dp_balancing,
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     )
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 144, in __init__
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 307, in _initialize_kv_caches
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         vllm_config, kv_cache_specs, available_gpu_memory
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     )
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/core/kv_cache_utils.py", line 2193, in get_kv_cache_configs
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     _check_enough_kv_cache_memory(
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         avail_mem,
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         ^^^^^^^^^^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ...<2 lines>...
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         partial(_estimate_max_model_len_from_groups, vllm_config, groups),
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     )
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ^
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/core/kv_cache_utils.py", line 738, in _check_enough_kv_cache_memory
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     raise ValueError(
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     ...<6 lines>...
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346]     )
+(EngineCore pid=8493) ERROR 08-30 18:54:54 [core.py:1346] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine (this flag also controls CPU memory reservation on the CPU backend, despite its name). See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+(EngineCore pid=8493) Process EngineCore:
+(EngineCore pid=8493) Traceback (most recent call last):
+(EngineCore pid=8493)   File "/usr/lib/python3.13/multiprocessing/process.py", line 313, in _bootstrap
+(EngineCore pid=8493)     self.run()
+(EngineCore pid=8493)     ~~~~~~~~^^
+(EngineCore pid=8493)   File "/usr/lib/python3.13/multiprocessing/process.py", line 108, in run
+(EngineCore pid=8493)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=8493)     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1350, in run_engine_core
+(EngineCore pid=8493)     raise e
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=8493)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=8493)     return func(*args, **kwargs)
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=8493)     super().__init__(
+(EngineCore pid=8493)     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=8493)         vllm_config,
+(EngineCore pid=8493)         ^^^^^^^^^^^^
+(EngineCore pid=8493)     ...<3 lines>...
+(EngineCore pid=8493)         internal_dp_balancing,
+(EngineCore pid=8493)         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=8493)     )
+(EngineCore pid=8493)     ^
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 144, in __init__
+(EngineCore pid=8493)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=8493)     return func(*args, **kwargs)
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/engine/core.py", line 307, in _initialize_kv_caches
+(EngineCore pid=8493)     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=8493)         vllm_config, kv_cache_specs, available_gpu_memory
+(EngineCore pid=8493)     )
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/core/kv_cache_utils.py", line 2193, in get_kv_cache_configs
+(EngineCore pid=8493)     _check_enough_kv_cache_memory(
+(EngineCore pid=8493)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(EngineCore pid=8493)         avail_mem,
+(EngineCore pid=8493)         ^^^^^^^^^^
+(EngineCore pid=8493)     ...<2 lines>...
+(EngineCore pid=8493)         partial(_estimate_max_model_len_from_groups, vllm_config, groups),
+(EngineCore pid=8493)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=8493)     )
+(EngineCore pid=8493)     ^
+(EngineCore pid=8493)   File "/usr/local/lib/python3.13/dist-packages/vllm/v1/core/kv_cache_utils.py", line 738, in _check_enough_kv_cache_memory
+(EngineCore pid=8493)     raise ValueError(
+(EngineCore pid=8493)     ...<6 lines>...
+(EngineCore pid=8493)     )
+(EngineCore pid=8493) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine (this flag also controls CPU memory reservation on the CPU backend, despite its name). See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+[rank0]:[W830 18:54:56.251209967 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())

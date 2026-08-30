@@ -1,0 +1,27 @@
+{"kind": "run_meta", "machine": "L4", "vllm": "0.28.0", "torch": "2.13.0+cu130", "transformers": "5.15.1", "cuda": "13.0", "gpu": "NVIDIA L4, 23034 MiB, 8.9, 580.82.07", "ts": 1788115370.1}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->16500", "ts": 1788115607.2}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->8250", "ts": 1788115769.3}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->4125", "ts": 1788115933.4}
+{"kind": "note", "cfg": "G31", "note": "no-kv-room, mml->2062", "ts": 1788116097.6}
+{"kind": "note", "cfg": "G31", "note": "capacity exhausted, retrying eager", "ts": 1788116097.6}
+{"kind": "note", "cfg": "G31-eager", "note": "kv_max_len=2000, mml->1980", "ts": 1788116166.7}
+{"kind": "model_meta", "cfg": "G31-eager", "machine": "L4", "vram_total_mib": 23034, "init_engine_s": "115.83", "model_load_s": "10.840279", "kv_gib": "1.71", "kv_tokens": "2020", "backend": "TRITON_ATTN", "wna16_kernel": "MarlinLinearKernel", "prefix_caching": "False", "mml": 1980, "util": 0.95, "ts": 1788116345.8}
+{"kind": "prefill", "cfg": "G31-eager", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 513, "ttft": 0.7205, "prefill_tps": 712.0, "ts": 1788116399.8}
+{"kind": "decode", "cfg": "G31-eager", "machine": "L4", "target": 500, "round": 1, "prompt_tokens": 513, "gen_tokens": 507, "wall_s": 46.607, "decode_tps": 11.0273, "ts": 1788116399.8}
+{"kind": "prefill", "cfg": "G31-eager", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 513, "ttft": 0.8124, "prefill_tps": 631.5, "ts": 1788116446.1}
+{"kind": "decode", "cfg": "G31-eager", "machine": "L4", "target": 500, "round": 2, "prompt_tokens": 513, "gen_tokens": 509, "wall_s": 46.341, "decode_tps": 11.1579, "ts": 1788116446.1}
+{"kind": "prefill", "cfg": "G31-eager", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1013, "ttft": 1.4932, "prefill_tps": 678.4, "ts": 1788116493.3}
+{"kind": "decode", "cfg": "G31-eager", "machine": "L4", "target": 1000, "round": 1, "prompt_tokens": 1013, "gen_tokens": 504, "wall_s": 47.191, "decode_tps": 11.0071, "ts": 1788116493.3}
+{"kind": "prefill", "cfg": "G31-eager", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1013, "ttft": 1.4874, "prefill_tps": 681.1, "ts": 1788116540.3}
+{"kind": "decode", "cfg": "G31-eager", "machine": "L4", "target": 1000, "round": 2, "prompt_tokens": 1013, "gen_tokens": 507, "wall_s": 47.036, "decode_tps": 11.109, "ts": 1788116540.3}
+{"kind": "config_complete", "cfg": "G31-eager", "ok": 4, "err": 0, "ts": 1788116540.3}
+{"kind": "note", "cfg": "Q38", "note": "no-kv-room, mml->16500", "ts": 1788116834.5}
+{"kind": "note", "cfg": "Q38", "note": "no-kv-room, mml->8250", "ts": 1788117113.6}
+{"kind": "note", "cfg": "Q38", "note": "no-kv-room, mml->4125", "ts": 1788117347.7}
+{"kind": "note", "cfg": "Q38", "note": "no-kv-room, mml->2062", "ts": 1788117576.9}
+{"kind": "note", "cfg": "Q38", "note": "capacity exhausted, retrying eager", "ts": 1788117576.9}
+{"kind": "note", "cfg": "Q38-eager", "note": "no-kv-room, mml->16500", "ts": 1788117761.0}
+{"kind": "note", "cfg": "Q38-eager", "note": "no-kv-room, mml->8250", "ts": 1788117858.1}
+{"kind": "note", "cfg": "Q38-eager", "note": "no-kv-room, mml->4125", "ts": 1788117955.1}
+{"kind": "note", "cfg": "Q38-eager", "note": "no-kv-room, mml->2062", "ts": 1788118052.2}
+{"kind": "config_failed", "cfg": "Q38-eager", "why": "startup retries exhausted", "ts": 1788118052.2}

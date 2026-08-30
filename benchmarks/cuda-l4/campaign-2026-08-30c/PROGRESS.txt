@@ -1,0 +1,26 @@
+18:42:50 | === L4 run start, vllm 0.28.0, torch 2.13.0+cu130, cuda 13.0 ===
+18:46:47 | G31: no room for KV -> retry mml 16500
+18:49:29 | G31: no room for KV -> retry mml 8250
+18:52:13 | G31: no room for KV -> retry mml 4125
+18:54:57 | G31: no room for KV -> retry mml 2062
+18:54:57 | G31: capacity retries exhausted -> retrying with --enforce-eager
+18:56:06 | G31-eager: KV holds only 2000 tok -> retry mml 1980
+18:59:06 | G31-eager: warmup ok
+18:59:59 | G31-eager: 500 r1 11.03 tok/s
+19:00:46 | G31-eager: 500 r2 11.16 tok/s
+19:01:33 | G31-eager: 1000 r1 11.01 tok/s
+19:02:20 | G31-eager: 1000 r2 11.11 tok/s
+19:02:20 | G31-eager: target 2000 exceeds mml, stop
+19:02:20 | G31-eager: COMPLETE (4 ok, 0 err)
+19:06:24 | Q38: still starting (4 min)
+19:07:14 | Q38: no room for KV -> retry mml 16500
+19:11:18 | Q38: still starting (4 min)
+19:11:53 | Q38: no room for KV -> retry mml 8250
+19:15:47 | Q38: no room for KV -> retry mml 4125
+19:19:36 | Q38: no room for KV -> retry mml 2062
+19:19:36 | Q38: capacity retries exhausted -> retrying with --enforce-eager
+19:22:40 | Q38-eager: no room for KV -> retry mml 16500
+19:24:18 | Q38-eager: no room for KV -> retry mml 8250
+19:25:55 | Q38-eager: no room for KV -> retry mml 4125
+19:27:32 | Q38-eager: no room for KV -> retry mml 2062
+19:27:32 | === L4 run end ===
