@@ -3644,8 +3644,8 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "24", len(XB["series"]))
-    ck("index figure, points", "254", sum(len(x["points"]) for x in XB["series"]))
+    ck("index figure, series", "27", len(XB["series"]))
+    ck("index figure, points", "277", sum(len(x["points"]) for x in XB["series"]))
     # Every line is one session at the campaign ladder -- not a three-point probe
     # beside an eleven-rung campaign -- unless the card could not hold the KV for
     # the next rung, which two of the single-card lines could not. A short line
@@ -3654,8 +3654,8 @@ def main():
        1 if all(len(x["points"]) == 11 or x.get("rungs_capped")
                 for x in XB["series"]) else 0)
     XCAP = [x for x in XB["series"] if x.get("rungs_capped")]
-    ck("index figure, lines the card capped", "2", len(XCAP))
-    ck("index figure, and each says how many tokens its KV held", "2",
+    ck("index figure, lines the card capped", "4", len(XCAP))
+    ck("index figure, and each says how many tokens its KV held", "4",
        sum(1 for x in XCAP if x["rungs_capped"].get("kv_tokens")))
     # the cap is arithmetic, and the arithmetic is in the serve logs: the last
     # rung drawn plus what the harness generates has to fit what the KV held,
@@ -3666,7 +3666,8 @@ def main():
         ck("index figure, %s's deepest rung fits its KV" % x["cfg"], "1",
            1 if deepest + 512 <= cap else 0)
         nxt = {500: 1000, 1000: 2000, 2000: 4000, 4000: 6000, 6000: 8000,
-               8000: 12000, 12000: 16000, 16000: 20000}[deepest]
+               8000: 12000, 12000: 16000, 16000: 20000, 20000: 24000,
+               24000: 32000}[deepest]
         ck("index figure, and %s's next rung up does not" % x["cfg"], "1",
            1 if nxt + 512 > cap else 0)
     ck("index figure, speculative lines", "6",
@@ -3699,9 +3700,9 @@ def main():
        sum(1 for x in XB["series"] if x["machine"] == "a100"))
     ck("index figure, lines on one Radeon", "3",
        sum(1 for x in XB["series"] if x["machine"] == "rdna3-1"))
-    ck("index figure, lines on the L4", "2",
+    ck("index figure, lines on the L4", "4",
        sum(1 for x in XB["series"] if x["machine"] == "l4"))
-    ck("index figure, machines offered", "4", len(XB["machines"]))
+    ck("index figure, machines offered", "5", len(XB["machines"]))
     ck("index figure, and one of them is on by default", "1",
        sum(1 for m in XB["machines"] if m["default"]))
     # every machine the figure draws has to have a name in both languages, or
@@ -3712,6 +3713,37 @@ def main():
         ck("index figure, every machine is named in %s" % _lang,
            str(len(XB["machines"])),
            sum(1 for m in XB["machines"] if _sb["bestMach"].get(m["id"])))
+        # A caveated prefill line renders its caveat from this key. Without it
+        # the tooltip prints "undefined" in one language and nothing catches it,
+        # which is the same failure the machine-name check above exists for.
+        ck("prefill figure, the caveat has a string in %s" % _lang, "1",
+           1 if _sb.get("preCaveat") else 0)
+
+    # --- the fifth machine ---------------------------------------------------
+    # The T4 exists in this repository at all because of vllm#39018, and that is
+    # not decoration: it is the only patch in either figure that changes an
+    # attention kernel, so it is the only line whose prefill coefficients mean
+    # something different from every other line's. Decode is untouched by it.
+    _t4 = [x for x in XB["series"] if x["machine"] == "t4"]
+    ck("index figure, lines on the T4", "1", len(_t4))
+    ck("index figure, and the T4 line carries the patch it needs to exist", "1",
+       1 if _t4 and _t4[0]["patches"] == ["vllm#39018"] else 0)
+    ck("index figure, no other line in it carries that patch", "0",
+       sum(1 for x in XB["series"]
+           if x["machine"] != "t4" and "vllm#39018" in x["patches"]))
+    # Two series this repository measured and this figure does not draw. A note
+    # about a series that does not exist would be worse than no note, so each
+    # one is looked up in the projection it claims to be in.
+    _ND = XB["not_drawn"]
+    ck("index figure, series measured and deliberately not drawn", "2", len(_ND))
+    ck("index figure, and each of them says why", "2",
+       sum(1 for n in _ND if n.get("why")))
+    _DECROWS = [json.loads(l) for l in
+                open(os.path.join(HERE, "..", "decode.jsonl"))]
+    ck("index figure, and each is a real series in decode.jsonl", "2",
+       sum(1 for n in _ND if any(r["cfg"] == n["cfg"] for r in _DECROWS)))
+    ck("index figure, and none of them is also drawn", "0",
+       sum(1 for n in _ND if any(x["cfg"] == n["cfg"] for x in XB["series"])))
 
     # Prefix caching was on for the 2026-08-29 A100 campaign and off for the
     # 2026-08-30 one. Its prefill cannot be used; its decode can, and this is
@@ -4129,10 +4161,10 @@ def main():
     import build_prefill as _bpf
     XP = XFIG["prefill"]
     XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
-    ck("prefill figure, lines", "17", len(XP["series"]))
-    ck("prefill figure, machines", "4", len({x["machine"] for x in XP["series"]}))
+    ck("prefill figure, lines", "19", len(XP["series"]))
+    ck("prefill figure, machines", "5", len({x["machine"] for x in XP["series"]}))
     ck("prefill figure, models", "7", len({x["model"] for x in XP["series"]}))
-    ck("prefill figure, single-card lines", "10",
+    ck("prefill figure, single-card lines", "12",
        sum(1 for x in XP["series"] if x["tp"] == 1))
     ck("prefill figure, and lines on the pair", "7",
        sum(1 for x in XP["series"] if x["tp"] == 2))
@@ -4154,7 +4186,7 @@ def main():
     # campaign, whose serve logs were not kept and which therefore records
     # neither. The flag is not the discriminator; repeatability is, and no
     # ungraded rung is drawn.
-    ck("prefill figure, lines measured with prefix caching off", "8",
+    ck("prefill figure, lines measured with prefix caching off", "10",
        sum(1 for x in XP["series"] if x["prefix_caching"] is False))
     ck("prefill figure, lines that had it on and show no hits", "2",
        sum(1 for x in XP["series"] if x["prefix_caching"] is True))
@@ -4162,15 +4194,38 @@ def main():
        sum(1 for x in XP["series"] if x["prefix_caching"] is None))
     # this column is for what was read: five logs survive and all five say
     # TRITON_ATTN, and none of the six records anything else
-    ck("prefill figure, lines recording TRITON_ATTN", "8",
+    ck("prefill figure, lines recording TRITON_ATTN", "9",
        sum(1 for x in XP["series"] if x["attn_backend"] == "TRITON_ATTN"))
     # Two lines do record a different one, and it is not an anomaly: vLLM sends
     # Qwen3.8 and Muse-Glimmer to FLASH_ATTN on the A100 and to TRITON_ATTN (or
     # an unrecorded backend) on the Radeons. That is why `backend_mixed` exists
     # -- a c ratio across those lines is a kernel difference as well as a card
     # one, and the figure has to say so rather than let it be assumed.
-    ck("prefill figure, lines recording FLASH_ATTN", "2",
+    ck("prefill figure, lines recording FLASH_ATTN", "3",
        sum(1 for x in XP["series"] if x["attn_backend"] == "FLASH_ATTN"))
+    # --- the one line drawn on different terms -------------------------------
+    # Its kernel was patched, so its c is not this card against the others, and
+    # its b is not determined by its own ladder. Both facts have to travel with
+    # the line rather than living only in the caption, and the line must be off
+    # by default and out of the card-against-card ratios.
+    _CAV = [x for x in XP["series"] if x.get("caveat")]
+    ck("prefill figure, lines drawn on different terms", "1", len(_CAV))
+    ck("prefill figure, and it is the T4's", "1",
+       1 if _CAV and _CAV[0]["machine"] == "t4" else 0)
+    ck("prefill figure, and it names the patch that makes it different", "1",
+       1 if _CAV and _CAV[0]["caveat"]["patch"] == "vllm#39018" else 0)
+    ck("prefill figure, and it is the only line carrying that patch", "1",
+       sum(1 for x in XP["series"] if "vllm#39018" in
+           [pp for r in XPFROWS if r["cfg"] == x["cfg"] and r["machine"] == x["machine_name"]
+            for pp in r["patches"]]))
+    ck("prefill figure, and a caveated line is never lit without being asked", "0",
+       sum(1 for x in _CAV if x["lit"]))
+    ck("prefill figure, and it is left out of the card-against-card ratios", "0",
+       sum(1 for c in XP["compare"] if c["machine"] == "t4"))
+    # The ratios are still every uncaveated single-card line for those models,
+    # so excluding one is not quietly excluding others.
+    ck("prefill figure, ratios drawn", "4", len(XP["compare"]))
+
     ck("prefill figure, and no line records anything else", "0",
        sum(1 for x in XP["series"]
            if x["attn_backend"] not in (None, "TRITON_ATTN", "FLASH_ATTN")))
@@ -4181,11 +4236,11 @@ def main():
     # 1 slower than round 2 each time, and this repository does not know why.
     _drop = {(x["machine"], x["model"]): [d["ctx"] for d in x["dropped"]]
              for x in XP["series"]}
-    ck("prefill figure, lines dropping their shallowest rung", "9",
+    ck("prefill figure, lines dropping their shallowest rung", "10",
        sum(1 for d in _drop.values() if d == [500]))
     ck("prefill figure, lines dropping the 4000 rung", "4",
        sum(1 for d in _drop.values() if d == [4000]))
-    ck("prefill figure, lines dropping nothing", "4",
+    ck("prefill figure, lines dropping nothing", "5",
        sum(1 for d in _drop.values() if not d))
 
     _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}

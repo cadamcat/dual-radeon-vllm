@@ -161,3 +161,7 @@
   .lgs.na { opacity:.4; cursor:default; }
   .lgs.na:hover { border-color:var(--border); }
 
+/* A caveated line states its caveat where its coefficients are read. Index
+   only: Figure 2 is the only chart in this repository that draws a line whose
+   attention kernel was patched, and `.tip .sub` dims everything it wraps. */
+.tip .warn { color:var(--red); font-weight:700; }

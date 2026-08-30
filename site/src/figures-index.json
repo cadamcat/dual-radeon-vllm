@@ -8,6 +8,7 @@
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -119,6 +120,7 @@
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -233,6 +235,7 @@
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp1",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -344,6 +347,7 @@
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "E26-tp1-u95",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -423,6 +427,7 @@
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp1",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -486,6 +491,7 @@
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -597,6 +603,7 @@
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -708,6 +715,7 @@
     "model": "gemma-4-31B-it",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "G31",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -819,6 +827,7 @@
     "model": "Qwen3.8-27B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -930,6 +939,7 @@
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "MG30",
     "quant": "int4",
     "quant_label": "INT4",
@@ -1041,6 +1051,7 @@
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1152,6 +1163,7 @@
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "E-26B-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1263,6 +1275,7 @@
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp2",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -1377,6 +1390,7 @@
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "G-30B-tp2",
     "quant": "int4",
     "quant_label": "INT4",
@@ -1488,6 +1502,7 @@
     "model": "gemma-3-27b-it",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "F-27B-tp2",
     "quant": "w4a16",
     "quant_label": "W4A16",
@@ -1602,6 +1617,7 @@
     "model": "Qwen3.8-27B",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38-triton-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1716,6 +1732,7 @@
     "model": "gemma-4-31B-it",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "G31-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1820,6 +1837,231 @@
       "range_pct": 0.015462489130646778
      }
     ]
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "model": "Qwen3-8B",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30b/results.jsonl",
+    "fit": {
+     "a_ms": 19.96940255322066,
+     "b_us_tok": 288.3468883585844,
+     "c_ns_tok2": 5.382166636164382,
+     "r2": 0.9998783786867539,
+     "rungs": 10
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 508,
+      "tok_s": 3190.9547738693464,
+      "ttft_s": 0.1592,
+      "runs": 2,
+      "range_pct": 3.768844221105531
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 3224.5681381957775,
+      "ttft_s": 0.3126,
+      "runs": 2,
+      "range_pct": 1.4075495841330823
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 3365.7391887361714,
+      "ttft_s": 0.5966,
+      "runs": 2,
+      "range_pct": 3.419376466644313
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 3168.6299312198594,
+      "ttft_s": 1.2649,
+      "runs": 2,
+      "range_pct": 0.6640841173215245
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 2955.6747183548973,
+      "ttft_s": 2.0327,
+      "runs": 2,
+      "range_pct": 0.07871304176712096
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 2947.4226614402182,
+      "ttft_s": 2.7169499999999998,
+      "runs": 2,
+      "range_pct": 1.019525570952717
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 2837.4626354281127,
+      "ttft_s": 4.231949999999999,
+      "runs": 2,
+      "range_pct": 0.905020144377898
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 2644.1366665840787,
+      "ttft_s": 6.05415,
+      "runs": 2,
+      "range_pct": 2.1192074857742114
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 2511.2175162693206,
+      "ttft_s": 7.96745,
+      "runs": 2,
+      "range_pct": 0.9802383447652755
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 2374.4789013782224,
+      "ttft_s": 10.11085,
+      "runs": 2,
+      "range_pct": 0.8119989911827268
+     }
+    ]
+   },
+   {
+    "machine": "t4",
+    "machine_name": "T4",
+    "model": "gemma-4-12B-it",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": {
+     "kind": "patched-kernel",
+     "patch": "vllm#39018",
+     "what": "halves TILE_PREFILL on the head_size 512 layers, which is the quadratic term this figure decomposes -- without it the engine does not start on sm75 at all",
+     "b_undetermined_pct": 29.9,
+     "c_undetermined_pct": 12.8
+    },
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-t4/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": -2717.7921019649257,
+     "b_us_tok": 3033.1692590813605,
+     "c_ns_tok2": 218.89285474276744,
+     "r2": 0.9997181653448902,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 13.696330055169115
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 519.3273864451963,
+      "ttft_s": 1.9506000000000001,
+      "runs": 2,
+      "range_pct": 1.9891315492668895
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2012,
+      "tok_s": 394.7226445632449,
+      "ttft_s": 5.09725,
+      "runs": 2,
+      "range_pct": 1.6773750551768047
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4010,
+      "tok_s": 312.83887627651524,
+      "ttft_s": 12.818100000000001,
+      "runs": 2,
+      "range_pct": 1.5665348218534665
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 266.33063444536964,
+      "ttft_s": 22.5772,
+      "runs": 2,
+      "range_pct": 0.20197367255461396
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8011,
+      "tok_s": 233.05506947868804,
+      "ttft_s": 34.37385,
+      "runs": 2,
+      "range_pct": 0.09338494233261563
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 188.01717243333005,
+      "ttft_s": 63.893100000000004,
+      "runs": 2,
+      "range_pct": 0.2566787336973701
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16012,
+      "tok_s": 158.38246516589751,
+      "ttft_s": 101.09705,
+      "runs": 2,
+      "range_pct": 0.07309807754033848
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 136.43642749671574,
+      "ttft_s": 146.6837,
+      "runs": 2,
+      "range_pct": 0.4438120936409309
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 119.89079866953318,
+      "ttft_s": 200.29059999999998,
+      "runs": 2,
+      "range_pct": 0.07928479918678841
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 100.93064403543497,
+      "ttft_s": 317.1782,
+      "runs": 2,
+      "range_pct": 0.23494679016400066
+     }
+    ]
    }
   ],
   "compare": [
@@ -1902,9 +2144,12 @@
    },
    {
     "model": "Qwen3-8B",
-    "backends": [],
+    "backends": [
+     "FLASH_ATTN"
+    ],
     "kernel": "unknown",
     "machines": [
+     "l4",
      "rdna3",
      "rdna3-1"
     ],
@@ -1933,7 +2178,8 @@
      "a100",
      "l4",
      "rdna3",
-     "rdna3-1"
+     "rdna3-1",
+     "t4"
     ],
     "unrecorded": 2
    },
@@ -4403,6 +4649,249 @@
     "quant_label": "INT4 AWQ",
     "spec_label": null,
     "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "t4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#39018"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 20.27585,
+      "runs": 2,
+      "range_pct": 1.8342017720588786,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 18.5523,
+      "runs": 2,
+      "range_pct": 1.5297294675053734,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 17.242800000000003,
+      "runs": 2,
+      "range_pct": 0.9116848771661188,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.61865,
+      "runs": 2,
+      "range_pct": 1.0921464739915685,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.3126,
+      "runs": 2,
+      "range_pct": 0.22465159411203692,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 13.9844,
+      "runs": 2,
+      "range_pct": 0.028603300820911583,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 12.709900000000001,
+      "runs": 2,
+      "range_pct": 0.11329750824160842,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 12.00125,
+      "runs": 2,
+      "range_pct": 0.0758254348505373,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 10.49495,
+      "runs": 2,
+      "range_pct": 0.14578440106908436,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 9.5841,
+      "runs": 2,
+      "range_pct": 0.16276958712869175,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 8.9851,
+      "runs": 2,
+      "range_pct": 0.12910262545769788,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": {
+     "kv_gib": 4.4,
+     "kv_tokens": 32000,
+     "why": "4.40 GiB of KV holds 32 000 tokens, 0.13 GiB short of what 33 000 needed, so the runner stepped max_model_len to 31 680 and the 32 000 rung plus its 512 generated tokens no longer fits"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 16.6012,
+      "runs": 2,
+      "range_pct": 0.06505553815386658,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 16.5075,
+      "runs": 2,
+      "range_pct": 0.04240496743903012,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 16.3318,
+      "runs": 2,
+      "range_pct": 0.014695257105756617,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.03255,
+      "runs": 2,
+      "range_pct": 0.033057748143609754,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.738399999999999,
+      "runs": 2,
+      "range_pct": 0.006353886036696526,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 15.4573,
+      "runs": 2,
+      "range_pct": 0.0012938870307203322,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 14.91685,
+      "runs": 2,
+      "range_pct": 0.007374211043222859,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 14.41105,
+      "runs": 2,
+      "range_pct": 0.0034695598169502645,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 13.93975,
+      "runs": 2,
+      "range_pct": 0.0007173729801450309,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 13.4911,
+      "runs": 2,
+      "range_pct": 0.013342129255591717,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "G31-eager",
+    "rungs_capped": {
+     "kv_gib": 1.71,
+     "kv_tokens": 2020,
+     "why": "18.7 GiB of weights leave a negative KV budget with CUDA graphs on; --enforce-eager buys 2.51 GiB, 1.71 GiB of KV, 2 020 tokens"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 11.092600000000001,
+      "runs": 2,
+      "range_pct": 1.177361484232726,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 11.05805,
+      "runs": 2,
+      "range_pct": 0.9215006262406169,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
    }
   ],
   "campaign": {
@@ -4924,6 +5413,20 @@
   "omitted": [
    "Qwen3.6-27B"
   ],
+  "not_drawn": [
+   {
+    "machine": "l4",
+    "cfg": "Q38S",
+    "model": "Qwen3.8-27B",
+    "why": "a different checkpoint of the same model, with no counterpart on any other machine"
+   },
+   {
+    "machine": "rdna3-1",
+    "cfg": "B8-tp1-u95",
+    "model": "Qwen3-8B",
+    "why": "decode is identical to the line already drawn, and swapping it in would make the second-card comparison a stack comparison"
+   }
+  ],
   "machines": [
    {
     "id": "rdna3",
@@ -4942,6 +5445,11 @@
    },
    {
     "id": "l4",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "t4",
     "default": false,
     "cards": 1
    }

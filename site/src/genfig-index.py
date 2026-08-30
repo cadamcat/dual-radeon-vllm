@@ -283,6 +283,99 @@ for cfg, model in L4:
         _L4_RAW, _L4_META, cfg, model, "l4", "2026-08-30", "0.28.0",
         "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl"))
 
+# --- the 2026-08-30 four-machine round --------------------------------------
+# These come out of `decode.jsonl` rather than out of a campaign's raw file,
+# because that projection is the one this repository gates: `build_decode.py
+# --check` recomputes it from the sources AND asserts it against the ledger
+# wherever both cover a cell. Re-aggregating the raw rows here a third time
+# would be a third answer to a question that already has one.
+_DEC = [json.loads(l) for l in open(B / "decode.jsonl")]
+
+
+def _decode_series(machine_name, cfg, date, mid, rungs, capped=None, lit=False):
+    rows = sorted([r for r in _DEC if r["machine"] == machine_name
+                   and r["cfg"] == cfg and r["date"] == date],
+                  key=lambda r: r["ctx"])
+    assert len(rows) == rungs, f"{cfg}: {len(rows)} rungs, expected {rungs}"
+    r0 = rows[0]
+    return {"model": r0["model"], "machine": mid, "tp": r0["tp"], "lit": lit,
+            "vllm": r0["vllm"], "patches": list(r0["patches"]),
+            "harness": r0["harness"], "date": date, "quant": r0["quant"],
+            "arch": r0["arch"], "spec": r0["spec"] is not None,
+            "spec_desc": r0["spec"], "attn_backend": r0["attn_backend"],
+            "cfg": cfg, "rungs_capped": capped, "alt": None,
+            "source": "benchmarks/decode.jsonl",
+            "points": [{"ctx": r["ctx"], "tok_s": r["decode_tok_s"],
+                        "runs": r["runs"], "range_pct": r["range_pct"],
+                        "graded": r["chart_grade"]} for r in rows]}
+
+
+# The fifth machine. It exists here at all because of vllm#39018: without it the
+# engine does not start on sm75, dying at kernel load asking 98 304 bytes of
+# shared memory against Turing's 65 536. **Decode is unaffected by that patch**
+# -- it only changes `TILE_PREFILL` -- so this line answers Figure 1's question
+# on the same terms as every other. Figure 2's is a different matter and is
+# handled there.
+series.append(_decode_series("T4", "G12", "2026-08-30", "t4", 11))
+
+# Two more on the L4, from the same round.
+#
+# `B8` stops at 24 000 and that is the capacity retry rather than the card
+# refusing: 33 000 tokens wanted 4.53 GiB of KV against 4.40 available, so the
+# runner stepped `max_model_len` to 31 680 and the 32 000 rung plus its 512
+# generated tokens no longer fits inside it.
+#
+# `G31-eager` stops at 1 000 and that IS the card. gemma-4-31B does not start on
+# this L4 at all with CUDA graphs on -- `Available KV cache memory: -0.8 GiB` --
+# and `--enforce-eager` turns that into +1.71 GiB, 2 020 tokens. It carries its
+# own configuration id because eager is a different engine, not another arm of
+# `G31`, and two rungs is what a 2 020-token pool reaches.
+L4_ROUND = [
+    ("B8", 10, {"kv_gib": 4.4, "kv_tokens": 32000,
+                "why": "4.40 GiB of KV holds 32 000 tokens, 0.13 GiB short of "
+                       "what 33 000 needed, so the runner stepped "
+                       "max_model_len to 31 680 and the 32 000 rung plus its "
+                       "512 generated tokens no longer fits"}),
+    ("G31-eager", 2, {"kv_gib": 1.71, "kv_tokens": 2020,
+                      "why": "18.7 GiB of weights leave a negative KV budget with "
+                             "CUDA graphs on; --enforce-eager buys 2.51 GiB, "
+                             "1.71 GiB of KV, 2 020 tokens"}),
+]
+for cfg, rungs, capped in L4_ROUND:
+    series.append(_decode_series("L4", cfg, "2026-08-30", "l4", rungs, capped))
+
+# Deliberately NOT drawn, and each for a reason that is about the figure's own
+# grammar rather than about the data:
+#
+#   L4 `Q38S`   RedHatAI/Qwen3.8-27B, symmetric compressed-tensors at group 128.
+#               It is a different CHECKPOINT of Qwen3.8-27B, not another arm of
+#               the AWQ one this figure already draws, and on gfx1100 the two
+#               differ by 1.27-3.24x on decode. The chart keys a label on the
+#               model name and asserts one `quant` per model; drawing this would
+#               put "INT4 AWQ" and "INT4 SYM CT" behind one legend entry. It has
+#               no counterpart on any other machine either, so it would be a
+#               line with nothing to be read against.
+#
+#   7900 XT `B8-tp1-u95`   Qwen3-8B on one card on the 0.27 image, stock. Decode
+#               is the same as the 2026-08-24 line already drawn to 0.21 % at
+#               every rung, and prefill is 1.24x better on b and 1.82x on c --
+#               so it is the better measurement, and it still cannot replace
+#               that line here. `tp_gain` below prices the second card by
+#               comparing this machine's one-card line against its two-card
+#               line, and those have to be the same stack: swapping in an 0.27
+#               single-card arm against an 0.23.1 pair would turn a
+#               1.23x/2.08x topology result into a 1.04x/1.03x stack result and
+#               call it the second card. The arm is in both projections and has
+#               its own README; it is not on this chart.
+NOT_DRAWN = [
+    {"machine": "l4", "cfg": "Q38S", "model": "Qwen3.8-27B",
+     "why": "a different checkpoint of the same model, with no counterpart on "
+            "any other machine"},
+    {"machine": "rdna3-1", "cfg": "B8-tp1-u95", "model": "Qwen3-8B",
+     "why": "decode is identical to the line already drawn, and swapping it in "
+            "would make the second-card comparison a stack comparison"},
+]
+
 # --- the control the A100 lines now have ------------------------------------
 # The same two models were measured again on the A100 on 2026-08-30 with prefix
 # caching off, because that campaign's *prefill* was measured through a warm
@@ -556,7 +649,40 @@ PF_LINES = [
     ("rdna3",   "RX 7900 XT",     "gemma-3-27b-it",   "2026-08-24", "F-27B-tp2"),
     ("rdna3",   "RX 7900 XT",     "Qwen3.8-27B",      "2026-08-29", "Q38-triton-tp2"),
     ("rdna3",   "RX 7900 XT",     "gemma-4-31B-it",   "2026-08-29", "G31-tp2"),
+    # 2026-08-30, the four-machine round.
+    #
+    # Qwen3-8B on the L4 is a third card for a model that had one and the pair.
+    # Ten rungs: the capacity retry stepped `max_model_len` to 31 680.
+    ("l4",      "L4",             "Qwen3-8B",         "2026-08-30", "B8"),
+    # The T4, which is here on different terms from every other line and says so
+    # in `caveat`. Its rows are the only ones in either projection measured with
+    # a patch that changes an attention kernel's tile size: vllm#39018 halves
+    # `TILE_PREFILL` on the head_size 512 layers, and this figure's argument is
+    # the split between b and c. So its c is not this card against the others,
+    # it is this card with a different kernel.
+    ("t4",      "T4",             "gemma-4-12B-it",   "2026-08-30", "G12"),
 ]
+
+# Lines whose coefficients must not be read as this figure reads the others.
+# Carried on the series so the tooltip and the caption say it, rather than the
+# figure drawing a line it quietly does not mean.
+PF_CAVEAT = {
+    ("t4", "G12"): {
+        "kind": "patched-kernel",
+        "patch": "vllm#39018",
+        "what": "halves TILE_PREFILL on the head_size 512 layers, which is the "
+                "quadratic term this figure decomposes -- without it the engine "
+                "does not start on sm75 at all",
+        # And the second reason, which is this line's own measurement rather
+        # than the patch: b is not determined by this ladder. The 32 000 rung
+        # was measured on a different VM from the ten below it, the two agree to
+        # 4.61 % there, and swapping which one supplies it moves b by 29.9 % and
+        # c by 12.8 %. The curve is quadratic-dominated in a way no other line
+        # here is -- 224 s against 97 s at 32 K -- so the linear term absorbs it.
+        "b_undetermined_pct": 29.9,
+        "c_undetermined_pct": 12.8,
+    },
+}
 # Lit to start: the two models every machine ran, which is the comparison the
 # figure exists to make. The other five are the pair's alone and are one click
 # away; lighting fourteen lines at once would be showing everything and saying
@@ -576,7 +702,10 @@ for mid, machine, model, date, cfg in PF_LINES:
     quant, arch = _QA[model]
     pf_series.append({
         "machine": mid, "machine_name": machine, "model": model, "date": date,
-        "lit": model in PF_LIT,
+        # A caveated line is never lit by default: it has to be asked for, so a
+        # reader who has it on has seen the row that says why it is different.
+        "lit": model in PF_LIT and (mid, cfg) not in PF_CAVEAT,
+        "caveat": PF_CAVEAT.get((mid, cfg)),
         "cfg": cfg, "quant": quant, "quant_label": qlabel(quant), "arch": arch,
         "tp": rows[0]["tp"], "vllm": rows[0]["vllm"],
         "attn_backend": rows[0]["attn_backend"],
@@ -602,6 +731,11 @@ for model in ("gemma-4-12B-it", "gemma-4-26B-A4B"):
     ref = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3-1")
     for x in pf_series:
         if x["model"] != model or x["machine"] in ("rdna3-1", "rdna3"):
+            continue
+        # A card-against-card ratio is the point of this table, and a line whose
+        # kernel was patched is not that card against the others. The T4 is
+        # drawn and excluded here, which is the honest pair of things to do.
+        if x.get("caveat"):
             continue
         pf_cmp.append({"model": model, "machine": x["machine"],
                        "b_ratio": ref["fit"]["b_us_tok"] / x["fit"]["b_us_tok"],
@@ -728,6 +862,11 @@ out = {
         "mtp_pairs": mtp_pairs,
         "alt_pairs": alt_pairs,
         "omitted": OMIT,
+        # Measured, in both projections, and deliberately absent from this
+        # chart. `omitted` is a model this repository has nothing current to say
+        # about; this is a series it has plenty to say about that this figure's
+        # own grammar cannot hold.
+        "not_drawn": NOT_DRAWN,
         # Order is the order the row is drawn in, and the two-card Radeon is
         # first because it is what this repository is about. The three
         # single-card machines are off by default: the figure's first question
@@ -737,7 +876,8 @@ out = {
         "machines": [{"id": "rdna3", "default": True, "cards": 2},
                      {"id": "a100", "default": False, "cards": 1},
                      {"id": "rdna3-1", "default": False, "cards": 1},
-                     {"id": "l4", "default": False, "cards": 1}],
+                     {"id": "l4", "default": False, "cards": 1},
+                     {"id": "t4", "default": False, "cards": 1}],
         "cache_control": cache_control,
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),
         "ctx_max": max(p["ctx"] for s in series for p in s["points"]),

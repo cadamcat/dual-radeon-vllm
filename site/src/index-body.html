@@ -30,15 +30,23 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <figcaption>
     <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
     log axis. Four models are lit to start; click any name to add or remove it, and the machine row
-    above to overlay another card. Four machines are offered and three of them are a
-    <em>single</em> card: one A100 80G, one of these 7900 XTs, and one L4 24G. The same checkpoints
+    above to overlay another card. Five machines are offered and four of them are a
+    <em>single</em> card: one A100 80G, one of these 7900 XTs, one L4 24G and one Tesla T4 16G. The
+    same checkpoints
     throughout — TP=1 on vLLM 0.28.0 for the CUDA cards against TP=2 on 0.23.1 for the pair. The
-    checkpoint is what the machines share; the split and the stack are not. Two of the single-card
+    checkpoint is what the machines share; the split and the stack are not. The T4 is here at all
+    only because of <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>: without
+    it the engine does not start on sm75, dying at kernel load asking 98 304 bytes of shared memory
+    against Turing's 65 536. That patch changes prefill's tile size and nothing else, so this figure
+    reads its line on the same terms as every other; Figure 2 does not, and says so. Four of the
+    single-card
     lines stop early, and that is the measurement rather than a gap: a card that cannot hold the KV
     for the next rung cannot measure it, and the tooltip on those lines says how many tokens its KV
-    held. Every line is one session at one
-    ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across days, and the
-    tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
+    held. The shortest is two rungs — gemma-4-31B does not start on the L4 at all with CUDA graphs
+    on, and <code>--enforce-eager</code> buys it 2.51 GiB, a 2 020-token pool and those two rungs.
+    Every line is one session at one
+    ladder — up to eleven rungs, two rounds a cell — rather than a best-of stitched across days, and
+    the tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
     measured the same day and on the same kernel as the line it sits beside, so it shows what
     speculation does to <em>that</em> line rather than the fastest speculative run anywhere. It is
     named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
@@ -50,15 +58,21 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     decode, by more than it buys (Figure 2) — and the switch is the half the front page used to leave
     out. Stroke says which is which: solid these two cards, long
     dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation, dot-dash the
-    alternative backend. Hover a point for the run count and the stack it took.
+    alternative backend, dash-dot-dot the T4. Hover a point for the run count and the stack it took.
     The vertical axis fits
-    what is lit, so switching a line on can move it.
+    what is lit, so switching a line on can move it. Two series this repository measured are
+    deliberately absent, each because of this chart's own grammar rather than the data: the L4's
+    Qwen3.8-27B is a <em>different checkpoint</em> from the one already drawn — symmetric
+    compressed-tensors against AWQ, 1.27–3.24× apart on decode on gfx1100 — and a legend keyed on
+    the model name would put both behind one entry; and Qwen3-8B on one 7900 XT on vLLM 0.27 decodes
+    identically to the line already drawn, to 0.21 % at every rung, while swapping it in would turn
+    Figure 2's second-card comparison into a stack comparison.
   </figcaption>
 </figure>
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, four machines
+    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, five machines
       <span class="prov yes">recomputable from repo</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -69,10 +83,11 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <figcaption>
     <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each machine
     <em>generates</em>; this is how fast it reads the prompt. Every model this repository has a
-    chart-grade prefill ladder for is here — seven models, fourteen lines, four machines — because
+    chart-grade prefill ladder for is here — seven models, nineteen lines, five machines — because
     prefill was recorded beside decode in every campaign since July and had never been drawn.
     Colour and stroke are Figure 1's, so a line means the same thing in both. Lit to start are the
-    two models all four machines ran; the other five are the pair's alone and are one click away.
+    two models four of the five machines ran; the other five are the pair's alone and are one click
+    away. The dense 12B is the one model every machine here has run.
     Prefill is not one number: split the time into a fixed cost, a linear term and attention's
     quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while <b>c</b> is
     how badly attention scales. Three things fall out that a single prefill tok/s cannot say.
@@ -84,6 +99,17 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     communication. <b>And the flag is a trade</b>: pinning Qwen3.8 to <code>TRITON_ATTN</code>, which
     this repository has been calling free, is worth 1.15× of decode at 32 K and <em>costs</em> 1.40×
     of prefill there. Hover a point for the run count and that line's fitted coefficients.
+    <b>One line is drawn on different terms and says so where its coefficients are read.</b> The T4
+    runs gemma-4-12B only with <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>
+    applied, and that patch halves <code>TILE_PREFILL</code> on the head_size 512 layers — which is
+    the quadratic term this figure decomposes. So its <b>c</b> is this card <em>with a different
+    kernel</em>, not this card against the others, and it is left out of the ratios above. Its
+    <b>b</b> is not determined by its ladder either: the 32 000 rung was measured on a second VM,
+    the two agree to 4.61 % there, and swapping which one supplies it moves <b>b</b> by 29.9 % and
+    <b>c</b> by 12.8 %. That is because this curve is quadratic-dominated in a way no other line
+    here is — 224 s of c·S² against 97 s of b·S at 32 K — so the linear term absorbs the
+    uncertainty, the way <b>a</b> does on every other line. It is drawn because the ladder is real
+    and the card is the fifth machine; it is off until asked for.
     Only rungs whose two rounds agree are drawn, and the one each line drops is not one story: six
     lines drop their shallowest, which on the CUDA cards is the cold engine's first request the
     runner did not discard until 2026-08-30, and four Radeon lines drop the 4 000 rung — round 1
@@ -156,20 +182,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
  "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
- "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · short dash: the same line with speculation on",
+ "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4 · short dash: the same line with speculation on",
  "bestCapped": "{m} stops at {k} because {w}",
- "preHint": "click a model or a machine to add or remove its lines · two models ran on all four machines and are lit; the other five are the pair\u2019s alone",
+ "preHint": "click a model or a machine to add or remove its lines · two models ran on four of the five machines and are lit; the other five are the pair\u2019s alone",
  "preAxisX": "prompt tokens",
  "preAxisY": "prefill tok/s",
- "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, four machines, every chart-grade ladder this repository has",
- "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4",
+ "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, five machines, every chart-grade ladder this repository has",
+ "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4",
  "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "against one RX 7900 XT on {m}: {x} is {b}× on b and {c}× on c",
  "preDropped": "{n} rung dropped, rounds {r}% apart",
+ "preCaveat": "{p} halves this kernel's tile size, so c is a kernel difference and not only a card one · b is undetermined by ±{b}% · drawn, and left out of the ratios",
  "preNote": "b is compute and c is how badly attention scales; the two do not move together",
  "preTpGain": "the second card buys {m} {b}× on b and {c}× on c — attention parallelises better than the GEMMs, because it needs no communication",
  "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
@@ -537,12 +564,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
             : "") + "</span>";
       };
     }
-    // One model can now own five lines -- four machines by two arms -- and they
+    // One model can now own several lines -- five machines by two arms -- and they
     // share a colour, so the stroke has to carry machine and arm both. The
     // table is the machine's; speculation overrides it, because a speculative
     // arm exists on only two of the four and reading "this is the arm" matters
     // more there than reading which card it ran on, which the tooltip says.
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
     function stroke(x) {
       if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
       // an alternative arm shares its line's machine, so it needs its own
@@ -727,7 +754,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
 
     var colour = {};
     BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
 
     // Models in Figure 1's colour order so the two figures agree; machines in
     // Figure 1's row order for the same reason.
@@ -762,6 +789,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
           (x.dropped.length
             ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
                 r: x.dropped[0].range_pct.toFixed(0) }))
+            : "") +
+          // A caveated line states its caveat where its coefficients are read,
+          // not only in the caption. The T4 is drawn because its ladder is
+          // real; its b and c are not this figure's b and c, and the tooltip
+          // is where a reader meets them.
+          (x.caveat
+            ? '<br><b class="warn">' + esc(fmt(S.preCaveat, {
+                m: x.model, p: x.caveat.patch,
+                b: x.caveat.b_undetermined_pct.toFixed(0) })) + "</b>"
             : "") + "</span>";
       };
     }

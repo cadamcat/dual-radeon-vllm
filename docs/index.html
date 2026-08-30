@@ -510,6 +510,10 @@
   .lgs.na { opacity:.4; cursor:default; }
   .lgs.na:hover { border-color:var(--border); }
 
+/* A caveated line states its caveat where its coefficients are read. Index
+   only: Figure 2 is the only chart in this repository that draws a line whose
+   attention kernel was patched, and `.tip .sub` dims everything it wraps. */
+.tip .warn { color:var(--red); font-weight:700; }
 
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
@@ -1112,15 +1116,23 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <figcaption>
     <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
     log axis. Four models are lit to start; click any name to add or remove it, and the machine row
-    above to overlay another card. Four machines are offered and three of them are a
-    <em>single</em> card: one A100 80G, one of these 7900 XTs, and one L4 24G. The same checkpoints
+    above to overlay another card. Five machines are offered and four of them are a
+    <em>single</em> card: one A100 80G, one of these 7900 XTs, one L4 24G and one Tesla T4 16G. The
+    same checkpoints
     throughout — TP=1 on vLLM 0.28.0 for the CUDA cards against TP=2 on 0.23.1 for the pair. The
-    checkpoint is what the machines share; the split and the stack are not. Two of the single-card
+    checkpoint is what the machines share; the split and the stack are not. The T4 is here at all
+    only because of <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>: without
+    it the engine does not start on sm75, dying at kernel load asking 98 304 bytes of shared memory
+    against Turing's 65 536. That patch changes prefill's tile size and nothing else, so this figure
+    reads its line on the same terms as every other; Figure 2 does not, and says so. Four of the
+    single-card
     lines stop early, and that is the measurement rather than a gap: a card that cannot hold the KV
     for the next rung cannot measure it, and the tooltip on those lines says how many tokens its KV
-    held. Every line is one session at one
-    ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across days, and the
-    tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
+    held. The shortest is two rungs — gemma-4-31B does not start on the L4 at all with CUDA graphs
+    on, and <code>--enforce-eager</code> buys it 2.51 GiB, a 2 020-token pool and those two rungs.
+    Every line is one session at one
+    ladder — up to eleven rungs, two rounds a cell — rather than a best-of stitched across days, and
+    the tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
     measured the same day and on the same kernel as the line it sits beside, so it shows what
     speculation does to <em>that</em> line rather than the fastest speculative run anywhere. It is
     named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
@@ -1132,15 +1144,21 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     decode, by more than it buys (Figure 2) — and the switch is the half the front page used to leave
     out. Stroke says which is which: solid these two cards, long
     dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation, dot-dash the
-    alternative backend. Hover a point for the run count and the stack it took.
+    alternative backend, dash-dot-dot the T4. Hover a point for the run count and the stack it took.
     The vertical axis fits
-    what is lit, so switching a line on can move it.
+    what is lit, so switching a line on can move it. Two series this repository measured are
+    deliberately absent, each because of this chart's own grammar rather than the data: the L4's
+    Qwen3.8-27B is a <em>different checkpoint</em> from the one already drawn — symmetric
+    compressed-tensors against AWQ, 1.27–3.24× apart on decode on gfx1100 — and a legend keyed on
+    the model name would put both behind one entry; and Qwen3-8B on one 7900 XT on vLLM 0.27 decodes
+    identically to the line already drawn, to 0.21 % at every rung, while swapping it in would turn
+    Figure 2's second-card comparison into a stack comparison.
   </figcaption>
 </figure>
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, four machines
+    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, five machines
       <span class="prov yes">recomputable from repo</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -1151,10 +1169,11 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <figcaption>
     <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each machine
     <em>generates</em>; this is how fast it reads the prompt. Every model this repository has a
-    chart-grade prefill ladder for is here — seven models, fourteen lines, four machines — because
+    chart-grade prefill ladder for is here — seven models, nineteen lines, five machines — because
     prefill was recorded beside decode in every campaign since July and had never been drawn.
     Colour and stroke are Figure 1's, so a line means the same thing in both. Lit to start are the
-    two models all four machines ran; the other five are the pair's alone and are one click away.
+    two models four of the five machines ran; the other five are the pair's alone and are one click
+    away. The dense 12B is the one model every machine here has run.
     Prefill is not one number: split the time into a fixed cost, a linear term and attention's
     quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while <b>c</b> is
     how badly attention scales. Three things fall out that a single prefill tok/s cannot say.
@@ -1166,6 +1185,17 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     communication. <b>And the flag is a trade</b>: pinning Qwen3.8 to <code>TRITON_ATTN</code>, which
     this repository has been calling free, is worth 1.15× of decode at 32 K and <em>costs</em> 1.40×
     of prefill there. Hover a point for the run count and that line's fitted coefficients.
+    <b>One line is drawn on different terms and says so where its coefficients are read.</b> The T4
+    runs gemma-4-12B only with <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>
+    applied, and that patch halves <code>TILE_PREFILL</code> on the head_size 512 layers — which is
+    the quadratic term this figure decomposes. So its <b>c</b> is this card <em>with a different
+    kernel</em>, not this card against the others, and it is left out of the ratios above. Its
+    <b>b</b> is not determined by its ladder either: the 32 000 rung was measured on a second VM,
+    the two agree to 4.61 % there, and swapping which one supplies it moves <b>b</b> by 29.9 % and
+    <b>c</b> by 12.8 %. That is because this curve is quadratic-dominated in a way no other line
+    here is — 224 s of c·S² against 97 s of b·S at 32 K — so the linear term absorbs the
+    uncertainty, the way <b>a</b> does on every other line. It is drawn because the ladder is real
+    and the card is the fifth machine; it is off until asked for.
     Only rungs whose two rounds agree are drawn, and the one each line drops is not one story: six
     lines drop their shallowest, which on the CUDA cards is the cold engine's first request the
     runner did not discard until 2026-08-30, and four Radeon lines drop the 4 000 rung — round 1
@@ -1243,6 +1273,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1354,6 +1385,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1468,6 +1500,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp1",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1579,6 +1612,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "E26-tp1-u95",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1658,6 +1692,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp1",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -1721,6 +1756,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1832,6 +1868,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1943,6 +1980,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-31B-it",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "G31",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -2054,6 +2092,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Qwen3.8-27B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2165,6 +2204,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "MG30",
     "quant": "int4",
     "quant_label": "INT4",
@@ -2276,6 +2316,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -2387,6 +2428,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "E-26B-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2498,6 +2540,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp2",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -2612,6 +2655,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "G-30B-tp2",
     "quant": "int4",
     "quant_label": "INT4",
@@ -2723,6 +2767,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-3-27b-it",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "F-27B-tp2",
     "quant": "w4a16",
     "quant_label": "W4A16",
@@ -2837,6 +2882,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "Qwen3.8-27B",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38-triton-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2951,6 +2997,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "model": "gemma-4-31B-it",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "G31-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -3055,6 +3102,231 @@ topology. The shapes transfer; the levels are the worst case.</p>
       "range_pct": 0.015462489130646778
      }
     ]
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "model": "Qwen3-8B",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30b/results.jsonl",
+    "fit": {
+     "a_ms": 19.96940255322066,
+     "b_us_tok": 288.3468883585844,
+     "c_ns_tok2": 5.382166636164382,
+     "r2": 0.9998783786867539,
+     "rungs": 10
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 508,
+      "tok_s": 3190.9547738693464,
+      "ttft_s": 0.1592,
+      "runs": 2,
+      "range_pct": 3.768844221105531
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 3224.5681381957775,
+      "ttft_s": 0.3126,
+      "runs": 2,
+      "range_pct": 1.4075495841330823
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 3365.7391887361714,
+      "ttft_s": 0.5966,
+      "runs": 2,
+      "range_pct": 3.419376466644313
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 3168.6299312198594,
+      "ttft_s": 1.2649,
+      "runs": 2,
+      "range_pct": 0.6640841173215245
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 2955.6747183548973,
+      "ttft_s": 2.0327,
+      "runs": 2,
+      "range_pct": 0.07871304176712096
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 2947.4226614402182,
+      "ttft_s": 2.7169499999999998,
+      "runs": 2,
+      "range_pct": 1.019525570952717
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 2837.4626354281127,
+      "ttft_s": 4.231949999999999,
+      "runs": 2,
+      "range_pct": 0.905020144377898
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 2644.1366665840787,
+      "ttft_s": 6.05415,
+      "runs": 2,
+      "range_pct": 2.1192074857742114
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 2511.2175162693206,
+      "ttft_s": 7.96745,
+      "runs": 2,
+      "range_pct": 0.9802383447652755
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 2374.4789013782224,
+      "ttft_s": 10.11085,
+      "runs": 2,
+      "range_pct": 0.8119989911827268
+     }
+    ]
+   },
+   {
+    "machine": "t4",
+    "machine_name": "T4",
+    "model": "gemma-4-12B-it",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": {
+     "kind": "patched-kernel",
+     "patch": "vllm#39018",
+     "what": "halves TILE_PREFILL on the head_size 512 layers, which is the quadratic term this figure decomposes -- without it the engine does not start on sm75 at all",
+     "b_undetermined_pct": 29.9,
+     "c_undetermined_pct": 12.8
+    },
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-t4/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": -2717.7921019649257,
+     "b_us_tok": 3033.1692590813605,
+     "c_ns_tok2": 218.89285474276744,
+     "r2": 0.9997181653448902,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 13.696330055169115
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 519.3273864451963,
+      "ttft_s": 1.9506000000000001,
+      "runs": 2,
+      "range_pct": 1.9891315492668895
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2012,
+      "tok_s": 394.7226445632449,
+      "ttft_s": 5.09725,
+      "runs": 2,
+      "range_pct": 1.6773750551768047
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4010,
+      "tok_s": 312.83887627651524,
+      "ttft_s": 12.818100000000001,
+      "runs": 2,
+      "range_pct": 1.5665348218534665
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 266.33063444536964,
+      "ttft_s": 22.5772,
+      "runs": 2,
+      "range_pct": 0.20197367255461396
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8011,
+      "tok_s": 233.05506947868804,
+      "ttft_s": 34.37385,
+      "runs": 2,
+      "range_pct": 0.09338494233261563
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 188.01717243333005,
+      "ttft_s": 63.893100000000004,
+      "runs": 2,
+      "range_pct": 0.2566787336973701
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16012,
+      "tok_s": 158.38246516589751,
+      "ttft_s": 101.09705,
+      "runs": 2,
+      "range_pct": 0.07309807754033848
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 136.43642749671574,
+      "ttft_s": 146.6837,
+      "runs": 2,
+      "range_pct": 0.4438120936409309
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 119.89079866953318,
+      "ttft_s": 200.29059999999998,
+      "runs": 2,
+      "range_pct": 0.07928479918678841
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 100.93064403543497,
+      "ttft_s": 317.1782,
+      "runs": 2,
+      "range_pct": 0.23494679016400066
+     }
+    ]
    }
   ],
   "compare": [
@@ -3137,9 +3409,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
    },
    {
     "model": "Qwen3-8B",
-    "backends": [],
+    "backends": [
+     "FLASH_ATTN"
+    ],
     "kernel": "unknown",
     "machines": [
+     "l4",
      "rdna3",
      "rdna3-1"
     ],
@@ -3168,7 +3443,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      "a100",
      "l4",
      "rdna3",
-     "rdna3-1"
+     "rdna3-1",
+     "t4"
     ],
     "unrecorded": 2
    },
@@ -5638,6 +5914,249 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "quant_label": "INT4 AWQ",
     "spec_label": null,
     "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "t4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#39018"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 20.27585,
+      "runs": 2,
+      "range_pct": 1.8342017720588786,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 18.5523,
+      "runs": 2,
+      "range_pct": 1.5297294675053734,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 17.242800000000003,
+      "runs": 2,
+      "range_pct": 0.9116848771661188,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.61865,
+      "runs": 2,
+      "range_pct": 1.0921464739915685,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.3126,
+      "runs": 2,
+      "range_pct": 0.22465159411203692,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 13.9844,
+      "runs": 2,
+      "range_pct": 0.028603300820911583,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 12.709900000000001,
+      "runs": 2,
+      "range_pct": 0.11329750824160842,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 12.00125,
+      "runs": 2,
+      "range_pct": 0.0758254348505373,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 10.49495,
+      "runs": 2,
+      "range_pct": 0.14578440106908436,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 9.5841,
+      "runs": 2,
+      "range_pct": 0.16276958712869175,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 8.9851,
+      "runs": 2,
+      "range_pct": 0.12910262545769788,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": {
+     "kv_gib": 4.4,
+     "kv_tokens": 32000,
+     "why": "4.40 GiB of KV holds 32 000 tokens, 0.13 GiB short of what 33 000 needed, so the runner stepped max_model_len to 31 680 and the 32 000 rung plus its 512 generated tokens no longer fits"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 16.6012,
+      "runs": 2,
+      "range_pct": 0.06505553815386658,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 16.5075,
+      "runs": 2,
+      "range_pct": 0.04240496743903012,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 16.3318,
+      "runs": 2,
+      "range_pct": 0.014695257105756617,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.03255,
+      "runs": 2,
+      "range_pct": 0.033057748143609754,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.738399999999999,
+      "runs": 2,
+      "range_pct": 0.006353886036696526,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 15.4573,
+      "runs": 2,
+      "range_pct": 0.0012938870307203322,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 14.91685,
+      "runs": 2,
+      "range_pct": 0.007374211043222859,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 14.41105,
+      "runs": 2,
+      "range_pct": 0.0034695598169502645,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 13.93975,
+      "runs": 2,
+      "range_pct": 0.0007173729801450309,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 13.4911,
+      "runs": 2,
+      "range_pct": 0.013342129255591717,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "G31-eager",
+    "rungs_capped": {
+     "kv_gib": 1.71,
+     "kv_tokens": 2020,
+     "why": "18.7 GiB of weights leave a negative KV budget with CUDA graphs on; --enforce-eager buys 2.51 GiB, 1.71 GiB of KV, 2 020 tokens"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 11.092600000000001,
+      "runs": 2,
+      "range_pct": 1.177361484232726,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 11.05805,
+      "runs": 2,
+      "range_pct": 0.9215006262406169,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
    }
   ],
   "campaign": {
@@ -6159,6 +6678,20 @@ topology. The shapes transfer; the levels are the worst case.</p>
   "omitted": [
    "Qwen3.6-27B"
   ],
+  "not_drawn": [
+   {
+    "machine": "l4",
+    "cfg": "Q38S",
+    "model": "Qwen3.8-27B",
+    "why": "a different checkpoint of the same model, with no counterpart on any other machine"
+   },
+   {
+    "machine": "rdna3-1",
+    "cfg": "B8-tp1-u95",
+    "model": "Qwen3-8B",
+    "why": "decode is identical to the line already drawn, and swapping it in would make the second-card comparison a stack comparison"
+   }
+  ],
   "machines": [
    {
     "id": "rdna3",
@@ -6177,6 +6710,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
    },
    {
     "id": "l4",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "t4",
     "default": false,
     "cards": 1
    }
@@ -7598,20 +8136,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 }</script>
 <script type="application/json" id="strings">{
  "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
- "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · short dash: the same line with speculation on",
+ "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4 · short dash: the same line with speculation on",
  "bestCapped": "{m} stops at {k} because {w}",
- "preHint": "click a model or a machine to add or remove its lines · two models ran on all four machines and are lit; the other five are the pair\u2019s alone",
+ "preHint": "click a model or a machine to add or remove its lines · two models ran on four of the five machines and are lit; the other five are the pair\u2019s alone",
  "preAxisX": "prompt tokens",
  "preAxisY": "prefill tok/s",
- "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, four machines, every chart-grade ladder this repository has",
- "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4",
+ "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, five machines, every chart-grade ladder this repository has",
+ "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4",
  "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "against one RX 7900 XT on {m}: {x} is {b}× on b and {c}× on c",
  "preDropped": "{n} rung dropped, rounds {r}% apart",
+ "preCaveat": "{p} halves this kernel's tile size, so c is a kernel difference and not only a card one · b is undetermined by ±{b}% · drawn, and left out of the ratios",
  "preNote": "b is compute and c is how badly attention scales; the two do not move together",
  "preTpGain": "the second card buys {m} {b}× on b and {c}× on c — attention parallelises better than the GEMMs, because it needs no communication",
  "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
@@ -7979,12 +8518,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
             : "") + "</span>";
       };
     }
-    // One model can now own five lines -- four machines by two arms -- and they
+    // One model can now own several lines -- five machines by two arms -- and they
     // share a colour, so the stroke has to carry machine and arm both. The
     // table is the machine's; speculation overrides it, because a speculative
     // arm exists on only two of the four and reading "this is the arm" matters
     // more there than reading which card it ran on, which the tooltip says.
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
     function stroke(x) {
       if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
       // an alternative arm shares its line's machine, so it needs its own
@@ -8169,7 +8708,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
 
     var colour = {};
     BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
 
     // Models in Figure 1's colour order so the two figures agree; machines in
     // Figure 1's row order for the same reason.
@@ -8204,6 +8743,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
           (x.dropped.length
             ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
                 r: x.dropped[0].range_pct.toFixed(0) }))
+            : "") +
+          // A caveated line states its caveat where its coefficients are read,
+          // not only in the caption. The T4 is drawn because its ladder is
+          // real; its b and c are not this figure's b and c, and the tooltip
+          // is where a reader meets them.
+          (x.caveat
+            ? '<br><b class="warn">' + esc(fmt(S.preCaveat, {
+                m: x.model, p: x.caveat.patch,
+                b: x.caveat.b_undetermined_pct.toFixed(0) })) + "</b>"
             : "") + "</span>";
       };
     }

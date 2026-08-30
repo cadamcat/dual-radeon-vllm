@@ -510,6 +510,10 @@
   .lgs.na { opacity:.4; cursor:default; }
   .lgs.na:hover { border-color:var(--border); }
 
+/* A caveated line states its caveat where its coefficients are read. Index
+   only: Figure 2 is the only chart in this repository that draws a line whose
+   attention kernel was patched, and `.tip .sub` dims everything it wraps. */
+.tip .warn { color:var(--red); font-weight:700; }
 
   .rv { opacity:0; transform:translateY(14px);
         transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
@@ -1110,11 +1114,17 @@ addEventListener("DOMContentLoaded", function () {
   <figcaption>
     <b>图 1.</b> 2× RX 7900 XT、张量并行 2 上的解码速率，横轴是上下文长度，取对数。
     默认点亮四个模型，点名字可以加上或去掉任意一条，点上面那一行机器名可以把别的卡叠上来。
-    一共四台机器，其中三台是<em>单</em>卡：一张 A100 80G、一张这里的 7900 XT、一张 L4 24G。
+    一共五台机器，其中四台是<em>单</em>卡：一张 A100 80G、一张这里的 7900 XT、一张 L4 24G、一张 Tesla T4 16G。
     checkpoint 自始至终相同 —— CUDA 那几张是 TP=1、vLLM 0.28.0，这一对是 TP=2、0.23.1。
-    机器之间共用的是 checkpoint，拆分方式和软件栈不是。有两条单卡线提前结束，那是测量结果而不是缺口：
-    卡装不下下一档的 KV 就测不了它，这两条线的悬浮提示会说它的 KV 装得下多少 token。
-    每条线都出自一场会话、同一套阶梯 —— 十一个档位、每格两轮 ——
+    机器之间共用的是 checkpoint，拆分方式和软件栈不是。T4 能出现在这里完全是因为
+    <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>：没有它，引擎在 sm75 上根本起不来，
+    会在内核加载时要 98 304 字节共享内存，而 Turing 只有 65 536。那个补丁只改预填充的 tile 大小，
+    所以本图读它那条线的方式和读别的线完全一样；图 2 不是，图 2 会说明。
+    有四条单卡线提前结束，那是测量结果而不是缺口：
+    卡装不下下一档的 KV 就测不了它，这些线的悬浮提示会说它的 KV 装得下多少 token。
+    最短的一条只有两档 —— gemma-4-31B 在 L4 上开着 CUDA graph 根本起不来，
+    <code>--enforce-eager</code> 给它换回 2.51 GiB、一个 2 020 token 的池子，以及这两档。
+    每条线都出自一场会话、同一套阶梯 —— 最多十一个档位、每格两轮 ——
     而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。模型旁边的小开关会加上这个模型的投机臂，
     它与旁边那条线同日、同内核测得，所以它显示的是「<em>这条线</em>开了投机会怎样」，
     而不是「哪里最快的一次投机」。开关上写的是这条臂实际解析出的方法，所以其中一个写的是
@@ -1123,14 +1133,19 @@ addEventListener("DOMContentLoaded", function () {
     有一个模型带第二个开关 <b>ROCM_ATTN</b>：Qwen3.8 那条线画的是本仓库用一个 flag 钉住的后端——因为它在 32K 上快 15%——
     而这个开关加上的是运行时自己选的那个后端。那个 flag 是一笔交易而不是白拿：它卖掉预填充来买解码，而且卖得比买得多
     （见图 2），这半边是首页原来漏掉的。笔画区分身份：实线是这两张卡，长虚线是 A100，点线是其中一张卡，点划线是 L4，
-    短虚线是投机，点划线（密）是另一个后端。
+    短虚线是投机，点划线（密）是另一个后端，双点划线是 T4。
     把鼠标停在任意点上可以看到 run 数和它用的软件栈。纵轴只按点亮的线取值域，所以多点亮一条线可能会让它变。
+    有两条本仓库测过的线被<em>刻意</em>排除在外，理由都出在这张图自己的语法而不是数据：
+    L4 上那条 Qwen3.8-27B 是<em>另一个 checkpoint</em>（对称 compressed-tensors，不是 AWQ，
+    在 gfx1100 上解码相差 1.27–3.24×），而图例是按模型名索引的，画上去会把两者塞进同一个条目；
+    单张 7900 XT 上 vLLM 0.27 的 Qwen3-8B 解码与已画的那条逐档吻合到 0.21%，
+    而把它换进来会让图 2 的「第二张卡买到什么」变成一次跨栈比较。
   </figcaption>
 </figure>
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">图 2 · 预填充吞吐，所有有阶梯的模型，四台机器
+    <div class="figtitle">图 2 · 预填充吞吐，所有有阶梯的模型，五台机器
       <span class="prov yes">可从仓库重算</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -1140,9 +1155,10 @@ addEventListener("DOMContentLoaded", function () {
   </div>
   <figcaption>
     <b>图 2.</b> 同一个问题的另一半。图 1 是每台机器<em>生成</em>得多快，这张是它读提示词读得多快。
-    本仓库凡是有 chart-grade 预填充阶梯的模型都在这里——七个模型、十四条线、四台机器——因为自七月起
+    本仓库凡是有 chart-grade 预填充阶梯的模型都在这里——七个模型、十九条线、五台机器——因为自七月起
     每场 campaign 都在 decode 旁边记了 prefill，却从来没有画过。颜色和线型沿用图 1，所以一条线在两图
-    里是同一件事。默认点亮的是四台机器都跑过的那两个模型，其余五个只有那对卡跑过，点一下即可加上。
+    里是同一件事。默认点亮的是五台机器里有四台跑过的那两个模型，其余五个只有那对卡跑过，点一下即可加上。
+    稠密 12B 是这里唯一每台机器都跑过的模型。
     预填充不是一个数：把时间拆成固定开销、线性项和 attention 的二次项——<code>T(S) = a + b·S + c·S²</code>
     ——<b>b</b> 是算力，<b>c</b> 是 attention 随长度恶化得多快。由此得到三件单独一个 tok/s 说不出的事。
     <b>卡对卡</b>：稠密 12B 上 A100 对一张 7900 XT 在 b 上领先 3.3×、c 上 6.7×，即 attention 的差距是
@@ -1150,7 +1166,15 @@ addEventListener("DOMContentLoaded", function () {
     之下、终点在其之上。<b>第二张卡</b>：三个同时有两种拓扑的模型上，它买到 b 的 1.2–1.5× 和 c 的
     1.9–2.2×——attention 比 GEMM 更容易并行，因为它不需要通信。<b>而那个 flag 是一笔交易</b>：把
     Qwen3.8 钉在 <code>TRITON_ATTN</code> 上——本仓库一直称之为「免费」——在 32K 处 decode 快 1.15×，
-    prefill 却<em>亏掉</em> 1.40×。悬停可看轮数和该条线拟合出的系数。只画两轮一致的档位，而每条线丢掉
+    prefill 却<em>亏掉</em> 1.40×。悬停可看轮数和该条线拟合出的系数。
+    <b>有一条线是按另一套条件画的，而且在它的系数被读到的地方就说明了这一点。</b>T4 要跑
+    gemma-4-12B 非得打上 <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a> 不可，
+    而那个补丁把 head_size 512 那些层的 <code>TILE_PREFILL</code> 减半——那正是本图所分解的二次项。
+    所以它的 <b>c</b> 是这张卡<em>换了内核</em>之后的结果，不是这张卡对别的卡，它也因此被排除在上面那组比值之外。
+    它的 <b>b</b> 同样没有被自己的阶梯确定住：32 000 那一档是在第二台 VM 上测的，两台在那一档相差 4.61%，
+    而换成由哪一台提供这一档，<b>b</b> 会动 29.9%、<b>c</b> 会动 12.8%。原因是这条曲线二次项主导的程度是
+    这里独一份的——32K 处 c·S² 是 224 s，而 b·S 只有 97 s——所以线性项把不确定性全吸收了，
+    就像 <b>a</b> 在其他每条线上那样。画它是因为阶梯是真的、卡是第五台机器；默认关着，要看得自己点开。只画两轮一致的档位，而每条线丢掉
     的那一档并非同一个原因：六条线丢的是最浅一档，在 CUDA 卡上那是冷引擎的第一次请求，runner 直到
     2026-08-30 才把它丢弃；四条 Radeon 线丢的是 4000 档，每次都是第一轮比第二轮慢，本仓库不知道原因。
     MoE 在一张 7900 XT 上停在 12K 则是知道原因的：16.96 GiB 权重之后只剩 0.93 GiB 的 KV，13 149 个 token。
@@ -1216,6 +1240,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1327,6 +1352,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1441,6 +1467,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp1",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1552,6 +1579,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "E26-tp1-u95",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1631,6 +1659,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp1",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -1694,6 +1723,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-12B-it",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G12",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -1805,6 +1835,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-30",
     "lit": true,
+    "caveat": null,
     "cfg": "G26A4B",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -1916,6 +1947,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-31B-it",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "G31",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -2027,6 +2059,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Qwen3.8-27B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2138,6 +2171,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-30",
     "lit": false,
+    "caveat": null,
     "cfg": "MG30",
     "quant": "int4",
     "quant_label": "INT4",
@@ -2249,6 +2283,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-12B-it",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "A-12B-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -2360,6 +2395,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-26B-A4B",
     "date": "2026-08-24",
     "lit": true,
+    "caveat": null,
     "cfg": "E-26B-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2471,6 +2507,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Qwen3-8B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "B-8B-tp2",
     "quant": "bf16",
     "quant_label": "BF16",
@@ -2585,6 +2622,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Muse-Glimmer-30B",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "G-30B-tp2",
     "quant": "int4",
     "quant_label": "INT4",
@@ -2696,6 +2734,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-3-27b-it",
     "date": "2026-08-24",
     "lit": false,
+    "caveat": null,
     "cfg": "F-27B-tp2",
     "quant": "w4a16",
     "quant_label": "W4A16",
@@ -2810,6 +2849,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "Qwen3.8-27B",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "Q38-triton-tp2",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
@@ -2924,6 +2964,7 @@ addEventListener("DOMContentLoaded", function () {
     "model": "gemma-4-31B-it",
     "date": "2026-08-29",
     "lit": false,
+    "caveat": null,
     "cfg": "G31-tp2",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
@@ -3028,6 +3069,231 @@ addEventListener("DOMContentLoaded", function () {
       "range_pct": 0.015462489130646778
      }
     ]
+   },
+   {
+    "machine": "l4",
+    "machine_name": "L4",
+    "model": "Qwen3-8B",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-l4/campaign-2026-08-30b/results.jsonl",
+    "fit": {
+     "a_ms": 19.96940255322066,
+     "b_us_tok": 288.3468883585844,
+     "c_ns_tok2": 5.382166636164382,
+     "r2": 0.9998783786867539,
+     "rungs": 10
+    },
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 508,
+      "tok_s": 3190.9547738693464,
+      "ttft_s": 0.1592,
+      "runs": 2,
+      "range_pct": 3.768844221105531
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 3224.5681381957775,
+      "ttft_s": 0.3126,
+      "runs": 2,
+      "range_pct": 1.4075495841330823
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 3365.7391887361714,
+      "ttft_s": 0.5966,
+      "runs": 2,
+      "range_pct": 3.419376466644313
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 3168.6299312198594,
+      "ttft_s": 1.2649,
+      "runs": 2,
+      "range_pct": 0.6640841173215245
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 2955.6747183548973,
+      "ttft_s": 2.0327,
+      "runs": 2,
+      "range_pct": 0.07871304176712096
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 2947.4226614402182,
+      "ttft_s": 2.7169499999999998,
+      "runs": 2,
+      "range_pct": 1.019525570952717
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 2837.4626354281127,
+      "ttft_s": 4.231949999999999,
+      "runs": 2,
+      "range_pct": 0.905020144377898
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 2644.1366665840787,
+      "ttft_s": 6.05415,
+      "runs": 2,
+      "range_pct": 2.1192074857742114
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 2511.2175162693206,
+      "ttft_s": 7.96745,
+      "runs": 2,
+      "range_pct": 0.9802383447652755
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 2374.4789013782224,
+      "ttft_s": 10.11085,
+      "runs": 2,
+      "range_pct": 0.8119989911827268
+     }
+    ]
+   },
+   {
+    "machine": "t4",
+    "machine_name": "T4",
+    "model": "gemma-4-12B-it",
+    "date": "2026-08-30",
+    "lit": false,
+    "caveat": {
+     "kind": "patched-kernel",
+     "patch": "vllm#39018",
+     "what": "halves TILE_PREFILL on the head_size 512 layers, which is the quadratic term this figure decomposes -- without it the engine does not start on sm75 at all",
+     "b_undetermined_pct": 29.9,
+     "c_undetermined_pct": 12.8
+    },
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-t4/campaign-2026-08-30/results.jsonl",
+    "fit": {
+     "a_ms": -2717.7921019649257,
+     "b_us_tok": 3033.1692590813605,
+     "c_ns_tok2": 218.89285474276744,
+     "r2": 0.9997181653448902,
+     "rungs": 10
+    },
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 13.696330055169115
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 519.3273864451963,
+      "ttft_s": 1.9506000000000001,
+      "runs": 2,
+      "range_pct": 1.9891315492668895
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2012,
+      "tok_s": 394.7226445632449,
+      "ttft_s": 5.09725,
+      "runs": 2,
+      "range_pct": 1.6773750551768047
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4010,
+      "tok_s": 312.83887627651524,
+      "ttft_s": 12.818100000000001,
+      "runs": 2,
+      "range_pct": 1.5665348218534665
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 266.33063444536964,
+      "ttft_s": 22.5772,
+      "runs": 2,
+      "range_pct": 0.20197367255461396
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8011,
+      "tok_s": 233.05506947868804,
+      "ttft_s": 34.37385,
+      "runs": 2,
+      "range_pct": 0.09338494233261563
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 188.01717243333005,
+      "ttft_s": 63.893100000000004,
+      "runs": 2,
+      "range_pct": 0.2566787336973701
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16012,
+      "tok_s": 158.38246516589751,
+      "ttft_s": 101.09705,
+      "runs": 2,
+      "range_pct": 0.07309807754033848
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 136.43642749671574,
+      "ttft_s": 146.6837,
+      "runs": 2,
+      "range_pct": 0.4438120936409309
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 119.89079866953318,
+      "ttft_s": 200.29059999999998,
+      "runs": 2,
+      "range_pct": 0.07928479918678841
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 100.93064403543497,
+      "ttft_s": 317.1782,
+      "runs": 2,
+      "range_pct": 0.23494679016400066
+     }
+    ]
    }
   ],
   "compare": [
@@ -3110,9 +3376,12 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "model": "Qwen3-8B",
-    "backends": [],
+    "backends": [
+     "FLASH_ATTN"
+    ],
     "kernel": "unknown",
     "machines": [
+     "l4",
      "rdna3",
      "rdna3-1"
     ],
@@ -3141,7 +3410,8 @@ addEventListener("DOMContentLoaded", function () {
      "a100",
      "l4",
      "rdna3",
-     "rdna3-1"
+     "rdna3-1",
+     "t4"
     ],
     "unrecorded": 2
    },
@@ -5611,6 +5881,249 @@ addEventListener("DOMContentLoaded", function () {
     "quant_label": "INT4 AWQ",
     "spec_label": null,
     "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "t4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [
+     "vllm#39018"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 20.27585,
+      "runs": 2,
+      "range_pct": 1.8342017720588786,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 18.5523,
+      "runs": 2,
+      "range_pct": 1.5297294675053734,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 17.242800000000003,
+      "runs": 2,
+      "range_pct": 0.9116848771661188,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.61865,
+      "runs": 2,
+      "range_pct": 1.0921464739915685,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.3126,
+      "runs": 2,
+      "range_pct": 0.22465159411203692,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 13.9844,
+      "runs": 2,
+      "range_pct": 0.028603300820911583,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 12.709900000000001,
+      "runs": 2,
+      "range_pct": 0.11329750824160842,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 12.00125,
+      "runs": 2,
+      "range_pct": 0.0758254348505373,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 10.49495,
+      "runs": 2,
+      "range_pct": 0.14578440106908436,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 9.5841,
+      "runs": 2,
+      "range_pct": 0.16276958712869175,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 8.9851,
+      "runs": 2,
+      "range_pct": 0.12910262545769788,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": {
+     "kv_gib": 4.4,
+     "kv_tokens": 32000,
+     "why": "4.40 GiB of KV holds 32 000 tokens, 0.13 GiB short of what 33 000 needed, so the runner stepped max_model_len to 31 680 and the 32 000 rung plus its 512 generated tokens no longer fits"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 16.6012,
+      "runs": 2,
+      "range_pct": 0.06505553815386658,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 16.5075,
+      "runs": 2,
+      "range_pct": 0.04240496743903012,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 16.3318,
+      "runs": 2,
+      "range_pct": 0.014695257105756617,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 16.03255,
+      "runs": 2,
+      "range_pct": 0.033057748143609754,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 15.738399999999999,
+      "runs": 2,
+      "range_pct": 0.006353886036696526,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 15.4573,
+      "runs": 2,
+      "range_pct": 0.0012938870307203322,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 14.91685,
+      "runs": 2,
+      "range_pct": 0.007374211043222859,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 14.41105,
+      "runs": 2,
+      "range_pct": 0.0034695598169502645,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 13.93975,
+      "runs": 2,
+      "range_pct": 0.0007173729801450309,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 13.4911,
+      "runs": 2,
+      "range_pct": 0.013342129255591717,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "l4",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-08-30",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "G31-eager",
+    "rungs_capped": {
+     "kv_gib": 1.71,
+     "kv_tokens": 2020,
+     "why": "18.7 GiB of weights leave a negative KV budget with CUDA graphs on; --enforce-eager buys 2.51 GiB, 1.71 GiB of KV, 2 020 tokens"
+    },
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 11.092600000000001,
+      "runs": 2,
+      "range_pct": 1.177361484232726,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 11.05805,
+      "runs": 2,
+      "range_pct": 0.9215006262406169,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
    }
   ],
   "campaign": {
@@ -6132,6 +6645,20 @@ addEventListener("DOMContentLoaded", function () {
   "omitted": [
    "Qwen3.6-27B"
   ],
+  "not_drawn": [
+   {
+    "machine": "l4",
+    "cfg": "Q38S",
+    "model": "Qwen3.8-27B",
+    "why": "a different checkpoint of the same model, with no counterpart on any other machine"
+   },
+   {
+    "machine": "rdna3-1",
+    "cfg": "B8-tp1-u95",
+    "model": "Qwen3-8B",
+    "why": "decode is identical to the line already drawn, and swapping it in would make the second-card comparison a stack comparison"
+   }
+  ],
   "machines": [
    {
     "id": "rdna3",
@@ -6150,6 +6677,11 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "id": "l4",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "t4",
     "default": false,
     "cards": 1
    }
@@ -7571,20 +8103,21 @@ addEventListener("DOMContentLoaded", function () {
 }</script>
 <script type="application/json" id="strings">{
  "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · 模型旁边的小开关会加上这个模型的投机臂，开关上写的是它实际跑的那种方法",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1", "t4": "一张 T4 16G · TP=1"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
  "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
- "bestStroke": "实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 短虚线：同一条线开着投机",
+ "bestStroke": "实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 双点划线：T4 · 短虚线：同一条线开着投机",
  "bestCapped": "{m} 停在 {k}，因为{w}",
- "preHint": "点模型或机器可增删对应的线 · 四台机器都跑过的两个模型默认点亮，其余五个只有那对卡跑过",
+ "preHint": "点模型或机器可增删对应的线 · 五台机器中有四台跑过的两个模型默认点亮，其余五个只有那对卡跑过",
  "preAxisX": "提示词 token 数",
  "preAxisY": "预填充 tok/s",
- "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 七个模型、四台机器，本仓库所有 chart-grade 的阶梯",
- "preStroke": "线型表示机器，与图 1 一致 · 实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4",
+ "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 七个模型、五台机器，本仓库所有 chart-grade 的阶梯",
+ "preStroke": "线型表示机器，与图 1 一致 · 实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 双点划线：T4",
  "preFit": "拟合：b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "在 {m} 上对一张 RX 7900 XT：{x} 的 b 是 {b}×，c 是 {c}×",
  "preDropped": "丢弃 {n} 档，两轮相差 {r}%",
+ "preCaveat": "{p} 把这个内核的 tile 减半，所以 c 是内核差异而不只是卡的差异 · b 有 ±{b}% 不确定 · 画出来，但不进比值",
  "preNote": "b 是算力，c 是 attention 随长度恶化的速度；两者并不同向",
  "preTpGain": "第二张卡给 {m} 带来 b {b}×、c {c}× —— attention 比 GEMM 更容易并行，因为它不需要通信",
  "preTrade": "而那个 flag 是一笔交易：把 {m} 钉在 TRITON_ATTN 上，{k} 处 decode 快 {d}×，prefill 反方向差 {p}×",
@@ -7952,12 +8485,12 @@ addEventListener("DOMContentLoaded", function () {
             : "") + "</span>";
       };
     }
-    // One model can now own five lines -- four machines by two arms -- and they
+    // One model can now own several lines -- five machines by two arms -- and they
     // share a colour, so the stroke has to carry machine and arm both. The
     // table is the machine's; speculation overrides it, because a speculative
     // arm exists on only two of the four and reading "this is the arm" matters
     // more there than reading which card it ran on, which the tooltip says.
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
     function stroke(x) {
       if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
       // an alternative arm shares its line's machine, so it needs its own
@@ -8142,7 +8675,7 @@ addEventListener("DOMContentLoaded", function () {
 
     var colour = {};
     BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
 
     // Models in Figure 1's colour order so the two figures agree; machines in
     // Figure 1's row order for the same reason.
@@ -8177,6 +8710,15 @@ addEventListener("DOMContentLoaded", function () {
           (x.dropped.length
             ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
                 r: x.dropped[0].range_pct.toFixed(0) }))
+            : "") +
+          // A caveated line states its caveat where its coefficients are read,
+          // not only in the caption. The T4 is drawn because its ladder is
+          // real; its b and c are not this figure's b and c, and the tooltip
+          // is where a reader meets them.
+          (x.caveat
+            ? '<br><b class="warn">' + esc(fmt(S.preCaveat, {
+                m: x.model, p: x.caveat.patch,
+                b: x.caveat.b_undetermined_pct.toFixed(0) })) + "</b>"
             : "") + "</span>";
       };
     }
