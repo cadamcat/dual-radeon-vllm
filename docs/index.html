@@ -922,8 +922,13 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
     Muse-Glimmer's assistant is a block-diffusion drafter and not MTP. Which way it goes is not one
     answer — on these cards both arms start ahead and one stays ahead all the way to 32 K, while on
-    the A100 all four lose at every depth. Stroke says which is which: solid these two cards, long
-    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation. Hover a point for the run count and the stack it took.
+    the A100 all four lose at every depth. One model carries a second switch, <b>ROCM_ATTN</b>: Qwen3.8's line is drawn on the backend this
+    repository pins with a flag because it is 15 % faster at 32 K, and the switch adds the backend the
+    runtime picks for itself. That flag is a trade rather than a free win — it sells prefill to buy
+    decode, by more than it buys (Figure 2) — and the switch is the half the front page used to leave
+    out. Stroke says which is which: solid these two cards, long
+    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation, dot-dash the
+    alternative backend. Hover a point for the run count and the stack it took.
     The vertical axis fits
     what is lit, so switching a line on can move it.
   </figcaption>
@@ -2693,8 +2698,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -2795,8 +2802,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -2897,8 +2906,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-3-27b-it",
@@ -2999,8 +3010,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -3101,8 +3114,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -3202,8 +3217,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -3305,8 +3322,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -3412,8 +3431,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -3517,8 +3538,113 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "ROCM_ATTN",
+    "cfg": "Q38-tp2",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.675,
+      "runs": 2,
+      "range_pct": 0.060392551585306764,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.394999999999996,
+      "runs": 2,
+      "range_pct": 0.10122482032595256,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.83,
+      "runs": 2,
+      "range_pct": 0.04095842719640207,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 47.739999999999995,
+      "runs": 2,
+      "range_pct": 0.08378718056137233,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 46.785,
+      "runs": 2,
+      "range_pct": 0.10687186063910285,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 45.78,
+      "runs": 2,
+      "range_pct": 0.04368719965049371,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 43.894999999999996,
+      "runs": 2,
+      "range_pct": 0.11390818999887065,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 42.125,
+      "runs": 2,
+      "range_pct": 0.0712166172106852,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 40.540000000000006,
+      "runs": 2,
+      "range_pct": 0.09866798223976109,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 39.15,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.47,
+      "runs": 2,
+      "range_pct": 0.05483959418699211,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false,
+    "rungs_capped": null,
+    "alt": "backend",
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": "ROCM_ATTN"
    },
    {
     "model": "gemma-4-31B-it",
@@ -3536,6 +3662,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G31",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3617,7 +3744,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -3635,6 +3763,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": null,
     "cfg": "A100-G12",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3716,7 +3845,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -3734,6 +3864,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": null,
     "cfg": "A100-G26A4B",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3815,7 +3946,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -3833,6 +3965,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": null,
     "cfg": "A100-Q38",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3914,7 +4047,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -3932,6 +4066,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": null,
     "cfg": "A100-MG30",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -4013,7 +4148,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -4037,6 +4173,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G31-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -4118,7 +4255,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -4142,6 +4280,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G26A4B-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -4223,7 +4362,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -4246,6 +4386,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "FLASH_ATTN",
     "cfg": "A100-Q38-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -4327,7 +4468,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -4349,6 +4491,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": null,
     "cfg": "A100-MG30-dflash",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -4430,7 +4573,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4",
-    "spec_label": "DFlash"
+    "spec_label": "DFlash",
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -4531,8 +4675,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3-1",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -4606,8 +4752,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
      "kv_tokens": 13149,
      "why": "16.96 GiB of weights leaves 0.93 GiB of KV, 13 149 tokens"
     },
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -4670,8 +4818,10 @@ topology. The shapes transfer; the levels are the worst case.</p>
      "kv_tokens": 8442,
      "why": "1.16 GiB of KV on a 19.98 GiB card holds 8 442 tokens"
     },
+    "alt": null,
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -4689,6 +4839,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "TRITON_ATTN",
     "cfg": "G12",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl",
     "points": [
      {
@@ -4770,7 +4921,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -4788,6 +4940,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "attn_backend": "TRITON_ATTN",
     "cfg": "G26A4B",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl",
     "points": [
      {
@@ -4869,7 +5022,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    }
   ],
   "campaign": {
@@ -4912,37 +5066,44 @@ topology. The shapes transfer; the levels are the worst case.</p>
    "gemma-4-26B-A4B": {
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    "Qwen3-8B": {
     "quant": "bf16",
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "Muse-Glimmer-30B": {
     "quant": "int4",
     "quant_label": "INT4",
-    "spec_label": "DFlash"
+    "spec_label": "DFlash",
+    "alt_label": null
    },
    "gemma-3-27b-it": {
     "quant": "w4a16",
     "quant_label": "W4A16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "gemma-4-12B-it": {
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "Qwen3.8-27B": {
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": "ROCM_ATTN"
    },
    "gemma-4-31B-it": {
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    }
   },
   "mtp_pairs": [
@@ -5321,6 +5482,64 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "crosses_zero": false,
     "at_shortest_pct": -28.262980586077845,
     "at_deepest_pct": -47.476792550439725
+   }
+  ],
+  "alt_pairs": [
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "rdna3",
+    "kind": "backend",
+    "base_cfg": "Q38-triton-tp2",
+    "alt_cfg": "Q38-tp2",
+    "base_backend": "TRITON_ATTN",
+    "alt_backend": "ROCM_ATTN",
+    "date": "2026-08-29",
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -0.21092808356770743
+     },
+     {
+      "ctx": 1000,
+      "pct": -0.4133064516129159
+     },
+     {
+      "ctx": 2000,
+      "pct": -1.1138112596192684
+     },
+     {
+      "ctx": 4000,
+      "pct": -2.282263841981391
+     },
+     {
+      "ctx": 6000,
+      "pct": -3.1867563372995455
+     },
+     {
+      "ctx": 8000,
+      "pct": -4.015095922004397
+     },
+     {
+      "ctx": 12000,
+      "pct": -5.7541599570585245
+     },
+     {
+      "ctx": 16000,
+      "pct": -7.488744921488955
+     },
+     {
+      "ctx": 20000,
+      "pct": -8.909111335804953
+     },
+     {
+      "ctx": 24000,
+      "pct": -10.237303679926635
+     },
+     {
+      "ctx": 32000,
+      "pct": -13.063170441001205
+     }
+    ]
    }
   ],
   "omitted": [
@@ -6777,6 +6996,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestSpec": "{s} on",
  "bestSpecOf": "{m}: draw the same line with {s} on, measured beside it as its control",
  "bestSpecAway": "{m}'s {s} arm was only ever measured on {x} — add that machine to see it",
+ "bestAltOf": "{m}: draw the same line on {b}, the backend the runtime picks for itself — faster at prefill, slower at decode (Figure 2)",
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
  "estLabel": "establishes",
@@ -7094,9 +7314,16 @@ topology. The shapes transfer; the levels are the worst case.</p>
     // three of the four arms resolved to mtp and Muse-Glimmer's is dflash, a
     // block-diffusion drafter at k=8, which a switch marked MTP would misname.
     var specOn = {}, specLabel = {};
+    // And the same again for an alternative arm that is not speculation: on
+    // Qwen3.8 the pair differs in one flag, and the line drawn is the one that
+    // is faster at decode. It is slower at prefill by more (Figure 2), so the
+    // other arm is a switch rather than an omission.
+    var altOn = {}, altLabel = {};
     models.forEach(function (m) {
       specOn[m] = false;
       specLabel[m] = (F.labels[m] || {}).spec_label || null;
+      altOn[m] = false;
+      altLabel[m] = (F.labels[m] || {}).alt_label || null;
     });
 
     function stack(x) {
@@ -7135,6 +7362,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
     function stroke(x) {
       if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
+      // an alternative arm shares its line's machine, so it needs its own
+      // pattern or the two would be one stroke in one colour
+      if (x.alt) return "3 2 1 2";
       return STROKE[x.machine];
     }
     var ser = F.series.map(function (x) {
@@ -7148,7 +7378,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     // lit ones into the bottom two thirds of the frame.
     function isLit(i) {
       var x = F.series[i];
-      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model]);
+      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model])
+             && (!x.alt || altOn[x.model]);
     }
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
@@ -7179,6 +7410,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
       var x = F.series.filter(function (y) { return y.spec && y.model === m; })[0];
       return x ? S.bestMach[x.machine] : "";
     }
+    function altShown(m) {
+      return F.series.some(function (x) {
+        return x.alt && x.model === m && machOn[x.machine];
+      });
+    }
     function apply() {
       chart.setLit(isLit);
       entries.forEach(function (e) {
@@ -7194,6 +7430,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
                                   x: armOn(e.model) }));
         e.sw.setAttribute("title", live
           ? fmt(S.bestSpecOf, { m: e.model, s: specLabel[e.model] }) : "");
+      });
+      entries.forEach(function (e) {
+        if (!e.alt) return;
+        var live = altShown(e.model);
+        e.alt.classList.toggle("on", altOn[e.model]);
+        e.alt.classList.toggle("na", !live);
+        e.alt.disabled = !live;
+        e.alt.setAttribute("title", live
+          ? fmt(S.bestAltOf, { m: e.model, b: altLabel[e.model] }) : "");
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
         var id = F.machines[i].id;
@@ -7251,8 +7496,24 @@ topology. The shapes transfer; the levels are the worst case.</p>
         });
         wrap.appendChild(sw);
       }
+      // The alternative arm sits in the same wrapper, after the speculative
+      // switch, so a model's controls stay one unit when the row wraps.
+      var alt = null;
+      if (altLabel[m]) {
+        alt = document.createElement("button");
+        alt.className = "lgs";
+        alt.style.setProperty("--c", colour[m]);
+        alt.textContent = altLabel[m];
+        alt.setAttribute("aria-pressed", "false");
+        alt.addEventListener("click", function () {
+          altOn[m] = !altOn[m];
+          alt.setAttribute("aria-pressed", String(altOn[m]));
+          apply();
+        });
+        wrap.appendChild(alt);
+      }
       key.appendChild(wrap);
-      entries.push({ model: m, btn: b, sw: sw, wrap: wrap });
+      entries.push({ model: m, btn: b, sw: sw, alt: alt, wrap: wrap });
     });
     apply();
     note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +

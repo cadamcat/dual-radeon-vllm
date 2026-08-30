@@ -74,6 +74,7 @@ for s in series:
     s["machine"] = "rdna3"
     s["lit"] = s["model"] in LIT
     s["rungs_capped"] = None
+    s["alt"] = None
 
 # --- speculation, as its own layer -----------------------------------------
 # One arm per model that has one, measured the same day as that model's line
@@ -87,8 +88,33 @@ for model, cfg in MTP:
     m["machine"] = "rdna3"
     m["lit"] = False
     m["rungs_capped"] = None
+    m["alt"] = None
     assert m["spec"], f"{cfg} is not a speculative arm"
     series.append(m)
+
+# --- the backend ROCm picks for itself, as its own layer ---------------------
+# Q38-tp2 is the only campaign-server decode series in this repository with a
+# sibling on the same machine, the same day and the same stack that is not a
+# later run superseding it: `Q38-triton-tp2` differs from it in one flag. The
+# line above is the Triton one because it is faster at decode -- +0.2 % at 500
+# rising to +15.0 % at 32 K -- and until 2026-08-30 that was the whole story.
+#
+# It is not. Both arms recorded prefill too, and prefill goes the other way and
+# by more: 969 against 690 tok/s at 32 K, `ROCM_ATTN` 1.40x ahead, fitted
+# quadratic terms 3.43 against 18.44. So the flag is a trade, and a front page
+# that draws only the decode-faster arm tells a reader half of it. This is that
+# other half, on a switch, off until asked for -- the same shape as the
+# speculative arms: an alternative way of running the line it sits beside,
+# measured against it as its own control, not a competitor for "fastest".
+ALT = [("Qwen3.8-27B", "Q38-tp2", "2026-08-29")]
+for model, cfg, date in ALT:
+    a = ledger_series(model, 2, date, cfg=cfg)
+    a["machine"] = "rdna3"
+    a["lit"] = False
+    a["rungs_capped"] = None
+    a["alt"] = "backend"
+    assert not a["spec"], f"{cfg} is a speculative arm, not a backend alternative"
+    series.append(a)
 
 # --- the other machine ------------------------------------------------------
 # All twelve A100 configurations are the ladder the Radeon lines use -- eleven
@@ -177,7 +203,7 @@ def _a100(cfg, model, spec_desc, patches, backend, lit):
             "vllm": "0.28.0", "patches": list(patches),
             "harness": "campaign-server", "date": "2026-08-29", "quant": quant,
             "arch": arch, "spec": bool(spec_desc), "spec_desc": spec_desc,
-            "attn_backend": backend, "cfg": cfg, "rungs_capped": None,
+            "attn_backend": backend, "cfg": cfg, "rungs_capped": None, "alt": None,
             "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
             "points": pts}
 
@@ -216,6 +242,7 @@ for model, date, cfg in SINGLE:
     x["machine"] = "rdna3-1"
     x["lit"] = False
     x["rungs_capped"] = CAPPED.get(cfg)
+    x["alt"] = None
     series.append(x)
 
 # The L4 is this round's own file, the same runner as the A100 half, and the
@@ -248,7 +275,7 @@ def _campaign_series(raw, meta, cfg, model, machine, date, vllm, source, rungs=1
             "vllm": vllm, "patches": [], "harness": "campaign-server",
             "date": date, "quant": quant, "arch": arch, "spec": False,
             "spec_desc": None, "attn_backend": md.get("backend"), "cfg": cfg,
-            "rungs_capped": None, "source": source, "points": pts}
+            "rungs_capped": None, "alt": None, "source": source, "points": pts}
 
 
 for cfg, model in L4:
@@ -300,6 +327,10 @@ SPEC_LABEL = {"mtp": "MTP", "dflash": "DFlash"}
 for x in series:
     x["quant_label"] = qlabel(x["quant"])
     x["spec_label"] = SPEC_LABEL[x["spec_desc"]["method"]] if x["spec"] else None
+    # An alternative arm is named for what it *is* -- the backend the engine
+    # resolved -- for the same reason the speculative switch is named for the
+    # method it ran rather than for the button it replaces.
+    x["alt_label"] = x["attn_backend"] if x.get("alt") else None
 
 # A label is per model, so every line a model owns has to agree about it --
 # otherwise the legend would have to pick one and the chart would say something
@@ -309,13 +340,17 @@ labels = {}
 for x in series:
     prev = labels.setdefault(x["model"], {"quant": x["quant"],
                                           "quant_label": x["quant_label"],
-                                          "spec_label": None})
+                                          "spec_label": None, "alt_label": None})
     assert prev["quant"] == x["quant"], \
         f'{x["model"]}: {prev["quant"]!r} on one line and {x["quant"]!r} on another'
     if x["spec"]:
         assert prev["spec_label"] in (None, x["spec_label"]), \
             f'{x["model"]}: two speculative methods, {prev["spec_label"]} and {x["spec_label"]}'
         prev["spec_label"] = x["spec_label"]
+    if x.get("alt"):
+        assert prev["alt_label"] in (None, x["alt_label"]), \
+            f'{x["model"]}: two alternative arms, {prev["alt_label"]} and {x["alt_label"]}'
+        prev["alt_label"] = x["alt_label"]
 
 # --- how well this machine repeats a whole campaign -------------------------
 # The same models were run twice, thirty days apart, on the same box. Their
@@ -347,7 +382,8 @@ assert not all(any(r["model"] == m and r["date"] == PRIOR for r in led) for m in
 beaten = []
 for spec_layer in (False,):
     picked = {s["model"]: s for s in series
-              if s["machine"] == "rdna3" and s["spec"] == spec_layer}
+              if s["machine"] == "rdna3" and s["spec"] == spec_layer
+              and not s.get("alt")}
     for model, s in picked.items():
         mine = {p["ctx"]: p["tok_s"] for p in s["points"]}
         for r in led:
@@ -383,6 +419,21 @@ assert not beaten, "a faster measurement exists and is not drawn:\n  " + \
 # machine's stock lines carry no backend to compare against -- an equality test
 # there would be testing that two nulls match, and asserting it as though it
 # were the kernel would be worse than saying nothing.
+alt_pairs = []
+for a in [x for x in series if x.get("alt")]:
+    base = next(x for x in series if x["machine"] == a["machine"]
+                and not x["spec"] and not x.get("alt") and x["model"] == a["model"])
+    assert a["date"] == base["date"], (a["cfg"], a["date"], base["date"])
+    assert a["vllm"] == base["vllm"], (a["cfg"], a["vllm"])
+    assert a["attn_backend"] != base["attn_backend"], (a["cfg"], a["attn_backend"])
+    alt_pairs.append({"model": a["model"], "machine": a["machine"], "kind": a["alt"],
+                      "base_cfg": base["cfg"], "alt_cfg": a["cfg"],
+                      "base_backend": base["attn_backend"],
+                      "alt_backend": a["attn_backend"], "date": a["date"],
+                      "delta_pct": [{"ctx": p["ctx"],
+                                     "pct": (q["tok_s"] / p["tok_s"] - 1) * 100.0}
+                                    for p, q in zip(base["points"], a["points"])]})
+
 mtp_pairs = []
 for m in [x for x in series if x["spec"]]:
     base = next(x for x in series if x["machine"] == m["machine"]
@@ -645,6 +696,7 @@ out = {
         "overrides": over,
         "labels": labels,
         "mtp_pairs": mtp_pairs,
+        "alt_pairs": alt_pairs,
         "omitted": OMIT,
         # Order is the order the row is drawn in, and the two-card Radeon is
         # first because it is what this repository is about. The three

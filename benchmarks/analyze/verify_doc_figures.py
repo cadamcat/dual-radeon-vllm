@@ -3490,8 +3490,8 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "23", len(XB["series"]))
-    ck("index figure, points", "243", sum(len(x["points"]) for x in XB["series"]))
+    ck("index figure, series", "24", len(XB["series"]))
+    ck("index figure, points", "254", sum(len(x["points"]) for x in XB["series"]))
     # Every line is one session at the campaign ladder -- not a three-point probe
     # beside an eleven-rung campaign -- unless the card could not hold the KV for
     # the next rung, which two of the single-card lines could not. A short line
@@ -3519,8 +3519,28 @@ def main():
        sum(1 for x in XB["series"] if x["spec"]))
     ck("index figure, and none of them is lit without being asked", "0",
        sum(1 for x in XB["series"] if x["spec"] and x["lit"]))
-    ck("index figure, lines on the Radeons", "9",
+    ck("index figure, lines on the Radeons", "10",
        sum(1 for x in XB["series"] if x["machine"] == "rdna3"))
+    # The alternative arm: same model, same machine, same day, same stack, one
+    # flag. It is not a pick competing for "fastest" -- it is the other half of
+    # a trade the front page would otherwise state only one side of.
+    XALT = [x for x in XB["series"] if x.get("alt")]
+    ck("index figure, alternative arms", "1", len(XALT))
+    ck("index figure, and no alternative arm is lit without being asked", "0",
+       sum(1 for x in XALT if x["lit"]))
+    ck("index figure, and each is named for the backend it ran", "1",
+       sum(1 for x in XALT if x["alt_label"] == x["attn_backend"]))
+    _ap = XB["alt_pairs"]
+    ck("index figure, alternative pairs", "1", len(_ap))
+    ck("index figure, and the pair differs in its backend", "1",
+       sum(1 for a in _ap if a["base_backend"] != a["alt_backend"]))
+    ck("index figure, and in nothing else", "1",
+       1 if all(a["date"] == "2026-08-29" for a in _ap) else 0)
+    # what the flag is worth at decode, which is the published finding inverted
+    ck("index figure, the backend ROCm picks at 500", "-0.21",
+       _ap[0]["delta_pct"][0]["pct"], 0.01)
+    ck("index figure, and the backend ROCm picks at 32K", "-13.1",
+       _ap[0]["delta_pct"][-1]["pct"], 0.01)
     ck("index figure, lines on the A100", "9",
        sum(1 for x in XB["series"] if x["machine"] == "a100"))
     ck("index figure, lines on one Radeon", "3",

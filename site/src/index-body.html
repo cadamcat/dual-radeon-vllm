@@ -44,8 +44,13 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     named for the method the arm resolved to, which is why one of them says <b>DFlash</b>:
     Muse-Glimmer's assistant is a block-diffusion drafter and not MTP. Which way it goes is not one
     answer — on these cards both arms start ahead and one stays ahead all the way to 32 K, while on
-    the A100 all four lose at every depth. Stroke says which is which: solid these two cards, long
-    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation. Hover a point for the run count and the stack it took.
+    the A100 all four lose at every depth. One model carries a second switch, <b>ROCM_ATTN</b>: Qwen3.8's line is drawn on the backend this
+    repository pins with a flag because it is 15 % faster at 32 K, and the switch adds the backend the
+    runtime picks for itself. That flag is a trade rather than a free win — it sells prefill to buy
+    decode, by more than it buys (Figure 2) — and the switch is the half the front page used to leave
+    out. Stroke says which is which: solid these two cards, long
+    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation, dot-dash the
+    alternative backend. Hover a point for the run count and the stack it took.
     The vertical axis fits
     what is lit, so switching a line on can move it.
   </figcaption>
@@ -174,6 +179,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestSpec": "{s} on",
  "bestSpecOf": "{m}: draw the same line with {s} on, measured beside it as its control",
  "bestSpecAway": "{m}'s {s} arm was only ever measured on {x} — add that machine to see it",
+ "bestAltOf": "{m}: draw the same line on {b}, the backend the runtime picks for itself — faster at prefill, slower at decode (Figure 2)",
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
  "estLabel": "establishes",
@@ -491,9 +497,16 @@ topology. The shapes transfer; the levels are the worst case.</p>
     // three of the four arms resolved to mtp and Muse-Glimmer's is dflash, a
     // block-diffusion drafter at k=8, which a switch marked MTP would misname.
     var specOn = {}, specLabel = {};
+    // And the same again for an alternative arm that is not speculation: on
+    // Qwen3.8 the pair differs in one flag, and the line drawn is the one that
+    // is faster at decode. It is slower at prefill by more (Figure 2), so the
+    // other arm is a switch rather than an omission.
+    var altOn = {}, altLabel = {};
     models.forEach(function (m) {
       specOn[m] = false;
       specLabel[m] = (F.labels[m] || {}).spec_label || null;
+      altOn[m] = false;
+      altLabel[m] = (F.labels[m] || {}).alt_label || null;
     });
 
     function stack(x) {
@@ -532,6 +545,9 @@ topology. The shapes transfer; the levels are the worst case.</p>
     var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
     function stroke(x) {
       if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
+      // an alternative arm shares its line's machine, so it needs its own
+      // pattern or the two would be one stroke in one colour
+      if (x.alt) return "3 2 1 2";
       return STROKE[x.machine];
     }
     var ser = F.series.map(function (x) {
@@ -545,7 +561,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     // lit ones into the bottom two thirds of the frame.
     function isLit(i) {
       var x = F.series[i];
-      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model]);
+      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model])
+             && (!x.alt || altOn[x.model]);
     }
     var chart = window.lineChart({
       el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
@@ -576,6 +593,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
       var x = F.series.filter(function (y) { return y.spec && y.model === m; })[0];
       return x ? S.bestMach[x.machine] : "";
     }
+    function altShown(m) {
+      return F.series.some(function (x) {
+        return x.alt && x.model === m && machOn[x.machine];
+      });
+    }
     function apply() {
       chart.setLit(isLit);
       entries.forEach(function (e) {
@@ -591,6 +613,15 @@ topology. The shapes transfer; the levels are the worst case.</p>
                                   x: armOn(e.model) }));
         e.sw.setAttribute("title", live
           ? fmt(S.bestSpecOf, { m: e.model, s: specLabel[e.model] }) : "");
+      });
+      entries.forEach(function (e) {
+        if (!e.alt) return;
+        var live = altShown(e.model);
+        e.alt.classList.toggle("on", altOn[e.model]);
+        e.alt.classList.toggle("na", !live);
+        e.alt.disabled = !live;
+        e.alt.setAttribute("title", live
+          ? fmt(S.bestAltOf, { m: e.model, b: altLabel[e.model] }) : "");
       });
       Array.prototype.forEach.call(mach.children, function (b, i) {
         var id = F.machines[i].id;
@@ -648,8 +679,24 @@ topology. The shapes transfer; the levels are the worst case.</p>
         });
         wrap.appendChild(sw);
       }
+      // The alternative arm sits in the same wrapper, after the speculative
+      // switch, so a model's controls stay one unit when the row wraps.
+      var alt = null;
+      if (altLabel[m]) {
+        alt = document.createElement("button");
+        alt.className = "lgs";
+        alt.style.setProperty("--c", colour[m]);
+        alt.textContent = altLabel[m];
+        alt.setAttribute("aria-pressed", "false");
+        alt.addEventListener("click", function () {
+          altOn[m] = !altOn[m];
+          alt.setAttribute("aria-pressed", String(altOn[m]));
+          apply();
+        });
+        wrap.appendChild(alt);
+      }
       key.appendChild(wrap);
-      entries.push({ model: m, btn: b, sw: sw, wrap: wrap });
+      entries.push({ model: m, btn: b, sw: sw, alt: alt, wrap: wrap });
     });
     apply();
     note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +

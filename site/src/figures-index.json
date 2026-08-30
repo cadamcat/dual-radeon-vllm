@@ -1667,8 +1667,10 @@
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -1769,8 +1771,10 @@
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -1871,8 +1875,10 @@
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-3-27b-it",
@@ -1973,8 +1979,10 @@
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -2075,8 +2083,10 @@
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -2176,8 +2186,10 @@
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -2279,8 +2291,10 @@
     "machine": "rdna3",
     "lit": true,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -2386,8 +2400,10 @@
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -2491,8 +2507,113 @@
     "machine": "rdna3",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "tp": 2,
+    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "patches": [
+     "vllm#45916 split-KV"
+    ],
+    "harness": "campaign-server",
+    "date": "2026-08-29",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "ROCM_ATTN",
+    "cfg": "Q38-tp2",
+    "source": "benchmarks/ledger.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 49.675,
+      "runs": 2,
+      "range_pct": 0.060392551585306764,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 49.394999999999996,
+      "runs": 2,
+      "range_pct": 0.10122482032595256,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 48.83,
+      "runs": 2,
+      "range_pct": 0.04095842719640207,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 47.739999999999995,
+      "runs": 2,
+      "range_pct": 0.08378718056137233,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 46.785,
+      "runs": 2,
+      "range_pct": 0.10687186063910285,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 45.78,
+      "runs": 2,
+      "range_pct": 0.04368719965049371,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 43.894999999999996,
+      "runs": 2,
+      "range_pct": 0.11390818999887065,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 42.125,
+      "runs": 2,
+      "range_pct": 0.0712166172106852,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 40.540000000000006,
+      "runs": 2,
+      "range_pct": 0.09866798223976109,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 39.15,
+      "runs": 2,
+      "range_pct": 0.0,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 36.47,
+      "runs": 2,
+      "range_pct": 0.05483959418699211,
+      "graded": true
+     }
+    ],
+    "machine": "rdna3",
+    "lit": false,
+    "rungs_capped": null,
+    "alt": "backend",
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": "ROCM_ATTN"
    },
    {
     "model": "gemma-4-31B-it",
@@ -2510,6 +2631,7 @@
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G31",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -2591,7 +2713,8 @@
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -2609,6 +2732,7 @@
     "attn_backend": null,
     "cfg": "A100-G12",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -2690,7 +2814,8 @@
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -2708,6 +2833,7 @@
     "attn_backend": null,
     "cfg": "A100-G26A4B",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -2789,7 +2915,8 @@
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -2807,6 +2934,7 @@
     "attn_backend": null,
     "cfg": "A100-Q38",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -2888,7 +3016,8 @@
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -2906,6 +3035,7 @@
     "attn_backend": null,
     "cfg": "A100-MG30",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -2987,7 +3117,8 @@
      }
     ],
     "quant_label": "INT4",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-31B-it",
@@ -3011,6 +3142,7 @@
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G31-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3092,7 +3224,8 @@
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -3116,6 +3249,7 @@
     "attn_backend": "TRITON_ATTN",
     "cfg": "A100-G26A4B-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3197,7 +3331,8 @@
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Qwen3.8-27B",
@@ -3220,6 +3355,7 @@
     "attn_backend": "FLASH_ATTN",
     "cfg": "A100-Q38-mtp-p45450",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3301,7 +3437,8 @@
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    {
     "model": "Muse-Glimmer-30B",
@@ -3323,6 +3460,7 @@
     "attn_backend": null,
     "cfg": "A100-MG30-dflash",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
     "points": [
      {
@@ -3404,7 +3542,8 @@
      }
     ],
     "quant_label": "INT4",
-    "spec_label": "DFlash"
+    "spec_label": "DFlash",
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -3505,8 +3644,10 @@
     "machine": "rdna3-1",
     "lit": false,
     "rungs_capped": null,
+    "alt": null,
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -3580,8 +3721,10 @@
      "kv_tokens": 13149,
      "why": "16.96 GiB of weights leaves 0.93 GiB of KV, 13 149 tokens"
     },
+    "alt": null,
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "Qwen3-8B",
@@ -3644,8 +3787,10 @@
      "kv_tokens": 8442,
      "why": "1.16 GiB of KV on a 19.98 GiB card holds 8 442 tokens"
     },
+    "alt": null,
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-12B-it",
@@ -3663,6 +3808,7 @@
     "attn_backend": "TRITON_ATTN",
     "cfg": "G12",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl",
     "points": [
      {
@@ -3744,7 +3890,8 @@
      }
     ],
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    {
     "model": "gemma-4-26B-A4B",
@@ -3762,6 +3909,7 @@
     "attn_backend": "TRITON_ATTN",
     "cfg": "G26A4B",
     "rungs_capped": null,
+    "alt": null,
     "source": "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl",
     "points": [
      {
@@ -3843,7 +3991,8 @@
      }
     ],
     "quant_label": "INT4 AWQ",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    }
   ],
   "campaign": {
@@ -3886,37 +4035,44 @@
    "gemma-4-26B-A4B": {
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    },
    "Qwen3-8B": {
     "quant": "bf16",
     "quant_label": "BF16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "Muse-Glimmer-30B": {
     "quant": "int4",
     "quant_label": "INT4",
-    "spec_label": "DFlash"
+    "spec_label": "DFlash",
+    "alt_label": null
    },
    "gemma-3-27b-it": {
     "quant": "w4a16",
     "quant_label": "W4A16",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "gemma-4-12B-it": {
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
-    "spec_label": null
+    "spec_label": null,
+    "alt_label": null
    },
    "Qwen3.8-27B": {
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": "ROCM_ATTN"
    },
    "gemma-4-31B-it": {
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
-    "spec_label": "MTP"
+    "spec_label": "MTP",
+    "alt_label": null
    }
   },
   "mtp_pairs": [
@@ -4295,6 +4451,64 @@
     "crosses_zero": false,
     "at_shortest_pct": -28.262980586077845,
     "at_deepest_pct": -47.476792550439725
+   }
+  ],
+  "alt_pairs": [
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "rdna3",
+    "kind": "backend",
+    "base_cfg": "Q38-triton-tp2",
+    "alt_cfg": "Q38-tp2",
+    "base_backend": "TRITON_ATTN",
+    "alt_backend": "ROCM_ATTN",
+    "date": "2026-08-29",
+    "delta_pct": [
+     {
+      "ctx": 500,
+      "pct": -0.21092808356770743
+     },
+     {
+      "ctx": 1000,
+      "pct": -0.4133064516129159
+     },
+     {
+      "ctx": 2000,
+      "pct": -1.1138112596192684
+     },
+     {
+      "ctx": 4000,
+      "pct": -2.282263841981391
+     },
+     {
+      "ctx": 6000,
+      "pct": -3.1867563372995455
+     },
+     {
+      "ctx": 8000,
+      "pct": -4.015095922004397
+     },
+     {
+      "ctx": 12000,
+      "pct": -5.7541599570585245
+     },
+     {
+      "ctx": 16000,
+      "pct": -7.488744921488955
+     },
+     {
+      "ctx": 20000,
+      "pct": -8.909111335804953
+     },
+     {
+      "ctx": 24000,
+      "pct": -10.237303679926635
+     },
+     {
+      "ctx": 32000,
+      "pct": -13.063170441001205
+     }
+    ]
    }
   ],
   "omitted": [
