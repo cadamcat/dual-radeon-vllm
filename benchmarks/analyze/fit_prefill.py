@@ -1,5 +1,26 @@
 #!/usr/bin/env python3
-"""Fit T(S) = a + b*S + c*S^2 to measured prefill TTFT; explains where prefill tok/s peaks."""
+"""Fit T(S) = a + b*S + c*S^2 to measured prefill TTFT; explains where prefill tok/s peaks.
+
+SUPERSEDED 2026-08-30 by `build_prefill.py --fits`. Kept because the numbers
+published in docs/benchmarks.md section 4 came from this script and this is what
+reproduces them; do not use it for new work. Two reasons:
+
+* It buckets by the measured `prompt_tokens` and takes `min()` of each bucket,
+  commented "min of the 2 rounds". That is true on CUDA, where both rounds of a
+  rung report the same count, and false on ROCm, where they differ by one to
+  three tokens -- so most buckets hold one sample and the minimum is that
+  sample. `A-12B-tp1` is fitted on nineteen mostly-unpaired points rather than
+  eleven paired ones. Every row carries `target`, which is exact on both.
+* It fits whatever is in one file, so a configuration measured in two campaigns
+  is fitted as one curve belonging to neither.
+
+It also does not gate on repeatability, which is what makes it report a `b` of
+4.1 us/tok for the A100's 2026-08-29 prefill -- that campaign ran with prefix
+caching on, every rung is a prefix of the next, and `min()` selects the cached
+round. See benchmarks/cuda-a100/campaign-2026-08-30/README.md.
+
+`a` and `S*` are the outputs this affects; `b` and `c` move by under 3 %.
+"""
 import json, sys
 
 import os
