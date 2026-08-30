@@ -1,0 +1,2 @@
+pid=5171 head_size=256 head_size_padded=256 nq_per_kv=2 BLOCK_M=16 BLOCK_Q=8 TILE_PREFILL=32 TILE_DECODE=32 tile=32 use_3d=False max_seqlen_q=2 q_heads=16 kv_heads=8 dtype=torch.float16 esize=2
+pid=5171 head_size=512 head_size_padded=512 nq_per_kv=16 BLOCK_M=16 BLOCK_Q=1 TILE_PREFILL=32 TILE_DECODE=16 tile=32 use_3d=False max_seqlen_q=2 q_heads=16 kv_heads=1 dtype=torch.float16 esize=2

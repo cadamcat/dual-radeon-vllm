@@ -30,7 +30,7 @@ touching the compute path.
 
 gemma-4's head dimensions are **heterogeneous**, and the one that matters is not
 the one this file first named. Measured 2026-08-30 by constructing vLLM 0.28.0's
-own `ModelConfig` against this checkpoint (`headsize.jsonl`, `check_head.py`):
+own `ModelConfig` against this checkpoint (`headsize-backfill/`, whose `check_head.py` reads that directory's README back out of the raw rows):
 
     config.json     head_dim 256 (sliding) · global_head_dim 512 (full)
                     16 attention heads · 8 KV heads · 48 layers
@@ -44,7 +44,9 @@ bytes of shared memory per block and **65 536 per SM**.
 
 This matters beyond pedantry: vllm#39018, the open fix for this failure, gates
 on `head_size_padded >= 512`, so the corrected value is what puts this case
-inside its scope rather than outside.
+inside its scope rather than outside. **It does fix it** — with that PR applied
+the same card serves this checkpoint and generates at 738 and 30 018 prompt
+tokens; see `headsize-backfill/`.
 
 | backend | selector | outcome | log |
 |---|---|---|---|
