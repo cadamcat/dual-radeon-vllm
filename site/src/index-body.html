@@ -30,9 +30,13 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <figcaption>
     <b>Figure 1.</b> Decode rate on 2× RX 7900 XT at tensor parallelism 2, against context length on a
     log axis. Four models are lit to start; click any name to add or remove it, and the machine row
-    above to overlay the other card. Five of the seven models have also been measured on one A100
-    80G — the same checkpoints, at TP=1 on vLLM 0.28.0 against TP=2 on 0.23.1 here. The checkpoint
-    is what the two sides share; the split and the stack are not. Every line is one session at one
+    above to overlay another card. Four machines are offered and three of them are a
+    <em>single</em> card: one A100 80G, one of these 7900 XTs, and one L4 24G. The same checkpoints
+    throughout — TP=1 on vLLM 0.28.0 for the CUDA cards against TP=2 on 0.23.1 for the pair. The
+    checkpoint is what the machines share; the split and the stack are not. Two of the single-card
+    lines stop early, and that is the measurement rather than a gap: a card that cannot hold the KV
+    for the next rung cannot measure it, and the tooltip on those lines says how many tokens its KV
+    held. Every line is one session at one
     ladder — eleven rungs, two rounds a cell — rather than a best-of stitched across days, and the
     tooltip carries each one's own. The switch beside a model adds that model's speculative arm,
     measured the same day and on the same kernel as the line it sits beside, so it shows what
@@ -41,9 +45,41 @@ own whole campaign on one afternoon. Every line says which it is.</p>
     Muse-Glimmer's assistant is a block-diffusion drafter and not MTP. Which way it goes is not one
     answer — on these cards both arms start ahead and one stays ahead all the way to 32 K, while on
     the A100 all four lose at every depth. Stroke says which is which: solid these two cards, long
-    dash the A100, short dash speculation. Hover a point for the run count and the stack it took.
+    dash the A100, dotted one of these cards, dash-dot the L4, short dash speculation. Hover a point for the run count and the stack it took.
     The vertical axis fits
     what is lit, so switching a line on can move it.
+  </figcaption>
+</figure>
+
+<figure class="rv" id="figpre">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · prefill throughput on one card, two models, three vendors
+      <span class="prov yes">recomputable from repo</span></div>
+    <p class="hint" id="prehint"></p>
+    <div class="legend" id="premach"></div>
+    <div class="legend" id="prekey"></div>
+    <svg class="chart" id="pre" role="img"></svg>
+    <div class="barunit" id="prenote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> The other half of the same question. Figure 1 is how fast each card
+    <em>generates</em>; this is how fast it reads the prompt, on <em>one</em> card of each kind, for
+    the two models all three have run. Colour and stroke are Figure 1's, so a line means the same
+    thing in both. Prefill is not one number: split the time into a fixed cost, a linear term and
+    attention's quadratic one — <code>T(S) = a + b·S + c·S²</code> — and <b>b</b> is compute while
+    <b>c</b> is how badly attention scales. Against one RX 7900 XT the A100 is 3.3× on b and 6.7× on
+    c for the dense 12B, so <em>the gap in attention is twice the gap in compute</em>. The L4 is the
+    interesting one: it is <b>slower than one 7900 XT on b</b> (0.90×) and 3.0× better on c, which
+    is why its curve starts below the Radeon's and ends above it. A single prefill tok/s number
+    states none of that. Hover a point for the run count and that line's fitted coefficients.
+    Only rungs whose two rounds agree are drawn, and the one each line drops is not one story. On
+    three of the four CUDA lines it is the shallowest, and it is the harness rather than the card:
+    the first request to a freshly started engine pays for the first CUDA-graph replay and the first
+    allocation out of the KV pool, and until 2026-08-30 the CUDA runner measured that request
+    instead of discarding it. On <em>both</em> Radeon lines it is the 4 000 rung — two models, two
+    campaigns, round 1 slower than round 2 each time — and this repository does not know why. The
+    MoE on one 7900 XT stops at 12 K for a reason it does know: 16.96 GiB of weights leave 0.93 GiB
+    of KV, which is 13 149 tokens.
   </figcaption>
 </figure>
 
@@ -111,11 +147,21 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
  "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
- "bestStroke": "solid: these two cards · long dash: the A100 · short dash: the same line with speculation on",
+ "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · short dash: the same line with speculation on",
+ "bestCapped": "{m} stops at {k} because {w}",
+ "preHint": "click a model or a machine to add or remove its lines · every line is one card",
+ "preAxisX": "prompt tokens",
+ "preAxisY": "prefill tok/s",
+ "preUnit": "prefill tok/s on one card · only rungs whose two rounds agree are drawn",
+ "preStroke": "stroke is the machine, as in Figure 1 · long dash: the A100 · dotted: one RX 7900 XT · dash-dot: the L4",
+ "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
+ "preRatio": "against one RX 7900 XT on {m}: {x} is {b}× on b and {c}× on c",
+ "preDropped": "{n} rung dropped, rounds {r}% apart",
+ "preNote": "b is compute and c is how badly attention scales; the two do not move together",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
  "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
@@ -417,11 +463,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
 
     // one colour per model, assigned in the order the data lists them so a
     // model keeps its colour whatever is lit
-    var models = [];
-    F.series.forEach(function (x) { if (x.lit && models.indexOf(x.model) < 0) models.push(x.model); });
-    F.series.forEach(function (x) { if (models.indexOf(x.model) < 0) models.push(x.model); });
-    // the models lit by default take the first four, which are the four furthest
-    // apart in both themes; the rest follow
+    // The order is decided in genfig-index.py and read here, so Figure 2 can
+    // draw two of the same models in the same colours: a reader who has learnt
+    // that gemma-4-26B-A4B is this colour should not have to learn it twice.
+    // Lit models take the first four, which are the four furthest apart in both
+    // themes; the rest follow.
+    var models = F.model_order.slice();
     var colour = {};
     models.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
 
@@ -460,14 +507,26 @@ topology. The shapes transfer; the levels are the worst case.</p>
           (p.runs > 1 && p.range_pct !== null
             ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) })
             : S.bestOne) +
-          "<br>" + esc(stack(x)) + "</span>";
+          "<br>" + esc(stack(x)) +
+          // A line that stops early is not an abandoned run: the card could not
+          // hold the KV for the next rung. Saying so on the line itself is the
+          // difference between a finding and a gap.
+          (x.rungs_capped
+            ? "<br>" + esc(fmt(S.bestCapped, { m: x.model,
+                k: kctx(x.points[x.points.length - 1].ctx),
+                w: x.rungs_capped.why }))
+            : "") + "</span>";
       };
     }
-    // One model can now own four lines -- two machines by two arms -- and they
-    // share a colour, so the stroke has to carry machine and arm both.
+    // One model can now own five lines -- four machines by two arms -- and they
+    // share a colour, so the stroke has to carry machine and arm both. The
+    // table is the machine's; speculation overrides it, because a speculative
+    // arm exists on only two of the four and reading "this is the arm" matters
+    // more there than reading which card it ran on, which the tooltip says.
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
     function stroke(x) {
-      if (x.machine === "rdna3") return x.spec ? "2 4" : null;
-      return x.spec ? "7 4 2 4" : "7 5";
+      if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
+      return STROKE[x.machine];
     }
     var ser = F.series.map(function (x) {
       var d = stroke(x);
@@ -593,6 +652,123 @@ topology. The shapes transfer; the levels are the worst case.</p>
       esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),
                              m: F.repro.median_pct.toFixed(2), c: F.repro.cells })) + "<br>" +
       esc(fmt(S.bestOmit, { m: F.omitted.join(", ") }));
+  })();
+
+  /* ---------- Figure 2: prefill on one card ----------
+     The same two axes a reader has just learnt, asking the other half of the
+     question. Colour and stroke are Figure 1's -- the colour order comes out
+     of genfig-index.py so both figures read from one decision, and the stroke
+     table is the same machine table -- so a line that is the L4 in one is the
+     L4 in the other without being relearnt.
+
+     Every line is lit to start. There are six, not twenty-three, and the point
+     of the figure is the comparison between them; hiding two thirds of it
+     behind a click would be hiding the finding. */
+  (function () {
+    var ALL = JSON.parse(document.getElementById("bestdata").textContent);
+    var F = ALL.prefill, BB = ALL.best;
+    var svg = document.getElementById("pre");
+    var key = document.getElementById("prekey"), mach = document.getElementById("premach");
+    var note = document.getElementById("prenote");
+    document.getElementById("prehint").textContent = S.preHint;
+
+    var colour = {};
+    BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
+    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3" };
+
+    var models = [], machines = [];
+    F.series.forEach(function (x) {
+      if (models.indexOf(x.model) < 0) models.push(x.model);
+      if (machines.indexOf(x.machine) < 0) machines.push(x.machine);
+    });
+    var on = {}, machOn = {};
+    models.forEach(function (m) { on[m] = true; });
+    machines.forEach(function (m) { machOn[m] = true; });
+
+    function tipFor(x) {
+      return function (i) {
+        var p = x.points[i];
+        return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
+          " · " + esc(S.bestMach[x.machine]) + "</span><br>" +
+          kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(0) + "</b> tok/s<br>" +
+          '<span class="sub">' + p.ttft_s.toFixed(3) + " s to first token · " +
+          p.tokens + " tok<br>" +
+          fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "<br>" +
+          esc(fmt(S.preFit, { b: x.fit.b_us_tok.toFixed(1),
+                              c: x.fit.c_ns_tok2.toFixed(2),
+                              r: x.fit.r2.toFixed(4) })) +
+          (x.dropped.length
+            ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
+                r: x.dropped[0].range_pct.toFixed(0) }))
+            : "") + "</span>";
+      };
+    }
+    var ser = F.series.map(function (x) {
+      var d = STROKE[x.machine];
+      return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
+               points: x.points.map(function (p) { return [p.tokens, p.tok_s]; }) };
+    });
+    function isLit(i) {
+      var x = F.series[i];
+      return on[x.model] && machOn[x.machine];
+    }
+    var chart = window.lineChart({
+      el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
+      fitLit: true, lit: isLit,
+      x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.preAxisX,
+           fmt: kctx, ticks: F.ticks },
+      y: { label: S.preAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    function apply() {
+      chart.setLit(isLit);
+      Array.prototype.forEach.call(mach.children, function (b, i) {
+        b.classList.toggle("on", machOn[machines[i]]);
+        b.classList.toggle("off", !machOn[machines[i]]);
+      });
+      Array.prototype.forEach.call(key.children, function (b, i) {
+        b.classList.toggle("on", on[models[i]]);
+      });
+    }
+    machines.forEach(function (id) {
+      var b = document.createElement("button");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(--text-2)");
+      b.innerHTML = '<span class="sw"></span>' + esc(S.bestMach[id]);
+      b.setAttribute("aria-pressed", "true");
+      b.addEventListener("click", function () {
+        machOn[id] = !machOn[id];
+        b.setAttribute("aria-pressed", String(machOn[id]));
+        apply();
+      });
+      mach.appendChild(b);
+    });
+    models.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "lg on";
+      b.style.setProperty("--c", colour[m]);
+      var q = BB.labels[m].quant_label;
+      b.innerHTML = '<span class="sw"></span>' + esc(m) +
+                    '<span class="q">' + esc(q) + "</span>";
+      b.setAttribute("aria-label", m + " " + q);
+      b.setAttribute("aria-pressed", "true");
+      b.addEventListener("click", function () {
+        on[m] = !on[m];
+        b.setAttribute("aria-pressed", String(on[m]));
+        apply();
+      });
+      key.appendChild(b);
+    });
+    apply();
+    // The ratios are the figure's argument, so they are written under it rather
+    // than left to be read off two curves by eye.
+    var lines = [esc(S.preStroke), esc(S.preUnit), esc(S.preNote)];
+    F.compare.forEach(function (c) {
+      lines.push(esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
+                                       b: c.b_ratio.toFixed(2),
+                                       c: c.c_ratio.toFixed(2) })));
+    });
+    note.innerHTML = lines.join("<br>");
   })();
 
   /* ---------- the timeline ----------

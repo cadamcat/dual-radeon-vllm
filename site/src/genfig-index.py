@@ -73,6 +73,7 @@ series.append(ledger_series("gemma-4-31B-it", 2, "2026-08-29", cfg="G31-tp2"))
 for s in series:
     s["machine"] = "rdna3"
     s["lit"] = s["model"] in LIT
+    s["rungs_capped"] = None
 
 # --- speculation, as its own layer -----------------------------------------
 # One arm per model that has one, measured the same day as that model's line
@@ -85,6 +86,7 @@ for model, cfg in MTP:
     m = ledger_series(model, 2, "2026-08-29", cfg=cfg)
     m["machine"] = "rdna3"
     m["lit"] = False
+    m["rungs_capped"] = None
     assert m["spec"], f"{cfg} is not a speculative arm"
     series.append(m)
 
@@ -175,13 +177,108 @@ def _a100(cfg, model, spec_desc, patches, backend, lit):
             "vllm": "0.28.0", "patches": list(patches),
             "harness": "campaign-server", "date": "2026-08-29", "quant": quant,
             "arch": arch, "spec": bool(spec_desc), "spec_desc": spec_desc,
-            "attn_backend": backend, "cfg": cfg,
+            "attn_backend": backend, "cfg": cfg, "rungs_capped": None,
             "source": "benchmarks/cuda-a100/campaign-2026-08-29/results.jsonl",
             "points": pts}
 
 for cfg, model, spec_desc, patches, backend in A100:
     series.append(_a100(cfg, model, spec_desc, patches, backend,
                         not spec_desc and model in LIT))
+
+# --- the single-card layer --------------------------------------------------
+# The A100 lines above are already one card; what the chart had no way to show
+# is the same question on the other two vendors, and on one of these Radeons
+# rather than the pair. Three machines, one card each, measured 2026-08-30
+# except where the ledger already had the answer.
+#
+# Two of these lines are short, and that is the finding rather than a gap. A
+# card that cannot hold the KV for a rung cannot measure it:
+#
+#   Qwen3-8B on one 7900 XT     1.16 GiB of KV = 8 442 tokens, so 8 000 (which
+#                               needs ~8 522 with the generation) is out
+#   gemma-4-26B-A4B, same card  16.96 GiB resident of 19.98, leaving 0.93 GiB
+#                               = 13 149 tokens at util 0.95, so 16 000 is out
+#
+# `rungs_capped` carries that so the figure can say why a line stops instead of
+# leaving a reader to assume the run was abandoned.
+CAPPED = {
+    "B-8B-tp1": {"kv_gib": 1.16, "kv_tokens": 8442,
+                 "why": "1.16 GiB of KV on a 19.98 GiB card holds 8 442 tokens"},
+    "E26-tp1-u95": {"kv_gib": 0.93, "kv_tokens": 13149,
+                    "why": "16.96 GiB of weights leaves 0.93 GiB of KV, 13 149 tokens"},
+}
+
+SINGLE = [("gemma-4-12B-it", "2026-08-24", "A-12B-tp1"),
+          ("gemma-4-26B-A4B", "2026-08-30", "E26-tp1-u95"),
+          ("Qwen3-8B", "2026-08-24", "B-8B-tp1")]
+for model, date, cfg in SINGLE:
+    x = ledger_series(model, 1, date, cfg=cfg)
+    x["machine"] = "rdna3-1"
+    x["lit"] = False
+    x["rungs_capped"] = CAPPED.get(cfg)
+    series.append(x)
+
+# The L4 is this round's own file, the same runner as the A100 half, and the
+# first CUDA rows in this repository measured with prefix caching off.
+_L4_RAW = _ct.defaultdict(lambda: _ct.defaultdict(list))
+_L4_META = {}
+for _line in open(B / "cuda-l4" / "campaign-2026-08-30" / "results.jsonl"):
+    _r = json.loads(_line)
+    if _r.get("kind") == "decode" and _r.get("decode_tps"):
+        _L4_RAW[_r["cfg"]][_r["target"]].append(_r["decode_tps"])
+    elif _r.get("kind") == "model_meta":
+        _L4_META[_r["cfg"]] = _r
+
+L4 = [("G12", "gemma-4-12B-it"), ("G26A4B", "gemma-4-26B-A4B")]
+
+
+def _campaign_series(raw, meta, cfg, model, machine, date, vllm, source, rungs=11):
+    by = raw[cfg]
+    assert len(by) == rungs, f"{cfg}: {len(by)} rungs, expected {rungs}"
+    quant, arch = _QA[model]
+    pts = []
+    for ctx in sorted(by):
+        v = by[ctx]
+        m = _st.mean(v)
+        rng = (max(v) - min(v)) / m * 100.0
+        pts.append({"ctx": ctx, "tok_s": m, "runs": len(v),
+                    "range_pct": rng, "graded": len(v) >= 2 and rng <= 8.0})
+    md = meta.get(cfg, {})
+    return {"model": model, "machine": machine, "tp": 1, "lit": False,
+            "vllm": vllm, "patches": [], "harness": "campaign-server",
+            "date": date, "quant": quant, "arch": arch, "spec": False,
+            "spec_desc": None, "attn_backend": md.get("backend"), "cfg": cfg,
+            "rungs_capped": None, "source": source, "points": pts}
+
+
+for cfg, model in L4:
+    series.append(_campaign_series(
+        _L4_RAW, _L4_META, cfg, model, "l4", "2026-08-30", "0.28.0",
+        "benchmarks/cuda-l4/campaign-2026-08-30/results.jsonl"))
+
+# --- the control the A100 lines now have ------------------------------------
+# The same two models were measured again on the A100 on 2026-08-30 with prefix
+# caching off, because that campaign's *prefill* was measured through a warm
+# cache and cannot be used. Decode was never in question -- it is read from the
+# stream after the first token -- and this is the measurement that says so
+# rather than the assertion. It is not drawn: it would be a second stock line
+# for a model that already has one, on the same machine, which is exactly what
+# the "no faster measurement left undrawn" rule exists to prevent.
+_A100_30 = _ct.defaultdict(lambda: _ct.defaultdict(list))
+for _line in open(B / "cuda-a100" / "campaign-2026-08-30" / "results.jsonl"):
+    _r = json.loads(_line)
+    if _r.get("kind") == "decode" and _r.get("decode_tps"):
+        _A100_30[_r["cfg"]][_r["target"]].append(_r["decode_tps"])
+cache_control = []
+for _c30, _c29 in (("G12", "A100-G12"), ("G26A4B", "A100-G26A4B")):
+    a = {c: _st.mean(v) for c, v in _A100_RAW[_c29].items()}
+    b_ = {c: _st.mean(v) for c, v in _A100_30[_c30].items()}
+    shared_ctx = sorted(set(a) & set(b_))
+    assert len(shared_ctx) == 11, (_c30, len(shared_ctx))
+    d = [abs(b_[c] - a[c]) / a[c] * 100.0 for c in shared_ctx]
+    cache_control.append({"cfg_on": _c29, "cfg_off": _c30, "rungs": len(shared_ctx),
+                          "worst_pct": max(d), "median_pct": sorted(d)[len(d) // 2]})
+assert max(x["worst_pct"] for x in cache_control) < 8.0, cache_control
 
 # --- what a label says ------------------------------------------------------
 # The chart names a model by the format its checkpoint is in as well as by its
@@ -353,6 +450,96 @@ CTX_TICKS = [c for c in sorted({p["ctx"] for s in series for p in s["points"]})
 assert CTX_TICKS[0] == min(p["ctx"] for s in series for p in s["points"]), CTX_TICKS
 assert CTX_TICKS[-1] == max(p["ctx"] for s in series for p in s["points"]), CTX_TICKS
 
+# --- Figure 2: what one card of each kind does to a prompt -------------------
+# The decode figure answers "how fast does it generate"; this one answers the
+# other half, and it is the half where the three cards do not agree about which
+# is better. Two models that all three ran, one card each, prefill throughput
+# against prompt length.
+#
+# Only chart-grade rungs are drawn. A prefill rung whose two rounds disagree is
+# not a measurement of anything, and on the shallowest rung of most of these
+# configurations they disagree a great deal: the first request to a freshly
+# started engine absorbs the first CUDA-graph replay, the first allocation out
+# of the KV pool and lazy JIT, and until 2026-08-30 the CUDA runner measured it
+# instead of discarding it. Drawing the mean of a cell whose rounds are 2.06 s
+# and 0.29 s would put a visibly wrong point on the curve; dropping it and
+# saying so is the honest version, and `dropped` carries which and why.
+#
+# The fit is imported from build_prefill.py rather than repeated here, so the
+# coefficients this figure states and the ones `prefill.jsonl --fits` reports
+# cannot drift apart.
+sys.path.insert(0, str(B / "analyze"))
+import build_prefill as _bp
+
+_PF = [json.loads(l) for l in open(B / "prefill.jsonl")]
+
+# machine id here is the figure's, and matches Figure 1's so a reader carries
+# the same stroke and the same name between the two.
+PF_LINES = [
+    ("a100",    "A100-SXM4-80GB", "gemma-4-12B-it",  "2026-08-30", "G12"),
+    ("a100",    "A100-SXM4-80GB", "gemma-4-26B-A4B", "2026-08-30", "G26A4B"),
+    ("rdna3-1", "RX 7900 XT",     "gemma-4-12B-it",  "2026-08-24", "A-12B-tp1"),
+    ("rdna3-1", "RX 7900 XT",     "gemma-4-26B-A4B", "2026-08-30", "E26-tp1-u95"),
+    ("l4",      "L4",             "gemma-4-12B-it",  "2026-08-30", "G12"),
+    ("l4",      "L4",             "gemma-4-26B-A4B", "2026-08-30", "G26A4B"),
+]
+
+_fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
+pf_series = []
+for mid, machine, model, date, cfg in PF_LINES:
+    rows = sorted([r for r in _PF if r["machine"] == machine and r["cfg"] == cfg
+                   and r["date"] == date], key=lambda r: r["ctx"])
+    assert rows, (machine, cfg, date)
+    good = [r for r in rows if r["chart_grade"]]
+    assert len(good) >= 4, (cfg, len(good))
+    f = _fits[(machine, cfg, date)]
+    assert "b_us_tok" in f, (cfg, f.get("note"))
+    quant, arch = _QA[model]
+    pf_series.append({
+        "machine": mid, "machine_name": machine, "model": model, "date": date,
+        "cfg": cfg, "quant": quant, "quant_label": qlabel(quant), "arch": arch,
+        "tp": rows[0]["tp"], "vllm": rows[0]["vllm"],
+        "attn_backend": rows[0]["attn_backend"],
+        "prefix_caching": rows[0]["prefix_caching"],
+        "source": rows[0]["source"],
+        "fit": {"a_ms": f["a_ms"], "b_us_tok": f["b_us_tok"],
+                "c_ns_tok2": f["c_ns_tok2"], "r2": f["r2"], "rungs": f["rungs"]},
+        "dropped": [{"ctx": r["ctx"], "range_pct": r["range_pct"]}
+                    for r in rows if not r["chart_grade"]],
+        "points": [{"ctx": r["ctx"], "tokens": r["prompt_tokens"],
+                    "tok_s": r["prefill_tok_s"], "ttft_s": r["ttft_s"],
+                    "runs": r["runs"], "range_pct": r["range_pct"]}
+                   for r in good],
+    })
+
+# The comparison the figure exists to make: against one 7900 XT, how much of
+# each machine's advantage is the linear term and how much the quadratic. b is
+# GEMM throughput -- the compute -- and c is how badly attention scales, and on
+# these six lines they do not move together.
+pf_cmp = []
+for model in ("gemma-4-12B-it", "gemma-4-26B-A4B"):
+    ref = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3-1")
+    for x in pf_series:
+        if x["model"] != model or x["machine"] == "rdna3-1":
+            continue
+        pf_cmp.append({"model": model, "machine": x["machine"],
+                       "b_ratio": ref["fit"]["b_us_tok"] / x["fit"]["b_us_tok"],
+                       "c_ratio": ref["fit"]["c_ns_tok2"] / x["fit"]["c_ns_tok2"]})
+# The L4 is behind one 7900 XT on the linear term and ahead on the quadratic --
+# the one crossing in the set, and the reason a single prefill tok/s number
+# cannot state what these cards do.
+_l4_12 = next(c for c in pf_cmp if c["machine"] == "l4" and c["model"] == "gemma-4-12B-it")
+assert _l4_12["b_ratio"] < 1.0 < _l4_12["c_ratio"], _l4_12
+PF_TICKS = [c for c in sorted({p["ctx"] for x in pf_series for p in x["points"]})
+            if c in {500 * 2 ** i for i in range(8)}]
+
+_lit_models = [m for m in dict.fromkeys(x["model"] for x in series if x["lit"])]
+_pf_models = [x["model"] for x in pf_series]
+_tail = [m for m in dict.fromkeys(x["model"] for x in series) if m not in _lit_models]
+MODEL_ORDER = _lit_models + sorted(_tail, key=lambda m: (m not in _pf_models,
+                                                         _tail.index(m)))
+assert len(MODEL_ORDER) == len(set(MODEL_ORDER)) == len({x["model"] for x in series})
+
 out = {
     "_what": "The index's best-measured-today figure. One line per model per machine, "
              "each the fastest configuration that model has been measured in; five of "
@@ -362,6 +549,13 @@ out = {
              "engine resolved. Derived by site/src/genfig-index.py from "
              "benchmarks/ledger.jsonl, benchmarks/speculative-decoding/ and "
              "benchmarks/cuda-a100/.",
+    "prefill": {
+        "series": pf_series,
+        "compare": pf_cmp,
+        "ticks": PF_TICKS,
+        "ctx_min": min(p["tokens"] for x in pf_series for p in x["points"]),
+        "ctx_max": max(p["tokens"] for x in pf_series for p in x["points"]),
+    },
     "best": {
         "series": series,
         "campaign": {"date": CAMPAIGN, "models": len(BACKBONE),
@@ -371,9 +565,33 @@ out = {
         "labels": labels,
         "mtp_pairs": mtp_pairs,
         "omitted": OMIT,
-        "machines": [{"id": "rdna3", "default": True}, {"id": "a100", "default": False}],
+        # Order is the order the row is drawn in, and the two-card Radeon is
+        # first because it is what this repository is about. The three
+        # single-card machines are off by default: the figure's first question
+        # is still "what does this box do", and a reader who wants the
+        # cross-vendor single-card comparison presses for it -- or reads
+        # Figure 2, which asks only that.
+        "machines": [{"id": "rdna3", "default": True, "cards": 2},
+                     {"id": "a100", "default": False, "cards": 1},
+                     {"id": "rdna3-1", "default": False, "cards": 1},
+                     {"id": "l4", "default": False, "cards": 1}],
+        "cache_control": cache_control,
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),
         "ctx_max": max(p["ctx"] for s in series for p in s["points"]),
+        # The colour order, decided here rather than in the page, because
+        # Figure 2 draws two of the same models and a reader carries the colour
+        # between the two figures. Lit models first -- they take the four
+        # furthest apart in both themes -- then the rest.
+        #
+        # Within the tail, the models Figure 2 draws come first, and that is not
+        # cosmetic. colour[m] is var(--m{i%7+1}) and the palette's closest pair
+        # by CIE76 is m1 against m7 at dE 17.8, where every other pair is 40 or
+        # more. Figure 2 has exactly two models on one chart, one of them lit
+        # here and so on m1; leaving the other at the end of the tail put it on
+        # m7 and drew both of that figure's models in the same blue. Pulling it
+        # forward costs Figure 1 nothing -- it swaps two models that are both
+        # off in the default view -- and gives Figure 2 a pair 78.7 apart.
+        "model_order": MODEL_ORDER,
         "ctx_ticks": CTX_TICKS,
         "fastest": max(p["tok_s"] for s in series for p in s["points"]),
     },

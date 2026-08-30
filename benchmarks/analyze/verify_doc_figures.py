@@ -3388,7 +3388,8 @@ def main():
     # Every line is recomputed from the file it claims, and the claim the whole
     # figure rests on -- that nothing faster is left undrawn -- is re-derived
     # here rather than taken from the script that emitted it.
-    XB = json.loads(xblock(XI["index.html"], "bestdata"))["best"]
+    XFIG = json.loads(xblock(XI["index.html"], "bestdata"))
+    XB = XFIG["best"]
     # --- the small figure each card carries --------------------------------
     # Every card's numbers are read out of that article's own figures-*.json by
     # genfig-index.py, so the card and the page it links to cannot disagree.
@@ -3489,12 +3490,31 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "18", len(XB["series"]))
-    ck("index figure, points", "198", sum(len(x["points"]) for x in XB["series"]))
-    # every line is one session at the campaign ladder now, not a three-point
-    # probe beside an eleven-rung campaign
-    ck("index figure, and every line is eleven rungs", "1",
-       1 if all(len(x["points"]) == 11 for x in XB["series"]) else 0)
+    ck("index figure, series", "23", len(XB["series"]))
+    ck("index figure, points", "243", sum(len(x["points"]) for x in XB["series"]))
+    # Every line is one session at the campaign ladder -- not a three-point probe
+    # beside an eleven-rung campaign -- unless the card could not hold the KV for
+    # the next rung, which two of the single-card lines could not. A short line
+    # has to say why it is short, or it reads as an abandoned run.
+    ck("index figure, and every line is eleven rungs unless the card capped it", "1",
+       1 if all(len(x["points"]) == 11 or x.get("rungs_capped")
+                for x in XB["series"]) else 0)
+    XCAP = [x for x in XB["series"] if x.get("rungs_capped")]
+    ck("index figure, lines the card capped", "2", len(XCAP))
+    ck("index figure, and each says how many tokens its KV held", "2",
+       sum(1 for x in XCAP if x["rungs_capped"].get("kv_tokens")))
+    # the cap is arithmetic, and the arithmetic is in the serve logs: the last
+    # rung drawn plus what the harness generates has to fit what the KV held,
+    # and the next rung up must not
+    for x in XCAP:
+        cap = x["rungs_capped"]["kv_tokens"]
+        deepest = x["points"][-1]["ctx"]
+        ck("index figure, %s's deepest rung fits its KV" % x["cfg"], "1",
+           1 if deepest + 512 <= cap else 0)
+        nxt = {500: 1000, 1000: 2000, 2000: 4000, 4000: 6000, 6000: 8000,
+               8000: 12000, 12000: 16000, 16000: 20000}[deepest]
+        ck("index figure, and %s's next rung up does not" % x["cfg"], "1",
+           1 if nxt + 512 > cap else 0)
     ck("index figure, speculative lines", "6",
        sum(1 for x in XB["series"] if x["spec"]))
     ck("index figure, and none of them is lit without being asked", "0",
@@ -3503,6 +3523,34 @@ def main():
        sum(1 for x in XB["series"] if x["machine"] == "rdna3"))
     ck("index figure, lines on the A100", "9",
        sum(1 for x in XB["series"] if x["machine"] == "a100"))
+    ck("index figure, lines on one Radeon", "3",
+       sum(1 for x in XB["series"] if x["machine"] == "rdna3-1"))
+    ck("index figure, lines on the L4", "2",
+       sum(1 for x in XB["series"] if x["machine"] == "l4"))
+    ck("index figure, machines offered", "4", len(XB["machines"]))
+    ck("index figure, and one of them is on by default", "1",
+       sum(1 for m in XB["machines"] if m["default"]))
+    # every machine the figure draws has to have a name in both languages, or
+    # the row renders "undefined" in one of them and nothing catches it
+    for _lang, _fn in (("en", "index-body.html"), ("zh", "index-body-zh.html")):
+        _sb = json.loads(block(open(os.path.join(
+            HERE, "..", "..", "site", "src", _fn), encoding="utf-8").read(), "strings"))
+        ck("index figure, every machine is named in %s" % _lang,
+           str(len(XB["machines"])),
+           sum(1 for m in XB["machines"] if _sb["bestMach"].get(m["id"])))
+
+    # Prefix caching was on for the 2026-08-29 A100 campaign and off for the
+    # 2026-08-30 one. Its prefill cannot be used; its decode can, and this is
+    # the measurement that says so rather than the assertion -- the same two
+    # models, eleven rungs each, measured both ways.
+    XCC = XB["cache_control"]
+    ck("index figure, models measured with the cache both ways", "2", len(XCC))
+    ck("index figure, and each is eleven rungs", "2",
+       sum(1 for c in XCC if c["rungs"] == 11))
+    ck("index figure, decode agrees across the two, worst", "2.34",
+       max(c["worst_pct"] for c in XCC), 0.01)
+    ck("index figure, and inside the chart-grade cut", "1",
+       1 if max(c["worst_pct"] for c in XCC) <= 8.0 else 0)
     ck("index figure, lit without being asked", "4",
        sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "rdna3"))
     ck("index figure, and the same models on the other machine", "4",
@@ -3808,6 +3856,139 @@ def main():
     for k in sorted(xkeys[0]):
         ck("index, script uses string '%s'" % k, "1",
            1 if xscr[0] and ("S." + k) in xscr[0].group(0) else 0)
+
+    # --- Figure 2: prefill on one card of each kind --------------------------
+    # The figure states two coefficients per line and four ratios between them,
+    # and every one of those is recomputed here from prefill.jsonl through the
+    # same fitter the projection uses -- so the figure and `--fits` cannot
+    # disagree, and neither can drift from the rows.
+    import build_prefill as _bpf
+    XP = XFIG["prefill"]
+    XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
+    ck("prefill figure, lines", "6", len(XP["series"]))
+    ck("prefill figure, machines", "3", len({x["machine"] for x in XP["series"]}))
+    ck("prefill figure, models", "2", len({x["model"] for x in XP["series"]}))
+    ck("prefill figure, and every line is one card", "6",
+       sum(1 for x in XP["series"] if x["tp"] == 1))
+    # The whole reason the A100 was re-run. Four of the six lines are the CUDA
+    # campaigns and had the cache off; one is the Radeon MoE, whose 0.23
+    # container has it ON and produced no hits anyway -- its rounds agree to
+    # 1.46 % at 500 and 0.03 % at 12 K -- and one is the 2026-08-24 Radeon
+    # campaign, whose serve logs were not kept and which therefore records
+    # neither. The flag is not the discriminator; repeatability is, and no
+    # ungraded rung is drawn.
+    ck("prefill figure, lines measured with prefix caching off", "4",
+       sum(1 for x in XP["series"] if x["prefix_caching"] is False))
+    ck("prefill figure, lines that had it on and show no hits", "1",
+       sum(1 for x in XP["series"] if x["prefix_caching"] is True))
+    ck("prefill figure, lines with no log to say", "1",
+       sum(1 for x in XP["series"] if x["prefix_caching"] is None))
+    # this column is for what was read: five logs survive and all five say
+    # TRITON_ATTN, and none of the six records anything else
+    ck("prefill figure, lines recording TRITON_ATTN", "5",
+       sum(1 for x in XP["series"] if x["attn_backend"] == "TRITON_ATTN"))
+    ck("prefill figure, and none records a different backend", "0",
+       sum(1 for x in XP["series"]
+           if x["attn_backend"] not in (None, "TRITON_ATTN")))
+    # Which rung each line had to drop, and it is not one story. On the four
+    # CUDA lines it is the shallowest -- the cold engine's first request, which
+    # the runner did not discard until 2026-08-30. On both Radeon lines it is
+    # the 4 000 rung, on two different models in two different campaigns, round
+    # 1 slower than round 2 each time, and this repository does not know why.
+    _drop = {(x["machine"], x["model"]): [d["ctx"] for d in x["dropped"]]
+             for x in XP["series"]}
+    ck("prefill figure, CUDA lines dropping their shallowest rung", "3",
+       sum(1 for (m, _), d in _drop.items() if m in ("a100", "l4") and d == [500]))
+    ck("prefill figure, Radeon lines dropping the 4000 rung", "2",
+       sum(1 for (m, _), d in _drop.items() if m == "rdna3-1" and d == [4000]))
+    ck("prefill figure, lines dropping nothing", "1",
+       sum(1 for d in _drop.values() if not d))
+
+    _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
+    _bad_fit = _bad_pts = _ungraded = 0
+    for x in XP["series"]:
+        f = _xfits.get((x["machine_name"], x["cfg"], x["date"]))
+        if not f or abs(f["b_us_tok"] - x["fit"]["b_us_tok"]) > 1e-9 \
+                or abs(f["c_ns_tok2"] - x["fit"]["c_ns_tok2"]) > 1e-9:
+            _bad_fit += 1
+        rows = {r["ctx"]: r for r in XPFROWS
+                if r["machine"] == x["machine_name"] and r["cfg"] == x["cfg"]
+                and r["date"] == x["date"]}
+        for p in x["points"]:
+            r = rows.get(p["ctx"])
+            if not r or abs(r["prefill_tok_s"] - p["tok_s"]) > 1e-9:
+                _bad_pts += 1
+            elif not r["chart_grade"]:
+                _ungraded += 1
+    ck("prefill figure, lines whose fit is not the projection's", "0", _bad_fit)
+    ck("prefill figure, points that do not match prefill.jsonl", "0", _bad_pts)
+    # a rung whose two rounds disagree is not a measurement; none may be drawn
+    ck("prefill figure, ungraded rungs drawn", "0", _ungraded)
+
+    # The argument. Against one 7900 XT the A100 leads on both terms and leads
+    # by more on the quadratic; the L4 is BEHIND on the linear term and ahead on
+    # the quadratic, which is the crossing that a single tok/s number hides.
+    _cmp = {(c["model"], c["machine"]): c for c in XP["compare"]}
+    ck("prefill figure, ratios stated", "4", len(XP["compare"]))
+    ck("prefill figure, A100 b on the 12B", "3.29",
+       _cmp[("gemma-4-12B-it", "a100")]["b_ratio"], 0.01)
+    ck("prefill figure, A100 c on the 12B", "6.67",
+       _cmp[("gemma-4-12B-it", "a100")]["c_ratio"], 0.01)
+    ck("prefill figure, so attention is the wider gap", "1",
+       1 if _cmp[("gemma-4-12B-it", "a100")]["c_ratio"]
+       > 2 * _cmp[("gemma-4-12B-it", "a100")]["b_ratio"] - 0.5 else 0)
+    ck("prefill figure, L4 b on the 12B", "0.90",
+       _cmp[("gemma-4-12B-it", "l4")]["b_ratio"], 0.01)
+    ck("prefill figure, L4 c on the 12B", "3.01",
+       _cmp[("gemma-4-12B-it", "l4")]["c_ratio"], 0.01)
+    ck("prefill figure, the L4 loses on b and wins on c", "1",
+       1 if _cmp[("gemma-4-12B-it", "l4")]["b_ratio"] < 1.0
+       < _cmp[("gemma-4-12B-it", "l4")]["c_ratio"] else 0)
+    ck("prefill figure, A100 b on the MoE", "5.75",
+       _cmp[("gemma-4-26B-A4B", "a100")]["b_ratio"], 0.01)
+    ck("prefill figure, A100 c on the MoE", "5.71",
+       _cmp[("gemma-4-26B-A4B", "a100")]["c_ratio"], 0.01)
+    # Two models on one chart have to be two colours a reader can tell apart at
+    # stroke width, and "there are seven colours" does not establish that: the
+    # palette's closest pair by CIE76 is m1 against m7 at 17.8, where every
+    # other pair is 40 or more, and the first draft of this figure drew both of
+    # its models in exactly that pair. The order in genfig-index.py pulls
+    # Figure 2's models forward to avoid it; this is the check that says the
+    # avoidance worked rather than that it was intended.
+    _pal = re.findall(r"--m(\d):\s*(#[0-9a-fA-F]{6})",
+                      open(os.path.join(HERE, "..", "..", "site", "src",
+                                        "index-extra.css"), encoding="utf-8").read())
+    _pal = {int(i): h for i, h in _pal}
+
+    def _lab(h):
+        r, g, b = (int(h[i:i + 2], 16) / 255 for i in (1, 3, 5))
+        f = lambda c: c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = f(r), f(g), f(b)
+        X, Y, Z = (0.4124 * r + 0.3576 * g + 0.1805 * b,
+                   0.2126 * r + 0.7152 * g + 0.0722 * b,
+                   0.0193 * r + 0.1192 * g + 0.9505 * b)
+        n = lambda t: t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+        fx, fy, fz = n(X / 0.95047), n(Y / 1.0), n(Z / 1.08883)
+        return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+
+    def _de(a, b):
+        return sum((x - y) ** 2 for x, y in zip(_lab(a), _lab(b))) ** 0.5
+
+    _slot = {m: i % 7 + 1 for i, m in enumerate(XB["model_order"])}
+    _pf_models = sorted({x["model"] for x in XP["series"]})
+    ck("prefill figure, its two models are two palette slots", "2",
+       len({_slot[m] for m in _pf_models}))
+    if len(_pf_models) == 2 and all(_slot[m] in _pal for m in _pf_models):
+        ck("prefill figure, and far enough apart to tell at stroke width", "78.7",
+           _de(_pal[_slot[_pf_models[0]]], _pal[_slot[_pf_models[1]]]), 0.01)
+        ck("prefill figure, which the palette's closest pair is not", "1",
+           1 if _de(_pal[_slot[_pf_models[0]]], _pal[_slot[_pf_models[1]]]) >= 40 else 0)
+
+    # the machine ids have to be Figure 1's, or a reader carrying a stroke or a
+    # colour between the two figures is carrying it to the wrong line
+    ck("prefill figure, its machines are Figure 1's", "1",
+       1 if {x["machine"] for x in XP["series"]} <=
+       {m["id"] for m in XB["machines"]} else 0)
 
     # --- what section 4 of benchmarks.md withdrew, and what it kept ----------
     # The claims retired on 2026-08-30 were retired because nothing recomputed

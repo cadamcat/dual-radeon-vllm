@@ -27,17 +27,45 @@ __CHIPS__
   </div>
   <figcaption>
     <b>图 1.</b> 2× RX 7900 XT、张量并行 2 上的解码速率，横轴是上下文长度，取对数。
-    默认点亮四个模型，点名字可以加上或去掉任意一条，点上面那一行机器名可以把另一张卡叠上来。
-    七个模型里有五个也在一张 A100 80G 上测过 —— 同样的 checkpoint，那边是 TP=1、vLLM 0.28.0，
-    这边是 TP=2、0.23.1。两边共用的是 checkpoint，拆分方式和软件栈不是。
+    默认点亮四个模型，点名字可以加上或去掉任意一条，点上面那一行机器名可以把别的卡叠上来。
+    一共四台机器，其中三台是<em>单</em>卡：一张 A100 80G、一张这里的 7900 XT、一张 L4 24G。
+    checkpoint 自始至终相同 —— CUDA 那几张是 TP=1、vLLM 0.28.0，这一对是 TP=2、0.23.1。
+    机器之间共用的是 checkpoint，拆分方式和软件栈不是。有两条单卡线提前结束，那是测量结果而不是缺口：
+    卡装不下下一档的 KV 就测不了它，这两条线的悬浮提示会说它的 KV 装得下多少 token。
     每条线都出自一场会话、同一套阶梯 —— 十一个档位、每格两轮 ——
     而不是跨天拼出来的最好成绩，悬浮提示带着它自己的那一套。模型旁边的小开关会加上这个模型的投机臂，
     它与旁边那条线同日、同内核测得，所以它显示的是「<em>这条线</em>开了投机会怎样」，
     而不是「哪里最快的一次投机」。开关上写的是这条臂实际解析出的方法，所以其中一个写的是
     <b>DFlash</b>：Muse-Glimmer 的助手模型是块扩散草稿模型，不是 MTP。投机到底划不划算并没有一个统一答案 ——
     在这两张卡上，两条臂在最短档都领先，其中一条一路领先到 32K；而在 A100 上，四条臂在每一档都是净亏。
-    笔画区分身份：实线是这两张卡，长虚线是 A100，短虚线是投机。
+    笔画区分身份：实线是这两张卡，长虚线是 A100，点线是其中一张卡，点划线是 L4，短虚线是投机。
     把鼠标停在任意点上可以看到 run 数和它用的软件栈。纵轴只按点亮的线取值域，所以多点亮一条线可能会让它变。
+  </figcaption>
+</figure>
+
+<figure class="rv" id="figpre">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 单卡预填充吞吐，两个模型，三家 GPU
+      <span class="prov yes">可从仓库重算</span></div>
+    <p class="hint" id="prehint"></p>
+    <div class="legend" id="premach"></div>
+    <div class="legend" id="prekey"></div>
+    <svg class="chart" id="pre" role="img"></svg>
+    <div class="barunit" id="prenote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 同一个问题的另一半。图 1 是每张卡<em>生成</em>得多快，这张是它读提示词读得多快——每种卡
+    只用<em>一张</em>，跑三者都跑过的那两个模型。颜色和线型沿用图 1，所以一条线在两图里是同一件事。预填充
+    不是一个数：把时间拆成固定开销、线性项和 attention 的二次项——<code>T(S) = a + b·S + c·S²</code>
+    ——<b>b</b> 是算力，<b>c</b> 是 attention 随长度恶化得多快。对一张 RX 7900 XT，A100 在稠密 12B 上
+    b 领先 3.3×、c 领先 6.7×，也就是说 <em>attention 上的差距是算力差距的两倍</em>。L4 最有意思：它在
+    b 上<b>比一张 7900 XT 还慢</b>（0.90×），在 c 上好 3.0×，所以它的曲线起点在 Radeon 之下、终点在其
+    之上。单独一个预填充 tok/s 说不出这里面任何一件事。悬停可看轮数和该条线拟合出的系数。只画两轮一致的
+    档位，而每条线丢掉的那一档并非同一个原因。四条 CUDA 线里有三条丢的是最浅的一档，原因在测量脚手架不在
+    卡——冷引擎的第一次请求要付第一次 CUDA graph 重放和第一次 KV 池分配的账，而 CUDA runner 直到
+    2026-08-30 才把这次请求丢弃而不是测量它。两条 Radeon 线丢的<em>都是</em> 4000 档——两个模型、两场
+    campaign，每次都是第一轮比第二轮慢——本仓库不知道原因。MoE 在一张 7900 XT 上停在 12K 则是知道原因的：
+    16.96 GiB 权重之后只剩 0.93 GiB 的 KV，也就是 13 149 个 token。
   </figcaption>
 </figure>
 
@@ -95,11 +123,21 @@ __CHIPS__
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
  "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · 模型旁边的小开关会加上这个模型的投机臂，开关上写的是它实际跑的那种方法",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
  "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
- "bestStroke": "实线：这两张卡 · 长虚线：A100 · 短虚线：同一条线开着投机",
+ "bestStroke": "实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 短虚线：同一条线开着投机",
+ "bestCapped": "{m} 停在 {k}，因为{w}",
+ "preHint": "点模型或机器可增删对应的线 · 每条线都是单卡",
+ "preAxisX": "提示词 token 数",
+ "preAxisY": "预填充 tok/s",
+ "preUnit": "单卡预填充 tok/s · 只画两轮一致的档位",
+ "preStroke": "线型表示机器，与图 1 一致 · 长虚线：A100 · 点线：一张 RX 7900 XT · 点划线：L4",
+ "preFit": "拟合：b {b} µs/tok · c {c} ns/tok² · r² {r}",
+ "preRatio": "在 {m} 上对一张 RX 7900 XT：{x} 的 b 是 {b}×，c 是 {c}×",
+ "preDropped": "丢弃 {n} 档，两轮相差 {r}%",
+ "preNote": "b 是算力，c 是 attention 随长度恶化的速度；两者并不同向",
  "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
  "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
  "bestOmit": "{m} 没有放进来：ledger 里它只有被 split-KV 那批工作取代掉的那次旧运行",
