@@ -4025,6 +4025,30 @@ def main():
     ck("index, the two versions share one script", "1",
        1 if all(xscr) and xscr[0].group(0) == xscr[1].group(0) else 0)
     xkeys = [set(json.loads(xblock(XI[fn], "strings") or "{}").keys()) for fn in XIP]
+    # --- the navigation furniture -------------------------------------------
+    # Every article carries a link back to the index in its own language, and
+    # the index carries none, because a link to the page you are on is
+    # furniture. The href is what would fail silently: an English article
+    # pointing at index.zh.html still renders, still clicks, and drops the
+    # reader into the other language.
+    xhome = 0
+    for a in AJ:
+        for lg, fn in (("en", a["href"]["en"].split("/")[-1]),
+                       ("zh", a["href"]["zh"].split("/")[-1])):
+            want = '../index.html' if lg == "en" else '../index.zh.html'
+            m = re.search(r'<a class="home" href="([^"]+)"', XPAGES[fn])
+            ck("article %s, %s has a way back to the index" % (a["slug"], lg), "1",
+               1 if m and m.group(1) == want else 0)
+            xhome += 1 if m else 0
+    ck("site, articles carrying a back link", str(xhome), xhome)
+    for fn in XIP:
+        ck("index %s, does not link back to itself" % fn, "0",
+           len(re.findall(r'<a class="home"', XI[fn])))
+        # the rail is built from the page's own headings and draws nothing at
+        # all below three of them, which would be a silent disappearance
+        ck("index %s, headings for the rail to list" % fn, "4",
+           len(re.findall(r"<h2><span class=\"n\">", XI[fn])))
+
     ck("index, the strings tables have the same keys", "1",
        1 if xkeys[0] == xkeys[1] and xkeys[0] else 0)
     for k in sorted(xkeys[0]):

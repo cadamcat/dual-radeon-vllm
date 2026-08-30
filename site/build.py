@@ -45,12 +45,33 @@ def lang_nav(current, en, zh):
     return "\n".join(rows)
 
 
+def home_nav(lang, label):
+    """Back to the index, in the reader's own language.
+
+    Articles are built into docs/articles/, so the index is one level up. The
+    index itself gets this stripped: a link to the page you are on is furniture,
+    not navigation.
+    """
+    href = "../index.html" if lang == "en" else "../index.zh.html"
+    return (f'  <a class="home" href="{href}" title="{label}" aria-label="{label}">'
+            '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" '
+            'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M20 12H4"/><path d="M10 6l-6 6 6 6"/></svg>'
+            f'<span>{label}</span></a>\n'
+            '  <span class="sep" aria-hidden="true"></span>')
+
+
 def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figures=None,
-         script_from=None, subs=None):
+         script_from=None, subs=None, home=True):
     h = head
     if extra_css:
         h = h.replace("  .rv { opacity:0;", (D / extra_css).read_text() + "\n  .rv { opacity:0;")
-    if nav is None:                       # the index has no language pair
+    if home:
+        h = h.replace("__HOME_NAV__", home_nav("zh" if lang.startswith("zh") else "en",
+                                               labels[4]))
+    else:
+        h = h.replace('__HOME_NAV__\n', "")
+    if nav is None:                       # a page with no language pair
         h = h.replace('__LANG_NAV__\n  <span class="sep" aria-hidden="true"></span>\n', "")
     else:
         h = h.replace("__LANG_NAV__", nav)
@@ -97,10 +118,10 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
 MISMATCH = []
 TITLES = {}
 SUBS = {}
-EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark")
+EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups")
 ZH_LABELS = ("语言与配色主题", "跟随系统",
-             "浅色", "深色")
-IDX_LABELS = ("Language and colour theme", "Match system", "Light", "Dark")
+             "浅色", "深色", "全部文章")
+IDX_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups")
 IDX_LABELS_ZH = ZH_LABELS
 
 H_EN, H_ZH = "hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"
@@ -493,6 +514,7 @@ built.append(page("index-body.html", lang="en", extra_css="index-extra.css",
                        "ROCm and vLLM. Every figure is checked against the committed data it is drawn "
                        "from.",
                   out=I_EN, nav=lang_nav("en", I_EN, I_ZH), labels=IDX_LABELS,
+                  home=False,
                   subs=dict(IDX_SUBS, __CHIPWORDS_JSON__=json.dumps(
                       CHIPWORDS["en"], ensure_ascii=False, indent=1))))
 built.append(page("index-body-zh.html", lang="zh-CN", extra_css="index-extra.css",
@@ -503,6 +525,7 @@ built.append(page("index-body-zh.html", lang="zh-CN", extra_css="index-extra.css
                        "每张图都对照它所出自的已"
                        "入库数据被检查过。",
                   out=I_ZH, nav=lang_nav("zh", I_EN, I_ZH), labels=IDX_LABELS_ZH,
+                  home=False,
                   subs=dict(IDX_SUBS, __CHIPWORDS_JSON__=json.dumps(
                       CHIPWORDS["zh"], ensure_ascii=False, indent=1))))
 

@@ -182,6 +182,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestAltOf": "{m}: draw the same line on {b}, the backend the runtime picks for itself — faster at prefill, slower at decode (Figure 2)",
  "bestRuns": "{n} runs · range {r}%",
  "bestOne": "one run",
+ "tocLabel": "sections of this page",
  "estLabel": "establishes",
  "cTokS": "decode tok/s at batch 1 · higher is better",
  "cAdv": "how many times ahead one A100 is, against context",
@@ -839,6 +840,77 @@ topology. The shapes transfer; the levels are the worst case.</p>
                                      p: bt.prefill_gain.toFixed(2),
                                      d: bt.decode_gain.toFixed(2) })));
     note.innerHTML = lines.join("<br>");
+  })();
+
+  /* ---------- the section rail ----------
+     Built from the page's own <h2> elements, so it cannot list a section that
+     is not there or miss one that is, and it needs no strings of its own: the
+     number comes from each heading's <span class="n"> and the label from the
+     rest of the heading. That also makes it work unchanged on both language
+     versions, which share this script.
+
+     Which section is current is a scroll question, not a visibility one, so it
+     is a throttled scroll listener rather than an IntersectionObserver: a
+     reader is "in" the last section whose heading has passed the reading line,
+     even when two headings are on screen at once and even when none is. */
+  (function () {
+    var hs = [].slice.call(document.querySelectorAll(".wrap h2"));
+    if (hs.length < 3) return;
+    var nav = document.createElement("nav");
+    nav.className = "toc";
+    nav.setAttribute("aria-label", S.tocLabel);
+    var ol = document.createElement("ol");
+    var mark = document.createElement("div");
+    mark.className = "mark";
+    mark.setAttribute("aria-hidden", "true");
+    ol.appendChild(mark);
+    var links = hs.map(function (h, i) {
+      if (!h.id) h.id = "sec" + (i + 1);
+      var num = h.querySelector(".n");
+      var n = num ? num.textContent : "";
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.innerHTML = '<span class="n">' + esc(n) + "</span>" +
+                    esc(h.textContent.slice(n.length));
+      li.appendChild(a);
+      ol.appendChild(li);
+      return a;
+    });
+    nav.appendChild(ol);
+    document.body.appendChild(nav);
+
+    var cur = -1;
+    function place() {
+      var a = links[cur];
+      mark.style.top = a.offsetTop + "px";
+      mark.style.height = a.offsetHeight + "px";
+    }
+    function sync() {
+      // a third of the way down is where a heading stops being "coming up" and
+      // starts being what you are reading
+      var line = innerHeight * 0.3, k = 0;
+      for (var i = 0; i < hs.length; i++) {
+        if (hs[i].getBoundingClientRect().top <= line) k = i;
+      }
+      if (k === cur) return;
+      cur = k;
+      links.forEach(function (a, i) {
+        if (i === k) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+      place();
+    }
+    var queued = false;
+    addEventListener("scroll", function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; sync(); });
+    }, { passive: true });
+    // the mark is positioned in pixels, so a resize that re-wraps a label moves
+    // the link it is pointing at
+    addEventListener("resize", function () { if (cur >= 0) place(); }, { passive: true });
+    sync();
   })();
 
   /* ---------- the timeline ----------

@@ -118,6 +118,20 @@
                     color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
   .themebar .lang:hover { color:var(--text-2); }
   .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  /* Back to the index, on every page that is not it. An article is usually
+     arrived at from a card on the front page and there was no way back except
+     the browser's own button, which is not there when the link was opened in a
+     new tab or shared. It sits leftmost because it goes to the widest thing. */
+  .themebar .home { display:inline-flex; align-items:center; gap:.4em; border-radius:99px;
+                    padding:5px 10px 5px 8px; color:var(--text-dim); border-bottom:0;
+                    font-family:var(--mono); font-size:.73rem; letter-spacing:.02em;
+                    transition:background .2s, color .2s; }
+  .themebar .home:hover { background:var(--surface-3); color:var(--accent); }
+  .themebar .home svg { width:15px; height:15px; }
+  /* the label is the first thing a narrow bar should give up: the arrow keeps
+     the target, and the accessible name is on the link either way */
+  @media (max-width:560px){ .themebar .home span { display:none; }
+                            .themebar .home { padding:5px 8px; } }
   .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
   @media (max-width:640px){ .themebar { top:8px; right:8px; } }
 
@@ -366,6 +380,8 @@
 <body>
 <div class="prog" id="prog" aria-hidden="true"></div>
 <nav class="themebar" aria-label="Language and colour theme">
+  <a class="home" href="../index.html" title="all write-ups" aria-label="all write-ups"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4"/><path d="M10 6l-6 6 6 6"/></svg><span>all write-ups</span></a>
+  <span class="sep" aria-hidden="true"></span>
   <a class="lang" href="a100-vs-two-radeons.html" hreflang="en" aria-current="page">EN</a>
   <a class="lang" href="a100-vs-two-radeons.zh.html" hreflang="zh">中</a>
   <span class="sep" aria-hidden="true"></span>
