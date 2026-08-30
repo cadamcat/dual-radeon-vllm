@@ -26,12 +26,35 @@ withdraw. One card each:
 | A100 80G | **145.7** / **3.62** | **62.6** / **2.30** |
 | one RX 7900 XT | 479.0 / 24.16 | 360.0 / 13.13 |
 | one L4 24G | 534.7 / 8.03 | 204.4 / 5.53 |
+| one Tesla T4 16G † | 3033.2 / 218.89 | — |
 
 The A100 leads one 7900 XT 3.3× on b and 6.7× on c: the gap in attention is twice the gap in
 compute. The L4 is *slower* on b (0.90×) and 3.0× better on c, so its curve starts below the
 Radeon's and ends 1.58× above it at 32 K. The second card buys 1.23–1.48× on b and 1.91–2.22× on
 c across the three models measured on both topologies — attention parallelises better than the
-GEMMs, which is the claim §4's withdrawn 76 ms intercept was reaching for |
+GEMMs, which is the claim §4's withdrawn 76 ms intercept was reaching for.
+
+† **The T4's row does not compare with the three above it, for two reasons.** It is the only line
+in either projection measured with a patch that changes an attention kernel: without
+[vllm#39018](https://github.com/vllm-project/vllm/pull/39018) the engine does not start on sm75 at
+all, and the patch halves `TILE_PREFILL` on the head_size 512 layers — which is the quadratic
+term. And its `b` is not determined by its own ladder: the 32 000 rung was measured on a second VM,
+the two agree to 4.61 % there, and swapping which one supplies it moves `b` by **29.9 %** and `c`
+by 12.8 %. This curve is quadratic-dominated in a way no other here is — 224 s of c·S² against
+97 s of b·S at 32 K — so the linear term absorbs the uncertainty, exactly as `a` does everywhere
+else. Read `c`, with that ±13 %, and read it as this card *with a different kernel*.
+
+**Qwen3-8B, the second model with more than one single card**, and it splits the same way:
+
+| machine | Qwen3-8B b / c | backend |
+|---|---|---|
+| one RX 7900 XT, vLLM 0.27, stock | **206.7** / 8.87 | `ROCM_ATTN` |
+| one L4 24G | 288.3 / **5.38** | `FLASH_ATTN` |
+
+The Radeon wins the linear term 1.39× and loses the quadratic 1.65× — the same direction
+gemma-4-12B shows, at very different magnitudes. **This pair is a kernel difference as well as a
+card difference**, which the gemma-4-12B pair is not free of either: the Radeon's 2026-07-25 and
+2026-08-24 campaigns kept no serve log, so their backend is unrecorded rather than known |
 | `decode.jsonl` | **Every decode point, across machines**, built by `analyze/build_decode.py`. `ledger.jsonl` stays Radeon-only and unchanged; this is the cross-machine projection beside it. It imports its campaign table from `build_prefill.py` so the two cannot drift apart, and `--check` **recomputes the overlap against `ledger.jsonl` and fails if any cell disagrees** — two files projecting the same rows is how a repository ends up with two answers to one question.
 
 **What it answers, and a correction.** Single-card decode, stock arms only, chart-grade rungs:
@@ -41,9 +64,34 @@ GEMMs, which is the claim §4's withdrawn 76 ms intercept was reaching for |
 | gemma-4-12B-it | A100 80G | `A100-G12` | 115.0 | 71.3 @32K | 61.9 % |
 | | one RX 7900 XT | `A-12B-tp1` | 50.6 | 36.7 @32K | 72.6 % |
 | | one L4 24G | `G12` | 28.2 | 25.1 @32K | 88.8 % |
+| | one Tesla T4 16G | `G12` | 20.3 | **9.0 @32K** | **44.3 %** |
 | gemma-4-26B-A4B | A100 80G | `A100-G26A4B` | 161.0 | 105.0 @32K | 65.2 % |
 | | one RX 7900 XT | `E26-tp1-u95` | 96.9 | 79.1 @12K | 81.6 % |
 | | one L4 24G | `G26A4B` | 52.4 | 44.1 @32K | 84.1 % |
+| Qwen3-8B | one RX 7900 XT | `B8-tp1-u95` | 46.6 | 44.1 @6K | 94.7 % |
+| | one L4 24G | `B8` | 16.6 | 13.5 @24K | 81.3 % |
+| Qwen3.8-27B INT4-sym | one L4 24G | `Q38S` | 15.9 | 15.4 @8K | 96.6 % |
+| gemma-4-31B-it | A100 80G | `G31` | 58.5 | 42.4 @32K | 72.5 % |
+| | one L4 24G | `G31-eager` | 11.1 | 11.1 @1K | 99.7 % |
+
+**Decode is the column the T4's patch does not touch** — vllm#39018 changes `TILE_PREFILL` and
+nothing else — so its row compares directly, and it is the only card here whose decode more than
+halves across the ladder: 0.72× of the L4 at 500 and **0.36× at 32 K**.
+
+Four of these lines stop short of 32 K and each stop is arithmetic rather than an abandoned run.
+`E26-tp1-u95`: 16.96 GiB of weights leave 0.93 GiB of KV, 13 149 tokens. `B8-tp1-u95`: 1.13 GiB,
+8 236 tokens, and raising utilisation to 0.95 did not move it — the weights are 15.27 GiB on 0.27
+rather than the 14.02 GiB 0.23 reported for the same checkpoint. `B8` on the L4: the capacity
+retry stepped `max_model_len` to 31 680. `G31-eager`: gemma-4-31B does not start on a 23 GiB L4 at
+all with CUDA graphs on (`Available KV cache memory: -0.8 GiB`), and `--enforce-eager` buys
+**2.51 GiB**, a 2 020-token pool and two rungs — where the same flag buys Qwen3.8-27B on the same
+card **0.05 GiB**, which is not enough, and that model does not fit at 23 GiB at all.
+
+`Q38S` is **RedHatAI/Qwen3.8-27B**, symmetric compressed-tensors at group 128 — a different
+checkpoint from the AWQ `Q38` elsewhere in this table's file, not another arm of it. On gfx1100 the
+two land on different kernels and differ by 1.27–3.24× on decode
+(`w4a16-symmetry/w4a16-ab.jsonl`), so they do not belong in one row, and this one has no
+counterpart on any other machine.
 
 The A100 leads on both models — 2.3x on the dense 12B at 500 and 1.66x on the MoE — and loses
 the most with depth. The commit message of `73fa06e` says the opposite of that second figure,

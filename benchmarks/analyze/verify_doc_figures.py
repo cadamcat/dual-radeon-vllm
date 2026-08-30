@@ -4128,13 +4128,21 @@ def main():
     # and G12/G26A4B name a line on two machines, so the machine and the date
     # are part of what the README's table cites. It cites the runs the two
     # index figures draw.
+    RETAINED = {}
     for cfg, mach, date, ctx_deep, want_s, want_d in (
             ("A100-G12",    "A100-SXM4-80GB", "2026-08-29", 32000, "115.0", "71.3"),
             ("A-12B-tp1",   "RX 7900 XT",     "2026-08-24", 32000, "50.6",  "36.7"),
             ("G12",         "L4",             "2026-08-30", 32000, "28.2",  "25.1"),
             ("A100-G26A4B", "A100-SXM4-80GB", "2026-08-29", 32000, "161.0", "105.0"),
             ("E26-tp1-u95", "RX 7900 XT",     "2026-08-30", 12000, "96.9",  "79.1"),
-            ("G26A4B",      "L4",             "2026-08-30", 32000, "52.4",  "44.1")):
+            ("G26A4B",      "L4",             "2026-08-30", 32000, "52.4",  "44.1"),
+            # the 2026-08-30 four-machine round
+            ("G12",         "T4",             "2026-08-30", 32000, "20.3",  "9.0"),
+            ("B8-tp1-u95",  "RX 7900 XT",     "2026-08-30",  6000, "46.6",  "44.1"),
+            ("B8",          "L4",             "2026-08-30", 24000, "16.6",  "13.5"),
+            ("Q38S",        "L4",             "2026-08-30",  8000, "15.9",  "15.4"),
+            ("G31",         "A100-SXM4-80GB", "2026-08-30", 32000, "58.5",  "42.4"),
+            ("G31-eager",   "L4",             "2026-08-30",  1000, "11.1",  "11.1")):
         pick = lambda c, _cfg=cfg, _m=mach, _d=date: next(
             r["decode_tok_s"] for r in XDEC
             if r["cfg"] == _cfg and r["ctx"] == c and r["tp"] == 1
@@ -4143,6 +4151,154 @@ def main():
         shallow = 500
         ck("benchmarks README, single-card decode %s at 500" % cfg, want_s, pick(shallow))
         ck("benchmarks README, and %s at its deepest" % cfg, want_d, pick(ctx_deep))
+        RETAINED[(cfg, mach)] = pick(ctx_deep) / pick(shallow) * 100.0
+    # The retained column, recomputed rather than trusted. It is a ratio of two
+    # numbers this file already checks, which is exactly why it was left ungated
+    # and exactly why it should not have been: a ratio can be right about its
+    # ends and wrong about which run they came from.
+    for (cfg, mach), want in (
+            (("A100-G12", "A100-SXM4-80GB"), "61.9"),
+            (("A-12B-tp1", "RX 7900 XT"),    "72.6"),
+            (("G12", "L4"),                  "88.8"),
+            (("G12", "T4"),                  "44.3"),
+            (("A100-G26A4B", "A100-SXM4-80GB"), "65.2"),
+            (("E26-tp1-u95", "RX 7900 XT"),  "81.6"),
+            (("G26A4B", "L4"),               "84.1"),
+            (("B8-tp1-u95", "RX 7900 XT"),   "94.7"),
+            (("B8", "L4"),                   "81.3"),
+            (("Q38S", "L4"),                 "96.6"),
+            (("G31", "A100-SXM4-80GB"),      "72.5"),
+            (("G31-eager", "L4"),            "99.7")):
+        ck("benchmarks README, %s on %s retains" % (cfg, mach), want, RETAINED[(cfg, mach)])
+    # The T4's is the claim the table bolds: the only card here whose decode
+    # more than halves across the ladder, and the ratios against the L4 that
+    # say how it gets there.
+    ck("benchmarks README, and the T4 is the only one to lose more than half", "1",
+       1 if sum(1 for v in RETAINED.values() if v < 50.0) == 1
+            and RETAINED[("G12", "T4")] < 50.0 else 0)
+    ck("benchmarks README, the T4 against the L4 at 500", "0.72",
+       RETAINED and next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "G12"
+                         and r["machine"] == "T4" and r["ctx"] == 500)
+       / next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "G12"
+              and r["machine"] == "L4" and r["ctx"] == 500))
+    ck("benchmarks README, and at 32K", "0.36",
+       next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "G12"
+            and r["machine"] == "T4" and r["ctx"] == 32000)
+       / next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "G12"
+              and r["machine"] == "L4" and r["ctx"] == 32000))
+
+    # --- README.md, the five-machine chart and the table under it ------------
+    # gemma-4-12B is the only model measured on all five, and the figure's whole
+    # argument is that the five do not order the same way at 500 as at 32 K. Both
+    # ends of every line, the retention, and each ratio the prose states.
+    _M5 = {"a100":  ("A100-SXM4-80GB", "A100-G12",  "2026-08-29"),
+           "pair":  ("RX 7900 XT",     "A-12B-tp2", "2026-08-24"),
+           "one":   ("RX 7900 XT",     "A-12B-tp1", "2026-08-24"),
+           "l4":    ("L4",             "G12",       "2026-08-30"),
+           "t4":    ("T4",             "G12",       "2026-08-30")}
+
+    def _m5(k, ctx):
+        mach, cfg, date = _M5[k]
+        return next(r["decode_tok_s"] for r in XDEC
+                    if r["machine"] == mach and r["cfg"] == cfg and r["date"] == date
+                    and r["ctx"] == ctx and r["chart_grade"])
+
+    for k, w500, w32k, wret in (("a100", "115.0", "71.3", "61.9"),
+                                ("pair", "59.9",  "41.4", "69.2"),
+                                ("one",  "50.6",  "36.7", "72.6"),
+                                ("l4",   "28.2",  "25.1", "88.8"),
+                                ("t4",   "20.3",  "9.0",  "44.3")):
+        ck("README five machines, %s at 500" % k, w500, _m5(k, 500))
+        ck("README five machines, %s at 32K" % k, w32k, _m5(k, 32000))
+        ck("README five machines, %s retains" % k, wret,
+           _m5(k, 32000) / _m5(k, 500) * 100.0)
+    # every one of the five is eleven rungs and every rung chart-grade, which is
+    # what lets the figure draw them without a single gap
+    for k, (mach, cfg, date) in _M5.items():
+        got = [r for r in XDEC if r["machine"] == mach and r["cfg"] == cfg
+               and r["date"] == date]
+        ck("README five machines, %s is eleven rungs" % k, "11", len(got))
+        ck("README five machines, and all of %s is chart-grade" % k, "11",
+           sum(1 for r in got if r["chart_grade"]))
+    # the three readings the prose leads with
+    ck("README five machines, the A100 over the pair at 500", "1.92",
+       _m5("a100", 500) / _m5("pair", 500), 0.005)
+    ck("README five machines, and at 32K", "1.72",
+       _m5("a100", 32000) / _m5("pair", 32000), 0.005)
+    ck("README five machines, the A100's lead narrows with depth", "1",
+       1 if (_m5("a100", 500) / _m5("pair", 500)
+             > _m5("a100", 32000) / _m5("pair", 32000)) else 0)
+    ck("README five machines, the second card at 500", "1.18",
+       _m5("pair", 500) / _m5("one", 500), 0.005)
+    ck("README five machines, and at 32K", "1.13",
+       _m5("pair", 32000) / _m5("one", 32000), 0.005)
+    ck("README five machines, the T4 against the L4 at 500", "0.72",
+       _m5("t4", 500) / _m5("l4", 500), 0.01)
+    ck("README five machines, and at 32K", "0.36",
+       _m5("t4", 32000) / _m5("l4", 32000), 0.01)
+    # "the T4 is last on both, and last on retention by a different mechanism",
+    # and "the L4 is slowest but flattest" -- the two orderings the chart exists
+    # to show disagree with each other
+    _by500 = sorted(_M5, key=lambda k: _m5(k, 500))
+    _byret = sorted(_M5, key=lambda k: _m5(k, 32000) / _m5(k, 500))
+    ck("README five machines, the T4 is last on throughput at 500", "1",
+       1 if _by500[0] == "t4" else 0)
+    ck("README five machines, and last on retention too", "1",
+       1 if _byret[0] == "t4" else 0)
+    ck("README five machines, the L4 is slowest but one and flattest", "1",
+       1 if _by500[1] == "l4" and _byret[-1] == "l4" else 0)
+    ck("README five machines, so the two orderings are not the same", "1",
+       1 if _by500 != _byret else 0)
+    ck("README five machines, only the T4 loses more than half", "1",
+       sum(1 for k in _M5 if _m5(k, 32000) / _m5(k, 500) < 0.5))
+    # and the claim that lets the decode numbers be quoted at all: the patch the
+    # T4 needs touches prefill only, so it travels on the prefill rows too
+    ck("README five machines, the T4's rows carry the patch", "11",
+       sum(1 for r in XDEC if r["machine"] == "T4"
+           and r["patches"] == ["vllm#39018"]))
+    ck("README five machines, and no other machine's decode row does", "0",
+       sum(1 for r in XDEC if r["machine"] != "T4" and "vllm#39018" in r["patches"]))
+    # The chart itself: it is generated, so what it draws has to be the rows.
+    # Each circle's y is inverted through the chart's own axis and compared with
+    # the value it claims to plot -- a chart with the right number of wrong
+    # circles passes a count, and counting is all a count does.
+    _svg = open(os.path.join(HERE, "..", "..", "docs", "assets",
+                             "decode-five-machines-gemma4-12b.svg"),
+                encoding="utf-8").read()
+    _cols = {"a100": "#2ea36a", "pair": "#e05c48", "one": "#d99a24",
+             "l4": "#8b6ee0", "t4": "#3f8fd4"}
+    ck("README five machines, the chart draws five lines", "5",
+       sum(1 for c in _cols.values() if ('stroke="%s"' % c) in _svg))
+    ck("README five machines, and 55 points", "55",
+       sum(_svg.count('fill="%s"/>' % c) for c in _cols.values()))
+    # gen_best_charts.build(): T=76, PLOT_H is the band height, one band 0..vmax
+    _T, _H, _VMAX = 76.0, 400.0, 130.0
+    _unmap = lambda cy: (1.0 - (cy - _T) / _H) * _VMAX
+    for k, c in _cols.items():
+        _pts = re.findall(
+            r'<circle cx="([\d.]+)" cy="([\d.]+)" r="3" fill="%s"/>' % re.escape(c),
+            _svg)
+        ck("README five machines, %s has eleven points in the chart" % k, "11",
+           len(_pts))
+        mach, cfg, date = _M5[k]
+        _want = sorted(r["decode_tok_s"] for r in XDEC
+                       if r["machine"] == mach and r["cfg"] == cfg
+                       and r["date"] == date and r["chart_grade"])
+        _got = sorted(_unmap(float(cy)) for _, cy in _pts)
+        # cy carries one decimal, so a value is recoverable to 130/400/10 tok/s
+        ck("README five machines, and every one of %s's is its measured value" % k,
+           "11", sum(1 for a, b in zip(_want, _got) if abs(a - b) <= 0.04))
+    # the dashed lines are exactly the patched ones, which is what the header
+    # line promises a reader
+    ck("README five machines, machines needing a patch", "3",
+       sum(1 for k, (mach, cfg, date) in _M5.items()
+           if any(r["patches"] for r in XDEC if r["machine"] == mach
+                  and r["cfg"] == cfg and r["date"] == date)))
+    ck("README five machines, and that many dashed lines in the chart", "3",
+       sum(1 for c in _cols.values()
+           if ('stroke="%s" stroke-width="2.4" stroke-linecap="round" '
+               'stroke-dasharray="7 4"' % c) in _svg))
+
     # the two statements the table is there to make
     _a100_moe = next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "A100-G26A4B"
                      and r["ctx"] == 500 and r["chart_grade"])
@@ -4483,7 +4639,12 @@ def main():
             ("L4",             "G12",         "2026-08-30", "534.7", "8.03"),
             ("A100-SXM4-80GB", "G26A4B",      "2026-08-30", "62.6",  "2.30"),
             ("RX 7900 XT",     "E26-tp1-u95", "2026-08-30", "360.0", "13.13"),
-            ("L4",             "G26A4B",      "2026-08-30", "204.4", "5.53")):
+            ("L4",             "G26A4B",      "2026-08-30", "204.4", "5.53"),
+            # the fifth machine, whose row the table marks as not comparable
+            ("T4",             "G12",         "2026-08-30", "3033.2", "218.89"),
+            # and Qwen3-8B, the second model with more than one single card
+            ("RX 7900 XT",     "B8-tp1-u95",  "2026-08-30", "206.7", "8.87"),
+            ("L4",             "B8",          "2026-08-30", "288.3", "5.38")):
         f = _pf_fit[(mach, cfg, date)]
         ck("benchmarks.md s4, b for %s on %s" % (cfg, mach), wb, f["b_us_tok"], 0.001)
         ck("benchmarks.md s4, c for %s on %s" % (cfg, mach), wc, f["c_ns_tok2"], 0.001)
@@ -4500,6 +4661,43 @@ def main():
     ck("benchmarks.md s4, and better on c", "3.0", _rc(_rad12, _l4_12), 0.01)
     ck("benchmarks.md s4, so the L4 loses b and wins c", "1",
        1 if _r(_rad12, _l4_12) < 1.0 < _rc(_rad12, _l4_12) else 0)
+    # Qwen3-8B splits the same way and by different amounts, which is what makes
+    # it worth stating twice rather than generalising from the 12B alone
+    _rad8 = ("RX 7900 XT", "B8-tp1-u95", "2026-08-30")
+    _l4_8 = ("L4", "B8", "2026-08-30")
+    ck("benchmarks README, Qwen3-8B: the Radeon wins b", "1.39", _r(_l4_8, _rad8), 0.01)
+    ck("benchmarks README, and loses c", "1.65", _rc(_rad8, _l4_8), 0.01)
+    ck("benchmarks README, so the split has the same sign as the 12B's", "1",
+       1 if (_r(_rad12, _l4_12) < 1.0 < _rc(_rad12, _l4_12))
+            == (_r(_l4_8, _rad8) > 1.0 > 1 / _rc(_rad8, _l4_8)) else 0)
+    # The T4's row carries a footnote rather than a comparison, and the two
+    # numbers that footnote states are recomputed here so it cannot drift: what
+    # changing which VM supplies the 32 000 rung does to b and to c.
+    _t4rows = [r for r in XPFROWS if r["machine"] == "T4" and r["chart_grade"]]
+    _base = [(r["prompt_tokens"], min(r["values"])) for r in _t4rows if r["ctx"] != 32000]
+    def _fit3(pairs):
+        S = [x for x, _ in pairs]; T = [t for _, t in pairs]; n = len(S)
+        A = [[float(n), sum(S), sum(x * x for x in S)],
+             [sum(S), sum(x * x for x in S), sum(x ** 3 for x in S)],
+             [sum(x * x for x in S), sum(x ** 3 for x in S), sum(x ** 4 for x in S)]]
+        y = [sum(T), sum(a * b for a, b in zip(S, T)), sum(a * a * b for a, b in zip(S, T))]
+        return _bpf.solve(A, y)
+    _t4d = _fit3(_base + [(32013, 316.8056)])
+    _t4c = _fit3(_base + [(32013, 331.4023)])
+    ck("benchmarks README, which VM supplied the T4's deepest rung moves b by", "29.9",
+       abs(_t4d[1] - _t4c[1]) / _t4c[1] * 100.0, 0.005)
+    ck("benchmarks README, and c by", "12.8",
+       abs(_t4d[2] - _t4c[2]) / _t4c[2] * 100.0, 0.005)
+    ck("benchmarks README, the two VMs disagree at that rung by", "4.61",
+       abs(331.4023 - 316.8056) / 316.8056 * 100.0, 0.005)
+    # and why the linear term is the one that absorbs it: this curve is
+    # quadratic-dominated where no other line here is
+    _bS = _t4d[1] * 32013
+    _cS2 = _t4d[2] * 32013 ** 2
+    ck("benchmarks README, the T4's quadratic term at 32K, seconds", "224", _cS2, 0.01)
+    ck("benchmarks README, against its linear term", "97", _bS, 0.01)
+    ck("benchmarks README, so the quadratic dominates here and nowhere else", "1",
+       1 if _cS2 > _bS else 0)
     # the second-card table, which is the claim that replaced the 76 ms one
     _tg2 = {g["model"]: g for g in XP["tp_gain"]}
     for model, wb, wc in (("gemma-4-12B-it", "1.48", "2.22"),

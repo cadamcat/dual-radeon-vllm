@@ -22,7 +22,7 @@ Three things, each usable on its own:
 | | |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | **292 measurements**: five model architectures across eleven context lengths, single vs dual GPU, with the raw per-request records, the runner that produced them, and analysis scripts that need no GPU. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
+| 📊 **The data** | Seven model architectures across eleven context lengths on **five machines** — two consumer Radeons together and apart, a rented A100 80G, an L4 24G and a Tesla T4 16G — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/ROCm/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
@@ -297,6 +297,54 @@ three lines read as one.
 | **Qwen3.6-27B** | **+ MTP speculative decoding** | **34.5 tok/s** 🟢 |
 
 ### The charts worth the scroll
+
+**One model, five machines.** Every other chart here holds the machine fixed and
+varies the model, because for most of this repository's life there was one
+machine. There are five now, and `gemma-4-12B-it` is the only model measured on
+all of them — eleven rungs, two rounds a cell, every point chart-grade on every
+line:
+
+![batch-1 decode for one model across five machines](docs/assets/decode-five-machines-gemma4-12b.svg)
+
+| | @500 | @32 K | retains |
+|---|--:|--:|--:|
+| one A100 80G | 115.0 | 71.3 | 61.9 % |
+| **2× RX 7900 XT** | **59.9** | **41.4** | **69.2 %** |
+| one RX 7900 XT | 50.6 | 36.7 | 72.6 % |
+| one L4 24G | 28.2 | 25.1 | 88.8 % |
+| one Tesla T4 16G | 20.3 | 9.0 | 44.3 % |
+
+Three readings, and the third is the one worth having.
+
+**The A100's lead narrows with depth**, 1.92× over the pair at 500 and 1.72× at
+32 K — batch-1 decode is bandwidth-bound, and the pair's two 800 GB/s cards
+against one 2.0 TB/s card is a smaller nominal gap than the price gap suggests.
+
+**The second card buys almost nothing here**: 1.18× at 500 falling to 1.13× at
+32 K. That is not a defect, it is the model — the 12B fits comfortably on one
+card, so the second one adds bandwidth the decode step was not waiting on. The
+next chart down is the same question on a model that *does* need it, where the
+two arms separate; and on **prefill** the answer is different again — the second
+card buys 1.2–1.5× on the linear term and 1.9–2.2× on the quadratic, because
+attention parallelises better than the GEMMs
+([benchmarks/README.md](benchmarks/README.md)).
+
+**Retention is not ranked the way throughput is.** The T4 is last on both, but
+it is last on retention by a different mechanism: it is the only card here whose
+decode more than halves across the ladder, 0.36× of the L4 at 32 K against 0.72×
+at 500. The L4 is slowest but flattest. A single tok/s number at one depth would
+order these five cards differently at 500 and at 32 K, which is the reason the
+chart is a chart.
+
+The T4 line is dashed because that card cannot serve this model at all without
+[vllm#39018](https://github.com/vllm-project/vllm/pull/39018) — the engine dies
+at kernel load asking 98 304 bytes of shared memory against Turing's 65 536.
+**That patch changes prefill's tile size and nothing else**, so the decode
+numbers above are not affected by it. Prefill on that card is a different story
+and does not compare;
+[its README](benchmarks/cuda-t4/campaign-2026-08-30/README.md) says why, and
+also why one rung measured on a second VM moves the fitted linear coefficient by
+30 %.
 
 **What the second GPU actually buys.** Dashed is one card, solid is two. The blue pair
 (BF16) separates; the green pair (4-bit) barely does. Same machine, same interconnect,
@@ -623,6 +671,20 @@ benchmarks/   The measurement data and everything that produced it
   cuda-a100/           one day on a rented A100: the gemma-4 MTP collapse
                        reproduced on CUDA and removed by rerouting — the
                        cross-vendor control for docs/speculative-decoding-on-rdna.md
+  cuda-l4/             one NVIDIA L4 24G, sm89. Three campaigns: the spine's two
+                       models, then Qwen3-8B and a symmetric-int4 Qwen3.8, then
+                       what does and does not fit on 23 GiB
+  cuda-t4/             one Tesla T4 16G, sm75. The pre-flight is why there was no
+                       T4 row for a month; the campaign is what vllm#39018 makes
+                       possible — and the only rows here measured with a patch
+                       that changes an attention kernel
+  ledger.jsonl         ★ the Radeon box's decode projection, one row per
+                       (configuration, rung), with the stack and patch list of
+                       every point. Built and gated by analyze/build_ledger.py
+  prefill.jsonl        every prefill point across machines, with the a/b/c fit
+  decode.jsonl         the same for decode, and it reconciles against the ledger
+                       wherever both cover a cell — two files projecting the same
+                       rows is how a repository grows two answers to one question
 
 patches/      Downstream changes to the installed vLLM, so the numbers above can
               be reproduced. None is a recommendation to run in production

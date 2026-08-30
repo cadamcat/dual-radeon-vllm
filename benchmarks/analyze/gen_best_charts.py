@@ -178,8 +178,20 @@ def wrap_notes(notes):
     return out
 
 
-def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
+def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None,
+          head=None, colours=None):
     """bands = [(lo, hi, step, height_px), ...] top to bottom, for a broken axis.
+
+    `head` is the third header line. It defaults to this file's own subject --
+    the Radeon pair, and what solid and dashed mean on it -- because every chart
+    here draws that machine. A figure whose lines are one card each from five
+    different machines has to say something else, and saying it in the caller
+    keeps one machine's description out of a chart that is not about it.
+
+    `colours` is the series-name to (hex, label) table, defaulting to this
+    file's `COLOUR`, which is keyed by model. A chart whose variable is the
+    machine rather than the model needs its own, and passing one beats writing
+    machine names into a table that is about models.
 
     One band is the ordinary case. Two exist because the ms-per-token chart has
     to reach 261.9 for the unpatched line while six of its seven series live
@@ -188,6 +200,7 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
     own gridlines, series are drawn once per band and clipped to it, and the gap
     between them carries a break mark so the discontinuity is visible.
     """
+    colours = COLOUR if colours is None else colours
     notes = wrap_notes(notes)
     rows_legend = math.ceil(len(series) / 2)
     W = 780
@@ -215,8 +228,10 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
          f'<text x="{L}" y="24" font-size="16" font-weight="700" fill="{GREY}">{title}</text>',
          f'<text x="{L}" y="42" font-size="11.5" fill="{GREY}" opacity=".85">{sub}</text>',
          f'<text x="{L}" y="58" font-size="10.5" fill="{GREY}" opacity=".7">'
-         f'2x RX 7900 XT &#183; TP=2 &#183; solid: released vLLM, no patch &#183; '
-         f'dashed: needs an unmerged patch, named below</text>']
+         + (head if head is not None else
+            '2x RX 7900 XT &#183; TP=2 &#183; solid: released vLLM, no patch &#183; '
+            'dashed: needs an unmerged patch, named below')
+         + '</text>']
     for i, (lo, hi, st, h) in enumerate(bands):
         for tv in nice_ticks(hi, st):
             if tv < lo or tv > hi:
@@ -257,7 +272,7 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
             # file carries no marks that only the clip path is hiding
             if max(vals) < lo or min(vals) > hi:
                 continue
-            col = COLOUR[model][0]
+            col = colours[model][0]
             dash = ' stroke-dasharray="7 4"' if patched else ""
             # a gap is a gap: consecutive points only join if nothing was
             # dropped between them, so a missing cell reads as missing
@@ -276,7 +291,7 @@ def build(fn, title, sub, series, vmax, ylab, notes, step=None, bands=None):
 
     for i, entry in enumerate(series):
         model, patched = entry[0], entry[2]
-        col, lab = COLOUR[model]
+        col, lab = colours[model]
         if len(entry) > 3 and entry[3]:      # a chart may name its own series
             lab = entry[3]
         cx = L + (i % 2) * ((R - L) / 2)
