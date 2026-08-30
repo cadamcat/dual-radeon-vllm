@@ -154,6 +154,21 @@ SOURCES = [
     dict(file="cuda-l4/campaign-2026-08-30/results.jsonl", machine="L4",
          date="2026-08-30", vllm="0.28.0", rocm=None, cuda=None,
          driver="580.82.07", kernel=None, patches=[], prefix_caching=False),
+    # 2026-08-30. The A100 measured again, with prefix caching off, because the
+    # 2026-08-29 rows below are not prefill measurements: 32 K there is 2.932 s
+    # and 0.201 s for the same cell; here it is 8.3826 s and 8.3796 s, a spread
+    # of 0.04 %. Round 1 of the old data was wrong too, by 2.9x -- every rung
+    # is a strict prefix of the next, so ascending the ladder was itself a
+    # sequence of cache hits.
+    #
+    # No serve log: the VM was reclaimed after the run finished and the logs
+    # went with it. What survives is what `harvester.py` had already pulled,
+    # which is the rows and their `model_meta` -- backend, quant kernel, KV
+    # size, and the `run_meta` row's versions. The logs themselves are gone.
+    dict(file="cuda-a100/campaign-2026-08-30/results.jsonl",
+         machine="A100-SXM4-80GB", date="2026-08-30", vllm="0.28.0", rocm=None,
+         cuda="13.0", driver="580.82.07", kernel=None, patches=[],
+         prefix_caching=False),
     dict(file="cuda-a100/campaign-2026-08-29/results.jsonl", prefix_caching=True,
          machine="A100-SXM4-80GB", date="2026-08-29", vllm="0.28.0",
          rocm=None, cuda=None, driver=None, kernel=None, patches=[],
