@@ -3857,6 +3857,48 @@ def main():
         ck("index, script uses string '%s'" % k, "1",
            1 if xscr[0] and ("S." + k) in xscr[0].group(0) else 0)
 
+    # --- the single-card decode table in benchmarks/README.md ----------------
+    # Stock arms only, grouped by cfg. The commit message of 73fa06e reports
+    # this table with the A100's MoE figure taken from a speculative arm,
+    # because the query behind it keyed on (machine, model, date) and that name
+    # covers three configurations there. The README carries the correction and
+    # these recompute it, so the corrected numbers cannot themselves rot.
+    XDEC = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
+
+    def _sc(cfg, ctx):
+        return next(r["decode_tok_s"] for r in XDEC
+                    if r["cfg"] == cfg and r["ctx"] == ctx and r["tp"] == 1
+                    and r["spec"] is None and r["chart_grade"])
+
+    # cfg is not a key on its own here: A-12B-tp1 was measured in two campaigns
+    # and G12/G26A4B name a line on two machines, so the machine and the date
+    # are part of what the README's table cites. It cites the runs the two
+    # index figures draw.
+    for cfg, mach, date, ctx_deep, want_s, want_d in (
+            ("A100-G12",    "A100-SXM4-80GB", "2026-08-29", 32000, "115.0", "71.3"),
+            ("A-12B-tp1",   "RX 7900 XT",     "2026-08-24", 32000, "50.6",  "36.7"),
+            ("G12",         "L4",             "2026-08-30", 32000, "28.2",  "25.1"),
+            ("A100-G26A4B", "A100-SXM4-80GB", "2026-08-29", 32000, "161.0", "105.0"),
+            ("E26-tp1-u95", "RX 7900 XT",     "2026-08-30", 12000, "96.9",  "79.1"),
+            ("G26A4B",      "L4",             "2026-08-30", 32000, "52.4",  "44.1")):
+        pick = lambda c, _cfg=cfg, _m=mach, _d=date: next(
+            r["decode_tok_s"] for r in XDEC
+            if r["cfg"] == _cfg and r["ctx"] == c and r["tp"] == 1
+            and r["spec"] is None and r["chart_grade"]
+            and r["machine"] == _m and r["date"] == _d)
+        shallow = 500
+        ck("benchmarks README, single-card decode %s at 500" % cfg, want_s, pick(shallow))
+        ck("benchmarks README, and %s at its deepest" % cfg, want_d, pick(ctx_deep))
+    # the two statements the table is there to make
+    _a100_moe = next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "A100-G26A4B"
+                     and r["ctx"] == 500 and r["chart_grade"])
+    _rdna_moe = next(r["decode_tok_s"] for r in XDEC if r["cfg"] == "E26-tp1-u95"
+                     and r["ctx"] == 500 and r["chart_grade"])
+    ck("benchmarks README, the A100 leads the MoE at 500", "1.66",
+       _a100_moe / _rdna_moe, 0.005)
+    ck("benchmarks README, and it is not the other way round", "1",
+       1 if _a100_moe > _rdna_moe else 0)
+
     # --- Figure 2: prefill on one card of each kind --------------------------
     # The figure states two coefficients per line and four ratios between them,
     # and every one of those is recomputed here from prefill.jsonl through the
