@@ -29,13 +29,30 @@ Three rules are encoded here rather than left to the chart:
     peak by up to 24 %, while `b` and `c` move by under 2.6 %.
   * `runs` and `range_pct` travel with the point, as they do in the ledger. The
     same cut applies, for the same reason.
-  * `attn_backend` is read from the serve log, and vLLM 0.28 writes it two
-    ways: `Using AttentionBackendEnum.TRITON_ATTN backend.` from one branch and
-    `Using FLASH_ATTN attention backend out of potential backends: [...]` from
-    another, in the same source file. A regex for one silently misses the
-    other, which is why the 2026-08-29 A100 campaign recorded no backend at
-    all. The vision-tower lines (`for vit attention`, `MMEncoderAttention`) are
-    a third form and must not be mistaken for the decoder's.
+  * `attn_backend` is resolved per **(source, cfg)**, in this order: the row's
+    own `model_meta.backend` (which the CUDA runners extract from the serve log
+    in-process), then the serve log itself, then the `ARMS` / `ARMS_CUDA`
+    tables. Until 2026-08-30 it came from the tables alone -- `backend_from_log`
+    had no callers anywhere in the repository, while this docstring claimed the
+    log was read -- and the tables are keyed on a cfg id that is **not unique
+    across machines**: `G12` and `G26A4B` each already name a row on two
+    machines, and this round adds a third.
+
+    vLLM writes the line four ways, and a regex for one silently misses the
+    others:
+
+        Using AttentionBackendEnum.TRITON_ATTN backend.
+        Using FLASH_ATTN attention backend out of potential backends: [...]
+        Using TRITON_ATTN backend (selected via --attention-backend).
+        Found incompatible backend(s) [TURBOQUANT] with AttentionType.DECODER.
+          Overriding with ROCM_ATTN out of potential backends: [...]
+
+    The fourth is the ROCm override, and it is the **only** backend line in
+    `campaign-0830d/serve-logs/B8-tp1-u95.log`. The vision-tower lines
+    (`for vit attention`, `MMEncoderAttention`) are a fifth form and must not
+    be mistaken for the decoder's. A log carries the drafter's selection as
+    well as the target's on a speculative arm, so the FIRST decoder line is the
+    target's and is the one taken.
 """
 import argparse
 import json
@@ -190,13 +207,25 @@ SOURCES = [
          }),
 ]
 
+# (source, cfg, read-from-this-source, ARMS-table). Reported, not resolved.
+BACKEND_MISMATCH = []
+
 BACKEND_RE = re.compile(
-    r"Using (?:AttentionBackendEnum\.)?([A-Z0-9_]+)(?: attention)? backend")
+    r"Using (?:AttentionBackendEnum\.)?([A-Z0-9_]+)(?: attention)? backend"
+    r"|Overriding with ([A-Z0-9_]+) out of potential backends")
 VIT_RE = re.compile(r"vit attention|MMEncoderAttention")
 
 
 def backend_from_log(path):
-    """The decoder's backend, from either of the two forms vLLM 0.28 writes."""
+    """The decoder's backend, from any of the forms vLLM 0.28 writes.
+
+    The first decoder line wins. On a speculative arm the log carries two: the
+    target's, then the drafter's after `Loading drafter model...`, and they
+    disagree -- `--attention-backend TRITON_ATTN` reaches the target and not the
+    drafter (vllm#53450). Taking the first is taking the target's, which is what
+    the arm is named for; a drafter that differs makes the arm a mixture and is
+    a fact about the arm rather than about this column.
+    """
     if not os.path.exists(path):
         return None
     for line in open(path, errors="ignore"):
@@ -204,8 +233,46 @@ def backend_from_log(path):
             continue                      # the vision tower, not the decoder
         m = BACKEND_RE.search(line)
         if m:
-            return m.group(1)
+            return m.group(1) or m.group(2)
     return None
+
+
+def backends_from_source(path):
+    """{cfg: backend} for one results file, from its own metadata and logs.
+
+    `model_meta.backend` is the CUDA runners' in-process read of the serve log
+    and is exact. The Radeon runners and the 2026-08-29 A100 campaign do not
+    write it, so their logs are read here -- under both directory names this
+    repository has used (`logs/`, `serve-logs/`) and both file conventions
+    (`<cfg>.log`, `serve-<cfg>.log`).
+    """
+    out = {}
+    if os.path.exists(path):
+        for line in open(path, errors="ignore"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("kind") == "model_meta" and r.get("backend"):
+                out[r["cfg"]] = r["backend"]
+    for name in ("logs", "serve-logs"):
+        d = os.path.join(os.path.dirname(path), name)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".log"):
+                continue
+            cfg = fn[:-4]
+            cfg = cfg[6:] if cfg.startswith("serve-") else cfg
+            if cfg in out:
+                continue                  # model_meta already settled it
+            b = backend_from_log(os.path.join(d, fn))
+            if b:
+                out[cfg] = b
+    return out
 
 
 def meta_for(cfg):
@@ -255,9 +322,17 @@ def build():
                 continue
             by.setdefault((r["cfg"], r["target"]), []).append(
                 (r["ts"], r["ttft"], r["prompt_tokens"]))
+        measured = backends_from_source(path)
         for (cfg, target), trips in sorted(by.items()):
             name, quant, arch, tp = meta_for(cfg)
-            spec, backend = arm_for(cfg)
+            spec, tabled = arm_for(cfg)
+            # This source's own reading first. `ARMS`/`ARMS_CUDA` are keyed on a
+            # cfg id that repeats across machines, so they are the fallback and
+            # not the authority; where both exist and disagree, that is recorded
+            # rather than silently resolved.
+            backend = measured.get(cfg) or tabled
+            if tabled and measured.get(cfg) and measured[cfg] != tabled:
+                BACKEND_MISMATCH.append((s["file"], cfg, measured[cfg], tabled))
             over = s.get("per_cfg", {}).get(cfg, {})
             vals, superseded = latest_session([(t, (tt, pt)) for t, tt, pt in trips])
             extra = {"superseded_values": sorted(x[0] for x in superseded)} \
