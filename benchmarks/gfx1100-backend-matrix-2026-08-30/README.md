@@ -62,6 +62,28 @@ selector prefers one of them for a property neither has here. The priority
 function never sees `head_size`; it takes `use_mla`, `use_sparse` and
 `use_kv_connector`.
 
+**This is recorded, not inferred.** Both `ROCM_ATTN` arms log
+`Cannot use ROCm custom paged attention kernel, falling back to Triton
+implementation.` from `chunked_prefill_paged_decode.py` itself, at the branch;
+neither `TRITON_ATTN` arm does. `check.py` asserts that, and asserts that each
+of the four arms carries **exactly one** backend verdict in its log.
+
+That last check exists because the speculative arms do not.
+`campaign-2026-08-29/logs/Q38-mtp-triton-tp2.log` carries
+`Using TRITON_ATTN backend (selected via --attention-backend)` for the target
+at 20:00:00 and `Overriding with ROCM_ATTN` on **both** TP ranks at 20:00:17
+for the drafter, and the kernels it then compiles are
+`kernel_paged_attention_2d{,_splitkv,_splitkv_reduce}`. So `--attention-backend`
+does not reach the draft model, that arm is a mixture rather than a
+`TRITON_ATTN` arm, and none of the four arms here uses speculation for exactly
+that reason.
+
+One caveat on reading these logs: the JIT monitor only warns about kernels
+compiled **during inference**, and Triton's cache lives in the container across
+engine restarts. A kernel an earlier arm already compiled produces no line, so
+the absence of a JIT line is not evidence the kernel did not run. The fallback
+warning above is the load-bearing record; the JIT lines corroborate.
+
 ## Two things this round measured rather than assumed
 
 * **vllm#52684 works on a model class it was never tested against.** Its four

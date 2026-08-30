@@ -102,6 +102,41 @@ for cfg in (A, B, C, Dd):
     chk(f"measurements {cfg}", n, 44, 0)
     chk(f"decode chart-grade {cfg}",
         sum(1 for (c, _), r in dec.items() if c == cfg and r["chart_grade"]), 11, 0)
+print("kernel path, read out of the serve logs")
+# The decisive line is the one `chunked_prefill_paged_decode` logs AT the
+# branch: ROCM_ATTN arms must carry it, TRITON_ATTN arms must not. The JIT
+# monitor lines only corroborate -- it warns about compiling during inference,
+# and Triton's cache lives in the container across engine restarts, so a kernel
+# that was already compiled by an earlier arm produces no line at all. Arm A is
+# exactly that case, which is why its `kernel_paged_attention_2d` is not
+# asserted here.
+LOGS = {A: "logs/Q38-rocm-nopatch-tp2.log", B: "logs/Q38-rocm-45916-tp2.log",
+        C: "logs/Q38-triton-stock-tp2.log", Dd: "logs/Q38-triton-52684-tp2.log"}
+FALLBACK = "Cannot use ROCm custom paged attention kernel"
+for cfg, want_fallback in ((A, True), (B, True), (C, False), (Dd, False)):
+    txt = open(os.path.join(D, LOGS[cfg]), errors="ignore").read()
+    chk(f"{cfg}: falls back off the custom HIP kernel", FALLBACK in txt, want_fallback, 0)
+
+# Positive kernel evidence where a JIT line does exist.
+for cfg, kern in ((B, "kernel_paged_attention_2d_splitkv"),
+                  (C, "kernel_unified_attention"),
+                  (Dd, "kernel_unified_attention")):
+    txt = open(os.path.join(D, LOGS[cfg]), errors="ignore").read()
+    chk(f"{cfg}: JIT-compiled {kern}", kern in txt, True, 0)
+
+# And the selector's own verdict, per arm.
+for cfg, line in ((A, "Overriding with ROCM_ATTN"), (B, "Overriding with ROCM_ATTN"),
+                  (C, "Using TRITON_ATTN backend (selected via --attention-backend)"),
+                  (Dd, "Using TRITON_ATTN backend (selected via --attention-backend)")):
+    txt = open(os.path.join(D, LOGS[cfg]), errors="ignore").read()
+    chk(f"{cfg}: selector logged {line[:34]}", line in txt, True, 0)
+# No arm may carry both verdicts: that is the signature of the speculative arms,
+# where --attention-backend reaches the target and not the drafter.
+for cfg in (A, B, C, Dd):
+    txt = open(os.path.join(D, LOGS[cfg]), errors="ignore").read()
+    both = ("Overriding with ROCM_ATTN" in txt) and ("selected via --attention-backend" in txt)
+    chk(f"{cfg}: exactly one backend verdict", both, False, 0)
+
 nerr = sum(1 for line in open(os.path.join(D, "results.jsonl"))
            if line.strip() and json.loads(line).get("kind") == "error")
 chk("error rows", nerr, 0, 0)
