@@ -14,7 +14,24 @@ headline figures from those files and exits non-zero if any disagrees.
 | `results.jsonl` | **The raw data.** 309 lines, one JSON object per event: every request's prompt tokens, TTFT, decode rate, per-card power and VRAM, plus per-config engine metadata |
 | `bench_runner.py` | The campaign runner that produced it — serial, checkpointed, VRAM-safe |
 | `ledger.jsonl` | **Every decode point in one row format**, built by `analyze/build_ledger.py` from the three campaign files and the 0.27 probe sweeps. One row per (model, context), carrying the stack it was measured on — date, vLLM, ROCm, kernel, patches, harness, and since 2026-08-29 `spec` and `attn_backend` — rather than inheriting one from the chart it lands in, plus `runs`, `range_pct` and `chart_grade`. It is a projection, not a source: `build_ledger.py --check` fails if it no longer matches the files it was built from |
-| `prefill.jsonl` | **Every prefill point in one row format, across machines**, built by `analyze/build_prefill.py`. The ledger is the Radeon box's and has no machine column; this one does, because prefill is asked across five machines. Same row discipline plus `machine`, `cuda`, `driver` and `prefix_caching`; `--fits` reports `T(S) = a + b·S + c·S²` per (machine, cfg, date, patches). Two rules it encodes are not obvious and each moved a number: rungs group by `target` rather than the measured `prompt_tokens`, because ROCm's two rounds land one to three tokens apart and grouping on the measurement gave nineteen mostly-unpaired points where CUDA gave eleven paired ones; and **only chart-grade rungs are fitted**, which is what excludes `cuda-a100/campaign-2026-08-29/` |
+| `prefill.jsonl` | **Every prefill point in one row format, across machines**, built by `analyze/build_prefill.py`. The ledger is the Radeon box's and has no machine column; this one does, because prefill is asked across five machines. Same row discipline plus `machine`, `cuda`, `driver` and `prefix_caching`; `--fits` reports `T(S) = a + b·S + c·S²` per (machine, cfg, date, patches). Two rules it encodes are not obvious and each moved a number: rungs group by `target` rather than the measured `prompt_tokens`, because ROCm's two rounds land one to three tokens apart and grouping on the measurement gave nineteen mostly-unpaired points where CUDA gave eleven paired ones; and **only chart-grade rungs are fitted**, which is what excludes `cuda-a100/campaign-2026-08-29/`.
+
+**What it says.** `T(S) = a + b·S + c·S²`, where `b` is compute and `c` is how badly attention
+scales. `a` is not reported: it does not reproduce, and going after it is what
+[docs/benchmarks.md §4](../docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits) had to
+withdraw. One card each:
+
+| machine | gemma-4-12B b / c | gemma-4-26B-A4B b / c |
+|---|---|---|
+| A100 80G | **145.7** / **3.62** | **62.6** / **2.30** |
+| one RX 7900 XT | 479.0 / 24.16 | 360.0 / 13.13 |
+| one L4 24G | 534.7 / 8.03 | 204.4 / 5.53 |
+
+The A100 leads one 7900 XT 3.3× on b and 6.7× on c: the gap in attention is twice the gap in
+compute. The L4 is *slower* on b (0.90×) and 3.0× better on c, so its curve starts below the
+Radeon's and ends 1.58× above it at 32 K. The second card buys 1.23–1.48× on b and 1.91–2.22× on
+c across the three models measured on both topologies — attention parallelises better than the
+GEMMs, which is the claim §4's withdrawn 76 ms intercept was reaching for |
 | `decode.jsonl` | **Every decode point, across machines**, built by `analyze/build_decode.py`. `ledger.jsonl` stays Radeon-only and unchanged; this is the cross-machine projection beside it. It imports its campaign table from `build_prefill.py` so the two cannot drift apart, and `--check` **recomputes the overlap against `ledger.jsonl` and fails if any cell disagrees** — two files projecting the same rows is how a repository ends up with two answers to one question.
 
 **What it answers, and a correction.** Single-card decode, stock arms only, chart-grade rungs:

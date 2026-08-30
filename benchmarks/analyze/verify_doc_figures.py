@@ -4189,6 +4189,46 @@ def main():
              and xcell("B-8B-tp2", "2026-08-24", 500)["prefill_tok_s"]
              > xcell("B-8B-tp1", "2026-08-24", 500)["prefill_tok_s"]) else 0)
 
+    # --- the table that replaced what section 4 withdrew ---------------------
+    # Twelve numbers of prose, each recomputed from prefill.jsonl through the
+    # projection's own fitter. The claims this replaced went unchecked for a
+    # month and were wrong; these are checked.
+    _pf_fit = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
+    for mach, cfg, date, wb, wc in (
+            ("A100-SXM4-80GB", "G12",         "2026-08-30", "145.7", "3.62"),
+            ("RX 7900 XT",     "A-12B-tp1",   "2026-08-24", "479.0", "24.16"),
+            ("L4",             "G12",         "2026-08-30", "534.7", "8.03"),
+            ("A100-SXM4-80GB", "G26A4B",      "2026-08-30", "62.6",  "2.30"),
+            ("RX 7900 XT",     "E26-tp1-u95", "2026-08-30", "360.0", "13.13"),
+            ("L4",             "G26A4B",      "2026-08-30", "204.4", "5.53")):
+        f = _pf_fit[(mach, cfg, date)]
+        ck("benchmarks.md s4, b for %s on %s" % (cfg, mach), wb, f["b_us_tok"], 0.001)
+        ck("benchmarks.md s4, c for %s on %s" % (cfg, mach), wc, f["c_ns_tok2"], 0.001)
+    # and the two ratios the prose leads with
+    _r = lambda a, b: _pf_fit[a]["b_us_tok"] / _pf_fit[b]["b_us_tok"]
+    _rc = lambda a, b: _pf_fit[a]["c_ns_tok2"] / _pf_fit[b]["c_ns_tok2"]
+    _rad12 = ("RX 7900 XT", "A-12B-tp1", "2026-08-24")
+    _a100_12 = ("A100-SXM4-80GB", "G12", "2026-08-30")
+    _l4_12 = ("L4", "G12", "2026-08-30")
+    ck("benchmarks.md s4, the A100 on b against one Radeon", "3.3",
+       _r(_rad12, _a100_12), 0.01)
+    ck("benchmarks.md s4, and on c", "6.7", _rc(_rad12, _a100_12), 0.01)
+    ck("benchmarks.md s4, the L4 is slower on b", "0.90", _r(_rad12, _l4_12), 0.01)
+    ck("benchmarks.md s4, and better on c", "3.0", _rc(_rad12, _l4_12), 0.01)
+    ck("benchmarks.md s4, so the L4 loses b and wins c", "1",
+       1 if _r(_rad12, _l4_12) < 1.0 < _rc(_rad12, _l4_12) else 0)
+    # the second-card table, which is the claim that replaced the 76 ms one
+    _tg2 = {g["model"]: g for g in XP["tp_gain"]}
+    for model, wb, wc in (("gemma-4-12B-it", "1.48", "2.22"),
+                          ("gemma-4-26B-A4B", "1.44", "1.91"),
+                          ("Qwen3-8B", "1.23", "2.08")):
+        ck("benchmarks.md s4, second card on %s, b" % model, wb,
+           _tg2[model]["b_gain"], 0.01)
+        ck("benchmarks.md s4, second card on %s, c" % model, wc,
+           _tg2[model]["c_gain"], 0.01)
+    ck("benchmarks.md s4, and c gains more on all three", "3",
+       sum(1 for g in _tg2.values() if g["c_gain"] > g["b_gain"]))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

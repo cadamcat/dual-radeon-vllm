@@ -400,6 +400,48 @@ faster than fixed overhead, so the prefill peak moves left.**
 > else in the fit. Where that puts the peak is not something this ladder
 > determines.
 
+### What replaces them, 2026-08-30
+
+Withdrawing three claims and leaving the section without a positive statement
+would be worse than the claims were. `b` and `c` reproduce, and by 2026-08-30
+there are four machines to compare them on rather than one, so the same
+decomposition says more than it did — it just no longer says it through `a`.
+
+**Card against card, one card each, same checkpoints, same eleven rungs:**
+
+| machine | model | b µs/tok | c ns/tok² |
+|---|---|--:|--:|
+| A100 80G | gemma-4-12B | **145.7** | **3.62** |
+| one RX 7900 XT | gemma-4-12B | 479.0 | 24.16 |
+| one L4 24G | gemma-4-12B | 534.7 | 8.03 |
+| A100 80G | gemma-4-26B-A4B | 62.6 | 2.30 |
+| one RX 7900 XT | gemma-4-26B-A4B | 360.0 | 13.13 |
+| one L4 24G | gemma-4-26B-A4B | 204.4 | 5.53 |
+
+Against one 7900 XT the A100 is **3.3× on b and 6.7× on c** for the dense 12B:
+the gap in how attention scales is twice the gap in compute. The L4 is the
+interesting one — **slower on b (0.90×) and 3.0× better on c** — so its curve
+starts below the Radeon's and ends above it, and at 32 K it is 1.58× ahead
+having been behind at the shallow end. No single prefill tok/s states that.
+
+**And what the second card buys, on the coefficients that survive:**
+
+| model | b | c |
+|---|--:|--:|
+| gemma-4-12B | 1.48× | **2.22×** |
+| gemma-4-26B-A4B | 1.44× | **1.91×** |
+| Qwen3-8B | 1.23× | **2.08×** |
+
+`c` gains more than `b` on all three. That is the same reading the table above
+drew from `c` and could not support from `a`: **attention parallelises better
+than the GEMMs because it needs no communication.** The old subsection reached
+it through a 76 ms intercept that does not reproduce; this reaches it through
+three models measured on both topologies, and it is the claim that should be
+quoted.
+
+All of it is in [`prefill.jsonl`](../benchmarks/prefill.jsonl), fitted by
+`analyze/build_prefill.py --fits`, and drawn as Figure 2 on the front page.
+
 **Open question.** gemma-4 uses a 1024-token sliding window, which should suppress
 the quadratic term; measured `c` is nevertheless the largest of the set. We suspect
 the `TRITON_ATTN` fallback does not exploit the sliding window. Not verified — see
