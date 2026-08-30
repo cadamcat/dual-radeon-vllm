@@ -3846,15 +3846,15 @@ def main():
                             ("A-12B-tp1", "2026-07-25", 70.1),
                             ("A-12B-tp1", "2026-08-24", -22.1)):
         ck(f"benchmarks.md s4, a for {cfg} {date}", f"{want}",
-           xfit(cfg, date)[0] * 1000, 0.1)
+           xfit(cfg, date)[0] * 1000, 0.01)
     ck("benchmarks.md s4, and one of them is below zero", "1",
        1 if xfit("A-12B-tp1", "2026-08-24")[0] < 0 else 0)
 
     # b and c do reproduce, and the two ratios the subsection now rests on
     for date, wb, wc in (("2026-07-25", 1.29, 1.87), ("2026-08-24", 1.23, 2.08)):
         one, two = xfit("B-8B-tp1", date), xfit("B-8B-tp2", date)
-        ck(f"benchmarks.md s4, b improves {date}", f"{wb}", one[1] / two[1], 0.005)
-        ck(f"benchmarks.md s4, c improves {date}", f"{wc}", one[2] / two[2], 0.005)
+        ck(f"benchmarks.md s4, b improves {date}", f"{wb}", one[1] / two[1], 0.01)
+        ck(f"benchmarks.md s4, c improves {date}", f"{wc}", one[2] / two[2], 0.01)
 
     # the crossover was a first-request cost, and it moved between arms
     for cfg, date, want_tps, want_rng in (
@@ -3864,7 +3864,7 @@ def main():
             ("B-8B-tp2", "2026-08-24", 3690, 1.72)):
         c500 = xcell(cfg, date, 500)
         ck(f"benchmarks.md s4, {cfg} {date} at 500", f"{want_tps}",
-           c500["prefill_tok_s"], 1.0)
+           c500["prefill_tok_s"], 0.01)
         ck(f"benchmarks.md s4, and its rounds differ by {want_rng}",
            f"{want_rng}", c500["range_pct"], 0.01)
     ck("benchmarks.md s4, the ungraded arm at 500 moved between campaigns", "1",

@@ -459,9 +459,23 @@ file each came from, and exits non-zero if one disagrees.
   1.19×, because the quantised model was never bandwidth-bound in the first place.
   For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
   151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
-- **Below ~1 K prompt tokens, one card prefills faster than two** (3460 vs 2270 tok/s
-  at 512): TP adds a ~76 ms per-request communication floor, 72 all-reduces at
-  ~1.05 ms each over host shared memory.
+- **Attention parallelises across two cards at about 90 %**, because it needs no
+  communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
+  1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
+  method. The linear term improves 1.23–1.31×.
+  ~~Below ~1 K prompt tokens, one card prefills faster than two (3460 vs 2270
+  tok/s at 512): TP adds a ~76 ms per-request communication floor, 72
+  all-reduces at ~1.05 ms each.~~ **Withdrawn 2026-08-30.** Both halves rested
+  on the fitted intercept `a`, which does not survive re-measurement — the same
+  configurations give +76 ms in one campaign and +1.6 ms in the next, and one
+  fit returns a fixed cost below zero. The crossover was a cold-engine artifact:
+  the 500-token cell behind the 2270 is the one rung of its configuration whose
+  two rounds disagree, by 22 %, and in the other campaign **the pair is ahead**
+  at 500 tokens. Where it happens it is round 1 that is slow — a first-request
+  cost, on the rung where that cost is largest next to the measurement — and it
+  landed on TP=2 in one campaign and TP=1 in the other. `b` and `c` reproduce
+  to a few percent; `a` and the peak position do not
+  ([details](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)).
 - **Long context: avoid hybrid-SSM *under vLLM*.** The 27B costs 4.84 µs of decode
   time per token of context, **41× the dense 8B**; dense and MoE lose only 23–32 %
   out to 32 K. The cause is not the SSM layers — it is the model's few

@@ -283,6 +283,34 @@ three-term model is weakest:
 | gemma-4-31B TP2 | 152 ms | 744.4 µs/tok | 28.04 ns/tok² | 2331 | 2000 |
 | Qwen3.6-27B TP2 | 211 ms | 842.0 µs/tok | 8.88 ns/tok² | 4877 | 4000 |
 
+> **Two of these five columns do not survive being measured again, 2026-08-30.**
+> Every configuration above was re-fitted from the same raw files on one
+> footing — rungs grouped by their nominal `target` rather than the measured
+> `prompt_tokens`, and only rungs whose two rounds agree admitted — and four of
+> them were also measured a second time, a month later, on the same stack.
+>
+> **`b` and `c` reproduce.** Against the table above they agree to 1.5 %
+> (195.9 → 197.7, 744.4 → 743.9, 330.1 → 330.5, 250.1 → 250.4, 842.0 → 846.4),
+> and campaign to campaign to 7.3 % and 3.9 %, at r² ≥ 0.9999.
+>
+> **`a` does not reproduce, and `S*` inherits it.** The same configuration
+> measured in July and in August gives `a` = 79.3 and 30.5 ms for Qwen3-8B TP2,
+> 9.8 and 99.8 ms for gemma-4-12B TP2, and **70.1 and −22.1 ms** for the same
+> model on one card — a fixed cost below zero, which is what a
+> three-parameter fit returns when the intercept is a long extrapolation back
+> from rungs that start at 500 tokens and the quadratic term carries the curve.
+> `S* = √(a/c)` is undefined wherever `a` < 0 and swings by a factor of three
+> where it is not.
+>
+> The `measured peak` column is the sounder of the two, and it is still not
+> sharp: it reproduces for the 26B and the 31B, whose curves are flattest near
+> the maximum, and moves for the other four. **The shape of the curve is
+> measured here; the position of its maximum is not.** `b` and `c` are what
+> this ladder determines, and they are what the 2026-08-30 round compares
+> across machines — see
+> [`benchmarks/prefill.jsonl`](../benchmarks/prefill.jsonl) and
+> `analyze/build_prefill.py --fits`.
+
 ### What TP=2 costs, in numbers
 
 The 8B's two fits decompose the cost of the second GPU:
@@ -298,16 +326,79 @@ price of one all-reduce over host shared memory on a cross-die PCIe 3.0 link wit
 no P2P. The attention term's 1.83× (91 %) independently reproduces the 1.80× / 90 %
 measured earlier by a different method.
 
+> **The first row of that table is withdrawn, 2026-08-30.** Re-measured, the
+> 8B's fixed costs are 19.7 and 79.3 ms in July and **28.9 and 30.5 ms** in
+> August: the +76 ms became **+1.6 ms**, so neither "5× worse" nor a 76 ms
+> communication floor nor 1.05 ms per all-reduce is a property of this machine.
+> They were a property of one fit's intercept. Nothing else here is affected —
+> the collective count is arithmetic, and the two rows that carry the reading
+> both hold:
+>
+> | coefficient | published | re-measured | verdict |
+> |---|---|---|---|
+> | a, fixed | 19 → 95 ms, +76 ms | 19.7 → 79.3, then 28.9 → 30.5 | **withdrawn** |
+> | b, linear | 1.31× better | 1.29× and 1.23× | stands |
+> | c, attention | 1.83× better, 91 % | 1.87× and 2.08× | stands |
+>
+> So the sentence this subsection exists to support — **attention parallelises
+> at about 90 % because it needs no communication** — is intact, and it is
+> intact on the coefficient that reproduces. What is gone is the attempt to
+> price a single all-reduce from the intercept.
+
 > **Practical consequence.** Larger fixed cost plus smaller quadratic term means the
 > curves cross: at 512 tokens **one card prefills faster than two** (3460 vs 2270
 > tok/s); by 979 tokens the pair is ahead (3434). Below roughly 1 K tokens of prompt,
 > TP=2 hurts time-to-first-token.
+
+> **This does not reproduce, and the reason is the harness, 2026-08-30.** The
+> 2 270 tok/s is one cell — TP=2 at the 500-token rung on 2026-07-25 — and its
+> two rounds disagree by **22.13 %**, which is the only rung of that
+> configuration that fails the repeatability cut. The August campaign measured
+> the same cell at 3 690 tok/s with its rounds 1.72 % apart, and there **the
+> pair is ahead of the single card at 500 tokens**, 3 690 against 3 265.
+>
+> | campaign | TP=1 @500 | TP=2 @500 | which is faster |
+> |---|---|---|---|
+> | 2026-07-25 | 3 444 (rounds 0.87 % apart) | **2 019 (22.13 %)** | one card |
+> | 2026-08-24 | **3 265 (18.24 %)** | 3 690 (1.72 %) | two cards |
+>
+> Where it happens it is **round 1 that is slow** — 0.2816 s against round 2's
+> 0.2255 s in July, 0.1711 s against 0.1425 s in August — which is the shape of
+> a first-request cost: the first CUDA-graph replay, the first allocation out
+> of the KV pool, lazy JIT. Each configuration starts its own engine, so each
+> has its own first request, and the 500-token rung is where that cost is
+> largest next to the measurement.
+>
+> It is **not** systematic. `B-8B-tp2` was measured before `B-8B-tp1` in both
+> campaigns, and the runner discards a health-check request before either; the
+> residual landed on TP=2 in July and on TP=1 in August. So which arm looked
+> slower at 500 tokens is not a property of the topology, and the published
+> comparison read one campaign's coin-flip as a finding.
+>
+> That also explains the note above the coefficient table — "the 500-token
+> point sits 5–18 % off the fit in every configuration" — which was read as the
+> three-term model being weakest at short prompts. It is the shallowest rung
+> being the one where a cold start is most of the measurement.
+>
+> **There is no measured crossover.** Whether TP=2 hurts time-to-first-token
+> below 1 K tokens on this machine is unmeasured, not answered: it needs both
+> arms measured with a discarded warm-up request, which the 2026-08-30 runner
+> does and neither of these campaigns did.
 
 **A prediction that failed.** Expecting bigger models to have larger fixed overhead,
 we predicted the 31B would peak later than the 8B. It peaks *earlier* (S* = 2331 vs
 3310): `a` did grow (95 → 152 ms), but `c` grew 3.2×, and S* is the square root of
 their ratio. Correct statement: **as models grow, attention's quadratic cost grows
 faster than fixed overhead, so the prefill peak moves left.**
+
+> **Half of this is withdrawn too, 2026-08-30.** `c` growing 3.2× from the 8B to
+> the 31B is solid and reproduces (8.63 → 28.11, 3.26×). The conclusion drawn
+> from it is not: it is a statement about where `S*` sits, and in August the
+> ordering reverses — the 31B's `S*` is 2 121 against the 8B's 1 887, so the
+> peak moves *right*. **What survives is the mechanism, not the consequence**:
+> attention's quadratic term grows much faster with model size than anything
+> else in the fit. Where that puts the peak is not something this ladder
+> determines.
 
 **Open question.** gemma-4 uses a 1024-token sliding window, which should suppress
 the quadratic term; measured `c` is nevertheless the largest of the set. We suspect
