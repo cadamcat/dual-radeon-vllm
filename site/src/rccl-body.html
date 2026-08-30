@@ -247,6 +247,10 @@ multifunction and not when passed as a single function. </div>
 <script type="application/json" id="figures">__FIGURES_JSON__</script>
 <script type="application/json" id="strings">{
  "expand": "evidence",
+ "shipUnit": "hidden_hostcall_buffer declarations · same platform in all four rows",
+ "shipBehaviour": {"works": "works", "fails": "fails"},
+ "shipNotes": {"every Generic kernel": "every Generic kernel"},
+ "hypNote": "{e} eliminated, {c} confirmed, of {t} tested",
  "eliminated": "eliminated",
  "confirmed": "root cause",
  "abBefore": "hostpci0: 0000:0b:00",
@@ -265,6 +269,9 @@ multifunction and not when passed as a single function. </div>
   var F = JSON.parse(document.getElementById("figures").textContent);
   var S = JSON.parse(document.getElementById("strings").textContent);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // the same one the other bodies carry: a sentence with counts in it has to be
+  // a template, because the two languages do not put the counts in one order
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
 
   /* ---------- theme ---------- */
   (function () {
@@ -332,19 +339,29 @@ multifunction and not when passed as a single function. </div>
       var zero = r.hostcall === "0";
       var el = document.createElement("div");
       el.className = "ship rv" + (zero ? " ok" : " bad");
+      // The data records what the library does in the words the investigation
+      // used; the page says it in the reader's. Both are looked up rather than
+      // printed, so the Chinese version stopped reading "fails" and "(every
+      // Generic kernel)" in English. A qualifier with no entry falls back to
+      // the recorded string, and the check beside this asserts there is none.
+      var hc = r.hostcall.replace(/^(\S+)\s+\((.*)\)$/, function (_, n, q) {
+        return n + '<span class="ship-q">(' + (S.shipNotes[q] || q) + ")</span>";
+      });
       el.innerHTML =
         '<div class="ship-v">' + r.rccl + "</div>" +
-        // "N (every Generic kernel)" in a 78px column wrapped to four lines and
-        // made its row three times the height of the others. The count and its
-        // qualifier are the same string, printed on two lines.
-        '<div class="ship-c">' + r.hostcall.replace(/^(\S+)\s+(\(.*\))$/,
-          '$1<span class="ship-q">$2</span>') + "</div>" +
-        '<div class="ship-b">' + r.behaviour + "</div>";
+        // the count and its qualifier are one string printed on two lines: in a
+        // 78px column the qualifier wrapped to four and made this row three
+        // times the height of the others
+        '<div class="ship-c">' + hc + "</div>" +
+        // the recorded behaviour, looked up -- not re-derived from the
+        // hostcall column, which would make the page agree with the data by
+        // construction instead of by being read off it
+        '<div class="ship-b">' + (S.shipBehaviour[r.behaviour] || r.behaviour) + "</div>";
       box.appendChild(el);
     });
     var u = document.createElement("div");
     u.className = "barunit";
-    u.textContent = "hidden_hostcall_buffer declarations · same platform in all four rows";
+    u.textContent = S.shipUnit;
     box.appendChild(u);
   })();
 
@@ -371,9 +388,9 @@ multifunction and not when passed as a single function. </div>
     });
     var u = document.createElement("div");
     u.className = "barunit";
-    u.textContent = F.counts.hypotheses_eliminated + " eliminated, " +
-                    F.counts.hypotheses_confirmed + " confirmed, of " +
-                    F.counts.hypotheses_total + " tested";
+    u.textContent = fmt(S.hypNote, { e: F.counts.hypotheses_eliminated,
+                                     c: F.counts.hypotheses_confirmed,
+                                     t: F.counts.hypotheses_total });
     box.appendChild(u);
   })();
 

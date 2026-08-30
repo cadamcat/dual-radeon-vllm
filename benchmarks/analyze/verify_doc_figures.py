@@ -3768,6 +3768,23 @@ def main():
             xbad.append(xfn + ":" + xax[:40])
     ck("site, charts drawing points on an axis that cannot place them", "0", len(xbad))
 
+    # The rccl figure's data records what the library does in the words the
+    # investigation used, and the page looks each one up so the Chinese version
+    # does not print "fails" in English. A value with no entry falls back to the
+    # recorded string, which is a silent leak, so every value has to have one --
+    # in both tables, or one language renders the other's.
+    xrccl = json.loads(open(os.path.join(xsrc, "figures-rccl.json"), encoding="utf-8").read())
+    xrb = {r["behaviour"] for r in xrccl["shipped"]}
+    xrq = {m.group(1) for r in xrccl["shipped"]
+           for m in [re.match(r"^\S+\s+\((.*)\)$", r["hostcall"])] if m}
+    for xfn in ("rccl-body.html", "rccl-body-zh.html"):
+        xst = json.loads(xblock(open(os.path.join(xsrc, xfn), encoding="utf-8").read(),
+                                "strings"))
+        ck("rccl article, %s says every recorded behaviour" % xfn, "0",
+           len(xrb - set(xst.get("shipBehaviour", {}))))
+        ck("rccl article, %s says every hostcall qualifier" % xfn, "0",
+           len(xrq - set(xst.get("shipNotes", {}))))
+
     xis = re.search(r"<script>\n\(function \(\).*?\n</script>", XI[XIP[0]], re.S)
     xiwant = set(re.findall(r'getElementById\("([^"]+)"\)', xis.group(0) if xis else ""))
     for fn in XIP:
@@ -3791,6 +3808,80 @@ def main():
     for k in sorted(xkeys[0]):
         ck("index, script uses string '%s'" % k, "1",
            1 if xscr[0] and ("S." + k) in xscr[0].group(0) else 0)
+
+    # --- what section 4 of benchmarks.md withdrew, and what it kept ----------
+    # The claims retired on 2026-08-30 were retired because nothing recomputed
+    # them. Their replacements are recomputed here, from prefill.jsonl, so the
+    # same thing cannot happen twice.
+    XPF = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
+
+    def xfit(cfg, date):
+        rs = sorted([r for r in XPF if r["cfg"] == cfg and r["date"] == date
+                     and r["chart_grade"]], key=lambda r: r["ctx"])
+        S = [r["prompt_tokens"] for r in rs]
+        T = [min(r["values"]) for r in rs]
+        n = len(S)
+        P = [[sum(x ** (i + j) for x in S) for j in range(3)] for i in range(3)]
+        q = [sum(T[k] * S[k] ** i for k in range(n)) for i in range(3)]
+        m = [row[:] + [q[i]] for i, row in enumerate(P)]
+        for col in range(3):
+            pv = max(range(col, 3), key=lambda r: abs(m[r][col]))
+            m[col], m[pv] = m[pv], m[col]
+            for r in range(3):
+                if r != col and m[col][col]:
+                    f = m[r][col] / m[col][col]
+                    for k in range(col, 4):
+                        m[r][k] -= f * m[col][k]
+        return [m[i][3] / m[i][i] for i in range(3)]
+
+    def xcell(cfg, date, ctx):
+        return next(r for r in XPF if r["cfg"] == cfg and r["date"] == date
+                    and r["ctx"] == ctx)
+
+    # a does not reproduce, and one fit returns it below zero
+    for cfg, date, want in (("B-8B-tp2", "2026-07-25", 79.3),
+                            ("B-8B-tp2", "2026-08-24", 30.5),
+                            ("A-12B-tp2", "2026-07-25", 9.8),
+                            ("A-12B-tp2", "2026-08-24", 99.8),
+                            ("A-12B-tp1", "2026-07-25", 70.1),
+                            ("A-12B-tp1", "2026-08-24", -22.1)):
+        ck(f"benchmarks.md s4, a for {cfg} {date}", f"{want}",
+           xfit(cfg, date)[0] * 1000, 0.1)
+    ck("benchmarks.md s4, and one of them is below zero", "1",
+       1 if xfit("A-12B-tp1", "2026-08-24")[0] < 0 else 0)
+
+    # b and c do reproduce, and the two ratios the subsection now rests on
+    for date, wb, wc in (("2026-07-25", 1.29, 1.87), ("2026-08-24", 1.23, 2.08)):
+        one, two = xfit("B-8B-tp1", date), xfit("B-8B-tp2", date)
+        ck(f"benchmarks.md s4, b improves {date}", f"{wb}", one[1] / two[1], 0.005)
+        ck(f"benchmarks.md s4, c improves {date}", f"{wc}", one[2] / two[2], 0.005)
+
+    # the crossover was a first-request cost, and it moved between arms
+    for cfg, date, want_tps, want_rng in (
+            ("B-8B-tp1", "2026-07-25", 3444, 0.87),
+            ("B-8B-tp2", "2026-07-25", 2019, 22.13),
+            ("B-8B-tp1", "2026-08-24", 3265, 18.24),
+            ("B-8B-tp2", "2026-08-24", 3690, 1.72)):
+        c500 = xcell(cfg, date, 500)
+        ck(f"benchmarks.md s4, {cfg} {date} at 500", f"{want_tps}",
+           c500["prefill_tok_s"], 1.0)
+        ck(f"benchmarks.md s4, and its rounds differ by {want_rng}",
+           f"{want_rng}", c500["range_pct"], 0.01)
+    ck("benchmarks.md s4, the ungraded arm at 500 moved between campaigns", "1",
+       1 if (not xcell("B-8B-tp2", "2026-07-25", 500)["chart_grade"]
+             and xcell("B-8B-tp1", "2026-07-25", 500)["chart_grade"]
+             and not xcell("B-8B-tp1", "2026-08-24", 500)["chart_grade"]
+             and xcell("B-8B-tp2", "2026-08-24", 500)["chart_grade"]) else 0)
+    ck("benchmarks.md s4, and where it happens round 1 is the slow one", "2",
+       sum(1 for cfg, date in (("B-8B-tp2", "2026-07-25"), ("B-8B-tp1", "2026-08-24"))
+           if xcell(cfg, date, 500)["values"][-1]
+           == max(xcell(cfg, date, 500)["values"])))
+    # and the two campaigns disagree about which arm is faster there
+    ck("benchmarks.md s4, July says one card and August says two", "1",
+       1 if (xcell("B-8B-tp1", "2026-07-25", 500)["prefill_tok_s"]
+             > xcell("B-8B-tp2", "2026-07-25", 500)["prefill_tok_s"]
+             and xcell("B-8B-tp2", "2026-08-24", 500)["prefill_tok_s"]
+             > xcell("B-8B-tp1", "2026-08-24", 500)["prefill_tok_s"]) else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

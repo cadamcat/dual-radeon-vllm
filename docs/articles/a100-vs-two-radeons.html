@@ -1502,6 +1502,9 @@ measurement here, but the crossing itself was not located, and only four depths 
  "viewCamp": "2026-08-29 ladder",
  "campBase": "2026-08-26 · MTP k=1",
  "campRuns": "{n} runs, range {r}%",
+ "noSpecLab": "no speculation",
+ "withMtpLab": "with MTP",
+ "utilOf": "{v} GB/s of {p}",
  "andJoin": " and ",
  "campBaseR": "2026-08-26 · Radeons, MTP k=1",
  "campBaseA": "2026-08-26 · A100, MTP k=1",
@@ -1844,8 +1847,8 @@ measurement here, but the crossing itself was not located, and only four depths 
       grow(f, c.gain_pct / max * 100);
       el(box, "val rv", "+" + c.gain_pct.toFixed(1) + S.pct);
       hover(tr, '<span class="hd">' + who + " · " + kctx(c.ctx) + "</span><br>" +
-        "no speculation <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
-        "with MTP <b>" + c.spec.toFixed(2) + "</b> tok/s");
+        S.noSpecLab + " <b>" + c.nospec.toFixed(2) + "</b> tok/s<br>" +
+        S.withMtpLab + " <b>" + c.spec.toFixed(2) + "</b> tok/s");
     });
     var u = el(box, "barunit", S.econUnit);
     u.style.gridColumn = "1 / -1";
@@ -1869,7 +1872,8 @@ measurement here, but the crossing itself was not located, and only four depths 
       el(box, "val rv", r.pct.toFixed(1) + S.pct);
       hover(tr, '<span class="hd">' + r.model + "</span><br>" +
         r.tok_s.toFixed(2) + " tok/s · " + fmt(S.gib, { n: r.gib_per_token }) + "<br>" +
-        "<b>" + Math.round(r.gb_s) + "</b> GB/s of " + F.bandwidth.peak_gb_s);
+        fmt(S.utilOf, { v: "<b>" + Math.round(r.gb_s) + "</b>",
+                        p: F.bandwidth.peak_gb_s }));
     });
     var u = el(box, "barunit", S.utilUnit);
     u.style.gridColumn = "1 / -1";

@@ -1927,6 +1927,7 @@ kernel 手里有多少可并行的东西。</p>
  "retSuffix": "% 保留",
  "f2unit": "单次调用 GPU 时间，对数刻度 · rank 0",
  "f3unit": "每 token 上下文所增加的解码微秒数 · 越低越平",
+ "denseBand": "vLLM · 稠密模型区间",
  "f4stock": "未打补丁 0.27",
  "f4patch": "打上 #45916",
  "f4bimodal": "轮，极差 {r}% — 双峰，见第 8 节",
@@ -2165,7 +2166,7 @@ kernel 手里有多少可并行的东西。</p>
       ["vLLM · hybrid-SSM", f.vllm_hybrid_slope_us, "var(--red)", null],
       ["llama.cpp · ROCm", f.llamacpp.rocm.slope_us, "var(--s2)", null],
       ["llama.cpp · Vulkan", f.llamacpp.vulkan.slope_us, "var(--s3)", null],
-      ["vLLM · dense band", f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
+      [S.denseBand, f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
     ];
     var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
     rows.forEach(function (r) {

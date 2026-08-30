@@ -2085,6 +2085,9 @@ defect.</p> </div> </div>
  "ctxK": "{n}K",
  "ctxRaw": "{n}",
  "runLab": "run {n}",
+ "vsConverged": "{p} against converged",
+ "overDepths": "{p} over {n} shared depths",
+ "andJoin": " and ",
  "runsUnit": "decode tok/s · four identical runs, nothing changed between them",
  "runsNote": "first run {a}% below converged at its worst, second still {b}% · runs 3 and 4 agree to {c}–{d}%",
  "runsWorst": "worst at {n} tokens, where the machine is fastest",
@@ -2227,7 +2230,8 @@ defect.</p> </div> </div>
         el(box, "val rv", v.toFixed(2));
         hover(tr, '<span class="hd">' + kctx(r.ctx) + " · " +
           fmt(S.runLab, { n: i + 1 }) + "</span><br><b>" + v.toFixed(2) + "</b> tok/s<br>" +
-          '<span class="sub">' + pc(r.vs_converged_pct[i], 1) + " against converged</span>");
+          '<span class="sub">' + fmt(S.vsConverged, { p: pc(r.vs_converged_pct[i], 1) }) +
+          "</span>");
       });
     });
     var u = el(box, "barunit", S.runsUnit);
@@ -2270,13 +2274,13 @@ defect.</p> </div> </div>
       grow(f, Math.abs(c.offset_pct) / span * 50);
       el(box, "val rv", pc(c.offset_pct, 3));
       hover(tr, '<span class="hd">' + c.name + "</span><br>" +
-        pc(c.offset_pct, 3) + " over " + c.depths + " shared depths");
+        fmt(S.overDepths, { p: pc(c.offset_pct, 3), n: c.depths }));
     });
     var u = el(box, "barunit", S.ctrlUnit);
     u.style.gridColumn = "1 / -1";
     var n = el(box, "barunit", fmt(S.ctrlNote, {
       n: F.fig3.within_band, t: F.fig3.controls.length, b: F.fig3.band_pct,
-      o: F.fig3.outside.join(" and ") }));
+      o: F.fig3.outside.join(S.andJoin) }));
     n.style.gridColumn = "1 / -1"; n.style.color = "var(--text-2)";
   })();
 

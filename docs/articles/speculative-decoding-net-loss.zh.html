@@ -1828,6 +1828,8 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
  "viewDelta": "打开投机之后的变化",
  "viewRate": "解码 tok/s",
  "nospec": "不投机",
+ "repeatSub": "{s} 复测：{v}（{p}%）",
+ "betweenThem": "两者相差 {r}×",
  "mtp": "MTP",
  "ctxK": "{n}K",
  "ctxAxis": "上下文长度",
@@ -1969,8 +1971,9 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
       return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
         S.nospec + " <b>" + r.nospec.toFixed(2) + "</b> tok/s<br>" +
         S.mtp + " <b>" + r.mtp.toFixed(2) + "</b> tok/s<br>" +
-        '<span class="sub">' + S.mtp + " again: " + r.mtp_repeat.toFixed(2) +
-        " (" + r.repeat_spread_pct.toFixed(2) + "%)</span>";
+        '<span class="sub">' + fmt(S.repeatSub, { s: S.mtp, v: r.mtp_repeat.toFixed(2),
+                                                   p: r.repeat_spread_pct.toFixed(2) }) +
+        "</span>";
     }
     function draw() {
       var xs = R.map(function (r) { return r.ctx; });
@@ -2154,7 +2157,7 @@ A100 那个矩阵同样每格一次，跨两台 VM，会话之间的方差没有
         return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
           S.stock + " <b>" + r.stock.toFixed(2) + "</b> tok/s<br>" +
           S.ported + " <b>" + r.ported.toFixed(2) + "</b> tok/s<br>" +
-          '<span class="sub">' + r.ratio.toFixed(2) + "× between them</span>";
+          '<span class="sub">' + fmt(S.betweenThem, { r: r.ratio.toFixed(2) }) + "</span>";
       };
     }
     function pairTip(p) {

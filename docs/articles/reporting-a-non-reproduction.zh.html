@@ -1370,7 +1370,7 @@ gfx1100 代码对象，然后两次记录在案的 <code>all_gather</code> 都�
       el(box, "w rv", r.who);
       el(box, "s rv", esc(r.script));
       el(box, "vd rv " + (r.saw_it ? "saw" : "blind"), esc(r.verdict));
-      el(box, "x rv", "exit " + r.exit);
+      el(box, "x rv", String(r.exit));   // the column header already names it
     });
     document.getElementById("bsnote").textContent = fmt(S.bsNote, {
       n: F.fig3.injections, m: F.fig3.md5_after });

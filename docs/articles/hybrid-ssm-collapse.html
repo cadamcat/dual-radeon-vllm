@@ -1961,6 +1961,7 @@ baseline is a different question with a different answer.</p>
  "retSuffix": "% retained",
  "f2unit": "per-call GPU time, log scale · rank 0",
  "f3unit": "microseconds of decode time added per token of context · lower is flatter",
+ "denseBand": "vLLM · dense band",
  "f4stock": "stock 0.27",
  "f4patch": "with #45916",
  "f4bimodal": "runs, range {r}% — bimodal, see §8",
@@ -2199,7 +2200,7 @@ baseline is a different question with a different answer.</p>
       ["vLLM · hybrid-SSM", f.vllm_hybrid_slope_us, "var(--red)", null],
       ["llama.cpp · ROCm", f.llamacpp.rocm.slope_us, "var(--s2)", null],
       ["llama.cpp · Vulkan", f.llamacpp.vulkan.slope_us, "var(--s3)", null],
-      ["vLLM · dense band", f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
+      [S.denseBand, f.dense_band_us[1], "var(--text-dim)", f.dense_band_us]
     ];
     var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
     rows.forEach(function (r) {

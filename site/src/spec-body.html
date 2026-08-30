@@ -327,6 +327,8 @@ is what supports it, not either measurement alone.</p>
  "viewDelta": "change from turning speculation on",
  "viewRate": "decode tok/s",
  "nospec": "no speculation",
+ "repeatSub": "{s} again: {v} ({p}%)",
+ "betweenThem": "{r}× between them",
  "mtp": "MTP",
  "ctxK": "{n}K",
  "ctxAxis": "context length",
@@ -468,8 +470,9 @@ is what supports it, not either measurement alone.</p>
       return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
         S.nospec + " <b>" + r.nospec.toFixed(2) + "</b> tok/s<br>" +
         S.mtp + " <b>" + r.mtp.toFixed(2) + "</b> tok/s<br>" +
-        '<span class="sub">' + S.mtp + " again: " + r.mtp_repeat.toFixed(2) +
-        " (" + r.repeat_spread_pct.toFixed(2) + "%)</span>";
+        '<span class="sub">' + fmt(S.repeatSub, { s: S.mtp, v: r.mtp_repeat.toFixed(2),
+                                                   p: r.repeat_spread_pct.toFixed(2) }) +
+        "</span>";
     }
     function draw() {
       var xs = R.map(function (r) { return r.ctx; });
@@ -653,7 +656,7 @@ is what supports it, not either measurement alone.</p>
         return '<span class="hd">' + kctx(r.ctx) + "</span><br>" +
           S.stock + " <b>" + r.stock.toFixed(2) + "</b> tok/s<br>" +
           S.ported + " <b>" + r.ported.toFixed(2) + "</b> tok/s<br>" +
-          '<span class="sub">' + r.ratio.toFixed(2) + "× between them</span>";
+          '<span class="sub">' + fmt(S.betweenThem, { r: r.ratio.toFixed(2) }) + "</span>";
       };
     }
     function pairTip(p) {
