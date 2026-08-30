@@ -69,15 +69,16 @@ always done as its health gate. It works: the 500 rung, which on the L4 was
 17.49 % — the shallowest rung is where a fixed cost of tens of milliseconds is
 the whole measurement.
 
-## No serve logs
+## Serve logs, for three of the five
 
-The VM was reclaimed after the run finished; the logs went with it. What
-survives is what `harvester.py` had already pulled to the Mac — the rows, each
-configuration's `model_meta` (backend, quant kernel, KV size, load time) and the
-`run_meta` row's versions. That is the provenance the projections use, but the
-raw logs for this campaign do not exist. `harvester.py` is kept here beside the
-data because it is the reason the data is here at all: it was running before the
-first measurement, and this is the sixth reclaim across two days.
+`logs/` holds `serve-G31.log`, `serve-Q38.log` and `serve-MG30.log` from the
+second pass. **The first pass has none**: its VM was reclaimed after the run
+finished and the logs went with it, so `G12` and `G26A4B` survive only as what
+`harvester.py` had already pulled — the rows, each configuration's `model_meta`
+(backend, quant kernel, KV size, load time) and the `run_meta` versions. That is
+the provenance the projections read, and it is why the harvester is committed
+here beside the data: it was running before the first measurement, and that was
+the sixth reclaim in two days.
 
 ## What it says about single-card prefill
 

@@ -4364,6 +4364,41 @@ def main():
     ck("benchmarks.md s4, and c gains more on all three", "3",
        sum(1 for g in _tg2.values() if g["c_gain"] > g["b_gain"]))
 
+    # --- the A100's second pass kept its serve logs, so check them ----------
+    # The first pass lost its logs to a reclaim and its backends survive only in
+    # model_meta. These three have both, so the projection's backend column can
+    # be checked against the log it claims to come from rather than trusted.
+    _A30 = os.path.join(HERE, "..", "cuda-a100", "campaign-2026-08-30", "logs")
+    _BR = re.compile(r"Using (?:AttentionBackendEnum\.)?([A-Z0-9_]+)(?: attention)? backend")
+    _VIT = re.compile(r"vit attention|MMEncoderAttention")
+
+    def _logbackend(name):
+        for line in open(os.path.join(_A30, name), errors="ignore"):
+            if _VIT.search(line):
+                continue
+            m = _BR.search(line)
+            if m:
+                return m.group(1)
+        return None
+
+    _prow = {r["cfg"]: r for r in XPFROWS
+             if r["machine"] == "A100-SXM4-80GB" and r["date"] == "2026-08-30"}
+    for cfg, want in (("G31", "TRITON_ATTN"), ("Q38", "FLASH_ATTN"),
+                      ("MG30", "FLASH_ATTN")):
+        ck("A100 2026-08-30, %s's backend is what its log says" % cfg, "1",
+           1 if _logbackend("serve-%s.log" % cfg) == want
+           and _prow[cfg]["attn_backend"] == want else 0)
+    # and the two forms are both present across these three, which is the bug
+    # that left the 2026-08-29 campaign with no backend at all
+    ck("A100 2026-08-30, logs using the enum form", "3",
+       sum(1 for n in ("serve-G31.log", "serve-Q38.log", "serve-MG30.log")
+           if "Using AttentionBackendEnum." in open(os.path.join(_A30, n),
+                                                    errors="ignore").read()))
+    ck("A100 2026-08-30, and logs using the other form", "2",
+       sum(1 for n in ("serve-G31.log", "serve-Q38.log", "serve-MG30.log")
+           if "attention backend out of potential backends"
+           in open(os.path.join(_A30, n), errors="ignore").read()))
+
     # --- the T4 pre-flight, which is evidence for an upstream report --------
     # Its README states what three backends did on sm75. Every number is read
     # back out of preflight.jsonl and the serve logs it cites, because the
