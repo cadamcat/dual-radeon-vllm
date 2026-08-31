@@ -726,7 +726,9 @@ docs/
 **Reported upstream:** the RCCL root cause is
 [ROCm/ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520), with a pointer on
 [#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074). The passthrough caveat behind
-it went to `pve-devel` on 2026-08-24 as a two-patch `pve-docs` series. The SSM
+it went to `pve-devel` on 2026-08-24 as a two-patch `pve-docs` series and is at
+[v3](https://lore.proxmox.com/all/20260831130752.37364-1-Xy2462381442@gmail.com/)
+as a single patch after review. The SSM
 behaviour is written up in `docs/` but not filed; see
 [open-questions.md](docs/open-questions.md) for what is claimed and how strongly.
 

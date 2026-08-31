@@ -137,6 +137,21 @@ because Proxmox asked for the rationale to be to hand if it is ever revisited,
 and drops the example patch, since passing the card as-is is the better default
 and the note covers the case that needs otherwise.
 
+[v3] went out on 2026-08-31 and changes two lines: the note said *"QEMU up to
+11.1 advertises it only for a single-function device"* and now says *"QEMU
+advertises …"*. The version was Dominik's suggestion on v1 and his own
+retraction on v2 — rereading it a few days later, he judged that naming a
+release dates the text and, worse, reads as though a later QEMU fixes this.
+Nothing here supports that reading: the guard is unchanged from v8.1.0 through
+v11.1.0 and the patch that would have lifted it was declined, both of which the
+subsection below sets out. The commit message keeps the version range, where it
+records when this was checked rather than hinting that it stopped being true.
+
+He also raised where the note belongs — `pve-docs`, or the
+[PCI Passthrough wiki](https://pve.proxmox.com/wiki/PCI_Passthrough) — and left
+that to the `pve-docs` maintainers. That question is open; the note needs no
+rewriting either way, and v3's changelog says so.
+
 **The review supplied something this machine could not.** Proxmox's experience
 is that passing part of a card works most of the time and not always: *"I've
 seen cases where the guest driver refused to work properly when e.g. the audio
@@ -196,6 +211,7 @@ releases either.
 [mf]: https://lore.kernel.org/qemu-devel/8b3e30e6-3c3e-49ab-b9db-8296aaf819d1@app.fastmail.com/
 [v1]: https://lore.proxmox.com/all/20260824170828.42821-1-Xy2462381442@gmail.com/
 [v2]: https://lore.proxmox.com/all/20260825141257.80190-1-Xy2462381442@gmail.com/
+[v3]: https://lore.proxmox.com/all/20260831130752.37364-1-Xy2462381442@gmail.com/
 
 **This repository walked the long way round too.** `open-questions.md` §5
 already concluded that a QEMU-side fix was "a real avenue for *us*", then said
