@@ -74,6 +74,8 @@ def offset(a, b, cfg):
 def main():
     verbose = "-v" in sys.argv
     jul, aug = decode(JULY), decode(AUG)
+    ROOT = os.path.join(HERE, "..", "..")
+    rm = open(os.path.join(ROOT, "README.md")).read()
     checks = []
 
     def ck(where, claim, value, tol=None):
@@ -411,21 +413,110 @@ def main():
        1 if max(r["max_abs_diff"] for r in kc) <= 1e-3 else 0)
 
     # --- README "Two Radeons against one A100" ------------------------------
-    # 3D-path A100-over-Radeons advantage at matched depths, and the other
-    # cross-vendor readings the section quotes. The 30K A100 leg is compared
-    # against the Radeons' 32K rung, as the prose states.
-    ck("README two-vs-one, advantage 1K", "1.48", leg_result("D1K.log") / pt[1024])
-    ck("README two-vs-one, advantage 8K", "1.20", leg_result("D8K.log") / pt[8192])
-    ck("README two-vs-one, advantage 16K", "1.14", leg_result("D16K.log") / pt[16384])
-    ck("README two-vs-one, advantage 30-32K", "1.87", leg_result("D30.log") / pt[32768])
-    ck("README two-vs-one, 2D retention Radeons pct", "15.8", st[32768] / st[1024] * 100)
-    ck("README two-vs-one, 2D retention A100 pct", "33.6",
+    # Rewritten 2026-08-31 off the campaign rather than off four single-run
+    # probes on a speculative arm. The old text read a U-shaped gap out of those
+    # -- 1.48x at 1K, 1.14x at 16K, 1.87x at 32K -- and the campaign does not
+    # have that shape, so the checks are rebuilt on the projection instead of
+    # being renumbered.
+    _XD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
+
+    def _d31(cfg, date, ctx):
+        return next(r for r in _XD if r["cfg"] == cfg and r["date"] == date
+                    and r["ctx"] == ctx)
+
+    _PAIR, _PD = "C-31B-tp2", "2026-07-25"      # TP=2, vLLM 0.23, no patches
+    _A1, _AD = "G31", "2026-08-30"              # TP=1, vLLM 0.28.0, no patches
+    # The table is READ OUT OF THE README, not restated here. A check that
+    # hardcodes the expected numbers catches the data drifting from the prose
+    # and not the prose drifting from the data, and this section's whole content
+    # is the table -- putting the old 1.14x back into it passed, once.
+    _sec = rm[rm.index("### Two Radeons against one A100"):rm.index("### Want the raw numbers?")]
+    _rows = []
+    for _c, _p, _a, _adv in re.findall(
+            r"^\|\s*([0-9]+(?:\s*K)?)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*\*{0,2}([\d.]+)×",
+            _sec, re.M):
+        _rows.append((int(_c.replace("K", "").strip()) * (1000 if "K" in _c else 1),
+                      _p, _a, _adv))
+    ck("README two-vs-one, rows in the published table", "5", len(_rows))
+    # The retraction quotes the numbers it retracts, so those are published
+    # figures too and are recomputed from the same probe files the old table
+    # read -- pt[] on the Radeon side, the D*.log legs on the A100 side.
+    _ret = re.search(r"read a U-shaped gap out of them — ([\d.]+)× at 1 K, "
+                     r"narrowing to\s+([\d.]+)× at 16 K, widening to ([\d.]+)× ", _sec)
+    ck("README two-vs-one, the retraction still quotes three gaps", "3",
+       len(_ret.groups()) if _ret else 0)
+    # so a deleted retraction fails as a figure rather than as a traceback
+    _ret = _ret or re.match(r"()()()", "")
+    ck("README two-vs-one, the retracted 1K gap", _ret.group(1) or "0",
+       leg_result("D1K.log") / pt[1024])
+    ck("README two-vs-one, the retracted 16K gap", _ret.group(2) or "0",
+       leg_result("D16K.log") / pt[16384])
+    ck("README two-vs-one, the retracted deep gap", _ret.group(3) or "0",
+       d30 / pt[32768])
+    # and it was 32K against 30K, which is why the deep end is stated that way
+    ck("README two-vs-one, the retracted deep row's depths did not match", "1",
+       1 if "32 K against the A100 at 30 K" in rm else 0)
+
+    for _ctx, _p, _a, _adv in _rows:
+        _pr, _ar = _d31(_PAIR, _PD, _ctx), _d31(_A1, _AD, _ctx)
+        ck("README two-vs-one, pair at %d" % _ctx, _p, _pr["decode_tok_s"])
+        ck("README two-vs-one, A100 at %d" % _ctx, _a, _ar["decode_tok_s"])
+        ck("README two-vs-one, advantage at %d" % _ctx, _adv,
+           _ar["decode_tok_s"] / _pr["decode_tok_s"])
+    # both arms stock, and every cell of both graded -- the two properties that
+    # make this a comparison rather than the probes it replaced
+    _both = [(_d31(_PAIR, _PD, c), _d31(_A1, _AD, c)) for c in
+             (500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000)]
+    ck("README two-vs-one, rungs compared", "11", len(_both))
+    ck("README two-vs-one, and every cell of both is chart-grade", "22",
+       sum(1 for t in _both for r in t if r["chart_grade"]))
+    ck("README two-vs-one, neither arm carries a patch", "0",
+       sum(1 for t in _both for r in t if r["patches"]))
+    ck("README two-vs-one, nor speculates", "0",
+       sum(1 for t in _both for r in t if r["spec"]))
+    # the withdrawn claim: no interior minimum, so no U
+    _adv = [t[1]["decode_tok_s"] / t[0]["decode_tok_s"] for t in _both]
+    ck("README two-vs-one, the narrowest gap is at the shallowest rung", "1",
+       1 if min(_adv) == _adv[0] else 0)
+    ck("README two-vs-one, and the widest at the deepest", "1",
+       1 if max(_adv) == _adv[-1] else 0)
+    ck("README two-vs-one, so the spread across the ladder", "0.08",
+       max(_adv) - min(_adv), 0.06)
+    # speculation inverts it, on arms that are patch-mismatched and said to be
+    _sp32 = _d31("G31-mtp-p45450-tp2", "2026-08-29", 32000)["decode_tok_s"]
+    _ss32 = _d31("G31-tp2", "2026-08-29", 32000)["decode_tok_s"]
+    _ap32 = _d31("A100-G31-mtp-p45450", "2026-08-29", 32000)["decode_tok_s"]
+    _as32 = _d31("A100-G31", "2026-08-29", 32000)["decode_tok_s"]
+    ck("README two-vs-one, MTP on the pair at 32K pct", "7.9",
+       (_sp32 / _ss32 - 1) * 100)
+    ck("README two-vs-one, MTP on the A100 at 32K pct", "-20.1",
+       (_ap32 / _as32 - 1) * 100)
+    ck("README two-vs-one, so the speculative arms are level at 32K", "1.08",
+       _ap32 / _sp32)
+    ck("README two-vs-one, and at 2K the pair is ahead", "0.99",
+       _d31("A100-G31-mtp-p45450", "2026-08-29", 2000)["decode_tok_s"]
+       / _d31("G31-mtp-p45450-tp2", "2026-08-29", 2000)["decode_tok_s"])
+
+    # the 2D-retention reading, moved out of the README on 2026-08-31 into
+    # spec-decode doc §5 rather than dropped with the section that housed it
+    _sd = open(os.path.join(HERE, "..", "..", "docs",
+                            "speculative-decoding-on-rdna.md")).read()
+    ck("spec-decode doc §5, 2D retention on the pair pct", "15.8",
+       st[32768] / st[1024] * 100)
+    ck("spec-decode doc §5, 2D retention on the A100 pct", "33.6",
        leg_result("C30.log") / leg_result("C1K.log") * 100)
-    ck("README two-vs-one, spec gain A100 pct", "39",
+    ck("spec-decode doc §5, so TP costs this much of the 2D path", "2.13",
+       (leg_result("C30.log") / leg_result("C1K.log")) / (st[32768] / st[1024]))
+    _splitkv = json.load(open(os.path.join(SDIR, "splitkv-31b-stock.json")))
+    _nospec32 = {r["depth"]: r["tok_per_s"] for r in _splitkv["rows"]}[32768]
+    ck("spec-decode doc §5, spec gain on the A100 pct", "39.2",
        (leg_result("D30.log") / M["30000"]["triton_forced"]["nospec"] - 1) * 100)
-    splitkv_stock = json.load(open(os.path.join(SDIR, "splitkv-31b-stock.json")))
-    nospec32 = {r["depth"]: r["tok_per_s"] for r in splitkv_stock["rows"]}[32768]
-    ck("README two-vs-one, spec gain Radeons pct", "7.5", (pt[32768] / nospec32 - 1) * 100)
+    ck("spec-decode doc §5, spec gain on the pair pct", "7.5",
+       (pt[32768] / _nospec32 - 1) * 100)
+    ck("spec-decode doc §5, and it says both", "1",
+       1 if "+39.2 %" in _sd and "erodes what speculation is worth" in _sd else 0)
+    ck("spec-decode doc §5, and it says so there", "1",
+       1 if "starved path starve harder" in _sd and "33.6 %" in _sd else 0)
 
     id_lists = sum((leg_ids(f) for f in ("A1.log", "A2.log", "B1.log", "B2.log")), [])
     ck("45450 README, 8/8 generations identical", "1",
@@ -1810,8 +1901,6 @@ def main():
        1 if re.search(r'text-anchor="end">275</text>', svgc) else 0)
 
     # --- the front pages: what they embed, and the numbers they quote --------
-    ROOT = os.path.join(HERE, "..", "..")
-    rm = open(os.path.join(ROOT, "README.md")).read()
     zh = open(os.path.join(ROOT, "README.zh.md")).read()
     bm = open(os.path.join(ROOT, "docs", "benchmarks.md")).read()
     for name, txt in (("README.md", rm), ("README.zh.md", zh)):

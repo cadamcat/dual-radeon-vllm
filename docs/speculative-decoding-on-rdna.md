@@ -192,6 +192,27 @@ ULP — at `query_len = 1`, today's shipped behaviour, exactly as at 2 and
 reassociation that batch size already toggles in production, not a
 defect of the admission.
 
+**Tensor parallelism makes the starved path starve harder.** The 2D grid is
+`(total_num_q_blocks, num_kv_heads)`, so splitting the KV heads across two cards
+halves each rank's workgroups — the `1 × 8` above, against twice that on a single
+card. Measured stock on the 2D path, this pair retains **15.8 %** of its 1K rate
+at 32K (55.84 → 8.81) while one A100 retains **33.6 %** at 30K (88.67 → 29.75):
+same kernel, same collapse, a little over twice the damage. The A100 legs are in
+[`benchmarks/cuda-a100/45450-validation`](../benchmarks/cuda-a100/45450-validation/README.md).
+The two deep legs are 30K and 32K rather than one depth, so the 2.13× is a ratio
+of two retentions and not a claim about either machine's speed.
+
+**And it erodes what speculation is worth.** The MTP drafter is small, but every
+draft step still pays the all-reduce floor, which does not shrink with model
+size. On the healthy 3D path, speculation's net win over no-speculation is
+**+39.2 %** on the single A100 at 30K (43.85 → 61.03) against **+7.5 %** on this
+pair at 32K (30.31 → 32.57). Both arms are the ported 3D path, so this is the
+economics of the split and not of the 2D bug above.
+
+*(Moved here 2026-08-31 from the README's "Two Radeons against one A100", which
+was rewritten onto campaign data that has no speculative arm. Both findings are
+unchanged; only their home is.)*
+
 ## 6. Upstream
 
 **The same 3D-to-2D drop was reported first**, in

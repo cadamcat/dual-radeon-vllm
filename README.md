@@ -426,50 +426,59 @@ and [speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdn
 
 ### Two Radeons against one A100
 
-The ladder above permits a cross-vendor reading, and at this regime it is
-not the blowout the price gap suggests. Batch-1 decode is
-bandwidth-bound, and two 800 GB/s cards against one 2.0 TB/s card is only
-a 1.27× difference in nominal ceiling. Measured on the healthy 3D path,
-MTP on, matched depths:
+**Rewritten 2026-08-31.** This section used to quote four single-run probes on a
+speculative arm and read a U-shaped gap out of them — 1.48× at 1 K, narrowing to
+1.14× at 16 K, widening to 1.87× at the deep end, where it compared the pair at
+32 K against the A100 at 30 K — and closed by calling the campaign-grade version
+future work. That campaign now exists, and **the U-shape does not survive it.**
 
-| context | 2× RX 7900 XT | A100 80G | A100 advantage |
+Stock arms, no speculation, eleven rungs, two rounds a cell, every cell
+chart-grade on both sides:
+
+| context | 2× RX 7900 XT | one A100 80G | A100 advantage |
 |--:|--:|--:|--:|
-| 1K | 74.89 | 110.71 | 1.48× |
-| 8K | 63.25 | 75.63 | 1.20× |
-| 16K | 63.09 | 72.13 | **1.14×** |
-| 32K vs 30K | 32.57 | 61.03 | 1.87× |
+| 500 | 43.16 | 58.51 | **1.36×** |
+| 2 K | 41.04 | 57.15 | 1.39× |
+| 8 K | 36.86 | 51.63 | 1.40× |
+| 16 K | 33.63 | 47.50 | 1.41× |
+| 32 K | 29.54 | 42.41 | **1.44×** |
 
-The gap is U-shaped, and each end has its own mechanism. At 1K the step
-time is short and TP=2's fixed all-reduce floor weighs heaviest — the
-single A100 pays no such tax. In the middle the two nearly converge:
-fourteen percent apart at 16K, on hardware an order of magnitude apart
-in price. Past 16K the KV scan dominates and the difference in realized
-bandwidth (the Radeons reach 63 % of their 800 GB/s on this model)
-compounds again.
-*(Corrected 2026-08-29: this cited 38 %, which is the 12B's utilisation,
-not this comparison's 31B. Recomputed from `results.jsonl` and the
-per-GPU bytes/token in [benchmarks.md §3](docs/benchmarks.md), the 31B at
-TP=2 reaches 62.8 %. All three utilisation figures are now pinned by
+The gap is **flat at about 1.4×**: narrowest at the shallowest rung, widest at
+the deepest, and 1.36 to 1.44 across a sixty-four-fold range of context. There is
+no interior minimum, so there is no U, and the mechanism story the old text told
+about one — a TP=2 all-reduce floor at the short end, the KV scan at the long one
+— was explaining a shape the data does not have.
+
+What survives is the size of the gap, and it is still smaller than the price
+difference: batch-1 decode is bandwidth-bound, and two 800 GB/s cards against one
+2.0 TB/s card is a 1.27× difference in nominal ceiling against a measured 1.4×.
+The Radeons reach 63 % of their 800 GB/s on this model.
+*(Corrected 2026-08-29, and kept through the 2026-08-31 rewrite because it
+records a figure that was published wrong: this cited 38 %, which is the 12B's
+utilisation, not this comparison's 31B. Recomputed from `results.jsonl` and the
+per-GPU bytes/token in [benchmarks.md §3](docs/benchmarks.md), the 31B at TP=2
+reaches 62.8 %. All three utilisation figures are pinned by
 `verify_doc_figures.py`.)*
 
-Two more readings from the same table:
+**The two stacks cannot be matched, and that is not laziness.** Each arm is stock
+on the stack its platform actually runs — vLLM 0.23 on the pair, 0.28.0 on the
+A100 — because gemma-4 cannot be served on the ROCm 0.27 image at all: its Quark
+plugin reads `head_dim` off a heterogeneous config and dies before loading. Every
+other pairing in the data is worse, not better: the 2026-08-29 Radeon arm carries
+three patches the A100 arm does not.
 
-- **The 2D path punishes tensor parallelism itself.** Splitting KV heads
-  across two cards halves each card's 2D workgroups — 8 per rank against
-  the A100's 16 — so the starved path starves harder: at 30K-32K the 2D
-  path retains 15.8 % of its 1K rate here, against 33.6 % on the A100.
-  The same collapse, same kernel, twice the damage.
-- **TP erodes speculation economics too.** The MTP drafter is small, but
-  every draft step still pays the all-reduce floor, which does not
-  shrink with model size: speculation's net win over no-speculation is
-  +39 % on the A100 at 30K and only +7.5 % here at 32K.
+**Speculation inverts the comparison.** MTP at k=3 is worth **+7.9 %** to the
+pair at 32 K and **−20.1 %** to the A100, so on speculative arms the two machines
+are level — 0.99× at 2 K, 1.08× at 32 K — and at the shallow end the pair is
+ahead. Those arms are patch-mismatched (three on the pair against one on the
+A100) and are read as what each machine does with speculation on rather than as
+a like-for-like pair.
 
-What this table does not cover is the territory the A100 wins outright:
-prefill and batched throughput are compute-bound, where its tensor cores
-run against RDNA3 WMMA that already realizes only ~37 % of nominal peak
-here — expect multiples, not percentages. One model, one stack per
-platform (the stack each side actually runs today), single-run probes;
-the campaign-grade version of this comparison is future work.
+What none of this covers is the territory the A100 wins outright: prefill and
+batched throughput are compute-bound, where its tensor cores run against RDNA3
+WMMA that realises only ~37 % of nominal peak here. Figure 2 above has the
+prefill decomposition; the gap there is 3.3× on the linear term and 6.7× on the
+quadratic for the dense 12B.
 
 ### Want the raw numbers?
 
