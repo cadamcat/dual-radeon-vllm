@@ -1794,6 +1794,25 @@ def main():
     sys.path.insert(0, HERE)
     import build_ledger
     led = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
+    # Structural, not numeric. "What is here" carried two rows that opened a
+    # table cell and never closed it; the blank line after each ended the table,
+    # so 23K characters rendered as loose prose between four broken tables and
+    # two stray "|" showed as text. Fixed 2026-08-31 by moving every long body
+    # into a section of its own. This is the check that would have caught it.
+    _br = open(os.path.join(HERE, "..", "README.md")).read()
+    _wh = _br[_br.index("## What is here"):_br.index("## Reproducing the analysis")]
+    _open = [l for l in _wh.split("\n")
+             if l.startswith("|") and not l.rstrip().endswith("|")]
+    ck("benchmarks README, table rows that open a cell and never close it", "0",
+       len(_open))
+    _idx = [l for l in _wh.split("\n")
+            if l.startswith("| `") and l.rstrip().endswith("|")]
+    ck("benchmarks README, paths in the index", "27", len(_idx))
+    ck("benchmarks README, and a section for each that needs one", "23",
+       len(re.findall(r"^### `", _wh, re.M)))
+    ck("benchmarks README, no index line long enough to be a wall", "0",
+       sum(1 for l in _idx if len(l) > 220))
+
     ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
