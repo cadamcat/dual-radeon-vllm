@@ -49,7 +49,7 @@
   {"kind": "hardware", "w": "hwOneCardTp1", "v": ["A100-SXM4-80GB"]},
   {"kind": "hardware", "w": "hwOneCardTp1", "v": ["L4"]},
   {"kind": "model", "w": "modelThree", "v": ["gemma-4-12B", "gemma-4-26B-A4B", "gemma-4-31B"]},
-  {"kind": "date", "tl": "measured", "w": "dMeasuredTwo", "v": ["2026-07-25", "2026-08-30"]}
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-08-30"]}
  ],
 
  "gqa-gate-costs-nothing": [
