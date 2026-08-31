@@ -112,7 +112,115 @@
    }
   ],
   "verdict": "the two agree to 0.88% at worst on four overlapping cells, so the constant is a per-call cost both arms pay -- the wrapper around the kernel -- and not a floor of the instrument",
-  "dilution": "because both arms pay it, the ratio is pulled toward 1 at small shapes; the kernel-level difference is larger than the ratio shows, in the same direction. The raw production_ms and bm64_ms columns are in the rows so this can be checked."
+  "dilution": "WITHDRAWN 2026-08-31. Passes 1 and 2 established that the ~0.2 ms at small shapes is per-call and survives batching, and this file previously inferred from that it was the Python wrapper, and therefore a cost both arms pay that pulls the ratio toward 1. Pass 3 measures it: the host side is a median of 6 microseconds and at most 82, and the device time carries essentially all of it -- median disagreement between the device and wall ratios 0.32%. It is not uniform: at the four smallest cells the host cost is asymmetric between the arms and moves the ratio by up to 20.8%, in BOTH directions depending on the cell, which is why this says 'no systematic dilution' rather than 'they agree'. The sign is untouched -- every short-q device ratio is still below 1. The ~0.2 ms IS `kernel_unified_attention` at that shape. There is no dilution, the wall ratios were kernel ratios all along, and the finding is exactly as strong as the table -- no weaker, and not stronger either.",
+  "pass3": "device time of the CUDA kernels from torch.profiler, measured in the same run as the wall clock so the host-side cost is a subtraction rather than an inference.",
+  "host_side_cost_ms": {
+   "n": 56,
+   "median": 0.006099198623657154,
+   "min": -0.010096901611327702,
+   "max": 0.08201200686035148
+  },
+  "dev_vs_wall": [
+   {
+    "kv_mode": "4096",
+    "q_len": 16,
+    "dev_speedup": 0.5822396849390444,
+    "wall_speedup": 0.5502034960454937,
+    "diff_pct": 5.822607294174997
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 32,
+    "dev_speedup": 0.52569286925737,
+    "wall_speedup": 0.5502275573429818,
+    "diff_pct": 4.459007506655684
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 64,
+    "dev_speedup": 0.5973003700664696,
+    "wall_speedup": 0.6021153579035232,
+    "diff_pct": 0.7996786286632288
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 96,
+    "dev_speedup": 0.6270702391857206,
+    "wall_speedup": 0.6298195678705372,
+    "diff_pct": 0.43652639979292085
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 128,
+    "dev_speedup": 0.6611110956666892,
+    "wall_speedup": 0.6654300543449231,
+    "diff_pct": 0.6490477323699488
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 256,
+    "dev_speedup": 1.1572386022463865,
+    "wall_speedup": 1.1444849899207434,
+    "diff_pct": 1.1143538305842082
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 1024,
+    "dev_speedup": 1.051352501375906,
+    "wall_speedup": 1.0506670426083526,
+    "diff_pct": 0.06524034158829502
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 16,
+    "dev_speedup": 0.5407875143278522,
+    "wall_speedup": 0.5419740982154605,
+    "diff_pct": 0.21893737939051103
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 32,
+    "dev_speedup": 0.5435213892342707,
+    "wall_speedup": 0.5449532689606007,
+    "diff_pct": 0.2627527547565712
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 64,
+    "dev_speedup": 0.5631134770449948,
+    "wall_speedup": 0.5647079732934853,
+    "diff_pct": 0.2823576651824302
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 96,
+    "dev_speedup": 0.5840722130210665,
+    "wall_speedup": 0.584470453047015,
+    "diff_pct": 0.06813689620618431
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 128,
+    "dev_speedup": 0.6501308389402577,
+    "wall_speedup": 0.6508643655578974,
+    "diff_pct": 0.11270038067162412
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 256,
+    "dev_speedup": 1.1931910202098126,
+    "wall_speedup": 1.1902125171972504,
+    "diff_pct": 0.2502496797442583
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 1024,
+    "dev_speedup": 1.0499095574059298,
+    "wall_speedup": 1.050148125994623,
+    "diff_pct": 0.02271761314312162
+   }
+  ],
+  "dev_vs_wall_worst_pct": 5.822607294174997
  },
  "environment": {
   "device": "NVIDIA A100-SXM4-80GB",
@@ -123,5 +231,5 @@
   "kernel_md5_before": "49fab3b643bf5a88eb65303ce377996b",
   "kernel_md5_after": "f1d7a7e3c6656303fa63b6a4c1b8aef5"
  },
- "not_established": "bf16 and head_size 128 only, two head patterns, one board, single-sequence prefill. No model-level TTFT claim. kv_len = q_len at q_len below 1024 is dominated by the per-call cost on both arms and is a control rather than a measurement."
+ "not_established": "bf16 and head_size 128 only, two head patterns, one board, single-sequence prefill. No model-level TTFT claim. The kv_len = q_len column below q_len=1024 is flat and is a control rather than a measurement. The absolute times are not on his scale -- he reports 0.058 ms where the same shape costs 0.2 here -- and nothing in this run explains that difference, so the ratios are what compare, not the milliseconds."
 }

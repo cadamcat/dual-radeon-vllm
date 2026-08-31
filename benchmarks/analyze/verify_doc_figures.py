@@ -3237,6 +3237,34 @@ def main():
        len(XKV["timing"]["overlap_rows"]))
     ck("52684 kv-depth, and the worst disagreement between them", "0.88",
        max(o["diff_pct"] for o in XKV["timing"]["overlap_rows"]), 0.02)
+    # Pass 3 exists because passes 1 and 2 licensed an inference this file then
+    # published: that the ~0.2 ms at small shapes was the Python wrapper, and so
+    # a cost both arms pay. It is not. These are the numbers that withdrew it,
+    # and they are gated so the withdrawal cannot quietly un-withdraw.
+    _kv3 = [json.loads(l) for l in
+            open(os.path.join(HERE, "..", "cuda-a100", "52684-kv-depth",
+                              "kv_depth3.jsonl"))]
+    _host = [r[f"{a}_host_ms"] for r in _kv3 for a in ("production", "bm64")]
+    ck("52684 kv-depth, arm-cells timed both ways", "56", len(_host))
+    ck("52684 kv-depth, the host-side cost is a rounding error", "1",
+       1 if max(abs(h) for h in _host) < 0.1 else 0)
+    ck("52684 kv-depth, its median in ms", "0.006", statistics.median(_host))
+    _dw = sorted(abs(r["dev_speedup"] - r["wall_speedup"]) / r["wall_speedup"] * 100
+                 for r in _kv3)
+    ck("52684 kv-depth, median device-vs-wall disagreement", "0.32",
+       statistics.median(_dw))
+    # not uniform: the host cost is asymmetric between arms at the four smallest
+    # cells and moves the ratio there by up to a fifth, in BOTH directions
+    # depending on the cell. Stated rather than smoothed, because "they agree"
+    # would be the second wrong claim about this constant.
+    ck("52684 kv-depth, and its worst cell", "20.79", _dw[-1], 0.005)
+    ck("52684 kv-depth, cells disagreeing by more than 5%", "3",
+       sum(1 for x in _dw if x > 5.0))
+    # the sign survives being measured at the kernel rather than at the wrapper
+    ck("52684 kv-depth, short-q device ratios favouring BLOCK_M=64", "0",
+       sum(1 for r in _kv3 if r["q_len"] <= 128 and r["dev_speedup"] > 1.0))
+    ck("52684 kv-depth, and the claim that was withdrawn says so", "1",
+       1 if XKV["timing"]["dilution"].startswith("WITHDRAWN") else 0)
 
     # --- a repository that was renamed under our links ----------------------
     # 2026-08-30: `ROCm/ROCm` became `ROCm/legacy-rocm-build`. GitHub redirects
