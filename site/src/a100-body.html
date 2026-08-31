@@ -159,20 +159,29 @@ than the linear one, which is the same fact the wall-clock numbers above state.<
 two Radeons, by context length <span class="prov yes">recomputable from repo</span></div>
 <div class="legend" id="v1"></div> <div class="legend" id="v1k"></div>
 <svg class="chart" id="adv" role="img"></svg> <div class="barunit" id="advnote"></div> </div>
-<figcaption> <b>Figure 3.</b> Eleven matched rungs, two rounds a cell, one session on each machine,
-from <code>benchmarks/campaign-2026-08-29/</code> and
-<code>benchmarks/cuda-a100/campaign-2026-08-29/</code>. The grey mark is parity and the amber one is
-the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s. Solid is the arm with no
-speculation on either side, which is the comparison the article's title used to be about; short dash
-is the same pair of runs with MTP on. The <em>2026-08-26 probe</em> switch adds the four single-run
-points this article was first written against — k=1, one run a cell, and a deepest cell that
-compares the Radeons at 32K against the A100 at 30K because that was the longest leg that side had.
-Its U is the shape of four points, and the ladder behind it does not have one. </figcaption>
+<figcaption> <b>Figure 3.</b> Eleven rungs at matched depths, two rounds a cell. The grey mark is
+parity and the amber one is the ratio of nominal memory bandwidths, 2039 against 2 × 800 GB/s.
+<b>Solid is the comparison the title asks for: both arms stock, no patch on either side</b> —
+<code>C-31B-tp2</code> of 2026-07-25 against the A100 ladder of 2026-08-30, from
+<code>benchmarks/decode.jsonl</code>. Dotted and short dash are the 2026-08-29 pair, the only
+session that ran both speculation arms; its Radeon side carries three patches the A100 side does
+not, so it is drawn for what MTP costs rather than for the size of the gap. The <em>2026-08-26
+probe</em> switch adds the four single-run points this article was first written against — k=1, one
+run a cell, and a deepest cell that compares the Radeons at 32K against the A100 at 30K because that
+was the longest leg that side had. Its U is the shape of four points, and neither ladder behind it
+has one. </figcaption>
 </figure>
 
-<p><strong>The lead is what speculation costs the A100.</strong> The solid line is the arm nobody is
-speculating on, and it is flat: the A100 is ahead by 1.30× to 1.46× at every depth, and that is the
-whole answer to the question this article's title used to ask. Switch MTP on and that lead is gone:
+<p><strong>The gap is flat at about 1.4×.</strong> Stock on both sides, with no patch on either,
+the A100 leads 1.36× at 500 tokens and 1.44× at 32K — narrowest at the shallowest rung, widest at
+the deepest, across a sixty-four-fold range of context. That is the whole answer to the question
+this article's title used to ask, and it is the same comparison the repository README publishes.</p>
+
+<p><strong>The lead is what speculation costs the A100.</strong> Speculation has to be read off the
+2026-08-29 pair, because it is the only session that ran both arms on both machines — and its
+Radeon side runs three patches the A100 side does not, so its <em>level</em> matters less than its
+<em>difference</em>. Without speculation that session puts the A100 ahead 1.30× to 1.46×, close to
+the stock ladder above it. Switch MTP on and the lead is gone:
 0.88× at 500 tokens, level from 2K through 8K, and only 1.08× at 32K. The Radeons do not get faster.
 The A100 gives up more by speculating — and not because it drafts badly. Its acceptance is the
 <em>better</em> of the two, 1.92–2.07 tokens a step against 1.46–1.53. It loses because a
@@ -184,7 +193,7 @@ doing. Both figures are in <code>benchmarks/campaign-2026-08-29/</code> and
 
 <p><strong>The U was four points.</strong> Turn the probe on and it is there — 1.48× at 1K, down to
 1.14× at 16K, back to 1.87× at 32K — and this article was named for it. Eleven matched rungs of the
-same pair of machines, two rounds a cell, produce a flat 1.30× to 1.46× instead. The 16K point that
+same two machines, two rounds a cell, produce a flat 1.36× to 1.44× instead. The 16K point that
 looked like a minimum is one cell of one run, and its deepest neighbour compares two different
 depths. The shape did not survive being measured again; the numbers behind it are still on the page
 because retracting a figure quietly is worse than showing what it said.</p>
@@ -317,6 +326,16 @@ side runs the stack it actually uses; two different operating environments, two 
 VMs whose cross-session variance is unquantified. And there is one A100 and one L4, each measured
 once: nothing here separates a card from its instance.</p>
 
+<h3>The speculative pair is not patch-matched</h3> <p>Figure 3's solid line is stock on both sides
+with no patch on either, which is why it carries the comparison. The 2026-08-29 pair drawn under it
+is not: its Radeon arms run <code>vllm#45916</code>, the window block-skip and
+<code>vllm#45450</code>, and the A100 arms run none of those without speculation and only
+<code>vllm#45450</code> with it. No unpatched session ran both speculation arms, so what MTP costs
+each machine has to be read off that pair or not at all — the difference between its two arms is
+what is claimed, not the level either arm sits at. The speculation itself does match: both serve
+logs record <code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code> against the same
+assistant checkpoint, and <code>verify_doc_figures.py</code> asserts it from the logs.</p>
+
 <h3>Why the second card behaves as it does</h3> <p>That a batch-1 decode step is short enough for a
 fixed all-reduce to eat most of a second card's bandwidth, and that attention parallelises without
 one, is consistent with every measurement on this page and is not demonstrated by any of them. No
@@ -341,6 +360,16 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
   round measured one 7900 XT, one A100 and one L4 on the same ladder for both decode and prefill,
   which splits the original question into three. The article now asks them in order; Figure 3 is the
   old one, redrawn on the ladder, with the probe behind a switch.
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-31 · the headline was measured on a pair that was not patch-matched</span>
+  Until today the flat ladder on this page was the 2026-08-29 pair, quoted as 1.30× to 1.46×. Its
+  Radeon side runs three patches its A100 side does not, which flatters the pair on precisely the
+  number the title asks about, and the page did not say so. The headline is now the stock ladder —
+  eleven rungs, both arms stock, no patch on either side, <strong>1.36× to 1.44×</strong> — which is
+  the comparison <code>README.md</code> publishes. The 2026-08-29 pair stays, because it is the only
+  session that ran both speculation arms, and now says what it carries.
 </div>
 
 <div class="note warn">
@@ -403,11 +432,13 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
  "campBaseA": "2026-08-26 · A100, MTP k=1",
  "campNospec": "2026-08-29 · no speculation",
  "campMtp": "2026-08-29 · MTP k=3",
+ "stockAdv": "stock · neither side patched",
+ "stockNote": "solid: both arms stock, <b>no patches on either side</b> — the A100 leads {lo}× to {hi}×, narrowest at the shallowest rung and widest at the deepest. The 2026-08-29 pair below it is the only session that ran both speculation arms, and its Radeon side carries three patches the A100 side does not, so it is drawn for what MTP costs and not as the size of the gap",
  "campRNospec": "2026-08-29 · Radeons, no speculation",
  "campRMtp": "2026-08-29 · Radeons, MTP k=3",
  "campANospec": "2026-08-29 · A100, no speculation",
  "campAMtp": "2026-08-29 · A100, MTP k=3",
- "campNote": "eleven matched rungs, two rounds a cell, k=3, one session a machine. Without speculation the A100 leads {lo}× to {hi}× at every depth — flat, and nothing like a U. With MTP on it starts <em>behind</em>, {at500}× at 500 tokens, and reaches only {mtp32}× at 32K: the lead is what speculation costs it",
+ "campNote": "dotted and short dash, 2026-08-29: eleven matched rungs, two rounds a cell, k=3, one session a machine — and three patches on the Radeon side that the A100 side does not carry. Without speculation it puts the A100 ahead {lo}× to {hi}×, close to the stock ladder; with MTP on it starts <em>behind</em>, {at500}× at 500 tokens, and reaches only {mtp32}× at 32K. The difference between its two arms is what speculation costs, and is the reason it is drawn",
  "probeNote": "long dash: the 2026-08-26 probe this article was first written against — four cells, one run each, k=1, and its deepest cell is the Radeons at 32K against the A100 at 30K. Its U is the shape of four points, two of which are one measurement apiece",
  "radeons": "2× RX 7900 XT",
  "a100": "one A100 80G",
@@ -416,9 +447,10 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
  "f1yAdv": "A100 ÷ Radeons",
  "f1yRate": "decode tok/s",
   "f1unit": "A100 tok/s ÷ Radeons tok/s at the same depth · two rounds a cell on the ladder, one on the probe",
- "f1rateUnit": "decode tok/s at batch 1 · solid is the arm with no speculation, short dash the same run with MTP on, long dash the 2026-08-26 probe",
+ "f1rateUnit": "decode tok/s at batch 1, the 2026-08-29 session · solid is the arm with no speculation, short dash the same run with MTP on, long dash the 2026-08-26 probe. Its Radeon side carries three patches the A100 side does not; the stock ladder is in the ratio view",
  "f1par": "parity", "f1nom": "nominal bandwidth ratio",
- "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · the measured advantage is under it at {d}",
+ "f1nomNote": "{n}× is {a} GB/s against 2 × 800 · both ladders stay above it at every rung",
+ "probeBelow": "the probe is the only line that goes under it, at {d}",
  "f1unmatched": "against the A100 at {n}K, its longest leg",
  "retUnit": "per cent of the same platform's own 1K rate, 2D path, speculation on",
  "retNote": "the same kernel and the same collapse, {r}× harder on two cards",
@@ -647,6 +679,14 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
        one where nobody is speculating. */
     var probeOn = false;                         /* the 2026-08-26 probe */
     var R = F.fig1.rows, K = F.fig1.campaign, C = K.rows;
+    var SK = F.fig1.stock, SR = SK.rows;          /* stock, neither side patched */
+    function stockAdv(i) {
+      var r = SR[i];
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+        r.advantage.toFixed(3) + "×</b><br><span class=\"sub\">" +
+        S.radeons + " " + r.radeons.toFixed(2) + " · " + S.a100 + " " +
+        r.a100.toFixed(2) + "<br>" + S.stockAdv + "</span>";
+    }
     function xAxis() {
       // the two ladders do not share rungs, so the axis has to be the real
       // number line rather than four evenly spaced categories
@@ -744,8 +784,16 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
           // for. Solid is the arm nobody is speculating on, which is the one
           // the probe never measured and the one that answers the question the
           // article's title asks.
+          // Solid is the stock ladder with no patch on either side, which is
+          // the size of the gap. The 2026-08-29 pair is drawn under it because
+          // it is the only session carrying both speculation arms -- and its
+          // Radeon side runs three patches the A100 side does not, so it
+          // answers "what does MTP cost" and not "how big is the gap".
           series: [
-            { colour: "var(--s3)", label: S.campNospec, tip: campAdv("nospec"),
+            { colour: "var(--s3)", label: S.stockAdv, tip: stockAdv,
+              points: SR.map(function (r) { return [r.ctx, r.advantage]; }) },
+            { colour: "var(--s1)", dash: true, dashPattern: "1 3",
+              label: S.campNospec, tip: campAdv("nospec"),
               points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
             { colour: "var(--s4)", dash: true, dashPattern: "2 4", label: S.campMtp,
               tip: campAdv("mtp"),
@@ -755,11 +803,18 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
                 tip: tipFor,
                 points: R.map(function (r) { return [r.ctx, r.advantage]; }) }] : [])
         });
+        // below_nominal used to be read off the probe, which is off by
+        // default: the note claimed the advantage dipped under the amber rule
+        // at 8K and 16K while no line on screen did. Both drawn ladders clear
+        // it at every rung, and the probe's dip is said when the probe is on.
         note.innerHTML = fmt(S.f1nomNote, {
-          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
-          d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
-          "<br>" + S.f1unit + "<br>" + campNote() +
-          (probeOn ? "<br>" + S.probeNote : "");
+          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s }) +
+          "<br>" + S.f1unit + "<br>" +
+          fmt(S.stockNote, { lo: SK.min.toFixed(2), hi: SK.max.toFixed(2) }) +
+          "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote + " · " +
+           fmt(S.probeBelow, { d: F.fig1.below_nominal.map(kctx).join(S.andJoin) })
+           : "");
       }
     }
     /* Two of these three controls are exclusive views of the same data and the

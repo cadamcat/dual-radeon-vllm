@@ -2591,6 +2591,72 @@ def main():
        1 if AART["fig1"]["u_shaped"] else 0)
     ck("a100 article, fig1 its minimum", "1.14", AART["fig1"]["min_advantage"])
 
+    # --- the stock ladder, which is what the article's title actually asks ----
+    # The 2026-08-29 pair below it is the only session with both speculation
+    # arms, and its Radeon side carries three patches the A100 side does not.
+    # That flatters the pair on exactly the number the title is about, so the
+    # headline is this instead: both arms stock, no patch on either side. Same
+    # comparison the repository README publishes, recomputed here from the
+    # projection rather than from the figure block it is checking.
+    ASK = AART["fig1"]["stock"]
+    _sp = {r["ctx"]: r for r in _XD if r["cfg"] == "C-31B-tp2"
+           and r["date"] == "2026-07-25" and r["spec"] is None}
+    _sa = {r["ctx"]: r for r in _XD if r["cfg"] == "G31"
+           and r["date"] == "2026-08-30" and r["spec"] is None}
+    ck("a100 article, stock ladder rungs", "11", len(ASK["rows"]))
+    ck("a100 article, stock ladder recomputes from decode.jsonl", "11",
+       sum(1 for r in ASK["rows"]
+           if abs(r["radeons"] - _sp[r["ctx"]]["decode_tok_s"]) < 1e-9
+           and abs(r["a100"] - _sa[r["ctx"]]["decode_tok_s"]) < 1e-9
+           and abs(r["advantage"] - r["a100"] / r["radeons"]) < 1e-9))
+    ck("a100 article, and neither of its arms carries a patch", "0",
+       sum(len(_sp[c]["patches"]) + len(_sa[c]["patches"]) for c in _sp if c in _sa))
+    ck("a100 article, every cell of it chart-grade", "22",
+       sum(1 for c in _sp if c in _sa
+           for r in (_sp[c], _sa[c]) if r["chart_grade"]))
+    ck("a100 article, stock gap at its narrowest", "1.36", ASK["min"])
+    ck("a100 article, and at its widest", "1.44", ASK["max"])
+    ck("a100 article, the narrowest is the shallowest rung", "500", ASK["min_at"])
+    ck("a100 article, and the widest the deepest", "32000", ASK["max_at"])
+    ck("a100 article, so the stock ladder has no interior minimum", "0",
+       1 if ASK["u_shaped"] else 0)
+    ck("a100 article, and the A100 leads at every rung of it", "1",
+       1 if ASK["always_ahead"] else 0)
+
+    # the asymmetry the page went a month without disclosing
+    _pm = AART["fig1"]["campaign"]["patch_mismatch"]
+    ck("a100 article, patches on the 2026-08-29 pair, no speculation", "3",
+       _pm["nospec"][0])
+    ck("a100 article, and on the A100 beside it", "0", _pm["nospec"][1])
+    ck("a100 article, patches on the speculative pair", "3", _pm["mtp"][0])
+    ck("a100 article, and on the speculative A100", "1", _pm["mtp"][1])
+    # but the speculation itself is like for like, asserted from the serve logs
+    ck("a100 article, both sides speculated the same way", "1",
+       1 if AART["fig1"]["campaign"]["speculation"]["same"] else 0)
+    ck("a100 article, and it was mtp at k=3", "3",
+       AART["fig1"]["campaign"]["speculation"]["a100"]["k"])
+
+    # The numbers are pulled OUT OF THE SENTENCE that makes the claim, not
+    # merely looked for somewhere on the page: 1.36× also appears in the figure
+    # note and the changelog entry, so a presence check passes while the claim
+    # itself says something else. Editing the sentence alone passed, once.
+    for _lang, _fn, _re, _pw in (
+            ("EN", "a100-vs-two-radeons.html",
+             r"the A100 leads ([\d.]+)× at 500 tokens and ([\d.]+)× at 32K",
+             "three patches the A100 side does not"),
+            ("ZH", "a100-vs-two-radeons.zh.html",
+             r"A100 在 500 档领先\s*([\d.]+)×，到 32K 是 ([\d.]+)×",
+             "三个 A100 一侧没有的补丁")):
+        _m = re.search(_re, flat[_fn])
+        ck("a100 article %s, states the stock gap in words" % _lang, "1",
+           1 if _m else 0)
+        ck("a100 article %s, quotes the stock gap floor" % _lang,
+           _m.group(1) if _m else "0", ASK["min"])
+        ck("a100 article %s, and its ceiling" % _lang,
+           _m.group(2) if _m else "0", ASK["max"])
+        ck("a100 article %s, and discloses the patch asymmetry" % _lang, "1",
+           1 if fl(_pw) in flat[_fn] else 0)
+
     # --- the 2026-08-29 ladder drawn beside it, and the prose that reads it ---
     # Off by default in the page, so nothing here is about the default view; it
     # is about the second measurement being what the paragraph says it is.

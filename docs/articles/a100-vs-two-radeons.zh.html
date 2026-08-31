@@ -994,7 +994,7 @@ addEventListener("DOMContentLoaded", function () {
     <span class="chip k-hardware" title="硬件" style="--i:1">一张 <b>A100-SXM4-80GB</b> · TP=1</span>
     <span class="chip k-hardware" title="硬件" style="--i:2">一张 <b>L4</b> · TP=1</span>
     <span class="chip k-model" title="模型" style="--i:3"><b>gemma-4-12B</b>、<b>gemma-4-26B-A4B</b> 与 <b>gemma-4-31B</b></span>
-    <span class="chip k-date" title="日期" style="--i:4">实测 <b>2026-08-26</b> 与 <b>2026-08-30</b></span>
+    <span class="chip k-date" title="日期" style="--i:4">实测 <b>2026-07-25</b> 与 <b>2026-08-30</b></span>
   </div>
 </header>
 
@@ -1135,19 +1135,28 @@ attention 随提示长度恶化得多快。一个 prefill tok/s 数字是这两�
     <div class="barunit" id="advnote"></div>
   </div>
   <figcaption>
-    <b>图 3.</b> 十一个对齐档位、每格两轮、每台机器一场会话，来自
-    <code>benchmarks/campaign-2026-08-29/</code> 与
-    <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>。
+    <b>图 3.</b> 十一个深度对齐的档位，每格两轮。
     灰色标记是持平，琥珀色那个是标称显存带宽之比，2039 对 2 × 800 GB/s。
-    实线是两边都不投机的那一臂 —— 这篇文章原来的标题问的就是它；短虚线是同一对运行开了 MTP。
+    <b>实线才是标题问的那个比较：两臂都是原版，两侧都不带补丁</b> ——
+    2026-07-25 的 <code>C-31B-tp2</code> 对 2026-08-30 的 A100 阶梯，取自
+    <code>benchmarks/decode.jsonl</code>。
+    点线与短虚线是 2026-08-29 那一对，它是唯一同时跑了两条投机臂的会话；
+    它的 Radeon 一侧带着三个 A100 一侧没有的补丁，所以它画在这里是为了说明 MTP 的代价，
+    而不是为了给出差距的大小。
     「2026-08-26 的探针」那个开关会加上这篇文章最初依据的四个单次点 —— k=1、每格一轮，
     最深那格是 Radeon 的 32K 对 A100 的 30K，因为那是那一侧当时能跑到的最长一档。
-    它的 U 形是四个点的形状，而它背后这套阶梯并没有 U。
+    它的 U 形是四个点的形状，而它背后的两套阶梯都没有 U。
   </figcaption>
 </figure>
 
-<p><strong>那个领先，正是投机在 A100 身上的代价。</strong>实线是两边都不投机的那一臂，而它是平的：
-A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那个标题所问问题的全部答案。开了 MTP，这个领先就没了 ——
+<p><strong>差距是平的，大约 1.4×。</strong>两边都是原版、两侧都不带补丁时，A100 在 500 档领先
+1.36×，到 32K 是 1.44× —— 最窄在最浅的一档，最宽在最深的一档，跨越六十四倍的上下文范围。
+这就是这篇文章原来那个标题所问问题的全部答案，也是仓库 README 发布的同一个比较。</p>
+
+<p><strong>那个领先，正是投机在 A100 身上的代价。</strong>投机只能从 2026-08-29 那一对上读，
+因为只有那一场会话在两台机器上都跑了两条臂 —— 而它的 Radeon 一侧带着三个 A100 一侧没有的补丁，
+所以它的<em>绝对水平</em>不如它的<em>差值</em>可信。不投机时那场会话给出的是 A100 领先 1.30× 到
+1.46×，与上面那条原版阶梯接近。开了 MTP，这个领先就没了 ——
 500 档 0.88×，2K 到 8K 持平，到 32K 也只有 1.08×。Radeon 并没有变快，是 A100 在投机上付出得更多。
 而且不是因为它草稿猜得差：它的接受长度是两者中<em>更好</em>的那个，每步 1.92–2.07 对 1.46–1.53。
 它亏在成本上 —— 一个投机步在它身上要花掉 2.40–2.57 个普通解码步，而同样一步在 Radeon 上只要
@@ -1158,7 +1167,7 @@ A100 在每个深度都领先 1.30× 到 1.46×，这就是这篇文章原来那
 
 <p><strong>那个 U 是四个点。</strong>把探针打开，它确实在那儿 —— 1K 上 1.48×，到 16K 降到
 1.14×，再回到 32K 的 1.87× —— 这篇文章就是为它取的名。而同一对机器、十一个对齐档位、每格两轮，
-给出的是平的 1.30× 到 1.46×。那个看起来像谷底的 16K 点是一次运行的一个格子，
+给出的是平的 1.36× 到 1.44×。那个看起来像谷底的 16K 点是一次运行的一个格子，
 而它最深的邻居比的是两个不同的深度。这个形状没有在重测里活下来；它背后的数字仍留在页面上，
 因为悄悄撤掉一张图比把它说过的话摆出来更糟。</p>
 
@@ -1281,6 +1290,16 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
 不同的运行环境，其中两个是租来的 Colab VM，会话之间的方差没有量化。
 而且 A100 和 L4 各只有一张、各只测过一次：这里没有任何东西能把一款卡和这一张卡分开。</p>
 
+<h3>投机那一对没有做到补丁对齐</h3>
+<p>图 3 的实线两侧都是原版、都不带补丁，所以由它承担这个比较。画在它下面的 2026-08-29 那一对
+不是：它的 Radeon 臂跑着 <code>vllm#45916</code>、window block-skip 和
+<code>vllm#45450</code>，而 A100 臂在不投机时一个都没有、投机时也只有
+<code>vllm#45450</code>。没有任何一场不带补丁的会话同时跑过两条投机臂，
+所以「投机对每台机器要价多少」要么从那一对上读，要么读不到 —— 被主张的是它两条臂之间的<em>差值</em>，
+不是任一条臂所处的<em>水平</em>。投机本身倒是对齐的：两份 serve 日志都记录了
+<code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code>，指向同一个 assistant checkpoint，
+这一点由 <code>verify_doc_figures.py</code> 从日志里断言。</p>
+
 <h3>第二张卡为什么是这个表现</h3>
 <p>「batch 1 下一步解码短到让一次固定的 all-reduce 吃掉第二张卡大半带宽，而 attention
 的并行不需要它」——这个说法和这一页上每一个测量都一致，但没有任何一个测量证明它。
@@ -1304,6 +1323,15 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
   在那四个点做出 U 的地方是平的。2026-08-30 的单卡一轮在同一套阶梯上测了一张 7900 XT、
   一张 A100 和一张 L4 的解码与 prefill，把原来那个问题拆成了三个。
   文章现在按顺序问这三个；图 3 就是原来那张，改画在阶梯上，探针收进了一个开关。
+</div>
+
+<div class="note warn">
+  <span class="lbl">2026-08-31 · 头条数字所依据的那一对并没有做到补丁对齐</span>
+  在今天之前，这一页上那条平坦阶梯用的是 2026-08-29 那一对，引用为 1.30× 到 1.46×。
+  它的 Radeon 一侧跑着三个 A100 一侧没有的补丁 —— 恰好抬高的就是标题所问的那个数字 ——
+  而这一页当时没有说明这件事。现在的头条换成了原版阶梯：十一个档位、两臂都是原版、两侧都不带补丁、
+  <strong>1.36× 到 1.44×</strong>，也就是 <code>README.md</code> 发布的那个比较。
+  2026-08-29 那一对保留下来，因为它是唯一同时跑了两条投机臂的会话，并且现在会说明自己带了什么。
 </div>
 
 <div class="note warn">
@@ -1677,7 +1705,157 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
     1000,
     2000,
     8000
-   ]
+   ],
+   "below_nominal_nospec": [],
+   "patches": {
+    "radeons_nospec": [
+     "vllm#45916 split-KV",
+     "window block-skip",
+     "vllm#45450 3D admission"
+    ],
+    "radeons_mtp": [
+     "vllm#45916 split-KV",
+     "window block-skip",
+     "vllm#45450 3D admission"
+    ],
+    "a100_nospec": [],
+    "a100_mtp": [
+     "vllm#45450 3D admission"
+    ]
+   },
+   "patch_mismatch": {
+    "nospec": [
+     3,
+     0
+    ],
+    "mtp": [
+     3,
+     1
+    ]
+   },
+   "speculation": {
+    "radeons": {
+     "method": "mtp",
+     "k": 3
+    },
+    "a100": {
+     "method": "mtp",
+     "k": 3
+    },
+    "same": true
+   }
+  },
+  "stock": {
+   "rows": [
+    {
+     "ctx": 500,
+     "radeons": 43.155,
+     "a100": 58.511300000000006,
+     "advantage": 1.3558405746726916,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 1000,
+     "radeons": 41.99,
+     "a100": 57.890249999999995,
+     "advantage": 1.37866753989045,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 2000,
+     "radeons": 41.04,
+     "a100": 57.1533,
+     "advantage": 1.3926242690058481,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 4000,
+     "radeons": 39.765,
+     "a100": 55.1572,
+     "advantage": 1.3870790896517038,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 6000,
+     "radeons": 38.269999999999996,
+     "a100": 53.0373,
+     "advantage": 1.3858714397700551,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 8000,
+     "radeons": 36.864999999999995,
+     "a100": 51.631699999999995,
+     "advantage": 1.400561508205615,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 12000,
+     "radeons": 35.26,
+     "a100": 49.790549999999996,
+     "advantage": 1.4120972773681224,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 16000,
+     "radeons": 33.629999999999995,
+     "a100": 47.498599999999996,
+     "advantage": 1.412387749033601,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 20000,
+     "radeons": 32.025000000000006,
+     "a100": 45.102000000000004,
+     "advantage": 1.4083372365339577,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 24000,
+     "radeons": 30.979999999999997,
+     "a100": 43.8324,
+     "advantage": 1.4148612007746935,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    },
+    {
+     "ctx": 32000,
+     "radeons": 29.54,
+     "a100": 42.408,
+     "advantage": 1.435612728503724,
+     "radeons_runs": 2,
+     "a100_runs": 2
+    }
+   ],
+   "pair": {
+    "cfg": "C-31B-tp2",
+    "date": "2026-07-25",
+    "vllm": "0.23",
+    "patches": []
+   },
+   "a100": {
+    "cfg": "G31",
+    "date": "2026-08-30",
+    "vllm": "0.28.0",
+    "patches": []
+   },
+   "min": 1.3558405746726916,
+   "max": 1.435612728503724,
+   "min_at": 500,
+   "max_at": 32000,
+   "u_shaped": false,
+   "always_ahead": true,
+   "source": "benchmarks/decode.jsonl",
+   "below_nominal": []
   },
   "economics": {
    "rungs": [
@@ -3173,11 +3351,13 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
  "campBaseA": "2026-08-26 · A100，MTP k=1",
  "campNospec": "2026-08-29 · 不带投机",
  "campMtp": "2026-08-29 · MTP k=3",
+ "stockAdv": "原版 · 两侧都不带补丁",
+ "stockNote": "实线：两臂都是原版，<b>两侧都不带补丁</b> —— A100 领先 {lo}× 到 {hi}×，最窄在最浅的一档，最宽在最深的一档。它下面那条 2026-08-29 是唯一同时跑了两条投机臂的会话，其 Radeon 一侧带着三个 A100 一侧没有的补丁，因此它画的是 MTP 的代价，而不是差距的大小",
  "campRNospec": "2026-08-29 · Radeon，不带投机",
  "campRMtp": "2026-08-29 · Radeon，MTP k=3",
  "campANospec": "2026-08-29 · A100，不带投机",
  "campAMtp": "2026-08-29 · A100，MTP k=3",
- "campNote": "十一个对齐档位、每格两轮、k=3，每台机器一场会话。不带投机时 A100 在每个深度都领先 {lo}× 到 {hi}× —— 平的，完全不是 U 形。开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×：那个领先正是投机在它身上的代价",
+ "campNote": "点线与短虚线，2026-08-29：十一个对齐档位、每格两轮、k=3，每台机器一场会话 —— 而且 Radeon 一侧带着三个 A100 一侧没有的补丁。不带投机时它给出 A100 领先 {lo}× 到 {hi}×，与原版阶梯接近；开了 MTP 之后它<em>反而落后</em>，500 档只有 {at500}×，到 32K 也只回到 {mtp32}×。它两条臂之间的差值才是投机的代价，也是它被画在这里的理由",
  "probeNote": "长虚线：这篇文章最初依据的 2026-08-26 探针 —— 四个格子、每格一轮、k=1，最深那格是两张卡的 32K 对 A100 的 30K。它的 U 形是四个点的形状，其中两个点各只有一次测量",
  "radeons": "2× RX 7900 XT",
  "a100": "一张 A100 80G",
@@ -3186,9 +3366,10 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
  "f1yAdv": "A100 ÷ Radeon",
  "f1yRate": "解码 tok/s",
   "f1unit": "同深度下 A100 tok/s ÷ Radeon tok/s · 阶梯每格两轮，探针每格一轮",
- "f1rateUnit": "batch 1 的解码 tok/s · 实线是不带投机的那一臂，短虚线是同一次运行开了 MTP，长虚线是 2026-08-26 的探针",
+ "f1rateUnit": "batch 1 的解码 tok/s，2026-08-29 那场会话 · 实线是不带投机的那一臂，短虚线是同一次运行开了 MTP，长虚线是 2026-08-26 的探针。它的 Radeon 一侧带着三个 A100 一侧没有的补丁；不带补丁的原版阶梯在比值视图里",
  "f1par": "持平", "f1nom": "标称带宽之比",
- "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 实测领先在 {d} 上低于它",
+ "f1nomNote": "{n}× 是 {a} GB/s 对 2 × 800 · 两套阶梯在每一档都在它之上",
+ "probeBelow": "只有探针那条线会低于它，在 {d}",
  "f1unmatched": "对 A100 的 {n}K，那是它最长的一条腿",
  "retUnit": "占同平台自己 1K 速率的百分比，2D 路径，开着投机",
  "retNote": "同一个 kernel、同一次塌陷，在两张卡上厉害 {r} 倍",
@@ -3417,6 +3598,14 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
        one where nobody is speculating. */
     var probeOn = false;                         /* the 2026-08-26 probe */
     var R = F.fig1.rows, K = F.fig1.campaign, C = K.rows;
+    var SK = F.fig1.stock, SR = SK.rows;          /* stock, neither side patched */
+    function stockAdv(i) {
+      var r = SR[i];
+      return '<span class="hd">' + kctx(r.ctx) + "</span><br><b>" +
+        r.advantage.toFixed(3) + "×</b><br><span class=\"sub\">" +
+        S.radeons + " " + r.radeons.toFixed(2) + " · " + S.a100 + " " +
+        r.a100.toFixed(2) + "<br>" + S.stockAdv + "</span>";
+    }
     function xAxis() {
       // the two ladders do not share rungs, so the axis has to be the real
       // number line rather than four evenly spaced categories
@@ -3514,8 +3703,16 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
           // for. Solid is the arm nobody is speculating on, which is the one
           // the probe never measured and the one that answers the question the
           // article's title asks.
+          // Solid is the stock ladder with no patch on either side, which is
+          // the size of the gap. The 2026-08-29 pair is drawn under it because
+          // it is the only session carrying both speculation arms -- and its
+          // Radeon side runs three patches the A100 side does not, so it
+          // answers "what does MTP cost" and not "how big is the gap".
           series: [
-            { colour: "var(--s3)", label: S.campNospec, tip: campAdv("nospec"),
+            { colour: "var(--s3)", label: S.stockAdv, tip: stockAdv,
+              points: SR.map(function (r) { return [r.ctx, r.advantage]; }) },
+            { colour: "var(--s1)", dash: true, dashPattern: "1 3",
+              label: S.campNospec, tip: campAdv("nospec"),
               points: C.map(function (r) { return [r.ctx, r.advantage_nospec]; }) },
             { colour: "var(--s4)", dash: true, dashPattern: "2 4", label: S.campMtp,
               tip: campAdv("mtp"),
@@ -3525,11 +3722,18 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
                 tip: tipFor,
                 points: R.map(function (r) { return [r.ctx, r.advantage]; }) }] : [])
         });
+        // below_nominal used to be read off the probe, which is off by
+        // default: the note claimed the advantage dipped under the amber rule
+        // at 8K and 16K while no line on screen did. Both drawn ladders clear
+        // it at every rung, and the probe's dip is said when the probe is on.
         note.innerHTML = fmt(S.f1nomNote, {
-          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s,
-          d: F.fig1.below_nominal.map(kctx).join(S.andJoin) }) +
-          "<br>" + S.f1unit + "<br>" + campNote() +
-          (probeOn ? "<br>" + S.probeNote : "");
+          n: F.fig1.nominal_ratio.toFixed(2), a: F.fig1.nominal.a100_gb_s }) +
+          "<br>" + S.f1unit + "<br>" +
+          fmt(S.stockNote, { lo: SK.min.toFixed(2), hi: SK.max.toFixed(2) }) +
+          "<br>" + campNote() +
+          (probeOn ? "<br>" + S.probeNote + " · " +
+           fmt(S.probeBelow, { d: F.fig1.below_nominal.map(kctx).join(S.andJoin) })
+           : "");
       }
     }
     /* Two of these three controls are exclusive views of the same data and the

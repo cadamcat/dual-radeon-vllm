@@ -102,6 +102,86 @@ _c["mtp_at_32k"] = _c["rows"][-1]["advantage_mtp"]
 _c["nospec_always_ahead"] = all(r["advantage_nospec"] > 1.0 for r in _c["rows"])
 _c["mtp_behind_at"] = [r["ctx"] for r in _c["rows"] if r["advantage_mtp"] < 1.0]
 
+# ---- fig1: the stock ladder, neither side carrying a patch ----------------
+# The 2026-08-29 pair above is the only session with both arms, so it has to
+# carry the speculation comparison -- but its Radeon arm runs three patches the
+# A100 arm does not, which flatters the pair on the one number the article's
+# title is about. This ladder is the headline instead: both arms stock, no
+# patches on either side, eleven rungs, every cell chart-grade. It is the same
+# comparison the repository README publishes, read from the same projection.
+DEC = [json.loads(l) for l in open(R / "benchmarks" / "decode.jsonl")]
+
+def stock_arm(cfg, date):
+    rows = [r for r in DEC if r["cfg"] == cfg and r["date"] == date
+            and r["spec"] is None]
+    assert rows, (cfg, date)
+    assert all(not r["patches"] for r in rows), (cfg, date, "expected no patches")
+    assert all(r["chart_grade"] for r in rows), (cfg, date, "expected chart-grade")
+    return {r["ctx"]: r for r in rows}
+
+SP_PAIR = ("C-31B-tp2", "2026-07-25")
+SP_A100 = ("G31", "2026-08-30")
+_sp, _sa = stock_arm(*SP_PAIR), stock_arm(*SP_A100)
+_srungs = sorted(set(_sp) & set(_sa))
+assert len(_srungs) == 11, _srungs
+_srows = [{"ctx": t, "radeons": _sp[t]["decode_tok_s"], "a100": _sa[t]["decode_tok_s"],
+           "advantage": _sa[t]["decode_tok_s"] / _sp[t]["decode_tok_s"],
+           "radeons_runs": _sp[t]["runs"], "a100_runs": _sa[t]["runs"]}
+          for t in _srungs]
+_sadv = [r["advantage"] for r in _srows]
+fig1["stock"] = {
+    "rows": _srows,
+    "pair": {"cfg": SP_PAIR[0], "date": SP_PAIR[1], "vllm": _sp[_srungs[0]]["vllm"],
+             "patches": []},
+    "a100": {"cfg": SP_A100[0], "date": SP_A100[1], "vllm": _sa[_srungs[0]]["vllm"],
+             "patches": []},
+    "min": min(_sadv), "max": max(_sadv),
+    "min_at": _srows[_sadv.index(min(_sadv))]["ctx"],
+    "max_at": _srows[_sadv.index(max(_sadv))]["ctx"],
+    # the retracted claim: an interior minimum. This ladder's is at an end.
+    "u_shaped": _sadv[0] > min(_sadv) < _sadv[-1],
+    "always_ahead": all(a > 1.0 for a in _sadv),
+    "source": "benchmarks/decode.jsonl",
+}
+# the amber rule is the nominal bandwidth ratio; the note under the figure used
+# to report which rungs sat under it from the probe's four points, which are off
+# by default. These are the ladders actually drawn.
+fig1["stock"]["below_nominal"] = [r["ctx"] for r in _srows
+                                  if r["advantage"] < fig1["nominal_ratio"]]
+fig1["campaign"]["below_nominal_nospec"] = [
+    r["ctx"] for r in fig1["campaign"]["rows"]
+    if r["advantage_nospec"] < fig1["nominal_ratio"]]
+
+# what each arm of the 2026-08-29 pair actually carried, so the page can say it
+def _patches(cfg):
+    return next(r["patches"] for r in DEC if r["cfg"] == cfg and r["date"] == "2026-08-29")
+
+fig1["campaign"]["patches"] = {
+    "radeons_nospec": _patches("G31-tp2"),
+    "radeons_mtp": _patches("G31-mtp-p45450-tp2"),
+    "a100_nospec": _patches("A100-G31"),
+    "a100_mtp": _patches("A100-G31-mtp-p45450"),
+}
+_pp = fig1["campaign"]["patches"]
+fig1["campaign"]["patch_mismatch"] = {
+    "nospec": [len(_pp["radeons_nospec"]), len(_pp["a100_nospec"])],
+    "mtp": [len(_pp["radeons_mtp"]), len(_pp["a100_mtp"])],
+}
+# both sides ran the same speculation: method='mtp', the same assistant
+# checkpoint, num_spec_tokens=3, asserted from the two serve logs
+_SPEC_RE = re.compile(r"SpeculativeConfig\(method='(\w+)'.*?num_spec_tokens=(\d+)")
+def _spec_of(path):
+    m = _SPEC_RE.search(open(path).read())
+    return {"method": m.group(1), "k": int(m.group(2))} if m else None
+fig1["campaign"]["speculation"] = {
+    "radeons": _spec_of(R / "benchmarks/campaign-2026-08-29/logs/G31-mtp-p45450-tp2.log"),
+    "a100": _spec_of(R / "benchmarks/cuda-a100/campaign-2026-08-29/logs/"
+                     "serve-A100-G31-mtp-p45450.log"),
+}
+fig1["campaign"]["speculation"]["same"] = (
+    fig1["campaign"]["speculation"]["radeons"]
+    == fig1["campaign"]["speculation"]["a100"])
+
 # ---- what the prose beside fig1 claims, computed rather than typed ---------
 # Acceptance comes from vLLM's own `SpecDecoding metrics` lines, aligned to each
 # rung's measurement window by the timestamps both sides carry. Step cost is
