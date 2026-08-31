@@ -16,7 +16,7 @@ rounded number means, and it is a tighter test than a percentage for the large
 figures and a looser one for the small. Pass an explicit tol= to override.
 """
 import glob
-import hashlib, json, os, re, sys
+import hashlib, json, os, re, statistics, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
@@ -3194,6 +3194,49 @@ def main():
     ck("measure article, fig6 and most of them vary too", "12",
        N6["within_process_varying"])
     ck("measure article, fig6 the worst cell", "8", N6["worst_distinct_of_8"])
+
+    # --- the KV-depth run for vllm#52684, 2026-08-31 ------------------------
+    # The claim is a sign, not a magnitude, so the sign is what is gated: every
+    # short-q cell at a fixed KV depth is below 1, and the crossover the author
+    # sees on gfx1100 does not appear on this card. Each median is recomputed
+    # from the rows rather than read off the summary.
+    XKV = json.load(open(os.path.join(HERE, "..", "cuda-a100", "52684-kv-depth",
+                                      "kv-depth-summary.json")))
+    _kvp = {}
+    for _f, _tag in (("kv_depth.jsonl", 1), ("kv_depth2.jsonl", 2)):
+        for _l in open(os.path.join(HERE, "..", "cuda-a100", "52684-kv-depth", _f)):
+            _r = json.loads(_l)
+            if "bm64_speedup" in _r:
+                _kvp.setdefault((_tag, _r["kv_mode"], _r["q_len"]), []).append(
+                    _r["bm64_speedup"])
+    ck("52684 kv-depth, pass 1 rows", "48",
+       sum(1 for _l in open(os.path.join(HERE, "..", "cuda-a100", "52684-kv-depth",
+                                         "kv_depth.jsonl"))))
+    ck("52684 kv-depth, pass 2 rows", "28",
+       sum(1 for _l in open(os.path.join(HERE, "..", "cuda-a100", "52684-kv-depth",
+                                         "kv_depth2.jsonl"))))
+    for _g in XKV["grid_median_over_head_patterns"]:
+        for _mode in ("eq", "4096", "16384"):
+            _k = "kv_" + _mode
+            if _k not in _g:
+                continue
+            _v = _kvp[(_g[_k + "_pass"], _mode, _g["q_len"])]
+            ck("52684 kv-depth, kv=%s q=%d recomputes" % (_mode, _g["q_len"]),
+               "%.3f" % _g[_k], statistics.median(_v))
+    # the finding: at a fixed KV depth every short-q cell has BLOCK_M=64 slower
+    _short = [g for g in XKV["grid_median_over_head_patterns"] if g["q_len"] <= 128]
+    ck("52684 kv-depth, short-q cells at a fixed depth", "10",
+       sum(1 for g in _short for m in ("4096", "16384") if "kv_" + m in g))
+    ck("52684 kv-depth, and how many of them favour BLOCK_M=64", "0",
+       sum(1 for g in _short for m in ("4096", "16384")
+           if g.get("kv_" + m, 0) > 1.0))
+    ck("52684 kv-depth, the worst of them", "0.537",
+       min(g["kv_" + m] for g in _short for m in ("4096", "16384") if "kv_" + m in g))
+    # and the cross-check that lets pass 2's short rows be believed at all
+    ck("52684 kv-depth, cells both passes measured", "4",
+       len(XKV["timing"]["overlap_rows"]))
+    ck("52684 kv-depth, and the worst disagreement between them", "0.88",
+       max(o["diff_pct"] for o in XKV["timing"]["overlap_rows"]), 0.02)
 
     # --- a repository that was renamed under our links ----------------------
     # 2026-08-30: `ROCm/ROCm` became `ROCm/legacy-rocm-build`. GitHub redirects

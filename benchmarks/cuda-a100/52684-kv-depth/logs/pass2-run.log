@@ -1,0 +1,32 @@
+device=NVIDIA A100-SXM4-80GB torch=2.13.0+cu130 triton=3.7.1 reps=50 batches=12
+kv= 4096 heads= 32:8 q=   16 prod=0.24883 bm64=0.35793 speedup=0.695
+kv= 4096 heads= 32:8 q=   32 prod=0.20832 bm64=0.36618 speedup=0.569
+kv= 4096 heads= 32:8 q=   64 prod=0.22579 bm64=0.38361 speedup=0.589
+kv= 4096 heads= 32:8 q=   96 prod=0.22987 bm64=0.38373 speedup=0.599
+kv= 4096 heads= 32:8 q=  128 prod=0.25096 bm64=0.38531 speedup=0.651
+kv= 4096 heads= 32:8 q=  256 prod=0.51431 bm64=0.43244 speedup=1.189
+kv= 4096 heads= 32:8 q= 1024 prod=1.25755 bm64=1.18282 speedup=1.063
+kv= 4096 heads= 28:4 q=   16 prod=0.18192 bm64=0.36131 speedup=0.504
+kv= 4096 heads= 28:4 q=   32 prod=0.18235 bm64=0.36149 speedup=0.504
+kv= 4096 heads= 28:4 q=   64 prod=0.22178 bm64=0.36188 speedup=0.613
+kv= 4096 heads= 28:4 q=   96 prod=0.23355 bm64=0.36231 speedup=0.645
+kv= 4096 heads= 28:4 q=  128 prod=0.24525 bm64=0.36381 speedup=0.674
+kv= 4096 heads= 28:4 q=  256 prod=0.47200 bm64=0.43469 speedup=1.086
+kv= 4096 heads= 28:4 q= 1024 prod=1.22073 bm64=1.17535 speedup=1.039
+kv=16384 heads= 32:8 q=   16 prod=0.87222 bm64=1.57321 speedup=0.554
+kv=16384 heads= 32:8 q=   32 prod=0.85705 bm64=1.57391 speedup=0.545
+kv=16384 heads= 32:8 q=   64 prod=0.88969 bm64=1.56348 speedup=0.569
+kv=16384 heads= 32:8 q=   96 prod=0.90087 bm64=1.54941 speedup=0.581
+kv=16384 heads= 32:8 q=  128 prod=1.02480 bm64=1.54790 speedup=0.662
+kv=16384 heads= 32:8 q=  256 prod=2.05574 bm64=1.70144 speedup=1.208
+kv=16384 heads= 32:8 q= 1024 prod=5.39836 bm64=5.10329 speedup=1.058
+kv=16384 heads= 28:4 q=   16 prod=0.83554 bm64=1.55181 speedup=0.538
+kv=16384 heads= 28:4 q=   32 prod=0.83876 bm64=1.54962 speedup=0.541
+kv=16384 heads= 28:4 q=   64 prod=0.85574 bm64=1.54573 speedup=0.554
+kv=16384 heads= 28:4 q=   96 prod=0.90991 bm64=1.54331 speedup=0.590
+kv=16384 heads= 28:4 q=  128 prod=0.98941 bm64=1.54827 speedup=0.639
+kv=16384 heads= 28:4 q=  256 prod=1.98138 bm64=1.71004 speedup=1.159
+kv=16384 heads= 28:4 q= 1024 prod=5.32971 bm64=5.12033 speedup=1.041
+=== KV_DEPTH2 DONE 28 rows -> /content/kv_depth2.jsonl ===
+[chain2] rc=0
+A100KV2_DONE

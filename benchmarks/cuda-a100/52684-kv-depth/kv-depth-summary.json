@@ -1,0 +1,127 @@
+{
+ "what": "Does the BLOCK_M=64 crossover move with KV depth on CUDA the way it does on gfx1100? Measured 2026-08-31 on one A100-SXM4-80GB at vllm#52684's author's request. It moves the other way.",
+ "why": "Our earlier pass (../52684-blockm) fixes kv_len = q_len on all 140 rows and cannot speak to this axis. The author said so in the thread and asked for the run: https://github.com/vllm-project/vllm/pull/52684#issuecomment-5473180002",
+ "arms": "his, so the two sets land on one axis: production = BLOCK_M 16 with Triton's default warp count, bm64 = BLOCK_M 64 with num_warps=4. speedup = production_ms / bm64_ms, so >1 means BLOCK_M=64 is faster.",
+ "forced_past_the_gate": "Both arms, deliberately. The PR's gate is `q_len >= 512`, and the crossover under test sits at q_len 32-128, entirely below it; ../52684-blockm collapses every arm onto base there. The author forced the same way, through a launch proxy.",
+ "answer": "On gfx1100 fixing kv_len at 4096 moves the crossover LEFT, from q_len 96-128 to 32-64. On the A100 the same fixed depth pushes the short-q region DOWN to 0.54-0.66, i.e. BLOCK_M=64 is 1.5-1.9x slower there. Same direction at 16384.",
+ "grid_median_over_head_patterns": [
+  {
+   "q_len": 16,
+   "kv_eq": 1.0,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.5993568660335573,
+   "kv_4096_pass": 2,
+   "kv_16384": 0.5464263277780657,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 32,
+   "kv_eq": 0.9304421399378902,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.5366755803232544,
+   "kv_4096_pass": 2,
+   "kv_16384": 0.5429008273106016,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 64,
+   "kv_eq": 0.9810426481450447,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.6007215446972936,
+   "kv_4096_pass": 2,
+   "kv_16384": 0.561329161527277,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 96,
+   "kv_eq": 0.9881403881903401,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.6218251285459311,
+   "kv_4096_pass": 2,
+   "kv_16384": 0.585504582363618,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 128,
+   "kv_eq": 0.9763480206068443,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.6627198262953192,
+   "kv_4096_pass": 2,
+   "kv_16384": 0.6505503860056677,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 256,
+   "kv_eq": 0.9776385254225427,
+   "kv_eq_pass": 1,
+   "kv_4096": 1.1375931335344576,
+   "kv_4096_pass": 2,
+   "kv_16384": 1.183456281125465,
+   "kv_16384_pass": 2
+  },
+  {
+   "q_len": 512,
+   "kv_eq": 1.0092592623782397,
+   "kv_eq_pass": 1,
+   "kv_4096": 0.933500011046698,
+   "kv_4096_pass": 1,
+   "kv_16384": 0.9381331798750576,
+   "kv_16384_pass": 1
+  },
+  {
+   "q_len": 1024,
+   "kv_eq": 1.0283100839797656,
+   "kv_eq_pass": 1,
+   "kv_4096": 1.0508968388134186,
+   "kv_4096_pass": 2,
+   "kv_16384": 1.0493570388264755,
+   "kv_16384_pass": 2
+  }
+ ],
+ "timing": {
+  "pass1": "one call between one pair of CUDA events",
+  "pass2": "50 calls between one pair, divided -- run because pass 1's short-q rows sat near a constant ~0.2 ms and that had to be shown to be a real per-call cost rather than a measurement artefact",
+  "overlap_rows": [
+   {
+    "kv_mode": "4096",
+    "q_len": 256,
+    "pass1": 1.1276595861792993,
+    "pass2": 1.1375931335344576,
+    "diff_pct": 0.8808994732900566
+   },
+   {
+    "kv_mode": "4096",
+    "q_len": 1024,
+    "pass1": 1.0512486436475945,
+    "pass2": 1.0508968388134186,
+    "diff_pct": 0.033465425739364445
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 256,
+    "pass1": 1.1824687161386278,
+    "pass2": 1.183456281125465,
+    "diff_pct": 0.08351721896390414
+   },
+   {
+    "kv_mode": "16384",
+    "q_len": 1024,
+    "pass1": 1.0484908643827695,
+    "pass2": 1.0493570388264755,
+    "diff_pct": 0.08261153941630782
+   }
+  ],
+  "verdict": "the two agree to 0.88% at worst on four overlapping cells, so the constant is a per-call cost both arms pay -- the wrapper around the kernel -- and not a floor of the instrument",
+  "dilution": "because both arms pay it, the ratio is pulled toward 1 at small shapes; the kernel-level difference is larger than the ratio shows, in the same direction. The raw production_ms and bm64_ms columns are in the rows so this can be checked."
+ },
+ "environment": {
+  "device": "NVIDIA A100-SXM4-80GB",
+  "capability": "8.0",
+  "vllm": "0.28.0",
+  "torch": "2.13.0+cu130",
+  "triton": "3.7.1",
+  "kernel_md5_before": "49fab3b643bf5a88eb65303ce377996b",
+  "kernel_md5_after": "f1d7a7e3c6656303fa63b6a4c1b8aef5"
+ },
+ "not_established": "bf16 and head_size 128 only, two head patterns, one board, single-sequence prefill. No model-level TTFT claim. kv_len = q_len at q_len below 1024 is dominated by the per-call cost on both arms and is a control rather than a measurement."
+}
