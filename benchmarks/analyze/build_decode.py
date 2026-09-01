@@ -24,7 +24,7 @@ import statistics
 import sys
 
 from build_ledger import RANGE_CUT, latest_session, B, PROBES, MODELS, CFG
-from build_prefill import SOURCES, meta_for, arm_for
+from build_prefill import SOURCES, meta_for, arm_for, routes_from_source
 
 
 DECODE = B("decode.jsonl")
@@ -63,6 +63,11 @@ def build():
                 continue
             by.setdefault((r["cfg"], r["target"]), []).append(
                 (r["ts"], r["decode_tps"], r["prompt_tokens"]))
+        # why the backend was chosen, from the serve logs beside this source.
+        # `backend` itself still comes from the arm table here, unlike prefill,
+        # which reads the log first -- that asymmetry predates this and is not
+        # settled by adding a column.
+        routed = routes_from_source(path)
         for (cfg, target), trips in sorted(by.items()):
             name, quant, arch, tp = meta_for(cfg)
             spec, backend = arm_for(cfg)
@@ -79,7 +84,7 @@ def build():
                 kernel=over.get("kernel", s["kernel"]),
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,
-                spec=spec, attn_backend=backend,
+                spec=spec, attn_backend=backend, route=routed.get(cfg),
                 prefix_caching=over.get("prefix_caching", s.get("prefix_caching"))))
     # The probe sources have decode and no prefill, so they are not in the
     # shared SOURCES table -- but the ledger carries them, and this projection

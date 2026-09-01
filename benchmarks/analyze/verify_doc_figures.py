@@ -1878,6 +1878,58 @@ def main():
     ck("benchmarks README, no index line long enough to be a wall", "0",
        sum(1 for l in _idx if len(l) > 220))
 
+    # --- the route column, added 2026-09-01 -------------------------------
+    # The serve logs always carried why a backend was chosen and which
+    # quantisation kernel the checkpoint landed on; neither projection did, so
+    # the question had to be answered by grepping logs. These pin what the
+    # column holds. No claim is published from it yet -- this is substrate.
+    _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
+    _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
+    _rt = [r for r in _RTP + _RTD if r.get("route")]
+    ck("route column, rows carrying one", "402", len(_rt))
+    _dec = {}
+    for _r in _rt:
+        _d = _r["route"]["decision"]
+        _dec[_d] = _dec.get(_d, 0) + 1
+    ck("route column, chosen by override", "120", _dec.get("override", 0))
+    ck("route column, forced", "194", _dec.get("forced", 0))
+    ck("route column, left to the default", "88", _dec.get("default", 0))
+    ck("route column, and nothing else", "3", len(_dec))
+    _why = {}
+    for _r in _rt:
+        if _r["route"]["decision"] == "forced":
+            _w = _r["route"]["forced_reason"]
+            _why[_w] = _why.get(_w, 0) + 1
+    ck("route column, forced for want of FA4", "136",
+       _why.get("FA4 not available", 0))
+    ck("route column, forced to keep one backend", "58",
+       _why.get("prevent mixed-backend numerical divergence", 0))
+    # what an override was choosing between -- the candidate set, which is the
+    # routing question and appears nowhere else in the data
+    _cand = {}
+    for _r in _rt:
+        for _c in _r["route"].get("candidates", []):
+            _cand[_c] = _cand.get(_c, 0) + 1
+    ck("route column, ROCm offered both of its backends", "120",
+       _cand.get("ROCM_ATTN", 0))
+    ck("route column, and Triton was the other one", "120",
+       _cand.get("TRITON_ATTN", 0))
+    # three quantisation kernels for one scheme name, two of them on gfx1100
+    _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
+    ck("route column, distinct quantisation kernels", "3", len(_qk))
+    ck("route column, and two of them are RDNA's", "2",
+       sum(1 for k in _qk if k.startswith("RDNA")))
+    _rdna = {}
+    for _r in _rt:
+        _k = _r["route"].get("quant_kernel", "")
+        if _k.startswith("RDNA"):
+            _rdna.setdefault(_k, set()).add(_r.get("model"))
+    ck("route column, gfx1100 splits one scheme across two kernels", "1",
+       1 if (_rdna.get("RDNA3W4A16LinearKernel")
+             and _rdna.get("RDNAHybridW4A16LinearKernel")
+             and not (_rdna["RDNA3W4A16LinearKernel"]
+                      & _rdna["RDNAHybridW4A16LinearKernel"])) else 0)
+
     ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())

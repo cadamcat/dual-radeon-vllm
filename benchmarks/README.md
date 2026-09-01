@@ -73,12 +73,29 @@ lands in, plus `runs`, `range_pct` and `chart_grade`. It is a projection, not a 
 **Every prefill point in one row format, across machines**, built by
 `analyze/build_prefill.py`. The ledger is the Radeon box's and has no machine column;
 this one does, because prefill is asked across five machines. Same row discipline plus
-`machine`, `cuda`, `driver` and `prefix_caching`; `--fits` reports `T(S) = a + b·S +
+`machine`, `cuda`, `driver`, `prefix_caching` and `route`; `--fits` reports `T(S) = a + b·S +
 c·S²` per (machine, cfg, date, patches). Two rules it encodes are not obvious and each
 moved a number: rungs group by `target` rather than the measured `prompt_tokens`,
 because ROCm's two rounds land one to three tokens apart and grouping on the measurement
 gave nineteen mostly-unpaired points where CUDA gave eleven paired ones; and **only
 chart-grade rungs are fitted**, which is what excludes `cuda-a100/campaign-2026-08-29/`.
+
+**`route` is why, not only which.** `attn_backend` records the backend that served
+an arm; `route` records how it was chosen, read from the same serve log: `decision` is
+`override`, `forced` or `default`, `candidates` is the set an override picked from,
+`forced_reason` is the log's own words, and `head_dims`, `kv_cache_dtype`,
+`quant_kernel` and `quant_scheme` are the shape and kernel facts that line sits beside.
+It is on the 402 rows whose serve log was kept and absent on the rest, so a row with no
+log stays distinguishable from one whose log said little. **`gqa_ratio` is not here**:
+vLLM does not print the head counts, so it is not derivable from what is kept.
+
+Two things it makes visible that no column did before. An override on gfx1100 is
+choosing between `ROCM_ATTN` and `TRITON_ATTN` — that candidate set used to be discarded
+at parse time. And one scheme name, `CompressedTensorsWNA16`, reaches **three** different
+quantisation kernels: `MarlinLinearKernel` on CUDA, and on gfx1100 both
+`RDNA3W4A16LinearKernel` and `RDNAHybridW4A16LinearKernel`, split by model with no
+overlap. Nothing is concluded from either — one or two arms each is not a finding — but
+`verify_doc_figures.py` pins them so they cannot quietly go away.
 
 **What it says.** `T(S) = a + b·S + c·S²`, where `b` is compute and `c` is how badly attention
 scales. `a` is not reported: it does not reproduce, and going after it is what

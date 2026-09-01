@@ -305,6 +305,103 @@ def backend_from_log(path):
     return None
 
 
+# --- how the backend was chosen, not only which one won ----------------------
+# The serve logs carry more than the winner: the candidate set an override
+# picked from, the reason a choice was forced, the head dimensions that forced
+# it, and which quantisation kernel the checkpoint landed on. None of that is in
+# either projection today -- FlashInfer and FLEX_ATTENTION appear in the logs and
+# in no row -- so a question about routing has to be answered by grepping logs
+# by hand. These lift it into the data.
+#
+# `gqa_ratio` is deliberately absent: vLLM does not print the head counts, so it
+# is not derivable from what we keep. It would have to come from the model
+# config, which this repository does not check in.
+ROUTE_RES = {
+    "candidates": re.compile(
+        r"Overriding with [A-Z0-9_]+ out of potential backends: \[([^\]]*)\]"),
+    # two phrasings, and the reason sits on opposite sides of the verb:
+    #   "... Forcing TRITON_ATTN backend to prevent mixed-backend divergence."
+    #   "... FA4 not available, forcing TRITON_ATTN backend."
+    "forced": re.compile(r"(?:([^.,\n]{3,60}), )?[Ff]orcing ([A-Z0-9_]+) backend"
+                         r"(?: to ([^.\n]+))?"),
+    "head_dim": re.compile(r"head_dim=(\d+)"),
+    "global_head_dim": re.compile(r"global_head_dim=(\d+)"),
+    "head_dims": re.compile(r"(\{'(?:sliding|full)_attention'[^}]*\})"),
+    "kv_cache_dtype": re.compile(r"kv_cache_dtype=([A-Za-z0-9_.]+)"),
+    "quant_kernel": re.compile(r"Using (\w+Kernel) for (\w+)"),
+}
+
+
+def route_from_log(path):
+    """Why this arm got the backend it got, as far as the log says.
+
+    Returns None when the log yields nothing, so a row whose log was never kept
+    is distinguishable from one whose log simply said little.
+    """
+    if not os.path.exists(path):
+        return None
+    out = {}
+    for line in open(path, errors="ignore"):
+        if VIT_RE.search(line):
+            continue
+        if "candidates" not in out:
+            m = ROUTE_RES["candidates"].search(line)
+            if m:
+                out["candidates"] = [x.strip().strip("'\"")
+                                     for x in m.group(1).split(",") if x.strip()]
+                out["decision"] = "override"
+        if "forced_reason" not in out:
+            m = ROUTE_RES["forced"].search(line)
+            if m:
+                out["decision"] = "forced"
+                out["forced_reason"] = ((m.group(3) or "").strip()
+                                        or (m.group(1) or "").strip()
+                                        or "unstated")
+        for k in ("head_dim", "global_head_dim"):
+            if k not in out:
+                m = ROUTE_RES[k].search(line)
+                if m:
+                    out[k] = int(m.group(1))
+        if "head_dims" not in out:
+            m = ROUTE_RES["head_dims"].search(line)
+            if m:
+                # a python-repr dict in the log; keep it as data, not a string
+                out["head_dims"] = {k: int(v) for k, v in
+                                    re.findall(r"'(\w+)':\s*(\d+)", m.group(1))}
+        if "kv_cache_dtype" not in out:
+            m = ROUTE_RES["kv_cache_dtype"].search(line)
+            if m:
+                out["kv_cache_dtype"] = m.group(1)
+        if "quant_kernel" not in out:
+            m = ROUTE_RES["quant_kernel"].search(line)
+            if m:
+                out["quant_kernel"] = m.group(1)
+                out["quant_scheme"] = m.group(2)
+    if out and "decision" not in out:
+        out["decision"] = "default"
+    return out or None
+
+
+def routes_from_source(path):
+    """{cfg: route} for one results file, from the serve logs beside it."""
+    out = {}
+    for name in ("logs", "serve-logs"):
+        d = os.path.join(os.path.dirname(path), name)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".log"):
+                continue
+            cfg = fn[:-4]
+            cfg = cfg[6:] if cfg.startswith("serve-") else cfg
+            if cfg in out:
+                continue
+            r = route_from_log(os.path.join(d, fn))
+            if r:
+                out[cfg] = r
+    return out
+
+
 def backends_from_source(path):
     """{cfg: backend} for one results file, from its own metadata and logs.
 
@@ -391,6 +488,7 @@ def build():
             by.setdefault((r["cfg"], r["target"]), []).append(
                 (r["ts"], r["ttft"], r["prompt_tokens"]))
         measured = backends_from_source(path)
+        routed = routes_from_source(path)
         for (cfg, target), trips in sorted(by.items()):
             name, quant, arch, tp = meta_for(cfg)
             spec, tabled = arm_for(cfg)
@@ -414,7 +512,7 @@ def build():
                 kernel=over.get("kernel", s["kernel"]),
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,
-                spec=spec, attn_backend=backend,
+                spec=spec, attn_backend=backend, route=routed.get(cfg),
                 prefix_caching=over.get("prefix_caching", s.get("prefix_caching"))))
     rows.sort(key=lambda r: (r["machine"], r["model"], r["tp"], r["date"],
                              ",".join(r["patches"]), r["ctx"]))
