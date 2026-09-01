@@ -1,4 +1,4 @@
-# Benchmarks: five architectures across eleven context lengths
+# Benchmarks: five models across eleven context lengths
 
 Measured 2026-07-25 on the [verified configuration](../README.md#verified-configuration):
 2× RX 7900 XT, vLLM 0.23 + ROCm 7.14, tensor parallel, inside a VFIO guest with no
@@ -82,7 +82,7 @@ see [`benchmarks/README.md`](../benchmarks/README.md#two-anomalies-and-what-was-
 
 By parameter count the order should be 8B > 12B > 26B > 27B > 31B. It is not.
 **The fastest model is the 26B MoE, ahead of the 8B dense by 1.355× and of the
-larger 31B dense by 2.513×.** On this stack, architecture matters more than size.
+larger 31B dense by 2.513×.** On this stack, architecture matters more than size. That ratio is the 2026-08-24 campaign's; the July table above gives 2.498× for the same pair.
 
 > **Corrected 2026-08-27.** This paragraph used to give the headline as "the 27B
 > hybrid-SSM is 3.6× slower than the larger 31B dense". That gap is mostly the
@@ -215,7 +215,10 @@ second card buys.
 Model decode as `T = W/(N·B) + C`: *W* bytes of weights per token, *N* GPUs, *B*
 per-GPU bandwidth, *C* everything that does not parallelise. If TP=2's gain came
 purely from halving bandwidth-bound traffic, the time saved must equal `W/(2B)`,
-and the implied *B* must not exceed the hardware's 800 GB/s.
+and the implied *B* must not exceed the hardware's 800 GB/s by more than
+measurement error. Nothing here resolves better than a few per cent, so the bar
+below is 110 % of nominal: above that the model was not bandwidth-bound, and no
+amount of timing noise closes the gap.
 
 | model | T(TP1) | T(TP2) | saved | implied per-GPU bandwidth | |
 |---|---:|---:|---:|---:|---|
@@ -232,8 +235,10 @@ hardware peak, was genuinely bandwidth-bound.
 
 Is the 12B's low utilisation caused by quantisation, or merely by having fewer
 bytes to move per token? `gemma-4-31B` settles it: **same quantisation, same
-262 144 vocabulary, same sliding window, same family** — only bigger (21.67 GiB
-per token, more even than the 8B's 14.02 GiB BF16).
+262 144 vocabulary, same sliding window, same family** — only bigger (21.67 GiB of
+weights, which at batch 1 is also what it reads per token, more even than the
+8B's 14.02 GiB BF16). The table below halves both: it is **per GPU**, and this
+paragraph is the total across the pair.
 
 | configuration | per-GPU bytes/token | memory-bandwidth utilisation |
 |---|---:|---:|
@@ -658,7 +663,7 @@ controlling it ([open-questions.md §8](open-questions.md)).
 
 | you want | use | because |
 |---|---|---|
-| **speed with a large model** | **gemma-4-26B-A4B (MoE, compiled)** | 107.8 tok/s, still 72.8 at 32 K, concurrency 9.5×; costs one 26-minute compile, then cached |
+| **speed with a large model** | **gemma-4-26B-A4B (MoE, compiled)** | 107.8 tok/s, still 72.8 at 32 K, concurrency 9.5×; costs a 26-minute first engine start, whose warm cost §1 says was not measured here |
 | best single-model quality | gemma-4-31B w4a16 | 43.2 tok/s, 29.5 at 32 K; concurrency only 1.74× |
 | short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |

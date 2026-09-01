@@ -5,9 +5,10 @@
 **Contains:** diagnostic programs, a build recipe, deployment scripts and
 documentation — all original work, released under the [MIT Licence](LICENSE).
 
-**Does not contain:** any RCCL source code. The build script fetches RCCL from
-upstream and applies a one-line configuration change. Nothing from AMD's or
-NVIDIA's codebase is redistributed here.
+**Does not contain:** any RCCL source code. The build recipe expects an upstream
+RCCL checkout to be present already — it names the tag to clone and then applies
+a one-line configuration change to that tree. Nothing from AMD's or NVIDIA's
+codebase is redistributed here.
 
 This distinction matters: because no upstream source is vendored, this
 repository is **not** a derivative distribution of RCCL, and carries only its own

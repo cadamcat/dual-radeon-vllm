@@ -248,6 +248,71 @@ def main():
     ck("§4 27B measured prefill peak", "4000",
        max(pre_j["D-27B-tp2"], key=lambda t: bj("D-27B-tp2", t)))
 
+    # 2026-08-31: the README used to give the peak positions with no campaign
+    # and point at S* as the derivation behind them. S* was withdrawn on
+    # 2026-08-30, and the positions themselves do not hold still -- the MoE's
+    # own configuration peaks at 6 K in July and 4 K in August. These pin the
+    # two numbers the README now uses to say so.
+    pre_a = {}
+    for line in open(AUG):
+        line = line.strip()
+        if not line:
+            continue
+        r = json.loads(line)
+        if r.get("kind") == "prefill":
+            pre_a.setdefault(r["cfg"], {}).setdefault(r["target"], []).append(
+                r["prefill_tps"])
+    ba = lambda c, t: max(pre_a[c][t])
+    # read out of the sentence that makes the claim, not merely recomputed: the
+    # positions are the point of the paragraph, and "4 K" and "6 K" are one
+    # transposition apart -- which is what the July and August rows actually are
+    _pk = re.search(r"it is 2 K for four of the six,\s*([0-9]+) K for the MoE and "
+                    r"([0-9]+) K for the hybrid-SSM; the same MoE configuration "
+                    r"measured\s*in July peaks at ([0-9]+) K instead", rm)
+    ck("README prefill peaks, the paragraph states three positions", "3",
+       len(_pk.groups()) if _pk else 0)
+    _pk = _pk or re.match(r"()()()", "")
+    ck("README prefill peaks, the MoE in August", (_pk.group(1) or "0") + "000",
+       max(pre_a["E-26B-tp2"], key=lambda t: ba("E-26B-tp2", t)))
+    ck("README prefill peaks, the hybrid-SSM in August", (_pk.group(2) or "0") + "000",
+       max(pre_a["D8-27B-tp2"], key=lambda t: ba("D8-27B-tp2", t)))
+    ck("README prefill peaks, and the MoE arm in July", (_pk.group(3) or "0") + "000",
+       max(pre_j["E-26B-tp2"], key=lambda t: bj("E-26B-tp2", t)))
+    ck("README prefill peaks, and four of the six sit at 2 K", "4",
+       sum(1 for c in ("A-12B-tp2", "B-8B-tp2", "C-31B-tp2", "G-30B-tp2")
+           if max(pre_a[c], key=lambda t: ba(c, t)) == 2000))
+    ck("README prefill, the 8B over the MoE at 500", "2.1",
+       ba("B-8B-tp2", 500) / ba("E-26B-tp2", 500))
+
+    # what results.jsonl actually holds, which the README describes
+    _kinds = {}
+    for line in open(JULY):
+        line = line.strip()
+        if line:
+            k = json.loads(line).get("kind")
+            _kinds[k] = _kinds.get(k, 0) + 1
+    ck("README, records in results.jsonl", "309", sum(_kinds.values()))
+    ck("README, of them prefill", "146", _kinds["prefill"])
+    ck("README, and decode", "146", _kinds["decode"])
+    ck("README, the rest being metadata, status and notes", "17",
+       sum(v for k, v in _kinds.items() if k not in ("prefill", "decode")))
+
+    # July's own ratio for the pair the August number is quoted for, so the
+    # table a reader can see and the figure beside it stop disagreeing
+    ck("benchmarks.md, MoE over the 31B in July", "2.498",
+       tps(jul, "E-26B-tp2", 500) / tps(jul, "C-31B-tp2", 500))
+
+    # 2026-08-31: three grids ran past a 390px viewport -- 6px, 21px and 89px --
+    # because nothing scrolled them. Measured in a browser at 390px; this is the
+    # static half, so a rule cannot quietly go away again.
+    for _css, _sel in (("gqa-extra.css", "fault"),
+                       ("measure-extra.css", "agree"),
+                       ("rdna3-extra.css", "thr")):
+        _t = open(os.path.join(HERE, "..", "..", "site", "src", _css)).read()
+        _pat = r"@media \(max-width:560px\)\{[^@]*?\." + _sel + r"\s*\{[^}]*overflow-x:auto"
+        ck("site css, %s scrolls .%s on a narrow screen" % (_css, _sel), "1",
+           1 if re.search(_pat, _t, re.S) else 0)
+
     # --- README.zh.md is a condensed mirror; pin the cells it adds ----------
     ck("README.zh 8B 32K", "61.4", tps(jul, "B-8B-tp2", 32000))
     ck("README.zh 12B 500", "59.9", tps(jul, "A-12B-tp2", 500))

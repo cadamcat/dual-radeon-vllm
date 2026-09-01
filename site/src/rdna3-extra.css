@@ -77,5 +77,8 @@
   .thr .st.merged { color:var(--green); font-weight:700; }
   .thr .wh { font-family:var(--mono); font-size:.7rem; color:var(--text-dim);
              text-align:right; }
-  @media (max-width:560px){ .thr { grid-template-columns:max-content 1fr max-content; }
+  /* dropping the author column is not enough: the status text still puts this
+     89px past a 390px viewport, so the table scrolls itself */
+  @media (max-width:560px){ .thr { grid-template-columns:max-content 1fr max-content;
+                                   overflow-x:auto; }
                             .thr .au { display:none; } }

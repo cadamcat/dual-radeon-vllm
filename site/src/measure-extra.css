@@ -19,6 +19,8 @@
   .agree .d { font-family:var(--mono); font-size:.8rem; text-align:right;
               font-variant-numeric:tabular-nums; color:var(--green); font-weight:700; }
   .agree .d.wide { color:var(--text-2); font-weight:400; }
+  /* the long English keys push five columns 21px past a 390px viewport */
+  @media (max-width:560px){ .agree { overflow-x:auto; } }
 
   /* ---- the four runs ---- */
   .bars .r4 { display:flex; height:100%; width:100%; align-items:center; gap:2px; }

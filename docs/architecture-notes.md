@@ -2,7 +2,7 @@
 
 Once tensor parallelism works, the next surprise is that **model architecture
 matters far more than model size** on consumer Radeon. A 26B MoE outruns a
-*larger* 31B dense by 2.513× on the same two cards.
+*larger* 31B dense by 2.513× on the same two cards, measured 2026-08-24.
 
 > **Corrected 2026-08-27.** The opening example used to be "a 27B model can be
 > 3.6× slower than a 31B model", and the hybrid-SSM row below carried that gap

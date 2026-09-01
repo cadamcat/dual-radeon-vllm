@@ -156,7 +156,7 @@ commands, and the second is decisive and needs no RCCL, no PyTorch, no vLLM.
 ```
 
 ```bash
-hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
+hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o diagnose/hipgate3 && ./diagnose/hipgate3
 ```
 
 **You are affected if the plain kernel passes and the hostcall kernel is refused,
@@ -267,7 +267,7 @@ chart and table — lives in [benchmarks.md](docs/benchmarks.md).
 
 | Model | Precision | 500 tok | 8 K | 32 K | |
 |---|---|---:|---:|---:|---|
-| **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.7** | 92.6 | **72.9** | 🟢 fastest of the nine — *needs one 26-min compile, then cached* |
+| **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.7** | 92.6 | **72.9** | 🟢 fastest of the nine — *26-min first engine start; warm cost not measured here* |
 | Qwen3-8B | BF16 dense | 79.5 | 73.4 | 61.4 | 🟢 TP=1 → TP=2 is **1.70×** |
 | gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
 | **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
@@ -389,12 +389,17 @@ Muse-Glimmer at 32 K. The shape is the mechanism check —
 
 ![sliding-window block skip](docs/assets/sliding-window-block-skip.svg)
 
-**Prefill, for completeness.** Every model peaks early — 2 K for four of the six,
-4 K for the MoE, 6 K for the hybrid-SSM — and then falls away. The ordering does
-not survive the fall: the 8B leads at 500 by 2.1× over the MoE and the MoE has
-passed it by 32 K. The derivation of where the peak sits (`S* = √(a/c)`, fitted
-to every measured point) is in
-[docs/benchmarks.md](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits).
+**Prefill, for completeness.** Every model peaks early and then falls away, and
+the ordering does not survive the fall: the 8B leads at 500 by 2.1× over the MoE
+and the MoE has passed it by 32 K. **Where the peak sits is not a result this
+ladder establishes.** In the 2026-08-24 campaign it is 2 K for four of the six,
+4 K for the MoE and 6 K for the hybrid-SSM; the same MoE configuration measured
+in July peaks at 6 K instead, and the fitted `S* = √(a/c)` was withdrawn on
+2026-08-30 because `a` does not reproduce — it comes out at 9.8 and 99.8 ms for
+one configuration a month apart, and below zero for another. What the ladder does
+determine is the shape: `b` and `c` reproduce to 1.5 %.
+[docs/benchmarks.md](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)
+has both the fits and the withdrawal.
 
 ![prefill throughput vs context length, patched](docs/assets/prefill-vs-context-2026-08-24.svg)
 
@@ -490,8 +495,9 @@ python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
 ```
 
 No GPU, no dependencies beyond the standard library. They read
-[`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records, one per request,
-each with its prompt length, TTFT, decode rate, per-card power and VRAM. That file is
+[`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records — 146 prefill
+and 146 decode measurements, each with its prompt length, TTFT, decode rate,
+per-card power and VRAM, plus 17 of engine metadata, run status and notes. That file is
 the 2026-07-25 campaign; the 2026-08-24 one is
 [`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl), and the separate
 findings have their own files. What ties them together is
@@ -502,7 +508,8 @@ file each came from, and exits non-zero if one disagrees.
 ### How to read this
 
 - **Architecture beats parameter count.** The fastest model here is the 26B MoE,
-  ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**.
+  ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
+  both measured in the 2026-08-24 campaign.
   *(Corrected 2026-08-27: this used to read "the slowest is a 27B, beaten 3.6× by
   a larger 31B dense". That comparison is confounded — the 27B's checkpoint is
   asymmetric int4 and misses the native W4A16 kernel, worth up to 3.24× on its

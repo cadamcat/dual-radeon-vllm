@@ -409,7 +409,10 @@
   .fault .v { font-family:var(--mono); font-size:.74rem; }
   .fault .v.bad { color:var(--red); font-weight:700; }
   .fault .v.ok { color:var(--green); }
-  @media (max-width:560px){ .fault { font-size:.78rem; column-gap:.5em; } }
+  /* four max-content columns still overrun a 390px viewport by 6px, so the
+     table scrolls itself rather than the page */
+  @media (max-width:560px){ .fault { font-size:.78rem; column-gap:.5em;
+                                     overflow-x:auto; } }
 
   .counts { display:grid; grid-template-columns:repeat(4, 1fr); gap:.7em; margin:1.2em 0 0; }
   .cnt { border:1px solid var(--border); border-radius:10px; padding:.75em .5em;
