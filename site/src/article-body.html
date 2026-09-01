@@ -214,9 +214,24 @@ magnitude outside it.</p>
   than showing one.
 </div>
 
-<p>Prefill, meanwhile, behaves as the architecture promises: throughput <em>improves</em> with length,
-805 → 880 tok/s from 500 to 32 K, while dense models lose 8–44 % over the same range. It is decode that
-inverts.</p>
+<p>Prefill, meanwhile, runs the other way for this configuration: throughput <em>improves</em> with
+length, 802 → 881 tok/s from 500 to 32 K, a rise of 9.9 %, while every dense arm measured beside it
+loses 36–44 % over the same range. It is decode that inverts.
+<em>(Corrected 2026-08-31: this said 8–44 %. The 8 was the 8B, whose 500-token rung is not
+chart-grade — its two rounds are 22 % apart — read at the better of the two, which is what makes its
+fall look small. On the rungs that pass the cut it falls 37 % from 1 K, and no dense arm here falls
+less than 36 %.)</em></p>
+
+<p><strong>That rise belongs to this configuration, not to the architecture.</strong> It read as the
+architecture's here until 2026-08-31, on two hand-typed numbers from one model on one machine.
+<code>Qwen3.8-27B</code> is the same hybrid-SSM design and its prefill <em>falls</em> on every arm
+this repository has measured — 7.5 % on these cards under vLLM 0.27, 11.8 % under 0.23, 8.1 % on an
+A100 — while <code>gemma-4-26B-A4B</code>, a MoE with no linear-attention layer at all, rises further
+than <code>Qwen3.6</code> does, 23.8 % in July and 21.9 % in August. One of the six stock hybrid-SSM
+ladders in <code>benchmarks/prefill.jsonl</code> rises and five fall, so what a rising prefill curve
+indicates is that a short prompt's fixed cost outweighs the quadratic term on that arm — not that the
+model carries a recurrent state. The decode collapse this article is about is unaffected either way:
+it is measured, not inferred from the same reasoning.</p>
 
 <h2><span class="n">7</span>The fix, measured twice</h2>
 

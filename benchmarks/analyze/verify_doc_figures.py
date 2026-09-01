@@ -5214,6 +5214,77 @@ def main():
        1 if _F["fig5"]["hybrid_that_rises"] == "Qwen3.6-27B" else 0)
     _q36 = next(x for x in _f5 if x["model"] == "Qwen3.6-27B")
     ck("hybrid fig5, the rise the prose quotes", "9.9", _q36["change_pct"], 0.01)
+
+    # 2026-08-31: fig5 was built to put data under section 6's prefill claim and
+    # the claim was never changed to match what it found. The paragraph now says
+    # the rise is this configuration's, so these read the paragraph.
+    _hy = {}
+    for _r in XPF:
+        if (_r.get("model") in ("Qwen3.6-27B", "Qwen3.8-27B") and _r["chart_grade"]
+                and _r.get("spec") is None):
+            _hy.setdefault((_r["cfg"], _r["machine"], _r["date"]), []).append(_r)
+    _lad = []
+    for _k, _rs in _hy.items():
+        _rs.sort(key=lambda r: r["ctx"])
+        if len(_rs) > 1:
+            _lad.append((_rs[-1]["prefill_tok_s"] / _rs[0]["prefill_tok_s"] - 1) * 100)
+    # the half of the sentence that does hold: the dense arms measured beside it
+    _dn = []
+    for _cfg in ("B-8B-tp2", "C-31B-tp2", "A-12B-tp2"):
+        _rs = sorted([r for r in XPF if r["cfg"] == _cfg and r["date"] == "2026-07-25"
+                      and r["chart_grade"]], key=lambda r: r["ctx"])
+        _dn.append((_rs[-1]["prefill_tok_s"] / _rs[0]["prefill_tok_s"] - 1) * 100)
+    ck("hybrid section 6, the dense arms beside it, best case", "-36",
+       max(_dn), 0.5)
+    ck("hybrid section 6, and worst", "-44", min(_dn), 0.5)
+    # why it used to read 8: the 8B's 500 rung fails the repeatability cut and
+    # the old number took the better of its two rounds
+    _b8 = [r for r in XPF if r["cfg"] == "B-8B-tp2" and r["date"] == "2026-07-25"
+           and r["ctx"] == 500]
+    ck("hybrid section 6, the 8B's 500 rung is not chart-grade", "0",
+       1 if _b8[0]["chart_grade"] else 0)
+    ck("hybrid section 6, and its two rounds are this far apart", "22",
+       _b8[0]["range_pct"], 0.5)
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "6", len(_lad))
+    ck("hybrid section 6, and only one of them rises", "1",
+       sum(1 for x in _lad if x > 0))
+    ck("hybrid section 6, the other five fall", "5", sum(1 for x in _lad if x < 0))
+
+    def _pf(cfg, machine, date):
+        rs = sorted([r for r in XPF if r["cfg"] == cfg and r["machine"] == machine
+                     and r["date"] == date and r["chart_grade"]], key=lambda r: r["ctx"])
+        return (rs[-1]["prefill_tok_s"] / rs[0]["prefill_tok_s"] - 1) * 100
+
+    for _lang, _fn in (("EN", "hybrid-ssm-collapse.html"),
+                       ("ZH", "hybrid-ssm-collapse.zh.html")):
+        _t = flat[_fn]
+        ck("hybrid section 6 %s, the sibling falls on 0.27" % _lang, "7.5",
+           -_pf("Q38-tp2", "RX 7900 XT", "2026-08-29"))
+        ck("hybrid section 6 %s, and on 0.23" % _lang, "11.8",
+           -_pf("D8-27B-tp2", "RX 7900 XT", "2026-08-24"))
+        ck("hybrid section 6 %s, and on the A100" % _lang, "8.1",
+           -_pf("Q38", "A100-SXM4-80GB", "2026-08-30"))
+        ck("hybrid section 6 %s, the MoE rises further, July" % _lang, "23.8",
+           _pf("E-26B-tp2", "RX 7900 XT", "2026-07-25"))
+        ck("hybrid section 6 %s, and August" % _lang, "21.9",
+           _pf("E-26B-tp2", "RX 7900 XT", "2026-08-24"))
+        # the dense range, read out of the sentence rather than only recomputed:
+        # it was published as 8-44 and the 8 came from a rung that fails the cut
+        _dr = re.search(r"(?:loses|都掉了)\s*([0-9]+)[-–]([0-9]+)\s*%", _t)
+        ck("hybrid section 6 %s, states the dense range" % _lang, "2",
+           len(_dr.groups()) if _dr else 0)
+        _dr = _dr or re.match(r"()()", "")
+        ck("hybrid section 6 %s, dense best case" % _lang,
+           "-" + (_dr.group(1) or "0"), max(_dn), 0.5)
+        ck("hybrid section 6 %s, dense worst case" % _lang,
+           "-" + (_dr.group(2) or "0"), min(_dn), 0.5)
+        ck("hybrid section 6 %s, quotes all five" % _lang, "5",
+           sum(1 for _v in ("7.5 %", "11.8 %", "8.1 %", "23.8 %", "21.9 %")
+               if fl(_v) in _t))
+        # the retracted generalisation, in both languages
+        ck("hybrid section 6 %s, no longer credits the architecture" % _lang, "0",
+           1 if (fl("behaves as the architecture promises") in _t
+                 or fl("正如架构所承诺") in _t) else 0)
     ck("hybrid fig5, from this rate", "802", _q36["shallow_tok_s"], 0.01)
     ck("hybrid fig5, to this one", "881", _q36["deep_tok_s"], 0.01)
     # its sibling, same architecture in the ledger's own column, on two machines
