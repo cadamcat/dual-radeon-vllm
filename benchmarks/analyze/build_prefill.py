@@ -352,6 +352,22 @@ SOURCES = [
          date="2026-09-02", vllm="0.28.0", rocm=None, cuda="13.0",
          driver="580.82.07", kernel=None, patches=[],
          prefix_caching=False),
+    # The first machine in this repository that was rented rather than owned or
+    # granted, and the first rows anywhere here past 32 000 tokens. `mml` is
+    # 132 000 on the four configurations that carry the long rungs and 33 000
+    # on B8, whose own config.json caps context at 40 960; every row records
+    # which. Q38 is in its own file because its first attempt on this machine
+    # died in engine init -- max_num_seqs 1024 against 969 Mamba cache blocks,
+    # which the long ladder provokes and the eleven-rung ladder does not -- and
+    # a configuration recorded as failed is deliberately not retried in place.
+    dict(file="cuda-h100/campaign-2026-09-03/results.jsonl",
+         machine="H100-80GB-HBM3", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-h100/campaign-2026-09-03/results-q38.jsonl",
+         machine="H100-80GB-HBM3", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
     dict(file="cuda-a100/campaign-2026-08-29/results.jsonl", prefix_caching=True,
          machine="A100-SXM4-80GB", date="2026-08-29", vllm="0.28.0",
          rocm=None, cuda=None, driver=None, kernel=None, patches=[],

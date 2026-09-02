@@ -40,6 +40,10 @@ import time
 import modal
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# The work directory on the Volume, and therefore which results.jsonl the
+# checkpointing reads. A configuration that failed is recorded as `done` --
+# deliberately, so a crash is not retried in a loop -- so a rerun with a fixed
+# harness needs a directory of its own rather than an edited results file.
 RUN = "h100-2026-09-03b"
 MACHINE = "H100-80GB-HBM3"
 GPU = "H100"
@@ -55,7 +59,9 @@ ORDER = ["G31", "G12", "G26A4B", "Q38", "B8"]
 LONG_CAPABLE = {"G31", "G12", "G26A4B", "Q38"}
 ALWAYS_LONG = {"G31"}
 
-BOOK = os.path.join(HERE, ".gutenberg-1228.txt")
+# One copy, where cut_prompts.py already caches it. Both campaigns ship it
+# into their image so no rented card ever goes to gutenberg.org for it.
+BOOK = os.path.join(HERE, "..", "..", "prompts", ".gutenberg-1228.txt")
 BOOK_MD5 = "2f3418d3e506a1aa3d0a854852bb4065"
 BOOK_BYTES = 970612
 
@@ -177,8 +183,8 @@ def _plan(remaining, left_s, unit_cfg_s, unit_long_s):
 @app.function(gpu=GPU, timeout=6000,
               volumes={"/models": CKPT, "/work": WORK,
                        "/root/.cache/flashinfer": JIT})
-def campaign(order: list, budget_s: int):
-    D = f"/work/{RUN}"
+def campaign(order: list, budget_s: int, run: str):
+    D = f"/work/{run}"
     os.makedirs(D, exist_ok=True)
     if not os.path.exists(f"{D}/origin.txt"):
         with open("/bench/.gutenberg-1228.txt", "rb") as a, open(f"{D}/origin.txt", "wb") as b:
@@ -263,7 +269,24 @@ def campaign(order: list, budget_s: int):
 
 
 @app.local_entrypoint()
-def main(budget_s: int = BUDGET_S, cfgs: str = ",".join(ORDER)):
+def main(budget_s: int = BUDGET_S, cfgs: str = ",".join(ORDER),
+         run: str = RUN, out_suffix: str = ""):
+    # The book is not in git -- .gitignore has held it out since cut_prompts.py
+    # first cached it -- so a clean clone fetches it once here, on the laptop,
+    # and the md5 below is what makes that fetch safe to ship into the image.
+    if not os.path.exists(BOOK):
+        import urllib.request
+        for _u in ("https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+                   "https://www.gutenberg.org/files/1228/1228-0.txt"):
+            try:
+                _b = urllib.request.urlopen(_u, timeout=180).read()
+                if len(_b) > 400000:
+                    open(BOOK, "wb").write(_b)
+                    break
+            except Exception as _e:                          # noqa: BLE001
+                print(f"  {_u}: {_e!r}")
+        else:
+            raise SystemExit(f"could not fetch the book to {BOOK}")
     b = open(BOOK, "rb").read()
     md5 = hashlib.md5(b).hexdigest()
     assert md5 == BOOK_MD5 and len(b) == BOOK_BYTES, \
@@ -271,11 +294,14 @@ def main(budget_s: int = BUDGET_S, cfgs: str = ",".join(ORDER)):
     print(f"book ok: {len(b)} bytes, md5 {md5}")
 
     t0 = time.perf_counter()
-    res = campaign.remote(cfgs.split(","), budget_s)
+    print(f"work dir /work/{run}, configs {cfgs}")
+    res = campaign.remote(cfgs.split(","), budget_s, run)
     wall = time.perf_counter() - t0
     for name, txt in res.items():
         if name.startswith("_"):
             continue
+        stem, dot, ext = name.rpartition(".")
+        name = f"{stem}{out_suffix}{dot}{ext}" if dot else name + out_suffix
         with open(os.path.join(HERE, name), "w") as f:
             f.write(txt)
         print(f"  wrote {name}  {len(txt)} bytes")

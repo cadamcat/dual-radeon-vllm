@@ -245,7 +245,49 @@ TOTAL_MIB = int(subprocess.run(
     shell=True, capture_output=True, text=True).stdout.strip().splitlines()[0])
 
 
-def start_server(cfg, mml=None):
+def classify(txt):
+    """What a serve log says has gone wrong, or None while it is still trying.
+
+    Extracted from `start_server` so it can be gated on a laptop with no GPU
+    against the real messages, which is the only way to know that a retry
+    branch fires on the text a card actually produced rather than on the text
+    someone remembered it producing.
+    """
+    # Before the crash test: this condition raises a ValueError, so its own
+    # traceback would otherwise be read as a crash. The message names the
+    # length that would fit; 0.27 has a second phrasing with no number.
+    m = re.search(r"estimated maximum model length is (\d+)", txt)
+    if m:
+        return "capacity", int(m.group(1))
+    if "No available memory for the cache blocks" in txt:
+        return "capacity", -1
+    # A hybrid-SSM model reserves one Mamba cache block per decode
+    # sequence, and vLLM refuses to capture CUDA graphs when it cannot
+    # reserve max_num_seqs of them. Same shape as the KV retry above --
+    # the message names the value that would work -- but a different
+    # knob, and the KV retry cannot fix it: lowering max_model_len is
+    # what frees KV, and this is the Mamba state pool. Qwen3.8-27B hit
+    # this on an 80 GiB H100 at mml 132 000 having been fine at 33 000,
+    # so it is the long ladder that provokes it, not the card.
+    m = re.search(r"exceeds available Mamba cache blocks \((\d+)\)", txt)
+    if m:
+        return "mns", int(m.group(1))
+    # torch logs whole formatted tracebacks at W level: triton_bundler
+    # prints one per missing AOT cubin when it falls back to recompiling,
+    # and injecting #45450 mid-run invalidates exactly that cache. The
+    # naive test stopped a healthy server on the Radeon side today. A real
+    # traceback sits at the head of its line behind only the process tag;
+    # a logged one carries its logger's "<file>.py:<line>]" ahead of it.
+    real_tb = [l for l in txt.splitlines()
+               if "Traceback (most recent call last)" in l
+               and not re.search(r"\.py:\d+\]", l.split("Traceback")[0])]
+    if real_tb or "EngineCore failed to start" in txt \
+            or "Engine core initialization failed" in txt:
+        return "crash", txt[-2500:]
+    return None
+
+
+def start_server(cfg, mml=None, mns=None):
     """`mml` is the effective max-model-len for this attempt, not the constant.
 
     The Radeon runner has had a capacity retry since rev2; this one did not, and
@@ -257,6 +299,7 @@ def start_server(cfg, mml=None):
     B8 by 0.13 GiB, needing 4.53 against 4.40 available.
     """
     mml = (cfg.get("mml") or MML) if mml is None else mml
+    mns = cfg.get("mns") if mns is None else mns
     # `pkill -f 'vllm serve'` under shell=True can match its own shell, whose
     # command line contains the pattern. That is not theoretical: it left two
     # servers for one model alive at once today, and the second died in
@@ -308,8 +351,8 @@ def start_server(cfg, mml=None):
              f"--gpu-memory-utilization {cfg.get('util', 0.90)}"]
     if cfg.get("dtype"):
         flags.append(f"--dtype {cfg['dtype']}")
-    if cfg.get("mns"):
-        flags.append(f"--max-num-seqs {cfg['mns']}")
+    if mns:
+        flags.append(f"--max-num-seqs {mns}")
     if cfg.get("tp"):
         flags.append(f"--tensor-parallel-size {cfg['tp']}")
     # CUDA graph capture is sized for max_num_seqs and is charged against the
@@ -336,26 +379,9 @@ def start_server(cfg, mml=None):
         txt = open(lg).read() if os.path.exists(lg) else ""
         if "Application startup complete" in txt:
             return "ready", txt
-        # Before the crash test: this condition raises a ValueError, so its own
-        # traceback would otherwise be read as a crash. The message names the
-        # length that would fit; 0.27 has a second phrasing with no number.
-        m = re.search(r"estimated maximum model length is (\d+)", txt)
-        if m:
-            return "capacity", int(m.group(1))
-        if "No available memory for the cache blocks" in txt:
-            return "capacity", -1
-        # torch logs whole formatted tracebacks at W level: triton_bundler
-        # prints one per missing AOT cubin when it falls back to recompiling,
-        # and injecting #45450 mid-run invalidates exactly that cache. The
-        # naive test stopped a healthy server on the Radeon side today. A real
-        # traceback sits at the head of its line behind only the process tag;
-        # a logged one carries its logger's "<file>.py:<line>]" ahead of it.
-        real_tb = [l for l in txt.splitlines()
-                   if "Traceback (most recent call last)" in l
-                   and not re.search(r"\.py:\d+\]", l.split("Traceback")[0])]
-        if real_tb or "EngineCore failed to start" in txt \
-                or "Engine core initialization failed" in txt:
-            return "crash", txt[-2500:]
+        st = classify(txt)
+        if st:
+            return st
         idle = time.time() - os.path.getmtime(lg) if os.path.exists(lg) else time.time() - t0
         if idle > stall:
             return "timeout", f"log idle {idle:.0f}s"
@@ -417,11 +443,19 @@ def run_cfg(cfg, done):
             return
         globals()["_INJECTED"] = True
     mml = cfg.get("mml") or MML
+    mns = cfg.get("mns")
     info = None
     for _ in range(4):
-        st, info = start_server(cfg, mml)
+        st, info = start_server(cfg, mml, mns)
         if st == "ready":
             break
+        if st == "mns":
+            new = max(1, int(info))
+            log(f"{cid}: Mamba cache holds {info} blocks -> retry mns {new}")
+            emit({"kind": "note", "cfg": cid,
+                  "note": f"mamba_blocks={info}, mns->{new}"})
+            mns = new
+            continue
         if st == "capacity":
             if info == -1:
                 mml = max(1200, mml // 2)
@@ -452,7 +486,8 @@ def run_cfg(cfg, done):
                                 id=cid + "-eager"), done)
         emit({"kind": "config_failed", "cfg": cid, "why": "startup retries exhausted"})
         return
-    emit(meta_from(cid, info) | {"mml": mml, "util": cfg.get("util", 0.90)})
+    emit(meta_from(cid, info) | {"mml": mml, "util": cfg.get("util", 0.90),
+                                "mns": mns})
     # One discarded request before the ladder. Without it the very first
     # measurement of the run -- prefill, round 1, the 500 rung -- absorbs
     # everything a cold engine does once: the first CUDA graph replay, the

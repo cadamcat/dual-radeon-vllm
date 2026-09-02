@@ -120,7 +120,37 @@ def main():
               and set(cache) == {"500", "1000", "48000", "128000"},
               f"{type(cache).__name__} {sorted(cache)[:5] if isinstance(cache, dict) else ''}")
 
-        # 5. per-config mml and targets are read from the config row
+        # 5. what a serve log says has gone wrong. Every string below is
+        #    copied out of a log this repository actually produced, not
+        #    paraphrased: a retry that fires on a remembered message is a
+        #    retry that does not fire.
+        MAMBA = ("(EngineCore pid=721) ValueError: max_num_seqs (1024) exceeds "
+                 "available Mamba cache blocks (969). Each decode sequence "
+                 "requires one Mamba cache block, so CUDA graph capture cannot "
+                 "proceed. Please lower max_num_seqs to at most 969 or increase "
+                 "gpu_memory_utilization.")
+        cl = g["classify"]
+        check("the Mamba block message asks for a lower mns",
+              cl(MAMBA) == ("mns", 969), str(cl(MAMBA))[:70])
+        check("a KV-length message still asks for a lower mml",
+              cl("estimated maximum model length is 15792") == ("capacity", 15792),
+              str(cl("estimated maximum model length is 15792")))
+        check("no room for KV is still capacity",
+              cl("No available memory for the cache blocks") == ("capacity", -1))
+        # the regression the runner's own comment records: torch logs whole
+        # tracebacks at W level, and reading one as a crash stopped a healthy
+        # server on the Radeon side.
+        LOGGED_TB = ("WARNING 09-02 21:03:12 [triton_bundler.py:212] Traceback "
+                     "(most recent call last):")
+        check("a logged traceback is not a crash", cl(LOGGED_TB) is None,
+              str(cl(LOGGED_TB))[:60])
+        REAL_TB = "Traceback (most recent call last):\n  File \"x.py\", line 1"
+        check("a real traceback is a crash",
+              (cl(REAL_TB) or ("", ""))[0] == "crash", str(cl(REAL_TB))[:40])
+        check("a log still starting says nothing yet",
+              cl("INFO 09-03 00:01:02 [core.py:99] Waiting for init") is None)
+
+        # 6. per-config mml and targets are read from the config row
         check("mml comes from the config row", (dict(mml=132000).get("mml")
                                                 or g["MML"]) == 132000)
         check("MML default unchanged", g["MML"] == 33000, str(g["MML"]))

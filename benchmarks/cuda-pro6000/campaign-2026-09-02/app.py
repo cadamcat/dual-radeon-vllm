@@ -41,7 +41,9 @@ GPU = "RTX-PRO-6000"
 BUDGET_S = 5400
 ORDER = ["G12", "G31", "B8", "G26A4B", "Q38"]
 
-BOOK = os.path.join(HERE, ".gutenberg-1228.txt")
+# One copy, where cut_prompts.py already caches it. Both campaigns ship it
+# into their image so no rented card ever goes to gutenberg.org for it.
+BOOK = os.path.join(HERE, "..", "..", "prompts", ".gutenberg-1228.txt")
 BOOK_MD5 = "2f3418d3e506a1aa3d0a854852bb4065"
 BOOK_BYTES = 970612
 
@@ -118,6 +120,22 @@ def campaign(order: list, budget_s: int):
 
 @app.local_entrypoint()
 def main(budget_s: int = BUDGET_S, cfgs: str = ",".join(ORDER)):
+    # The book is not in git -- .gitignore has held it out since cut_prompts.py
+    # first cached it -- so a clean clone fetches it once here, on the laptop,
+    # and the md5 below is what makes that fetch safe to ship into the image.
+    if not os.path.exists(BOOK):
+        import urllib.request
+        for _u in ("https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+                   "https://www.gutenberg.org/files/1228/1228-0.txt"):
+            try:
+                _b = urllib.request.urlopen(_u, timeout=180).read()
+                if len(_b) > 400000:
+                    open(BOOK, "wb").write(_b)
+                    break
+            except Exception as _e:                          # noqa: BLE001
+                print(f"  {_u}: {_e!r}")
+        else:
+            raise SystemExit(f"could not fetch the book to {BOOK}")
     b = open(BOOK, "rb").read()
     md5 = hashlib.md5(b).hexdigest()
     assert md5 == BOOK_MD5 and len(b) == BOOK_BYTES, \

@@ -1942,7 +1942,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "19", len(_camps))
+    ck("campaigns, every results.jsonl found", "20", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2449,6 +2449,132 @@ def main():
        1 if "no longer an inference from the scaling it explains" in _rmf else 0)
     ck("README, and quotes the two counters", "1",
        1 if "**90 % `mem_busy`**" in _rmf and "**56 %**" in _rmf else 0)
+
+    # --- the H100, 2026-09-03: first context past 32 000 ------------------
+    # This README publishes a decode table, four ratios against the A100, a
+    # coefficient table and a telemetry table. Each is read out of the prose
+    # and recomputed, so a number that moves in the data and not on the page
+    # fails here rather than being noticed by someone re-reading it.
+    _H = os.path.join(_BR, "cuda-h100", "campaign-2026-09-03")
+    _rh = open(os.path.join(_H, "README.md"), encoding="utf-8").read()
+    _hrows = []
+    for _f in ("results.jsonl", "results-q38.jsonl"):
+        _hrows += [json.loads(_l) for _l in open(os.path.join(_H, _f))]
+    _hd = {}
+    for _r in _hrows:
+        if _r["kind"] == "decode":
+            _hd.setdefault((_r["cfg"], _r["target"]), []).append(_r["decode_tps"])
+
+    def _hm(cfg, ctx):
+        _v = sorted(_hd[(cfg, ctx)])
+        return _v[len(_v) // 2] if len(_v) % 2 else sum(_v) / 2
+
+    # the decode table, one row per model, read as written
+    for _cfg, _pat in (("G26A4B", r"gemma-4-26B-A4B int4 MoE \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| ([\d.]+)"),
+                       ("G12", r"gemma-4-12B w4a16 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| ([\d.]+)"),
+                       ("Q38", r"Qwen3.8-27B int4 hybrid SSM \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| ([\d.]+)"),
+                       ("G31", r"gemma-4-31B w4a16 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| ([\d.]+)")):
+        _m = re.search(_pat, _rh)
+        ck("H100 README, %s row is there" % _cfg, "1", 1 if _m else 0)
+        if _m:
+            for _i, _ctx in enumerate((500, 8000, 32000, 128000)):
+                ck("H100 README, %s at %d" % (_cfg, _ctx), _m.group(_i + 1),
+                   _hm(_cfg, _ctx))
+    _m = re.search(r"Qwen3-8B bf16 \| ([\d.]+) \| ([\d.]+) \| \*\*?([\d.]+)\*\*? \| — \|", _rh) \
+        or re.search(r"Qwen3-8B bf16 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| — \|", _rh)
+    ck("H100 README, B8 row is there and has no 128 000", "1", 1 if _m else 0)
+    if _m:
+        for _i, _ctx in enumerate((500, 8000, 32000)):
+            ck("H100 README, B8 at %d" % _ctx, _m.group(_i + 1), _hm("B8", _ctx))
+    ck("H100 README, and B8 has no rung past its own limit", "0",
+       sum(1 for (_c, _t) in _hd if _c == "B8" and _t > 40960))
+
+    # the four ratios against the A100, recomputed from decode.jsonl
+    _a100 = {}
+    for _r in _RTD:
+        if _r["machine"] == "A100-SXM4-80GB" and not _r["spec"]:
+            _a100[(_r["cfg"], _r["ctx"])] = _r["decode_tok_s"]
+    for _name, _hc, _ac in (("gemma-4-12B", "G12", "A100-G12"),
+                            ("gemma-4-26B-A4B", "G26A4B", "A100-G26A4B"),
+                            ("gemma-4-31B", "G31", "G31"),
+                            (r"\*\*Qwen3.8-27B hybrid SSM\*\*", "Q38", "Q38")):
+        _m = re.search(_name + r" \| ([\d.]+)× \| ([\d.]+)× \| \*?\*?([\d.]+)×",
+                       _rh)
+        ck("H100 README, %s ratio row" % _hc, "1", 1 if _m else 0)
+        if _m:
+            for _i, _ctx in enumerate((500, 8000, 32000)):
+                ck("H100 README, %s ratio at %d" % (_hc, _ctx), _m.group(_i + 1),
+                   _hm(_hc, _ctx) / _a100[(_ac, _ctx)])
+
+    # the coefficient table: the H100 rows are read off the page and refitted
+    _hf = {(f["machine"], f["cfg"]): f for f in _bpm.fits(_RTP)}
+    for _cfg in ("G31", "G12", "Q38"):
+        _m = re.search(r"`%s` \| \*\*H100\*\* \| FLASH_ATTN \| \*\*([\d.]+)\*\* \| \*\*([\d.]+)\*\*"
+                       % _cfg, _rh)
+        ck("H100 README, %s coefficient row" % _cfg, "1", 1 if _m else 0)
+        if _m:
+            _f = _hf[("H100-80GB-HBM3", _cfg)]
+            ck("H100 README, %s b us/tok" % _cfg, _m.group(1), _f["b_us_tok"])
+            ck("H100 README, %s c ns/tok2" % _cfg, _m.group(2), _f["c_ns_tok2"])
+    # and the caveat that makes three of those rows two-variable
+    ck("H100 README, says the gemma arms changed backend too", "1",
+       1 if "machine **and** backend" in _rh else 0)
+    ck("H100 README, and names the one clean comparison", "1",
+       1 if "The only clean single-variable comparison in the" in _rh
+       and "`Q38`, FlashAttention on both" in _rh else 0)
+    # The disagreement itself, read from what is committed rather than from a
+    # list that is only populated while build_prefill is rebuilding: every
+    # H100 G31 row says FLASH_ATTN, and the ARMS_CUDA fallback for that cfg id
+    # says TRITON_ATTN because that is what the A100 chose. The projection
+    # keeps the measured one and reports the pair; this asserts both halves.
+    ck("H100 README, the rows carry the backend the card chose", "1",
+       1 if {r["attn_backend"] for r in _RTP
+             if r["machine"] == "H100-80GB-HBM3" and r["cfg"] == "G31"}
+       == {"FLASH_ATTN"} else 0)
+    ck("H100 README, and the table it disagrees with still says Triton", "1",
+       1 if _bpm.ARMS_CUDA.get("G31", (None, None))[1] == "TRITON_ATTN" else 0)
+
+    # telemetry: the pair the README puts beside 2026-09-02d's
+    def _hmem(cfg, ctx):
+        return max(r["mem_busy_pct_max"] for r in _hrows
+                   if r["kind"] == "decode" and r["cfg"] == cfg
+                   and r["target"] == ctx and r.get("mem_busy_pct_max") is not None)
+    _m = re.search(r"Qwen3-8B bf16 \| \*\*(\d+) %\*\* \| \*\*(\d+) %\*\*", _rh)
+    ck("H100 README, states both 8B figures", "2", len(_m.groups()) if _m else 0)
+    if _m:
+        ck("H100 README, the 8B here", _m.group(1), _hmem("B8", 500))
+        ck("H100 README, the 8B on the Radeon", _m.group(2),
+           _p2mem("B8-tp1-p45450", 500))
+    _m = re.search(r"gemma-4-12B w4a16 \| \*\*(\d+) %\*\* \| \*\*(\d+) %\*\*", _rh)
+    ck("H100 README, states both 12B figures", "2", len(_m.groups()) if _m else 0)
+    if _m:
+        ck("H100 README, the 12B here", _m.group(1), _hmem("G12", 500))
+        ck("H100 README, the 12B on the Radeon", _m.group(2),
+           _p2mem("A12-tp1-p45450", 500), 0.01)
+    # the power claim, which is the one that reverses 2026-09-02d's regime
+    _pw = sorted(round(max(r["power_w_max"] for r in _hrows
+                           if r["kind"] == "decode" and r["cfg"] == c
+                           and r["target"] == 128000
+                           and r.get("power_w_max") is not None))
+                 for c in ("G12", "G26A4B", "G31", "Q38"))
+    _m = re.search(r"sit at the 700 W cap\*\* — (\d+),\s*\n?(\d+), (\d+) and (\d+) W", _rh)
+    ck("H100 README, quotes four power figures at 128 000", "4",
+       len(_m.groups()) if _m else 0)
+    if _m:
+        for _i in range(4):
+            ck("H100 README, power figure %d" % (_i + 1), _m.group(_i + 1), _pw[_i])
+    ck("H100 README, and the cap it is measured against", "700",
+       max(r["power_cap_w"] for r in _hrows
+           if r["kind"] == "decode" and r.get("power_cap_w") is not None))
+    # counts and the two failures kept as evidence
+    ck("H100 README, measurements", "75",
+       sum(1 for _r in _hrows if _r["kind"] == "decode") // 2)
+    ck("H100 README, errors", "0", sum(1 for _r in _hrows if _r["kind"] == "error"))
+    ck("H100 README, the Mamba retry is in the data", "969",
+       next(_r["mns"] for _r in _hrows
+            if _r["kind"] == "model_meta" and _r["cfg"] == "Q38"))
+    ck("H100 README, and the crashed attempt is kept", "1",
+       1 if os.path.exists(os.path.join(_H, "results-attempt1.jsonl")) else 0)
 
     # --- the attention backend is not the axis, 2026-09-02 ----------------
     # gfx1100-greedy-nondeterminism.json's `reading` blamed ROCM_ATTN, on a set
@@ -2966,14 +3092,18 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "518", len(_rt))
+    # +118 on 2026-09-03: the H100's five configurations, every one of which
+    # vLLM routed to FLASH_ATTN by its own default rather than being forced --
+    # the A100 forces gemma-4 onto Triton "FA4 not available" and this machine
+    # does not, which is why `default` moves by the whole 118.
+    ck("route column, rows carrying one", "636", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
     ck("route column, chosen by override", "156", _dec.get("override", 0))
     ck("route column, forced", "252", _dec.get("forced", 0))
-    ck("route column, left to the default", "110", _dec.get("default", 0))
+    ck("route column, left to the default", "228", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
     for _r in _rt:
@@ -6409,15 +6539,34 @@ def main():
     ck("hybrid section 6, and its two rounds are this far apart", "22",
        _b8[0]["range_pct"], 0.5)
     # 2026-09-02c added two: the same two Qwen3.8 arms re-measured on the
-    # restored link. Eight ladders now, and the count of "rises" went 1 -> 2 --
-    # but the second rises by 0.3%, which is flat, so the sentence says one
-    # rises, one is flat and six fall rather than "two rise".
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "8", len(_lad))
+    # restored link. 2026-09-03 added a ninth, on an H100, and it is the one
+    # that broke the sentence: this checkpoint's prefill was published as
+    # never rising, and on that machine it rises further than the Qwen3.6 arm
+    # the section is about. The ninth also runs four times further than any
+    # other, so its end-to-end number answers a different question from the
+    # other eight's -- hence the split below rather than one tally of nine.
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "9", len(_lad))
+    _short = [x for k, x in zip(sorted(_hy), _lad)]     # order-stable with _lad
+    _h100 = [(k, v) for k, v in zip(sorted(_hy), _lad) if k[1] == "H100-80GB-HBM3"]
+    ck("hybrid section 6, exactly one of them is the H100 arm", "1", len(_h100))
+    _eight = [v for k, v in zip(sorted(_hy), _lad) if k[1] != "H100-80GB-HBM3"]
+    ck("hybrid section 6, the eight that stop at 32000 or below", "8", len(_eight))
     ck("hybrid section 6, and only one of them rises by more than 1 pct", "1",
-       sum(1 for x in _lad if x > 1))
+       sum(1 for x in _eight if x > 1))
     ck("hybrid section 6, one more is flat inside 1 pct", "1",
-       sum(1 for x in _lad if 0 < x <= 1))
-    ck("hybrid section 6, the other six fall", "6", sum(1 for x in _lad if x < 0))
+       sum(1 for x in _eight if 0 < x <= 1))
+    ck("hybrid section 6, the other six fall", "6", sum(1 for x in _eight if x < 0))
+    # the ninth, on the two rungs the prose actually quotes
+    _h = sorted([r for r in XPF if r["cfg"] == "Q38"
+                 and r["machine"] == "H100-80GB-HBM3" and r["chart_grade"]],
+                key=lambda r: r["ctx"])
+    _h0 = next(r for r in _h if r["ctx"] == 500)
+    ck("hybrid section 6, the ninth rises this far by 32000", "19.4",
+       (next(r for r in _h if r["ctx"] == 32000)["prefill_tok_s"]
+        / _h0["prefill_tok_s"] - 1) * 100)
+    ck("hybrid section 6, and is back to this by 128000", "1.3",
+       (next(r for r in _h if r["ctx"] == 128000)["prefill_tok_s"]
+        / _h0["prefill_tok_s"] - 1) * 100)
 
     def _pf(cfg, machine, date, lo=None):
         """The ladder's end-to-end change, optionally from a stated rung.
@@ -6468,6 +6617,31 @@ def main():
         ck("hybrid section 6 %s, no longer credits the architecture" % _lang, "0",
            1 if (fl("behaves as the architecture promises") in _t
                  or fl("正如架构所承诺") in _t) else 0)
+        # 2026-09-03. The sentence said this checkpoint's prefill never rises.
+        # An H100 rose 19.4 % over the same rungs, so the claim is gone and the
+        # two figures that replace it are quoted. Read out of the page, not
+        # recomputed: recomputing proves the data, not that anyone published it.
+        # The retracted claim, in the form it was published in -- not the two
+        # words. The correction note quotes the old wording, as every other
+        # correction on this page does, so a gate on "never rises" would fail
+        # on the retraction itself and force the note to be vague.
+        ck("hybrid section 6 %s, no longer says the prefill never rises" % _lang,
+           "0", 1 if (fl("its prefill <em>never rises</em>") in _t
+                      or fl("而它的预填充<em>从来没有上升过</em>") in _t)
+           else 0)
+        ck("hybrid section 6 %s, and the retraction still quotes it" % _lang, "1",
+           1 if (fl("used to say that this checkpoint's prefill never rises") in _t
+                 or fl("原来写的是这个 checkpoint 的预填充「从来没有上升过」") in _t)
+           else 0)
+        ck("hybrid section 6 %s, quotes the ninth ladder's two figures" % _lang,
+           "2", sum(1 for _v in ("19.4 %", "1.3 %") if fl(_v) in _t))
+        ck("hybrid section 6 %s, and counts nine ladders, not eight" % _lang, "1",
+           1 if (fl("nine stock hybrid-SSM ladders") in _t
+                 or fl("九条 stock hybrid-SSM 阶梯") in _t) else 0)
+        ck("hybrid section 6 %s, and no longer counts eight" % _lang, "0",
+           1 if (fl("eight\nstock hybrid-SSM ladders") in _t
+                 or fl("eight stock hybrid-SSM ladders") in _t
+                 or fl("八条 stock hybrid-SSM 阶梯") in _t) else 0)
     ck("hybrid fig5, from this rate", "802", _q36["shallow_tok_s"], 0.01)
     ck("hybrid fig5, to this one", "881", _q36["deep_tok_s"], 0.01)
     # its sibling, same architecture in the ledger's own column, on two machines

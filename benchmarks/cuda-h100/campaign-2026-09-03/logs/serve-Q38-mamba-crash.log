@@ -1,0 +1,148 @@
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333] 
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333]        █     █     █▄   ▄█
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.28.0
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333]   █▄█▀ █     █     █     █  model   /models/Qwen3.8-27B-AWQ-INT4
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:333] 
+(APIServer pid=680) INFO 09-02 23:05:45 [api_utils.py:272] non-default args: {'model_tag': '/models/Qwen3.8-27B-AWQ-INT4', 'model': '/models/Qwen3.8-27B-AWQ-INT4', 'max_model_len': 132000, 'gpu_memory_utilization': 0.9, 'enable_prefix_caching': False}
+(APIServer pid=680) INFO 09-02 23:05:56 [model.py:672] Resolved architecture: Qwen3_5ForConditionalGeneration
+(APIServer pid=680) INFO 09-02 23:05:56 [model.py:1965] Using max model len 132000
+(APIServer pid=680) INFO 09-02 23:05:57 [scheduler.py:242] Chunked prefill is enabled with max_num_batched_tokens=8192.
+(APIServer pid=680) INFO 09-02 23:05:57 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=680) [transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+(EngineCore pid=721) INFO 09-02 23:06:16 [core.py:122] Initializing a V1 LLM engine (v0.28.0) with config: model='/models/Qwen3.8-27B-AWQ-INT4', speculative_config=None, tokenizer='/models/Qwen3.8-27B-AWQ-INT4', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=132000, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=compressed-tensors, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/models/Qwen3.8-27B-AWQ-INT4, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::qwen_gdn_attention_core_fused_norm_packed', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=721) INFO 09-02 23:06:17 [parallel_state.py:1638] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_472e1392c1ef4cba97119fd4821eb286 backend=nccl
+(EngineCore pid=721) INFO 09-02 23:06:17 [parallel_state.py:1982] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=721) INFO 09-02 23:06:18 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=721) [transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+(EngineCore pid=721) INFO 09-02 23:06:24 [gpu_model_runner.py:5419] Starting to load model /models/Qwen3.8-27B-AWQ-INT4...
+(EngineCore pid=721) INFO 09-02 23:06:24 [cuda.py:545] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(EngineCore pid=721) INFO 09-02 23:06:24 [mm_encoder_attention.py:375] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+(EngineCore pid=721) INFO 09-02 23:06:24 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(EngineCore pid=721) INFO 09-02 23:06:24 [qwen_gdn_linear_attn.py:158] Using FlashInfer GDN prefill kernel (requested=auto, head_k_dim=128).
+(EngineCore pid=721) WARNING 09-02 23:06:24 [qwen_gdn_linear_attn.py:165] FlashInfer GDN prefill is JIT-compiled; first run may take a while. Set --gdn-prefill-backend triton to skip JIT.
+(EngineCore pid=721) INFO 09-02 23:06:24 [qwen_gdn_linear_attn.py:505] GDN decode kernel: cuda
+(EngineCore pid=721) INFO 09-02 23:06:24 [cuda.py:486] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=721) INFO 09-02 23:06:24 [flash_attn.py:866] Using FlashAttention version 3
+(EngineCore pid=721) INFO 09-02 23:06:25 [weight_utils.py:858] Filesystem type for checkpoints: 9P. Checkpoint size: 19.57 GiB. Available RAM: 1015.65 GiB.
+(EngineCore pid=721) INFO 09-02 23:06:25 [weight_utils.py:881] Auto-prefetch is disabled because the filesystem (9P) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=721) Loading safetensors checkpoint shards:   0% Completed | 0/5 [00:00<?, ?it/s]
+(EngineCore pid=721) Loading safetensors checkpoint shards:  20% Completed | 1/5 [00:01<00:05,  1.37s/it]
+(EngineCore pid=721) Loading safetensors checkpoint shards:  40% Completed | 2/5 [00:09<00:15,  5.32s/it]
+(EngineCore pid=721) Loading safetensors checkpoint shards:  60% Completed | 3/5 [00:14<00:10,  5.09s/it]
+(EngineCore pid=721) Loading safetensors checkpoint shards:  80% Completed | 4/5 [00:20<00:05,  5.53s/it]
+(EngineCore pid=721) Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:22<00:00,  4.36s/it]
+(EngineCore pid=721) Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:22<00:00,  4.55s/it]
+(EngineCore pid=721) 
+(EngineCore pid=721) INFO 09-02 23:06:48 [default_loader.py:430] Loading weights took 22.85 seconds
+(EngineCore pid=721) INFO 09-02 23:06:53 [gpu_model_runner.py:5515] Model loading took 19.24 GiB memory and 28.504047 seconds
+(EngineCore pid=721) INFO 09-02 23:06:53 [interface.py:911] Setting attention block size to 784 tokens to ensure that attention page size is >= mamba page size.
+(EngineCore pid=721) INFO 09-02 23:06:53 [interface.py:935] Padding mamba page size by 0.13% to ensure that mamba page size and attention page size are exactly equal.
+(EngineCore pid=721) INFO 09-02 23:06:54 [gpu_model_runner.py:6590] Encoder cache will be initialized with a budget of 16384 tokens, and profiled with 1 image items of the maximum feature size.
+(EngineCore pid=721) INFO 09-02 23:07:12 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/3efbaf81ca/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=721) INFO 09-02 23:07:12 [backends.py:1155] Dynamo bytecode transform time: 17.23 s
+(EngineCore pid=721) INFO 09-02 23:07:31 [backends.py:393] Compiling a graph for compile range (1, 8192) takes 17.99 s
+(EngineCore pid=721) INFO 09-02 23:07:38 [backends.py:920] collected artifacts: 65 entries, 6 artifacts, 10982561 bytes total
+(EngineCore pid=721) INFO 09-02 23:07:38 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/79e02c9c7cee0c72df578c902908851849e4af7f6f552cbd0320fe2a99278364/rank_0_0/model
+(EngineCore pid=721) INFO 09-02 23:07:38 [monitor.py:53] torch.compile took 43.04 s in total
+(EngineCore pid=721) INFO 09-02 23:07:47 [monitor.py:81] Initial profiling/warmup run took 8.67 s
+(EngineCore pid=721) INFO 09-02 23:07:52 [gpu_model_runner.py:6816] Profiling CUDA graph memory: PIECEWISE=51 (largest=512), FULL=51 (largest=512)
+(EngineCore pid=721) INFO 09-02 23:07:55 [gpu_model_runner.py:6941] Estimated CUDA graph memory: 1.16 GiB total
+(EngineCore pid=721) INFO 09-02 23:07:55 [gpu_worker.py:578] Available KV cache memory: 46.4 GiB
+(EngineCore pid=721) INFO 09-02 23:07:55 [gpu_worker.py:593] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9000 is equivalent to --gpu-memory-utilization=0.8854 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9146. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.
+(EngineCore pid=721) INFO 09-02 23:07:55 [kv_cache_utils.py:1869] GPU KV cache size: 743,651 tokens, Maximum concurrency for 132,000 tokens per request: 5.63x
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346] EngineCore failed to start.
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346] Traceback (most recent call last):
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     super().__init__(
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 144, in __init__
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 329, in _initialize_kv_caches
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self.model_executor.initialize_from_config(kv_cache_configs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 122, in initialize_from_config
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self.collective_rpc("initialize_from_config", args=(kv_cache_configs,))
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 103, in collective_rpc
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     result = run_method(self.driver_worker, method, args, kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/serial_utils.py", line 510, in run_method
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 329, in initialize_from_config
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self.worker.initialize_from_config(kv_cache_config)  # type: ignore
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 680, in initialize_from_config
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self.model_runner.initialize_kv_cache(kv_cache_config)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7775, in initialize_kv_cache
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self.initialize_attn_backend(kv_cache_config, is_profiling=is_profiling)
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7250, in initialize_attn_backend
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     self._check_and_update_cudagraph_mode(
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7323, in _check_and_update_cudagraph_mode
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     cudagraph_mode = self.compilation_config.resolve_cudagraph_mode_and_sizes(
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/config/compilation.py", line 1507, in resolve_cudagraph_mode_and_sizes
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346]     raise ValueError(
+(EngineCore pid=721) ERROR 09-02 23:07:55 [core.py:1346] ValueError: max_num_seqs (1024) exceeds available Mamba cache blocks (969). Each decode sequence requires one Mamba cache block, so CUDA graph capture cannot proceed. Please lower max_num_seqs to at most 969 or increase gpu_memory_utilization.
+(EngineCore pid=721) Process EngineCore:
+(EngineCore pid=721) Traceback (most recent call last):
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=721)     self.run()
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=721)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1350, in run_engine_core
+(EngineCore pid=721)     raise e
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=721)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=721)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721)     return func(*args, **kwargs)
+(EngineCore pid=721)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=721)     super().__init__(
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 144, in __init__
+(EngineCore pid=721)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=721)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721)     return func(*args, **kwargs)
+(EngineCore pid=721)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 329, in _initialize_kv_caches
+(EngineCore pid=721)     self.model_executor.initialize_from_config(kv_cache_configs)
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 122, in initialize_from_config
+(EngineCore pid=721)     self.collective_rpc("initialize_from_config", args=(kv_cache_configs,))
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 103, in collective_rpc
+(EngineCore pid=721)     result = run_method(self.driver_worker, method, args, kwargs)
+(EngineCore pid=721)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/serial_utils.py", line 510, in run_method
+(EngineCore pid=721)     return func(*args, **kwargs)
+(EngineCore pid=721)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 329, in initialize_from_config
+(EngineCore pid=721)     self.worker.initialize_from_config(kv_cache_config)  # type: ignore
+(EngineCore pid=721)     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=721)     return func(*args, **kwargs)
+(EngineCore pid=721)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 680, in initialize_from_config
+(EngineCore pid=721)     self.model_runner.initialize_kv_cache(kv_cache_config)
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7775, in initialize_kv_cache
+(EngineCore pid=721)     self.initialize_attn_backend(kv_cache_config, is_profiling=is_profiling)
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7250, in initialize_attn_backend
+(EngineCore pid=721)     self._check_and_update_cudagraph_mode(
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 7323, in _check_and_update_cudagraph_mode
+(EngineCore pid=721)     cudagraph_mode = self.compilation_config.resolve_cudagraph_mode_and_sizes(
+(EngineCore pid=721)                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=721)   File "/usr/local/lib/python3.12/site-packages/vllm/config/compilation.py", line 1507, in resolve_cudagraph_mode_and_sizes
+(EngineCore pid=721)     raise ValueError(
+(EngineCore pid=721) ValueError: max_num_seqs (1024) exceeds available Mamba cache blocks (969). Each decode sequence requires one Mamba cache block, so CUDA graph capture cannot proceed. Please lower max_num_seqs to at most 969 or increase gpu_memory_utilization.
+[rank0]:[W902 23:07:56.863330788 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
