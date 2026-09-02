@@ -1,0 +1,10 @@
+15:50:38 | === campaign start rev2 (['B8-tp2-r5', 'B8-tp1-r5']) ===
+15:52:46 | B8-tp2-r5: ready (mml=33000, util=0.85), 1 points x 5 rounds
+15:53:30 | B8-tp2-r5: point 500 done
+15:53:30 | B8-tp2-r5: COMPLETE (10 ok, 0 err)
+15:54:30 | B8-tp1-r5: KV holds only 15952 tok -> retry mml 15792
+15:55:51 | B8-tp1-r5: KV holds only 8448 tok -> retry mml 8363
+15:56:57 | B8-tp1-r5: ready (mml=8363, util=0.9), 1 points x 5 rounds
+15:58:04 | B8-tp1-r5: point 500 done
+15:58:04 | B8-tp1-r5: COMPLETE (10 ok, 0 err)
+15:58:14 | === campaign end: container stopped, services restored ===

@@ -1,4 +1,4 @@
-# Campaign record schema — v1, 2026-09-02
+# Campaign record schema — v2, 2026-09-02
 
 Every campaign writes JSONL. One record per line, `kind` says which.
 `harness/telemetry.py` produces the hardware half on both platforms; it was
@@ -34,8 +34,9 @@ Measurement, unchanged from before plus the telemetry block:
 
 ## The telemetry block, on every measured row
 
-    tele_schema          1
+    tele_schema          2
     tele_samples         how many polls landed inside the cell
+    tele_period_s        the polling period this cell was sampled at (v2)
     gpu_busy_pct_max     amdgpu gpu_busy_percent | NVML utilization.gpu
     mem_busy_pct_max     amdgpu mem_busy_percent | NVML utilization.memory
     power_w_max          hwmon power1_average    | NVML power usage -- the maximum of
@@ -55,11 +56,35 @@ Measurement, unchanged from before plus the telemetry block:
     vram_used_b_max      mem_info_vram_used      | NVML memory used
     pcie_tx_kbs_max      null on Radeon          | NVML PCIe TX
     pcie_rx_kbs_max      null on Radeon          | NVML PCIe RX
+    sclk_mhz_first       the FIRST sample's clock, untrimmed          (v2)
+    temp_c_first         the FIRST sample's temperature, untrimmed    (v2)
+    sclk_mhz_min         the lowest clock in the cell, untrimmed      (v2)
     per_card             the same keys, one entry per card
 
-Sampling is a background thread at 1.5 s. The first third and last sixth of the
-samples are dropped, as the Radeon runners always did: the head is warm-up and
-the tail is the request draining.
+Sampling is a background thread. The default period is 1.5 s; the Radeon
+template drops to **0.02 s for prefill**, and `tele_period_s` records which was
+used. The first third and last sixth of the samples are dropped, as the Radeon
+runners always did: the head is warm-up and the tail is the request draining.
+
+## v2, and the cell that forced it — 2026-09-02b
+
+A 500-token prefill on gfx1100 takes **0.12 s**. At a 1.5 s period that is one
+sample, and in four of the five rounds of `B8-tp2-r5` it landed in the idle gap
+*before* the request: the row recorded `sclk_mhz_max` **0** against a
+`sclk_mhz_cap` of 2075, while the round that happened to sample inside the
+request read 2897 against 2897. Nothing in v1 distinguished "the card was idle"
+from "we looked at the wrong moment", and the campaign existed to ask what the
+card was doing during that 0.12 s.
+
+So v2 adds two things and neither is a new quantity — both are about *when* the
+quantity was read. `tele_period_s` puts the sampling rate on the row instead of
+in a docstring. `sclk_mhz_first`, `temp_c_first` and `sclk_mhz_min` come from
+the **untrimmed** samples, because for a cell shorter than the card's clock ramp
+the steady-state window is empty and the only answerable question is what state
+the cell started in.
+
+v1 rows stay v1. `tele_schema` is on every row so a reader never has to date
+one to know which set it carries.
 
 ## `kind: telemetry_meta`, once per configuration
 

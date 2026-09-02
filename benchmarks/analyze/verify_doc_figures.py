@@ -28,6 +28,7 @@ for _pyc in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    "__pycache__", "build_prefill*.pyc")):
     os.unlink(_pyc)
 import build_prefill as _bpm   # noqa: E402  -- the host_link rule has one home
+import build_decode as _bpd    # noqa: E402  -- ...and this asserts it
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
@@ -1941,7 +1942,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "15", len(_camps))
+    ck("campaigns, every results.jsonl found", "17", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -1961,7 +1962,7 @@ def main():
            if os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))))
     # the module both platforms now share, and the fields it promises
     _TELE = open(os.path.join(_BR, "harness", "telemetry.py")).read()
-    ck("harness, telemetry module carries a schema version", "1",
+    ck("harness, telemetry module carries a schema version", "2",
        int(re.search(r"SCHEMA_VERSION = (\d+)", _TELE).group(1)))
     ck("harness, and names what it cannot measure", "2",
        len(re.findall(r'^\s{4}"[a-z_]+":$|^\s{4}"[a-z_]+":\s', _TELE[
@@ -2030,9 +2031,9 @@ def main():
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "164", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "177", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "170", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "183", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -2087,6 +2088,152 @@ def main():
     _need_hl = [c for c in _camps if c not in _PRE_SCHEMA and "cuda-" not in c
                 and not os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))]
     ck("campaigns, new Radeon ones missing host_link.json", "0", len(_need_hl))
+
+    # --- the link, re-measured, and the shallow rung, 2026-09-02 ----------
+    # `host_link` no longer comes from the date: the reboot that restored the
+    # link landed in the middle of 2026-09-02 and campaigns are dated by day,
+    # so from that date every Radeon campaign carries the preflight's own file
+    # and the rule reads it. These pin both halves of that rule and the
+    # measurement it made possible.
+    ck("host_link, the date the width came back", "1",
+       1 if _bpm.HOST_LINK_X16_AGAIN == "2026-09-02" else 0)
+    ck("host_link, the rule prefers the preflight's file", "1",
+       1 if _bpm.host_link_measured(
+           os.path.join(_BR, "campaign-2026-09-02", "results.jsonl")) == "x16/x16"
+       else 0)
+    ck("host_link, an unreadable record is not a reading", "1",
+       1 if _bpm.host_link_measured(os.path.join(_BR, "nowhere", "x.jsonl")) is None
+       else 0)
+    ck("host_link, and one home for the rule", "1",
+       1 if _bpd.host_link is _bpm.host_link else 0)
+    # the four sittings of one arm, three of them on x16
+    _f31 = {f["date"]: f for f in _bpm.fits(_RTP)
+            if f["machine"] == "RX 7900 XT"
+            and f["cfg"] in ("C-31B-tp2", "G31-tp2", "G31-tp2-x16")}
+    # no `tol=` here: half a unit in the last quoted place, which is what
+    # quoting 722.6 means. The 5% tolerance the 2026-09-02 host_link checks
+    # carry would admit 732.6, and a break-test caught exactly that.
+    ck("31B re-measured, b on the restored link", "722.6",
+       _f31["2026-09-02"]["b_us_tok"])
+    ck("31B re-measured, and all eleven rungs are chart-grade", "11",
+       _f31["2026-09-02"]["rungs"])
+    ck("31B re-measured, which the other three sittings were not", "3",
+       sum(1 for d, f in _f31.items() if d != "2026-09-02" and f["rungs"] == 10))
+    _b16 = [_f31[d]["b_us_tok"] for d in ("2026-07-25", "2026-08-24", "2026-09-02")]
+    ck("31B re-measured, the three x16 sittings span this much pct", "3.0",
+       (max(_b16) / min(_b16) - 1) * 100)
+    ck("31B re-measured, so the x8 sitting is this far above their mean", "18.3",
+       (_f31["2026-08-29"]["b_us_tok"] / (sum(_b16) / 3) - 1) * 100)
+    # c is the attention term and needs no communication, so the link must not
+    # have moved it. This is the control on the claim above.
+    _c16 = [_f31[d]["c_ns_tok2"] for d in ("2026-07-25", "2026-08-24", "2026-09-02")]
+    ck("31B re-measured, and c is unmoved across the three x16 sittings", "1.1",
+       (max(_c16) / min(_c16) - 1) * 100, 0.1)
+    # decode, which the arithmetic said would not move
+    _d31 = {(r["date"], r["ctx"]): r["decode_tok_s"] for r in _RTD
+            if r.get("machine") == "RX 7900 XT"
+            and r.get("cfg") in ("C-31B-tp2", "G31-tp2", "G31-tp2-x16")}
+    for _ctx, _want in ((500, "-0.89"), (8000, "-0.56"), (32000, "-1.05")):
+        _m = sum(_d31[(d, _ctx)] for d in ("2026-07-25", "2026-08-24", "2026-09-02")) / 3
+        ck("31B re-measured, decode at %d moved this pct on x8" % _ctx, _want,
+           (_d31[("2026-08-29", _ctx)] / _m - 1) * 100)
+
+    # the shallow rung, five rounds, two sittings
+    _B1 = os.path.join(_BR, "campaign-2026-09-02b")
+    _b1a = [json.loads(l) for l in open(os.path.join(_B1, "results-attempt1.jsonl"))]
+    _b1b = [json.loads(l) for l in open(os.path.join(_B1, "results.jsonl"))]
+
+    def _five(rows, cfg, kind):
+        v = [r for r in rows if r.get("kind") == kind and r.get("cfg") == cfg]
+        v.sort(key=lambda r: r["round"])
+        return v
+
+    for _tag, _rows in (("first", _b1a), ("second", _b1b)):
+        for _cfg in ("B8-tp2-r5", "B8-tp1-r5"):
+            ck("shallow rung, %s sitting %s has five prefill rounds" % (_tag, _cfg),
+               "5", len(_five(_rows, _cfg, "prefill")))
+            ck("shallow rung, %s sitting %s has five decode rounds" % (_tag, _cfg),
+               "5", len(_five(_rows, _cfg, "decode")))
+    _sp = lambda rows, cfg, kind, key: (
+        (lambda v: (max(v) - min(v)) / min(v) * 100)(
+            [r[key] for r in _five(rows, cfg, kind)]))
+    ck("shallow rung, tp2 prefill spread, first sitting", "13.56",
+       _sp(_b1a, "B8-tp2-r5", "prefill", "ttft"))
+    ck("shallow rung, tp2 prefill spread, second sitting", "14.50",
+       _sp(_b1b, "B8-tp2-r5", "prefill", "ttft"))
+    ck("shallow rung, tp1 prefill spread, first sitting", "21.06",
+       _sp(_b1a, "B8-tp1-r5", "prefill", "ttft"))
+    ck("shallow rung, tp1 prefill spread, second sitting", "17.49",
+       _sp(_b1b, "B8-tp1-r5", "prefill", "ttft"))
+    # ...and the same cell measured for eleven seconds instead of a tenth of one
+    ck("shallow rung, tp2 decode spread, second sitting", "0.30",
+       _sp(_b1b, "B8-tp2-r5", "decode", "decode_tps"))
+    ck("shallow rung, tp1 decode spread, second sitting", "0.19",
+       _sp(_b1b, "B8-tp1-r5", "decode", "decode_tps"))
+    # not a first-request cost: round 1 is the fastest in three of four
+    _fastest1 = 0
+    for _rows in (_b1a, _b1b):
+        for _cfg in ("B8-tp2-r5", "B8-tp1-r5"):
+            _v = _five(_rows, _cfg, "prefill")
+            _fastest1 += 1 if min(_v, key=lambda r: r["ttft"])["round"] == 1 else 0
+    ck("shallow rung, arms where round 1 was the fastest", "3", _fastest1)
+    # on the pair, the five order exactly by the lowest clock inside the cell
+    _tp2 = _five(_b1b, "B8-tp2-r5", "prefill")
+    _bysclk = [r["ttft"] for r in sorted(_tp2, key=lambda r: r["sclk_mhz_min"])]
+    ck("shallow rung, tp2 orders by sclk_mhz_min without exception", "1",
+       1 if all(a >= b for a, b in zip(_bysclk, _bysclk[1:])) else 0)
+    ck("shallow rung, its lowest clock", "436",
+       min(r["sclk_mhz_min"] for r in _tp2))
+    ck("shallow rung, its highest", "1543", max(r["sclk_mhz_min"] for r in _tp2))
+    # ...and on the single card it does not, which is why the README says so
+    _tp1 = _five(_b1b, "B8-tp1-r5", "prefill")
+    _bys1 = [r["ttft"] for r in sorted(_tp1, key=lambda r: r["sclk_mhz_min"])]
+    ck("shallow rung, tp1 does not order by it", "0",
+       1 if all(a >= b for a, b in zip(_bys1, _bys1[1:])) else 0)
+    # the defect the first sitting is kept for
+    ck("shallow rung, first sitting rows that read sclk 0", "4",
+       sum(1 for r in _b1a if r.get("kind") == "prefill"
+           and r.get("cfg") == "B8-tp2-r5" and r.get("sclk_mhz_max") == 0))
+    ck("shallow rung, and the second sitting has none", "0",
+       sum(1 for r in _b1b if r.get("kind") == "prefill"
+           and not r.get("sclk_mhz_max")))
+    ck("shallow rung, prefill sampled at this period", "0.02",
+       max(r["tele_period_s"] for r in _b1b if r.get("kind") == "prefill"))
+    ck("shallow rung, decode at the default", "1.5",
+       max(r["tele_period_s"] for r in _b1b if r.get("kind") == "decode"))
+    # TP=1 runs on card1 alone -- read, not inferred
+    ck("shallow rung, tp1 leaves the second card idle", "5",
+       sum(1 for r in _tp1 if (r.get("per_card") or {}).get("gpu_busy_pct", [0, 0])[1] == 0))
+
+    # the two READMEs, read as published
+    _r31 = open(os.path.join(_BR, "campaign-2026-09-02", "README.md"),
+                encoding="utf-8").read()
+    ck("31B README, publishes the re-measured b", "1",
+       1 if "`b` = 722.6" in _r31 else 0)
+    ck("31B README, and what it replaces", "1",
+       1 if "868.7" in _r31 and "18.3%" in _r31 else 0)
+    ck("31B README, says c did not move", "1",
+       1 if "left the quadratic one where it was" in _r31 else 0)
+    _rb1 = open(os.path.join(_B1, "README.md"), encoding="utf-8").read()
+    ck("shallow rung README, rules out the first-request reading", "1",
+       1 if "It is not a first-request cost" in _rb1 else 0)
+    ck("shallow rung README, rules out the thermal ramp", "1",
+       1 if "It is not a thermal ramp" in _rb1 else 0)
+    ck("shallow rung README, and leaves the tp1 bimodality open", "1",
+       1 if "not determined here" in _rb1 else 0)
+    ck("shallow rung README, states the crossover stays unmeasured", "1",
+       1 if "The crossover stays unmeasured" in _rb1 else 0)
+    ck("shallow rung README, warns that sclk_pct_of_cap is not NVML's", "1",
+       1 if "moving denominator" in _rb1 else 0)
+    _m = re.search(r"\| `sclk_mhz_min` \| (\d+) \| (\d+) \| (\d+) \| (\d+) \| (\d+) \|",
+                   _rb1)
+    ck("shallow rung README, publishes the five clocks", "5",
+       len(_m.groups()) if _m else 0)
+    if _m:
+        ck("shallow rung README, and they are the measured ones", "0",
+           sum(1 for a, b in zip([int(x) for x in _m.groups()],
+                                 sorted(r["sclk_mhz_min"] for r in _tp2))
+               if a != b))
 
     # --- the all-reduce, timed at last, 2026-09-02 ------------------------
     # Three published claims priced this collective off a fitted intercept and
@@ -2297,13 +2444,13 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "426", len(_rt))
+    ck("route column, rows carrying one", "452", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "120", _dec.get("override", 0))
-    ck("route column, forced", "218", _dec.get("forced", 0))
+    ck("route column, chosen by override", "124", _dec.get("override", 0))
+    ck("route column, forced", "240", _dec.get("forced", 0))
     ck("route column, left to the default", "88", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
@@ -2313,7 +2460,7 @@ def main():
             _why[_w] = _why.get(_w, 0) + 1
     ck("route column, forced for want of FA4", "160",
        _why.get("FA4 not available", 0))
-    ck("route column, forced to keep one backend", "58",
+    ck("route column, forced to keep one backend", "80",
        _why.get("prevent mixed-backend numerical divergence", 0))
     # what an override was choosing between -- the candidate set, which is the
     # routing question and appears nowhere else in the data
@@ -2321,9 +2468,9 @@ def main():
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "120",
+    ck("route column, ROCm offered both of its backends", "124",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "120",
+    ck("route column, and Triton was the other one", "124",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}

@@ -1,5 +1,47 @@
 #!/usr/bin/env python3
-"""runner_radeon.py — the template a new gfx1100 campaign starts from.
+"""runner.py — campaign 2026-09-02, the Radeon back on a full-width link.
+
+Copied from `harness/runner_radeon.py`, which is the template every new gfx1100
+campaign starts from; only `CFGS`, `D`, `CONTAINER` and this docstring differ.
+The template's own notes follow below.
+
+What this campaign is for
+-------------------------
+One of the two 7900 XTs trained at PCIe 3.0 **x8** from the boot of 2026-08-29
+21:48 CST onward, and nothing in the guest could see it -- the guest's sysfs
+reports the on-card bridge link, 16 GT/s x16 always, and the trained width is
+visible only at the host's root ports. The reboot of 2026-09-02 22:44 restored
+it. `host_link.json` in this directory is `preflight_host_link.sh`'s reading
+from the host, taken before this campaign ran, and `pcie.jsonl` in
+`../allreduce-2026-09-02/` is the same fact measured a second way from inside
+the guest: 13.9 GB/s host-to-device on both cards, which an x8 link (7.9 GB/s
+ceiling) cannot reach.
+
+`G31-tp2` is the arm that shows the cost. It has two x16 sittings a month apart
+that agree to 1% on fitted `b` (743.9 and 736.0 us/tok) and one x8 sitting at
+868.7 -- 17% above them -- and that x8 line is what the front page's Figure 2
+and the a100 article's Figure 4 currently draw. This re-run replaces an
+*estimate* in two published captions with a measurement.
+
+Reproduced exactly, so that the link is the only thing that differs:
+
+    container        vllm-tp2, vLLM 0.23.1.dev1+g9ddef7117.d20260715
+    #45450 state     patched -- triton_unified_attention.py 4a14f86d,
+                     triton_attn.py 7e275cdc, both confirmed unchanged in the
+                     container on 2026-09-02 against campaign-2026-08-29's
+                     provenance.json
+    serve args       tp 2, util 0.92, max-num-seqs 16, mml 33000,
+                     hf_overrides allow_global_per_layer_attribute_access
+    backend          TRITON_ATTN, forced by vLLM itself for gemma-4's
+                     heterogeneous head dims -- not by a flag
+    identity check   the 08-29 run got 6.49 GiB of KV = 82,106 tokens at these
+                     settings. A different number here means a different
+                     configuration, whatever the flags say.
+
+The id is `G31-tp2-x16` rather than `G31-tp2`: it is a different link, so it is
+a different configuration, not a second round of the same one.
+
+--- template notes follow ---
 
 Copy this beside the campaign's data, edit `CFGS` and the paths, and run it.
 It is `campaign-2026-08-30b/runner.py` with three things changed, and those
@@ -34,13 +76,13 @@ import requests
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from harness.telemetry import Sampler, describe   # noqa: E402
 
-D = "/data/rccl-build/bench0830d"
-D_IN_CONTAINER = "/rb/bench0830d"
+D = "/data/rccl-build/bench0902a"
+D_IN_CONTAINER = "/rb/bench0902a"
 # gemma-4 cannot be served on the 0.27 ROCm image at all -- its Quark plugin
 # reads head_dim off a heterogeneous config and dies before loading. Its rows
 # come from the 0.23 container, which is the stack the 08-24 campaign used,
 # so the MTP arm has that campaign's own ladder as its control.
-CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-027")
+CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-tp2")
 OTHER_CONTAINERS = ("vllm-027", "vllm-tp2")
 MUSE_P = "/data/rccl-build/prompts-muse"
 RES = f"{D}/results.jsonl"
@@ -56,27 +98,15 @@ MML = 33000          # max prompt is ~32,010 tok + 512 output + template
 DEFAULT_UTIL = 0.85  # 0.90 leaves no scratch headroom on 20 GiB cards (see rev2 note)
 
 CFGS = [
-    # 2026-08-30. Qwen3-8B on ONE 7900 XT, re-run at util 0.95.
-    #
-    # The existing B-8B-tp1 row is 2026-07-25 on vLLM 0.23 at the runner's
-    # default util 0.85, which left 1.16 GiB of KV = 8 442 tokens and stopped
-    # the ladder at 6 000: ten measurements, six rungs. Nothing about the card
-    # required that. bf16, 36 layers, 8 KV heads, head_dim 128 -> 144 KiB of KV
-    # per token, and the card reports 19.98 GiB. At util 0.95 the budget is
-    # 18.98; E26-tp1-u95 puts the activation overhead at 1.09 GiB on this card,
-    # and July measured the weights at 14.02 GiB resident, so ~3.9 GiB of KV
-    # and roughly 27 000 tokens should be reachable -- 10 rungs instead of 6.
-    #
-    # Predicted rather than known, so the runner's capacity retry decides it and
-    # the row records what it actually got. A separate id because it is a
-    # different utilisation from every other row, and 0.27 rather than 0.23, so
-    # it is a second configuration of this arm and not a second round of it.
-    #
-    # head_dim 128 with gqa_ratio 4 satisfies use_rocm_custom_paged_attention on
-    # RDNA, so unlike Qwen3.8-27B this model gets ROCM_ATTN's actual HIP kernel.
-    # That is the case vllm#54438 deliberately leaves alone.
-    dict(id="B8-tp1-u95", model="/models/Qwen3-8B", tp=1,
-         prompts=QWEN_P, mns=16, util=0.95),
+    # A1. `G31-tp2` again, byte-identical serve arguments to 2026-08-29, on the
+    # link that boot degraded and the 2026-09-02 reboot restored. Expect fitted
+    # `b` back near the 740 us/tok the two x16 sittings agree on, and decode
+    # unchanged: the arithmetic says a decode step moves less than 1% at either
+    # width because a step's collective traffic is one token's hidden state,
+    # and ../allreduce-2026-09-02 measures that collective directly.
+    dict(id="G31-tp2-x16", model="/models/gemma-4-31B-it-qat-w4a16-ct", tp=2,
+         prompts=GEMMA_P, mns=16, util=0.92,
+         hf_overrides={"allow_global_per_layer_attribute_access": True}),
 ]
 
 def sh(cmd, timeout=180):
@@ -344,11 +374,7 @@ def run_cfg(cfg, done, util=None, attempt=1):
         nonlocal nerr, consec, nok
         if (cid, target, kind, rnd) in done:
             return
-        # A 500-token prefill on this box takes 0.12 s. At the sampler's default
-        # 1.5 s that is one sample, and on 2026-09-02b four of five rounds took
-        # theirs in the idle gap before the request and recorded sclk 0. Short
-        # cells get a short period; the period is recorded on the row either way.
-        smp = Sampler(period_s=0.02 if kind == "prefill" else None)
+        smp = Sampler()
         try:
             # sampled for both kinds now; a prefill too short to catch a sample
             # emits the same keys with tele_samples 0 rather than a shorter row

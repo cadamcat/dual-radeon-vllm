@@ -194,6 +194,40 @@ SOURCES = [
     dict(file="campaign-2026-08-30/results.jsonl", machine="RX 7900 XT",
          date="2026-08-30", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
          cuda=None, kernel="7.0.0-30", patches=[], prefix_caching=True),
+    # 2026-09-02. `G31-tp2` again, on the link the 22:44 reboot restored. Same
+    # container, same vLLM build, same serve arguments to the byte (the command
+    # is committed as serve-G31-tp2-x16.sh), same forced TRITON_ATTN, same
+    # #45450 state -- confirmed by md5 against campaign-2026-08-29's
+    # provenance.json before the run. What differs is the width of one card's
+    # link, which is why the id does. `host_link.json` beside the results is the
+    # preflight's reading, and it is what host_link() uses rather than the date.
+    #
+    # The KV pool came out 6.78 GiB / 85 766 tokens against 08-29's 6.49 /
+    # 82 106 -- 4.5% more, at the same utilisation, after a reboot with nothing
+    # else resident. Recorded because it is a difference; it changes the
+    # concurrency figure and no rung of a 33 000-token ladder.
+    dict(file="campaign-2026-09-02/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-02", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
+         cuda=None, kernel="7.0.0-30", prefix_caching=True,
+         patches=["vllm#45916 split-KV", "window block-skip",
+                  "vllm#45450 3D admission"]),
+    # 2026-09-02b. Five rounds at the 500-token rung, both arms of the 8B, to
+    # ask what the shallowest rung's round-to-round disagreement is. One rung,
+    # so it fits no ladder and contributes no coefficients; what it contributes
+    # is five values per cell where every other row has two. `chart_grade` is
+    # False on both prefill cells and that is the finding, not a defect.
+    #
+    # The ids end in `-r5` deliberately: five rounds at one rung is not a second
+    # sitting of `B-8B-tp*` and must not be fitted as one.
+    #
+    # Only the second sitting is here. The first, kept beside it as
+    # results-attempt1.jsonl, ran the telemetry sampler at 1.5 s against a
+    # 0.12 s cell and recorded sclk 0 in four rounds of five; and its tp1 arm
+    # settled at a different `mml` (8 363 against 15 792), so the two are not
+    # the same configuration either. See this campaign's README.
+    dict(file="campaign-2026-09-02b/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-02", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
+         cuda=None, kernel="7.0.0-30", patches=[], prefix_caching=True),
     # 2026-08-30. The spine's fourth machine, and the first CUDA rows in this
     # repository measured with prefix caching off. Both configurations are 11
     # rungs x 2 rounds, 22 measurements, 0 errors. `driver` is from nvidia-smi
@@ -430,11 +464,50 @@ def routes_from_source(path):
 # at TP=2 and depth is -- the 31B's fitted `b` is 743.9 and 736.0 on the two
 # x16 sittings and 868.7 on the x8 one.
 HOST_LINK_X8_FROM = "2026-08-29"
+# ...and the reboot of 2026-09-02 22:44 CST put it back. Both root ports read
+# x16 again, under load and at boot, with no reseat -- so the cause was a
+# link-training state the hard stop left behind, and it can recur.
+#
+# A date alone can no longer answer the question. The reboot landed in the
+# middle of 2026-09-02, and campaigns are dated by day, so two Radeon campaigns
+# with the same `date` can sit on either side of it. From 2026-09-02 every
+# campaign therefore runs `harness/preflight_host_link.sh` first and commits its
+# reading; when that file is beside the results, it is the answer and the date
+# rule is not consulted. The date rule stays for the campaigns that predate the
+# preflight, which is the only thing it can honestly cover.
+HOST_LINK_X16_AGAIN = "2026-09-02"
 
 
-def host_link(machine, date):
+def host_link_measured(path):
+    """The preflight's own reading for the campaign `path` belongs to, or None.
+
+    `x8/x16` and `x16/x16` in the order preflight_host_link.sh reads the cards,
+    which is 0b:00.0 then 44:00.0 -- the narrowed one first, as the existing
+    strings already assume.
+    """
+    if not path:
+        return None
+    hl = os.path.join(os.path.dirname(path), "host_link.json")
+    if not os.path.exists(hl):
+        return None
+    cards = json.load(open(hl)).get("cards") or []
+    if len(cards) != 2 or any(not c.get("width") for c in cards):
+        return None                               # an unreadable record is not a reading
+    return "/".join(c["width"] for c in cards)
+
+
+def host_link(machine, date, path=None):
     if machine != "RX 7900 XT":
         return None                               # rented VMs: unknown, and not ours
+    measured = host_link_measured(path)
+    if measured:
+        return measured
+    if date >= HOST_LINK_X16_AGAIN:
+        # a Radeon campaign from the day the link was restored onward has to
+        # carry its own preflight; guessing from the date would be a coin flip
+        raise SystemExit(
+            f"host_link: {path} is dated {date} and has no host_link.json. "
+            "Run harness/preflight_host_link.sh before the campaign.")
     return "x8/x16" if date >= HOST_LINK_X8_FROM else "x16/x16"
 
 
@@ -549,7 +622,7 @@ def build():
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,
                 spec=spec, attn_backend=backend, route=routed.get(cfg),
-                host_link=host_link(s["machine"], s["date"]),
+                host_link=host_link(s["machine"], s["date"], B(s["file"])),
                 prefix_caching=over.get("prefix_caching", s.get("prefix_caching"))))
     rows.sort(key=lambda r: (r["machine"], r["model"], r["tp"], r["date"],
                              ",".join(r["patches"]), r["ctx"]))

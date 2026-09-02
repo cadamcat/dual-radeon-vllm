@@ -88,6 +88,16 @@ CFG = {
     # 8 442 -- because the weights are 15.27 GiB on 0.27 rather than the 14.02
     # that 0.23 reported, and this model's activation overhead is 2.58 GiB.
     "B8-tp1-u95":                ("Qwen3-8B", "bf16", "dense", 1),
+    # 2026-09-02. `G31-tp2` re-run with byte-identical serve arguments on the
+    # link the 2026-09-02 22:44 reboot restored to x16. A separate id because
+    # the link is part of the configuration, not a second round of the x8 one.
+    "G31-tp2-x16":               ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
+    # 2026-09-02b. Five rounds at the 500-token rung, both arms of the 8B --
+    # the cell whose two rounds disagreed by 22.13% in July and 18.24% in
+    # August. Five rounds at one rung is not the two-round eleven-rung ladder,
+    # so these must not be picked up as a third sitting of `B-8B-tp*`.
+    "B8-tp2-r5":                 ("Qwen3-8B", "bf16", "dense", 2),
+    "B8-tp1-r5":                 ("Qwen3-8B", "bf16", "dense", 1),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -131,6 +141,9 @@ ARMS = {
     # rather than a second Triton one. Read from the serve log's
     # `Overriding with ROCM_ATTN out of potential backends` line.
     "B8-tp1-u95":                (None,   "ROCM_ATTN"),
+    "G31-tp2-x16":               (None,   "TRITON_ATTN"),
+    "B8-tp2-r5":                 (None,   "ROCM_ATTN"),
+    "B8-tp1-r5":                 (None,   "ROCM_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 

@@ -65,7 +65,7 @@ import re
 import threading
 import time
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 #: what this harness deliberately does not carry, and why. Kept as data so a
 #: reader and a gate see the same list.
@@ -247,7 +247,7 @@ class Sampler(threading.Thread):
     def stop_and_summarise(self):
         self.stop_ev.set()
         self.join(timeout=self.period * 2 + 1)
-        return summarise(self.rows)
+        return summarise(self.rows, period=self.period)
 
 
 #: the aggregate keys every measured row carries, whatever the platform and
@@ -259,21 +259,32 @@ SUMMARY_KEYS = ("gpu_busy_pct_max", "mem_busy_pct_max", "power_w_max",
                 "temp_c_max", "sclk_mhz_max", "mclk_mhz_max", "vram_used_b_max",
                 "pcie_tx_kbs_max", "pcie_rx_kbs_max", "power_w_sum_max",
                 "power_w_sum_min", "sclk_mhz_cap", "power_cap_w",
-                "sclk_pct_of_cap")
+                "sclk_pct_of_cap",
+                # v2, 2026-09-02b. A 500-token prefill on gfx1100 takes 0.12 s
+                # and the sampler ran at 1.5 s, so four of five rounds caught
+                # exactly one sample and it landed in the idle gap between
+                # requests: sclk read 0 and the row said nothing. The period is
+                # now recorded rather than assumed, and the *first* sample is
+                # kept beside the maximum, because for a cell shorter than the
+                # card's clock ramp the question is what state it started in.
+                "tele_period_s", "sclk_mhz_first", "sclk_mhz_min",
+                "temp_c_first")
 
 
-def _empty():
+def _empty(period=None):
     d = {"tele_samples": 0, "tele_schema": SCHEMA_VERSION, "per_card": {}}
     d.update({k: None for k in SUMMARY_KEYS})
+    d["tele_period_s"] = period
     return d
 
 
-def summarise(rows):
+def summarise(rows, period=None):
     """Per-cell aggregates, with the field names every machine emits."""
+    raw = rows
     if len(rows) >= 6:
         rows = rows[len(rows) // 3: -max(1, len(rows) // 6)]
     if not rows:
-        return _empty()
+        return _empty(period)
     n = len(rows[0])
 
     def vals(card, key):
@@ -316,6 +327,18 @@ def summarise(rows):
     out["sclk_pct_of_cap"] = (
         round(out["sclk_mhz_max"] / out["sclk_mhz_cap"] * 100, 1)
         if out.get("sclk_mhz_max") and out.get("sclk_mhz_cap") else None)
+    # v2. The trimmed window answers "what was the steady state"; these answer
+    # "what state did the cell start in", which is the only question a cell
+    # shorter than the clock ramp can answer at all. Taken from the untrimmed
+    # samples on purpose -- the head is exactly what is wanted here.
+    out["tele_period_s"] = period
+    _first = raw[0] if raw else None
+    out["sclk_mhz_first"] = (max([c.get("sclk_mhz") or 0 for c in _first]) or None
+                             if _first else None)
+    out["temp_c_first"] = (max([c.get("temp_c") or 0 for c in _first]) or None
+                           if _first else None)
+    _sall = [c.get("sclk_mhz") for r in raw for c in r if c.get("sclk_mhz")]
+    out["sclk_mhz_min"] = min(_sall) if _sall else None
     for k in SUMMARY_KEYS:                        # never a ragged row
         out.setdefault(k, None)
     return out

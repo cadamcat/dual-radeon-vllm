@@ -1,5 +1,46 @@
 #!/usr/bin/env python3
-"""runner_radeon.py — the template a new gfx1100 campaign starts from.
+"""runner.py — campaign 2026-09-02b, the shallow rung, five rounds, on gfx1100.
+
+Copied from `harness/runner_radeon.py` like every new gfx1100 campaign; `CFGS`,
+`D`, `CONTAINER` and this docstring are what differ. The template's own notes
+follow below.
+
+The question
+------------
+Every ladder in this repository measures each rung twice, and the shallowest
+rung is the one whose two rounds disagree. On this box it disagreed by
+**22.13%** on `B-8B-tp2` at 500 tokens in July and by 18.24% on `B-8B-tp1` in
+August, and the published crossover claim ("below roughly 1 K tokens of prompt,
+TP=2 hurts time-to-first-token") rested on that one cell. It was withdrawn on
+2026-08-30 because the residual landed on TP=2 in July and on TP=1 in August —
+a coin flip, not a topology.
+
+The reading offered then was a first-request cost: the first CUDA-graph replay,
+the first allocation out of the KV pool, lazy JIT. Two CUDA campaigns on
+2026-09-02 tested that with five rounds and telemetry and it did not survive.
+On the T4 round 1 was +4.45% and the five fell **monotonically with the clock**,
+83% -> 70% of cap. On the L4 the five spanned 1.28% with round 1 in the middle.
+Neither is a first-request effect; the T4's is a thermal ramp.
+
+The Radeon is the platform where the disagreement was largest and the only one
+not yet tested this way. It also has a known 99-100 C hotspot on the upper card.
+The harness records sclk, mclk, power and temperature per round now, so if the
+mechanism is a ramp it is visible, and if round 1 is simply special that is
+visible too.
+
+Both arms of the 8B, because the July/August pair is what makes the cell
+interesting: whichever arm looks slow, five rounds say whether it is the arm or
+the round.
+
+    container   vllm-tp2, vLLM 0.23.1.dev1+g9ddef7117.d20260715 -- the stack
+                both published sittings of these two arms ran on
+    util        0.85 on tp2 and 0.90 on tp1, as in July and August
+    rung        500 only (BENCH_TARGETS), five rounds of prefill then five of
+                decode, telemetry sampled on both
+    link        x16/x16, see host_link.json
+
+--- template notes follow ---
+
 
 Copy this beside the campaign's data, edit `CFGS` and the paths, and run it.
 It is `campaign-2026-08-30b/runner.py` with three things changed, and those
@@ -34,13 +75,13 @@ import requests
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from harness.telemetry import Sampler, describe   # noqa: E402
 
-D = "/data/rccl-build/bench0830d"
-D_IN_CONTAINER = "/rb/bench0830d"
+D = "/data/rccl-build/bench0902b"
+D_IN_CONTAINER = "/rb/bench0902b"
 # gemma-4 cannot be served on the 0.27 ROCm image at all -- its Quark plugin
 # reads head_dim off a heterogeneous config and dies before loading. Its rows
 # come from the 0.23 container, which is the stack the 08-24 campaign used,
 # so the MTP arm has that campaign's own ladder as its control.
-CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-027")
+CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-tp2")
 OTHER_CONTAINERS = ("vllm-027", "vllm-tp2")
 MUSE_P = "/data/rccl-build/prompts-muse"
 RES = f"{D}/results.jsonl"
@@ -56,27 +97,14 @@ MML = 33000          # max prompt is ~32,010 tok + 512 output + template
 DEFAULT_UTIL = 0.85  # 0.90 leaves no scratch headroom on 20 GiB cards (see rev2 note)
 
 CFGS = [
-    # 2026-08-30. Qwen3-8B on ONE 7900 XT, re-run at util 0.95.
-    #
-    # The existing B-8B-tp1 row is 2026-07-25 on vLLM 0.23 at the runner's
-    # default util 0.85, which left 1.16 GiB of KV = 8 442 tokens and stopped
-    # the ladder at 6 000: ten measurements, six rungs. Nothing about the card
-    # required that. bf16, 36 layers, 8 KV heads, head_dim 128 -> 144 KiB of KV
-    # per token, and the card reports 19.98 GiB. At util 0.95 the budget is
-    # 18.98; E26-tp1-u95 puts the activation overhead at 1.09 GiB on this card,
-    # and July measured the weights at 14.02 GiB resident, so ~3.9 GiB of KV
-    # and roughly 27 000 tokens should be reachable -- 10 rungs instead of 6.
-    #
-    # Predicted rather than known, so the runner's capacity retry decides it and
-    # the row records what it actually got. A separate id because it is a
-    # different utilisation from every other row, and 0.27 rather than 0.23, so
-    # it is a second configuration of this arm and not a second round of it.
-    #
-    # head_dim 128 with gqa_ratio 4 satisfies use_rocm_custom_paged_attention on
-    # RDNA, so unlike Qwen3.8-27B this model gets ROCM_ATTN's actual HIP kernel.
-    # That is the case vllm#54438 deliberately leaves alone.
-    dict(id="B8-tp1-u95", model="/models/Qwen3-8B", tp=1,
-         prompts=QWEN_P, mns=16, util=0.95),
+    # B1. The 500 rung of the two arms whose rounds disagreed, five times each.
+    # The ids carry `-r5` because five rounds at one rung is not the same
+    # configuration as two rounds across eleven, and the ladder fits must not
+    # pick these up as a third sitting of `B-8B-tp*`.
+    dict(id="B8-tp2-r5", model="/models/Qwen3-8B", tp=2,
+         prompts=QWEN_P, rounds=5),
+    dict(id="B8-tp1-r5", model="/models/Qwen3-8B", tp=1,
+         prompts=QWEN_P, util=0.90, rounds=5),
 ]
 
 def sh(cmd, timeout=180):
@@ -344,10 +372,6 @@ def run_cfg(cfg, done, util=None, attempt=1):
         nonlocal nerr, consec, nok
         if (cid, target, kind, rnd) in done:
             return
-        # A 500-token prefill on this box takes 0.12 s. At the sampler's default
-        # 1.5 s that is one sample, and on 2026-09-02b four of five rounds took
-        # theirs in the idle gap before the request and recorded sclk 0. Short
-        # cells get a short period; the period is recorded on the row either way.
         smp = Sampler(period_s=0.02 if kind == "prefill" else None)
         try:
             # sampled for both kinds now; a prefill too short to catch a sample

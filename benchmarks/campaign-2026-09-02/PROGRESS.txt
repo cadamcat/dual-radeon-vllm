@@ -1,0 +1,15 @@
+15:27:36 | === campaign start rev2 (['G31-tp2-x16']) ===
+15:31:29 | G31-tp2-x16: ready (mml=33000, util=0.92), 11 points x 2 rounds
+15:31:54 | G31-tp2-x16: point 500 done
+15:32:26 | G31-tp2-x16: point 1000 done
+15:33:01 | G31-tp2-x16: point 2000 done
+15:33:45 | G31-tp2-x16: point 4000 done
+15:34:38 | G31-tp2-x16: point 6000 done
+15:35:41 | G31-tp2-x16: point 8000 done
+15:37:05 | G31-tp2-x16: point 12000 done
+15:38:56 | G31-tp2-x16: point 16000 done
+15:41:15 | G31-tp2-x16: point 20000 done
+15:44:07 | G31-tp2-x16: point 24000 done
+15:48:15 | G31-tp2-x16: point 32000 done
+15:48:15 | G31-tp2-x16: COMPLETE (44 ok, 0 err)
+15:48:25 | === campaign end: container stopped, services restored ===

@@ -25,6 +25,8 @@ import sys
 
 from build_ledger import RANGE_CUT, latest_session, B, PROBES, MODELS, CFG
 from build_prefill import SOURCES, meta_for, arm_for, routes_from_source
+from build_prefill import HOST_LINK_X8_FROM as _bpm_host_link_x8_from
+from build_prefill import host_link as _bpm_host_link
 
 
 DECODE = B("decode.jsonl")
@@ -62,13 +64,10 @@ def aggregate(values, tokens, **row):
 # crosses that link. Decode is not measurably affected at either width; prefill
 # at TP=2 and depth is -- the 31B's fitted `b` is 743.9 and 736.0 on the two
 # x16 sittings and 868.7 on the x8 one.
-HOST_LINK_X8_FROM = "2026-08-29"
-
-
-def host_link(machine, date):
-    if machine != "RX 7900 XT":
-        return None                               # rented VMs: unknown, and not ours
-    return "x8/x16" if date >= HOST_LINK_X8_FROM else "x16/x16"
+# The rule itself lives in build_prefill, which is where the campaign table
+# lives; restating it here once produced two copies that could disagree.
+HOST_LINK_X8_FROM = _bpm_host_link_x8_from
+host_link = _bpm_host_link
 
 
 def build():
@@ -109,7 +108,7 @@ def build():
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,
                 spec=spec, attn_backend=backend, route=routed.get(cfg),
-                host_link=host_link(s["machine"], s["date"]),
+                host_link=host_link(s["machine"], s["date"], B(s["file"])),
                 prefix_caching=over.get("prefix_caching", s.get("prefix_caching"))))
     # The probe sources have decode and no prefill, so they are not in the
     # shared SOURCES table -- but the ledger carries them, and this projection
