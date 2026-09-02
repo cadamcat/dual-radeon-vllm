@@ -1,0 +1,20 @@
+===== start 2026-09-02T17:39:28+00:00 =====
+Error response from daemon: container 93d44e04eee630b9c67e3d48ecea50977acee0ceacf09a8016db641860c882fa is not running
+patch state (first_block sites, left exactly as found): 
+--- muse backend=ROCM_ATTN  2026-09-02T17:39:33+00:00 ---
+  [within] muse backend=ROCM_ATTN proc=1 ctx=   512 -> 6 distinct of 8  first_div=[32, 0, 29, 0, 0, 0, 0]
+  [within] muse backend=ROCM_ATTN proc=1 ctx=  8192 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  === NONDET DONE ===
+  backend in log: Overriding with ROCM_ATTN 
+  quant kernel:   Using RDNA3W4A16LinearKernel 
+--- muse backend=TRITON_ATTN  2026-09-02T17:42:49+00:00 ---
+  [within] muse backend=TRITON_ATTN proc=1 ctx=   512 -> 6 distinct of 8  first_div=[16, 0, 16, 13, 0, 16, 0]
+  [within] muse backend=TRITON_ATTN proc=1 ctx=  8192 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  === NONDET DONE ===
+  backend in log: Overriding with ROCM_ATTN 
+  quant kernel:   Using RDNA3W4A16LinearKernel 
+--- gemma3 backend=ROCM_ATTN  2026-09-02T17:46:08+00:00 ---
+===== restore 2026-09-02T17:48:17+00:00 =====
+services: active active 
+vram: 27971584 27971584 
+=== ATTN-AB COMPLETE 2026-09-02T17:48:40+00:00 ===

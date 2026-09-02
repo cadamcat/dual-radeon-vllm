@@ -2268,6 +2268,98 @@ def main():
                                  sorted(r["sclk_mhz_min"] for r in _tp2))
                if a != b))
 
+    # --- the attention backend is not the axis, 2026-09-02 ----------------
+    # gfx1100-greedy-nondeterminism.json's `reading` blamed ROCM_ATTN, on a set
+    # in which the attention backend is confounded with the W4A16 quantisation
+    # kernel. Holding the kernel and moving the backend leaves the same cells
+    # varying, so the sentence is withdrawn. These pin the A/B, the confound it
+    # breaks, and the fact that the kernel did not move with the backend.
+    _AB = os.path.join(_BR, "gfx1100-greedy-attn-ab")
+    _abc = {}
+    for _m in ("muse", "gemma3"):
+        for _b in ("ROCM_ATTN", "TRITON_ATTN"):
+            _j = json.load(open(os.path.join(_AB, f"nondet-attn-{_m}-{_b}-p1.json")))
+            assert _j["attn_backend"] == _b
+            for _r in _j["rows"]:
+                _abc[(_m, _b, _r["depth"])] = _r["distinct"]
+    ck("attn A/B, cells measured", "8", len(_abc))
+    for _k, _v in ((("muse", "ROCM_ATTN", 512), "6"),
+                   (("muse", "TRITON_ATTN", 512), "7"),
+                   (("muse", "ROCM_ATTN", 8192), "4"),
+                   (("muse", "TRITON_ATTN", 8192), "1"),
+                   (("gemma3", "ROCM_ATTN", 512), "1"),
+                   (("gemma3", "TRITON_ATTN", 512), "1"),
+                   (("gemma3", "ROCM_ATTN", 8192), "4"),
+                   (("gemma3", "TRITON_ATTN", 8192), "3")):
+        ck("attn A/B, %s %s @%d distinct of 8" % _k, _v, _abc[_k])
+    # the binary, which is what is read: the same three cells vary under both
+    ck("attn A/B, cells varying on ROCM_ATTN", "3",
+       sum(1 for k, v in _abc.items() if k[1] == "ROCM_ATTN" and v > 1))
+    ck("attn A/B, cells varying on TRITON_ATTN", "2",
+       sum(1 for k, v in _abc.items() if k[1] == "TRITON_ATTN" and v > 1))
+    ck("attn A/B, cells that agree between the two backends on varies-or-not", "3",
+       sum(1 for _m in ("muse", "gemma3") for _d in (512, 8192)
+           if (_abc[(_m, "ROCM_ATTN", _d)] > 1) == (_abc[(_m, "TRITON_ATTN", _d)] > 1)))
+    # every log must name the backend it was asked for, and the same quantisation
+    # kernel -- the first attempt's arms both ran ROCM_ATTN and this is the check
+    # that caught it
+    _named = _kern = 0
+    for _m in ("muse", "gemma3"):
+        for _b in ("ROCM_ATTN", "TRITON_ATTN"):
+            _t = open(os.path.join(_AB, "logs", f"nondet-attn-{_m}-{_b}.log"),
+                      errors="ignore").read()
+            _named += 1 if ("Using %s backend" % _b) in _t else 0
+            _kern += 1 if "Using RDNA3W4A16LinearKernel" in _t else 0
+    ck("attn A/B, logs naming the backend the arm asked for", "4", _named)
+    ck("attn A/B, and all of them on the same quantisation kernel", "4", _kern)
+    # the attempt that measured nothing, kept as evidence
+    _a1 = open(os.path.join(_AB, "logs-attempt1", "nondet-attn-ab.log"),
+               errors="ignore").read()
+    ck("attn A/B, the first attempt's arms both landed on ROCM_ATTN", "2",
+       _a1.count("backend in log: Overriding with ROCM_ATTN"))
+    ck("attn A/B, and none of them on the backend they asked for", "0",
+       _a1.count("Using TRITON_ATTN backend"))
+    _nra = open(os.path.join(_AB, "nondet_attn.py")).read()
+    ck("attn A/B, the runner passes the backend as an engine arg", "1",
+       1 if "attention_backend=AttentionBackendEnum[backend]" in _nra else 0)
+    ck("attn A/B, and no longer through the env var", "0",
+       _nra.count('os.environ["VLLM_ATTENTION_BACKEND"]'))
+    _drv = open(os.path.join(_AB, "run_attn_ab.sh")).read()
+    ck("attn A/B, the driver greps the backend out of every log", "1",
+       1 if "backend in log" in _drv else 0)
+    ck("attn A/B, and the quantisation kernel too", "1",
+       1 if "quant kernel" in _drv else 0)
+    # the withdrawal, in the data file that carried the sentence
+    _nd = json.load(open(os.path.join(_BR, "gfx1100-greedy-nondeterminism.json")))
+    ck("attn A/B, the old reading no longer claims the backend", "0",
+       _nd["reading"].count("the affected models are on ROCM_ATTN"))
+    ck("attn A/B, and it is recorded as withdrawn rather than deleted", "1",
+       1 if "the affected models are on ROCM_ATTN"
+       in _nd.get("reading_withdrawn_2026-09-02", {}).get("was", "") else 0)
+    ck("attn A/B, the withdrawal names what is left open", "1",
+       1 if "NOT established"
+       in _nd.get("reading_withdrawn_2026-09-02", {}).get("what_is_left", "") else 0)
+    # ...and the README that publishes it
+    _rab = open(os.path.join(_AB, "README.md"), encoding="utf-8").read()
+    ck("attn A/B README, answers the question in its title", "1",
+       1 if _rab.count("**No.**") else 0)
+    ck("attn A/B README, states the kernel was held fixed", "1",
+       1 if "held at\n`RDNA3W4A16LinearKernel`" in _rab else 0)
+    # ...and does not overstate the result: neither model is rescued, but the
+    # counts are 3 against 2, not "the same three"
+    ck("attn A/B README, counts the varying cells both ways", "1",
+       1 if "3 of 4 on\n`ROCM_ATTN` against 2 of 4 on `TRITON_ATTN`" in _rab else 0)
+    ck("attn A/B README, says both models are still unstable", "1",
+       1 if "both unstable models are still unstable" in _rab else 0)
+    ck("attn A/B README, says #54706 needs a build and not a file swap", "1",
+       1 if "Budget a\nbuild, not an hour." in _rab else 0)
+    ck("attn A/B README, keeps the failed attempt and its rule", "1",
+       1 if "an arm that asks for a configuration is not an arm that got it" in _rab
+       else 0)
+    ck("attn A/B README, does not claim the kernel is the cause", "1",
+       1 if "**Not established:** that the quantisation kernel is the cause" in _rab
+       else 0)
+
     # --- the other two x8 lines, re-measured, 2026-09-02c -----------------
     _f38 = {(f["cfg"], f["date"]): f for f in _bpm.fits(_RTP)
             if f["machine"] == "RX 7900 XT"
