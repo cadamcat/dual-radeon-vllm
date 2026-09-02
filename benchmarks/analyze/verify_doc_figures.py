@@ -1942,7 +1942,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "17", len(_camps))
+    ck("campaigns, every results.jsonl found", "18", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2031,9 +2031,9 @@ def main():
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "177", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "199", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "183", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "205", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -2268,6 +2268,94 @@ def main():
                                  sorted(r["sclk_mhz_min"] for r in _tp2))
                if a != b))
 
+    # --- the other two x8 lines, re-measured, 2026-09-02c -----------------
+    _f38 = {(f["cfg"], f["date"]): f for f in _bpm.fits(_RTP)
+            if f["machine"] == "RX 7900 XT"
+            and f["cfg"].startswith(("Q38-tp2", "Q38-triton-tp2"))
+            and "mtp" not in f["cfg"]}
+    ck("Q38 re-measured, ROCm b on x8", "913.2", _f38[("Q38-tp2", "2026-08-29")]["b_us_tok"])
+    ck("Q38 re-measured, ROCm b on x16", "761.3",
+       _f38[("Q38-tp2-x16", "2026-09-02")]["b_us_tok"])
+    ck("Q38 re-measured, so x8 was this much above it", "20.0",
+       (_f38[("Q38-tp2", "2026-08-29")]["b_us_tok"]
+        / _f38[("Q38-tp2-x16", "2026-09-02")]["b_us_tok"] - 1) * 100)
+    ck("Q38 re-measured, Triton b on x8", "846.2",
+       _f38[("Q38-triton-tp2", "2026-08-29")]["b_us_tok"])
+    ck("Q38 re-measured, Triton b on x16", "758.5",
+       _f38[("Q38-triton-tp2-x16", "2026-09-02")]["b_us_tok"])
+    ck("Q38 re-measured, so x8 was this much above it", "11.6",
+       (_f38[("Q38-triton-tp2", "2026-08-29")]["b_us_tok"]
+        / _f38[("Q38-triton-tp2-x16", "2026-09-02")]["b_us_tok"] - 1) * 100)
+    # the finding: once the link is equal the two backends agree on b, and only
+    # on b -- c is attention and the flag is what changes it
+    ck("Q38 re-measured, the two backends disagree on b by this pct on x8", "7.9",
+       (_f38[("Q38-tp2", "2026-08-29")]["b_us_tok"]
+        / _f38[("Q38-triton-tp2", "2026-08-29")]["b_us_tok"] - 1) * 100)
+    ck("Q38 re-measured, and by this much on x16", "0.4",
+       (_f38[("Q38-tp2-x16", "2026-09-02")]["b_us_tok"]
+        / _f38[("Q38-triton-tp2-x16", "2026-09-02")]["b_us_tok"] - 1) * 100)
+    ck("Q38 re-measured, while c still differs by this factor on x16", "3.87",
+       _f38[("Q38-triton-tp2-x16", "2026-09-02")]["c_ns_tok2"]
+       / _f38[("Q38-tp2-x16", "2026-09-02")]["c_ns_tok2"])
+    # the published comparison, at the rung it is published at
+    _p38 = {(r["cfg"], r["date"], r["ctx"]): r for r in _RTP
+            if r.get("machine") == "RX 7900 XT"}
+    _d38 = {(r["cfg"], r["date"], r["ctx"]): r for r in _RTD
+            if r.get("machine") == "RX 7900 XT"}
+    ck("Q38 re-measured, ROCm prefill at 32K", "1098.8",
+       _p38[("Q38-tp2-x16", "2026-09-02", 32000)]["prefill_tok_s"], 0.001)
+    ck("Q38 re-measured, Triton prefill at 32K", "759.7",
+       _p38[("Q38-triton-tp2-x16", "2026-09-02", 32000)]["prefill_tok_s"], 0.001)
+    ck("Q38 re-measured, and the ratio the trade is published as", "1.446",
+       _p38[("Q38-tp2-x16", "2026-09-02", 32000)]["prefill_tok_s"]
+       / _p38[("Q38-triton-tp2-x16", "2026-09-02", 32000)]["prefill_tok_s"])
+    ck("Q38 re-measured, which on x8 was", "1.405",
+       _p38[("Q38-tp2", "2026-08-29", 32000)]["prefill_tok_s"]
+       / _p38[("Q38-triton-tp2", "2026-08-29", 32000)]["prefill_tok_s"])
+    # decode, which the link does not reach
+    _dmax = max(abs(_d38[(c + "-x16", "2026-09-02", x)]["decode_tok_s"]
+                    / _d38[(c, "2026-08-29", x)]["decode_tok_s"] - 1) * 100
+                for c in ("Q38-tp2", "Q38-triton-tp2")
+                for x in (500, 8000, 32000))
+    ck("Q38 re-measured, worst decode move across the link", "1.0", _dmax, 0.05)
+    # the run that was thrown away, and what identified it
+    _NS = [json.loads(l) for l in
+           open(os.path.join(_BR, "campaign-2026-09-02c", "results-nosplitkv.jsonl"))]
+    _ns32 = [r["decode_tps"] for r in _NS
+             if r.get("kind") == "decode" and r.get("target") == 32000]
+    ck("Q38 re-measured, the discarded run's decode at 32K", "3.88",
+       sum(_ns32) / len(_ns32))
+    _sk = [json.loads(l) for l in
+           open(os.path.join(_BR, "hybrid-splitkv-027", "qwen38-027-depth.jsonl"))]
+    _stock32 = next(r["decode_tok_s"] for r in _sk
+                    if r["arm"] == "stock" and r["ctx"] == 32768)
+    ck("Q38 re-measured, which is the committed stock arm to this pct", "1.4",
+       abs(sum(_ns32) / len(_ns32) / _stock32 - 1) * 100, 0.2)
+    _ap = open(os.path.join(_BR, "campaign-2026-09-02c", "apply_45916.py")).read()
+    ck("Q38 re-measured, the guard that would have caught it asserts both md5s",
+       "2", sum(1 for _m in ("86f68d47c7bdc390ced4c6d0c18025fa",
+                             "84c6d4f9b2dfe2714b3a8f43ee832b02") if _m in _ap))
+    ck("Q38 re-measured, and refuses on anything else", "1",
+       1 if "refusing: the container's file is neither state on record" in _ap else 0)
+    # the READMEs that publish it
+    _r38 = open(os.path.join(_BR, "campaign-2026-09-02c", "README.md"),
+                encoding="utf-8").read()
+    ck("Q38 README, publishes both re-measured b values", "1",
+       1 if "**761.3**" in _r38 and "**758.5**" in _r38 else 0)
+    ck("Q38 README, states the backends agree on b once the link is equal", "1",
+       1 if "agree on `b` to 0.4%" in _r38 else 0)
+    ck("Q38 README, keeps the discarded run and says why", "1",
+       1 if "3.88 tok/s at 32 000 tokens" in _r38 and "results-nosplitkv.jsonl" in _r38
+       else 0)
+    ck("Q38 README, states the rule the trap earns", "1",
+       1 if "assert every patch md5" in _r38 else 0)
+    _bmr = open(os.path.join(_BR, "README.md"), encoding="utf-8").read()
+    _m = re.search(r"\*\*969 . 1.099\*\* tok/s on `ROCM_ATTN` and \*\*690 . 760\*\*", _bmr)
+    ck("benchmarks README, re-states the trade with measured absolutes", "1",
+       1 if _m else 0)
+    ck("benchmarks README, and says the ratio barely moved", "1",
+       1 if "1.40" in _bmr and "1.45" in _bmr else 0)
+
     # --- the all-reduce, timed at last, 2026-09-02 ------------------------
     # Three published claims priced this collective off a fitted intercept and
     # all three were withdrawn on 2026-08-30. benchmarks/allreduce-2026-09-02
@@ -2477,14 +2565,14 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "452", len(_rt))
+    ck("route column, rows carrying one", "496", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "124", _dec.get("override", 0))
+    ck("route column, chosen by override", "146", _dec.get("override", 0))
     ck("route column, forced", "240", _dec.get("forced", 0))
-    ck("route column, left to the default", "88", _dec.get("default", 0))
+    ck("route column, left to the default", "110", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
     for _r in _rt:
@@ -2501,9 +2589,9 @@ def main():
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "124",
+    ck("route column, ROCm offered both of its backends", "146",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "124",
+    ck("route column, and Triton was the other one", "146",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
@@ -5891,21 +5979,39 @@ def main():
        1 if _b8[0]["chart_grade"] else 0)
     ck("hybrid section 6, and its two rounds are this far apart", "22",
        _b8[0]["range_pct"], 0.5)
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "6", len(_lad))
-    ck("hybrid section 6, and only one of them rises", "1",
-       sum(1 for x in _lad if x > 0))
-    ck("hybrid section 6, the other five fall", "5", sum(1 for x in _lad if x < 0))
+    # 2026-09-02c added two: the same two Qwen3.8 arms re-measured on the
+    # restored link. Eight ladders now, and the count of "rises" went 1 -> 2 --
+    # but the second rises by 0.3%, which is flat, so the sentence says one
+    # rises, one is flat and six fall rather than "two rise".
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "8", len(_lad))
+    ck("hybrid section 6, and only one of them rises by more than 1 pct", "1",
+       sum(1 for x in _lad if x > 1))
+    ck("hybrid section 6, one more is flat inside 1 pct", "1",
+       sum(1 for x in _lad if 0 < x <= 1))
+    ck("hybrid section 6, the other six fall", "6", sum(1 for x in _lad if x < 0))
 
-    def _pf(cfg, machine, date):
+    def _pf(cfg, machine, date, lo=None):
+        """The ladder's end-to-end change, optionally from a stated rung.
+
+        `lo` matters: `Q38-triton-tp2-x16` keeps its 500 rung and `Q38-tp2-x16`
+        does not, so their own-shallow ratios are not comparable. From 1 000 the
+        Triton arm falls 32.6% where the ROCm one is flat.
+        """
         rs = sorted([r for r in XPF if r["cfg"] == cfg and r["machine"] == machine
                      and r["date"] == date and r["chart_grade"]], key=lambda r: r["ctx"])
+        if lo:
+            rs = [r for r in rs if r["ctx"] >= lo]
         return (rs[-1]["prefill_tok_s"] / rs[0]["prefill_tok_s"] - 1) * 100
 
     for _lang, _fn in (("EN", "hybrid-ssm-collapse.html"),
                        ("ZH", "hybrid-ssm-collapse.zh.html")):
         _t = flat[_fn]
-        ck("hybrid section 6 %s, the sibling falls on 0.27" % _lang, "7.5",
-           -_pf("Q38-tp2", "RX 7900 XT", "2026-08-29"))
+        # the 0.27 arm on the narrowed link is no longer quoted -- it is
+        # replaced by the same arm on a full-width one, which is flat
+        ck("hybrid section 6 %s, the sibling on a full-width link" % _lang, "0.3",
+           _pf("Q38-tp2-x16", "RX 7900 XT", "2026-09-02"))
+        ck("hybrid section 6 %s, and pinned to Triton it falls hardest" % _lang,
+           "32.6", -_pf("Q38-triton-tp2-x16", "RX 7900 XT", "2026-09-02", 1000))
         ck("hybrid section 6 %s, and on 0.23" % _lang, "11.8",
            -_pf("D8-27B-tp2", "RX 7900 XT", "2026-08-24"))
         ck("hybrid section 6 %s, and on the A100" % _lang, "8.1",
@@ -5924,9 +6030,11 @@ def main():
            "-" + (_dr.group(1) or "0"), max(_dn), 0.5)
         ck("hybrid section 6 %s, dense worst case" % _lang,
            "-" + (_dr.group(2) or "0"), min(_dn), 0.5)
-        ck("hybrid section 6 %s, quotes all five" % _lang, "5",
-           sum(1 for _v in ("7.5 %", "11.8 %", "8.1 %", "23.8 %", "21.9 %")
+        ck("hybrid section 6 %s, quotes all six" % _lang, "6",
+           sum(1 for _v in ("0.3 %", "11.8 %", "8.1 %", "32.6 %", "23.8 %", "21.9 %")
                if fl(_v) in _t))
+        ck("hybrid section 6 %s, no longer quotes the narrowed-link figure" % _lang,
+           "0", 1 if fl("7.5 % on these cards") in _t or fl("0.27 是 7.5 %") in _t else 0)
         # the retracted generalisation, in both languages
         ck("hybrid section 6 %s, no longer credits the architecture" % _lang, "0",
            1 if (fl("behaves as the architecture promises") in _t

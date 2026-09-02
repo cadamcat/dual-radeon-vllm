@@ -228,6 +228,29 @@ SOURCES = [
     dict(file="campaign-2026-09-02b/results.jsonl", machine="RX 7900 XT",
          date="2026-09-02", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
          cuda=None, kernel="7.0.0-30", patches=[], prefix_caching=True),
+    # 2026-09-02c. The other two lines the front page's Figure 2 draws from the
+    # narrowed link, re-measured on the restored one. The two arms did not run
+    # in the same container state on 2026-08-29 and do not here either --
+    # `Q38-tp2` was #45450 stock and `Q38-triton-tp2` patched -- so the campaign
+    # ran twice with `campaign-0829/revert45450.py` between, and `patches`
+    # differs per cfg accordingly.
+    #
+    # The first attempt at this campaign is committed beside the results as
+    # `results-nosplitkv.jsonl` and is NOT a source. It ran with vllm#45916
+    # absent from the container -- `chunked_prefill_paged_decode.py` read
+    # 86f68d47, the image's own file -- and decoded at 3.88 tok/s at 32 000
+    # against 36.47 here. `hybrid-splitkv-027/qwen38-027-depth.jsonl` records
+    # the same checkpoint at 32 768 as 3.828 stock, so that run reproduced the
+    # stock arm to 1.4% while its `patches` field would have claimed otherwise.
+    # `apply_45916.py` in the campaign directory asserts both states now.
+    dict(file="campaign-2026-09-02c/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-02", vllm="0.27.1.dev5+gf46a9dfe2.d20260827", rocm="10.0",
+         cuda=None, kernel="7.0.0-30", prefix_caching=False,
+         patches=["vllm#45916 split-KV"],
+         per_cfg={
+             "Q38-triton-tp2-x16": dict(
+                 patches=["vllm#45916 split-KV", "vllm#45450 3D admission"]),
+         }),
     # 2026-08-30. The spine's fourth machine, and the first CUDA rows in this
     # repository measured with prefix caching off. Both configurations are 11
     # rungs x 2 rounds, 22 measurements, 0 errors. `driver` is from nvidia-smi

@@ -225,9 +225,20 @@ worker, and the patch is worth **+187 %** at 32 K.
 Separately, the same stock ladder pinned to Triton is **15.0 %** faster at 32 K than the
 backend ROCm picks for itself — but **it is a trade and not a free flag**, which this
 entry said until 2026-08-30 and the prefill rows contradict: the same two arms, the same
-day, differing in that flag and nothing else, give **969 against 690 prefill tok/s at 32
-K the other way** (`ROCM_ATTN` 1.40× ahead), and their fitted quadratic terms are 3.43
-against 18.44 ns/tok². Pinning Triton buys decode at depth and sells prefill at depth.
+day, differing in that flag and nothing else, give prefill at 32 K **the other way**,
+`ROCM_ATTN` ahead, and fitted quadratic terms an order apart. Pinning Triton buys decode
+at depth and sells prefill at depth.
+
+> **Both arms re-measured on 2026-09-02**, in `../campaign-2026-09-02c/`, because the
+> 08-29 pair ran on a link one card had trained at PCIe 3.0 x8. The ratio was always
+> fair — both arms sat on the same link — and it barely moves, **1.40× → 1.45×**. The
+> absolute numbers do: **969 → 1 099** tok/s on `ROCM_ATTN` and **690 → 760** on
+> `TRITON_ATTN` at 32 K, and fitted `b` falls from 913.2 and 846.2 µs/tok to **761.3 and
+> 758.5**. That last pair is the interesting part: on a full-width link the two backends
+> agree on `b` to **0.4 %** where on the narrowed one they differed by 7.9 %, and they
+> still differ by four times on `c` — 4.46 against 17.27 ns/tok². `b` carries the
+> communication the link throttled; `c` is attention, which is what the flag actually
+> changes. Decode moved −0.2 % to +0.9 %, so the 15.0 % is untouched.
 Both halves are drawn in the index's Figure 2. `provenance.json` is derived from `logs/`
 by `make_provenance.py` so the backend column can be recomputed rather than believed;
 `acceptance.txt` is the acceptance length vLLM logs every ten seconds, aligned to each

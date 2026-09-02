@@ -1,0 +1,30 @@
+16:57:06 | === campaign start rev2 (['Q38-tp2-x16']) ===
+17:00:36 | Q38-tp2-x16: ready (mml=33000, util=0.92), 11 points x 2 rounds
+17:01:03 | Q38-tp2-x16: point 500 done
+17:01:31 | Q38-tp2-x16: point 1000 done
+17:02:03 | Q38-tp2-x16: point 2000 done
+17:02:42 | Q38-tp2-x16: point 4000 done
+17:03:27 | Q38-tp2-x16: point 6000 done
+17:04:20 | Q38-tp2-x16: point 8000 done
+17:05:27 | Q38-tp2-x16: point 12000 done
+17:06:49 | Q38-tp2-x16: point 16000 done
+17:08:27 | Q38-tp2-x16: point 20000 done
+17:10:22 | Q38-tp2-x16: point 24000 done
+17:12:51 | Q38-tp2-x16: point 32000 done
+17:12:51 | Q38-tp2-x16: COMPLETE (44 ok, 0 err)
+17:13:01 | === campaign end: container stopped, services restored ===
+17:14:38 | === campaign start rev2 (['Q38-triton-tp2-x16']) ===
+17:17:23 | Q38-triton-tp2-x16: ready (mml=33000, util=0.92), 11 points x 2 rounds
+17:17:50 | Q38-triton-tp2-x16: point 500 done
+17:18:18 | Q38-triton-tp2-x16: point 1000 done
+17:18:50 | Q38-triton-tp2-x16: point 2000 done
+17:19:29 | Q38-triton-tp2-x16: point 4000 done
+17:20:16 | Q38-triton-tp2-x16: point 6000 done
+17:21:10 | Q38-triton-tp2-x16: point 8000 done
+17:22:24 | Q38-triton-tp2-x16: point 12000 done
+17:23:57 | Q38-triton-tp2-x16: point 16000 done
+17:25:53 | Q38-triton-tp2-x16: point 20000 done
+17:28:14 | Q38-triton-tp2-x16: point 24000 done
+17:31:32 | Q38-triton-tp2-x16: point 32000 done
+17:31:32 | Q38-triton-tp2-x16: COMPLETE (44 ok, 0 err)
+17:31:42 | === campaign end: container stopped, services restored ===
