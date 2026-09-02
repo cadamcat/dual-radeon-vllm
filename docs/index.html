@@ -1209,11 +1209,12 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         <b>b</b> is compute while <b>c</b> is how badly attention scales. Hover a point for that
         line's fitted pair.</dd>
       <dt>Two lines on a narrowed link</dt>
-      <dd><em>Added 2026-09-02.</em> The pair's <code>gemma-4-31B</code> and
-        <code>Qwen3.8-27B</code> lines are the 2026-08-29 sitting, on which one card ran at
-        <b>PCIe 3.0 x8</b>, not x16 &mdash; the host's boot journal shows it; the guest's sysfs
-        cannot. Prefill pays its all-reduce over that link: the 31B's <b>b</b> is 743.9 and
-        736.0 on its two x16 sittings and 868.7 here. The other five lines are 2026-08-24, on x16.</dd>
+      <dd><em>Added 2026-09-02, re-measured that evening.</em> The pair's
+        <code>gemma-4-31B</code> and <code>Qwen3.8-27B</code> lines are the 2026-08-29 sitting,
+        on which one card ran at <b>PCIe 3.0 x8</b> &mdash; visible in the host's boot journal,
+        never in the guest's sysfs. A reboot restored the width, so the error is measured, not
+        estimated: the 31B's <b>b</b> is 743.9, 736.0 and 722.6 on its three x16 sittings
+        against 868.7 here, <b>18.3&thinsp;% high</b>. The other five are 2026-08-24, on x16.</dd>
       <dt>Card against card</dt>
       <dd>On the dense 12B the A100 is 3.3&times; on <b>b</b> and 6.7&times; on <b>c</b> against one
         7900 XT, so the gap in attention is twice the gap in compute. The L4 is <em>slower</em> on
@@ -1239,9 +1240,9 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         absorbs the uncertainty, as <b>a</b> does everywhere.</dd>
       <dt>Dropped rungs</dt>
       <dd>Only rungs whose two rounds agree are drawn, and the one each line drops is not one story:
-        six drop their shallowest, which on the CUDA cards is the cold engine's first request the
-        runner did not discard until 2026-08-30, and four Radeon lines drop the 4&nbsp;000 rung
-        &mdash; round 1 slower than round 2 each time &mdash; which this repository does not explain.
+        six drop their shallowest &mdash; on the CUDA cards a cold first request, not discarded
+        until 2026-08-30 &mdash; and four Radeon lines drop the 4&nbsp;000 rung, round 1 slower
+        each time, which this repository does not explain.
         The MoE on one 7900 XT stops at 12&nbsp;K for a reason it does know: 16.96&nbsp;GiB of
         weights leave 0.93&nbsp;GiB of KV, 13&nbsp;149 tokens.</dd>
     </dl>

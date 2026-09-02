@@ -2040,40 +2040,73 @@ def main():
     ck("host_link, every x8 row is dated on or after the boot", "1",
        1 if all(r["date"] >= _HLX for r in _RTP + _RTD
                 if r.get("host_link") == "x8/x16") else 0)
-    # the clean comparison: one model, TP=2, two x16 sittings a month apart
-    # agreeing to 1%, and the x8 sitting 17% above them on b
+    # the clean comparison: one model, TP=2, three x16 sittings -- two a month
+    # apart and the third after the 2026-09-02 reboot -- and the x8 sitting
+    # above them on b. The two-sitting version of this figure said 17%; with the
+    # third it is 18.3%, and the second is what the captions now publish.
     _fits31 = {(f["date"]): f for f in _bpm.fits(_RTP)
-               if f["machine"] == "RX 7900 XT" and f["cfg"] in ("C-31B-tp2", "G31-tp2")}
+               if f["machine"] == "RX 7900 XT"
+               and f["cfg"] in ("C-31B-tp2", "G31-tp2", "G31-tp2-x16")}
     ck("host_link, 31B b on x16, July", "743.9", _fits31["2026-07-25"]["b_us_tok"], 0.05)
     ck("host_link, 31B b on x16, August", "736.0", _fits31["2026-08-24"]["b_us_tok"], 0.05)
     ck("host_link, 31B b on x8", "868.7", _fits31["2026-08-29"]["b_us_tok"], 0.05)
+    ck("host_link, 31B b on x16, September", "722.6",
+       _fits31["2026-09-02"]["b_us_tok"])
     ck("host_link, so the x8 sitting is this far above the x16 pair", "17",
        (_fits31["2026-08-29"]["b_us_tok"]
         / ((_fits31["2026-07-25"]["b_us_tok"] + _fits31["2026-08-24"]["b_us_tok"]) / 2)
         - 1) * 100, 0.5)
     # the captions, in both languages on both pages, and the numbers in them
     # read out of the sentence rather than looked for anywhere
-    for _lang, _fn, _re_b in (
+    # 2026-09-02, second edit: the link was restored the same evening and the arm
+    # re-run, so each caption now quotes FOUR values -- three x16 sittings and
+    # the x8 one -- and states the overstatement as a measured 18.3% rather than
+    # leaving it as "overstates by some amount". The patterns are re-read here
+    # rather than loosened, so a caption that reverts to three fails.
+    for _lang, _fn, _re_b, _re_pct in (
             ("index EN", "index.html",
-             r"the 31B.s <b>b</b> is ([\d.]+) and\s*([\d.]+) on its two x16 sittings and ([\d.]+) here"),
+             r"the 31B.s <b>b</b> is ([\d.]+), ([\d.]+) and ([\d.]+) on its three x16\s*"
+             r"sittings\s*against ([\d.]+) here",
+             r"here, <b>([\d.]+)&thinsp;% high</b>"),
             ("index ZH", "index.zh.html",
-             r"31B 的 <b>b</b> 在两次 x16 测量里是\s*([\d.]+) 和 ([\d.]+)，这里是 ([\d.]+)"),
+             r"31B 的 <b>b</b> 在三次 x16 测量里是 ([\d.]+)、([\d.]+) 和\s*([\d.]+)，"
+             r"这里是 ([\d.]+)",
+             r"<b>高了 ([\d.]+)%</b>"),
             ("a100 EN", "a100-vs-two-radeons.html",
-             r"<code>b</code> is ([\d.]+) against ([\d.]+) and ([\d.]+) on the same model"),
+             r"<code>b</code> is ([\d.]+) against ([\d.]+), ([\d.]+) and ([\d.]+) on the same",
+             r"<strong>([\d.]+)&#8239;% high</strong>"),
             ("a100 ZH", "a100-vs-two-radeons.zh.html",
-             r"它的 <code>b</code> 是\s*([\d.]+)，而同一模型两次 x16 测量是 ([\d.]+) 和 ([\d.]+)")):
+             r"它的 <code>b</code> 是\s*([\d.]+)，而同一模型三次 x16 测量是 ([\d.]+)、([\d.]+) 和 ([\d.]+)",
+             r"<strong>高了 ([\d.]+)%</strong>")):
         # the index lives in docs/, not docs/articles/, so it is not in `pages`
         _t = pages[_fn] if _fn in pages else open(
             os.path.join(ROOT, "docs", _fn), encoding="utf-8").read()
         ck("host_link caption, %s dated 2026-09-02" % _lang, "1",
            1 if "2026-09-02" in _t and ("x8" in _t) else 0)
         _m = re.search(_re_b, _t, re.S)
-        ck("host_link caption, %s states the three b values" % _lang, "3",
+        ck("host_link caption, %s states the four b values" % _lang, "4",
            len(_m.groups()) if _m else 0)
         if _m:
             _vals = sorted(float(x) for x in _m.groups())
-            ck("host_link caption, %s lowest b" % _lang, "736.0", _vals[0], 0.05)
-            ck("host_link caption, %s highest b" % _lang, "868.7", _vals[2], 0.05)
+            # every one recomputed from prefill.jsonl, in the order the fits give
+            # them, so a caption cannot carry a number the data has stopped saying
+            _want = sorted(_fits31[_d]["b_us_tok"] for _d in _fits31)
+            ck("host_link caption, %s quotes b values the fits do not" % _lang, "0",
+               sum(1 for _a, _b in zip(_vals, _want) if abs(_a - _b) > 0.05))
+            ck("host_link caption, %s lowest b" % _lang, "722.6", _vals[0], 0.05)
+            ck("host_link caption, %s highest b" % _lang, "868.7", _vals[3], 0.05)
+        # ...and the overstatement, read out of the caption's own sentence and
+        # recomputed, not looked for anywhere on the page: "18.3" also appears
+        # in other figures, so a substring test passes on a caption that says
+        # something else.
+        _mp = re.search(_re_pct, _t)
+        ck("host_link caption, %s states the measured overstatement" % _lang, "1",
+           1 if _mp else 0)
+        if _mp:
+            _x16m = sum(_fits31[_d]["b_us_tok"]
+                        for _d in ("2026-07-25", "2026-08-24", "2026-09-02")) / 3
+            ck("host_link caption, %s overstatement pct" % _lang, _mp.group(1),
+               (_fits31["2026-08-29"]["b_us_tok"] / _x16m - 1) * 100)
     # the preflight, and what it must refuse
     _pf = open(os.path.join(_BR, "harness", "preflight_host_link.sh")).read()
     ck("preflight, executable", "1",
@@ -2106,10 +2139,10 @@ def main():
        else 0)
     ck("host_link, and one home for the rule", "1",
        1 if _bpd.host_link is _bpm.host_link else 0)
-    # the four sittings of one arm, three of them on x16
-    _f31 = {f["date"]: f for f in _bpm.fits(_RTP)
-            if f["machine"] == "RX 7900 XT"
-            and f["cfg"] in ("C-31B-tp2", "G31-tp2", "G31-tp2-x16")}
+    # the four sittings of one arm, three of them on x16. Same dict the caption
+    # checks above read, so a caption and a claim cannot be checked against two
+    # different fits.
+    _f31 = _fits31
     # no `tol=` here: half a unit in the last quoted place, which is what
     # quoting 722.6 means. The 5% tolerance the 2026-09-02 host_link checks
     # carry would admit 732.6, and a break-test caught exactly that.

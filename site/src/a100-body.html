@@ -214,12 +214,15 @@ means the A100 is further ahead, and the mark is parity. The two terms are scale
 <code>c</code> reaches 19 and <code>b</code> stops at 4 — because what is being compared is within a
 term. The grouping is by the backend vLLM chose on the A100, which is recorded and checked against
 the serve log beside it for all five; the Radeon side records one for three of the five and the
-campaigns that did not keep a log carry null rather than a guess. <em>Added 2026-09-02:</em> the
-31B pair's Radeon arm is the 2026-08-29 sitting, on which one of the two cards had trained at PCIe
-3.0 x8 rather than x16 (the host's boot journal shows it; the guest's sysfs cannot). Its
-<code>b</code> is 868.7 against 743.9 and 736.0 on the same model's two x16 sittings, so the 31B's
-<code>b</code> ratio here overstates the A100's lead on that term. The 12B and 26B pairs are
-2026-08-24, on x16. </figcaption> </figure>
+campaigns that did not keep a log carry null rather than a guess. <em>Added 2026-09-02, measured the same
+evening:</em> the 31B pair's Radeon arm is the 2026-08-29 sitting, on which one of the two cards had
+trained at PCIe 3.0 x8 rather than x16 (the host's boot journal shows it; the guest's sysfs cannot).
+A reboot restored the width and the arm was run again on it, so the size of the error is measured
+rather than estimated: its <code>b</code> is 868.7 against 743.9, 736.0 and 722.6 on the same
+model's three x16 sittings, <strong>18.3&#8239;% high</strong>, and the 31B's <code>b</code> ratio
+here overstates the A100's lead on that term by the same 18.3&#8239;% &mdash; 2.31&times; drawn
+against 1.96&times; measured. The quadratic term is unaffected, as attention needing no
+communication says it should be. The 12B and 26B pairs are 2026-08-24, on x16. </figcaption> </figure>
 
 <p><strong>The compute term does not care which kernel is on the path, and the attention term is
 almost nothing else.</strong> Across all five models the A100 is 2.08× to 4.00× ahead on
