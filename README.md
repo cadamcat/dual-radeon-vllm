@@ -529,6 +529,12 @@ file each came from, and exits non-zero if one disagrees.
   1.19×, because the quantised model was never bandwidth-bound in the first place.
   For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
   151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
+  *(2026-09-02: what it is **not** is the collective. Both models pay one within
+  0.6 ms of the other per step, about a tenth of the step in each case, so a
+  fixed all-reduce cannot be what separates 1.70× from 1.19×
+  ([measured](benchmarks/allreduce-2026-09-02/)). That rules out the reading the
+  a100 article carried until the same day; it does not establish this one,
+  which is still the plausible explanation and not the tested one.)*
 - **Attention parallelises across two cards at about 90 %**, because it needs no
   communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
   1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
@@ -538,14 +544,21 @@ file each came from, and exits non-zero if one disagrees.
   all-reduces at ~1.05 ms each.~~ **Withdrawn 2026-08-30.** Both halves rested
   on the fitted intercept `a`, which does not survive re-measurement — the same
   configurations give +76 ms in one campaign and +1.6 ms in the next, and one
-  fit returns a fixed cost below zero. The crossover was a cold-engine artifact:
-  the 500-token cell behind the 2270 is the one rung of its configuration whose
-  two rounds disagree, by 22 %, and in the other campaign **the pair is ahead**
-  at 500 tokens. Where it happens it is round 1 that is slow — a first-request
-  cost, on the rung where that cost is largest next to the measurement — and it
-  landed on TP=2 in one campaign and TP=1 in the other. `b` and `c` reproduce
-  to a few percent; `a` and the peak position do not
+  fit returns a fixed cost below zero. `b` and `c` reproduce to a few percent;
+  `a` and the peak position do not
   ([details](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)).
+  **The collective has since been timed** — 16.6–21.5 µs at the batch-1 shape,
+  1.20 ms across the 8B's 72 of them, so the withdrawn 1.05 ms *each* was 49 to
+  63 times the measurement
+  ([`benchmarks/allreduce-2026-09-02/`](benchmarks/allreduce-2026-09-02/)).
+  **The crossover is still unmeasured**, and the reading offered for it here
+  until 2026-09-02 — a first-request cost, round 1 slow — is wrong on this box:
+  five rounds of that cell, twice, put round 1 *fastest* in three of the four
+  arm-by-sitting combinations, and the spread tracks the clock the card had
+  reached, not the request number
+  ([`campaign-2026-09-02b/`](benchmarks/campaign-2026-09-02b/)). A 500-token
+  cell here carries roughly 15 % of noise however many rounds you give it, and
+  the three sittings that have measured it split 2:1 for the pair being ahead.
 - **Long context: avoid hybrid-SSM *under vLLM*.** The 27B costs 4.84 µs of decode
   time per token of context, **41× the dense 8B**; dense and MoE lose only 23–32 %
   out to 32 K. The cause is not the SSM layers — it is the model's few
@@ -687,7 +700,22 @@ benchmarks/   The measurement data and everything that produced it
   harness/             one telemetry shape for every machine, and the schema
                        every campaign from 2026-09-02 writes: clocks, power,
                        temperature and memory-controller busy beside each cell,
-                       so a slow kernel and a throttled card stop looking alike
+                       so a slow kernel and a throttled card stop looking alike.
+                       `preflight_host_link.sh` reads the host's PCIe root ports
+                       before a Radeon campaign and refuses below x16
+  allreduce-2026-09-02/  the TP=2 collective, timed: 16.6-21.5 us at the
+                       batch-1 shape under graph replay, three timing modes,
+                       and the per-card PCIe ceiling it is a fraction of
+  campaign-2026-09-02/   gemma-4-31B TP=2 prefill on the link a reboot restored
+                       to x16; fitted `b` 868.7 -> 722.6
+  campaign-2026-09-02b/  the 500-token rung, five rounds, both arms of the 8B:
+                       what the shallowest rung's disagreement actually is
+  campaign-2026-09-02c/  the other two lines that had been measured on the
+                       narrowed link, and one run thrown away because the
+                       container had silently lost a patch
+  gfx1100-greedy-attn-ab/  the same two models forced onto the other attention
+                       backend with the quantisation kernel held fixed: the
+                       greedy non-determinism is not the attention backend
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
   repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive

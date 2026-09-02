@@ -2555,6 +2555,53 @@ def main():
     # ...and the sentences that publish them. Recomputing the data and never
     # reading the prose is how three of these gates passed on 2026-08-30 while
     # the prose said something else.
+    # the front page README carried the same two gaps the a100 article did: the
+    # withdrawn 1.05 ms with nothing pointing at what replaced it, and a reading
+    # of the shallow rung -- "round 1 is slow, a first-request cost" -- that
+    # five rounds measured twice contradict. Both read out of the file.
+    _RM = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    _mrm = re.search(r"([\d.]+)–([\d.]+) µs at the batch-1 shape,\s*"
+                     r"([\d.]+) ms across the 8B's (\d+) of them, so the withdrawn "
+                     r"1\.05 ms \*each\* was (\d+) to\s*(\d+)\s*times", _RM)
+    ck("README, points the withdrawn claim at its measurement", "6",
+       len(_mrm.groups()) if _mrm else 0)
+    if _mrm:
+        ck("README, the measured low end", _mrm.group(1),
+           min(r["t_graph_us"] for r in _ar1.values()))
+        ck("README, the measured high end", _mrm.group(2),
+           max(r["t_graph_us"] for r in _ar1.values()))
+        ck("README, the 8B's per step", _mrm.group(3), _dv["8B"]["ms_per_step_graph"])
+        ck("README, over this many collectives", _mrm.group(4),
+           _dv["8B"]["collectives_per_step"])
+        ck("README, so the withdrawn figure was this many times it, low",
+           _mrm.group(5), 1050.0 / max(r["t_graph_us"] for r in _ar1.values()),
+           0.5 / float(_mrm.group(5)))
+        ck("README, and high", _mrm.group(6),
+           1050.0 / min(r["t_graph_us"] for r in _ar1.values()),
+           0.5 / float(_mrm.group(6)))
+    # the falsified reading must be gone as a live claim and named as wrong
+    ck("README, no longer calls the crossover a first-request cost", "0",
+       1 if "Where it happens it is round 1 that is slow" in _RM else 0)
+    _mr1 = re.search(r"put round 1 \*fastest\* in three of the four", _RM)
+    ck("README, states what five rounds twice actually found", "1",
+       1 if _mr1 else 0)
+    ck("README, and that the crossover is still unmeasured", "1",
+       1 if "**The crossover is still unmeasured**" in _RM else 0)
+    # the second-card bullet: the wire is ruled out, the alternative is not claimed
+    ck("README, rules the collective out of the second-card gap", "1",
+       1 if "cannot be what separates 1.70× from 1.19×" in _RM else 0)
+    ck("README, and does not claim the alternative is established", "1",
+       1 if "the plausible explanation and not the tested one" in _RM else 0)
+    # every campaign directory this round produced has a line in the map -- and
+    # "in the map", not "somewhere on the page": each of these is also a link
+    # in the prose above, so a substring test passes on a map that lost the row.
+    _map = _RM[_RM.index("## Repository map"):]
+    _map = _map[:_map.index("\n## ", 1)]
+    for _d in ("allreduce-2026-09-02/", "campaign-2026-09-02/",
+               "campaign-2026-09-02b/", "campaign-2026-09-02c/",
+               "gfx1100-greedy-attn-ab/"):
+        ck("README map, lists %s" % _d, "1", 1 if _d in _map else 0)
+
     # ...and the a100 article's section 9, which this measurement replaced.
     #: what marks a paragraph as retracting rather than asserting
     _MARK = {"EN": ("used to say", "used to conclude", "This page used to"),
