@@ -1208,13 +1208,13 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         quadratic one &mdash; <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> &mdash; and
         <b>b</b> is compute while <b>c</b> is how badly attention scales. Hover a point for that
         line's fitted pair.</dd>
-      <dt>Two lines on a narrowed link</dt>
-      <dd><em>Added 2026-09-02, re-measured that evening.</em> The pair's
-        <code>gemma-4-31B</code> and <code>Qwen3.8-27B</code> lines are the 2026-08-29 sitting,
-        on which one card ran at <b>PCIe 3.0 x8</b> &mdash; visible in the host's boot journal,
-        never in the guest's sysfs. A reboot restored the width, so the error is measured, not
-        estimated: the 31B's <b>b</b> is 743.9, 736.0 and 722.6 on its three x16 sittings
-        against 868.7 here, <b>18.3&thinsp;% high</b>. The other five are 2026-08-24, on x16.</dd>
+      <dt>Two lines re-measured</dt>
+      <dd><em>2026-09-02.</em> The pair's <code>gemma-4-31B</code> and <code>Qwen3.8-27B</code>
+        lines were first measured on 2026-08-29, when one card had trained at <b>PCIe 3.0 x8</b>
+        &mdash; visible in the host's boot journal, never in the guest's sysfs. A reboot restored
+        it and both arms ran again, same container, same serve arguments: <b>b</b>
+        868.7&thinsp;&rarr;&thinsp;<b>722.6</b> on the 31B and
+        846.2&thinsp;&rarr;&thinsp;<b>758.5</b> on Qwen3.8. Those are the lines drawn.</dd>
       <dt>Card against card</dt>
       <dd>On the dense 12B the A100 is 3.3&times; on <b>b</b> and 6.7&times; on <b>c</b> against one
         7900 XT, so the gap in attention is twice the gap in compute. The L4 is <em>slower</em> on
@@ -1226,7 +1226,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         needs no communication.</dd>
       <dt>The flag is a trade</dt>
       <dd>Pinning Qwen3.8 to <code>TRITON_ATTN</code>, which this repository called free until
-        2026-08-30, is worth 1.15&times; of decode at 32&nbsp;K and <em>costs</em> 1.40&times; of
+        2026-08-30, is worth 1.15&times; of decode at 32&nbsp;K and <em>costs</em> 1.45&times; of
         prefill there.</dd>
       <dt>One line is different</dt>
       <dd>The T4 runs gemma-4-12B only with
@@ -1241,7 +1241,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
       <dt>Dropped rungs</dt>
       <dd>Only rungs whose two rounds agree are drawn, and the one each line drops is not one story:
         six drop their shallowest &mdash; on the CUDA cards a cold first request, not discarded
-        until 2026-08-30 &mdash; and four Radeon lines drop the 4&nbsp;000 rung, round 1 slower
+        until 2026-08-30 &mdash; and three Radeon lines drop the 4&nbsp;000 rung, round 1 slower
         each time, which this repository does not explain.
         The MoE on one 7900 XT stops at 12&nbsp;K for a reason it does know: 16.96&nbsp;GiB of
         weights leave 0.93&nbsp;GiB of KV, 13&nbsp;149 tokens.</dd>
@@ -2925,114 +2925,114 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "machine_name": "RX 7900 XT",
     "model": "Qwen3.8-27B",
-    "date": "2026-08-29",
+    "date": "2026-09-02",
     "lit": false,
     "caveat": null,
-    "cfg": "Q38-triton-tp2",
+    "cfg": "Q38-triton-tp2-x16",
     "quant": "int4 AWQ",
     "quant_label": "INT4 AWQ",
     "arch": "hybrid SSM",
     "tp": 2,
-    "vllm": "0.27.1.dev5+gf46a9dfe2",
+    "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
     "attn_backend": "TRITON_ATTN",
     "prefix_caching": false,
-    "source": "campaign-2026-08-29/results.jsonl",
+    "source": "campaign-2026-09-02c/results.jsonl",
     "fit": {
-     "a_ms": 283.974299440232,
-     "b_us_tok": 846.1560835819542,
-     "c_ns_tok2": 18.443415242101082,
-     "r2": 0.9999624309767275,
+     "a_ms": 107.81180155813033,
+     "b_us_tok": 758.4920167740185,
+     "c_ns_tok2": 17.266455454372476,
+     "r2": 0.9999968590910995,
      "rungs": 11
     },
     "dropped": [],
     "points": [
      {
       "ctx": 500,
-      "tokens": 560,
-      "tok_s": 834.326579261025,
-      "ttft_s": 0.6712,
+      "tokens": 562,
+      "tok_s": 1102.933961338436,
+      "ttft_s": 0.50955,
       "runs": 2,
-      "range_pct": 5.065554231227656
+      "range_pct": 0.2551270729074611
      },
      {
       "ctx": 1000,
       "tokens": 1028,
-      "tok_s": 977.7439604337073,
-      "ttft_s": 1.0514000000000001,
+      "tok_s": 1126.8840778295423,
+      "ttft_s": 0.91225,
       "runs": 2,
-      "range_pct": 1.8261365797983529
+      "range_pct": 1.7867909016168793
      },
      {
       "ctx": 2000,
       "tokens": 2079,
-      "tok_s": 938.7699810349499,
-      "ttft_s": 2.2146,
+      "tok_s": 1172.3574026559902,
+      "ttft_s": 1.77335,
       "runs": 2,
-      "range_pct": 1.806195249706495
+      "range_pct": 0.09586376067894295
      },
      {
       "ctx": 4000,
       "tokens": 4102,
-      "tok_s": 976.6317869599895,
-      "ttft_s": 4.20015,
+      "tok_s": 1160.1006815803614,
+      "ttft_s": 3.5359,
       "runs": 2,
-      "range_pct": 0.5975977048438776
+      "range_pct": 0.36200118781639534
      },
      {
       "ctx": 6000,
-      "tokens": 6022,
-      "tok_s": 979.553328887226,
-      "ttft_s": 6.1477,
+      "tokens": 6021,
+      "tok_s": 1131.0971886946638,
+      "ttft_s": 5.32315,
       "runs": 2,
-      "range_pct": 0.06181173446980213
+      "range_pct": 0.054479020880500204
      },
      {
       "ctx": 8000,
       "tokens": 8070,
-      "tok_s": 959.5719381688466,
-      "ttft_s": 8.41,
+      "tok_s": 1095.507333926111,
+      "ttft_s": 7.36645,
       "runs": 2,
-      "range_pct": 0.8513674197384078
+      "range_pct": 0.05837275756978936
      },
      {
       "ctx": 12000,
-      "tokens": 12121,
-      "tok_s": 913.9509282019575,
-      "ttft_s": 13.2622,
+      "tokens": 12120,
+      "tok_s": 1024.604888853195,
+      "ttft_s": 11.828949999999999,
       "runs": 2,
-      "range_pct": 0.14175626969883443
+      "range_pct": 0.23586201649343944
      },
      {
       "ctx": 16000,
       "tokens": 16100,
-      "tok_s": 863.1573868312205,
-      "ttft_s": 18.65245,
+      "tok_s": 960.4342833281136,
+      "ttft_s": 16.76325,
       "runs": 2,
-      "range_pct": 0.0026806130025751828
+      "range_pct": 0.018492834026813898
      },
      {
       "ctx": 20000,
-      "tokens": 20114,
-      "tok_s": 814.7723567191174,
-      "ttft_s": 24.68665,
+      "tokens": 20115,
+      "tok_s": 900.165130963622,
+      "ttft_s": 22.3459,
       "runs": 2,
-      "range_pct": 0.3568730467681811
+      "range_pct": 0.034010713374713265
      },
      {
       "ctx": 24000,
-      "tokens": 24083,
-      "tok_s": 767.89159027501,
-      "ttft_s": 31.3625,
+      "tokens": 24086,
+      "tok_s": 846.8030425282446,
+      "ttft_s": 28.44345,
       "runs": 2,
-      "range_pct": 0.06759665205261166
+      "range_pct": 0.05097834475073078
      },
      {
       "ctx": 32000,
-      "tokens": 32127,
-      "tok_s": 689.8921258413744,
-      "ttft_s": 46.56815,
+      "tokens": 32126,
+      "tok_s": 759.7070991679544,
+      "ttft_s": 42.28735,
       "runs": 2,
-      "range_pct": 0.052611065717655066
+      "range_pct": 0.011587389609420401
      }
     ]
    },
@@ -3040,111 +3040,114 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "machine": "rdna3",
     "machine_name": "RX 7900 XT",
     "model": "gemma-4-31B-it",
-    "date": "2026-08-29",
+    "date": "2026-09-02",
     "lit": false,
     "caveat": null,
-    "cfg": "G31-tp2",
+    "cfg": "G31-tp2-x16",
     "quant": "w4a16 QAT",
     "quant_label": "W4A16 QAT",
     "arch": "dense",
     "tp": 2,
-    "vllm": "0.23.1.dev1+g9ddef7117",
+    "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
     "attn_backend": "TRITON_ATTN",
     "prefix_caching": true,
-    "source": "campaign-2026-08-29/results.jsonl",
+    "source": "campaign-2026-09-02/results.jsonl",
     "fit": {
-     "a_ms": 115.15017109644413,
-     "b_us_tok": 868.7073601787611,
-     "c_ns_tok2": 29.060775378009133,
-     "r2": 0.9999966815238704,
-     "rungs": 10
+     "a_ms": 161.57213758079007,
+     "b_us_tok": 722.5608188953967,
+     "c_ns_tok2": 28.31182865334003,
+     "r2": 0.9999957917009363,
+     "rungs": 11
     },
-    "dropped": [
-     {
-      "ctx": 4000,
-      "range_pct": 8.766871815389674
-     }
-    ],
+    "dropped": [],
     "points": [
      {
       "ctx": 500,
-      "tokens": 492,
-      "tok_s": 857.5163398692811,
-      "ttft_s": 0.57375,
+      "tokens": 496,
+      "tok_s": 917.2445677300045,
+      "ttft_s": 0.5407500000000001,
       "runs": 2,
-      "range_pct": 2.806100217864924
+      "range_pct": 1.3129912159038364
      },
      {
       "ctx": 1000,
-      "tokens": 971,
-      "tok_s": 1042.9085441168575,
-      "ttft_s": 0.9310499999999999,
+      "tokens": 972,
+      "tok_s": 1148.7324942386103,
+      "ttft_s": 0.84615,
       "runs": 2,
-      "range_pct": 0.5262875248375507
+      "range_pct": 1.5481888554038883
      },
      {
       "ctx": 2000,
-      "tokens": 1992,
-      "tok_s": 1006.4926862542001,
-      "ttft_s": 1.97915,
+      "tokens": 1990,
+      "tok_s": 1169.040975179909,
+      "ttft_s": 1.7022499999999998,
       "runs": 2,
-      "range_pct": 0.5305307834171211
+      "range_pct": 0.26435599941253923
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4007,
+      "tok_s": 1134.4044164484392,
+      "ttft_s": 3.5322500000000003,
+      "runs": 2,
+      "range_pct": 0.3085851794182152
      },
      {
       "ctx": 6000,
-      "tokens": 6006,
-      "tok_s": 935.7545163476594,
-      "ttft_s": 6.41835,
+      "tokens": 6005,
+      "tok_s": 1082.6159462748458,
+      "ttft_s": 5.546749999999999,
       "runs": 2,
-      "range_pct": 0.3225127953445935
+      "range_pct": 0.06310001352142852
      },
      {
       "ctx": 8000,
       "tokens": 7982,
-      "tok_s": 888.2212207199689,
-      "ttft_s": 8.9865,
+      "tok_s": 1026.4389691888277,
+      "ttft_s": 7.7764,
       "runs": 2,
-      "range_pct": 0.6565403661047046
+      "range_pct": 0.1465973972532287
      },
      {
       "ctx": 12000,
-      "tokens": 11984,
-      "tok_s": 816.0458140540467,
-      "ttft_s": 14.68545,
+      "tokens": 11986,
+      "tok_s": 928.8916615970024,
+      "ttft_s": 12.90355,
       "runs": 2,
-      "range_pct": 0.4337626698534875
+      "range_pct": 0.19607007373939464
      },
      {
       "ctx": 16000,
       "tokens": 16010,
-      "tok_s": 745.750711514186,
-      "ttft_s": 21.4683,
+      "tok_s": 841.5773925293579,
+      "ttft_s": 19.0238,
       "runs": 2,
-      "range_pct": 0.20309013755165253
+      "range_pct": 0.015769720034904244
      },
      {
       "ctx": 20000,
-      "tokens": 19980,
-      "tok_s": 686.7477954811446,
-      "ttft_s": 29.093649999999997,
+      "tokens": 19981,
+      "tok_s": 772.4051019481185,
+      "ttft_s": 25.86855,
       "runs": 2,
-      "range_pct": 0.07321185207081304
+      "range_pct": 0.13568599708912912
      },
      {
       "ctx": 24000,
       "tokens": 23962,
-      "tok_s": 636.8409372686959,
-      "ttft_s": 37.62635,
+      "tok_s": 710.8656054016529,
+      "ttft_s": 33.708200000000005,
       "runs": 2,
-      "range_pct": 0.02737443307682213
+      "range_pct": 0.09967900985516831
      },
      {
       "ctx": 32000,
-      "tokens": 31956,
-      "tok_s": 555.1902277068695,
-      "ttft_s": 57.55865,
+      "tokens": 31958,
+      "tok_s": 612.1811755916749,
+      "ttft_s": 52.2035,
       "runs": 2,
-      "range_pct": 0.015462489130646778
+      "range_pct": 0.01877268765503937
      }
     ]
    },
@@ -3425,19 +3428,19 @@ topology. The shapes transfer; the levels are the worst case.</p>
   ],
   "backend_tradeoff": {
    "model": "Qwen3.8-27B",
-   "date": "2026-08-29",
+   "date": "2026-09-02",
    "ctx": 32000,
    "ctx_decode": 32000,
-   "rocm_cfg": "Q38-tp2",
-   "triton_cfg": "Q38-triton-tp2",
-   "prefill_rocm": 968.9756474214739,
-   "prefill_triton": 689.8921258413744,
-   "decode_rocm": 36.47,
-   "decode_triton": 41.95,
-   "c_rocm": 3.4283510218247906,
-   "c_triton": 18.443415242101082,
-   "prefill_gain": 1.4045321161474869,
-   "decode_gain": 1.1502604880723883
+   "rocm_cfg": "Q38-tp2-x16",
+   "triton_cfg": "Q38-triton-tp2-x16",
+   "prefill_rocm": 1098.7530182703688,
+   "prefill_triton": 759.7070991679544,
+   "decode_rocm": 36.625,
+   "decode_triton": 42.28,
+   "c_rocm": 4.456411017800094,
+   "c_triton": 17.266455454372476,
+   "prefill_gain": 1.4462850478477085,
+   "decode_gain": 1.1544027303754267
   },
   "backend_mixed": [
    {
@@ -3530,7 +3533,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
    32000
   ],
   "ctx_min": 490,
-  "ctx_max": 32127
+  "ctx_max": 32126
  },
  "best": {
   "series": [

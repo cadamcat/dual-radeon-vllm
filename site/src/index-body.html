@@ -89,13 +89,13 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         quadratic one &mdash; <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> &mdash; and
         <b>b</b> is compute while <b>c</b> is how badly attention scales. Hover a point for that
         line's fitted pair.</dd>
-      <dt>Two lines on a narrowed link</dt>
-      <dd><em>Added 2026-09-02, re-measured that evening.</em> The pair's
-        <code>gemma-4-31B</code> and <code>Qwen3.8-27B</code> lines are the 2026-08-29 sitting,
-        on which one card ran at <b>PCIe 3.0 x8</b> &mdash; visible in the host's boot journal,
-        never in the guest's sysfs. A reboot restored the width, so the error is measured, not
-        estimated: the 31B's <b>b</b> is 743.9, 736.0 and 722.6 on its three x16 sittings
-        against 868.7 here, <b>18.3&thinsp;% high</b>. The other five are 2026-08-24, on x16.</dd>
+      <dt>Two lines re-measured</dt>
+      <dd><em>2026-09-02.</em> The pair's <code>gemma-4-31B</code> and <code>Qwen3.8-27B</code>
+        lines were first measured on 2026-08-29, when one card had trained at <b>PCIe 3.0 x8</b>
+        &mdash; visible in the host's boot journal, never in the guest's sysfs. A reboot restored
+        it and both arms ran again, same container, same serve arguments: <b>b</b>
+        868.7&thinsp;&rarr;&thinsp;<b>722.6</b> on the 31B and
+        846.2&thinsp;&rarr;&thinsp;<b>758.5</b> on Qwen3.8. Those are the lines drawn.</dd>
       <dt>Card against card</dt>
       <dd>On the dense 12B the A100 is 3.3&times; on <b>b</b> and 6.7&times; on <b>c</b> against one
         7900 XT, so the gap in attention is twice the gap in compute. The L4 is <em>slower</em> on
@@ -107,7 +107,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         needs no communication.</dd>
       <dt>The flag is a trade</dt>
       <dd>Pinning Qwen3.8 to <code>TRITON_ATTN</code>, which this repository called free until
-        2026-08-30, is worth 1.15&times; of decode at 32&nbsp;K and <em>costs</em> 1.40&times; of
+        2026-08-30, is worth 1.15&times; of decode at 32&nbsp;K and <em>costs</em> 1.45&times; of
         prefill there.</dd>
       <dt>One line is different</dt>
       <dd>The T4 runs gemma-4-12B only with
@@ -122,7 +122,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
       <dt>Dropped rungs</dt>
       <dd>Only rungs whose two rounds agree are drawn, and the one each line drops is not one story:
         six drop their shallowest &mdash; on the CUDA cards a cold first request, not discarded
-        until 2026-08-30 &mdash; and four Radeon lines drop the 4&nbsp;000 rung, round 1 slower
+        until 2026-08-30 &mdash; and three Radeon lines drop the 4&nbsp;000 rung, round 1 slower
         each time, which this repository does not explain.
         The MoE on one 7900 XT stops at 12&nbsp;K for a reason it does know: 16.96&nbsp;GiB of
         weights leave 0.93&nbsp;GiB of KV, 13&nbsp;149 tokens.</dd>

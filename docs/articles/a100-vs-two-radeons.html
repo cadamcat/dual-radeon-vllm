@@ -999,10 +999,12 @@ cards against one A100 — and that question bundles three. This round measured 
 so they come apart: what one consumer card is worth against one datacentre card, what a second
 consumer card then buys, and only then what the pair is worth.</p>
 <p><strong>The second card is nearly free of effect at decode.</strong> Across eleven depths and two
-models it buys <strong>1.11× to 1.23×</strong>. At batch 1 a decode step is bandwidth-bound and
-short, and TP=2 pays a fixed all-reduce on every one of them, so most of the second card's bandwidth
-is spent talking to the first. <strong>At prefill the same card buys 1.56× to 1.87×</strong> of
-wall time, because attention parallelises with no communication at all.</p>
+models it buys <strong>1.11× to 1.23×</strong>. The all-reduce it pays on every step has since been
+timed and is <em>not</em> the reason: it is about a ninth of a step, and the same box gives
+<code>Qwen3-8B</code> 1.70× from its second card while paying the same collective. What holds these
+two models back is not the wire, and section 9 says so rather than guessing.
+<strong>At prefill the same card buys 1.56× to 1.87×</strong> of wall time, because attention
+parallelises with no communication at all.</p>
 <p><strong>Prefill is two terms and they do not move together.</strong> Fitting T(S) = a + bS + cS²,
 against one 7900 XT the A100 is <strong>3.3× on b and 6.7× on c</strong> for the dense 12B: the gap
 in attention scaling is twice the gap in compute. On the mixture-of-experts, whose 4B active
@@ -1093,10 +1095,12 @@ buys <strong>1.13× to 1.23×</strong>, and across seven on the mixture-of-exper
 <strong>1.11× to 1.12×</strong>. It is not even monotone: on the 12B it rises to 1.23× at 6 000
 tokens before falling to 1.13× at 32 K.</p>
 
-<p>The reason is that a batch-1 decode step is both bandwidth-bound and short. Splitting the weights
-halves the bytes each card reads, which is the whole gain; but every step then ends in an all-reduce
-whose cost does not shrink with the split, and at batch 1 there is only one token's worth of work to
-amortise it over. What the second card contributes in bandwidth it largely spends on the wire.</p>
+<p>A batch-1 decode step is both bandwidth-bound and short: splitting the weights halves the bytes
+each card reads, which is the whole gain, and every step then ends in an all-reduce whose cost does
+not shrink with the split. This page used to conclude that what the second card contributes in
+bandwidth it largely spends on the wire. <strong>Timed, the wire is about a ninth of the step</strong>
+— 1.83&nbsp;ms of 16.70 on the 12B — and a model on this same box gets 1.70× from its second card
+while paying the same collective. So the collective is real and it is not the limit; see section 9.</p>
 
 <p><strong>Prefill is the opposite case, and it is the same two cards.</strong> Attention over a
 prompt parallelises across heads with no communication at all, and the prompt is long enough that
@@ -1201,29 +1205,29 @@ means the A100 is further ahead, and the mark is parity. The two terms are scale
 <code>c</code> reaches 19 and <code>b</code> stops at 4 — because what is being compared is within a
 term. The grouping is by the backend vLLM chose on the A100, which is recorded and checked against
 the serve log beside it for all five; the Radeon side records one for three of the five and the
-campaigns that did not keep a log carry null rather than a guess. <em>Added 2026-09-02, measured the same
-evening:</em> the 31B pair's Radeon arm is the 2026-08-29 sitting, on which one of the two cards had
-trained at PCIe 3.0 x8 rather than x16 (the host's boot journal shows it; the guest's sysfs cannot).
-A reboot restored the width and the arm was run again on it, so the size of the error is measured
-rather than estimated: its <code>b</code> is 868.7 against 743.9, 736.0 and 722.6 on the same
-model's three x16 sittings, <strong>18.3&#8239;% high</strong>, and the 31B's <code>b</code> ratio
-here overstates the A100's lead on that term by the same 18.3&#8239;% &mdash; 2.31&times; drawn
-against 1.96&times; measured. The quadratic term is unaffected, as attention needing no
-communication says it should be. The 12B and 26B pairs are 2026-08-24, on x16. </figcaption> </figure>
+campaigns that did not keep a log carry null rather than a guess. <em>Changed 2026-09-02:</em> the 31B and
+Qwen3.8 pairs' Radeon arms used to be the 2026-08-29 sitting, on which one of the two cards had
+trained at PCIe 3.0 x8 rather than x16 (the host's boot journal shows it; the guest's sysfs cannot),
+and a narrowed link moves <code>b</code>, which is half of what this figure divides. A reboot
+restored the width and both arms were run again on the same container and the same serve arguments:
+the 31B's <code>b</code> falls 868.7&#8239;&rarr;&#8239;<strong>722.6</strong> and Qwen3.8's
+846.2&#8239;&rarr;&#8239;<strong>758.5</strong>, so the 31B bar drawn here is 2.31&times; no longer
+but <strong>1.92&times;</strong>. Those are the sittings drawn. The 12B and 26B pairs are
+2026-08-24, on x16. </figcaption> </figure>
 
 <p><strong>The compute term does not care which kernel is on the path, and the attention term is
-almost nothing else.</strong> Across all five models the A100 is 2.08× to 4.00× ahead on
+almost nothing else.</strong> Across all five models the A100 is 1.92× to 4.00× ahead on
 <code>b</code>, and the two kernel groups' ranges overlap. On <code>c</code> they do not come near
-each other: 2.99× to 3.18× on the three models the A100 serves through the same Triton
-unified-attention family the Radeons are on, and 12.75× and 19.01× on the two it serves through
+each other: 2.99× to 3.10× on the three models the A100 serves through the same Triton
+unified-attention family the Radeons are on, and 11.94× and 19.01× on the two it serves through
 FlashAttention.</p>
 
 <p>Five models differ in more than their kernel, so that is a correlation. Here is the same thing
 inside one machine, one day and one model. Qwen3.8-27B on these cards is routed to
 <code>ROCM_ATTN</code> by default and can be pinned to <code>TRITON_ATTN</code> with a flag. Pinned,
-its <code>c</code> is 18.44 ns/token² and the A100 is 12.75× ahead. Left alone, its <code>c</code>
-is 3.43 and the A100 is 2.37× ahead. One flag, no patch, and the answer to "how far ahead is the
-A100 on long prompts" moves by <strong>5.38×</strong>. That flag is the one this repository called
+its <code>c</code> is 17.27 ns/token² and the A100 is 11.94× ahead. Left alone, its <code>c</code>
+is 4.46 and the A100 is 3.08× ahead. One flag, no patch, and the answer to "how far ahead is the
+A100 on long prompts" moves by <strong>3.87×</strong>. That flag is the one this repository called
 free until 2026-08-30; it buys 1.15× of decode at 32 K and sells this.</p>
 
 <p>None of which makes the A100 slower than it is. It is ahead on every model and both terms. What
@@ -1256,8 +1260,9 @@ The starved path is therefore starved twice as hard by the parallelism, and it s
 
 <p>The MTP drafter is four layers deep, so the extra forward pass is cheap. What is not cheap is
 that every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the
-model attached to it costs. The floor does not shrink with the drafter, so the arithmetic that makes
-speculation worth having is worse on two cards than on one.</p>
+model attached to it costs — <strong>2.30&nbsp;ms on the 31B</strong>, measured, and it does not
+shrink with the drafter. So the arithmetic that makes speculation worth having is worse on two cards
+than on one.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1336,11 +1341,29 @@ what is claimed, not the level either arm sits at. The speculation itself does m
 logs record <code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code> against the same
 assistant checkpoint, and <code>verify_doc_figures.py</code> asserts it from the logs.</p>
 
-<h3>Why the second card behaves as it does</h3> <p>That a batch-1 decode step is short enough for a
-fixed all-reduce to eat most of a second card's bandwidth, and that attention parallelises without
-one, is consistent with every measurement on this page and is not demonstrated by any of them. No
-all-reduce was timed here. The three published claims that did try to put a number on that floor
-were withdrawn on 2026-08-30, because the term they rested on is not measurable from this ladder.</p>
+<h3>Why the second card behaves as it does</h3> <p>This page used to say that a batch-1 decode step
+is short enough for a fixed all-reduce to eat most of a second card's bandwidth, and that no
+all-reduce had been timed to check it. One has been now, and it does not support the reading. Under
+HIP-graph replay — the mode a decode step actually runs in, which the serve logs record as
+<code>cudagraph_mode FULL_AND_PIECEWISE</code> and <code>Capturing CUDA graphs (decode, FULL)</code>
+— one all-reduce at the batch-1 shape costs <strong>16.6 to 21.5&#8239;µs</strong> on this pair. Over
+<code>2&nbsp;×&nbsp;layers</code> collectives that is <strong>1.83&nbsp;ms of the 12B's 16.70&nbsp;ms
+step</strong>, about a ninth of it.</p>
+
+<p>And the same box gives <code>Qwen3-8B</code> <strong>1.70×</strong> from its second card at decode
+while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0.6&nbsp;ms of each
+other per step. If a fixed all-reduce were eating most of what the second card contributes, the 8B
+could not be getting 1.70×. <strong>What holds the 12B back is not the wire, and this page does not
+say what it is.</strong> Subtracting perfect halving and the measured collectives leaves
+4.97&nbsp;ms of its step unexplained; the same subtraction on the 8B leaves 0.68&nbsp;ms.</p>
+
+<p>The half of the old sentence about attention still stands: attention parallelises with no
+communication at all, and that is what the prefill numbers above show. The three claims that tried
+to price the collective from a fitted intercept remain withdrawn — they were withdrawn for being
+unmeasurable from this ladder, and the number that replaces them is 49 to 63 times smaller.
+<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/allreduce-2026-09-02">The
+measurement is in the repository</a>, with the library it ran through identified from
+<code>/proc/self/maps</code> rather than from a version constant.</p>
 
 <h2><span class="n">10</span>What has changed since</h2>
 
@@ -3271,34 +3294,34 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
    },
    {
     "model": "gemma-4-31B-it",
-    "radeon_cfg": "G31-tp2",
-    "radeon_date": "2026-08-29",
+    "radeon_cfg": "G31-tp2-x16",
+    "radeon_date": "2026-09-02",
     "a100_cfg": "G31",
     "a100_date": "2026-08-30",
     "radeon_backend": "TRITON_ATTN",
     "a100_backend": "TRITON_ATTN",
-    "radeon_b": 868.7073601787611,
-    "radeon_c": 29.060775378009133,
+    "radeon_b": 722.5608188953967,
+    "radeon_c": 28.31182865334003,
     "a100_b": 375.3968825116025,
     "a100_c": 9.131068785787285,
-    "b": 2.3141038209125555,
-    "c": 3.1826258305317867,
+    "b": 1.924791740573563,
+    "c": 3.100604027581966,
     "rungs": 10
    },
    {
     "model": "Qwen3.8-27B",
-    "radeon_cfg": "Q38-triton-tp2",
-    "radeon_date": "2026-08-29",
+    "radeon_cfg": "Q38-triton-tp2-x16",
+    "radeon_date": "2026-09-02",
     "a100_cfg": "Q38",
     "a100_date": "2026-08-30",
     "radeon_backend": "TRITON_ATTN",
     "a100_backend": "FLASH_ATTN",
-    "radeon_b": 846.1560835819542,
-    "radeon_c": 18.443415242101082,
+    "radeon_b": 758.4920167740185,
+    "radeon_c": 17.266455454372476,
     "a100_b": 303.2123550198574,
     "a100_c": 1.4462363901342088,
-    "b": 2.790638539536225,
-    "c": 12.752697531272572,
+    "b": 2.501520812779363,
+    "c": 11.938888809712617,
     "rungs": 10
    },
    {
@@ -3322,16 +3345,16 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
    "triton": {
     "n": 3,
     "c_min": 2.9898148370495745,
-    "c_max": 3.1826258305317867,
-    "b_min": 2.214157705748569,
+    "c_max": 3.100604027581966,
+    "b_min": 1.924791740573563,
     "b_max": 3.9994561760416008
    },
    "flash": {
     "n": 2,
-    "c_min": 12.752697531272572,
+    "c_min": 11.938888809712617,
     "c_max": 19.00702564625918,
     "b_min": 2.07620284731491,
-    "b_max": 2.790638539536225
+    "b_max": 2.501520812779363
    },
    "b_overlaps": true,
    "c_separates": true,
@@ -3340,16 +3363,16 @@ were withdrawn on 2026-08-30, because the term they rested on is not measurable 
   },
   "flag": {
    "model": "Qwen3.8-27B",
-   "date": "2026-08-29",
-   "pinned_cfg": "Q38-triton-tp2",
+   "date": "2026-09-02",
+   "pinned_cfg": "Q38-triton-tp2-x16",
    "pinned_backend": "TRITON_ATTN",
-   "pinned_c": 18.443415242101082,
-   "pinned_ratio": 12.752697531272572,
-   "default_cfg": "Q38-tp2",
+   "pinned_c": 17.266455454372476,
+   "pinned_ratio": 11.938888809712617,
+   "default_cfg": "Q38-tp2-x16",
    "default_backend": "ROCM_ATTN",
-   "default_c": 3.4283510218247906,
-   "default_ratio": 2.370532953818597,
-   "swing": 5.379675279658003
+   "default_c": 4.456411017800094,
+   "default_ratio": 3.0813849300158633,
+   "swing": 3.874520412368978
   }
  }
 }</script>

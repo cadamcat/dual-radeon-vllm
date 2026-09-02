@@ -2058,55 +2058,63 @@ def main():
         - 1) * 100, 0.5)
     # the captions, in both languages on both pages, and the numbers in them
     # read out of the sentence rather than looked for anywhere
-    # 2026-09-02, second edit: the link was restored the same evening and the arm
-    # re-run, so each caption now quotes FOUR values -- three x16 sittings and
-    # the x8 one -- and states the overstatement as a measured 18.3% rather than
-    # leaving it as "overstates by some amount". The patterns are re-read here
-    # rather than loosened, so a caption that reverts to three fails.
-    for _lang, _fn, _re_b, _re_pct in (
+    # 2026-09-02, third edit: the figures now DRAW the restored-link sittings
+    # rather than the narrowed one with a caption saying how wrong it is, so
+    # each caption states the before-and-after pair for both re-measured arms.
+    # Four numbers per caption, every one recomputed from prefill.jsonl.
+    _f38c = {(f["cfg"], f["date"]): f for f in _bpm.fits(_RTP)
+             if f["machine"] == "RX 7900 XT"}
+    _WANT4 = [_fits31["2026-08-29"]["b_us_tok"],
+              _fits31["2026-09-02"]["b_us_tok"],
+              _f38c[("Q38-triton-tp2", "2026-08-29")]["b_us_tok"],
+              _f38c[("Q38-triton-tp2-x16", "2026-09-02")]["b_us_tok"]]
+    for _lang, _fn, _re_b in (
             ("index EN", "index.html",
-             r"the 31B.s <b>b</b> is ([\d.]+), ([\d.]+) and ([\d.]+) on its three x16\s*"
-             r"sittings\s*against ([\d.]+) here",
-             r"here, <b>([\d.]+)&thinsp;% high</b>"),
+             r"<b>b</b>\s*([\d.]+)&thinsp;&rarr;&thinsp;<b>([\d.]+)</b> on the 31B and\s*"
+             r"([\d.]+)&thinsp;&rarr;&thinsp;<b>([\d.]+)</b> on Qwen3\.8"),
             ("index ZH", "index.zh.html",
-             r"31B 的 <b>b</b> 在三次 x16 测量里是 ([\d.]+)、([\d.]+) 和\s*([\d.]+)，"
-             r"这里是 ([\d.]+)",
-             r"<b>高了 ([\d.]+)%</b>"),
+             r"31B 的 <b>b</b> 从 ([\d.]+) 降到 <b>([\d.]+)</b>，Qwen3\.8 从 ([\d.]+) 降到\s*"
+             r"<b>([\d.]+)</b>"),
             ("a100 EN", "a100-vs-two-radeons.html",
-             r"<code>b</code> is ([\d.]+) against ([\d.]+), ([\d.]+) and ([\d.]+) on the same",
-             r"<strong>([\d.]+)&#8239;% high</strong>"),
+             r"the 31B.s <code>b</code> falls ([\d.]+)&#8239;&rarr;&#8239;<strong>([\d.]+)</strong>"
+             r" and Qwen3\.8.s\s*([\d.]+)&#8239;&rarr;&#8239;<strong>([\d.]+)</strong>"),
             ("a100 ZH", "a100-vs-two-radeons.zh.html",
-             r"它的 <code>b</code> 是\s*([\d.]+)，而同一模型三次 x16 测量是 ([\d.]+)、([\d.]+) 和 ([\d.]+)",
-             r"<strong>高了 ([\d.]+)%</strong>")):
+             r"31B 的 <code>b</code> 从 ([\d.]+) 降到 <strong>([\d.]+)</strong>，"
+             r"Qwen3\.8 从 ([\d.]+) 降到\s*<strong>([\d.]+)</strong>")):
         # the index lives in docs/, not docs/articles/, so it is not in `pages`
         _t = pages[_fn] if _fn in pages else open(
             os.path.join(ROOT, "docs", _fn), encoding="utf-8").read()
         ck("host_link caption, %s dated 2026-09-02" % _lang, "1",
            1 if "2026-09-02" in _t and ("x8" in _t) else 0)
         _m = re.search(_re_b, _t, re.S)
-        ck("host_link caption, %s states the four b values" % _lang, "4",
+        ck("host_link caption, %s states both before-and-after pairs" % _lang, "4",
            len(_m.groups()) if _m else 0)
         if _m:
-            _vals = sorted(float(x) for x in _m.groups())
-            # every one recomputed from prefill.jsonl, in the order the fits give
-            # them, so a caption cannot carry a number the data has stopped saying
-            _want = sorted(_fits31[_d]["b_us_tok"] for _d in _fits31)
+            _got = [float(x) for x in _m.groups()]
             ck("host_link caption, %s quotes b values the fits do not" % _lang, "0",
-               sum(1 for _a, _b in zip(_vals, _want) if abs(_a - _b) > 0.05))
-            ck("host_link caption, %s lowest b" % _lang, "722.6", _vals[0], 0.05)
-            ck("host_link caption, %s highest b" % _lang, "868.7", _vals[3], 0.05)
-        # ...and the overstatement, read out of the caption's own sentence and
-        # recomputed, not looked for anywhere on the page: "18.3" also appears
-        # in other figures, so a substring test passes on a caption that says
-        # something else.
-        _mp = re.search(_re_pct, _t)
-        ck("host_link caption, %s states the measured overstatement" % _lang, "1",
-           1 if _mp else 0)
-        if _mp:
-            _x16m = sum(_fits31[_d]["b_us_tok"]
-                        for _d in ("2026-07-25", "2026-08-24", "2026-09-02")) / 3
-            ck("host_link caption, %s overstatement pct" % _lang, _mp.group(1),
-               (_fits31["2026-08-29"]["b_us_tok"] / _x16m - 1) * 100)
+               sum(1 for _a, _b in zip(_got, _WANT4) if abs(_a - _b) > 0.05))
+            # ...and the direction, so a caption cannot swap the pair round
+            ck("host_link caption, %s has both arms falling" % _lang, "2",
+               sum(1 for _a, _b in ((_got[0], _got[1]), (_got[2], _got[3]))
+                   if _a > _b))
+    # the a100 caption also states what the swap does to the bar it draws: the
+    # 31B's b ratio against the A100's, before and after
+    _a100b = next(f["b_us_tok"] for f in _bpm.fits(_RTP)
+                  if f["machine"] == "A100-SXM4-80GB" and f["cfg"] == "G31"
+                  and f["date"] == "2026-08-30")
+    for _lang, _fn, _re in (("a100 EN", "a100-vs-two-radeons.html",
+                             r"is ([\d.]+)&times; no longer\s*but <strong>([\d.]+)&times;</strong>"),
+                            ("a100 ZH", "a100-vs-two-radeons.zh.html",
+                             r"不再是 ([\d.]+)×，而是 <strong>([\d.]+)×</strong>")):
+        _t = pages[_fn]
+        _m = re.search(_re, _t, re.S)
+        ck("host_link caption, %s states the bar before and after" % _lang, "2",
+           len(_m.groups()) if _m else 0)
+        if _m:
+            ck("host_link caption, %s the bar it used to draw" % _lang, _m.group(1),
+               _fits31["2026-08-29"]["b_us_tok"] / _a100b)
+            ck("host_link caption, %s and the bar it draws now" % _lang, _m.group(2),
+               _fits31["2026-09-02"]["b_us_tok"] / _a100b)
     # the preflight, and what it must refuse
     _pf = open(os.path.join(_BR, "harness", "preflight_host_link.sh")).read()
     ck("preflight, executable", "1",
@@ -2547,6 +2555,90 @@ def main():
     # ...and the sentences that publish them. Recomputing the data and never
     # reading the prose is how three of these gates passed on 2026-08-30 while
     # the prose said something else.
+    # ...and the a100 article's section 9, which this measurement replaced.
+    #: what marks a paragraph as retracting rather than asserting
+    _MARK = {"EN": ("used to say", "used to conclude", "This page used to"),
+             "ZH": ("原先说", "原先由此断定")}
+    # It used to say a fixed all-reduce eats most of what the second card
+    # contributes and that no all-reduce had been timed. Both are now false, so
+    # the old sentences must be gone and the new numbers must recompute.
+    for _lang, _fn, _gone, _re_us, _re_ms, _re_sp, _re_res in (
+            ("EN", "a100-vs-two-radeons.html",
+             ("No all-reduce was timed here",
+              "largely spends on the wire",
+              "most of the second card&#39;s bandwidth\nis spent talking to the first"),
+             r"costs <strong>([\d.]+) to ([\d.]+)&#8239;µs</strong>",
+             r"<strong>([\d.]+)&nbsp;ms of the 12B.s ([\d.]+)&nbsp;ms\s*step</strong>",
+             r"<code>Qwen3-8B</code> <strong>([\d.]+)×</strong> from its second card at decode\s*"
+             r"while giving the 12B <strong>([\d.]+)×</strong>",
+             r"leaves\s*([\d.]+)&nbsp;ms of its step unexplained; the same subtraction on the 8B\s*"
+             r"leaves ([\d.]+)&nbsp;ms"),
+            ("ZH", "a100-vs-two-radeons.zh.html",
+             ("这里没有给任何一次 all-reduce 计过时",
+              "大半花在了线上。</p>",
+              "所以第二张卡的带宽大半花在了跟第一张说话上"),
+             r"一次 all-reduce 是\s*<strong>([\d.]+) 到 ([\d.]+)&#8239;µs</strong>",
+             r"<strong>一步 ([\d.]+)&nbsp;ms 里的 ([\d.]+)&nbsp;ms</strong>",
+             r"<code>Qwen3-8B</code> 的第二张卡在解码上值 <strong>([\d.]+)×</strong>，\s*"
+             r"12B 只值 <strong>([\d.]+)×</strong>",
+             r"12B 还剩 ([\d.]+)&nbsp;ms 无法解释，8B 只剩 ([\d.]+)&nbsp;ms")):
+        _t = pages[_fn]
+        # Not "the phrase is absent": the retraction quotes what it retracts,
+        # which is how a correction should read. What must hold is that no
+        # withdrawn phrase appears as a LIVE claim -- every paragraph carrying
+        # one has to carry the retraction marker too.
+        _paras = re.findall(r"<p>.*?</p>", _t, re.S)
+        _live = 0
+        for _g in _gone:
+            for _para in _paras:
+                if _g in _para and not any(_mk in _para for _mk in _MARK[_lang]):
+                    _live += 1
+        ck("a100 section 9 %s, withdrawn sentences left standing" % _lang, "0", _live)
+        ck("a100 section 9 %s, and each survivor is inside a retraction" % _lang,
+           str(sum(1 for _g in _gone if _g in _t)),
+           sum(1 for _g in _gone for _para in _paras
+               if _g in _para and any(_mk in _para for _mk in _MARK[_lang])))
+        _m = re.search(_re_us, _t, re.S)
+        ck("a100 section 9 %s, states the measured range" % _lang, "2",
+           len(_m.groups()) if _m else 0)
+        if _m:
+            ck("a100 section 9 %s, low end" % _lang, _m.group(1),
+               min(r["t_graph_us"] for r in _ar1.values()))
+            ck("a100 section 9 %s, high end" % _lang, _m.group(2),
+               max(r["t_graph_us"] for r in _ar1.values()))
+        _m = re.search(_re_ms, _t, re.S)
+        ck("a100 section 9 %s, states the per-step cost and the step" % _lang, "2",
+           len(_m.groups()) if _m else 0)
+        if _m:
+            # the EN sentence reads "1.83 ms of the 12B's 16.70 ms step", the ZH
+            # one reads them the other way round; sort so one check serves both
+            _a, _b = sorted(float(x) for x in _m.groups())
+            ck("a100 section 9 %s, the 12B's all-reduce per step" % _lang,
+               "%.2f" % _a, _dv["12B"]["ms_per_step_graph"])
+            ck("a100 section 9 %s, and its measured step" % _lang,
+               "%.2f" % _b, _dv["12B"]["tp2_ms"])
+        _m = re.search(_re_sp, _t, re.S)
+        ck("a100 section 9 %s, states both second-card speedups" % _lang, "2",
+           len(_m.groups()) if _m else 0)
+        if _m:
+            ck("a100 section 9 %s, the 8B's" % _lang, _m.group(1), _dv["8B"]["speedup"])
+            ck("a100 section 9 %s, and the 12B's" % _lang, _m.group(2),
+               _dv["12B"]["speedup"])
+        # the residual it refuses to explain, read out of its own sentence and
+        # recomputed. "4.97" also appears in the page's embedded data block, so
+        # a substring test passes on a page that has stopped saying it.
+        _mr = re.search(_re_res, _t, re.S)
+        ck("a100 section 9 %s, states the residual it does not explain" % _lang, "2",
+           len(_mr.groups()) if _mr else 0)
+        if _mr:
+            ck("a100 section 9 %s, the 12B's residual" % _lang, _mr.group(1),
+               _dv["12B"]["residual_ms"])
+            ck("a100 section 9 %s, and the 8B's" % _lang, _mr.group(2),
+               _dv["8B"]["residual_ms"])
+        # section 7 gets the floor as a number rather than a rewrite
+        ck("a100 section 7 %s, prices the floor on the 31B" % _lang, "1",
+           1 if "2.30&nbsp;ms" in _t else 0)
+
     _art = open(os.path.join(_ARD, "README.md"), encoding="utf-8").read()
     _artf = re.sub(r"\s+", " ", _art)
     ck("allreduce README, states the graph range", "1",
@@ -3750,28 +3842,35 @@ def main():
         # the grouping is by a backend read off a serve log, not by a guess
         ck("a100 article, pair %s names the A100's backend" % x["model"], "1",
            1 if x["a100_backend"] in ("TRITON_ATTN", "FLASH_ATTN") else 0)
+    # the same two arms, on the figure that divides their coefficients by the
+    # A100's -- a narrowed link moves b, which is half of what it divides
+    _apairs = {p["model"]: p for p in ASP["pair"]}
+    for _mdl, _cfg in (("gemma-4-31B-it", "G31-tp2-x16"),
+                       ("Qwen3.8-27B", "Q38-triton-tp2-x16")):
+        ck("a100 article, the %s pair is the restored-link sitting" % _mdl, "1",
+           1 if _apairs[_mdl]["radeon_cfg"] == _cfg else 0)
     APS = ASP["pair_split"]
     ck("a100 article, models where the A100 is on Triton", "3", APS["triton"]["n"])
     ck("a100 article, and where it is on FlashAttention", "2", APS["flash"]["n"])
     ck("a100 article, c on Triton, floor", "2.99", APS["triton"]["c_min"])
-    ck("a100 article, and ceiling", "3.18", APS["triton"]["c_max"])
-    ck("a100 article, c on FlashAttention, floor", "12.75", APS["flash"]["c_min"])
+    ck("a100 article, and ceiling", "3.10", APS["triton"]["c_max"])
+    ck("a100 article, c on FlashAttention, floor", "11.94", APS["flash"]["c_min"])
     ck("a100 article, and ceiling", "19.01", APS["flash"]["c_max"])
     ck("a100 article, the two c groups do not touch", "1",
        1 if APS["c_separates"] else 0)
     ck("a100 article, and the b groups do", "1", 1 if APS["b_overlaps"] else 0)
-    ck("a100 article, b across all five, floor", "2.08",
+    ck("a100 article, b across all five, floor", "1.92",
        min(x["b"] for x in ASP["pair"]))
     ck("a100 article, and ceiling", "4.00", max(x["b"] for x in ASP["pair"]))
 
     # one machine, one day, one model, one flag -- which is what turns the five
     # models above from a correlation into a demonstration
     AFG = ASP["flag"]
-    ck("a100 article, Qwen3.8 on its default backend, c", "3.43", AFG["default_c"])
-    ck("a100 article, and the A100 ahead by", "2.37", AFG["default_ratio"])
-    ck("a100 article, pinned to Triton, c", "18.44", AFG["pinned_c"])
-    ck("a100 article, and the A100 ahead by", "12.75", AFG["pinned_ratio"])
-    ck("a100 article, so one flag moves the answer by", "5.38", AFG["swing"])
+    ck("a100 article, Qwen3.8 on its default backend, c", "4.46", AFG["default_c"])
+    ck("a100 article, and the A100 ahead by", "3.08", AFG["default_ratio"])
+    ck("a100 article, pinned to Triton, c", "17.27", AFG["pinned_c"])
+    ck("a100 article, and the A100 ahead by", "11.94", AFG["pinned_ratio"])
+    ck("a100 article, so one flag moves the answer by", "3.87", AFG["swing"])
     ck("a100 article, and the two arms are the same day", "1",
        1 if AFG["date"] == next(x["radeon_date"] for x in ASP["pair"]
                                 if x["model"] == AFG["model"]) else 0)
@@ -5619,9 +5718,9 @@ def main():
              for x in XP["series"]}
     ck("prefill figure, lines dropping their shallowest rung", "10",
        sum(1 for d in _drop.values() if d == [500]))
-    ck("prefill figure, lines dropping the 4000 rung", "4",
+    ck("prefill figure, lines dropping the 4000 rung", "3",
        sum(1 for d in _drop.values() if d == [4000]))
-    ck("prefill figure, lines dropping nothing", "5",
+    ck("prefill figure, lines dropping nothing", "6",
        sum(1 for d in _drop.values() if not d))
 
     _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
@@ -5759,19 +5858,40 @@ def main():
     # The flag this repository called free. Same model, same day, same stack,
     # one flag: it buys decode at depth and sells prefill at depth, and the two
     # directions are what makes it a trade rather than a win.
+    #
+    # 2026-09-02: the panel moved off the 2026-08-29 pair, which had one card at
+    # PCIe 3.0 x8 and so a biased prefill half. The trade barely moves -- the
+    # ratio was always between two arms on one link -- and the absolutes do.
     _bt = XP["backend_tradeoff"]
     ck("prefill figure, the Triton flag buys decode at 32K", "1.15",
        _bt["decode_gain"], 0.01)
-    ck("prefill figure, and sells prefill at 32K", "1.40",
+    ck("prefill figure, and sells prefill at 32K", "1.45",
        _bt["prefill_gain"], 0.01)
+    ck("prefill figure, which on the narrowed link read", "1.405",
+       _p38[("Q38-tp2", "2026-08-29", 32000)]["prefill_tok_s"]
+       / _p38[("Q38-triton-tp2", "2026-08-29", 32000)]["prefill_tok_s"])
     ck("prefill figure, and the two go opposite ways", "1",
        1 if _bt["prefill_gain"] > 1 and _bt["decode_gain"] > 1 else 0)
-    ck("prefill figure, the backend's quadratic term, ROCm", "3.43",
+    ck("prefill figure, the backend's quadratic term, ROCm", "4.46",
        _bt["c_rocm"], 0.01)
-    ck("prefill figure, and Triton's", "18.44", _bt["c_triton"], 0.01)
+    ck("prefill figure, and Triton's", "17.27", _bt["c_triton"], 0.01)
     # both arms are the same model on the same day, or it is not one flag
     ck("prefill figure, and the pair differs only in the flag", "1",
-       1 if _bt["date"] == "2026-08-29" and _bt["model"] == "Qwen3.8-27B" else 0)
+       1 if _bt["date"] == "2026-09-02" and _bt["model"] == "Qwen3.8-27B" else 0)
+    # ...and both halves come from the restored link, not one from each
+    ck("prefill figure, both arms of the trade are the x16 sittings", "2",
+       sum(1 for _k in ("rocm_cfg", "triton_cfg") if _bt[_k].endswith("-x16")))
+
+    # the two lines the link biased draw the restored sitting, which is what the
+    # caption beside them says. Same configuration as Figure 1's, a different
+    # day -- the configuration is what controls the variable, and decode moves
+    # by 1.0% at most across the two link widths.
+    _pfs = {(x["machine"], x["model"]): x for x in XP["series"]}
+    for _mdl, _cfg in (("gemma-4-31B-it", "G31-tp2-x16"),
+                       ("Qwen3.8-27B", "Q38-triton-tp2-x16")):
+        ck("prefill figure, the %s line is the restored-link sitting" % _mdl, "1",
+           1 if _pfs[("rdna3", _mdl)]["cfg"] == _cfg
+           and _pfs[("rdna3", _mdl)]["date"] == "2026-09-02" else 0)
 
     # the machine ids have to be Figure 1's, or a reader carrying a stroke or a
     # colour between the two figures is carrying it to the wrong line

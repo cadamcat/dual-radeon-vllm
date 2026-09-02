@@ -100,8 +100,10 @@ for model, cfg in MTP:
 # rising to +15.0 % at 32 K -- and until 2026-08-30 that was the whole story.
 #
 # It is not. Both arms recorded prefill too, and prefill goes the other way and
-# by more: 969 against 690 tok/s at 32 K, `ROCM_ATTN` 1.40x ahead, fitted
-# quadratic terms 3.43 against 18.44. So the flag is a trade, and a front page
+# by more: 1 099 against 760 tok/s at 32 K, `ROCM_ATTN` 1.45x ahead, fitted
+# quadratic terms 4.46 against 17.27. (Those are the 2026-09-02 re-measurement
+# on a full-width link; the 2026-08-29 pair read 969 against 690 and 1.40x, on
+# a link that biased both.) So the flag is a trade, and a front page
 # that draws only the decode-faster arm tells a reader half of it. This is that
 # other half, on a switch, off until asked for -- the same shape as the
 # speculative arms: an alternative way of running the line it sits beside,
@@ -647,8 +649,16 @@ PF_LINES = [
     ("rdna3",   "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp2"),
     ("rdna3",   "RX 7900 XT",     "Muse-Glimmer-30B", "2026-08-24", "G-30B-tp2"),
     ("rdna3",   "RX 7900 XT",     "gemma-3-27b-it",   "2026-08-24", "F-27B-tp2"),
-    ("rdna3",   "RX 7900 XT",     "Qwen3.8-27B",      "2026-08-29", "Q38-triton-tp2"),
-    ("rdna3",   "RX 7900 XT",     "gemma-4-31B-it",   "2026-08-29", "G31-tp2"),
+    # 2026-09-02, not 2026-08-29: those two sittings ran with one card trained
+    # at PCIe 3.0 x8, and this figure's argument is the split between b and c,
+    # which is exactly what a narrowed link moves. Re-measured on the restored
+    # link the 31B's b is 722.6 against 868.7 and Qwen3.8's is 758.5 against
+    # 846.2. Same container, same vLLM build, same serve arguments to the byte,
+    # same #45450 state -- the configuration is what has to match, and it does;
+    # the day does not, and Figure 1 still draws these two models' decode from
+    # 2026-08-29, which the link moves by 1.0% at most.
+    ("rdna3",   "RX 7900 XT",     "Qwen3.8-27B",      "2026-09-02", "Q38-triton-tp2-x16"),
+    ("rdna3",   "RX 7900 XT",     "gemma-4-31B-it",   "2026-09-02", "G31-tp2-x16"),
     # 2026-08-30, the four-machine round.
     #
     # Qwen3-8B on the L4 is a third card for a model that had one and the pair.
@@ -761,31 +771,38 @@ for model in ("gemma-4-12B-it", "gemma-4-26B-A4B", "Qwen3-8B"):
 assert all(g["c_gain"] > g["b_gain"] for g in tp_gain), tp_gain
 
 # --- the flag that is not free ----------------------------------------------
-# The 2026-08-29 campaign found that pinning Qwen3.8 to TRITON_ATTN is worth
-# 15.0 % of decode at 32 K against the backend ROCm picks for itself, and this
-# repository has been calling that "nothing but a flag". Both arms recorded
-# prefill too, on the same day, differing in that flag and nothing else -- and
-# prefill goes the other way and by more. It is a trade, not a free win.
+# Pinning Qwen3.8 to TRITON_ATTN is worth about 15 % of decode at 32 K against
+# the backend ROCm picks for itself, and this repository called that "nothing
+# but a flag" until 2026-08-30. Both arms recorded prefill too, on the same day,
+# differing in that flag and nothing else -- and prefill goes the other way and
+# by more. It is a trade, not a free win.
+#
+# The 2026-09-02 sitting, not 2026-08-29: the earlier one had one card at PCIe
+# 3.0 x8, which biases prefill and is half of what this panel reports. Both arms
+# were re-measured on the restored link on one day, so the "same day, one flag
+# apart" property this panel rests on is intact. The trade barely moves --
+# 1.40x -> 1.45x on prefill -- which is what "both arms on the same link"
+# predicted, and the absolutes move 10-13 %.
 _bt = {}
-for cfg in ("Q38-tp2", "Q38-triton-tp2"):
+for cfg in ("Q38-tp2-x16", "Q38-triton-tp2-x16"):
     pre = {r["ctx"]: r for r in _PF if r["cfg"] == cfg and r["chart_grade"]}
     dec = {r["ctx"]: r for r in json.loads("[" + ",".join(
         open(B / "decode.jsonl").read().strip().splitlines()) + "]")
         if r["cfg"] == cfg and r["chart_grade"]}
     _bt[cfg] = (pre, dec)
-_deep = max(set(_bt["Q38-tp2"][0]) & set(_bt["Q38-triton-tp2"][0]))
-_deep_d = max(set(_bt["Q38-tp2"][1]) & set(_bt["Q38-triton-tp2"][1]))
+_deep = max(set(_bt["Q38-tp2-x16"][0]) & set(_bt["Q38-triton-tp2-x16"][0]))
+_deep_d = max(set(_bt["Q38-tp2-x16"][1]) & set(_bt["Q38-triton-tp2-x16"][1]))
 backend_tradeoff = {
-    "model": "Qwen3.8-27B", "date": "2026-08-29", "ctx": _deep, "ctx_decode": _deep_d,
-    "rocm_cfg": "Q38-tp2", "triton_cfg": "Q38-triton-tp2",
-    "prefill_rocm": _bt["Q38-tp2"][0][_deep]["prefill_tok_s"],
-    "prefill_triton": _bt["Q38-triton-tp2"][0][_deep]["prefill_tok_s"],
-    "decode_rocm": _bt["Q38-tp2"][1][_deep_d]["decode_tok_s"],
-    "decode_triton": _bt["Q38-triton-tp2"][1][_deep_d]["decode_tok_s"],
+    "model": "Qwen3.8-27B", "date": "2026-09-02", "ctx": _deep, "ctx_decode": _deep_d,
+    "rocm_cfg": "Q38-tp2-x16", "triton_cfg": "Q38-triton-tp2-x16",
+    "prefill_rocm": _bt["Q38-tp2-x16"][0][_deep]["prefill_tok_s"],
+    "prefill_triton": _bt["Q38-triton-tp2-x16"][0][_deep]["prefill_tok_s"],
+    "decode_rocm": _bt["Q38-tp2-x16"][1][_deep_d]["decode_tok_s"],
+    "decode_triton": _bt["Q38-triton-tp2-x16"][1][_deep_d]["decode_tok_s"],
     "c_rocm": next(f for f in _bp.fits(_PF)
-                   if f["cfg"] == "Q38-tp2")["c_ns_tok2"],
+                   if f["cfg"] == "Q38-tp2-x16")["c_ns_tok2"],
     "c_triton": next(f for f in _bp.fits(_PF)
-                     if f["cfg"] == "Q38-triton-tp2")["c_ns_tok2"],
+                     if f["cfg"] == "Q38-triton-tp2-x16")["c_ns_tok2"],
 }
 backend_tradeoff["prefill_gain"] = (backend_tradeoff["prefill_rocm"]
                                     / backend_tradeoff["prefill_triton"])

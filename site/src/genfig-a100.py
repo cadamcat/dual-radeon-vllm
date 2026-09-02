@@ -497,14 +497,18 @@ split = {"ladders": ladders, "second": second, "percard": percard,
 PAIR_ARMS = [
     ("gemma-4-12B-it",   ("A-12B-tp2",      "2026-08-24"), ("G12",    "2026-08-30")),
     ("gemma-4-26B-A4B",  ("E-26B-tp2",      "2026-08-24"), ("G26A4B", "2026-08-30")),
-    ("gemma-4-31B-it",   ("G31-tp2",        "2026-08-29"), ("G31",    "2026-08-30")),
-    ("Qwen3.8-27B",      ("Q38-triton-tp2", "2026-08-29"), ("Q38",    "2026-08-30")),
+    # 2026-09-02 for both: their 2026-08-29 sittings had one card trained at
+    # PCIe 3.0 x8, and this figure is a ratio of fitted coefficients, which is
+    # what a narrowed link moves. Same container, build and serve arguments, so
+    # the configuration matches and only the day does not.
+    ("gemma-4-31B-it",   ("G31-tp2-x16",        "2026-09-02"), ("G31",    "2026-08-30")),
+    ("Qwen3.8-27B",      ("Q38-triton-tp2-x16", "2026-09-02"), ("Q38",    "2026-08-30")),
     ("Muse-Glimmer-30B", ("G-30B-tp2",      "2026-08-24"), ("MG30",   "2026-08-30")),
 ]
 # The same model and machine on the other backend, one flag apart, same day.
 # This is what makes the reading above a demonstration rather than a
 # correlation across five models that differ in more than their kernel.
-PAIR_ALT = ("Qwen3.8-27B", ("Q38-tp2", "2026-08-29"))
+PAIR_ALT = ("Qwen3.8-27B", ("Q38-tp2-x16", "2026-09-02"))
 
 
 def _fit(machine, cfg, date):
