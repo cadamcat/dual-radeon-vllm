@@ -718,6 +718,9 @@ benchmarks/   The measurement data and everything that produced it
   gfx1100-greedy-attn-ab/  the same two models forced onto the other attention
                        backend with the quantisation kernel held fixed: the
                        greedy non-determinism is not the attention backend
+  modal-2026-09-02/    six rented GPUs described before anything is measured --
+                       B300, B200, H100, RTX PRO 6000, L40S, A100-80GB -- for
+                       $0.054 and 39 seconds of GPU time
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
   repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive

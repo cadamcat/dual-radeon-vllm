@@ -2276,6 +2276,80 @@ def main():
                                  sorted(r["sclk_mhz_min"] for r in _tp2))
                if a != b))
 
+    # --- the machines Modal rents, described before anything is measured ---
+    # Every machine in the projections carries a description; these six were
+    # obtained for $0.054 and are recorded the same way, with nvidia-smi's own
+    # field names. Nothing here has run a model -- the checks are that the
+    # descriptions are complete, that the README quotes them, and that none of
+    # the cards arrives de-rated, which is a measurement condition.
+    _MD = os.path.join(_BR, "modal-2026-09-02")
+    _MM = {r["gpu_arg"]: r for r in
+           (json.loads(l) for l in open(os.path.join(_MD, "machines.jsonl")) if l.strip())}
+    ck("modal machines, probed", "6", len(_MM))
+    ck("modal machines, and none of them failed", "0",
+       sum(1 for r in _MM.values() if "error" in r))
+    _NEED = ("name", "driver_version", "memory.total", "power.limit",
+             "power.max_limit", "clocks.max.sm", "clocks.max.memory",
+             "compute_cap", "pcie.link.gen.max", "pcie.link.width.max",
+             "cuda_version", "scheduled_s", "wall_s")
+    ck("modal machines, rows missing a field", "0",
+       sum(1 for r in _MM.values() for f in _NEED if f not in r))
+    # every check below indexes _MM by name, and a row that went missing must
+    # make those FAIL rather than raise -- a gate that throws is not a gate.
+    _EXPECT = ("B300", "B200", "H100", "RTX-PRO-6000", "L40S", "A100-80GB")
+    ck("modal machines, every one asked for is here", "0",
+       sum(1 for g in _EXPECT if g not in _MM))
+    _mm = lambda g, f: (_MM.get(g) or {}).get(f, "")
+    # none is de-rated: a card rented below its own ceiling is a different
+    # measurement condition, and the L4 on Colab was exactly that
+    ck("modal machines, rented below their own power ceiling", "0",
+       sum(1 for r in _MM.values()
+           if r["power.limit"] != r["power.max_limit"]))
+    ck("modal machines, all on one driver", "1",
+       len({r["driver_version"] for r in _MM.values()}))
+    # the two that matter for what this repository already publishes
+    ck("modal machines, the A100 is the part the projections already carry", "1",
+       1 if _mm("A100-80GB", "name") == "NVIDIA A100-SXM4-80GB" else 0)
+    ck("modal machines, and that string is in decode.jsonl", "1",
+       1 if any(r.get("machine") == "A100-SXM4-80GB" for r in _RTD) else 0)
+    # RTX PRO 6000 is a different architecture from the other two Blackwells
+    ck("modal machines, distinct compute capabilities", "6",
+       len({r["compute_cap"] for r in _MM.values()}))
+    ck("modal machines, the workstation Blackwell's is 12.0", "12.0",
+       float(_mm("RTX-PRO-6000", "compute_cap") or 0))
+    ck("modal machines, against the datacentre ones", "2",
+       sum(1 for g in ("B200", "B300")
+           if _mm(g, "compute_cap").startswith("10")))
+    ck("modal machines, and only B300 is PCIe gen 6", "1",
+       sum(1 for r in _MM.values() if r["pcie.link.gen.max"] == "6"))
+    # what it cost, from the rows rather than from a receipt
+    _RATE = {"B300": 7.10, "B200": 6.25, "H100": 3.95, "RTX-PRO-6000": 3.03,
+             "L40S": 1.95, "A100-80GB": 2.50}
+    _cost = lambda: sum(r["wall_s"] / 3600 * _RATE[g]
+                        for g, r in _MM.items() if g in _RATE)
+    ck("modal machines, seconds of GPU time spent", "39.0",
+       sum(r["wall_s"] for r in _MM.values()), 0.01)
+    ck("modal machines, dollars spent", "0.054",
+       _cost(), 0.02)
+    ck("modal machines, longest wait for a card, seconds", "1.21",
+       max(r["scheduled_s"] for r in _MM.values()))
+    # ...and the README states them
+    _rmd = open(os.path.join(_MD, "README.md"), encoding="utf-8").read()
+    for _g, _nm in (("B300", "NVIDIA B300 SXM6 AC"),
+                    ("RTX-PRO-6000", "NVIDIA RTX PRO 6000 Blackwell Server Edition"),
+                    ("A100-80GB", "NVIDIA A100-SXM4-80GB")):
+        ck("modal README, names what %s returns" % _g, "1",
+           1 if _mm(_g, "name") and _mm(_g, "name") in _rmd else 0)
+    _m = re.search(r"\*\*Six machines, 39 seconds,\s*\$([\d.]+)\.\*\*", _rmd)
+    ck("modal README, states what it cost", "1", 1 if _m else 0)
+    if _m:
+        ck("modal README, and the figure is the rows'", _m.group(1),
+           _cost(), 0.02)
+    ck("modal README, records that none arrives de-rated", "1",
+       1 if "none of these\ncards is being rented to us de-rated" in _rmd else 0)
+    ck("modal README, publishes no performance number", "1",
+       1 if "Nothing here has run a model." in _rmd else 0)
+
     # --- what the second card buys, and what decides it, 2026-09-02d ------
     # allreduce-2026-09-02 left +4.97 ms on the 12B as a residual it declined to
     # explain, and named two candidates. Both are eliminated here with counters,
