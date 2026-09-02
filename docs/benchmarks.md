@@ -246,6 +246,20 @@ paragraph is the total across the pair.
 | 31B w4a16, TP=2 | 10.84 GiB | **63 %** |
 | 12B w4a16, TP=2 | 4.78 GiB | **38 %** |
 
+> **These three are derived, and on 2026-09-02 the derivation was measured for
+> the first time — on another machine.** Each assumes a decode step reads every
+> weight byte from memory once, so utilisation is tok/s times the checkpoint's
+> size. Profiled against hardware counters on an A100-SXM4-40GB
+> ([`cuda-a100/campaign-2026-09-02`](../benchmarks/cuda-a100/campaign-2026-09-02/README.md)),
+> a decode step reads **81.6 %** of the checkpoint on `gemma-4-12B` and **85.6 %**
+> on `gemma-4-31B`, so the derived figure overstates by 17–23 % there. The two
+> factors differ by 4.7 %, which is why no correction is applied here: it is a
+> property of the model, not a constant. **These gfx1100 numbers cannot be
+> checked the same way** — `rocprofv3` runs in the VFIO guest and its memory
+> counters read zero — and they run `RDNA3W4A16LinearKernel` where the A100 runs
+> Marlin. Read the three as an upper bound on the real utilisation, and the
+> comparisons *between* them as unaffected: the same assumption is on both sides.
+
 Both effects are real: at equal quantisation the larger model reaches 1.7× the
 utilisation (63 % vs 38 %), *and* the 31B still trails the BF16 8B by 12 points
 despite moving 55 % more data.

@@ -1883,8 +1883,8 @@ def main():
        len(_open))
     _idx = [l for l in _wh.split("\n")
             if l.startswith("| `") and l.rstrip().endswith("|")]
-    ck("benchmarks README, paths in the index", "30", len(_idx))
-    ck("benchmarks README, and a section for each that needs one", "25",
+    ck("benchmarks README, paths in the index", "31", len(_idx))
+    ck("benchmarks README, and a section for each that needs one", "26",
        len(re.findall(r"^### `", _wh, re.M)))
     ck("benchmarks README, no index line long enough to be a wall", "0",
        sum(1 for l in _idx if len(l) > 220))
@@ -1941,7 +1941,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "13", len(_camps))
+    ck("campaigns, every results.jsonl found", "14", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2078,6 +2078,53 @@ def main():
                 and not os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))]
     ck("campaigns, new Radeon ones missing host_link.json", "0", len(_need_hl))
 
+    # --- derived against measured bandwidth, 2026-09-02 -------------------
+    # Every utilisation figure in this repository is derived: tok/s times the
+    # checkpoint's size, assuming a decode step reads every weight byte once.
+    # This is the first measurement of that assumption, and it is 17-23% out.
+    # vLLM's prefill emits the first token, so gen=1 is a bare prefill and
+    # gen=8 is that prefill plus seven decode steps; the difference isolates
+    # them. Read from the committed profile summary, not from the prose.
+    _NCU = json.load(open(os.path.join(_BR, "cuda-a100", "campaign-2026-09-02",
+                                       "ncu-summary.json")))
+    ck("ncu, profiles committed", "4", len(_NCU))
+    _CKPT_GB = {"gemma-4-12B-it": 9.56 * 2**30 / 1e9,      # benchmarks.md s3,
+                "gemma-4-31B-it": 21.67 * 2**30 / 1e9}     # per-GPU bytes x TP=2
+    _fac = {}
+    _ZERO = {"read_B": 0.0, "write_B": 0.0, "time_s": 0.0}
+    for _short, _full in (("gemma-4-12B-it-qat-w4a16-ct", "gemma-4-12B-it"),
+                          ("gemma-4-31B-it-qat-w4a16-ct", "gemma-4-31B-it")):
+        # a profile removed from the summary must fail as a figure, not as a
+        # traceback: deleting one is exactly the regression this block guards
+        _g8 = _NCU.get(f"{_short}-gen8", {}).get("totals", _ZERO)
+        _g1 = _NCU.get(f"{_short}-gen1", {}).get("totals", _ZERO)
+        _per = (_g8["read_B"] - _g1["read_B"]) / 7 / 1e9
+        _fac[_full] = _per / _CKPT_GB[_full]
+        ck("ncu, %s reads this per decode step" % _full,
+           "8.375" if "12B" in _full else "19.914", _per, 0.002)
+    ck("ncu, the 12B reads this share of its checkpoint", "81.6",
+       _fac["gemma-4-12B-it"] * 100, 0.05)
+    ck("ncu, and the 31B this", "85.6", _fac["gemma-4-31B-it"] * 100, 0.05)
+    ck("ncu, so both read less than all of it", "2",
+       sum(1 for v in _fac.values() if v < 1.0))
+    ck("ncu, and the two factors differ by", "4.7",
+       abs(_fac["gemma-4-12B-it"] - _fac["gemma-4-31B-it"]) / max(max(_fac.values()), 1e-9)
+       * 100, 0.05)
+    # the serving rates the corrected figures use, from this campaign's own rows
+    _a40 = [r for r in _RTD if r["machine"] == "A100-SXM4-40GB" and r["ctx"] == 500
+            and r["spec"] is None]
+    ck("ncu, the 40GB card's cells at 500", "2", len(_a40))
+    for _cfg, _want in (("G12", "100.50"), ("G31", "50.15")):
+        _r = [r for r in _a40 if r["cfg"] == _cfg][0]
+        ck("ncu, %s serves at" % _cfg, _want, _r["decode_tok_s"], 0.02)
+    # the note is on both pages that publish a derived figure
+    _bmd = open(os.path.join(ROOT, "docs", "benchmarks.md"), encoding="utf-8").read()
+    ck("ncu, benchmarks.md marks its three as derived", "1",
+       1 if "derived, and on 2026-09-02 the derivation was measured" in _bmd else 0)
+    for _fn in ("a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"):
+        ck("ncu, %s marks Figure 7 as an upper bound" % _fn[-8:], "1",
+           1 if ("81.6" in flat[_fn] and "2026-09-02" in flat[_fn]) else 0)
+
     # --- the route column, added 2026-09-01 -------------------------------
     # The serve logs always carried why a backend was chosen and which
     # quantisation kernel the checkpoint landed on; neither projection did, so
@@ -2086,13 +2133,13 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "414", len(_rt))
+    ck("route column, rows carrying one", "426", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
     ck("route column, chosen by override", "120", _dec.get("override", 0))
-    ck("route column, forced", "206", _dec.get("forced", 0))
+    ck("route column, forced", "218", _dec.get("forced", 0))
     ck("route column, left to the default", "88", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
@@ -2100,7 +2147,7 @@ def main():
         if _r["route"]["decision"] == "forced":
             _w = _r["route"]["forced_reason"]
             _why[_w] = _why.get(_w, 0) + 1
-    ck("route column, forced for want of FA4", "148",
+    ck("route column, forced for want of FA4", "160",
        _why.get("FA4 not available", 0))
     ck("route column, forced to keep one backend", "58",
        _why.get("prevent mixed-backend numerical divergence", 0))

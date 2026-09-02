@@ -46,6 +46,7 @@ that has a section of its own further down, in the same order:
 | `cuda-t4/campaign-2026-08-30/` | **The fifth machine**, with [vllm#39018](https://github.com/vllm-project/vllm/pull/39018) applied |
 | `cuda-l4/campaign-2026-09-02/` | **The first CUDA cells with hardware telemetry** — the L4 is power-capped in every cell, and the 500 rung is stable there |
 | `cuda-t4/campaign-2026-09-02/` | **The same nine cells on the T4** — round 1 is the high outlier and it is heat; at 32 K the T4 is compute-bound, not bandwidth-bound |
+| `cuda-a100/campaign-2026-09-02/` | **What the derived bandwidth figures are worth** — measured against hardware counters for the first time: a decode step reads 82–86 % of its checkpoint, not all of it |
 
 **Standalone findings**
 
@@ -496,6 +497,24 @@ links)
 as the vLLM campaign. The control that showed the long-context collapse is specific to
 vLLM's paged-attention path — see
 [hybrid-decode-on-rdna.md](../docs/hybrid-decode-on-rdna.md)
+
+### `cuda-a100/campaign-2026-09-02/`
+
+**The first check of the assumption every utilisation figure here rests on.**
+Those figures are derived — decode tok/s times the checkpoint's size, assuming a
+decode step reads every weight byte once — and nothing had tested it on any
+machine. It cannot be tested on the Radeon box: `rocprofv3` runs in the VFIO
+guest and its memory counters read zero. On an A100 it can. Profiling
+`gemma-4-12B` and `gemma-4-31B` under `ncu` with the range scoped by NVTX, and
+differencing a bare prefill against prefill-plus-seven-decode-steps, a decode
+step reads **8.375 GB against a 10.265 GB checkpoint** on the 12B and
+**19.914 against 23.268** on the 31B — 81.6 % and 85.6 %. So the derived method
+overstates by 17–23 %, the two factors differ by 4.7 %, and **there is no single
+correction to apply**: it is a property of the model. On this card the 12B's
+utilisation falls from a derived 66.3 % to a measured 54.2 %, and the 31B's from
+75.0 % to 64.3 %. Nothing transfers to the Radeon figures, whose kernel is
+`RDNA3W4A16LinearKernel` and not Marlin. The card is the **40 GB** part, never
+merged with the published 80 GB rows. [The README](cuda-a100/campaign-2026-09-02/README.md).
 
 ## Reproducing the analysis (no GPU needed)
 

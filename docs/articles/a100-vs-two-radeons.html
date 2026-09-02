@@ -1289,7 +1289,12 @@ against 800 GB/s — puts this comparison's model at 63 %:</p>
     §3</a>. Two effects are visible and both are real: at equal quantisation the larger model
     reaches higher utilisation, and the BF16 model reaches higher still. <strong>No equivalent
     figure was measured on the A100</strong>, so the comparison in Figure 3 is against a nominal
-    ceiling on that side and a realized one on this side.
+    ceiling on that side and a realized one on this side. <em>Added 2026-09-02:</em> every bar here
+    is <em>derived</em> — tok/s times the checkpoint's size, assuming a decode step reads every
+    weight byte once. Measured against hardware counters on an A100-SXM4-40GB, a decode step reads
+    81.6 % of the checkpoint on <code>gemma-4-12B</code> and 85.6 % on <code>gemma-4-31B</code>, so
+    the derivation overstates by 17–23 % there. It cannot be measured on gfx1100 — the VFIO guest's
+    counters read zero — so these bars stand as an upper bound.
   </figcaption>
 </figure>
 

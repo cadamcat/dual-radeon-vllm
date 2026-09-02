@@ -280,7 +280,11 @@ Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以
     两个效应都真实可见：同样的量化下更大的模型实到更高，而 BF16 那个还要更高。
     <strong>A100 那边没有测过对应的数字</strong>，
     所以图 3 里的对比在那一侧是对着标称上限，在这一侧是对着实到值。
-  </figcaption>
+   <em>2026-09-02 补记：</em>这里每一根柱子都是<em>推算</em>的 —— tok/s 乘以 checkpoint 大小，
+    假设一个解码步把每个权重字节都从显存读一遍。在 A100-SXM4-40GB 上用硬件计数器实测，
+    一个解码步在 <code>gemma-4-12B</code> 上读了 checkpoint 的 81.6 %、在 <code>gemma-4-31B</code>
+    上读了 85.6 %，所以那边的推算高估了 17–23 %。gfx1100 上测不了 —— VFIO 客户机的计数器读零 ——
+    所以这些柱子只能当作上界。</figcaption>
 </figure>
 
 <h2><span class="n">9</span>没有被确立的部分</h2>

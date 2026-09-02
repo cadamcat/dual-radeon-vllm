@@ -1,0 +1,274 @@
+{
+ "gemma-4-12B-it-qat-w4a16-ct-gen1": {
+  "model": "gemma-4-12B-it-qat-w4a16-ct",
+  "gen": 1,
+  "launches_profiled": 894,
+  "totals": {
+   "read_B": 9180187520.0,
+   "write_B": 324725120.0,
+   "time_s": 0.022646
+  },
+  "top_kernels": [
+   {
+    "kernel": "void marlin::Marlin",
+    "read_B": 6538467456.0,
+    "write_B": 324175232.0,
+    "time_s": 0.014221,
+    "launches": 192
+   },
+   {
+    "kernel": "ampere_bf16_s16816gemm_bf16_64x64_sliced1x2_ldg8_f2f_stages_",
+    "read_B": 2013418240.0,
+    "write_B": 549376.0,
+    "time_s": 0.001395,
+    "launches": 1
+   },
+   {
+    "kernel": "kernel_unified_attention",
+    "read_B": 197365248.0,
+    "write_B": 0.0,
+    "time_s": 0.003032,
+    "launches": 48
+   },
+   {
+    "kernel": "void vllm::act_and_mul_kernel",
+    "read_B": 153668864.0,
+    "write_B": 512.0,
+    "time_s": 0.000491,
+    "launches": 48
+   },
+   {
+    "kernel": "void vllm::rms_norm_kernel",
+    "read_B": 123906816.0,
+    "write_B": 0.0,
+    "time_s": 0.001863,
+    "launches": 337
+   },
+   {
+    "kernel": "void at::vectorized_elementwise_kernel",
+    "read_B": 78889472.0,
+    "write_B": 0.0,
+    "time_s": 0.000445,
+    "launches": 102
+   },
+   {
+    "kernel": "void vllm::rotary_embedding_kernel",
+    "read_B": 34690432.0,
+    "write_B": 0.0,
+    "time_s": 0.000473,
+    "launches": 48
+   },
+   {
+    "kernel": "void at::elementwise_kernel",
+    "read_B": 20539008.0,
+    "write_B": 0.0,
+    "time_s": 0.000346,
+    "launches": 49
+   }
+  ]
+ },
+ "gemma-4-12B-it-qat-w4a16-ct-gen8": {
+  "model": "gemma-4-12B-it-qat-w4a16-ct",
+  "gen": 8,
+  "launches_profiled": 7453,
+  "totals": {
+   "read_B": 67802311808.0,
+   "write_B": 380862336.0,
+   "time_s": 0.113359
+  },
+  "top_kernels": [
+   {
+    "kernel": "void marlin::Marlin",
+    "read_B": 49607162880.0,
+    "write_B": 376788864.0,
+    "time_s": 0.062521,
+    "launches": 1536
+   },
+   {
+    "kernel": "ampere_bf16_s16816gemm_bf16_64x64_sliced1x2_ldg8_f2f_stages_",
+    "read_B": 16106728448.0,
+    "write_B": 4073472.0,
+    "time_s": 0.011153,
+    "launches": 8
+   },
+   {
+    "kernel": "kernel_unified_attention",
+    "read_B": 1424510336.0,
+    "write_B": 0.0,
+    "time_s": 0.007895,
+    "launches": 384
+   },
+   {
+    "kernel": "void vllm::act_and_mul_kernel",
+    "read_B": 176525440.0,
+    "write_B": 0.0,
+    "time_s": 0.003439,
+    "launches": 384
+   },
+   {
+    "kernel": "void vllm::rms_norm_kernel",
+    "read_B": 175537536.0,
+    "write_B": 0.0,
+    "time_s": 0.014019,
+    "launches": 2696
+   },
+   {
+    "kernel": "reduce_segments",
+    "read_B": 106132608.0,
+    "write_B": 0.0,
+    "time_s": 0.002774,
+    "launches": 336
+   },
+   {
+    "kernel": "void at::vectorized_elementwise_kernel",
+    "read_B": 104680448.0,
+    "write_B": 0.0,
+    "time_s": 0.003148,
+    "launches": 816
+   },
+   {
+    "kernel": "void vllm::rotary_embedding_kernel",
+    "read_B": 41959680.0,
+    "write_B": 0.0,
+    "time_s": 0.003373,
+    "launches": 384
+   }
+  ]
+ },
+ "gemma-4-31B-it-qat-w4a16-ct-gen1": {
+  "model": "gemma-4-31B-it-qat-w4a16-ct",
+  "gen": 1,
+  "launches_profiled": 1109,
+  "totals": {
+   "read_B": 20375840768.0,
+   "write_B": 191035520.0,
+   "time_s": 0.030433
+  },
+  "top_kernels": [
+   {
+    "kernel": "void marlin::Marlin",
+    "read_B": 16756958080.0,
+    "write_B": 190014976.0,
+    "time_s": 0.019312,
+    "launches": 240
+   },
+   {
+    "kernel": "ampere_bf16_s16816gemm_bf16_256x64_ldg8_f2f_stages_64x3_tn",
+    "read_B": 2819227008.0,
+    "write_B": 1020544.0,
+    "time_s": 0.002037,
+    "launches": 1
+   },
+   {
+    "kernel": "kernel_unified_attention",
+    "read_B": 475374080.0,
+    "write_B": 0.0,
+    "time_s": 0.003803,
+    "launches": 60
+   },
+   {
+    "kernel": "void vllm::act_and_mul_kernel",
+    "read_B": 103610880.0,
+    "write_B": 0.0,
+    "time_s": 0.00071,
+    "launches": 60
+   },
+   {
+    "kernel": "void vllm::rms_norm_kernel",
+    "read_B": 99881600.0,
+    "write_B": 0.0,
+    "time_s": 0.002338,
+    "launches": 421
+   },
+   {
+    "kernel": "void at::vectorized_elementwise_kernel",
+    "read_B": 53970304.0,
+    "write_B": 0.0,
+    "time_s": 0.000503,
+    "launches": 126
+   },
+   {
+    "kernel": "void vllm::rotary_embedding_kernel",
+    "read_B": 33147264.0,
+    "write_B": 0.0,
+    "time_s": 0.000881,
+    "launches": 60
+   },
+   {
+    "kernel": "reshape_and_cache_kernel_flash",
+    "read_B": 18239744.0,
+    "write_B": 0.0,
+    "time_s": 0.000276,
+    "launches": 60
+   }
+  ]
+ },
+ "gemma-4-31B-it-qat-w4a16-ct-gen8": {
+  "model": "gemma-4-31B-it-qat-w4a16-ct",
+  "gen": 8,
+  "launches_profiled": 9257,
+  "totals": {
+   "read_B": 159773204352.0,
+   "write_B": 423611776.0,
+   "time_s": 0.196341
+  },
+  "top_kernels": [
+   {
+    "kernel": "void marlin::Marlin",
+    "read_B": 132760592256.0,
+    "write_B": 415450368.0,
+    "time_s": 0.123777,
+    "launches": 1920
+   },
+   {
+    "kernel": "ampere_bf16_s16816gemm_bf16_256x64_ldg8_f2f_stages_64x3_tn",
+    "read_B": 22553765888.0,
+    "write_B": 8161280.0,
+    "time_s": 0.016278,
+    "launches": 8
+   },
+   {
+    "kernel": "kernel_unified_attention",
+    "read_B": 3675225728.0,
+    "write_B": 0.0,
+    "time_s": 0.012774,
+    "launches": 480
+   },
+   {
+    "kernel": "reduce_segments",
+    "read_B": 261957888.0,
+    "write_B": 0.0,
+    "time_s": 0.003518,
+    "launches": 420
+   },
+   {
+    "kernel": "void vllm::rms_norm_kernel",
+    "read_B": 182051200.0,
+    "write_B": 128.0,
+    "time_s": 0.018145,
+    "launches": 3368
+   },
+   {
+    "kernel": "void vllm::act_and_mul_kernel",
+    "read_B": 142500224.0,
+    "write_B": 0.0,
+    "time_s": 0.00549,
+    "launches": 480
+   },
+   {
+    "kernel": "void at::vectorized_elementwise_kernel",
+    "read_B": 88554112.0,
+    "write_B": 0.0,
+    "time_s": 0.003711,
+    "launches": 1008
+   },
+   {
+    "kernel": "void vllm::rotary_embedding_kernel",
+    "read_B": 47887360.0,
+    "write_B": 0.0,
+    "time_s": 0.006604,
+    "launches": 480
+   }
+  ]
+ }
+}

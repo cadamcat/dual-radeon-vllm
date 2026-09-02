@@ -216,6 +216,10 @@ SOURCES = [
          machine="A100-SXM4-80GB", date="2026-08-30", vllm="0.28.0", rocm=None,
          cuda="13.0", driver="580.82.07", kernel=None, patches=[],
          prefix_caching=False),
+    dict(file="cuda-a100/campaign-2026-09-02/results.jsonl", machine="A100-SXM4-40GB",
+         date="2026-09-02", vllm="0.28.0", rocm=None, cuda="13.0",
+         driver="580.82.07", kernel=None, patches=[],
+         prefix_caching=False),
     # 2026-08-30, the four-machine round. Qwen3-8B on ONE 7900 XT at util 0.95,
     # on the 0.27 image and **fully stock**: the container's
     # `triton_unified_attention.py`, `triton_attn.py` and
