@@ -798,6 +798,34 @@ ceiling is real, but raising it is not expected to fix the throughput gap above.
 
 ---
 
+## 10. Does the bandwidth-utilisation derivation hold on gfx1100? — **not answerable on this hardware**
+
+Every utilisation figure this repository publishes is derived: decode tok/s
+times the checkpoint's size, assuming a decode step reads every weight byte from
+memory once. On 2026-09-02 that assumption was measured for the first time, on
+an A100-SXM4-40GB under `ncu`
+([`cuda-a100/campaign-2026-09-02`](../benchmarks/cuda-a100/campaign-2026-09-02/README.md)):
+a decode step reads **81.6 %** of the checkpoint on `gemma-4-12B` and **85.6 %**
+on `gemma-4-31B`, so the derivation overstates by 17–23 % there, and the two
+factors differ by 4.7 % — it is a property of the model, not a constant.
+
+**The same measurement cannot be made on the machine the figures describe.**
+`rocprofv3` runs in the VFIO guest and its kernel trace is correct — names, grid
+sizes and durations all land — but the memory-side counters read zero: over six
+dispatches of a 2048² fp32 matmul, `FETCH_SIZE`, `GRBM_COUNT`, `GPUBusy` and
+`SQ_INSTS_VALU` each summed to 0.0 while `SQ_WAVES` returned 6120. Some counter
+blocks survive passthrough and the ones that would answer this do not.
+
+So the gfx1100 figures stand as an upper bound, and the A100's factor is not
+transferable to them: those run `RDNA3W4A16LinearKernel` where the A100 runs
+Marlin, and a kernel that reads its weights differently would have a different
+factor. What would settle it is either bare-metal access to a gfx1100 — where
+the counters are not behind passthrough — or a kernel-by-kernel attribution of
+the unread bytes, which is 1.89 GB on the 12B and 3.35 GB on the 31B and which
+that campaign did not do.
+
+---
+
 ## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s? ANSWERED
 
 > **Answered 2026-08-27.** The checkpoint is asymmetric int4, so every quantised

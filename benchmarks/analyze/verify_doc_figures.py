@@ -2124,6 +2124,15 @@ def main():
     for _fn in ("a100-vs-two-radeons.html", "a100-vs-two-radeons.zh.html"):
         ck("ncu, %s marks Figure 7 as an upper bound" % _fn[-8:], "1",
            1 if ("81.6" in flat[_fn] and "2026-09-02" in flat[_fn]) else 0)
+    # the front page publishes the same derived figure and must carry the note
+    ck("ncu, the README marks its own derived figure", "1",
+       1 if ("81.6 % of the checkpoint" in rm and "upper bound" in rm) else 0)
+    ck("ncu, and open-questions records what cannot be measured here", "1",
+       1 if "not answerable on this hardware" in
+       open(os.path.join(ROOT, "docs", "open-questions.md"), encoding="utf-8").read()
+       else 0)
+    ck("ncu, the README lists the harness", "1",
+       1 if "harness/             one telemetry shape" in rm else 0)
 
     # --- the route column, added 2026-09-01 -------------------------------
     # The serve logs always carried why a backend was chosen and which

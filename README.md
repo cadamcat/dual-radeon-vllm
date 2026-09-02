@@ -22,7 +22,7 @@ Three things, each usable on its own:
 | | |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | Seven model architectures across eleven context lengths on **five machines** — two consumer Radeons together and apart, a rented A100 80G, an L4 24G and a Tesla T4 16G — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
+| 📊 **The data** | Seven model architectures across eleven context lengths on **five machines** — two consumer Radeons together and apart, a rented A100 80G, an L4 24G and a Tesla T4 16G — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and a sixth machine, an A100 40G, appears in the projections for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
@@ -464,6 +464,12 @@ utilisation, not this comparison's 31B. Recomputed from `results.jsonl` and the
 per-GPU bytes/token in [benchmarks.md §3](docs/benchmarks.md), the 31B at TP=2
 reaches 62.8 %. All three utilisation figures are pinned by
 `verify_doc_figures.py`.)*
+*(And on 2026-09-02 the derivation behind it was measured for the first time —
+on another machine, because gfx1100's counters read zero under VFIO. On an
+A100 a decode step reads 81.6 % of the checkpoint on the 12B and 85.6 % on the
+31B, not all of it, so a figure of this kind overstates by 17–23 % there. The
+two factors differ by 4.7 %, so no correction is applied to this number: read
+it as an upper bound. [The measurement](benchmarks/cuda-a100/campaign-2026-09-02/README.md).)*
 
 **The two stacks cannot be matched, and that is not laziness.** Each arm is stock
 on the stack its platform actually runs — vLLM 0.23 on the pair, 0.28.0 on the
@@ -678,6 +684,10 @@ benchmarks/   The measurement data and everything that produced it
                          the 2026-07-25 tables and charts
   analyze/             turn that into the tables and charts; no GPU needed
   bench_runner.py      the campaign runner: serial, checkpointed, VRAM-safe
+  harness/             one telemetry shape for every machine, and the schema
+                       every campaign from 2026-09-02 writes: clocks, power,
+                       temperature and memory-controller busy beside each cell,
+                       so a slow kernel and a throttled card stop looking alike
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
   repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive
