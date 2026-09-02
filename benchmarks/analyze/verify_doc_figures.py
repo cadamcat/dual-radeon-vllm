@@ -2285,7 +2285,9 @@ def main():
     _MD = os.path.join(_BR, "modal-2026-09-02")
     _MM = {r["gpu_arg"]: r for r in
            (json.loads(l) for l in open(os.path.join(_MD, "machines.jsonl")) if l.strip())}
-    ck("modal machines, probed", "6", len(_MM))
+    # seven since 2026-09-03: the H200 was probed once cuda-h100's campaign
+    # made it the one pair in the catalogue that moves memory bandwidth alone.
+    ck("modal machines, probed", "7", len(_MM))
     ck("modal machines, and none of them failed", "0",
        sum(1 for r in _MM.values() if "error" in r))
     _NEED = ("name", "driver_version", "memory.total", "power.limit",
@@ -2324,12 +2326,12 @@ def main():
        sum(1 for r in _MM.values() if r["pcie.link.gen.max"] == "6"))
     # what it cost, from the rows rather than from a receipt
     _RATE = {"B300": 7.10, "B200": 6.25, "H100": 3.95, "RTX-PRO-6000": 3.03,
-             "L40S": 1.95, "A100-80GB": 2.50}
+             "L40S": 1.95, "A100-80GB": 2.50, "H200": 4.54}
     _cost = lambda: sum(r["wall_s"] / 3600 * _RATE[g]
                         for g, r in _MM.items() if g in _RATE)
-    ck("modal machines, seconds of GPU time spent", "39.0",
+    ck("modal machines, seconds of GPU time spent", "43.2",
        sum(r["wall_s"] for r in _MM.values()), 0.01)
-    ck("modal machines, dollars spent", "0.054",
+    ck("modal machines, dollars spent", "0.059",
        _cost(), 0.02)
     ck("modal machines, longest wait for a card, seconds", "1.21",
        max(r["scheduled_s"] for r in _MM.values()))
@@ -2340,15 +2342,24 @@ def main():
                     ("A100-80GB", "NVIDIA A100-SXM4-80GB")):
         ck("modal README, names what %s returns" % _g, "1",
            1 if _mm(_g, "name") and _mm(_g, "name") in _rmd else 0)
-    _m = re.search(r"\*\*Six machines, 39 seconds,\s*\$([\d.]+)\.\*\*", _rmd)
+    _m = re.search(r"\*\*Seven machines, 43 seconds,\s*\n?\$([\d.]+)\.\*\*", _rmd)
     ck("modal README, states what it cost", "1", 1 if _m else 0)
     if _m:
         ck("modal README, and the figure is the rows'", _m.group(1),
            _cost(), 0.02)
     ck("modal README, records that none arrives de-rated", "1",
-       1 if "none of these\ncards is being rented to us de-rated" in _rmd else 0)
+       1 if "none of\nthese cards is being rented to us de-rated" in _rmd else 0)
     ck("modal README, publishes no performance number", "1",
        1 if "Nothing here has run a model." in _rmd else 0)
+    # the H200 claim, which is the reason it was probed at all: same compute
+    # capability, same power cap, same SM clock ceiling, more memory.
+    ck("modal README, says the H200 changes memory and nothing else", "1",
+       1 if "an `H100` with more memory and nothing else changed" in _rmd else 0)
+    for _f in ("compute_cap", "power.limit", "clocks.max.sm", "pcie.link.gen.max"):
+        ck("modal machines, H200 matches H100 on %s" % _f, "1",
+           1 if _mm("H200", _f) == _mm("H100", _f) else 0)
+    ck("modal machines, and does not match on memory", "0",
+       1 if _mm("H200", "memory.total") == _mm("H100", "memory.total") else 0)
 
     # --- what the second card buys, and what decides it, 2026-09-02d ------
     # allreduce-2026-09-02 left +4.97 ms on the 12B as a residual it declined to
@@ -2519,9 +2530,42 @@ def main():
     # and the caveat that makes three of those rows two-variable
     ck("H100 README, says the gemma arms changed backend too", "1",
        1 if "machine **and** backend" in _rh else 0)
-    ck("H100 README, and names the one clean comparison", "1",
-       1 if "The only clean single-variable comparison in the" in _rh
-       and "`Q38`, FlashAttention on both" in _rh else 0)
+    # 2026-09-03, same day: the README first said Q38 was the clean pair. It is
+    # the opposite -- the A100 campaign pinned max_num_seqs to 16 for exactly
+    # that model, which is read here out of the A100 serve logs rather than
+    # inferred from its results file, because inferring it is what got it
+    # wrong. Three pairs differ in backend and not mns; the fourth in mns and
+    # not backend; none is single-variable.
+    ck("H100 README, says no pair is single-variable", "1",
+       1 if "**So no pair in\nthe table is single-variable.**" in _rh else 0)
+    _A30 = os.path.join(_BR, "cuda-a100", "campaign-2026-08-30", "logs")
+    _A29 = os.path.join(_BR, "cuda-a100", "campaign-2026-08-29", "logs")
+
+    def _mns_from_log(path):
+        _m = re.search(r"'max_num_seqs': (\d+)", open(path, encoding="utf-8",
+                                                     errors="ignore").read())
+        return int(_m.group(1)) if _m else None
+
+    ck("H100 README, the A100's Q38 really was pinned to 16", "16",
+       _mns_from_log(os.path.join(_A30, "serve-Q38.log")))
+    ck("H100 README, and its gemma arms were not", "1",
+       1 if _mns_from_log(os.path.join(_A30, "serve-G31.log")) is None else 0)
+    ck("H100 README, this run's Q38 says 969", "969",
+       _mns_from_log(os.path.join(_H, "logs", "serve-Q38-q38.log")))
+    # and the reason 969 vs the default is inert within this run
+    _caps = {re.search(r"'max_cudagraph_capture_size': (\d+)",
+                       open(os.path.join(_H, "logs", _f), encoding="utf-8",
+                            errors="ignore").read()).group(1)
+             for _f in os.listdir(os.path.join(_H, "logs")) if _f.endswith(".log")}
+    ck("H100 README, every arm here captures to the same ceiling", "1",
+       1 if _caps == {"512"} else 0)
+    ck("H100 README, and says so", "1",
+       1 if "tops out at `max_cudagraph_capture_size` 512 on every arm here" in _rh
+       else 0)
+    ck("H100 README, and that the A100's ceiling is 32", "32",
+       int(re.search(r"'max_cudagraph_capture_size': (\d+)",
+                     open(os.path.join(_A30, "serve-Q38.log"), encoding="utf-8",
+                          errors="ignore").read()).group(1)))
     # The disagreement itself, read from what is committed rather than from a
     # list that is only populated while build_prefill is rebuilding: every
     # H100 G31 row says FLASH_ATTN, and the ARMS_CUDA fallback for that cfg id

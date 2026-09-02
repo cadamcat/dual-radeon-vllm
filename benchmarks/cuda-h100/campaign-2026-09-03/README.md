@@ -59,8 +59,17 @@ well as machine.** vLLM routes gemma-4 to `TRITON_ATTN` on the A100 and to
 which is why the runner reads the backend out of the serve log instead of
 trusting a table, and why `build_prefill.py` records a `BACKEND_MISMATCH`
 against its own `ARMS_CUDA` entry for `G31`. So for gemma the two columns are
-machine **and** backend. The only clean single-variable comparison in the
-table is `Q38`, FlashAttention on both: `b` 1.89×, `c` 4.5×.
+machine **and** backend.
+
+`Q38` is the one pair with the same backend on both sides — and it is the one
+pair whose `max_num_seqs` differs, 16 on the A100 against 969 here, because
+the A100 campaign pinned it and this one had it forced down. **So no pair in
+the table is single-variable.** Three differ in the backend and not in `mns`;
+the fourth differs in `mns` and not in the backend. The A100 campaign measured
+`mns` 16 against the default at under 0.7 % on this model family, so `Q38`'s
+row is machine-only to about that, but 0.7 % is a figure this campaign has not
+reproduced on this machine. The control that would settle it — `Q38` here at
+`mns` 16 — is named in the plan and has not been bought.
 
 ## What limits this card at depth is its power cap
 
@@ -124,8 +133,10 @@ the toolkit every existing CUDA row here was measured against. **$0.32.**
 **Q38's first attempt — `logs/serve-Q38-mamba-crash.log`.** `max_num_seqs
 (1024) exceeds available Mamba cache blocks (969)`. A hybrid-SSM model
 reserves one Mamba block per decode sequence, and at `mml` 132 000 the state
-pool no longer holds 1 024 of them — at 33 000 it does, which is why the A100
-ran this model at the default and this campaign could not. The runner now
+pool holds 969 of them rather than the default `max_num_seqs` of 1 024. The
+A100 never met this limit for a different reason than a shorter `mml`: it
+pinned `max_num_seqs` to 16 for this model and asked for 16 blocks. The runner
+now
 retries on it the way it has always retried on a short KV pool, and the retry
 fired first time: `Q38: Mamba cache holds 969 blocks -> retry mns 969`. The
 successful arm is in `results-q38.jsonl`, and its rows carry `mns: 969`.
@@ -149,7 +160,13 @@ most 128 512. It is still a difference, and the control — these same eleven
 rungs at `mml` 33 000 on this same card — has not been bought.
 
 `Q38` additionally ran at `mns` 969 rather than the default 1 024, for the
-reason above. No other flag differs from the A100 campaign: util 0.90,
+reason above; the A100 arm it is compared with ran at 16. Within this run that
+difference is inert where it could be measured — vLLM's CUDA graph capture set
+tops out at `max_cudagraph_capture_size` 512 on every arm here, 969 and 1 024
+alike, so the two choose the same graphs. Against the A100's 16, whose capture
+ceiling is 32, it is not inert and is not measured.
+
+No other flag differs from the A100 campaign: util 0.90,
 `--no-enable-prefix-caching`, batch 1, 512 generated tokens, two rounds.
 
 ## Cost
