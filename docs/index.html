@@ -1208,6 +1208,12 @@ own whole campaign on one afternoon. Every line says which it is.</p>
         quadratic one &mdash; <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> &mdash; and
         <b>b</b> is compute while <b>c</b> is how badly attention scales. Hover a point for that
         line's fitted pair.</dd>
+      <dt>Two lines on a narrowed link</dt>
+      <dd><em>Added 2026-09-02.</em> The pair's <code>gemma-4-31B</code> and
+        <code>Qwen3.8-27B</code> lines are the 2026-08-29 sitting, on which one card ran at
+        <b>PCIe 3.0 x8</b>, not x16 &mdash; the host's boot journal shows it; the guest's sysfs
+        cannot. Prefill pays its all-reduce over that link: the 31B's <b>b</b> is 743.9 and
+        736.0 on its two x16 sittings and 868.7 here. The other five lines are 2026-08-24, on x16.</dd>
       <dt>Card against card</dt>
       <dd>On the dense 12B the A100 is 3.3&times; on <b>b</b> and 6.7&times; on <b>c</b> against one
         7900 XT, so the gap in attention is twice the gap in compute. The L4 is <em>slower</em> on

@@ -47,6 +47,30 @@ def aggregate(values, tokens, **row):
     return row
 
 
+# --- host PCIe link, the measurement condition nobody recorded -----------------
+# On 2026-09-02 the Proxmox host's persistent journal showed card 0b:00.0
+# (guest card1, the runners' p1/v1) trained at x8 from the boot of 2026-08-29
+# 21:48 CST, after ten boots at x16 and a hard stop at 06:28 that day:
+#
+#   boot -2 (Aug 27 18:56 .. Aug 29 06:28)  "limited by 8.0 GT/s PCIe x16 link at 0000:00:03.1"
+#   boot -1 (Aug 29 21:48 ..)               "limited by 8.0 GT/s PCIe x8 link at 0000:00:03.1"
+#
+# The other card was x16 at every boot. The guest's own sysfs reports 16 GT/s
+# x16 throughout, because that is the on-card bridge link, so no run could have
+# seen it. TP=2 is bounded by the narrower card; TP=1 on 2026-08-30 ran on card1
+# (its VRAM rose, card2's did not) but has no all-reduce, so only weight loading
+# crosses that link. Decode is not measurably affected at either width; prefill
+# at TP=2 and depth is -- the 31B's fitted `b` is 743.9 and 736.0 on the two
+# x16 sittings and 868.7 on the x8 one.
+HOST_LINK_X8_FROM = "2026-08-29"
+
+
+def host_link(machine, date):
+    if machine != "RX 7900 XT":
+        return None                               # rented VMs: unknown, and not ours
+    return "x8/x16" if date >= HOST_LINK_X8_FROM else "x16/x16"
+
+
 def build():
     rows = []
     for s in SOURCES:
@@ -85,6 +109,7 @@ def build():
                 patches=over.get("patches", s["patches"]),
                 harness="campaign-server", source=s["file"], cfg=cfg,
                 spec=spec, attn_backend=backend, route=routed.get(cfg),
+                host_link=host_link(s["machine"], s["date"]),
                 prefix_caching=over.get("prefix_caching", s.get("prefix_caching"))))
     # The probe sources have decode and no prefill, so they are not in the
     # shared SOURCES table -- but the ledger carries them, and this projection
@@ -111,7 +136,8 @@ def build():
                 cuda=None, driver=None, kernel=prb["kernel"],
                 patches=prb["arms"][arm], harness="probe-t8t64",
                 source=", ".join(prb["files"]), cfg=cfg, spec=None,
-                attn_backend=None, prefix_caching=None))
+                attn_backend=None, prefix_caching=None,
+                host_link=host_link("RX 7900 XT", prb["date"]) if "date" in prb else None))
 
     rows.sort(key=lambda r: (r["machine"], r["model"], r["tp"], r["date"],
                              ",".join(r["patches"]), r["ctx"]))

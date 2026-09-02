@@ -18,6 +18,17 @@ figures and a looser one for the small. Pass an explicit tol= to override.
 import glob
 import hashlib, json, os, re, statistics, sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The break-tests edit build_prefill.py and put it back. A same-length edit
+# restored inside one second leaves the .pyc's recorded mtime and size intact,
+# and Python keeps running the edited bytecode -- which is how a "restored"
+# tree once failed its own gate on 2026-09-02. So: never trust the cache here.
+sys.dont_write_bytecode = True
+for _pyc in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "__pycache__", "build_prefill*.pyc")):
+    os.unlink(_pyc)
+import build_prefill as _bpm   # noqa: E402  -- the host_link rule has one home
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
 AUG = os.path.join(HERE, "..", "results-2026-08-24.jsonl")
@@ -1970,6 +1981,83 @@ def main():
     _rr = open(os.path.join(_BR, "harness", "runner_radeon.py")).read()
     ck("harness, the Radeon template no longer samples decode alone", "0",
        _rr.count('if kind == "decode":\n            smp.start()'))
+
+    # --- host_link, added 2026-09-02 ------------------------------------------
+    # One of the two cards trained at PCIe 3.0 x8 from the boot of 2026-08-29
+    # 21:48 CST (host journal, 12 boots on record: ten at x16, a hard stop, then
+    # x8). The guest could not see it -- its sysfs reports the on-card bridge
+    # link -- so no run recorded it. These pin the rows it touches, the one
+    # clean same-model comparison that shows the cost, and the captions that
+    # now say so. Read from build_prefill so the rule has one home.
+    _HLX = _bpm.HOST_LINK_X8_FROM
+    _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
+    _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
+    ck("host_link, the boot it changed on", "1", 1 if _HLX == "2026-08-29" else 0)
+    _hl_p = {}
+    for _r in _RTP:
+        if _r.get("machine") == "RX 7900 XT":
+            _hl_p[_r.get("host_link")] = _hl_p.get(_r.get("host_link"), 0) + 1
+    _hl_d = {}
+    for _r in _RTD:
+        if _r.get("machine") == "RX 7900 XT":
+            _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
+    ck("host_link, prefill rows on x16/x16", "164", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
+    ck("host_link, decode rows on x16/x16", "170", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
+    ck("host_link, and no Radeon row without one", "0",
+       _hl_p.get(None, 0) + _hl_d.get(None, 0))
+    ck("host_link, every x8 row is dated on or after the boot", "1",
+       1 if all(r["date"] >= _HLX for r in _RTP + _RTD
+                if r.get("host_link") == "x8/x16") else 0)
+    # the clean comparison: one model, TP=2, two x16 sittings a month apart
+    # agreeing to 1%, and the x8 sitting 17% above them on b
+    _fits31 = {(f["date"]): f for f in _bpm.fits(_RTP)
+               if f["machine"] == "RX 7900 XT" and f["cfg"] in ("C-31B-tp2", "G31-tp2")}
+    ck("host_link, 31B b on x16, July", "743.9", _fits31["2026-07-25"]["b_us_tok"], 0.05)
+    ck("host_link, 31B b on x16, August", "736.0", _fits31["2026-08-24"]["b_us_tok"], 0.05)
+    ck("host_link, 31B b on x8", "868.7", _fits31["2026-08-29"]["b_us_tok"], 0.05)
+    ck("host_link, so the x8 sitting is this far above the x16 pair", "17",
+       (_fits31["2026-08-29"]["b_us_tok"]
+        / ((_fits31["2026-07-25"]["b_us_tok"] + _fits31["2026-08-24"]["b_us_tok"]) / 2)
+        - 1) * 100, 0.5)
+    # the captions, in both languages on both pages, and the numbers in them
+    # read out of the sentence rather than looked for anywhere
+    for _lang, _fn, _re_b in (
+            ("index EN", "index.html",
+             r"the 31B.s <b>b</b> is ([\d.]+) and\s*([\d.]+) on its two x16 sittings and ([\d.]+) here"),
+            ("index ZH", "index.zh.html",
+             r"31B 的 <b>b</b> 在两次 x16 测量里是\s*([\d.]+) 和 ([\d.]+)，这里是 ([\d.]+)"),
+            ("a100 EN", "a100-vs-two-radeons.html",
+             r"<code>b</code> is ([\d.]+) against ([\d.]+) and ([\d.]+) on the same model"),
+            ("a100 ZH", "a100-vs-two-radeons.zh.html",
+             r"它的 <code>b</code> 是\s*([\d.]+)，而同一模型两次 x16 测量是 ([\d.]+) 和 ([\d.]+)")):
+        # the index lives in docs/, not docs/articles/, so it is not in `pages`
+        _t = pages[_fn] if _fn in pages else open(
+            os.path.join(ROOT, "docs", _fn), encoding="utf-8").read()
+        ck("host_link caption, %s dated 2026-09-02" % _lang, "1",
+           1 if "2026-09-02" in _t and ("x8" in _t) else 0)
+        _m = re.search(_re_b, _t, re.S)
+        ck("host_link caption, %s states the three b values" % _lang, "3",
+           len(_m.groups()) if _m else 0)
+        if _m:
+            _vals = sorted(float(x) for x in _m.groups())
+            ck("host_link caption, %s lowest b" % _lang, "736.0", _vals[0], 0.05)
+            ck("host_link caption, %s highest b" % _lang, "868.7", _vals[2], 0.05)
+    # the preflight, and what it must refuse
+    _pf = open(os.path.join(_BR, "harness", "preflight_host_link.sh")).read()
+    ck("preflight, executable", "1",
+       1 if os.access(os.path.join(_BR, "harness", "preflight_host_link.sh"), os.X_OK) else 0)
+    ck("preflight, reads the root port three levels up", "1",
+       1 if "dirname $(dirname $(dirname" in _pf else 0)
+    ck("preflight, refuses on anything but two cards", "1",
+       1 if "len(cards) != 2" in _pf else 0)
+    ck("preflight, refuses a card below x16", "1",
+       1 if 'c["width"] != "x16"' in _pf else 0)
+    # a new Radeon campaign must carry the preflight's record
+    _need_hl = [c for c in _camps if c not in _PRE_SCHEMA and "cuda-" not in c
+                and not os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))]
+    ck("campaigns, new Radeon ones missing host_link.json", "0", len(_need_hl))
 
     # --- the route column, added 2026-09-01 -------------------------------
     # The serve logs always carried why a backend was chosen and which

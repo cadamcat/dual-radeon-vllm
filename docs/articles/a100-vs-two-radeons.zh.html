@@ -1184,7 +1184,10 @@ prefill：测它解码的那场开着 prefix caching，而这套阶梯每一档�
 <figcaption> <b>图 4.</b> 每根条是这一对的系数除以 A100 的，所以越高表示 A100 领先越多，刻线是持平。
 两项各用自己的刻度 —— <code>c</code> 到 19 而 <code>b</code> 只到 4 —— 因为要比的是同一项之内。
 分组依据是 vLLM 在 A100 上选的后端，五个模型都有记录，并且与旁边那份 serve log 核对过；
-Radeon 一侧五个里记录了三个，没有留下日志的那几场 campaign 写的是 null 而不是一个猜测。</figcaption>
+Radeon 一侧五个里记录了三个，没有留下日志的那几场 campaign 写的是 null 而不是一个猜测。<em>2026-09-02 补记：</em>31B 那一对的 Radeon 臂来自 2026-08-29 那场，当时两张卡中的一张训练在
+PCIe 3.0 x8 而非 x16（宿主机开机日志有记录；客户机的 sysfs 看不到）。它的 <code>b</code> 是
+868.7，而同一模型两次 x16 测量是 743.9 和 736.0，所以这里 31B 的 <code>b</code> 比值高估了 A100
+在该项上的领先。12B 和 26B 两对来自 2026-08-24，在 x16 上。 </figcaption>
 </figure>
 
 <p><strong>算力项不在乎路径上是哪个 kernel，而 attention 项几乎就只是这件事。</strong>
