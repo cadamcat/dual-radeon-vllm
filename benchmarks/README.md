@@ -25,6 +25,7 @@ that has a section of its own further down, in the same order:
 | `prefill.jsonl` | **Every prefill point in one row format, across machines**, with `T(S) = a + b·S + c·S²` fitted per arm |
 | `decode.jsonl` | **Every decode point, across machines** — the cross-machine projection beside the ledger |
 | `analyze/` | The scripts that turn the raw data into the tables and charts in the docs |
+| `harness/` | **One telemetry shape for every machine**, and the schema every campaign from 2026-09-02 writes — [`SCHEMA.md`](harness/SCHEMA.md) says what each field is and what these machines cannot measure |
 | `prompts/` | Prompt-ladder manifests (the token counts as measured) + the cutter that rebuilds the ladders from the public-domain source |
 | `speculative-decoding/` | Results behind [speculative-decoding-on-rdna.md](../docs/speculative-decoding-on-rdna.md) |
 

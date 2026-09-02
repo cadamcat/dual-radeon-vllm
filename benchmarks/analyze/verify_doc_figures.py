@@ -1872,11 +1872,84 @@ def main():
        len(_open))
     _idx = [l for l in _wh.split("\n")
             if l.startswith("| `") and l.rstrip().endswith("|")]
-    ck("benchmarks README, paths in the index", "27", len(_idx))
+    ck("benchmarks README, paths in the index", "28", len(_idx))
     ck("benchmarks README, and a section for each that needs one", "23",
        len(re.findall(r"^### `", _wh, re.M)))
     ck("benchmarks README, no index line long enough to be a wall", "0",
        sum(1 for l in _idx if len(l) > 220))
+
+    # --- campaign completeness, added 2026-09-02 --------------------------
+    # Every campaign before today recorded a different set: the Radeon runners
+    # sampled power and VRAM and no wall clock, the CUDA runners the reverse,
+    # neither sampled clocks, and two kept no serve log at all. harness/ fixes
+    # it going forward; this makes the rule mechanical rather than a habit.
+    #
+    # The campaigns that predate the schema are listed, not excused. The list is
+    # exact, so a NEW campaign that skips telemetry does not slip in beside them
+    # -- it lands in `_missing` and fails.
+    _PRE_SCHEMA = {
+        "results.jsonl", "campaign-2026-08-29/results.jsonl",
+        "campaign-2026-08-30/results.jsonl", "campaign-2026-08-30b/results.jsonl",
+        "cuda-a100/campaign-2026-08-29/results.jsonl",
+        "cuda-a100/campaign-2026-08-30/results.jsonl",
+        "cuda-l4/campaign-2026-08-30/results.jsonl",
+        "cuda-l4/campaign-2026-08-30b/results.jsonl",
+        "cuda-l4/campaign-2026-08-30c/results.jsonl",
+        "cuda-t4/campaign-2026-08-30/results.jsonl",
+        "gfx1100-backend-matrix-2026-08-30/results.jsonl",
+    }
+    _TELE_REQUIRED = ("tele_schema", "gpu_busy_pct_max", "mem_busy_pct_max",
+                      "power_w_max", "sclk_mhz_max", "sclk_mhz_cap",
+                      "temp_c_max", "vram_used_b_max", "wall_s", "machine")
+    _BR = os.path.join(HERE, "..")
+    _camps, _missing, _nolog = [], [], []
+    for _root, _dirs, _files in os.walk(_BR):
+        _dirs[:] = [d for d in _dirs if d not in (".git", "__pycache__", "logs",
+                                                  "serve-logs", "traces")]
+        if "results.jsonl" not in _files:
+            continue
+        _rel = os.path.relpath(os.path.join(_root, "results.jsonl"), _BR)
+        _camps.append(_rel)
+        _has_log = any(os.path.isdir(os.path.join(_root, d))
+                       and any(f.endswith(".log") for f in os.listdir(os.path.join(_root, d)))
+                       for d in ("logs", "serve-logs"))
+        if not _has_log:
+            _nolog.append(_rel)
+        if _rel in _PRE_SCHEMA:
+            continue
+        _seen = set()
+        for _line in open(os.path.join(_root, "results.jsonl")):
+            _line = _line.strip()
+            if not _line:
+                continue
+            try:
+                _r = json.loads(_line)
+            except Exception:
+                continue
+            if _r.get("kind") in ("decode", "prefill"):
+                _seen |= set(_r)
+        if _seen and not set(_TELE_REQUIRED) <= _seen:
+            _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
+    ck("campaigns, every results.jsonl found", "11", len(_camps))
+    ck("campaigns, predating the telemetry schema", "11",
+       sum(1 for c in _camps if c in _PRE_SCHEMA))
+    ck("campaigns, new ones missing required telemetry", "0", len(_missing))
+    # two of the eleven kept no serve log, which is why they have no backend
+    ck("campaigns, keeping no serve log", "2", len(_nolog))
+    ck("campaigns, and they are the two that predate the rule", "2",
+       sum(1 for c in _nolog if c in _PRE_SCHEMA))
+    # the module both platforms now share, and the fields it promises
+    _TELE = open(os.path.join(_BR, "harness", "telemetry.py")).read()
+    ck("harness, telemetry module carries a schema version", "1",
+       int(re.search(r"SCHEMA_VERSION = (\d+)", _TELE).group(1)))
+    ck("harness, and names what it cannot measure", "2",
+       len(re.findall(r'^\s{4}"[a-z_]+":$|^\s{4}"[a-z_]+":\s', _TELE[
+           _TELE.index("ABSENT = {"):_TELE.index("def _f(")], re.M)))
+    _SCH = open(os.path.join(_BR, "harness", "SCHEMA.md")).read()
+    ck("harness, the schema doc lists every required field", str(len(_TELE_REQUIRED)),
+       sum(1 for f in _TELE_REQUIRED if f in _SCH))
+    ck("harness, and records that the counters read zero", "1",
+       1 if "SQ_WAVES" in _SCH and "0.0" in _SCH else 0)
 
     # --- the route column, added 2026-09-01 -------------------------------
     # The serve logs always carried why a backend was chosen and which
