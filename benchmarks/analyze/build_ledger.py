@@ -102,6 +102,13 @@ CFG = {
     # re-measured on the restored one. Same reason for the `-x16` suffix.
     "Q38-tp2-x16":               ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "Q38-triton-tp2-x16":        ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    # 2026-09-02d. The two models whose second-card gain differs most, both
+    # topologies, with telemetry. `-p45450` because the container carries that
+    # patch and August's sitting of these arms did not.
+    "A12-tp1-p45450":            ("gemma-4-12B-it", "w4a16 QAT", "dense", 1),
+    "A12-tp2-p45450":            ("gemma-4-12B-it", "w4a16 QAT", "dense", 2),
+    "B8-tp1-p45450":             ("Qwen3-8B", "bf16", "dense", 1),
+    "B8-tp2-p45450":             ("Qwen3-8B", "bf16", "dense", 2),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -148,6 +155,10 @@ ARMS = {
     "G31-tp2-x16":               (None,   "TRITON_ATTN"),
     "Q38-tp2-x16":               (None,   "ROCM_ATTN"),
     "Q38-triton-tp2-x16":        (None,   "TRITON_ATTN"),
+    "A12-tp1-p45450":            (None,   "TRITON_ATTN"),
+    "A12-tp2-p45450":            (None,   "TRITON_ATTN"),
+    "B8-tp1-p45450":             (None,   "ROCM_ATTN"),
+    "B8-tp2-p45450":             (None,   "ROCM_ATTN"),
     "B8-tp2-r5":                 (None,   "ROCM_ATTN"),
     "B8-tp1-r5":                 (None,   "ROCM_ATTN"),
 }

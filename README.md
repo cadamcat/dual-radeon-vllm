@@ -529,12 +529,14 @@ file each came from, and exits non-zero if one disagrees.
   1.19×, because the quantised model was never bandwidth-bound in the first place.
   For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
   151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
-  *(2026-09-02: what it is **not** is the collective. Both models pay one within
-  0.6 ms of the other per step, about a tenth of the step in each case, so a
-  fixed all-reduce cannot be what separates 1.70× from 1.19×
-  ([measured](benchmarks/allreduce-2026-09-02/)). That rules out the reading the
-  a100 article carried until the same day; it does not establish this one,
-  which is still the plausible explanation and not the tested one.)*
+  *(2026-09-02: **measured, on the memory controller.** One sitting, both models,
+  both topologies: the 8B's single card runs at **90 % `mem_busy`** and the 12B's
+  at **56 %**, and across five cells the second card's gain follows that number
+  and nothing else in the row. So "never bandwidth-bound in the first place" is
+  no longer an inference from the scaling it explains
+  ([data](benchmarks/campaign-2026-09-02d/)). Two other candidates are out with
+  counters: the collective, which both models pay within 0.6 ms of each other
+  per step, and the power cap — both TP=1 arms sit at 52 % of it.)*
 - **Attention parallelises across two cards at about 90 %**, because it needs no
   communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
   1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second

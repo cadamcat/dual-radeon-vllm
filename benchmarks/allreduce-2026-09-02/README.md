@@ -130,6 +130,17 @@ the collective nor perfect halving accounts for. **What that 4.97 ms is, this
 campaign does not say.** It is a residual, not an explanation, and the
 "halves perfectly" premise is itself doing work in it.
 
+> **Answered the same day, and the premise was the problem.**
+> [`../campaign-2026-09-02d/`](../campaign-2026-09-02d/README.md) put the
+> sampler on both arms of both models in one sitting: the 8B's single card runs
+> at **90% memory-controller busy** and the 12B's at **56%**. The bytes do halve
+> under TP=2 — 90 → 77% and 56 → 35% — but only a step that was *waiting* on
+> them gets faster when they arrive sooner. The 8B was waiting, which is why its
+> subtraction lands within 5.4%. The 12B was not, so its 4.97 ms is not a
+> missing cost: it is this null model being wrong for a model whose memory
+> controller is half idle. The power cap was the other candidate and is also
+> out — both TP=1 arms sit at 51.4–52.2% of 265 W at every depth.
+
 ## The size curve, and why the floor is not flat
 
 Under graph replay the cost rises with the message from the first token

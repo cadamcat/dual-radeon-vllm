@@ -251,6 +251,24 @@ SOURCES = [
              "Q38-triton-tp2-x16": dict(
                  patches=["vllm#45916 split-KV", "vllm#45450 3D admission"]),
          }),
+    # 2026-09-02d. gemma-4-12B and Qwen3-8B, both topologies, three rungs, with
+    # the sampler on every cell -- the first telemetry either model has. It
+    # answers what `allreduce-2026-09-02` left as a residual: the 8B's single
+    # card is 90% memory-controller busy and the 12B's 56%, and the second
+    # card's gain follows that and nothing else.
+    #
+    # New ids rather than a second sitting of `A-12B-tp*` / `B-8B-tp*`: the
+    # container has carried #45450 since 2026-08-29 and August's entry does not
+    # list it, and gemma-4 is forced onto TRITON_ATTN, which is what that patch
+    # touches. The 8B routes to ROCM_ATTN, where it cannot act, and its rows
+    # carry the state anyway. `B8-tp1-p45450` reached only two rungs: its
+    # capacity retry settled at mml 15 792, the same non-determinism 2026-09-02b
+    # and `E26-tp1-u95` both hit.
+    dict(file="campaign-2026-09-02d/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-02", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
+         cuda=None, kernel="7.0.0-30", prefix_caching=True,
+         patches=["vllm#45916 split-KV", "window block-skip",
+                  "vllm#45450 3D admission"]),
     # 2026-08-30. The spine's fourth machine, and the first CUDA rows in this
     # repository measured with prefix caching off. Both configurations are 11
     # rungs x 2 rounds, 22 measurements, 0 errors. `driver` is from nvidia-smi

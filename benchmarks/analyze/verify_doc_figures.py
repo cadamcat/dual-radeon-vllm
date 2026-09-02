@@ -1942,7 +1942,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "18", len(_camps))
+    ck("campaigns, every results.jsonl found", "19", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2031,9 +2031,9 @@ def main():
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "199", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "210", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "205", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "216", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -2275,6 +2275,106 @@ def main():
            sum(1 for a, b in zip([int(x) for x in _m.groups()],
                                  sorted(r["sclk_mhz_min"] for r in _tp2))
                if a != b))
+
+    # --- what the second card buys, and what decides it, 2026-09-02d ------
+    # allreduce-2026-09-02 left +4.97 ms on the 12B as a residual it declined to
+    # explain, and named two candidates. Both are eliminated here with counters,
+    # and the thing that does explain it is the memory controller: the 8B's
+    # single card is 90% busy and the 12B's 56%, and the second card's gain
+    # follows that across five cells.
+    _P2 = [json.loads(l) for l in
+           open(os.path.join(_BR, "campaign-2026-09-02d", "results.jsonl"))]
+    _p2d = {}
+    for _r in _P2:
+        if _r.get("kind") == "decode":
+            _p2d.setdefault((_r["cfg"], _r["target"]), []).append(_r)
+    _mean = lambda v: sum(v) / len(v)
+
+    def _p2(cfg, ctx, key):
+        return _mean([r[key] for r in _p2d[(cfg, ctx)]])
+
+    def _p2mem(cfg, ctx):
+        return _mean([max(r["per_card"]["mem_busy_pct"]) for r in _p2d[(cfg, ctx)]])
+
+    ck("second card, cells measured", "22",
+       sum(1 for r in _P2 if r.get("kind") == "decode"))
+    ck("second card, and every one carries a power reading", "0",
+       sum(1 for r in _P2 if r.get("kind") == "decode"
+           and r.get("power_w_mean") is None))
+    # the two numbers the finding is
+    # no tol=: half a unit in the last quoted place. mem_busy is an integer
+    # percentage and the two rounds read 90/90 and 57/56, so a 2% relative
+    # window would have admitted 91 and 57 -- a break test caught exactly that.
+    ck("second card, the 8B's single card on the memory controller", "90",
+       _p2mem("B8-tp1-p45450", 500))
+    ck("second card, and the 12B's", "56.5", _p2mem("A12-tp1-p45450", 500))
+    ck("second card, what it buys the 8B", "1.696",
+       _p2("B8-tp2-p45450", 500, "decode_tps") / _p2("B8-tp1-p45450", 500, "decode_tps"))
+    ck("second card, and the 12B", "1.198",
+       _p2("A12-tp2-p45450", 500, "decode_tps") / _p2("A12-tp1-p45450", 500, "decode_tps"))
+    # the gain follows mem_busy across every cell that has both arms
+    _pairs = [(m1, m2, c) for m1, m2 in (("A12-tp1-p45450", "A12-tp2-p45450"),
+                                         ("B8-tp1-p45450", "B8-tp2-p45450"))
+              for c in (500, 8000, 32000)
+              if (m1, c) in _p2d and (m2, c) in _p2d]
+    ck("second card, cells with both arms", "5", len(_pairs))
+    _ordered = sorted(_pairs, key=lambda p: _p2mem(p[0], p[2]))
+    _gains = [_p2(m2, c, "decode_tps") / _p2(m1, c, "decode_tps")
+              for m1, m2, c in _ordered]
+    ck("second card, the gain rises with mem_busy without exception", "1",
+       1 if all(a <= b for a, b in zip(_gains, _gains[1:])) else 0)
+    # the power candidate, eliminated
+    _pw = [_p2(m1, c, "power_w_mean") / _p2d[(m1, c)][0]["power_cap_w"] * 100
+           for m1, _m2, c in _pairs]
+    ck("second card, lowest TP=1 draw as pct of cap", "51.4", min(_pw), 0.01)
+    ck("second card, and highest", "52.2", max(_pw), 0.01)
+    ck("second card, so no TP=1 arm is near its power limit", "0",
+       sum(1 for x in _pw if x > 60))
+    # ...and prefill at depth is, which is why the candidate was worth testing
+    _pf32 = [r for r in _P2 if r.get("kind") == "prefill" and r["target"] == 32000]
+    ck("second card, while prefill at 32K sits at this pct of cap", "99.9",
+       max(r["power_w_mean"] / r["power_cap_w"] * 100 for r in _pf32), 0.005)
+    # the arms reproduce 2026-08-24, or this is a different measurement
+    _AUG = {r["cfg"]: r["decode_tok_s"] for r in _RTD
+            if r.get("machine") == "RX 7900 XT" and r.get("date") == "2026-08-24"
+            and r.get("ctx") == 500}
+    _rep = max(abs(_p2(n, 500, "decode_tps") / _AUG[o] - 1) * 100
+               for n, o in (("A12-tp1-p45450", "A-12B-tp1"),
+                            ("A12-tp2-p45450", "A-12B-tp2"),
+                            ("B8-tp1-p45450", "B-8B-tp1"),
+                            ("B8-tp2-p45450", "B-8B-tp2")))
+    ck("second card, worst reproduction of the August sitting, pct", "0.94",
+       _rep, 0.01)
+    # the READMEs that publish it
+    _r2d = open(os.path.join(_BR, "campaign-2026-09-02d", "README.md"),
+                encoding="utf-8").read()
+    _m = re.search(r"sits at (\d+) % memory-controller busy and the 12B.s at (\d+) %",
+                   _r2d)
+    ck("second card README, states both memory-controller figures", "2",
+       len(_m.groups()) if _m else 0)
+    if _m:
+        # the README rounds 56.5 to 56, so its own place is what it is held to
+        ck("second card README, the 8B's", _m.group(1), _p2mem("B8-tp1-p45450", 500))
+        ck("second card README, the 12B's", _m.group(2),
+           _p2mem("A12-tp1-p45450", 500), 0.01)
+    ck("second card README, says the null model was the problem", "1",
+       1 if "it is the null model being wrong" in _r2d else 0)
+    ck("second card README, does not attribute the remaining time", "1",
+       1 if "does not\nattribute the time kernel by kernel" in _r2d else 0)
+    # the residual's own page now points at the answer instead of leaving it open
+    _arr = open(os.path.join(_BR, "allreduce-2026-09-02", "README.md"),
+                encoding="utf-8").read()
+    ck("allreduce README, points the residual at what answered it", "1",
+       1 if "Answered the same day, and the premise was the problem" in _arr else 0)
+    ck("allreduce README, and names the two counters", "1",
+       1 if "90% memory-controller busy" in _arr
+       and "51.4\u201352.2% of 265 W" in _arr else 0)
+    # ...and the front page stops calling it plausible-but-untested
+    _rmf = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    ck("README, the second-card reading is no longer an inference", "1",
+       1 if "no longer an inference from the scaling it explains" in _rmf else 0)
+    ck("README, and quotes the two counters", "1",
+       1 if "**90 % `mem_busy`**" in _rmf and "**56 %**" in _rmf else 0)
 
     # --- the attention backend is not the axis, 2026-09-02 ----------------
     # gfx1100-greedy-nondeterminism.json's `reading` blamed ROCM_ATTN, on a set
@@ -2588,10 +2688,6 @@ def main():
     ck("README, and that the crossover is still unmeasured", "1",
        1 if "**The crossover is still unmeasured**" in _RM else 0)
     # the second-card bullet: the wire is ruled out, the alternative is not claimed
-    ck("README, rules the collective out of the second-card gap", "1",
-       1 if "cannot be what separates 1.70× from 1.19×" in _RM else 0)
-    ck("README, and does not claim the alternative is established", "1",
-       1 if "the plausible explanation and not the tested one" in _RM else 0)
     # every campaign directory this round produced has a line in the map -- and
     # "in the map", not "somewhere on the page": each of these is also a link
     # in the prose above, so a substring test passes on a map that lost the row.
@@ -2796,13 +2892,13 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "496", len(_rt))
+    ck("route column, rows carrying one", "518", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "146", _dec.get("override", 0))
-    ck("route column, forced", "240", _dec.get("forced", 0))
+    ck("route column, chosen by override", "156", _dec.get("override", 0))
+    ck("route column, forced", "252", _dec.get("forced", 0))
     ck("route column, left to the default", "110", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
@@ -2812,7 +2908,7 @@ def main():
             _why[_w] = _why.get(_w, 0) + 1
     ck("route column, forced for want of FA4", "160",
        _why.get("FA4 not available", 0))
-    ck("route column, forced to keep one backend", "80",
+    ck("route column, forced to keep one backend", "92",
        _why.get("prevent mixed-backend numerical divergence", 0))
     # what an override was choosing between -- the candidate set, which is the
     # routing question and appears nowhere else in the data
@@ -2820,9 +2916,9 @@ def main():
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "146",
+    ck("route column, ROCm offered both of its backends", "156",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "146",
+    ck("route column, and Triton was the other one", "156",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}

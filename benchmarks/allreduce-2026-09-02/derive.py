@@ -18,6 +18,11 @@ Step 3 is the one that pays for the campaign, and its assumption is load-bearing
 "halves perfectly" is true only where decode is purely weight-read bandwidth.
 It is reported as a residual, never as an explanation.
 
+`../campaign-2026-09-02d/` measured exactly that premise afterwards, with the
+memory-controller counter: the 8B's single card is 90% busy and the 12B's 56%.
+So the premise holds for the 8B, whose residual is +0.68 ms, and does not for
+the 12B, whose +4.97 ms is the premise failing rather than a cost gone missing.
+
     python3 derive.py            # table
     python3 derive.py --json     # the same numbers, machine-readable
 """
