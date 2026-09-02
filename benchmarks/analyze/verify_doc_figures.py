@@ -1941,14 +1941,24 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "14", len(_camps))
+    ck("campaigns, every results.jsonl found", "15", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
-    # two of the eleven kept no serve log, which is why they have no backend
-    ck("campaigns, keeping no serve log", "2", len(_nolog))
-    ck("campaigns, and they are the two that predate the rule", "2",
-       sum(1 for c in _nolog if c in _PRE_SCHEMA))
+    # two of the eleven kept no serve log, which is why they have no backend.
+    # allreduce-2026-09-02 has none either, and for a different reason: it
+    # starts no server. Naming it here rather than widening the rule keeps
+    # "no log because nobody kept one" and "no log because there was nothing to
+    # log" apart, which is the distinction the rule exists to make.
+    _NO_SERVER = {"allreduce-2026-09-02/results.jsonl"}
+    ck("campaigns, keeping no serve log", "3", len(_nolog))
+    ck("campaigns, and every one either predates the rule or ran no server", "3",
+       sum(1 for c in _nolog if c in _PRE_SCHEMA or c in _NO_SERVER))
+    ck("campaigns, of those, the ones that ran no server", "1",
+       sum(1 for c in _nolog if c in _NO_SERVER))
+    ck("campaigns, and a no-server campaign still records its link", "1",
+       sum(1 for c in _NO_SERVER
+           if os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))))
     # the module both platforms now share, and the fields it promises
     _TELE = open(os.path.join(_BR, "harness", "telemetry.py")).read()
     ck("harness, telemetry module carries a schema version", "1",
@@ -2077,6 +2087,135 @@ def main():
     _need_hl = [c for c in _camps if c not in _PRE_SCHEMA and "cuda-" not in c
                 and not os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))]
     ck("campaigns, new Radeon ones missing host_link.json", "0", len(_need_hl))
+
+    # --- the all-reduce, timed at last, 2026-09-02 ------------------------
+    # Three published claims priced this collective off a fitted intercept and
+    # all three were withdrawn on 2026-08-30. benchmarks/allreduce-2026-09-02
+    # times it directly, so these read the measurement out of the campaign's own
+    # rows and then read the sentences the campaign's README publishes.
+    _ARD = os.path.join(_BR, "allreduce-2026-09-02")
+    _ARR = [json.loads(l) for l in open(os.path.join(_ARD, "results.jsonl"))
+            if l.strip()]
+    _ARC = [r for r in _ARR if r.get("kind") == "allreduce"]
+    _ARM = next(r for r in _ARR if r.get("kind") == "ar_meta")
+    _AR1 = [json.loads(l) for l in open(os.path.join(_ARD, "results.rank1.jsonl"))
+            if l.strip()]
+    ck("allreduce, cells measured", "55", len(_ARC))
+    ck("allreduce, and rank 1 wrote its own", "55", len(_AR1))
+    # the library, not the version constant torch reports
+    ck("allreduce, torch reports a version that is not the loaded one", "1",
+       1 if _ARM["nccl_version_torch_reports"].startswith("2.30") else 0)
+    ck("allreduce, the loaded library is 2.27.7", "1",
+       1 if "RCCL version 2.27.7" in _ARM["rccl_loaded"]["version_string"] else 0)
+    ck("allreduce, and it is the no-hostcall build", "0",
+       _ARM["rccl_loaded"]["hidden_hostcall_buffer"])
+    ck("allreduce, P2P disabled as the deployment serves", "1",
+       1 if _ARM["env"]["NCCL_P2P_DISABLE"] == "1" else 0)
+    # the two ranks are locked together by the collective; a disagreement would
+    # mean one of them was not in it
+    _ar1x = {(r["hidden"], r["ntok"]): r for r in _AR1}
+    ck("allreduce, worst rank-to-rank disagreement pct", "0.43",
+       max(abs(r["t_stream_us"] - _ar1x[(r["hidden"], r["ntok"])]["t_stream_us"])
+           / r["t_stream_us"] * 100 for r in _ARC), 0.02)
+    # batch-1, the shape a decode step reduces, per model hidden size
+    _ar1 = {r["hidden"]: r for r in _ARC if r["ntok"] == 1}
+    for _h, _g in ((4096, "16.6"), (3840, "19.1"), (2816, "21.5"),
+                   (5376, "19.2"), (5120, "19.2")):
+        ck("allreduce, hidden %d graph us" % _h, _g, _ar1[_h]["t_graph_us"])
+    ck("allreduce, graph batch-1 lowest", "16.6",
+       min(r["t_graph_us"] for r in _ar1.values()))
+    ck("allreduce, graph batch-1 highest", "21.5",
+       max(r["t_graph_us"] for r in _ar1.values()))
+    ck("allreduce, eager back-to-back lowest", "55.2",
+       min(r["t_stream_us"] for r in _ar1.values()))
+    ck("allreduce, eager back-to-back highest", "58.8",
+       max(r["t_stream_us"] for r in _ar1.values()))
+    ck("allreduce, one-at-a-time lowest", "79.1",
+       min(r["t_sync_us_median"] for r in _ar1.values()))
+    ck("allreduce, one-at-a-time highest", "89.1",
+       max(r["t_sync_us_median"] for r in _ar1.values()))
+    # the withdrawn figure, against the measurement that replaces it. 76 ms over
+    # 72 collectives = 1.05 ms, docs/benchmarks.md's own arithmetic.
+    ck("allreduce, the withdrawn figure is this many times the measured, low",
+       "49", 1050.0 / max(r["t_graph_us"] for r in _ar1.values()), 0.5 / 49)
+    ck("allreduce, the withdrawn figure is this many times the measured, high",
+       "63", 1050.0 / min(r["t_graph_us"] for r in _ar1.values()), 0.5 / 63)
+    # a graph replay is what a decode step runs, and it is not the eager number:
+    # publishing the eager one would have overstated the collective threefold
+    ck("allreduce, eager over graph at batch 1", "3.0",
+       statistics.mean([r["t_stream_us"] / r["t_graph_us"] for r in _ar1.values()]), 0.05)
+    # the plateau, and the one-way ceiling it is a fraction of
+    _ARP = [json.loads(l) for l in open(os.path.join(_ARD, "pcie.jsonl")) if l.strip()]
+    _big = [r for r in _ARP if r["mib"] >= 64]
+    ck("allreduce, pcie h2d lowest GB/s", "13.86", min(r["h2d_gbs"] for r in _big))
+    ck("allreduce, pcie h2d highest GB/s", "13.94", max(r["h2d_gbs"] for r in _big))
+    ck("allreduce, both cards above an x8 ceiling of 7.9 GB/s", "2",
+       len({r["card"] for r in _big if r["h2d_gbs"] > 7.9}))
+    _plat = [r["bus_bw_gbs"] for r in _ARC if r["ntok"] >= 4096]
+    ck("allreduce, ring plateau low", "7.35", min(_plat))
+    ck("allreduce, ring plateau high", "7.54", max(_plat))
+    # the link this ran on, from the preflight's own file
+    _ARHL = json.load(open(os.path.join(_ARD, "host_link.json")))
+    ck("allreduce, ran with both root ports at x16", "2",
+       sum(1 for c in _ARHL["cards"] if c["width"] == "x16"))
+
+    # the per-step arithmetic and the cross-check, from derive.py so the prose
+    # and the table cannot drift apart
+    sys.path.insert(0, _ARD)
+    for _pyc in glob.glob(os.path.join(_ARD, "__pycache__", "derive*.pyc")):
+        os.unlink(_pyc)
+    import derive as _drv                                  # noqa: E402
+    _dv = {d["key"]: d for d in _drv.rows()}
+    for _k, _l, _ms, _pc in (("8B", 36, "1.20", "9.5"), ("12B", 48, "1.83", "11.0"),
+                             ("26B-A4B", 30, "1.29", "13.9"),
+                             ("31B", 60, "2.30", "9.9"), ("27B", 64, "2.46", "3.0")):
+        ck("allreduce, %s layers" % _k, str(_l), _dv[_k]["layers"])
+        ck("allreduce, %s ms per step" % _k, _ms, _dv[_k]["ms_per_step_graph"])
+        ck("allreduce, %s share of its step pct" % _k, _pc,
+           _dv[_k]["ar_pct_of_tp2_step"])
+    # the finding: near-equal collective cost, and the second card worth 1.70x
+    # to one model and 1.19x to the other. If the wire were the limit, it could
+    # not be both.
+    ck("allreduce, 8B second-card speedup", "1.70", _dv["8B"]["speedup"])
+    ck("allreduce, 12B second-card speedup", "1.185", _dv["12B"]["speedup"])
+    ck("allreduce, 8B residual ms after perfect halving", "0.68",
+       _dv["8B"]["residual_ms"])
+    ck("allreduce, 12B residual ms after perfect halving", "4.97",
+       _dv["12B"]["residual_ms"])
+    ck("allreduce, and the collective is this share of the 12B shortfall",
+       "26.9", _dv["12B"]["ar_share_of_gap_pct"])
+    # ...and the sentences that publish them. Recomputing the data and never
+    # reading the prose is how three of these gates passed on 2026-08-30 while
+    # the prose said something else.
+    _art = open(os.path.join(_ARD, "README.md"), encoding="utf-8").read()
+    _artf = re.sub(r"\s+", " ", _art)
+    ck("allreduce README, states the graph range", "1",
+       1 if "16.6 - 21.5 us" in _artf else 0)
+    ck("allreduce README, states the rank agreement it measured", "1",
+       1 if "agree to 0.43%" in _artf else 0)
+    ck("allreduce README, states what it replaces", "1",
+       1 if "1050 us" in _artf and "49 to 63 times" in _artf else 0)
+    ck("allreduce README, names the loaded library and its hostcall count", "1",
+       1 if "RCCL version 2.27.7" in _artf and "hidden_hostcall_buffer 0" in _artf else 0)
+    # the contrast table, cell by cell, out of the row it is published in --
+    # not "does this number appear somewhere on the page", which passes on a
+    # page that says it once and contradicts it twice
+    for _name, _key in (("Qwen3-8B", "8B"), ("gemma-4-12B", "12B")):
+        _m = re.search(r"\| " + _name + r" \| ([\d.]+) ms \| ([\d.]+)% \|"
+                       r" \*\*([\d.]+)", _art)
+        ck("allreduce README, contrast row for %s exists" % _name, "1",
+           1 if _m else 0)
+        if _m:
+            ck("allreduce README, %s row ms per step" % _name, _m.group(1),
+               _dv[_key]["ms_per_step_graph"])
+            ck("allreduce README, %s row share of step" % _name, _m.group(2),
+               _dv[_key]["ar_pct_of_tp2_step"])
+            ck("allreduce README, %s row second-card speedup" % _name,
+               _m.group(3), _dv[_key]["speedup"])
+    ck("allreduce README, says the residual is not an explanation", "1",
+       1 if "It is a residual, not an explanation" in _artf else 0)
+    ck("allreduce README, keeps the two-per-layer count as an assumption", "1",
+       1 if "Two collectives per decoder layer" in _artf else 0)
 
     # --- derived against measured bandwidth, 2026-09-02 -------------------
     # Every utilisation figure in this repository is derived: tok/s times the

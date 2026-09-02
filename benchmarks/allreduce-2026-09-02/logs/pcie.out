@@ -1,0 +1,10 @@
+card0    1 MiB  H2D  11.02 GB/s  D2H  11.57 GB/s
+card0    4 MiB  H2D  13.31 GB/s  D2H  13.65 GB/s
+card0   16 MiB  H2D  13.71 GB/s  D2H  14.07 GB/s
+card0   64 MiB  H2D  13.89 GB/s  D2H  14.23 GB/s
+card0  256 MiB  H2D  13.92 GB/s  D2H  14.26 GB/s
+card1    1 MiB  H2D  11.44 GB/s  D2H  11.01 GB/s
+card1    4 MiB  H2D  13.30 GB/s  D2H  12.06 GB/s
+card1   16 MiB  H2D  13.74 GB/s  D2H  12.34 GB/s
+card1   64 MiB  H2D  13.86 GB/s  D2H  12.45 GB/s
+card1  256 MiB  H2D  13.94 GB/s  D2H  12.50 GB/s

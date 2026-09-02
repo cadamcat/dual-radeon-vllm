@@ -1,0 +1,19 @@
+{
+ "kind": "host_link",
+ "ts": 1788361607.843254,
+ "read_from": "host root ports via lspci, three levels above the GPU",
+ "cards": [
+  {
+   "gpu": "0b:00.0",
+   "root_port": "00:03.1",
+   "lnksta": "8GT/s, Width x16",
+   "width": "x16"
+  },
+  {
+   "gpu": "44:00.0",
+   "root_port": "40:03.1",
+   "lnksta": "8GT/s, Width x16",
+   "width": "x16"
+  }
+ ]
+}

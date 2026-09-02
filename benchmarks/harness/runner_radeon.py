@@ -331,7 +331,13 @@ def run_cfg(cfg, done, util=None, attempt=1):
         return
 
     pts = points_for(cfg, mml)
-    log(f"{cid}: ready (mml={mml}, util={util}), {len(pts)} points")
+    # two rounds is what every campaign before 2026-09-02 ran, and it is enough
+    # to see a rung disagree with itself but not enough to see *why*: the L4 and
+    # the T4 needed five to show that the shallow rung's spread follows the
+    # clock rather than the request number. `rounds` lets an arm ask for more
+    # without a second runner.
+    nrounds = cfg.get("rounds", 2)
+    log(f"{cid}: ready (mml={mml}, util={util}), {len(pts)} points x {nrounds} rounds")
     nerr = consec = nok = 0
 
     def do(kind, target, rnd, base, to):
@@ -368,9 +374,9 @@ def run_cfg(cfg, done, util=None, attempt=1):
         for target, est in pts:
             base = open(os.path.join(cfg["prompts"], f"prompt_{target}.txt"), encoding="utf-8").read()
             to = max(300, int(est / 60) + 300)
-            for rnd in (1, 2):
+            for rnd in range(1, nrounds + 1):
                 do("prefill", target, rnd, base, to)
-            for rnd in (1, 2):
+            for rnd in range(1, nrounds + 1):
                 do("decode", target, rnd, base, to + 400)
             log(f"{cid}: point {target} done")
     except ConfigAborted as e:

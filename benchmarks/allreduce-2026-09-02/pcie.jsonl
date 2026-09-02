@@ -1,0 +1,10 @@
+{"kind": "pcie", "ts": 1788362178.5, "machine": "RX 7900 XT", "card": 0, "mib": 1, "bytes": 1048576, "iters": 200, "h2d_gbs": 11.021, "d2h_gbs": 11.573, "pinned": true}
+{"kind": "pcie", "ts": 1788362178.5, "machine": "RX 7900 XT", "card": 0, "mib": 4, "bytes": 4194304, "iters": 64, "h2d_gbs": 13.312, "d2h_gbs": 13.652, "pinned": true}
+{"kind": "pcie", "ts": 1788362178.6, "machine": "RX 7900 XT", "card": 0, "mib": 16, "bytes": 16777216, "iters": 16, "h2d_gbs": 13.711, "d2h_gbs": 14.07, "pinned": true}
+{"kind": "pcie", "ts": 1788362178.7, "machine": "RX 7900 XT", "card": 0, "mib": 64, "bytes": 67108864, "iters": 5, "h2d_gbs": 13.889, "d2h_gbs": 14.234, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.2, "machine": "RX 7900 XT", "card": 0, "mib": 256, "bytes": 268435456, "iters": 5, "h2d_gbs": 13.92, "d2h_gbs": 14.26, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.3, "machine": "RX 7900 XT", "card": 1, "mib": 1, "bytes": 1048576, "iters": 200, "h2d_gbs": 11.442, "d2h_gbs": 11.009, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.3, "machine": "RX 7900 XT", "card": 1, "mib": 4, "bytes": 4194304, "iters": 64, "h2d_gbs": 13.302, "d2h_gbs": 12.063, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.4, "machine": "RX 7900 XT", "card": 1, "mib": 16, "bytes": 16777216, "iters": 16, "h2d_gbs": 13.744, "d2h_gbs": 12.34, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.5, "machine": "RX 7900 XT", "card": 1, "mib": 64, "bytes": 67108864, "iters": 5, "h2d_gbs": 13.855, "d2h_gbs": 12.451, "pinned": true}
+{"kind": "pcie", "ts": 1788362179.9, "machine": "RX 7900 XT", "card": 1, "mib": 256, "bytes": 268435456, "iters": 5, "h2d_gbs": 13.939, "d2h_gbs": 12.503, "pinned": true}
