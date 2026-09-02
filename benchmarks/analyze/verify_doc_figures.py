@@ -2127,10 +2127,26 @@ def main():
     # the front page publishes the same derived figure and must carry the note
     ck("ncu, the README marks its own derived figure", "1",
        1 if ("81.6 % of the checkpoint" in rm and "upper bound" in rm) else 0)
+    _oq = open(os.path.join(ROOT, "docs", "open-questions.md"), encoding="utf-8").read()
     ck("ncu, and open-questions records what cannot be measured here", "1",
-       1 if "not answerable on this hardware" in
-       open(os.path.join(ROOT, "docs", "open-questions.md"), encoding="utf-8").read()
-       else 0)
+       1 if "not answerable on this hardware" in _oq else 0)
+    # 2026-09-02, second correction: "bare metal would settle it" was an
+    # inference, not a result. The counters divide by hardware block -- SQ works,
+    # GL2C and GRBM read zero -- and three explanations remain unseparated, only
+    # one of which bare metal tests. An earlier reading that TCC_* was blocked
+    # was itself wrong: that is the CDNA name and gfx11 has no such counters.
+    ck("open-questions 10, keeps the three explanations apart", "3",
+       sum(1 for _p in ("VFIO passthrough does not expose",
+                        "consumer RDNA3 does not enable",
+                        "accepts and reports those counters without wiring")
+           if _p in _oq))
+    ck("open-questions 10, and does not claim bare metal settles it", "1",
+       1 if "not established" in _oq and "settles only (1)" in _oq else 0)
+    ck("open-questions 10, records the SQ/GL2C split", "1",
+       1 if ("SQ_WAVES" in _oq and "GL2C_EA_RDREQ_32B" in _oq
+             and "GRBM_COUNT" in _oq) else 0)
+    ck("open-questions 10, and corrects the TCC naming error", "1",
+       1 if "CDNA name for that block" in _oq else 0)
     ck("ncu, the README lists the harness", "1",
        1 if "harness/             one telemetry shape" in rm else 0)
 

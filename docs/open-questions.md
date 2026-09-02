@@ -809,20 +809,50 @@ a decode step reads **81.6 %** of the checkpoint on `gemma-4-12B` and **85.6 %**
 on `gemma-4-31B`, so the derivation overstates by 17–23 % there, and the two
 factors differ by 4.7 % — it is a property of the model, not a constant.
 
-**The same measurement cannot be made on the machine the figures describe.**
-`rocprofv3` runs in the VFIO guest and its kernel trace is correct — names, grid
-sizes and durations all land — but the memory-side counters read zero: over six
-dispatches of a 2048² fp32 matmul, `FETCH_SIZE`, `GRBM_COUNT`, `GPUBusy` and
-`SQ_INSTS_VALU` each summed to 0.0 while `SQ_WAVES` returned 6120. Some counter
-blocks survive passthrough and the ones that would answer this do not.
+**The same measurement cannot be made on the machine the figures describe, and
+on 2026-09-02 the reason was narrowed but not settled.** `rocprofv3` runs in the
+VFIO guest and its kernel trace is correct — names, grid sizes and durations all
+land. Its counters divide cleanly by hardware block:
 
-So the gfx1100 figures stand as an upper bound, and the A100's factor is not
-transferable to them: those run `RDNA3W4A16LinearKernel` where the A100 runs
+    SQ_WAVES            6120     SQ block, the shader engines -- works
+    GL2C_EA_RDREQ_32B    0.0     GL2C block, the L2 and its memory interface
+    GL2C_EA_RDREQ_64B    0.0
+    GL2C_EA_RDREQ_128B   0.0
+    GL2C_HIT / _MISS     0.0
+    GL2C_MC_RDREQ        0.0
+    GRBM_COUNT           0.0     GRBM block
+    FETCH_SIZE           0.0     derived from the four GL2C_EA_RDREQ_* above
+
+Each was accepted, profiled six dispatches of a 2048² fp32 matmul, and returned
+rows — with every value zero outside the SQ block.
+
+Two things this rules out. It is **not** an unsupported architecture:
+`derived_counters.xml` defines `FETCH_SIZE` under `<gfx11 base="common_derived">`
+as `(GL2C_EA_RDREQ_32B*32 + _64B*64 + _96B*96 + _128B*128)/1024`, and
+`basic_counters.xml` defines every one of those for gfx11. And an earlier
+reading here that `TCC_*` counters were "blocked" was **wrong**: `TCC_*` is the
+CDNA name for that block, gfx11 calls it `GL2C_*`, and those names simply do not
+exist on this ASIC.
+
+**What is left is three explanations, and this campaign separated none of them:**
+
+1. VFIO passthrough does not expose the GL2C and GRBM performance-monitor
+   registers, while the SQ block's survive;
+2. consumer RDNA3 does not enable those blocks' perfmon at all, in which case
+   bare metal reads zero too;
+3. `rocprofv3`'s gfx11 path accepts and reports those counters without wiring
+   them, which would be an upstream defect.
+
+**So "bare metal would settle it" is not established** — it settles only (1).
+What separates all three is one command on any bare-metal gfx1100, which the
+community has many of, or a search of ROCm's tracker for GL2C counters reading
+zero on gfx11. Neither needs this machine opened.
+
+Until then the gfx1100 figures stand as an upper bound, and the A100's factor is
+not transferable to them: those run `RDNA3W4A16LinearKernel` where the A100 runs
 Marlin, and a kernel that reads its weights differently would have a different
-factor. What would settle it is either bare-metal access to a gfx1100 — where
-the counters are not behind passthrough — or a kernel-by-kernel attribution of
-the unread bytes, which is 1.89 GB on the 12B and 3.35 GB on the 31B and which
-that campaign did not do.
+factor. The unread amount there was 1.89 GB on the 12B and 3.35 GB on the 31B,
+and that campaign did not attribute it kernel by kernel.
 
 ---
 
