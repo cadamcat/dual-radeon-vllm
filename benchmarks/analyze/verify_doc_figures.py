@@ -1950,6 +1950,26 @@ def main():
        sum(1 for f in _TELE_REQUIRED if f in _SCH))
     ck("harness, and records that the counters read zero", "1",
        1 if "SQ_WAVES" in _SCH and "0.0" in _SCH else 0)
+    # the two templates a new campaign copies, and the wiring that makes them
+    # compliant. A template that stops importing the shared sampler would leave
+    # the next campaign to fail the completeness check instead, one run later.
+    for _t, _parent in (("runner_radeon.py", "campaign-2026-08-30b/runner.py"),
+                        ("runner_cuda.py", "cuda-l4/campaign-2026-08-30c/run.py")):
+        _src = open(os.path.join(_BR, "harness", _t)).read()
+        ck("harness, %s imports the shared sampler" % _t, "1",
+           1 if "from harness.telemetry import Sampler, describe" in _src else 0)
+        ck("harness, %s samples the cell" % _t, "1",
+           1 if "with smp:" in _src else 0)
+        ck("harness, %s writes the machine description" % _t, "1",
+           1 if "emit(describe())" in _src else 0)
+        ck("harness, %s carries no inline sampler" % _t, "0",
+           _src.count("class Sampler("))
+        ck("harness, %s names the runner it came from" % _t, "1",
+           1 if _parent in _src else 0)
+    # the Radeon template's own fix: the old one sampled decode only
+    _rr = open(os.path.join(_BR, "harness", "runner_radeon.py")).read()
+    ck("harness, the Radeon template no longer samples decode alone", "0",
+       _rr.count('if kind == "decode":\n            smp.start()'))
 
     # --- the route column, added 2026-09-01 -------------------------------
     # The serve logs always carried why a backend was chosen and which

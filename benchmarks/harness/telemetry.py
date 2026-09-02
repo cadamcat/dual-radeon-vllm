@@ -234,10 +234,37 @@ class Sampler(threading.Thread):
                 pass
             self.stop_ev.wait(self.period)
 
+    def __enter__(self):
+        self.t0 = time.perf_counter()
+        self.start()
+        return self
+
+    def __exit__(self, *exc):
+        self.result = self.stop_and_summarise()
+        self.result["wall_s"] = round(time.perf_counter() - self.t0, 3)
+        return False
+
     def stop_and_summarise(self):
         self.stop_ev.set()
         self.join(timeout=self.period * 2 + 1)
         return summarise(self.rows)
+
+
+#: the aggregate keys every measured row carries, whatever the platform and
+#: however short the cell. A 500-token prefill can finish inside one sampling
+#: period; the shape must not change because of that, or half the rows grow a
+#: different schema and the comparison quietly becomes conditional.
+SUMMARY_KEYS = ("gpu_busy_pct_max", "mem_busy_pct_max", "power_w_max",
+                "temp_c_max", "sclk_mhz_max", "mclk_mhz_max", "vram_used_b_max",
+                "pcie_tx_kbs_max", "pcie_rx_kbs_max", "power_w_sum_max",
+                "power_w_sum_min", "sclk_mhz_cap", "power_cap_w",
+                "sclk_pct_of_cap")
+
+
+def _empty():
+    d = {"tele_samples": 0, "tele_schema": SCHEMA_VERSION, "per_card": {}}
+    d.update({k: None for k in SUMMARY_KEYS})
+    return d
 
 
 def summarise(rows):
@@ -245,7 +272,7 @@ def summarise(rows):
     if len(rows) >= 6:
         rows = rows[len(rows) // 3: -max(1, len(rows) // 6)]
     if not rows:
-        return {"tele_samples": 0}
+        return _empty()
     n = len(rows[0])
 
     def vals(card, key):
@@ -276,8 +303,11 @@ def summarise(rows):
     caps_p = [rows[-1][c].get("power_cap_w") for c in range(n)]
     out["sclk_mhz_cap"] = max([c for c in caps_s if c], default=None)
     out["power_cap_w"] = max([c for c in caps_p if c], default=None)
-    if out["sclk_mhz_max"] and out["sclk_mhz_cap"]:
-        out["sclk_pct_of_cap"] = round(out["sclk_mhz_max"] / out["sclk_mhz_cap"] * 100, 1)
+    out["sclk_pct_of_cap"] = (
+        round(out["sclk_mhz_max"] / out["sclk_mhz_cap"] * 100, 1)
+        if out.get("sclk_mhz_max") and out.get("sclk_mhz_cap") else None)
+    for k in SUMMARY_KEYS:                        # never a ragged row
+        out.setdefault(k, None)
     return out
 
 

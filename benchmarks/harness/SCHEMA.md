@@ -61,6 +61,24 @@ the tail is the request draining.
 `n_cards`, each card's `slot`, `vram_total_b`, `link_speed`, `link_width`, and
 `absent` — the machine-readable list of what this platform cannot measure.
 
+## The two templates
+
+`runner_radeon.py` and `runner_cuda.py` are the files a new campaign copies.
+Each is the most recent runner of its family with telemetry wired in and nothing
+else touched, because the runners in campaign directories are **records** — each
+has exactly one commit, on its own campaign's date, and editing one would
+falsify what actually ran.
+
+    runner_radeon.py   campaign-2026-08-30b/runner.py, 77 lines changed
+    runner_cuda.py     cuda-l4/campaign-2026-08-30c/run.py, 38 lines changed
+
+The Radeon template also fixes something the old one did that no schema could
+have caught: it started the sampler **only for decode**, so every prefill row in
+this repository carries no hardware reading at all. Both kinds are sampled now.
+
+Both resolve `harness.telemetry` whether they sit in `harness/` or are copied to
+`campaign-*/`, which was checked from both locations.
+
 ## Required artefacts
 
 * `results.jsonl` with the above
