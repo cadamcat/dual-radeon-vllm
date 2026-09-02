@@ -1,0 +1,15 @@
+09:58:09 | sys.argv as seen by the runner: ['/usr/local/lib/python3.13/dist-packages/colab_kernel_launcher.py', '-f', '/root/.local/share/jupyter/runtime/kernel-ca49d74f-f101-49a2-8528-9dd587a37614.json']
+09:58:16 | === T4 run start, vllm 0.28.0, torch 2.13.0+cu130, cuda 13.0 ===
+10:02:19 | G12: still starting (4 min)
+10:02:34 | G12: warmup ok
+10:03:06 | G12: 500 r1 20.62 tok/s
+10:03:32 | G12: 500 r2 20.36 tok/s
+10:03:59 | G12: 500 r3 19.57 tok/s
+10:04:26 | G12: 500 r4 19.46 tok/s
+10:04:52 | G12: 500 r5 19.58 tok/s
+10:06:01 | G12: 8000 r1 14.40 tok/s
+10:07:10 | G12: 8000 r2 14.39 tok/s
+10:13:25 | G12: 32000 r1 8.98 tok/s
+10:19:41 | G12: 32000 r2 8.99 tok/s
+10:19:41 | G12: COMPLETE (9 ok, 0 err)
+10:19:41 | === T4 run end ===

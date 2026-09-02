@@ -1,0 +1,163 @@
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333] 
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333]        █     █     █▄   ▄█
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.28.0
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333]   █▄█▀ █     █     █     █  model   /content/models/gemma-4-12B-it-qat-w4a16-ct
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:333] 
+(APIServer pid=3314) INFO 09-02 09:58:37 [api_utils.py:272] non-default args: {'model_tag': '/content/models/gemma-4-12B-it-qat-w4a16-ct', 'model': '/content/models/gemma-4-12B-it-qat-w4a16-ct', 'dtype': 'float16', 'max_model_len': 33000, 'gpu_memory_utilization': 0.95, 'enable_prefix_caching': False, 'limit_mm_per_prompt': {'image': 0, 'video': 0, 'audio': 0}, 'max_num_seqs': 1}
+(APIServer pid=3314) INFO 09-02 09:58:55 [model.py:672] Resolved architecture: Gemma4UnifiedForConditionalGeneration
+(APIServer pid=3314) WARNING 09-02 09:58:55 [model.py:2299] Casting torch.bfloat16 to torch.float16.
+(APIServer pid=3314) INFO 09-02 09:58:55 [model.py:1965] Using max model len 33000
+(APIServer pid=3314) [transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+(APIServer pid=3314) INFO 09-02 09:59:00 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(APIServer pid=3314) INFO 09-02 09:59:00 [model.py:875] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(APIServer pid=3314) INFO 09-02 09:59:01 [config.py:242] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. FA4 not available, forcing TRITON_ATTN backend.
+(APIServer pid=3314) INFO 09-02 09:59:01 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=3584) INFO 09-02 09:59:29 [core.py:122] Initializing a V1 LLM engine (v0.28.0) with config: model='/content/models/gemma-4-12B-it-qat-w4a16-ct', speculative_config=None, tokenizer='/content/models/gemma-4-12B-it-qat-w4a16-ct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.float16, max_seq_len=33000, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=compressed-tensors, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/content/models/gemma-4-12B-it-qat-w4a16-ct, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::qwen_gdn_attention_core_fused_norm_packed', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 2, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=3584) [transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+(EngineCore pid=3584) INFO 09-02 09:59:38 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(EngineCore pid=3584) INFO 09-02 09:59:38 [parallel_state.py:1638] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_ab029f6870384a958d1af7a834797dbc backend=nccl
+(EngineCore pid=3584) INFO 09-02 09:59:38 [parallel_state.py:1982] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3584) INFO 09-02 09:59:38 [gpu_worker.py:396] Using V2 Model Runner
+(EngineCore pid=3584) INFO 09-02 09:59:39 [model_runner.py:358] Loading model from scratch...
+(EngineCore pid=3584) INFO 09-02 09:59:39 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=3584) INFO 09-02 09:59:40 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(EngineCore pid=3584) INFO 09-02 09:59:40 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+(EngineCore pid=3584) INFO 09-02 09:59:40 [cuda.py:426] Using AttentionBackendEnum.TRITON_ATTN backend.
+(EngineCore pid=3584) INFO 09-02 09:59:47 [weight_utils.py:858] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 9.56 GiB. Available RAM: 8.02 GiB.
+(EngineCore pid=3584) INFO 09-02 09:59:47 [weight_utils.py:888] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre) and the checkpoint size (9.56 GiB) exceeds 90% of available RAM (8.02 GiB).
+(EngineCore pid=3584) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(EngineCore pid=3584) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:33<00:00, 33.13s/it]
+(EngineCore pid=3584) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:33<00:00, 33.13s/it]
+(EngineCore pid=3584) 
+(EngineCore pid=3584) INFO 09-02 10:00:20 [default_loader.py:430] Loading weights took 33.24 seconds
+(EngineCore pid=3584) INFO 09-02 10:00:22 [model_runner.py:380] Model loading took 8.28 GiB memory and 43.120580 seconds
+(EngineCore pid=3584) WARNING 09-02 10:00:22 [topk_topp_sampler.py:69] FlashInfer top-p/top-k sampling unavailable: unsupported compute capability 7.5; falling back. Set VLLM_USE_FLASHINFER_SAMPLER=0 to silence.
+(EngineCore pid=3584) INFO 09-02 10:00:54 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/990038ae40/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=3584) INFO 09-02 10:00:54 [backends.py:1155] Dynamo bytecode transform time: 28.53 s
+(EngineCore pid=3584) INFO 09-02 10:01:44 [backends.py:393] Compiling a graph for compile range (1, 2048) takes 48.81 s
+(EngineCore pid=3584) INFO 09-02 10:01:59 [backends.py:920] collected artifacts: 49 entries, 5 artifacts, 15942087 bytes total
+(EngineCore pid=3584) INFO 09-02 10:01:59 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/115086fe3c559241873d629a1cd53c961bc11326ce97b6a15caafd44d70c92a7/rank_0_0/model
+(EngineCore pid=3584) INFO 09-02 10:01:59 [monitor.py:53] torch.compile took 93.18 s in total
+(EngineCore pid=3584) INFO 09-02 10:01:59 [monitor.py:81] Initial profiling/warmup run took 0.06 s
+(EngineCore pid=3584) INFO 09-02 10:02:04 [gpu_worker.py:578] Available KV cache memory: 3.5 GiB
+(EngineCore pid=3584) INFO 09-02 10:02:04 [kv_cache_utils.py:1869] GPU KV cache size: 55,809 tokens, Maximum concurrency for 33,000 tokens per request: 1.69x
+(EngineCore pid=3584) Capturing CUDA graphs (PIECEWISE):   0%|          | 0/2 [00:00<?, ?it/s]Capturing CUDA graphs (PIECEWISE):  50%|█████     | 1/2 [00:05<00:05,  5.11s/it]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 2/2 [00:11<00:00,  5.84s/it]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 2/2 [00:11<00:00,  5.73s/it]
+(EngineCore pid=3584) Capturing CUDA graphs (FULL):   0%|          | 0/1 [00:00<?, ?it/s]Capturing CUDA graphs (FULL): 100%|██████████| 1/1 [00:00<00:00,  4.94it/s]Capturing CUDA graphs (FULL): 100%|██████████| 1/1 [00:00<00:00,  4.93it/s]
+(EngineCore pid=3584) INFO 09-02 10:02:18 [model_runner.py:906] Graph capturing finished in 13 secs, took 0.02 GiB
+(EngineCore pid=3584) INFO 09-02 10:02:18 [gpu_worker.py:804] Free memory on device (14.46/14.56 GiB) on startup. Desired GPU memory utilization is (0.95, 13.84 GiB). Actual usage is 8.43 GiB for consumed memory (weights + non-torch), 1.9 GiB for peak activation, and 0.02 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=3579351962` (3.33 GiB) to fit into requested memory, or `--kv-cache-memory=4251236864` (3.96 GiB) to fully utilize gpu memory. Current kv cache memory in use is 3.5 GiB.
+(EngineCore pid=3584) INFO 09-02 10:02:23 [jit_monitor.py:85] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=3584) INFO 09-02 10:02:24 [core.py:347] init engine (profile, create kv cache, warmup model) took 121.86 s (compilation: 93.18 s)
+(EngineCore pid=3584) INFO 09-02 10:02:24 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=3314) INFO 09-02 10:02:24 [api_server.py:653] Supported tasks: ['generate']
+(APIServer pid=3314) INFO 09-02 10:02:29 [hf.py:551] Detected the chat template content format to be 'openai'. You can set `--chat-template-content-format` to override this.
+(APIServer pid=3314) WARNING 09-02 10:02:29 [model.py:1713] Default vLLM sampling parameters have been overridden by the model's `generation_config.json`: `{'temperature': 1.0, 'top_k': 64, 'top_p': 0.95}`. If this is not intended, please relaunch vLLM instance with `--generation-config vllm`.
+(APIServer pid=3314) INFO 09-02 10:02:29 [api_server.py:657] Starting vLLM server on http://0.0.0.0:8000
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:51] Available routes are:
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /openapi.json, Methods: HEAD, GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /docs, Methods: HEAD, GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /docs/oauth2-redirect, Methods: HEAD, GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /redoc, Methods: HEAD, GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /load, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /version, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /health, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /metrics, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /tokenize, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /detokenize, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/models, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /ping, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /ping, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /invocations, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/chat/completions, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/chat/completions/batch, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/responses, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/responses/{response_id}, Methods: GET
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/responses/{response_id}/cancel, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/completions, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/messages, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/messages/count_tokens, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /generative_scoring, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /scale_elastic_ep, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /is_scaling_elastic_ep, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/chat/completions/render, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/completions/render, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/chat/completions/derender, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /v1/completions/derender, Methods: POST
+(APIServer pid=3314) INFO 09-02 10:02:29 [launcher.py:60] Route: /inference/v1/generate, Methods: POST
+(APIServer pid=3314) INFO:     Started server process [3314]
+(APIServer pid=3314) INFO:     Waiting for application startup.
+(APIServer pid=3314) INFO:     Application startup complete.
+(APIServer pid=3314) INFO:     127.0.0.1:33750 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:02:40 [loggers.py:310] Engine 000: Avg prompt throughput: 1.1 tokens/s, Avg generation throughput: 0.5 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:42730 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:02:50 [loggers.py:310] Engine 000: Avg prompt throughput: 51.3 tokens/s, Avg generation throughput: 18.4 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 6.4%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:03:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 20.6 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 8.4%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:44470 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:03:10 [loggers.py:310] Engine 000: Avg prompt throughput: 51.3 tokens/s, Avg generation throughput: 19.1 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 5.4%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:03:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 20.7 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 7.3%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:03:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.8 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 9.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:33604 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:03:40 [loggers.py:310] Engine 000: Avg prompt throughput: 51.3 tokens/s, Avg generation throughput: 18.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 6.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:03:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.6 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 7.9%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:60174 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:04:00 [loggers.py:310] Engine 000: Avg prompt throughput: 51.3 tokens/s, Avg generation throughput: 17.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 4.9%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:04:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 6.7%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:04:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 8.5%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:55642 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:04:30 [loggers.py:310] Engine 000: Avg prompt throughput: 51.3 tokens/s, Avg generation throughput: 18.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 5.4%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:04:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 7.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:04:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 19.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 9.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:35142 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:05:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 4.8 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 37.5%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:05:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 47.3%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:05:30 [loggers.py:310] Engine 000: Avg prompt throughput: 801.3 tokens/s, Avg generation throughput: 5.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.6%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:05:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.7%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:05:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.7%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:06:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.8%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:42496 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:06:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 2.2 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 37.5%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:06:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 47.3%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:06:40 [loggers.py:310] Engine 000: Avg prompt throughput: 801.2 tokens/s, Avg generation throughput: 7.4 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.6%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:06:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.7%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:07:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.7%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:07:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 14.3 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 12.8%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:59918 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:07:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.7 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 37.5%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:07:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 47.3%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:12:30 [loggers.py:310] Engine 000: Avg prompt throughput: 3201.2 tokens/s, Avg generation throughput: 1.6 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:12:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:12:50 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 8.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:13:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:13:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:13:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO:     127.0.0.1:39844 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=3314) INFO 09-02 10:13:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 4.7 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:13:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 47.3%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:18:50 [loggers.py:310] Engine 000: Avg prompt throughput: 3200.9 tokens/s, Avg generation throughput: 4.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:00 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:10 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.1%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:20 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:30 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 9.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:40 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 8.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 23.2%, Prefix cache hit rate: 0.0%
+(APIServer pid=3314) INFO 09-02 10:19:41 [launcher.py:114] [shutdown] API server: shutdown triggered
+(APIServer pid=3314) INFO 09-02 10:19:41 [launcher.py:130] [shutdown] API server: stopping engine client mode=abort timeout=0s
+(APIServer pid=3314) INFO 09-02 10:19:41 [core_client.py:689] [shutdown] MPClient: start timeout=0s
+(APIServer pid=3314) INFO 09-02 10:19:41 [core_client.py:691] [shutdown] MPClient: stopping engine manager
+(APIServer pid=3314) INFO 09-02 10:19:41 [utils.py:615] [shutdown] Process manager: send sigterm to process EngineCore
+(APIServer pid=3314) WARNING 09-02 10:19:41 [utils.py:635] [shutdown] Process manager: force killing remaining processes count=1
+(APIServer pid=3314) WARNING 09-02 10:19:41 [utils.py:640] [shutdown] Process manager: force killing remaining process EngineCore pid 3584
+(EngineCore pid=3584) INFO 09-02 10:19:41 [core.py:1329] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=3584) INFO 09-02 10:19:41 [core.py:1465] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=3584) INFO 09-02 10:19:41 [core.py:1496] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=3584) INFO 09-02 10:19:41 [core.py:1342] [shutdown] EngineCore: exiting busy loop
+(APIServer pid=3314) INFO 09-02 10:19:41 [core_client.py:693] [shutdown] MPClient: engine manager stopped
+(APIServer pid=3314) INFO 09-02 10:19:41 [core_client.py:694] [shutdown] MPClient: cleaning up background resources
+(APIServer pid=3314) INFO 09-02 10:19:41 [core_client.py:696] [shutdown] MPClient: complete
+(APIServer pid=3314) INFO 09-02 10:19:41 [launcher.py:139] [shutdown] API server: engine client stopped
+(APIServer pid=3314) INFO 09-02 10:19:41 [launcher.py:142] [shutdown] API server: signalling HTTP server shutdown
+(APIServer pid=3314) INFO 09-02 10:19:41 [launcher.py:163] [shutdown] API server: shutting down FastAPI HTTP server
+(APIServer pid=3314) INFO:     Shutting down
+(APIServer pid=3314) INFO:     Waiting for application shutdown.
+(APIServer pid=3314) INFO:     Application shutdown complete.
+/usr/lib/python3.13/multiprocessing/resource_tracker.py:479: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/loky-3584-dvsg5zkg'}
+  warnings.warn(

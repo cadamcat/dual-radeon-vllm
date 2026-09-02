@@ -1,0 +1,21 @@
+{
+ "session": "t4t",
+ "purpose": "gemma-4-12B @500 x5, 8000 x2, 32000 x2 with telemetry, T4, 2026-09-02",
+ "vllm": "0.28.0",
+ "md5_before": {
+  "vllm/v1/attention/backends/flex_attention.py": "daa93cab828be935711a95f928e037db",
+  "vllm/v1/attention/ops/triton_unified_attention.py": "49fab3b643bf5a88eb65303ce377996b"
+ },
+ "md5_after": {
+  "vllm/v1/attention/backends/flex_attention.py": "54287e6ca3413add3d2fbbb2e180f965",
+  "vllm/v1/attention/ops/triton_unified_attention.py": "66c2861f6499f693b30e16935284f4be"
+ },
+ "patch_rc": 0,
+ "files_changed": [
+  "vllm/v1/attention/backends/flex_attention.py",
+  "vllm/v1/attention/ops/triton_unified_attention.py"
+ ],
+ "marker_present": true,
+ "checkpoint_ok": true,
+ "note": "labels session/purpose were inherited from the 08-30 chain and corrected here; every other field is as the chain printed it"
+}

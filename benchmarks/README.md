@@ -44,6 +44,8 @@ that has a section of its own further down, in the same order:
 | `cuda-l4/campaign-2026-08-30c/` | **What fits on a 23 GB L4 and what does not**, with an `--enforce-eager` fallback |
 | `cuda-a100/52684-kv-depth/` | **Does the `BLOCK_M` crossover move with KV depth on CUDA? It moves the other way** |
 | `cuda-t4/campaign-2026-08-30/` | **The fifth machine**, with [vllm#39018](https://github.com/vllm-project/vllm/pull/39018) applied |
+| `cuda-l4/campaign-2026-09-02/` | **The first CUDA cells with hardware telemetry** — the L4 is power-capped in every cell, and the 500 rung is stable there |
+| `cuda-t4/campaign-2026-09-02/` | **The same nine cells on the T4** — round 1 is the high outlier and it is heat; at 32 K the T4 is compute-bound, not bandwidth-bound |
 
 **Standalone findings**
 
@@ -376,6 +378,32 @@ quadratic-dominated (224 s against 97 s at 32 K) and the linear term absorbs it.
 not determined by this ladder, the way `a` is not determined by any of them.
 
 ## The standalone findings, in detail
+
+### `cuda-l4/campaign-2026-09-02/`
+
+**The first CUDA cells with hardware telemetry.** `gemma-4-12B-it` on one L4,
+vLLM 0.28.0 pinned to the 2026-08-30 stack, the 500 rung five times and 8 000 /
+32 000 twice, through `harness/telemetry.py`. Decode agrees with 2026-08-30 to
+within 1.1 % and prefill from 8 000 up to 2.3 %, and every cell sits on the
+72 W power cap at 70–79 % of the SM clock ceiling — so the published L4 rows
+were a 72 W L4's, and now say so. The 500 rung's five decode rounds span 1.28 %
+with round 1 in the middle: no first-request effect here. Its prefill falls
+15 % across the same five rounds as the card warms from 68 to 81 °C, which is
+why that rung has no chart-grade prefill row and is the mechanism rather than a
+guess. [The README](cuda-l4/campaign-2026-09-02/README.md) has the tables.
+
+### `cuda-t4/campaign-2026-09-02/`
+
+**The same nine cells on the T4, with vllm#39018 md5-asserted, and a different
+answer at the 500 rung.** Round 1 is the high outlier, +4.45 % over the other
+four, and the five fall monotonically with the clock: the shallow rung measures
+where a 70 W card is on its thermal ramp, not a software effect a warm-up would
+fix. At 32 K the memory controller is busy 35 % of the time against 80 % at
+500 tokens while the SMs stay at 100 % — the T4's decode collapsing to 0.36× of
+the L4's at depth is Triton attention on sm75, not bandwidth, and nothing
+before this run could say which. `power_w_max` reads 105.7 W against a 70 W cap
+there, which is the maximum of spiky instantaneous samples and not a draw; a
+mean is added to the schema after this batch. [The README](cuda-t4/campaign-2026-09-02/README.md).
 
 ### `hmm-kernel-three-states.json`
 

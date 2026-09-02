@@ -1883,8 +1883,8 @@ def main():
        len(_open))
     _idx = [l for l in _wh.split("\n")
             if l.startswith("| `") and l.rstrip().endswith("|")]
-    ck("benchmarks README, paths in the index", "28", len(_idx))
-    ck("benchmarks README, and a section for each that needs one", "23",
+    ck("benchmarks README, paths in the index", "30", len(_idx))
+    ck("benchmarks README, and a section for each that needs one", "25",
        len(re.findall(r"^### `", _wh, re.M)))
     ck("benchmarks README, no index line long enough to be a wall", "0",
        sum(1 for l in _idx if len(l) > 220))
@@ -1941,7 +1941,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "11", len(_camps))
+    ck("campaigns, every results.jsonl found", "13", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2067,13 +2067,13 @@ def main():
     _RTP = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     _RTD = [json.loads(l) for l in open(os.path.join(HERE, "..", "decode.jsonl"))]
     _rt = [r for r in _RTP + _RTD if r.get("route")]
-    ck("route column, rows carrying one", "402", len(_rt))
+    ck("route column, rows carrying one", "414", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
     ck("route column, chosen by override", "120", _dec.get("override", 0))
-    ck("route column, forced", "194", _dec.get("forced", 0))
+    ck("route column, forced", "206", _dec.get("forced", 0))
     ck("route column, left to the default", "88", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
@@ -2081,7 +2081,7 @@ def main():
         if _r["route"]["decision"] == "forced":
             _w = _r["route"]["forced_reason"]
             _why[_w] = _why.get(_w, 0) + 1
-    ck("route column, forced for want of FA4", "136",
+    ck("route column, forced for want of FA4", "148",
        _why.get("FA4 not available", 0))
     ck("route column, forced to keep one backend", "58",
        _why.get("prevent mixed-backend numerical divergence", 0))
@@ -4888,7 +4888,7 @@ def main():
        sum(1 for k in _M5 if _m5(k, 32000) / _m5(k, 500) < 0.5))
     # and the claim that lets the decode numbers be quoted at all: the patch the
     # T4 needs touches prefill only, so it travels on the prefill rows too
-    ck("README five machines, the T4's rows carry the patch", "11",
+    ck("README five machines, the T4's rows carry the patch", "14",
        sum(1 for r in XDEC if r["machine"] == "T4"
            and r["patches"] == ["vllm#39018"]))
     ck("README five machines, and no other machine's decode row does", "0",
@@ -5308,7 +5308,10 @@ def main():
     # The T4's row carries a footnote rather than a comparison, and the two
     # numbers that footnote states are recomputed here so it cannot drift: what
     # changing which VM supplies the 32 000 rung does to b and to c.
-    _t4rows = [r for r in XPFROWS if r["machine"] == "T4" and r["chart_grade"]]
+    # 2026-09-02: the T4 was measured again, on the same stack, as its own arm.
+    # This claim is about the 2026-08-30 ladder and must not absorb that one.
+    _t4rows = [r for r in XPFROWS if r["machine"] == "T4" and r["chart_grade"]
+               and r["date"] == "2026-08-30"]
     _base = [(r["prompt_tokens"], min(r["values"])) for r in _t4rows if r["ctx"] != 32000]
     def _fit3(pairs):
         S = [x for x, _ in pairs]; T = [t for _, t in pairs]; n = len(S)
