@@ -98,6 +98,10 @@ CFG = {
     # so these must not be picked up as a third sitting of `B-8B-tp*`.
     "B8-tp2-r5":                 ("Qwen3-8B", "bf16", "dense", 2),
     "B8-tp1-r5":                 ("Qwen3-8B", "bf16", "dense", 1),
+    # 2026-09-02c. The other two lines Figure 2 draws from the narrowed link,
+    # re-measured on the restored one. Same reason for the `-x16` suffix.
+    "Q38-tp2-x16":               ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "Q38-triton-tp2-x16":        ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -142,6 +146,8 @@ ARMS = {
     # `Overriding with ROCM_ATTN out of potential backends` line.
     "B8-tp1-u95":                (None,   "ROCM_ATTN"),
     "G31-tp2-x16":               (None,   "TRITON_ATTN"),
+    "Q38-tp2-x16":               (None,   "ROCM_ATTN"),
+    "Q38-triton-tp2-x16":        (None,   "TRITON_ATTN"),
     "B8-tp2-r5":                 (None,   "ROCM_ATTN"),
     "B8-tp1-r5":                 (None,   "ROCM_ATTN"),
 }
