@@ -255,6 +255,7 @@ class Sampler(threading.Thread):
 #: period; the shape must not change because of that, or half the rows grow a
 #: different schema and the comparison quietly becomes conditional.
 SUMMARY_KEYS = ("gpu_busy_pct_max", "mem_busy_pct_max", "power_w_max",
+                "power_w_mean", "power_w_median",
                 "temp_c_max", "sclk_mhz_max", "mclk_mhz_max", "vram_used_b_max",
                 "pcie_tx_kbs_max", "pcie_rx_kbs_max", "power_w_sum_max",
                 "power_w_sum_min", "sclk_mhz_cap", "power_cap_w",
@@ -292,6 +293,15 @@ def summarise(rows):
         agg[key] = per
         got = [x for x in per if x is not None]
         out[f"{key}_max"] = max(got) if got else None
+    # power_w_max is what tells a throttle from a slow kernel, and it is also a
+    # maximum of instantaneous samples: on a Colab T4 on 2026-09-02 it read
+    # 105.7 W against a 70 W cap over a three-minute cell, which is not a draw
+    # the part can sustain. The mean and median beside it are the draw.
+    import statistics as _st
+    _pw_all = [r[c].get("power_w") for r in rows for c in range(n)
+               if r[c].get("power_w") is not None]
+    out["power_w_mean"] = round(_st.mean(_pw_all), 2) if _pw_all else None
+    out["power_w_median"] = round(_st.median(_pw_all), 2) if _pw_all else None
     # power is the one quantity that is summed across cards rather than maxed:
     # a two-card box's draw is what the wall sees.
     psum = [sum(r[c].get("power_w") or 0 for c in range(n)) for r in rows]

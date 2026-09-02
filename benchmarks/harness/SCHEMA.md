@@ -38,7 +38,12 @@ Measurement, unchanged from before plus the telemetry block:
     tele_samples         how many polls landed inside the cell
     gpu_busy_pct_max     amdgpu gpu_busy_percent | NVML utilization.gpu
     mem_busy_pct_max     amdgpu mem_busy_percent | NVML utilization.memory
-    power_w_max          hwmon power1_average    | NVML power usage
+    power_w_max          hwmon power1_average    | NVML power usage -- the maximum of
+                         instantaneous samples: it tells a throttle from a slow
+                         kernel, and on a Colab T4 it read 105.7 W against a 70 W
+                         cap, which is not a draw. Read the next two for the draw.
+    power_w_mean         mean of the same samples, all cards      (added 2026-09-02)
+    power_w_median       median of the same samples, all cards    (added 2026-09-02)
     power_w_sum_max      summed across cards -- what the wall sees
     power_w_sum_min
     power_cap_w          hwmon power1_cap        | NVML enforced limit

@@ -1961,6 +1961,25 @@ def main():
        sum(1 for f in _TELE_REQUIRED if f in _SCH))
     ck("harness, and records that the counters read zero", "1",
        1 if "SQ_WAVES" in _SCH and "0.0" in _SCH else 0)
+    # 2026-09-02: the T4's power_w_max read 105.7 W against a 70 W cap -- a
+    # maximum of spiky samples, not a draw. The schema carries the mean and
+    # median beside it now, and a row with no samples still carries the keys.
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_location("telemetry", os.path.join(_BR, "harness", "telemetry.py")) \
+        if hasattr(_ilu, "spec_from_location") else \
+        _ilu.spec_from_file_location("telemetry", os.path.join(_BR, "harness", "telemetry.py"))
+    _tm = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_tm)
+    # five rows: below six, summarise() trims nothing, so the spike is in play
+    _fake = [[{"power_w": w, "sclk_mhz": 1500, "sclk_mhz_cap": 2040, "power_cap_w": 70.0}]
+             for w in (60.0, 70.0, 105.7, 70.0, 68.0)]
+    _sm = _tm.summarise(_fake)
+    ck("harness, summarise keeps the max", "105.7", _sm["power_w_max"], 0.05)
+    ck("harness, and now the mean beside it", "74.74", _sm["power_w_mean"], 0.05)
+    ck("harness, and the median", "70.0", _sm["power_w_median"], 0.05)
+    ck("harness, an empty cell still carries both", "2",
+       sum(1 for k in ("power_w_mean", "power_w_median") if k in _tm.summarise([])))
+    ck("harness, and SCHEMA.md names them", "2",
+       sum(1 for k in ("power_w_mean", "power_w_median") if k in _SCH))
     # the two templates a new campaign copies, and the wiring that makes them
     # compliant. A template that stops importing the shared sampler would leave
     # the next campaign to fail the completeness check instead, one run later.
