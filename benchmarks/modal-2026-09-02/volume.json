@@ -1,0 +1,67 @@
+[
+ {
+  "name": "Qwen3-8B",
+  "repo": "Qwen/Qwen3-8B",
+  "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "n_files": 14,
+  "bytes": 16397459696,
+  "gib": 15.271,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 100.1,
+  "mib_s": 156.3
+ },
+ {
+  "name": "gemma-4-12B-it-qat-w4a16-ct",
+  "repo": "google/gemma-4-12B-it-qat-w4a16-ct",
+  "revision": "1d2c2d7f2466070e69d6fb3fd5ce9a7d75f2f6ee",
+  "n_files": 9,
+  "bytes": 10296460042,
+  "gib": 9.589,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 68.5,
+  "mib_s": 143.4
+ },
+ {
+  "name": "gemma-4-26B-A4B-AWQ",
+  "repo": "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit",
+  "revision": "0ef577a5710035bd2d3a3f27e4f5cb2e86a9a9ba",
+  "n_files": 12,
+  "bytes": 17227424543,
+  "gib": 16.044,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 110.2,
+  "mib_s": 149.1
+ },
+ {
+  "name": "gemma-4-31B-it-qat-w4a16-ct",
+  "repo": "google/gemma-4-31B-it-qat-w4a16-ct",
+  "revision": "52f3f65bc7a02d555763bc923bd1d9094898219d",
+  "n_files": 8,
+  "bytes": 23297594473,
+  "gib": 21.698,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 160.7,
+  "mib_s": 138.3
+ },
+ {
+  "name": "Qwen3.8-27B-AWQ-INT4",
+  "repo": "cyankiwi/Qwen3.8-27B-AWQ-INT4",
+  "revision": "63768c10df38c0395e12ef49edac1bd539eaeeea",
+  "n_files": 17,
+  "bytes": 21041254225,
+  "gib": 19.596,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 124.8,
+  "mib_s": 160.8
+ }
+]

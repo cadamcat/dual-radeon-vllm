@@ -41,16 +41,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from harness.telemetry import Sampler, describe   # noqa: E402
 
 MACHINE = os.environ.get("BENCH_MACHINE", "unknown")   # goes on every row
-D = "/content/work"
+# /content is Colab's. A rented container mounts its Volume somewhere else,
+# and a runner that can only be run on Colab cannot be the template.
+D = os.environ.get("BENCH_WORK", "/content/work")
 RES = f"{D}/results.jsonl"
 PROG = f"{D}/PROGRESS.txt"
-MODELS = "/content/models"
+MODELS = os.environ.get("BENCH_MODELS", "/content/models")
 PORT = 8000
 URL = f"http://127.0.0.1:{PORT}/v1/chat/completions"
 HEALTH = f"http://127.0.0.1:{PORT}/health"
+# The default ladder and the default context. Both are per-config overridable
+# -- `targets=` and `mml=` on a config row -- because a card with 96 GiB can
+# carry a model past 32 000 and the eleven rungs below stop there.
 TARGETS = [500, 1000, 2000, 4000, 6000, 8000, 12000, 16000, 20000, 24000, 32000]
 GEN = 512
 MML = 33000
+# How long a configuration may take to reach "Application startup complete",
+# and how long its log may go quiet. The old 3600/600 was written for a Colab
+# session that costs nothing per second; on a rented card an hour of a hung
+# compile is real money, and no engine in this repository has ever taken more
+# than 290 s to start.
+HARD_START_S = int(os.environ.get("BENCH_HARD_START_S", 1200))
+STALL_S = int(os.environ.get("BENCH_STALL_S", 420))
 
 # BENCH_CFGS picks a subset by id, as the Radeon runner does.
 CFGS = [
@@ -114,7 +126,7 @@ def done_keys():
 
 
 # --- the ladder, cut per tokenizer -----------------------------------------
-BOOK = "/content/work/origin.txt"
+BOOK = f"{D}/origin.txt"
 
 
 def get_book():
@@ -148,25 +160,48 @@ def get_book():
     raise RuntimeError(f"could not fetch the book: {last}")
 
 
-def ladder_for(model_dir):
-    """one prompt per target, cut to that target in THIS model's tokens"""
+def ladder_for(model_dir, targets):
+    """one prompt per target, cut to that target in THIS model's tokens
+
+    Keyed by model AND by target. It used to be a bare list keyed by the model
+    directory alone, written by whichever configuration ran first: a second
+    configuration asking for a longer ladder got the first one's list back, and
+    its extra rungs simply did not exist -- no error, no missing file, no row
+    saying why. One entry per target means a longer ladder reuses what is
+    already cut and cuts only the rest.
+    """
     cache = f"{D}/ladder-{os.path.basename(model_dir)}.json"
+    have = {}
     if os.path.exists(cache):
-        return json.load(open(cache))
-    from transformers import AutoTokenizer
-    tok = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
-    body = get_book()
-    start = body.find("INTRODUCTION")
-    body = body[start if start > 0 else 0:]
-    ids = tok(body).input_ids
-    out = []
-    for t in TARGETS:
-        take = ids[:t]
-        text = tok.decode(take, skip_special_tokens=True)
-        n = len(tok(text).input_ids)          # what it actually costs after decode
-        out.append({"target": t, "prompt_tokens": n, "text": text})
-    json.dump(out, open(cache, "w"))
-    return out
+        try:
+            raw = json.load(open(cache))
+        except Exception:
+            raw = None
+        if isinstance(raw, list):            # the old format, read once
+            have = {str(e["target"]): e for e in raw}
+        elif isinstance(raw, dict):
+            have = raw
+    need = [t for t in targets if str(t) not in have]
+    if need:
+        from transformers import AutoTokenizer
+        tok = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
+        body = get_book()
+        start = body.find("INTRODUCTION")
+        body = body[start if start > 0 else 0:]
+        ids = tok(body).input_ids
+        # A ladder longer than the book does not fail: ids[:t] silently returns
+        # the whole book, and the rung records whatever that came to while
+        # claiming the target it asked for. At 32 000 there was no way to hit
+        # this; at 128 000 there is.
+        if max(need) > len(ids):
+            raise RuntimeError(f"book is {len(ids)} tokens in this tokenizer, "
+                               f"ladder asks for {max(need)}")
+        for t in need:
+            text = tok.decode(ids[:t], skip_special_tokens=True)
+            n = len(tok(text).input_ids)      # what it actually costs after decode
+            have[str(t)] = {"target": t, "prompt_tokens": n, "text": text}
+        json.dump(have, open(cache, "w"))
+    return [have[str(t)] for t in targets]
 
 
 def post(model, prompt, max_tokens, timeout):
@@ -217,7 +252,7 @@ def start_server(cfg, mml=None):
     is recorded as a crash, which is what happened to B8, Q38S, G31 and Q38 --
     B8 by 0.13 GiB, needing 4.53 against 4.40 available.
     """
-    mml = MML if mml is None else mml
+    mml = (cfg.get("mml") or MML) if mml is None else mml
     # `pkill -f 'vllm serve'` under shell=True can match its own shell, whose
     # command line contains the pattern. That is not theoretical: it left two
     # servers for one model alive at once today, and the second died in
@@ -271,6 +306,8 @@ def start_server(cfg, mml=None):
         flags.append(f"--dtype {cfg['dtype']}")
     if cfg.get("mns"):
         flags.append(f"--max-num-seqs {cfg['mns']}")
+    if cfg.get("tp"):
+        flags.append(f"--tensor-parallel-size {cfg['tp']}")
     # CUDA graph capture is sized for max_num_seqs and is charged against the
     # same budget as the KV pool. On a 15 GiB T4 the default capture set cost
     # 4.57 GiB; --enforce-eager skips capture entirely, which is the largest
@@ -288,7 +325,7 @@ def start_server(cfg, mml=None):
                  f" > {D}/serve-{cfg['id']}.log 2>&1\n")
     os.chmod(sc, 0o755)
     subprocess.Popen(["bash", sc])
-    t0, hard, stall = time.time(), 3600, 600
+    t0, hard, stall = time.time(), HARD_START_S, STALL_S
     lg = f"{D}/serve-{cfg['id']}.log"
     last = 0
     while time.time() - t0 < hard:
@@ -375,7 +412,7 @@ def run_cfg(cfg, done):
             emit({"kind": "config_failed", "cfg": cid, "why": "inject_45450 failed"})
             return
         globals()["_INJECTED"] = True
-    mml = MML
+    mml = cfg.get("mml") or MML
     info = None
     for _ in range(4):
         st, info = start_server(cfg, mml)
@@ -427,7 +464,7 @@ def run_cfg(cfg, done):
     except Exception as ex:
         log(f"{cid}: warmup failed {ex!r} (continuing)")
         emit({"kind": "note", "cfg": cid, "note": f"warmup failed: {ex!r}"[:200]})
-    lad = ladder_for(f"{MODELS}/{cfg['model']}")
+    lad = ladder_for(f"{MODELS}/{cfg['model']}", cfg.get("targets") or TARGETS)
     ok = err = 0
     for e in lad:
         if e["prompt_tokens"] + GEN + 100 > mml:
