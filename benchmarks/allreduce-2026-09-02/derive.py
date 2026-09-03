@@ -57,6 +57,19 @@ SITTING = "2026-08-24"
 CTX = 500
 
 
+def _counted():
+    """model -> all-reduces per forward pass, from collectives.jsonl (rank 0)"""
+    out = {}
+    path = os.path.join(HERE, "collectives.jsonl")
+    if os.path.exists(path):
+        for line in open(path):
+            r = json.loads(line)
+            if r.get("kind") == "collective_count":
+                per = r["allreduce_per_decode_step"]
+                out[os.path.basename(r["model"])] = per[sorted(per)[0]]
+    return out
+
+
 def load():
     ar = [json.loads(l) for l in open(os.path.join(HERE, "results.jsonl"))
           if '"allreduce"' in l]
@@ -86,10 +99,19 @@ def rows():
         key, model, hidden, layers, c1, c2 = m[:6]
         d1 = m[6] if len(m) > 6 else SITTING
         r = at(ar, hidden)
-        n_coll = 2 * layers
+        # 2026-09-03: counted, not assumed. count_collectives.py differenced two
+        # requests on the 8B at TP=2 with RCCL logging every call (eager, so
+        # nothing hides in a graph): 73 per forward pass on each rank, every
+        # one a hidden-sized bf16 all-reduce on one communicator -- two per
+        # decoder layer and one more, which is VocabParallelEmbedding.forward's
+        # all-reduce of the sharded embedding (vllm 0.23,
+        # vocab_parallel_embedding.py:496). The +1 is that layer's code, so it
+        # applies to every model here; only the 8B's 73 is a measurement.
+        n_coll = 2 * layers + 1
         t1, t2 = step_ms(dec, model, c1, date=d1), step_ms(dec, model, c2)
         d = {"key": key, "model": model, "hidden": hidden, "layers": layers,
              "collectives_per_step": n_coll,
+             "collectives_measured": _counted().get(model),
              "us_graph": r["t_graph_us"], "us_stream": r["t_stream_us"],
              "us_sync_median": r["t_sync_us_median"],
              "ms_per_step_graph": n_coll * r["t_graph_us"] / 1000.0,

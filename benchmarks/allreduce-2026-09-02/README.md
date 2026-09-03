@@ -90,11 +90,11 @@ a reading. So the collective is not merely a launch.
 
 | model | hidden | layers | collectives/step | ms/step | measured TP=2 step | share |
 |---|--:|--:|--:|--:|--:|--:|
-| Qwen3-8B | 4096 | 36 | 72 | 1.20 | 12.58 ms | 9.5% |
-| gemma-4-12B | 3840 | 48 | 96 | 1.83 | 16.70 ms | 11.0% |
-| gemma-4-26B-A4B | 2816 | 30 | 60 | 1.29 | 9.29 ms | 13.9% |
-| gemma-4-31B | 5376 | 60 | 120 | 2.30 | 23.34 ms | 9.9% |
-| Qwen3.8-27B | 5120 | 64 | 128 | 2.46 | 81.27 ms | 3.0% |
+| Qwen3-8B | 4096 | 36 | 73 | 1.22 | 12.58 ms | 9.7% |
+| gemma-4-12B | 3840 | 48 | 97 | 1.85 | 16.70 ms | 11.1% |
+| gemma-4-26B-A4B | 2816 | 30 | 61 | 1.31 | 9.29 ms | 14.1% |
+| gemma-4-31B | 5376 | 60 | 121 | 2.32 | 23.34 ms | 10.0% |
+| Qwen3.8-27B | 5120 | 64 | 129 | 2.48 | 81.27 ms | 3.0% |
 
 Layer counts and hidden sizes are read from each checkpoint's `config.json` on
 this box, not remembered. The withdrawn claim's "36 layers × 2 all-reduces = 72
@@ -107,8 +107,8 @@ step in both cases:
 
 | | all-reduce per step | share of step | what the second card buys at decode |
 |---|--:|--:|--:|
-| Qwen3-8B | 1.20 ms | 9.5% | **1.70×** |
-| gemma-4-12B | 1.83 ms | 11.0% | **1.18×** |
+| Qwen3-8B | 1.22 ms | 9.7% | **1.70×** |
+| gemma-4-12B | 1.85 ms | 11.1% | **1.18×** |
 
 Whatever holds the 12B to 1.18×, it is not the wire. If a fixed all-reduce
 were eating most of what a second card contributes, the 8B — which pays the
@@ -120,13 +120,13 @@ The subtraction says the same thing with an assumption attached. Take
 
 | model | TP=1 | TP=2 | predicted TP=2 | residual | all-reduce's share of the shortfall |
 |---|--:|--:|--:|--:|--:|
-| Qwen3-8B | 21.42 ms | 12.58 ms | 11.91 ms | +0.68 ms | 63.9% |
-| gemma-4-12B | 19.78 ms | 16.70 ms | 11.72 ms | +4.97 ms | 26.9% |
+| Qwen3-8B | 21.42 ms | 12.58 ms | 11.91 ms | +0.66 ms | 64.8% |
+| gemma-4-12B | 19.78 ms | 16.70 ms | 11.72 ms | +4.96 ms | 27.2% |
 
 For the 8B the measured collective plus perfect halving lands within 5.4% of
 the measured step, and the collective is most of the small shortfall. For the
-12B the same subtraction leaves 4.97 ms — a third of its step — that neither
-the collective nor perfect halving accounts for. **What that 4.97 ms is, this
+12B the same subtraction leaves 4.96 ms — a third of its step — that neither
+the collective nor perfect halving accounts for. **What that 4.96 ms is, this
 campaign does not say.** It is a residual, not an explanation, and the
 "halves perfectly" premise is itself doing work in it.
 
@@ -136,7 +136,7 @@ campaign does not say.** It is a residual, not an explanation, and the
 > at **90% memory-controller busy** and the 12B's at **56%**. The bytes do halve
 > under TP=2 — 90 → 77% and 56 → 35% — but only a step that was *waiting* on
 > them gets faster when they arrive sooner. The 8B was waiting, which is why its
-> subtraction lands within 5.4%. The 12B was not, so its 4.97 ms is not a
+> subtraction lands within 5.4%. The 12B was not, so its 4.96 ms is not a
 > missing cost: it is this null model being wrong for a model whose memory
 > controller is half idle. The power cap was the other candidate and is also
 > out — both TP=1 arms sit at 51.4–52.2% of 265 W at every depth.
@@ -155,17 +155,30 @@ measured, which is what a `NCCL_P2P_DISABLE=1` path predicts — with P2P off th
 route is device → host → device, so every byte crosses the link twice. That
 consistency is worth noting; it is not itself a measurement of the route.
 
-## What is still assumed
+## Counted, on 2026-09-03: 73 per forward pass, not 72
 
-**Two collectives per decoder layer.** Every per-step figure above multiplies by
-`2 × layers`, on the standard reading that each layer reduces once after
-attention's `o_proj` and once after the MLP's `down_proj`, both
-`RowParallelLinear`. That is architecture, not something this campaign
-measured, and it has not been counted on this stack.
+Every per-step figure above used to multiply by `2 × layers` on the standard
+reading that each decoder layer reduces once after attention's `o_proj` and
+once after the MLP's `down_proj`. `count_collectives.py` counted instead:
+Qwen3-8B at TP=2, `--enforce-eager` so nothing hides in a captured graph, RCCL
+logging every collective (`NCCL_DEBUG_SUBSYS=COLL`, one file per rank), and two
+requests of the same prompt with `max_tokens` 8 and 40 differenced so prefill
+and warm-up cancel. Rank 0 logged 584 then 2 920 AllReduce lines, rank 1 the
+same — **73 per forward pass**, 32 passes apart, on both ranks. Every one of the
+2 920 is a `count 4096`, bf16 all-reduce on one communicator: hidden-sized,
+the same shape 73 times. Two per layer is 72; the seventy-third is the
+vocab-parallel embedding's all-reduce of its sharded output
+(`vocab_parallel_embedding.py:496` in this container's vLLM), which every
+model here pays once per pass. `derive.py` now multiplies by `2 × layers + 1`,
+which moved the 8B's per-step figure from 1.20 to 1.22 ms and every other row
+by the same one part in seventy; only the 8B's 73 is a measurement, the other
+four are that layer's code applied to their layer counts. The run took 79 s
+and its files are in `count/`.
 
 **Isolated cost equals in-step cost.** A collective inside a captured decode
 graph sits between real kernels; this one sits between other collectives. Graph
-replay removes the host-side difference, but not any device-side one.
+replay removes the host-side difference, but not any device-side one. This is
+still assumed.
 
 ## Files
 
@@ -178,6 +191,10 @@ replay removes the host-side difference, but not any device-side one.
     host_link.json          preflight, both root ports, before the run
     logs/ar.out             the sweep's console output
     logs/pcie.out           the probe's
+    count_collectives.py    the count: two requests differenced, RCCL logging every call
+    run_count.sh            what ran it on the box, and restored the two GPU services after
+    collectives.jsonl       the result row: 73.0 per forward pass on each rank
+    count/                  both ranks' RCCL logs (gzipped), the serve script and log, PROGRESS.txt
 
 The run took 7.5 s of measurement. Telemetry over it: both cards at 2 914–2 948
 MHz against a 2 942 MHz cap, 123–125 W against a 265 W cap, 30–31 °C. Nothing

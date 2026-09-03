@@ -100,7 +100,7 @@ A100 领先，幅度取决于模型，并且随深度收窄。L4 则根本没有
 <p>batch 1 下一步解码既带宽受限又很短：把权重切开让每张卡少读一半字节，收益全在这里，
 而此后每一步都以一次 all-reduce 收尾，这笔开销不随切分变小。这一页原先由此断定：
 第二张卡在带宽上贡献的，大半花在了线上。<strong>量过之后，线上的那部分约是一步的九分之一</strong>
-——12B 上是 16.70 里的 1.83&nbsp;ms——而同一台机器上另一个模型付着同样的集合通信、
+——12B 上是 16.70 里的 1.85&nbsp;ms——而同一台机器上另一个模型付着同样的集合通信、
 第二张卡却值 1.70×。所以这笔开销是真的，但它不是上限；见第 9 节。</p>
 
 <p><strong>prefill 是相反的情形，而且是同样两张卡。</strong>对提示做 attention
@@ -333,18 +333,18 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
 <code>cudagraph_mode FULL_AND_PIECEWISE</code> 和
 <code>Capturing CUDA graphs (decode, FULL)</code>——这对卡上 batch 1 形状的一次 all-reduce 是
 <strong>16.6 到 21.5&#8239;µs</strong>。乘上 <code>2&nbsp;×&nbsp;层数</code>，对 12B 就是
-<strong>一步 16.70&nbsp;ms 里的 1.83&nbsp;ms</strong>，约九分之一。</p>
+<strong>一步 16.70&nbsp;ms 里的 1.85&nbsp;ms</strong>，约九分之一。</p>
 
 <p>而且同一台机器上，<code>Qwen3-8B</code> 的第二张卡在解码上值 <strong>1.70×</strong>，
 12B 只值 <strong>1.185×</strong>，两者每步的集合通信开销相差不到 0.6&nbsp;ms。
 如果一次固定的 all-reduce 真吃掉了第二张卡贡献的大半，8B 不可能拿到 1.70×。
 <strong>拖住 12B 的不是那根线。</strong>
-减去「完美对半」和量到的集合通信，12B 还剩 4.97&nbsp;ms 无法解释，8B 只剩 0.68&nbsp;ms。
+减去「完美对半」和量到的集合通信，12B 还剩 4.96&nbsp;ms 无法解释，8B 只剩 0.66&nbsp;ms。
 <em>（2026-09-02 有了答案，而且问题出在前提上。）</em>那道减法假定每一步都在等字节；单卡上 8B 让内存控制器
 <strong>90&nbsp;%</strong> 的时间在忙，12B 只有 <strong>56&nbsp;%</strong>，五个格子里第二张卡的收益跟着这个计数器走、
 不跟着行里的任何别的东西走
 （<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>）。
-12B 的 4.97&nbsp;ms 不是一笔丢失的开销，而是零模型对一个内存控制器半闲着的模型算错了。
+12B 的 4.96&nbsp;ms 不是一笔丢失的开销，而是零模型对一个内存控制器半闲着的模型算错了。
 同一个计数器此后又给四种租用 NVIDIA 配置上更快的显存、第二张卡和更慢的卡排了序，那是
 <a href="mem-busy-orders-five-settings.zh.html">另一篇文章</a>。</p>
 

@@ -822,7 +822,7 @@ fit returns a fixed cost below zero. `b` and `c` reproduce to a few percent;
 `a` and the peak position do not
 ([details](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)).
 **The collective has since been timed** — 16.6–21.5 µs at the batch-1 shape,
-1.20 ms across the 8B's 72 of them, so the withdrawn 1.05 ms *each* was 49 to
+1.22 ms across the 8B's 73 of them, so the withdrawn 1.05 ms *each* was 49 to
 63 times the measurement
 ([`benchmarks/allreduce-2026-09-02/`](benchmarks/allreduce-2026-09-02/)).
 **The crossover is still unmeasured**, and the reading offered for it here

@@ -1099,7 +1099,7 @@ tokens before falling to 1.13× at 32 K.</p>
 each card reads, which is the whole gain, and every step then ends in an all-reduce whose cost does
 not shrink with the split. This page used to conclude that what the second card contributes in
 bandwidth it largely spends on the wire. <strong>Timed, the wire is about a ninth of the step</strong>
-— 1.83&nbsp;ms of 16.70 on the 12B — and a model on this same box gets 1.70× from its second card
+— 1.85&nbsp;ms of 16.70 on the 12B — and a model on this same box gets 1.70× from its second card
 while paying the same collective. So the collective is real and it is not the limit; see section 9.</p>
 
 <p><strong>Prefill is the opposite case, and it is the same two cards.</strong> Attention over a
@@ -1347,7 +1347,7 @@ all-reduce had been timed to check it. One has been now, and it does not support
 HIP-graph replay — the mode a decode step actually runs in, which the serve logs record as
 <code>cudagraph_mode FULL_AND_PIECEWISE</code> and <code>Capturing CUDA graphs (decode, FULL)</code>
 — one all-reduce at the batch-1 shape costs <strong>16.6 to 21.5&#8239;µs</strong> on this pair. Over
-<code>2&nbsp;×&nbsp;layers</code> collectives that is <strong>1.83&nbsp;ms of the 12B's 16.70&nbsp;ms
+<code>2&nbsp;×&nbsp;layers&nbsp;+&nbsp;1</code> collectives (counted on 2026-09-03: two per layer and the embedding's one) that is <strong>1.85&nbsp;ms of the 12B's 16.70&nbsp;ms
 step</strong>, about a ninth of it.</p>
 
 <p>And the same box gives <code>Qwen3-8B</code> <strong>1.70×</strong> from its second card at decode
@@ -1355,12 +1355,12 @@ while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0
 other per step. If a fixed all-reduce were eating most of what the second card contributes, the 8B
 could not be getting 1.70×. <strong>What holds the 12B back is not the wire.</strong> Subtracting
 perfect halving and the measured collectives leaves
-4.97&nbsp;ms of its step unexplained; the same subtraction on the 8B
-leaves 0.68&nbsp;ms. <em>(Answered 2026-09-02, and the premise was the problem.)</em> The subtraction assumed a step that was waiting on bytes; on one card the 8B keeps
+4.96&nbsp;ms of its step unexplained; the same subtraction on the 8B
+leaves 0.66&nbsp;ms. <em>(Answered 2026-09-02, and the premise was the problem.)</em> The subtraction assumed a step that was waiting on bytes; on one card the 8B keeps
 the memory controller <strong>90&nbsp;%</strong> busy and the 12B <strong>56&nbsp;%</strong>, and
 across five cells the second card's gain follows that counter and nothing else in the row
 (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
-The 12B's 4.97&nbsp;ms is not a cost gone missing; it is the null model being wrong for a model whose
+The 12B's 4.96&nbsp;ms is not a cost gone missing; it is the null model being wrong for a model whose
 memory controller is half idle. The same counter has since ordered the worth of faster memory, a
 second card and a slower card on four rented NVIDIA configurations, which is
 <a href="mem-busy-orders-five-settings.html">its own article</a>.</p>

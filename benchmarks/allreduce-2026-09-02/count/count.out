@@ -1,0 +1,45 @@
+max_tokens=8 got=8 allreduce lines={'rccl.93d44e04eee6.94': 584, 'rccl.93d44e04eee6.95': 584}
+max_tokens=40 got=40 allreduce lines={'rccl.93d44e04eee6.94': 2920, 'rccl.93d44e04eee6.95': 2920}
+{
+ "kind": "collective_count",
+ "ts": 1788469355.0,
+ "model": "/models/Qwen3-8B",
+ "machine": "RX 7900 XT",
+ "requests": [
+  {
+   "max_tokens": 8,
+   "completion_tokens": 8,
+   "delta": {
+    "rccl.93d44e04eee6.94": 584,
+    "rccl.93d44e04eee6.95": 584
+   }
+  },
+  {
+   "max_tokens": 40,
+   "completion_tokens": 40,
+   "delta": {
+    "rccl.93d44e04eee6.94": 2920,
+    "rccl.93d44e04eee6.95": 2920
+   }
+  }
+ ],
+ "delta_tokens": 32,
+ "allreduce_per_decode_step": {
+  "rccl.93d44e04eee6.94": 73.0,
+  "rccl.93d44e04eee6.95": 73.0
+ },
+ "logs_seen": [
+  "rccl.93d44e04eee6.94",
+  "rccl.93d44e04eee6.95"
+ ]
+}
+total 1604
+drwxrwxr-x 2 ubuntu ubuntu   4096 Sep  3 21:01 .
+drwxr-xr-x 3 ubuntu ubuntu   4096 Sep  3 21:02 ..
+-rw-rw-r-- 1 ubuntu ubuntu    434 Sep  3 21:02 PROGRESS.txt
+-rw-rw-r-- 1 ubuntu ubuntu    794 Sep  3 21:02 count.out
+-rw-r--r-- 1 root   root   798642 Sep  3 21:02 rccl.93d44e04eee6.94
+-rw-r--r-- 1 root   root   798250 Sep  3 21:02 rccl.93d44e04eee6.95
+-rw-rw-r-- 1 ubuntu ubuntu   1228 Sep  3 21:02 run.log
+-rw-rw-r-- 1 ubuntu ubuntu    374 Sep  3 21:01 serve-count.sh
+-rw-r--r-- 1 root   root    17811 Sep  3 21:02 serve.log

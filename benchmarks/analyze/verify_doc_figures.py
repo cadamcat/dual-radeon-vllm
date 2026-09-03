@@ -3061,10 +3061,13 @@ def main():
         os.unlink(_pyc)
     import derive as _drv                                  # noqa: E402
     _dv = {d["key"]: d for d in _drv.rows()}
-    for _k, _l, _ms, _pc in (("8B", 36, "1.20", "9.5"), ("12B", 48, "1.83", "11.0"),
-                             ("26B-A4B", 30, "1.29", "13.9"),
-                             ("31B", 60, "2.30", "9.9"), ("27B", 64, "2.46", "3.0")):
+    # 2026-09-03: counted. 73 per forward pass on the 8B, two per layer and the
+    # embedding's one, so every per-step figure here is 2 x layers + 1
+    for _k, _l, _ms, _pc in (("8B", 36, "1.22", "9.7"), ("12B", 48, "1.85", "11.1"),
+                             ("26B-A4B", 30, "1.31", "14.1"),
+                             ("31B", 60, "2.32", "10.0"), ("27B", 64, "2.48", "3.0")):
         ck("allreduce, %s layers" % _k, str(_l), _dv[_k]["layers"])
+        ck("allreduce, %s collectives per step" % _k, str(2 * _l + 1), _dv[_k]["collectives_per_step"])
         ck("allreduce, %s ms per step" % _k, _ms, _dv[_k]["ms_per_step_graph"])
         ck("allreduce, %s share of its step pct" % _k, _pc,
            _dv[_k]["ar_pct_of_tp2_step"])
@@ -3073,12 +3076,12 @@ def main():
     # not be both.
     ck("allreduce, 8B second-card speedup", "1.70", _dv["8B"]["speedup"])
     ck("allreduce, 12B second-card speedup", "1.185", _dv["12B"]["speedup"])
-    ck("allreduce, 8B residual ms after perfect halving", "0.68",
+    ck("allreduce, 8B residual ms after perfect halving", "0.66",
        _dv["8B"]["residual_ms"])
-    ck("allreduce, 12B residual ms after perfect halving", "4.97",
+    ck("allreduce, 12B residual ms after perfect halving", "4.96",
        _dv["12B"]["residual_ms"])
     ck("allreduce, and the collective is this share of the 12B shortfall",
-       "26.9", _dv["12B"]["ar_share_of_gap_pct"])
+       "27.2", _dv["12B"]["ar_share_of_gap_pct"])
     # ...and the sentences that publish them. Recomputing the data and never
     # reading the prose is how three of these gates passed on 2026-08-30 while
     # the prose said something else.
@@ -3220,6 +3223,52 @@ def main():
        1 if "1050 us" in _artf and "49 to 63 times" in _artf else 0)
     ck("allreduce README, names the loaded library and its hostcall count", "1",
        1 if "RCCL version 2.27.7" in _artf and "hidden_hostcall_buffer 0" in _artf else 0)
+    # the arithmetic table, row by row: hidden, layers, collectives per step, ms per
+    # step, the measured TP=2 step and the share -- against derive.py, which is
+    # where every one of those numbers comes from. It had no gate until the
+    # 2026-09-03 break test changed a cell and nothing noticed.
+    for _name, _key in (("Qwen3-8B", "8B"), ("gemma-4-12B", "12B"), ("gemma-4-26B-A4B", "26B-A4B"),
+                        ("gemma-4-31B", "31B"), ("Qwen3.8-27B", "27B")):
+        _m = re.search(r"^\| " + re.escape(_name) + r" \| (\d+) \| (\d+) \| (\d+) \| ([\d.]+) \| ([\d.]+) ms \| ([\d.]+)% \|$", _art, re.M)
+        ck("allreduce README, arithmetic row for %s exists" % _name, "1", 1 if _m else 0)
+        if _m:
+            ck("allreduce README, %s arithmetic row hidden" % _name, _m.group(1), _dv[_key]["hidden"])
+            ck("allreduce README, %s arithmetic row layers" % _name, _m.group(2), _dv[_key]["layers"])
+            ck("allreduce README, %s arithmetic row collectives" % _name, _m.group(3), _dv[_key]["collectives_per_step"])
+            ck("allreduce README, %s arithmetic row ms per step" % _name, _m.group(4), _dv[_key]["ms_per_step_graph"])
+            ck("allreduce README, %s arithmetic row measured step" % _name, _m.group(5), _dv[_key]["tp2_ms"])
+            ck("allreduce README, %s arithmetic row share" % _name, _m.group(6), _dv[_key]["ar_pct_of_tp2_step"])
+    # --- the count, 2026-09-03: collectives.jsonl, both ranks' logs, and the README's account
+    _cc = [json.loads(l) for l in open(os.path.join(_ARD, "collectives.jsonl"), encoding="utf-8") if l.strip()]
+    ck("collective count, one result row", "1", len(_cc))
+    if _cc:
+        _c0 = _cc[0]
+        ck("collective count, two ranks logged", "2", len(_c0["logs_seen"]))
+        ck("collective count, per forward pass on each rank", "2",
+           sum(1 for f, n in _c0["allreduce_per_decode_step"].items() if abs(n - 73.0) < 1e-9))
+        ck("collective count, and that is 2 x layers + 1 for the 8B", "73", 2 * _dv["8B"]["layers"] + 1)
+        ck("collective count, thirty-two passes apart", "32", _c0["delta_tokens"])
+        ck("collective count, the requests ran their full length", "2",
+           sum(1 for r in _c0["requests"] if r["completion_tokens"] == r["max_tokens"]))
+        ck("collective count, and the deltas divide exactly", "0",
+           sum(1 for r in _c0["requests"] for n in r["delta"].values() if n % 73))
+        ck("collective count, derive.py carries it for the 8B", "73", _dv["8B"]["collectives_measured"])
+        # the logs themselves: every AllReduce in the 40-token window is hidden-sized bf16 on one communicator
+        import gzip as _gz
+        _cw = {}
+        for _f in sorted(glob.glob(os.path.join(_ARD, "count", "rccl.*.gz"))):
+            _ls = [l for l in _gz.open(_f, "rt", errors="ignore") if re.search(r"\bAllReduce\b", l)]
+            _last = _ls[-2920:]
+            _cw[os.path.basename(_f)] = (len(_ls), len({re.search(r"count (\d+) datatype (\d+)", l).groups() for l in _last}),
+                                         {re.search(r"count (\d+) datatype (\d+)", l).groups() for l in _last},
+                                         len({re.search(r"comm (0x[0-9a-f]+)", l).group(1) for l in _last}))
+        ck("collective count, both logs kept", "2", len(_cw))
+        ck("collective count, one shape in the differenced window on each rank", "2",
+           sum(1 for t in _cw.values() if t[1] == 1 and t[2] == {("4096", "9")}))
+        ck("collective count, and one communicator", "2", sum(1 for t in _cw.values() if t[3] == 1))
+        ck("collective count, the README says seventy-three and names the embedding", "1",
+           1 if "**73 per forward pass**" in _art and "vocab_parallel_embedding.py:496" in _art else 0)
+        ck("collective count, and the README no longer calls it assumed", "0", _art.count("## What is still assumed"))
     # the contrast table, cell by cell, out of the row it is published in --
     # not "does this number appear somewhere on the page", which passes on a
     # page that says it once and contradicts it twice
@@ -3237,8 +3286,8 @@ def main():
                _m.group(3), _dv[_key]["speedup"])
     ck("allreduce README, says the residual is not an explanation", "1",
        1 if "It is a residual, not an explanation" in _artf else 0)
-    ck("allreduce README, keeps the two-per-layer count as an assumption", "1",
-       1 if "Two collectives per decoder layer" in _artf else 0)
+    ck("allreduce README, records the per-layer count as counted, not assumed", "1",
+       1 if "## Counted, on 2026-09-03: 73 per forward pass, not 72" in _art else 0)
 
     # --- derived against measured bandwidth, 2026-09-02 -------------------
     # Every utilisation figure in this repository is derived: tok/s times the

@@ -1,0 +1,9 @@
+21:01:16 | stopping ollama llamacpp-hub
+21:01:16 | vllm-tp2 started
+21:01:16 | serve launched (eager, NCCL_DEBUG_SUBSYS=COLL, log file per rank)
+21:02:35 | count_collectives.py exit 0
+21:02:35 | stopping the server and the container
+21:02:50 | vllm-tp2 stopped
+21:02:50 | ollama llamacpp-hub started
+21:02:55 | /sys/class/drm/card1/device/mem_info_vram_used 27971584
+21:02:55 | /sys/class/drm/card2/device/mem_info_vram_used 27971584
