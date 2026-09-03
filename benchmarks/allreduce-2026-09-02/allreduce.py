@@ -113,17 +113,23 @@ def _nccl_version():
 
 
 def _loaded_rccl():
-    """The librccl actually mapped into this process, after a first collective.
+    """The collective library actually mapped in, after a first collective.
 
     Read from /proc/self/maps rather than from any version API, with the
     version string and the hostcall count taken out of the file itself -- the
     two facts that decide whether this is the deployment's patched build.
+
+    Matches `nccl` as well as `rccl` since 2026-09-03, so the same script runs
+    on a rented NVIDIA pair. RCCL is NCCL's ROCm build and answers the same
+    `ncclAllReduce`, so nothing else here is platform-specific; on CUDA the
+    hostcall count is simply 0, which is what that build has.
     """
     import subprocess
     out = {}
     try:
         paths = sorted({ln.split()[-1] for ln in open("/proc/self/maps")
-                        if "rccl" in ln.lower()} - {"(deleted)"})
+                        if "rccl" in ln.lower() or "nccl" in ln.lower()}
+                       - {"(deleted)"})
         out["mapped"] = paths
         for p in paths:
             real = os.path.realpath(p)
@@ -173,6 +179,7 @@ def main():
                 "world_size": world, "dtype": str(DTYPE),
                 "torch": torch.__version__,
                 "hip": getattr(torch.version, "hip", None),
+                "cuda": getattr(torch.version, "cuda", None),
                 "nccl_version_torch_reports": _nccl_version(),
                 "rccl_loaded": _loaded_rccl(),
                 "env": {k: os.environ.get(k) for k in

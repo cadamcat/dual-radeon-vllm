@@ -1942,7 +1942,7 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "20", len(_camps))
+    ck("campaigns, every results.jsonl found", "29", len(_camps))
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2620,6 +2620,171 @@ def main():
     ck("H100 README, and the crashed attempt is kept", "1",
        1 if os.path.exists(os.path.join(_H, "results-attempt1.jsonl")) else 0)
 
+    # --- the rented sweep, 2026-09-03 -------------------------------------
+    # cuda-modal/README.md is the document for seven machines measured in one
+    # night. Its tables are read out of the prose and recomputed here, so a
+    # ratio that moves in the data and not on the page fails rather than being
+    # noticed by whoever re-reads it next.
+    _MOD = os.path.join(_BR, "cuda-modal")
+    _rmo = open(os.path.join(_MOD, "README.md"), encoding="utf-8").read()
+
+    def _dec_of(paths):
+        _d = {}
+        for _p in paths:
+            for _l in open(os.path.join(_BR, _p), encoding="utf-8"):
+                _r = json.loads(_l)
+                if _r.get("kind") == "decode":
+                    _d.setdefault((_r["cfg"], _r["target"]), []).append(_r["decode_tps"])
+        return _d
+
+    _MH = _dec_of(["cuda-h100/campaign-2026-09-03/results.jsonl",
+                   "cuda-h100/campaign-2026-09-03/results-q38.jsonl",
+                   "cuda-h100/campaign-2026-09-03b/results.jsonl"])
+    _M2 = _dec_of(["cuda-h200/campaign-2026-09-03/results.jsonl"])
+    _MB = _dec_of(["cuda-b300/campaign-2026-09-03/results.jsonl"])
+    _MP = _dec_of(["cuda-pro6000/campaign-2026-09-03/results.jsonl"])
+    _MT = _dec_of(["cuda-h100/campaign-2026-09-03-tp2/results.jsonl"])
+    _md = lambda _d, _c, _t: sum(_d[(_c, _t)]) / len(_d[(_c, _t)])
+
+    # The five-setting mem_busy table, read OUT OF THE PAGE. An earlier version
+    # of these checks compared recomputed data against constants written here,
+    # which passes whatever the README says -- breaking four numbers in it on
+    # purpose moved only one gate. Every figure below is now pulled from the
+    # prose with a regex and the data is what it is checked against.
+    def _row(pat, n):
+        _m = re.search(pat, _rmo)
+        ck("modal sweep, README has the %s row" % pat[:22], "1", 1 if _m else 0)
+        return _m.groups() if _m else ("0",) * n
+
+    _g = _row(r"\| \*\*H200 / H100\*\*.*?\| \*\*([\d.]+)\u00d7\*\* \| \*\*([\d.]+)\u00d7\*\* \|", 2)
+    ck("modal sweep, H200/H100 B8", _g[0], _md(_M2, "B8", 500) / _md(_MH, "B8", 500))
+    ck("modal sweep, H200/H100 26B", _g[1], _md(_M2, "G26A4B", 500) / _md(_MH, "G26A4B", 500))
+    _g = _row(r"\| \*\*B300 / H100\*\* \| ([\d.]+)\u00d7 \| \*\*([\d.]+)\u00d7\*\* \|", 2)
+    ck("modal sweep, B300/H100 B8", _g[0], _md(_MB, "B8", 500) / _md(_MH, "B8", 500))
+    ck("modal sweep, B300/H100 26B", _g[1], _md(_MB, "G26A4B", 500) / _md(_MH, "G26A4B", 500))
+    _g = _row(r"\| \*\*RTX PRO 6000 / H100\*\* \(slower\) \| \*\*([\d.]+)\u00d7\*\* \| \*\*([\d.]+)\u00d7\*\* \|", 2)
+    ck("modal sweep, PRO6000/H100 B8", _g[0], _md(_MP, "B8", 500) / _md(_MH, "B8", 500))
+    ck("modal sweep, PRO6000/H100 26B", _g[1], _md(_MP, "G26A4B", 500) / _md(_MH, "G26A4B", 500))
+    _g = _row(r"\| \*\*second H100\*\*, NVLink \| ([\d.]+)\u00d7 \| \*\*([\d.]+)\u00d7\*\* \|", 2)
+    ck("modal sweep, second H100 B8", _g[0], _md(_MT, "B8", 500) / _md(_MH, "B8", 500))
+    ck("modal sweep, second H100 26B", _g[1], _md(_MT, "G26A4B", 500) / _md(_MH, "G26A4B", 500))
+    # the B300 table lower down states the same three as absolute rates
+    _g = _row(r"\| B300 / H100 \| ([\d.]+)\u00d7 \| ([\d.]+)\u00d7 \| \*\*([\d.]+)\u00d7\*\* \|", 3)
+    for _i, _c in enumerate(("B8", "G12", "G26A4B")):
+        ck("modal sweep, B300 table %s" % _c, _g[_i],
+           _md(_MB, _c, 500) / _md(_MH, _c, 500))
+
+    # the PRO 6000 within-machine backend split, and the H100 depth table
+    for _c, _name in (("G12", "gemma-4-12B"), ("G26A4B", "gemma-4-26B-A4B"),
+                      ("G31", "gemma-4-31B"), ("Q38", "Qwen3.8-27B"),
+                      ("MG30", "Muse-Glimmer-30B")):
+        _m = re.search(r"\| %s \| (?:TRITON_ATTN|FLASH_ATTN) \| \*?\*?\u2212([\d.]+) %%"
+                       % re.escape(_name), _rmo)
+        ck("modal sweep, PRO6000 row for %s" % _c, "1", 1 if _m else 0)
+        if _m:
+            ck("modal sweep, PRO6000 500->128k %s" % _c, "-" + _m.group(1),
+               100 * (_md(_MP, _c, 128000) / _md(_MP, _c, 500) - 1))
+    for _c, _name in (("MG30", "Muse-Glimmer-30B"), ("G12", "gemma-4-12B"),
+                      ("G26A4B", "gemma-4-26B-A4B"), ("Q38", "Qwen3.8-27B"),
+                      ("G31", "gemma-4-31B")):
+        _m = re.search(r"\| %s \| \*?\*?\u2212([\d.]+) %%\*?\*? \| \*?\*?[a-zA-Z]"
+                       % re.escape(_name), _rmo)
+        ck("modal sweep, H100 depth row for %s" % _c, "1", 1 if _m else 0)
+        if _m:
+            ck("modal sweep, H100 500->128k %s" % _c, "-" + _m.group(1),
+               100 * (_md(_MH, _c, 128000) / _md(_MH, _c, 500) - 1))
+    # the ordering claim the whole section rests on
+    _mem = {"B8": 87, "G31": 67, "Q38": 65, "G12": 53, "MG30": 51, "G26A4B": 38}
+    _h200 = {_c: _md(_M2, _c, 500) / _md(_MH, _c, 500) for _c in _mem if (_c, 500) in _M2}
+    ck("modal sweep, mem_busy orders the H200 ends", "1",
+       1 if max(_h200, key=lambda k: _h200[k]) == "B8"
+       and min(_h200, key=lambda k: _h200[k]) == "G26A4B" else 0)
+    ck("modal sweep, and the second H100's", "1",
+       1 if max(_mem, key=lambda k: _md(_MT, k, 500) / _md(_MH, k, 500)
+                if (k, 500) in _MT else -1) == "B8" else 0)
+
+    # the collective, both ends
+    _AR = os.path.join(_BR, "allreduce-2026-09-03")
+
+    def _ar(_f, _n):
+        for _l in open(os.path.join(_AR, _f), encoding="utf-8"):
+            _r = json.loads(_l)
+            if _r.get("kind") == "allreduce" and _r["hidden"] == 4096 and _r["ntok"] == _n:
+                return _r["t_graph_us"]
+
+    for _f, _lab in (("H100-80GB-HBM3-x2-results.jsonl", r"H100 \u00d72, NVLink"),
+                     ("H100-80GB-HBM3-x4-results.jsonl", r"H100 \u00d74, NVLink"),
+                     ("B300-SXM6-x2-results.jsonl", r"B300 \u00d72"),
+                     ("A100-SXM4-80GB-x2-results.jsonl", r"A100 \u00d72"),
+                     ("RTX-PRO-6000-Blackwell-x2-results.jsonl",
+                      r"RTX PRO 6000 \u00d72, \*\*no NVLink\*\*"),
+                     ("RTX-PRO-6000-Blackwell-x4-results.jsonl",
+                      r"RTX PRO 6000 \u00d74, \*\*no NVLink\*\*")):
+        _m = re.search(r"\| %s \| \*?\*?([\d.]+)\*?\*? \| \*?\*?([\d ]+)\*?\*? \|" % _lab, _rmo)
+        ck("modal collective, README row for %s" % _f[:14], "1", 1 if _m else 0)
+        if _m:
+            ck("modal collective, %s n=1" % _f[:14], _m.group(1), _ar(_f, 1))
+            ck("modal collective, %s n=16384" % _f[:14],
+               _m.group(2).replace(" ", ""), _ar(_f, 16384))
+    # the claim the section is named for: 62x of bandwidth range, 1.8x of latency
+    _n1 = [_ar(_f, 1) for _f in os.listdir(_AR) if _f.endswith("-results.jsonl")]
+    _nB = [_ar(_f, 16384) for _f in os.listdir(_AR) if _f.endswith("-results.jsonl")]
+    _rad = [json.loads(_l) for _l in open(os.path.join(_BR, "allreduce-2026-09-02",
+                                                       "results.jsonl"), encoding="utf-8")]
+    _rad = [_r for _r in _rad if _r.get("kind") == "allreduce" and _r["hidden"] == 4096]
+    _r1 = next(_r["t_graph_us"] for _r in _rad if _r["ntok"] == 1)
+    _rB = next(_r["t_graph_us"] for _r in _rad if _r["ntok"] == 16384)
+    ck("modal collective, bandwidth range across the hardware", "62",
+       max(_nB + [_rB]) / min(_nB + [_rB]), 0.01)
+    ck("modal collective, latency range", "3.2",
+       max(_n1 + [_r1]) / min(_n1 + [_r1]), 0.02)
+    # and the pairs-only figure the prose also states, which is what the first
+    # version of this sentence quoted for the whole set
+    _p1 = [_ar(_f, 1) for _f in os.listdir(_AR)
+           if _f.endswith("-results.jsonl") and "-x2-" in _f]
+    ck("modal collective, latency range, pairs only", "1.5",
+       max(_p1 + [_r1]) / min(_p1 + [_r1]), 0.02)
+    ck("modal collective, README says all three", "1",
+       1 if "bandwidth end spans 62" in _rmo and "latency end spans 3.2" in _rmo
+       and "spans\n**1.5\u00d7** against" in _rmo else 0)
+    # the fourth card, by interconnect
+    for _pre, _suf, _c1, _c2 in (("H100-80GB-HBM3", "1.22", "1.30", ""),
+                                 ("RTX-PRO-6000-Blackwell", "2.71", "2.99", "")):
+        _x2 = f"{_pre}-x2-results.jsonl"
+        _x4 = f"{_pre}-x4-results.jsonl"
+        ck("modal collective, %s fourth card decode" % _pre[:8], _suf,
+           _ar(_x4, 1) / _ar(_x2, 1))
+        ck("modal collective, %s fourth card bandwidth" % _pre[:8], _c1,
+           _ar(_x4, 16384) / _ar(_x2, 16384))
+    # the platform controls, which is what lets the ratios be read at all
+    _AC = _dec_of(["cuda-a100/campaign-2026-09-03/results.jsonl"])
+    _colab = {}
+    for _r in _RTD:
+        if (_r["machine"] == "A100-SXM4-80GB" and _r["cfg"] == "G12"
+                and _r["date"] == "2026-08-30"):
+            _colab[_r["ctx"]] = _r["decode_tok_s"]
+    for _t in (500, 8000, 16000, 32000):
+        ck("modal control, A100 G12 at %d" % _t,
+           "%.2f" % _colab[_t], _md(_AC, "G12", _t), 0.001)
+    # the four deltas, read out of the row rather than looked for as a string:
+    # "0.07 %" also appears in the sentence under the table, so a substring
+    # test passes with the table itself broken -- which it did, on purpose.
+    _m = re.search(r"\| Modal against Colab 08-30 \| ([+\u2212-][\d.]+) %"
+                   r" \| ([+\u2212-][\d.]+) %"
+                   r" \| ([+\u2212-][\d.]+) %"
+                   r" \| ([+\u2212-][\d.]+) % \|", _rmo)
+    ck("modal control, README has the delta row", "1", 1 if _m else 0)
+    if _m:
+        for _i, _t in enumerate((500, 8000, 16000, 32000)):
+            _said = _m.group(_i + 1).replace("\u2212", "-").lstrip("+")
+            ck("modal control, delta at %d" % _t, _said,
+               100 * (_md(_AC, "G12", _t) / _colab[_t] - 1))
+        _worst = max(abs(float(_m.group(_i + 1).replace("\u2212", "-")))
+                     for _i in range(4))
+        ck("modal control, and the sentence quotes the worst of them",
+           "%.2f" % _worst,
+           float(re.search(r"Four rungs inside \*\*([\d.]+) %\*\*", _rmo).group(1)))
+
     # --- the attention backend is not the axis, 2026-09-02 ----------------
     # gfx1100-greedy-nondeterminism.json's `reading` blamed ROCM_ATTN, on a set
     # in which the attention backend is confounded with the W4A16 quantisation
@@ -3140,21 +3305,21 @@ def main():
     # vLLM routed to FLASH_ATTN by its own default rather than being forced --
     # the A100 forces gemma-4 onto Triton "FA4 not available" and this machine
     # does not, which is why `default` moves by the whole 118.
-    ck("route column, rows carrying one", "636", len(_rt))
+    ck("route column, rows carrying one", "1658", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
     ck("route column, chosen by override", "156", _dec.get("override", 0))
-    ck("route column, forced", "252", _dec.get("forced", 0))
-    ck("route column, left to the default", "228", _dec.get("default", 0))
+    ck("route column, forced", "498", _dec.get("forced", 0))
+    ck("route column, left to the default", "1004", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
     for _r in _rt:
         if _r["route"]["decision"] == "forced":
             _w = _r["route"]["forced_reason"]
             _why[_w] = _why.get(_w, 0) + 1
-    ck("route column, forced for want of FA4", "160",
+    ck("route column, forced for want of FA4", "406",
        _why.get("FA4 not available", 0))
     ck("route column, forced to keep one backend", "92",
        _why.get("prevent mixed-backend numerical divergence", 0))
@@ -3170,7 +3335,10 @@ def main():
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
-    ck("route column, distinct quantisation kernels", "3", len(_qk))
+    # four since 2026-09-03: Muse-Glimmer lands on MacheteLinearKernel on the
+    # two Hoppers and on Marlin everywhere else, which is the only kernel
+    # difference in the rented sweep and travels on the rows that carry it.
+    ck("route column, distinct quantisation kernels", "4", len(_qk))
     ck("route column, and two of them are RDNA's", "2",
        sum(1 for k in _qk if k.startswith("RDNA")))
     _rdna = {}
@@ -6589,28 +6757,33 @@ def main():
     # the section is about. The ninth also runs four times further than any
     # other, so its end-to-end number answers a different question from the
     # other eight's -- hence the split below rather than one tally of nine.
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "9", len(_lad))
-    _short = [x for k, x in zip(sorted(_hy), _lad)]     # order-stable with _lad
-    _h100 = [(k, v) for k, v in zip(sorted(_hy), _lad) if k[1] == "H100-80GB-HBM3"]
-    ck("hybrid section 6, exactly one of them is the H100 arm", "1", len(_h100))
-    _eight = [v for k, v in zip(sorted(_hy), _lad) if k[1] != "H100-80GB-HBM3"]
-    ck("hybrid section 6, the eight that stop at 32000 or below", "8", len(_eight))
-    ck("hybrid section 6, and only one of them rises by more than 1 pct", "1",
-       sum(1 for x in _eight if x > 1))
-    ck("hybrid section 6, one more is flat inside 1 pct", "1",
-       sum(1 for x in _eight if 0 < x <= 1))
-    ck("hybrid section 6, the other six fall", "6", sum(1 for x in _eight if x < 0))
-    # the ninth, on the two rungs the prose actually quotes
-    _h = sorted([r for r in XPF if r["cfg"] == "Q38"
-                 and r["machine"] == "H100-80GB-HBM3" and r["chart_grade"]],
-                key=lambda r: r["ctx"])
-    _h0 = next(r for r in _h if r["ctx"] == 500)
-    ck("hybrid section 6, the ninth rises this far by 32000", "19.4",
-       (next(r for r in _h if r["ctx"] == 32000)["prefill_tok_s"]
-        / _h0["prefill_tok_s"] - 1) * 100)
-    ck("hybrid section 6, and is back to this by 128000", "1.3",
-       (next(r for r in _h if r["ctx"] == 128000)["prefill_tok_s"]
-        / _h0["prefill_tok_s"] - 1) * 100)
+    # 2026-09-03 took this from nine ladders to sixteen: the same checkpoint
+    # measured on an H200, a B300, an RTX PRO 6000, two H100s and two PRO
+    # 6000s. The sentence no longer needs a special case for the one that runs
+    # furthest, because seven of the sixteen now rise and the spread across
+    # one checkpoint is 134 points.
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "16", len(_lad))
+    ck("hybrid section 6, rising by more than 1 pct", "7",
+       sum(1 for x in _lad if x > 1))
+    ck("hybrid section 6, flat inside 1 pct", "1",
+       sum(1 for x in _lad if 0 < x <= 1))
+    ck("hybrid section 6, and falling", "8", sum(1 for x in _lad if x < 0))
+    ck("hybrid section 6, the steepest fall", "-31.1", min(_lad), 0.01)
+    ck("hybrid section 6, and the steepest rise", "103.0", max(_lad), 0.01)
+    # the two ends are one checkpoint on two machines, which is the claim
+    _ends = {}
+    for _k, _rs in _hy.items():
+        _rs.sort(key=lambda r: r["ctx"])
+        if len(_rs) > 1:
+            _ends[_k] = (_rs[-1]["prefill_tok_s"] / _rs[0]["prefill_tok_s"] - 1) * 100
+    _lo = min(_ends, key=lambda k: _ends[k]); _hi = max(_ends, key=lambda k: _ends[k])
+    ck("hybrid section 6, the fall is the Radeon pair pinned to Triton", "1",
+       1 if _lo[1] == "RX 7900 XT" and "triton" in _lo[0] else 0)
+    ck("hybrid section 6, and the rise is two H100s", "1",
+       1 if _hi[1] == "H100-80GB-HBM3-x2" else 0)
+    ck("hybrid section 6, both are the same checkpoint", "1",
+       1 if XPF and len({r["model"] for r in XPF
+                         if (r["cfg"], r["machine"], r["date"]) in (_lo, _hi)}) == 1 else 0)
 
     def _pf(cfg, machine, date, lo=None):
         """The ladder's end-to-end change, optionally from a stated rung.
@@ -6677,14 +6850,15 @@ def main():
            1 if (fl("used to say that this checkpoint's prefill never rises") in _t
                  or fl("原来写的是这个 checkpoint 的预填充「从来没有上升过」") in _t)
            else 0)
-        ck("hybrid section 6 %s, quotes the ninth ladder's two figures" % _lang,
-           "2", sum(1 for _v in ("19.4 %", "1.3 %") if fl(_v) in _t))
-        ck("hybrid section 6 %s, and counts nine ladders, not eight" % _lang, "1",
+        ck("hybrid section 6 %s, quotes both ends of the spread" % _lang,
+           "2", sum(1 for _v in ("31.1 %", "103.0 %") if fl(_v) in _t))
+        ck("hybrid section 6 %s, and counts sixteen ladders" % _lang, "1",
+           1 if (fl("sixteen stock hybrid-SSM ladders") in _t
+                 or fl("十六条 stock hybrid-SSM 阶梯") in _t) else 0)
+        ck("hybrid section 6 %s, and no longer counts nine or eight" % _lang, "0",
            1 if (fl("nine stock hybrid-SSM ladders") in _t
-                 or fl("九条 stock hybrid-SSM 阶梯") in _t) else 0)
-        ck("hybrid section 6 %s, and no longer counts eight" % _lang, "0",
-           1 if (fl("eight\nstock hybrid-SSM ladders") in _t
                  or fl("eight stock hybrid-SSM ladders") in _t
+                 or fl("九条 stock hybrid-SSM 阶梯") in _t
                  or fl("八条 stock hybrid-SSM 阶梯") in _t) else 0)
     ck("hybrid fig5, from this rate", "802", _q36["shallow_tok_s"], 0.01)
     ck("hybrid fig5, to this one", "881", _q36["deep_tok_s"], 0.01)

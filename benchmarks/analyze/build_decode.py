@@ -93,6 +93,10 @@ def build():
         routed = routes_from_source(path)
         for (cfg, target), trips in sorted(by.items()):
             name, quant, arch, tp = meta_for(cfg)
+            # see build_prefill: the rented multi-card campaigns reuse the
+            # single-card configuration ids, so the source states the card
+            # count and the table cannot.
+            tp = s.get("tp", tp)
             spec, backend = arm_for(cfg)
             over = s.get("per_cfg", {}).get(cfg, {})
             vals, superseded = latest_session([(t, (d, pt)) for t, d, pt in trips])

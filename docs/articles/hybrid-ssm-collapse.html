@@ -1165,13 +1165,14 @@ prefill never rises. On an H100 it rises <strong>19.4 %</strong> across the same
 the <code>Qwen3.6</code> arm this section is about. The claim was written about a model and was only
 ever true of the machines the model had been run on.)</em> Meanwhile <code>gemma-4-26B-A4B</code>, a
 MoE with no linear-attention layer at all, rises further than <code>Qwen3.6</code> does, 23.8 % in
-July and 21.9 % in August. Of the nine stock hybrid-SSM ladders in
-<code>benchmarks/prefill.jsonl</code>, the eight that stop at 32 000 or below give one rise of 9.9 %,
-one flat <strong>+0.3 %</strong>, and six falls; the ninth runs four times further and rises
-<strong>19.4 %</strong> to 32 000 before coming back to <strong>+1.3 %</strong> of its 500-token rate
-by 128 000. One architecture, one checkpoint, both signs — which is the point: what a rising prefill
-curve indicates is that a short prompt's fixed cost outweighs the quadratic term on that arm — not
-that the model carries a recurrent state. The decode collapse this article is about is unaffected either way:
+July and 21.9 % in August. Of the sixteen stock hybrid-SSM ladders now in
+<code>benchmarks/prefill.jsonl</code> — one checkpoint family across seven machine configurations —
+<strong>seven rise by more than 1 %, one is flat, and eight fall</strong>. The same
+<code>Qwen3.8-27B</code> checkpoint runs from <strong>−31.1 %</strong> on two Radeons pinned to
+Triton to <strong>+103.0 %</strong> on two H100s. One architecture, one checkpoint, both signs and a
+range of 134 points — which is the point: what a rising prefill curve indicates is that a short
+prompt's fixed cost outweighs the quadratic term on that arm — not that the model carries a
+recurrent state. The decode collapse this article is about is unaffected either way:
 it is measured, not inferred from the same reasoning.</p>
 
 <h2><span class="n">7</span>The fix, measured twice</h2>

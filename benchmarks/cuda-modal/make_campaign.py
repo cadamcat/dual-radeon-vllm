@@ -74,19 +74,49 @@ SPECS = {
                     why="sm_120 and GDDR7 -- the workstation Blackwell die, the "
                         "closest thing in a datacentre catalogue to the consumer "
                         "parts this repository is about."),
+    # The platform control. Every A100 row this sweep is compared against was
+    # measured on Colab; every card tonight was rented from Modal. The L4 is
+    # the one GPU that exists on both, and Colab measured G12 on it twice --
+    # 2026-08-30 and 2026-09-02, agreeing to 0.2-0.8 % -- so the band that
+    # decides this is not something chosen after seeing the answer.
+    # The baseline itself, on the platform the new cards were rented from.
+    # Every headline ratio tonight divides by an A100 row Colab measured. The
+    # L4 control says the two platforms agree on a card that appears in no
+    # conclusion; this says whether they agree on the card that appears in all
+    # of them. Same mml and same eleven rungs as cuda-a100/campaign-2026-08-30.
+    "a100": dict(gpu="A100-80GB", machine="A100-SXM4-80GB", rate=2.50, tp=1,
+                 models=["G12", "B8"], budget_s=1500,
+                 override={"G12": dict(mml=33000, max_ctx=33000),
+                           "B8": dict(mml=33000, max_ctx=33000)},
+                 why="The A100 every ratio here divides by, rented rather than "
+                     "granted, at the mml and the ladder Colab used."),
+    "l4": dict(gpu="L4", machine="L4", rate=0.80, tp=1,
+               models=["G12"], budget_s=1800,
+               why="The same L4 Colab measured twice, on the same model, to "
+                   "put a number on the platform difference every "
+                   "machine-to-machine ratio here inherits."),
     "b200": dict(gpu="B200", machine="B200-SXM", rate=6.25, tp=1,
                  models=["B8", "G26A4B"], budget_s=1500,
                  why="sm_100 beside B300's sm_103, on the two models that sit at "
                      "the ends of the mem_busy range: 87 % and 38 %."),
-    "h100-tp2": dict(gpu="H100:2", machine="H100-80GB-HBM3", rate=7.90, tp=2,
+    "h100-tp2": dict(gpu="H100:2", machine="H100-80GB-HBM3-x2", rate=7.90, tp=2,
                      models=["B8", "G12", "G26A4B", "G31", "Q38"], budget_s=3000,
                      why="Two cards with NVLink, against the Radeon pair with no "
                          "P2P at all."),
-    "h100-tp4": dict(gpu="H100:4", machine="H100-80GB-HBM3", rate=15.80, tp=4,
-                     models=["B8", "G12", "G31"], budget_s=3000,
-                     why="Four-way, on the memory-bound end, the not-memory-bound "
-                         "end and the largest model."),
-    "pro6000-tp2": dict(gpu="RTX-PRO-6000:2", machine="RTX-PRO-6000-Blackwell",
+    # One model, not three, and the choice is the budget's: $15.80/h with $3.51
+    # of credit left buys one configuration. B8 is the one worth it -- the TP
+    # axis has 1 and 2, the second card was worth 1.484x on this model against
+    # 1.029x on the least memory-bound one, and the open question is whether
+    # that keeps going or saturates. A third point on the steepest curve
+    # answers it; a first point on a flat one would not.
+    "h100-tp4": dict(gpu="H100:4", machine="H100-80GB-HBM3-x4", rate=15.80, tp=4,
+                     models=["B8", "G26A4B"], budget_s=900,
+                     why="Four-way at both ends of the mem_busy range: Qwen3-8B "
+                         "at 87 %, which the second card was worth 1.484x to, "
+                         "and the 26B MoE at 38 %, which it was worth 1.029x "
+                         "to. One point would be an anecdote; two that far "
+                         "apart is a test."),
+    "pro6000-tp2": dict(gpu="RTX-PRO-6000:2", machine="RTX-PRO-6000-Blackwell-x2",
                         rate=6.06, tp=2,
                         models=["B8", "G12", "G26A4B", "G31", "Q38"], budget_s=3600,
                         why="Two cards with NO NVLink -- nvidia-smi nvlink -s is "
@@ -95,10 +125,17 @@ SPECS = {
 
 
 def cfg_lines(spec):
-    """the CFGS table, with each model's ladder cut to what it will accept"""
+    """the CFGS table, with each model's ladder cut to what it will accept
+
+    `spec["override"]` lets a control campaign hold `mml` and the ladder where
+    the campaign it is a control for held them, rather than where this file's
+    defaults put them. The A100 control exists to be compared with rows Colab
+    measured at mml 33 000 and eleven rungs; giving it sixteen rungs at
+    132 000 would make it a different measurement wearing the same name.
+    """
     out = []
     for mid in spec["models"]:
-        m = MODELS[mid]
+        m = dict(MODELS[mid], **spec.get("override", {}).get(mid, {}))
         want = TARGETS + LONG
         mml = m["mml"]
         rungs = [t for t in want if t + GEN_PLUS <= min(mml, m["max_ctx"])]

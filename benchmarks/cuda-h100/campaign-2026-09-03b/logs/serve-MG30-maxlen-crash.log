@@ -1,0 +1,55 @@
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333] 
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333]        █     █     █▄   ▄█
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.28.0
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333]   █▄█▀ █     █     █     █  model   /models/Muse-Glimmer-30B-INT4
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:333] 
+(APIServer pid=48) INFO 09-02 23:59:48 [api_utils.py:272] non-default args: {'model_tag': '/models/Muse-Glimmer-30B-INT4', 'model': '/models/Muse-Glimmer-30B-INT4', 'max_model_len': 132000, 'gpu_memory_utilization': 0.9, 'enable_prefix_caching': False}
+(APIServer pid=48) INFO 09-02 23:59:57 [model.py:672] Resolved architecture: MuseGlimmerForConditionalGeneration
+(APIServer pid=48) Traceback (most recent call last):
+(APIServer pid=48)   File "/usr/local/bin/vllm", line 8, in <module>
+(APIServer pid=48)     sys.exit(main())
+(APIServer pid=48)              ^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/cli/main.py", line 97, in main
+(APIServer pid=48)     args.dispatch_function(args)
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/cli/serve.py", line 152, in cmd
+(APIServer pid=48)     uvloop.run(run_server(args))
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=48)     return __asyncio.run(
+(APIServer pid=48)            ^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/asyncio/runners.py", line 194, in run
+(APIServer pid=48)     return runner.run(main)
+(APIServer pid=48)            ^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=48)     return self._loop.run_until_complete(task)
+(APIServer pid=48)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=48)     return await main
+(APIServer pid=48)            ^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 739, in run_server
+(APIServer pid=48)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 753, in run_server_worker
+(APIServer pid=48)     async with build_async_engine_client(
+(APIServer pid=48)   File "/usr/local/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=48)     return await anext(self.gen)
+(APIServer pid=48)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 127, in build_async_engine_client
+(APIServer pid=48)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=48)   File "/usr/local/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=48)     return await anext(self.gen)
+(APIServer pid=48)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 151, in build_async_engine_client_from_engine_args
+(APIServer pid=48)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=48)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 1969, in create_engine_config
+(APIServer pid=48)     model_config = self.create_model_config()
+(APIServer pid=48)                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 1727, in create_model_config
+(APIServer pid=48)     return ModelConfig(
+(APIServer pid=48)            ^^^^^^^^^^^^
+(APIServer pid=48)   File "/usr/local/lib/python3.12/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=48)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=48) pydantic_core._pydantic_core.ValidationError: 1 validation error for ModelConfig
+(APIServer pid=48)   Value error, User-specified max_model_len (132000) is greater than the derived max_model_len (max_position_embeddings=131072.0 or model_max_length=None in model's config.json). To allow overriding this maximum, set the env var VLLM_ALLOW_LONG_MAX_MODEL_LEN=1. VLLM_ALLOW_LONG_MAX_MODEL_LEN must be used with extreme caution. If the model uses relative position encoding (RoPE), positions exceeding derived_max_model_len lead to nan. If the model uses absolute position encoding, positions exceeding derived_max_model_len will cause a CUDA array out-of-bounds error. [type=value_error, input_value=ArgsKwargs((), {'model': ...nderer_num_workers': 1}), input_type=ArgsKwargs]
+(APIServer pid=48)     For further information visit https://errors.pydantic.dev/2.13/v/value_error

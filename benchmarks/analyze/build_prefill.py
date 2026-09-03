@@ -95,6 +95,13 @@ CFG_CUDA = {
     "MG30":                    ("Muse-Glimmer-30B", "int4",     "sliding window 2048", 1),
     # 2026-08-30, the four-machine round.
     "B8":                      ("Qwen3-8B",        "bf16",      "dense", 1),
+    # 2026-09-03 controls on the H100. Same models, same ids as their arms
+    # except for what each one holds still; `mml` and `mns` travel on the row.
+    "G31-mml33":               ("gemma-4-31B-it",  "w4a16 QAT", "dense", 1),
+    "G12-mml33":               ("gemma-4-12B-it",  "w4a16 QAT", "dense", 1),
+    "G26A4B-mml33":            ("gemma-4-26B-A4B", "int4 AWQ",  "MoE", 1),
+    "Q38-mml33":               ("Qwen3.8-27B",     "int4 AWQ",  "hybrid", 1),
+    "Q38-mml33-mns16":         ("Qwen3.8-27B",     "int4 AWQ",  "hybrid", 1),
     # **A different checkpoint, not a different arm of `Q38`.** `Q38` is
     # cyankiwi's AWQ; this is RedHatAI/Qwen3.8-27B, compressed-tensors with
     # symmetric int4 at group 128. On gfx1100 the two land on different kernels
@@ -366,6 +373,55 @@ SOURCES = [
          prefix_caching=False),
     dict(file="cuda-h100/campaign-2026-09-03/results-q38.jsonl",
          machine="H100-80GB-HBM3", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    # 2026-09-03, the rented sweep. Six machine configurations on one ladder,
+    # the same six models, the same vllm 0.28.0 -- and three attention
+    # backends, none of them asked for: FLASH_ATTN on both Hoppers,
+    # FLASHINFER on the B300, TRITON_ATTN for gemma-4 on the RTX PRO 6000.
+    # Every row carries what its own serve log said, which is the only reason
+    # that is known.
+    dict(file="cuda-h100/campaign-2026-09-03b/results.jsonl",
+         machine="H100-80GB-HBM3", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-h200/campaign-2026-09-03/results.jsonl",
+         machine="H200-143GB-HBM3e", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-b300/campaign-2026-09-03/results.jsonl",
+         machine="B300-SXM6", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-pro6000/campaign-2026-09-03/results.jsonl",
+         machine="RTX-PRO-6000-Blackwell", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+         machine="H100-80GB-HBM3-x2", date="2026-09-03", vllm="0.28.0", tp=2,
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+         machine="RTX-PRO-6000-Blackwell-x2", date="2026-09-03", vllm="0.28.0", tp=2,
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-h100/campaign-2026-09-03-tp4/results.jsonl",
+         machine="H100-80GB-HBM3-x4", date="2026-09-03", vllm="0.28.0", tp=4,
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    # Two platform controls, and they are the reason every ratio above can be
+    # read as a card difference. Each rented card here was compared with an
+    # A100 or an L4 that Colab measured; these two put the same models on the
+    # same cards on Modal, at the mml and ladder Colab used, so the platform
+    # gap is a number rather than an assumption. B8 on the A100 is one rung:
+    # the run was stopped there to free credit for a collective sweep, and its
+    # two rounds agree to 0.17 %, so it is kept as the point it is.
+    dict(file="cuda-a100/campaign-2026-09-03/results.jsonl",
+         machine="A100-SXM4-80GB", date="2026-09-03", vllm="0.28.0",
+         rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
+         prefix_caching=False),
+    dict(file="cuda-l4/campaign-2026-09-03/results.jsonl",
+         machine="L4", date="2026-09-03", vllm="0.28.0",
          rocm=None, cuda="13.0", driver="580.95.05", kernel=None, patches=[],
          prefix_caching=False),
     dict(file="cuda-a100/campaign-2026-08-29/results.jsonl", prefix_caching=True,
@@ -657,6 +713,11 @@ def build():
         routed = routes_from_source(path)
         for (cfg, target), trips in sorted(by.items()):
             name, quant, arch, tp = meta_for(cfg)
+            # `CFG_CUDA` is keyed on the configuration id and the rented
+            # multi-card campaigns reuse the single-card ids -- B8 at TP=4 is
+            # still called B8. Without this the projection would record four
+            # H100s as one, silently and in a column nothing else checks.
+            tp = s.get("tp", tp)
             spec, tabled = arm_for(cfg)
             # This source's own reading first. `ARMS`/`ARMS_CUDA` are keyed on a
             # cfg id that repeats across machines, so they are the fallback and

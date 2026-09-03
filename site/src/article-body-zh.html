@@ -209,11 +209,11 @@ kernel 手里有多少可并行的东西。</p>
 <code>Qwen3.6</code> 臂涨得还多。这个论断是按「模型的性质」写的，而它只在跑过它的那几台机器上成立。）</em>
 与此同时 <code>gemma-4-26B-A4B</code> —— 一个 MoE，根本没有线性注意力层 ——
 涨得比 <code>Qwen3.6</code> 还多，7 月 23.8 %、8 月 21.9 %。
-<code>benchmarks/prefill.jsonl</code> 里九条 stock hybrid-SSM 阶梯，
-其中止步于 32 000 及以下的八条是：一条上升 9.9 %、一条持平 <strong>+0.3 %</strong>、六条下降；
-第九条比它们远四倍，到 32 000 时<strong>上升 19.4 %</strong>，再回落到 128 000 时是
-500 档速率的 <strong>+1.3 %</strong>。同一个架构、同一份权重、两个方向的符号 —— 这正是要点：
-预填充曲线上升说明的是：在那条臂上，短提示的固定开销盖过了二次项 —— 而不是模型带着一个循环状态。
+<code>benchmarks/prefill.jsonl</code> 里现在有十六条 stock hybrid-SSM 阶梯 ——
+同一个 checkpoint 家族，跨七种机器配置 —— 其中<strong>七条上升超过 1 %、一条持平、八条下降</strong>。
+同一份 <code>Qwen3.8-27B</code> 权重，从双 Radeon 钉在 Triton 上的 <strong>−31.1 %</strong>
+一直到双 H100 上的 <strong>+103.0 %</strong>。同一个架构、同一份权重、两个方向的符号、134 个百分点的跨度 ——
+这正是要点：预填充曲线上升说明的是：在那条臂上，短提示的固定开销盖过了二次项 —— 而不是模型带着一个循环状态。
 这篇文章讲的解码崩塌不受影响：那是测出来的，不是靠同一套推理推出来的。</p>
 
 <h2><span class="n">7</span>修复，测了两次</h2>

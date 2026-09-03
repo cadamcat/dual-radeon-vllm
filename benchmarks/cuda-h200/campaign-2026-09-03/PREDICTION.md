@@ -50,3 +50,50 @@ other five had not started.
 records achieved bandwidth as absent on both platforms and says why. A busy
 fraction of 87 % at a lower absolute rate is not the same thing as 87 % at a
 higher one, and nothing here separates them.
+
+---
+
+# The verdict, written after — 2026-09-03
+
+**Ordering: right at both ends. Magnitude: wrong, by about a factor of two on
+the spread.**
+
+| model | `mem_busy` | predicted | measured | rung used |
+|---|--:|--:|--:|--:|
+| `B8` Qwen3-8B bf16 | 87 % | 1.188× | **1.254×** | 500 |
+| `G31` gemma-4-31B | 67 % | 1.139× | 1.120× | 2 000 |
+| `Q38` Qwen3.8-27B SSM | 65 % | 1.134× | 1.124× | 500 |
+| `G12` gemma-4-12B | 53 % | 1.107× | 1.072× | 500 |
+| `MG30` Muse-Glimmer-30B | 51 % | 1.102× | 1.089× | 500 |
+| `G26A4B` gemma-4-26B-A4B | 38 % | 1.074× | **1.044×** | 500 |
+
+Each row uses the shallowest rung whose two rounds agree within 1 % **on both
+machines** — a rule fixed before the numbers were looked at. `G31` uses 2 000
+because its H200 500-rung rounds came back 84.62 and 95.84, 13.3 % apart; every
+other rung on that ladder agrees to 0.2 %, and the projection marks it not
+chart-grade on its own repeatability rule.
+
+**What passed.** The two ends are in the right order and clearly separated:
+1.254× at 87 % against 1.044× at 38 %. The two order violations are
+`G31`/`Q38` and `G12`/`MG30`, and each is a pair whose `mem_busy` differs by
+two points — inside the resolution of the predictor itself.
+
+**What failed.** Measured spread 0.210 against 0.114 predicted. Fitting `r`
+with `f` held at `mem_busy` gives 1.227, all but identical to the 1.222 the
+prediction used — so `r` is not the error. The error is in `f`, and it is not a
+constant scaling: `B8`'s 1.254× **exceeds** `r` itself, which
+`1/((1-f) + f/r)` cannot produce for any `f ≤ 1`. Either the effective
+bandwidth ratio is above the memory-clock ratio (the vendors' 3.35 and
+4.8 TB/s give 1.43, and at that `r` the same form over-predicts every row), or
+the H200 differs from the H100 in something this file assumed away.
+
+**Standing conclusion: `mem_busy` is an ordinal predictor of what bandwidth is
+worth, not a cardinal one.** It has now ordered five settings correctly and
+sized none of them.
+
+An independent check that the mechanism is right even where the arithmetic is
+not: `mem_busy` on the H200 is **lower than on the H100 for every one of the six** —
+87→76, 67→53, 65→52, 53→39, 51→39, 38→28 at the 500 rung, no exceptions and no
+crossings. Faster memory doing the same work leaves the controller busy for
+less of the time, which is what the model says should happen and is not
+something it was fitted to.

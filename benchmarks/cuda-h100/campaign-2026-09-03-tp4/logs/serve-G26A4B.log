@@ -1,0 +1,414 @@
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333] 
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333]        █     █     █▄   ▄█
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.28.0
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333]   █▄█▀ █     █     █     █  model   /models/gemma-4-26B-A4B-AWQ
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:333] 
+(APIServer pid=66) INFO 09-03 06:11:15 [api_utils.py:272] non-default args: {'model_tag': '/models/gemma-4-26B-A4B-AWQ', 'model': '/models/gemma-4-26B-A4B-AWQ', 'max_model_len': 132000, 'tensor_parallel_size': 4, 'gpu_memory_utilization': 0.9, 'enable_prefix_caching': False, 'limit_mm_per_prompt': {'image': 0, 'video': 0, 'audio': 0}}
+(APIServer pid=66) INFO 09-03 06:11:26 [model.py:672] Resolved architecture: Gemma4ForConditionalGeneration
+(APIServer pid=66) INFO 09-03 06:11:26 [model.py:1965] Using max model len 132000
+(APIServer pid=66) [transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+(APIServer pid=66) INFO 09-03 06:11:28 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(APIServer pid=66) INFO 09-03 06:11:28 [model.py:875] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(APIServer pid=66) INFO 09-03 06:11:29 [scheduler.py:242] Chunked prefill is enabled with max_num_batched_tokens=8192.
+(APIServer pid=66) INFO 09-03 06:11:29 [config.py:235] Gemma4 model has heterogeneous head dimensions {'sliding_attention': 256, 'full_attention': 512}. Using FA4 for all layers to avoid mixed FA3/FA4 penalty.
+(APIServer pid=66) INFO 09-03 06:11:29 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=66) INFO 09-03 06:11:30 [compilation.py:329] Enabled custom fusions: allreduce_rms
+(EngineCore pid=113) INFO 09-03 06:11:45 [core.py:122] Initializing a V1 LLM engine (v0.28.0) with config: model='/models/gemma-4-26B-A4B-AWQ', speculative_config=None, tokenizer='/models/gemma-4-26B-A4B-AWQ', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=132000, download_dir=None, load_format=auto, tensor_parallel_size=4, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=compressed-tensors, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/models/gemma-4-26B-A4B-AWQ, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::qwen_gdn_attention_core_fused_norm_packed', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [372, 8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': True, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=113) INFO 09-03 06:11:45 [multiproc_executor.py:150] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=172.20.12.193 (local), world_size=4, local_world_size=4
+[transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+[transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+[transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+[transformers] `SiglipImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `SiglipImageProcessor` instead.
+INFO 09-03 06:12:05 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+INFO 09-03 06:12:05 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+INFO 09-03 06:12:05 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+INFO 09-03 06:12:05 [registry.py:141] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(Worker pid=133) INFO 09-03 06:12:05 [parallel_state.py:1638] world_size=4 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_b2177a8ee0584e8eaa6b4060420cfa00 backend=nccl
+(Worker pid=136) INFO 09-03 06:12:05 [parallel_state.py:1638] world_size=4 rank=3 local_rank=3 distributed_init_method=file:///tmp/vllm_dist_b2177a8ee0584e8eaa6b4060420cfa00 backend=nccl
+(Worker pid=134) INFO 09-03 06:12:06 [parallel_state.py:1638] world_size=4 rank=1 local_rank=1 distributed_init_method=file:///tmp/vllm_dist_b2177a8ee0584e8eaa6b4060420cfa00 backend=nccl
+(Worker pid=135) INFO 09-03 06:12:06 [parallel_state.py:1638] world_size=4 rank=2 local_rank=2 distributed_init_method=file:///tmp/vllm_dist_b2177a8ee0584e8eaa6b4060420cfa00 backend=nccl
+(Worker pid=133) INFO 09-03 06:12:07 [pynccl.py:113] vLLM is using nccl==2.29.7
+(Worker pid=133) INFO 09-03 06:12:08 [cuda_communicator.py:266] Using ['CUSTOM', 'SYMM_MEM', 'PYNCCL'] all-reduce backends (in dispatch order) for group 'tp:0' out of potential backends: ['NCCL_SYMM_MEM', 'QUICK_REDUCE', 'FLASHINFER', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=133) INFO 09-03 06:12:09 [cuda_communicator.py:266] Using ['PYNCCL'] all-reduce backends (in dispatch order) for group 'ep:0' out of potential backends: ['NCCL_SYMM_MEM', 'QUICK_REDUCE', 'FLASHINFER', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=133) INFO 09-03 06:12:09 [parallel_state.py:1982] rank 0 in world size 4 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(Worker pid=133) INFO 09-03 06:12:10 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [gpu_model_runner.py:5419] Starting to load model /models/gemma-4-26B-A4B-AWQ...
+(Worker_TP1 pid=134) INFO 09-03 06:12:10 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(Worker_TP3 pid=136) INFO 09-03 06:12:10 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(Worker_TP1 pid=134) INFO 09-03 06:12:10 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(Worker_TP2 pid=135) INFO 09-03 06:12:10 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(Worker_TP3 pid=136) INFO 09-03 06:12:10 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(Worker_TP2 pid=135) INFO 09-03 06:12:10 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [compilation.py:329] Enabled custom fusions: allreduce_rms
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [compressed_tensors_wNa16.py:137] Using MarlinLinearKernel for CompressedTensorsWNA16
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [cuda.py:486] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [flash_attn.py:866] Using FlashAttention version 4
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [compressed_tensors_moe.py:132] Using CompressedTensorsWNA16MoEMethod
+(Worker_TP0 pid=133) INFO 09-03 06:12:10 [int_wna16.py:297] Using 'TRITON' WNA16 MoE backend.
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941] WorkerProc failed to start.
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941] Traceback (most recent call last):
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 908, in worker_main
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     worker = WorkerProc(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 677, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.worker.load_model()
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 457, in load_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 5435, in load_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = model_loader.load_model(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = initialize_model(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4_mm.py", line 1107, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.language_model: Gemma4ForCausalLM = init_vllm_registered_model(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 557, in init_vllm_registered_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return initialize_model(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1535, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = Gemma4Model(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 383, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     old_init(self, *args, **kwargs)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1032, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.start_layer, self.end_layer, self.layers = make_layers(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                                     ^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 812, in make_layers
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     + get_offloader().wrap_modules(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/offloader/base.py", line 104, in wrap_modules
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return list(modules_generator)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 813, in <genexpr>
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1034, in <lambda>
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     lambda prefix: Gemma4DecoderLayer(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 633, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.moe = Gemma4MoE(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                ^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 355, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.experts = FusedMoEFactory(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/layer.py", line 375, in FusedMoEFactory
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     routed_experts = routed_experts_cls(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                      ^^^^^^^^^^^^^^^^^^^
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 175, in __init__
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.quant_method.create_weights(layer=self, **moe_quant_params)
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors_moe/compressed_tensors_moe_wna16.py", line 308, in create_weights
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     raise ValueError(
+(Worker_TP3 pid=136) ERROR 09-03 06:12:11 [multiproc_executor.py:941] ValueError: CompressedTensors WNA16 MoE with static group scales requires the MoE intermediate size per tensor-parallel partition (176) to be divisible by group_size (32). Scale groups would otherwise cross TP shard boundaries; use a compatible TP size or enable expert parallelism.
+(EngineCore pid=113) INFO 09-03 06:12:11 [multiproc_executor.py:469] [shutdown] Executor: waiting for worker exit count=4
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941] WorkerProc failed to start.
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941] Traceback (most recent call last):
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 908, in worker_main
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     worker = WorkerProc(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 677, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.worker.load_model()
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 457, in load_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 5435, in load_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = model_loader.load_model(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = initialize_model(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4_mm.py", line 1107, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.language_model: Gemma4ForCausalLM = init_vllm_registered_model(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 557, in init_vllm_registered_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return initialize_model(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1535, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = Gemma4Model(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 383, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     old_init(self, *args, **kwargs)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1032, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.start_layer, self.end_layer, self.layers = make_layers(
+(Worker_TP1 pid=134) (Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                                     ^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 812, in make_layers
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     + get_offloader().wrap_modules(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/offloader/base.py", line 104, in wrap_modules
+ERROR 09-03 06:12:11 [multiproc_executor.py:941] WorkerProc failed to start.
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941] Traceback (most recent call last):
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 908, in worker_main
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     worker = WorkerProc(*args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return list(modules_generator)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 813, in <genexpr>
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1034, in <lambda>
+(Worker_TP0 pid=133) (Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941] WorkerProc failed to start.
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941] Traceback (most recent call last):
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 908, in worker_main
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     worker = WorkerProc(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 677, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.worker.load_model()
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]     lambda prefix: Gemma4DecoderLayer(
+(Worker_TP0 pid=133) (Worker_TP2 pid=135) (Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 633, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.moe = Gemma4MoE(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                ^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 355, in __init__
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 457, in load_model
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.experts = FusedMoEFactory(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/layer.py", line 375, in FusedMoEFactory
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     routed_experts = routed_experts_cls(
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                      ^^^^^^^^^^^^^^^^^^^
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 175, in __init__
+(Worker_TP1 pid=134) (Worker_TP0 pid=133) (Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.quant_method.create_weights(layer=self, **moe_quant_params)
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors_moe/compressed_tensors_moe_wna16.py", line 308, in create_weights
+(Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     raise ValueError(
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(Worker_TP2 pid=135) (Worker_TP1 pid=134) ERROR 09-03 06:12:11 [multiproc_executor.py:941] ValueError: CompressedTensors WNA16 MoE with static group scales requires the MoE intermediate size per tensor-parallel partition (176) to be divisible by group_size (32). Scale groups would otherwise cross TP shard boundaries; use a compatible TP size or enable expert parallelism.
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 677, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.worker.load_model()
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 457, in load_model
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 5435, in load_model
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = model_loader.load_model(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 5435, in load_model
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = model_loader.load_model(
+(Worker_TP2 pid=135) (Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = initialize_model(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = initialize_model(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) (Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4_mm.py", line 1107, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.language_model: Gemma4ForCausalLM = init_vllm_registered_model(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4_mm.py", line 1107, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.language_model: Gemma4ForCausalLM = init_vllm_registered_model(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 557, in init_vllm_registered_model
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return initialize_model(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 557, in init_vllm_registered_model
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return initialize_model(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return func(*args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/utils.py", line 58, in initialize_model
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1535, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1535, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = Gemma4Model(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 383, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.model = Gemma4Model(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                  ^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 383, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     old_init(self, *args, **kwargs)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1032, in __init__
+(Worker_TP2 pid=135) (Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     old_init(self, *args, **kwargs)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1032, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.start_layer, self.end_layer, self.layers = make_layers(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                                     ^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 812, in make_layers
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.start_layer, self.end_layer, self.layers = make_layers(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                                                     ^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 812, in make_layers
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     + get_offloader().wrap_modules(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/offloader/base.py", line 104, in wrap_modules
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]     + get_offloader().wrap_modules(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/offloader/base.py", line 104, in wrap_modules
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return list(modules_generator)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 813, in <genexpr>
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     return list(modules_generator)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]            ^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py", line 813, in <genexpr>
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1034, in <lambda>
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     lambda prefix: Gemma4DecoderLayer(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 633, in __init__
+(Worker_TP0 pid=133) (Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 1034, in <lambda>
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     lambda prefix: Gemma4DecoderLayer(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 633, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.moe = Gemma4MoE(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.moe = Gemma4MoE(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                ^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 355, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.experts = FusedMoEFactory(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                ^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/gemma4.py", line 355, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.experts = FusedMoEFactory(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/layer.py", line 375, in FusedMoEFactory
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     routed_experts = routed_experts_cls(
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]                    ^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/layer.py", line 375, in FusedMoEFactory
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     routed_experts = routed_experts_cls(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                      ^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 175, in __init__
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.quant_method.create_weights(layer=self, **moe_quant_params)
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors_moe/compressed_tensors_moe_wna16.py", line 308, in create_weights
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]                      ^^^^^^^^^^^^^^^^^^^
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 175, in __init__
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     self.quant_method.create_weights(layer=self, **moe_quant_params)
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941]   File "/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors_moe/compressed_tensors_moe_wna16.py", line 308, in create_weights
+(Worker_TP2 pid=135) (Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941]     raise ValueError(
+(Worker_TP2 pid=135) ERROR 09-03 06:12:11 [multiproc_executor.py:941] ValueError: CompressedTensors WNA16 MoE with static group scales requires the MoE intermediate size per tensor-parallel partition (176) to be divisible by group_size (32). Scale groups would otherwise cross TP shard boundaries; use a compatible TP size or enable expert parallelism.
+ERROR 09-03 06:12:11 [multiproc_executor.py:941]     raise ValueError(
+(Worker_TP0 pid=133) ERROR 09-03 06:12:11 [multiproc_executor.py:941] ValueError: CompressedTensors WNA16 MoE with static group scales requires the MoE intermediate size per tensor-parallel partition (176) to be divisible by group_size (32). Scale groups would otherwise cross TP shard boundaries; use a compatible TP size or enable expert parallelism.
+[rank0]:[W903 06:12:12.484468092 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+(EngineCore pid=113) INFO 09-03 06:12:14 [multiproc_executor.py:476] [shutdown] Executor: all workers exited gracefully
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346] EngineCore failed to start.
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346] Traceback (most recent call last):
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     super().__init__(
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 133, in __init__
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 116, in __init__
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     super().__init__(vllm_config)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     return func(*args, **kwargs)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 110, in __init__
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     self._init_executor()
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 211, in _init_executor
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 805, in wait_for_ready
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346]     raise e from None
+(EngineCore pid=113) ERROR 09-03 06:12:14 [core.py:1346] Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(EngineCore pid=113) Process EngineCore:
+(EngineCore pid=113) Traceback (most recent call last):
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=113)     self.run()
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=113)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1350, in run_engine_core
+(EngineCore pid=113)     raise e
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1315, in run_engine_core
+(EngineCore pid=113)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=113)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=113)     return func(*args, **kwargs)
+(EngineCore pid=113)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1073, in __init__
+(EngineCore pid=113)     super().__init__(
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 133, in __init__
+(EngineCore pid=113)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=113)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 116, in __init__
+(EngineCore pid=113)     super().__init__(vllm_config)
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=113)     return func(*args, **kwargs)
+(EngineCore pid=113)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 110, in __init__
+(EngineCore pid=113)     self._init_executor()
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 211, in _init_executor
+(EngineCore pid=113)     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=113)                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=113)   File "/usr/local/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 805, in wait_for_ready
+(EngineCore pid=113)     raise e from None
+(EngineCore pid=113) Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
