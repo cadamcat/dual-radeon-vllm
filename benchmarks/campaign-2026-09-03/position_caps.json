@@ -1,0 +1,68 @@
+{
+ "kind": "position_caps",
+ "read_at_utc": "2026-09-03T14:31:05Z",
+ "read_from": "/models/<checkpoint>/config.json inside the vllm-tp2 container, docker exec, after c0903b and during c0903c",
+ "guard": "vllm/config/model.py, the max_model_len > derived max check, lines 2235-2247 in 0.23.1.dev1+g9ddef7117.d20260715; VLLM_ALLOW_LONG_MAX_MODEL_LEN lifts it",
+ "checkpoints": [
+  {
+   "model": "Qwen3-8B",
+   "architectures": [
+    "Qwen3ForCausalLM"
+   ],
+   "max_position_embeddings": 40960,
+   "where": "top",
+   "config_md5": "85a491bc89baa282426717ff96c55d80",
+   "sliding_window": null
+  },
+  {
+   "model": "Muse-Glimmer-30B-INT4",
+   "architectures": [
+    "MuseGlimmerForConditionalGeneration"
+   ],
+   "max_position_embeddings": 131072,
+   "where": "text_config",
+   "config_md5": "3a3ad8685e19b1c76b829f652800a37d",
+   "sliding_window": 2048
+  },
+  {
+   "model": "Qwen3.8-27B-AWQ-INT4",
+   "architectures": [
+    "Qwen3_5ForConditionalGeneration"
+   ],
+   "max_position_embeddings": 262144,
+   "where": "text_config",
+   "config_md5": "f2b8cb38c9dc4659c2383bacac9b7427",
+   "sliding_window": null
+  },
+  {
+   "model": "gemma-4-12B-it-qat-w4a16-ct",
+   "architectures": [
+    "Gemma4UnifiedForConditionalGeneration"
+   ],
+   "max_position_embeddings": 262144,
+   "where": "text_config",
+   "config_md5": "17b3e995131b6be40c7bab36ac1ef0eb",
+   "sliding_window": 1024
+  },
+  {
+   "model": "gemma-4-26B-A4B-AWQ",
+   "architectures": [
+    "Gemma4ForConditionalGeneration"
+   ],
+   "max_position_embeddings": 262144,
+   "where": "text_config",
+   "config_md5": "1b36242d2387a42be516d624662b72be",
+   "sliding_window": 1024
+  },
+  {
+   "model": "gemma-4-31B-it-qat-w4a16-ct",
+   "architectures": [
+    "Gemma4ForConditionalGeneration"
+   ],
+   "max_position_embeddings": 262144,
+   "where": "text_config",
+   "config_md5": "32e08aa1f1b5ab3ed301ed19333b6b0e",
+   "sliding_window": 1024
+  }
+ ]
+}

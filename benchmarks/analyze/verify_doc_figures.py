@@ -1884,7 +1884,9 @@ def main():
        len(_open))
     _idx = [l for l in _wh.split("\n")
             if l.startswith("| `") and l.rstrip().endswith("|")]
-    ck("benchmarks README, paths in the index", "31", len(_idx))
+    # 17 since 2026-09-03: the fourteen hand-typed campaign rows moved to the
+    # generated CAMPAIGNS.md, which its own gate above holds to the tree
+    ck("benchmarks README, paths in the index", "17", len(_idx))
     ck("benchmarks README, and a section for each that needs one", "26",
        len(re.findall(r"^### `", _wh, re.M)))
     ck("benchmarks README, no index line long enough to be a wall", "0",
@@ -1942,7 +1944,22 @@ def main():
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "29", len(_camps))
+    ck("campaigns, every results.jsonl found", "30", len(_camps))
+    # the generated index, since 2026-09-03: the hand-typed table it replaced
+    # named eighteen of forty-two directories
+    import build_campaigns as _bc
+    _cm = open(os.path.join(_BR, "CAMPAIGNS.md"), encoding="utf-8").read()
+    ck("campaigns, CAMPAIGNS.md matches the tree", "1",
+       1 if _bc.render(_bc.scan()) == _cm else 0)
+    _readme_dirs = [os.path.relpath(_r, _BR) for _r, _d, _f in os.walk(_BR)
+                    if "README.md" in _f and _r != _BR
+                    and not any(x in _r for x in ("__pycache__", "/logs", "serve-logs", "/traces"))
+                    and os.path.relpath(_r, _BR).split("/")[0] not in ("analyze", "harness", "prompts")]
+    ck("campaigns, and names every directory that has a README", "0",
+       sum(1 for _d in _readme_dirs if "[`%s/`]" % _d not in _cm))
+    ck("campaigns, and the benchmarks README points at it", "1",
+       1 if "[`CAMPAIGNS.md`](CAMPAIGNS.md)"
+       in open(os.path.join(_BR, "README.md"), encoding="utf-8").read() else 0)
     ck("campaigns, predating the telemetry schema", "11",
        sum(1 for c in _camps if c in _PRE_SCHEMA))
     ck("campaigns, new ones missing required telemetry", "0", len(_missing))
@@ -2031,9 +2048,9 @@ def main():
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "210", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "298", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "216", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "304", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -3305,13 +3322,13 @@ def main():
     # vLLM routed to FLASH_ATTN by its own default rather than being forced --
     # the A100 forces gemma-4 onto Triton "FA4 not available" and this machine
     # does not, which is why `default` moves by the whole 118.
-    ck("route column, rows carrying one", "1658", len(_rt))
+    ck("route column, rows carrying one", "1834", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "156", _dec.get("override", 0))
-    ck("route column, forced", "498", _dec.get("forced", 0))
+    ck("route column, chosen by override", "240", _dec.get("override", 0))
+    ck("route column, forced", "590", _dec.get("forced", 0))
     ck("route column, left to the default", "1004", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
@@ -3321,7 +3338,7 @@ def main():
             _why[_w] = _why.get(_w, 0) + 1
     ck("route column, forced for want of FA4", "406",
        _why.get("FA4 not available", 0))
-    ck("route column, forced to keep one backend", "92",
+    ck("route column, forced to keep one backend", "184",
        _why.get("prevent mixed-backend numerical divergence", 0))
     # what an override was choosing between -- the candidate set, which is the
     # routing question and appears nowhere else in the data
@@ -3329,16 +3346,23 @@ def main():
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "156",
+    ck("route column, ROCm offered both of its backends", "240",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "156",
+    ck("route column, and Triton was the other one", "240",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
     # four since 2026-09-03: Muse-Glimmer lands on MacheteLinearKernel on the
     # two Hoppers and on Marlin everywhere else, which is the only kernel
     # difference in the rented sweep and travels on the rows that carry it.
-    ck("route column, distinct quantisation kernels", "4", len(_qk))
+    # Five since the pair's long ladder the same evening: the AWQ 27B on the
+    # 0.23 container reports TritonW4A16LinearKernel, the fallback the README
+    # of campaign-2026-09-03 calls the dequantisation kernel -- the reason that
+    # arm decodes at a quarter of Figure 1's line for the same model.
+    ck("route column, distinct quantisation kernels", "5", len(_qk))
+    ck("route column, and the fifth is the 27B's fallback on the pair", "1",
+       1 if {(r["cfg"], r["machine"]) for r in _rt if r["route"].get("quant_kernel") == "TritonW4A16LinearKernel"}
+       == {("D8-27B-tp2-long", "RX 7900 XT")} else 0)
     ck("route column, and two of them are RDNA's", "2",
        sum(1 for k in _qk if k.startswith("RDNA")))
     _rdna = {}
@@ -3352,6 +3376,386 @@ def main():
              and not (_rdna["RDNA3W4A16LinearKernel"]
                       & _rdna["RDNAHybridW4A16LinearKernel"])) else 0)
 
+    # --- the front page's "Measured on" block, 2026-09-03 --------------------
+    # The README used to describe the data as 292 measurements on one pair.
+    # The block that replaced that is held to the files: every machine family
+    # in the projection is named in the table, and each count in the sentence
+    # under it is recounted rather than trusted.
+    _rmf = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    _rmz = open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read()
+    _mo = _rmf[_rmf.index("### Measured on"):_rmf.index("### What is in here")]
+    _moz = _rmz[_rmz.index("### 测过的机器"):_rmz.index("> 这是一页浓缩的中文导览")]
+    for _fam in ("RX 7900 XT", "A100 SXM4 80G", "A100 SXM4 40G", "L4 24G", "T4 16G",
+                 "H100 80G", "H200 143G", "B300 275G", "RTX PRO 6000 96G"):
+        _fre = re.compile(r"(?<!\w)" + re.escape(_fam) + r"(?!\w)")   # "H100 80GB" is not "H100 80G"
+        ck("README measured-on, names %s" % _fam, "2", (1 if _fre.search(_mo) else 0) + (1 if _fre.search(_moz) else 0))
+    ck("README measured-on, the two languages have the same rows", "1",
+       1 if _mo.count("\n| ") == _moz.count("\n| ") else 0)
+    _mfam = {"RX 7900 XT": "RX 7900 XT", "A100-SXM4-80GB": "A100 SXM4 80G", "A100-SXM4-40GB": "A100 SXM4 40G",
+             "L4": "L4 24G", "T4": "T4 16G", "H100-80GB-HBM3": "H100 80G", "H100-80GB-HBM3-x2": "H100 80G",
+             "H100-80GB-HBM3-x4": "H100 80G", "H200-143GB-HBM3e": "H200 143G", "B300-SXM6": "B300 275G",
+             "RTX-PRO-6000-Blackwell": "RTX PRO 6000 96G", "RTX-PRO-6000-Blackwell-x2": "RTX PRO 6000 96G"}
+    ck("README measured-on, every machine in decode.jsonl has a row", "0",
+       sum(1 for m in {r["machine"] for r in _RTD}
+           if not re.search(r"(?<!\w)" + re.escape(_mfam.get(m, "?")) + r"(?!\w)", _mo)))
+    _mreq = _mfiles = _mar = 0
+    for _root, _dirs, _files in os.walk(_BR):
+        _dirs[:] = [d for d in _dirs if d not in (".git", "__pycache__", "logs", "serve-logs", "traces")]
+        for _f in _files:
+            if _f.endswith(".jsonl") and "results" in _f:
+                _mfiles += 1
+                for _l in open(os.path.join(_root, _f), encoding="utf-8"):
+                    _l = _l.strip()
+                    if not _l:
+                        continue
+                    try:
+                        _r = json.loads(_l)
+                    except Exception:
+                        continue
+                    _mreq += 1 if _r.get("kind") in ("decode", "prefill") else 0
+                    _mar += 1 if _r.get("kind") == "allreduce" else 0
+    _msent = re.search(r"Thirteen machine configurations, eight checkpoints, ([\d ]+) request-level "
+                       r"measurements in (\d+) results files, ([\d ]+) chart-grade cells [^,]+, "
+                       r"(\d+) all-reduce cells [^,]+, and (\d+) write-ups", _mo)
+    ck("README measured-on, the count sentence is there", "1", 1 if _msent else 0)
+    if _msent:
+        # a configuration is a card and a card count: the pair and its single card
+        # share a machine name and are two rows of the table, as are the H100s
+        ck("README measured-on, machine configurations", "13", len({(r["machine"], r["tp"]) for r in _RTD}))
+        # a row is one or two machines (split on the middle dot) times the card
+        # counts its second cell names: "L4 24G · T4 16G | 1" is two, "H100 80G | 1, 2 and 4" is three
+        ck("README measured-on, and the table has a cell for each", "13",
+           sum((c.split("|")[1].count("·") + 1) * len(re.findall(r"\d+", c.split("|")[2]))
+               for c in _mo.split("\n") if c.startswith("| ") and not c.startswith("| machine") and "---" not in c))
+        ck("README measured-on, checkpoints", "8", len({r["model"] for r in _RTD + _RTP}))
+        ck("README measured-on, request-level measurements", _msent.group(1).replace(" ", ""), _mreq)
+        ck("README measured-on, results files", _msent.group(2), _mfiles)
+        ck("README measured-on, chart-grade cells", _msent.group(3).replace(" ", ""),
+           sum(1 for r in _RTD + _RTP if r["chart_grade"]))
+        ck("README measured-on, all-reduce cells", _msent.group(4), _mar)
+        ck("README measured-on, write-ups", _msent.group(5),
+           len(json.load(open(os.path.join(ROOT, "site", "src", "articles.json"), encoding="utf-8"))["articles"]))
+        ck("README measured-on, and the Chinese page quotes the same counts", "5",
+           sum(1 for g in _msent.groups() if g in _moz))
+    # --- campaign-2026-09-03 README: every published number, recomputed -----
+    # The README's tables and sentences are read back with regexes and each
+    # figure is re-derived from results.jsonl, the two projections, the
+    # manifests, host_link.json and PROGRESS.txt. Nothing here trusts the
+    # table generator that wrote the README.
+    # ck's tol is relative to the value; these gates rely on its default, half a unit
+    # of the last digit the README wrote, which the break test showed is the honest one
+    import statistics as _st
+    from decimal import Decimal as _Dc, ROUND_HALF_UP as _RHU
+    _rhu = lambda x, n: float(_Dc(str(x)).quantize(_Dc(1).scaleb(-n), rounding=_RHU))
+    _c3 = os.path.join(_BR, "campaign-2026-09-03")
+    _c3r = open(os.path.join(_c3, "README.md"), encoding="utf-8").read()
+    _c3rows = [json.loads(l) for l in open(os.path.join(_c3, "results.jsonl"), encoding="utf-8") if l.strip()]
+    _c3d = lambda cfg: sorted([r for r in _RTD if r["cfg"] == cfg and r["date"] == "2026-09-03"
+                               and r["machine"] == "RX 7900 XT"], key=lambda r: r["ctx"])
+    _c3p = lambda cfg: sorted([r for r in _RTP if r["cfg"] == cfg and r["date"] == "2026-09-03"
+                               and r["machine"] == "RX 7900 XT"], key=lambda r: r["ctx"])
+    _c3n = lambda s: float(s.replace(" ", "").replace("\u2212", "-").replace("\u00a0", ""))
+    _C3 = {"gemma-4-12B": "A-12B-tp2-long", "gemma-4-26B-A4B": "E-26B-tp2-long",
+           "gemma-4-31B": "C-31B-tp2-long", "Qwen3-8B": "B-8B-tp2-long",
+           "Qwen3.8-27B": "D8-27B-tp2-long", "Muse-Glimmer-30B": "G-30B-tp2-long"}
+    # the decode table: 500, 32 000, deepest chart-grade rung and the change
+    _c3seen = 0
+    for _m in re.finditer(r"^\| (gemma-4-12B|gemma-4-26B-A4B|gemma-4-31B|Qwen3-8B|Qwen3\.8-27B|Muse-Glimmer-30B) "
+                          r"\| ([\d.]+) \| ([\d.]+|—) \| \*\*([\d.]+)\*\* @ ([\d ]+) \| ([−\-+][\d.]+) % \|$",
+                          _c3r, re.M):
+        _c3seen += 1
+        _cfg = _C3[_m.group(1)]
+        _dr = {r["ctx"]: r for r in _c3d(_cfg)}
+        _g = [r for r in _c3d(_cfg) if r["chart_grade"]]
+        ck("0903 README decode table, %s at 500" % _cfg, _m.group(2),
+           round(_dr[500]["decode_tok_s"], 2) if 500 in _dr else -1)
+        if _m.group(3) != "—":
+            ck("0903 README decode table, %s at 32 000" % _cfg, _m.group(3),
+               round(_dr[32000]["decode_tok_s"], 2) if 32000 in _dr else -1)
+        ck("0903 README decode table, %s deepest" % _cfg, _m.group(4), round(_g[-1]["decode_tok_s"], 2))
+        ck("0903 README decode table, %s deepest rung" % _cfg, _m.group(5).replace(" ", ""), _g[-1]["ctx"])
+        ck("0903 README decode table, %s change" % _cfg, _c3n(_m.group(6)),
+           round((_g[-1]["decode_tok_s"] / _g[0]["decode_tok_s"] - 1) * 100, 1))
+    ck("0903 README decode table, rows for every configuration that completed", "6" if False else
+       str(len({r["cfg"] for r in _c3rows if r.get("kind") == "config_complete"})), _c3seen)
+    # the pools and the retry
+    _c3meta = {r["cfg"]: r for r in _c3rows if r.get("kind") == "model_meta"}
+    _c3done = {r["cfg"]: r for r in _c3rows if r.get("kind") == "config_complete"}
+    _m = re.search(r"holds \*\*([\d ]+) tokens of KV\*\* at (\d+) % utilisation", _c3r)
+    ck("0903 README, the 31B's pool", _m.group(1).replace(" ", "") if _m else "-1",
+       int(_c3meta["C-31B-tp2-long"]["kv_tokens"]))
+    ck("0903 README, and its utilisation", _m.group(2) if _m else "-1",
+       round(_c3done["C-31B-tp2-long"]["util"] * 100))
+    _m = re.search(r"`max_model_len` from ([\d ]+) to ([\d ]+)", _c3r)
+    ck("0903 README, the 31B's retry, from", _m.group(1).replace(" ", "") if _m else "-1",
+       max(int(x["mml"]) for x in _c3rows if x.get("kind") == "config_complete"))
+    ck("0903 README, the 31B's retry, to", _m.group(2).replace(" ", "") if _m else "-1",
+       _c3done["C-31B-tp2-long"]["mml"])
+    _m = re.search(r"The 12B and the MoE hold\s+([\d ]+) and ([\d ]+)", _c3r)
+    ck("0903 README, the 12B's pool", _m.group(1).replace(" ", "") if _m else "-1",
+       int(_c3meta["A-12B-tp2-long"]["kv_tokens"]))
+    ck("0903 README, the MoE's pool", _m.group(2).replace(" ", "") if _m else "-1",
+       int(_c3meta["E-26B-tp2-long"]["kv_tokens"]))
+    ck("0903 README, the retry note is in results.jsonl", "1",
+       sum(1 for r in _c3rows if r.get("kind") == "note" and r.get("cfg") == "C-31B-tp2-long"
+           and "kv_max_len=83392, mml->82558" in r.get("note", "")))
+    ck("0903 README, and the 31B's ladder ended at 80 000", "80000", max(r["ctx"] for r in _c3d("C-31B-tp2-long")))
+    # the prefill fit table: whole-ladder fits, b/c, the share at the deepest rung, TTFT
+    _c3fits = {f["cfg"]: f for f in _bpm.fits([r for r in _RTP if r["date"] == "2026-09-03"
+                                                and r["machine"] == "RX 7900 XT"])}
+    for _m in re.finditer(r"^\| (gemma-4-12B|gemma-4-26B-A4B|gemma-4-31B|Qwen3-8B|Qwen3\.8-27B|Muse-Glimmer-30B) "
+                          r"\| (\d+)/(\d+) \| ([\d.]+) \| ([\d.]+) \| ([\d ]+) \| ([\d.]+) % @ ([\d ]+) \| ([\d.]+) s \|$",
+                          _c3r, re.M):
+        _cfg = _C3[_m.group(1)]
+        _f = _c3fits[_cfg]
+        _pr = _c3p(_cfg)
+        ck("0903 README prefill table, %s graded rungs" % _cfg, _m.group(2), sum(1 for r in _pr if r["chart_grade"]))
+        ck("0903 README prefill table, %s rungs" % _cfg, _m.group(3), len(_pr))
+        ck("0903 README prefill table, %s b" % _cfg, _m.group(4), round(_f["b_us_tok"], 1))
+        ck("0903 README prefill table, %s c" % _cfg, _m.group(5), round(_f["c_ns_tok2"], 2))
+        ck("0903 README prefill table, %s b/c" % _cfg, _m.group(6).replace(" ", ""),
+           round(_f["b_us_tok"] / 1e6 / (_f["c_ns_tok2"] / 1e9)))
+        _Sr = int(_m.group(8).replace(" ", ""))
+        _a, _b, _c = _f["a_ms"] / 1e3, _f["b_us_tok"] / 1e6, _f["c_ns_tok2"] / 1e9
+        ck("0903 README prefill table, %s deepest rung" % _cfg, _Sr, max(r["ctx"] for r in _pr))
+        _S = [r for r in _pr if r["chart_grade"]][-1]["prompt_tokens"]   # the share is at the tokens actually sent
+        ck("0903 README prefill table, %s quadratic share" % _cfg, _m.group(7),
+           round(_c * _S * _S / (_a + _b * _S + _c * _S * _S) * 100, 1))
+        _tt = [r["ttft"] for r in _c3rows if r.get("kind") == "prefill" and r["cfg"] == _cfg and r["target"] == _Sr]
+        ck("0903 README prefill table, %s TTFT at the deepest rung" % _cfg, _m.group(9), round(_st.mean(_tt), 1))
+    # the ungraded rungs, named with their two-round range
+    _m = re.search(r"\(the 12B at ([\d ]+) and ([\d ]+), ([\d.]+) % and ([\d.]+) %; the MoE at\s+([\d ]+), ([\d.]+) %; Muse at ([\d ]+), ([\d.]+) %; the 27B at ([\d ]+), ([\d.]+) %, a first request\s+at ([\d.]+) tok/s against a second at ([\d.]+)\)", _c3r)
+    ck("0903 README, the ungraded prefill rungs are named", "1", 1 if _m else 0)
+    if _m:
+        _ung = {c: {r["ctx"]: r["range_pct"] for r in _c3p(c) if not r["chart_grade"]} for c in _C3.values()}
+        for _c, _gi, _gr, _n in (("A-12B-tp2-long", 1, 3, "the 12B's first"), ("A-12B-tp2-long", 2, 4, "the 12B's second"),
+                                 ("E-26B-tp2-long", 5, 6, "the MoE's"), ("G-30B-tp2-long", 7, 8, "Muse's"), ("D8-27B-tp2-long", 9, 10, "the 27B's")):
+            ck("0903 README, %s ungraded range" % _n, _m.group(_gr), round(_ung[_c].get(int(_m.group(_gi).replace(" ", "")), -1), 1))
+        ck("0903 README, the ungraded rungs, counted", "5", sum(len(v) for v in _ung.values()))
+        ck("0903 README, and the count word agrees", "1", 1 if "Five rungs are below chart grade" in _c3r else 0)
+        _r27 = sorted([r for r in _c3rows if r.get("kind") == "prefill" and r["cfg"] == "D8-27B-tp2-long" and r["target"] == 500], key=lambda r: r["ts"])
+        ck("0903 README, the 27B's first request at 500", _m.group(11), round(_r27[0]["prefill_tps"], 1))
+        ck("0903 README, and its second", _m.group(12), round(_r27[1]["prefill_tps"], 1))
+    # the telemetry table: per-card power against the cap, mem_busy, sclk, temperature
+    def _c3cell(cfg, t):
+        cell = [r for r in _c3rows if r.get("kind") == "decode" and r["cfg"] == cfg and r["target"] == t]
+        return (round(_st.mean(r["power_w_mean"] for r in cell), 1),
+                round(100 * _st.mean(r["power_w_mean"] for r in cell) / cell[0]["power_cap_w"]),
+                round(_st.mean(r["mem_busy_pct_max"] for r in cell), 1),
+                max(r["sclk_mhz_max"] for r in cell), max(r["temp_c_max"] for r in cell))
+    for _m in re.finditer(r"^\| (gemma-4-12B|gemma-4-26B-A4B|gemma-4-31B|Qwen3-8B|Qwen3\.8-27B|Muse-Glimmer-30B) \| \**([\d.]+) W \(([\d.]+) %\)\**, `mem_busy` ([\d.]+) %, sclk ([\d ]+) "
+                          r"\| ([\d.]+) W \(([\d.]+) %\), `mem_busy` ([\d.]+) %, sclk ([\d ]+), (\d+) °C \|$", _c3r, re.M):
+        _cfg = _C3[_m.group(1)]
+        _deep = max(r["ctx"] for r in _c3d(_cfg))
+        _a5 = _c3cell(_cfg, 500); _ad = _c3cell(_cfg, _deep)
+        ck("0903 README telemetry, %s power at 500" % _cfg, _m.group(2), _a5[0])
+        ck("0903 README telemetry, %s share of cap at 500" % _cfg, _m.group(3), round(100 * _a5[0] / 265, 1))
+        ck("0903 README telemetry, %s mem_busy at 500" % _cfg, _m.group(4), _a5[2])
+        ck("0903 README telemetry, %s sclk at 500" % _cfg, _m.group(5).replace(" ", ""), _a5[3])
+        ck("0903 README telemetry, %s power at the deepest rung" % _cfg, _m.group(6), _ad[0])
+        ck("0903 README telemetry, %s share of cap at the deepest rung" % _cfg, _m.group(7), round(100 * _ad[0] / 265, 1))
+        ck("0903 README telemetry, %s mem_busy at the deepest rung" % _cfg, _m.group(8), _ad[2])
+        ck("0903 README telemetry, %s sclk at the deepest rung" % _cfg, _m.group(9).replace(" ", ""), _ad[3])
+        ck("0903 README telemetry, %s temperature at the deepest rung" % _cfg, _m.group(10), _ad[4])
+    ck("0903 README telemetry, the cap is the cards'", "265",
+       list({r["power_cap_w"] for r in _c3rows if r.get("kind") == "decode"})[0])
+    # the overlap with 2026-08-24: decode worst rungs, the MoE's prefill rows on both days
+    _c3old = [json.loads(l) for l in open(os.path.join(_BR, "results-2026-08-24.jsonl"), encoding="utf-8") if l.strip()]
+    _m = re.search(r"worst rung ([\d.]+) % \(12B\), ([\d.]+) % \(MoE, every rung 2–3 % slower\), ([\d.]+) %\s+\(31B\), ([\d.]+) % \(8B\), ([\d.]+) % \(Muse, every rung 1–1.6 % slower\), ([\d.]+) % \(27B\)", _c3r)
+    ck("0903 README overlap, the decode sentence is there", "1", 1 if _m else 0)
+    if _m:
+        for _i, (_cfg, _oc) in enumerate((("A-12B-tp2-long", "A-12B-tp2"), ("E-26B-tp2-long", "E-26B-tp2"), ("C-31B-tp2-long", "C-31B-tp2"),
+                                          ("B-8B-tp2-long", "B-8B-tp2"), ("G-30B-tp2-long", "G-30B-tp2"), ("D8-27B-tp2-long", "D8-27B-tp2"))):
+            _new = {r["ctx"]: r["decode_tok_s"] for r in _c3d(_cfg)}
+            _old = {r["ctx"]: r["decode_tok_s"] for r in _RTD if r["cfg"] == _oc and r["date"] == "2026-08-24" and r["machine"] == "RX 7900 XT"}
+            _dif = [(_new[c] / _old[c] - 1) * 100 for c in _old if c in _new]
+            ck("0903 README overlap, %s worst decode rung" % _cfg, _m.group(_i + 1), _rhu(max(abs(x) for x in _dif), 1))
+            if _cfg == "E-26B-tp2-long":
+                ck("0903 README overlap, and the MoE is slower on every rung", "0", sum(1 for x in _dif if x >= 0))
+                ck("0903 README overlap, by two to three per cent", "0", sum(1 for x in _dif if not (1.5 <= -x <= 3.5)))
+            if _cfg == "G-30B-tp2-long":
+                ck("0903 README overlap, and Muse is slower on every rung", "0", sum(1 for x in _dif if x >= 0))
+                ck("0903 README overlap, by one to 1.6 per cent", "0", sum(1 for x in _dif if not (0.95 <= -x <= 1.65)))
+    for _m in re.finditer(r"^\| (2026-08-24|2026-09-03), two rounds \| \**([\d ]+) / ([\d ]+)\** \| ([\d ]+) / ([\d ]+) \| ([\d ]+) / ([\d ]+) \| ([\d ]+) / ([\d ]+) \|$", _c3r, re.M):
+        _src = _c3old if _m.group(1) == "2026-08-24" else _c3rows
+        _cfg = "E-26B-tp2" if _m.group(1) == "2026-08-24" else "E-26B-tp2-long"
+        for _j, _t in enumerate((500, 1000, 2000, 32000)):
+            _rs = sorted([r for r in _src if r.get("kind") == "prefill" and r["cfg"] == _cfg and r["target"] == _t], key=lambda r: r["ts"])
+            ck("0903 README overlap, MoE prefill %s at %d, round 1" % (_m.group(1), _t), _m.group(2 + 2 * _j).replace(" ", ""), _rhu(_rs[0]["prefill_tps"], 0))
+            ck("0903 README overlap, MoE prefill %s at %d, round 2" % (_m.group(1), _t), _m.group(3 + 2 * _j).replace(" ", ""), _rhu(_rs[1]["prefill_tps"], 0))
+    _m = re.search(r"\+(\d+) % at 500, \+(\d+) % at 1 000, \+(\d+) % at 2 000, \+([\d.]+) % at 32 000", _c3r)
+    ck("0903 README overlap, the four percentages are there", "1", 1 if _m else 0)
+    if _m:
+        for _j, _t in enumerate((500, 1000, 2000, 32000)):
+            _o = _st.mean(r["prefill_tps"] for r in _c3old if r.get("kind") == "prefill" and r["cfg"] == "E-26B-tp2" and r["target"] == _t)
+            _n = _st.mean(r["prefill_tps"] for r in _c3rows if r.get("kind") == "prefill" and r["cfg"] == "E-26B-tp2-long" and r["target"] == _t)
+            ck("0903 README overlap, MoE prefill change at %d" % _t, _m.group(_j + 1), round((_n / _o - 1) * 100, 1 if _t == 32000 else 0))
+    _m = re.search(r"The 12B, 31B, 8B, Muse and 27B prefill rows agree\s+within ([\d.]+) %", _c3r)
+    _w = 0   # chart-grade rungs on both sides, as the overlap table itself is drawn
+    for _cfg, _oc in (("A-12B-tp2-long", "A-12B-tp2"), ("C-31B-tp2-long", "C-31B-tp2"), ("B-8B-tp2-long", "B-8B-tp2"), ("G-30B-tp2-long", "G-30B-tp2"), ("D8-27B-tp2-long", "D8-27B-tp2")):
+        _new = {r["ctx"]: r["prefill_tok_s"] for r in _c3p(_cfg) if r["chart_grade"]}
+        _old = {r["ctx"]: r["prefill_tok_s"] for r in _RTP if r["cfg"] == _oc and r["date"] == "2026-08-24" and r["machine"] == "RX 7900 XT" and r["chart_grade"]}
+        _w = max([_w] + [abs(_new[c] / _old[c] - 1) * 100 for c in _old if c in _new])
+    ck("0903 README overlap, the other arms' worst prefill rung", _m.group(1) if _m else "-1", _rhu(_w, 1))
+    # the prompt cut: rungs that reproduce, per tokenizer, and the two that count ten fewer
+    _c3same = {}
+    for _tok in ("gemma", "gemma26b", "qwen", "muse"):
+        _nw = {r["target"]: r for r in json.load(open(os.path.join(_c3, "prompts-v2", "manifest-%s.json" % _tok)))}
+        _od = {r["target"]: r for r in json.load(open(os.path.join(_BR, "prompts", "manifest-%s.json" % _tok)))}
+        _c3same[_tok] = sum(1 for t in _od if t in _nw and _nw[t]["chars"] == _od[t]["chars"])
+        ck("0903 README prompts, %s ladder has sixteen rungs" % _tok, "16", len(_nw))
+        ck("0903 README prompts, %s ladder reaches 128 000" % _tok, "128000", max(_nw))
+    for _name, _tok in (("Muse-Glimmer", "muse"), ("Qwen", "qwen"), ("gemma-4-26B", "gemma26b"), (r"gemma-4 \(12B, 31B\)", "gemma")):
+        _m = re.search(r"^\| %s \| (\d+) \|" % _name, _c3r, re.M)
+        ck("0903 README prompts, %s rungs with the same text" % _tok, _m.group(1) if _m else "-1", _c3same[_tok])
+    _nw = {r["target"]: r for r in json.load(open(os.path.join(_c3, "prompts-v2", "manifest-gemma.json")))}
+    _od = {r["target"]: r for r in json.load(open(os.path.join(_BR, "prompts", "manifest-gemma.json")))}
+    ck("0903 README prompts, the two gemma rungs that share their text", "2",
+       len([t for t in _od if _nw[t]["chars"] == _od[t]["chars"]]))
+    ck("0903 README prompts, and both count ten tokens fewer", "1",
+       1 if {_nw[t]["est_prompt_tokens"] - _od[t]["est_prompt_tokens"] for t in _od if _nw[t]["chars"] == _od[t]["chars"]} == {-10} else 0)
+    _m = re.search(r"Qwen \| \d+ \| 12 000: ([\d ]+) → ([\d ]+) tokens, ([−\-]\d+) chars", _c3r)
+    _nq = {r["target"]: r for r in json.load(open(os.path.join(_c3, "prompts-v2", "manifest-qwen.json")))}
+    _oq = {r["target"]: r for r in json.load(open(os.path.join(_BR, "prompts", "manifest-qwen.json")))}
+    ck("0903 README prompts, the Qwen rung that moved, before", _m.group(1).replace(" ", "") if _m else "-1", _oq[12000]["est_prompt_tokens"])
+    ck("0903 README prompts, the Qwen rung that moved, after", _m.group(2).replace(" ", "") if _m else "-1", _nq[12000]["est_prompt_tokens"])
+    ck("0903 README prompts, and its characters", _c3n(_m.group(3)) if _m else "-1", _nq[12000]["chars"] - _oq[12000]["chars"])
+    # host_link: the time it was read, and how long after the start
+    _hl = json.load(open(os.path.join(_c3, "host_link.json")))
+    _m = re.search(r"taken at (\d\d:\d\d:\d\d) UTC, (\w+) minutes after the run started at\s+(\d\d:\d\d:\d\d)", _c3r)
+    ck("0903 README host_link, the sentence is there", "1", 1 if _m else 0)
+    if _m:
+        import datetime as _dt
+        _hlt = _dt.datetime.fromtimestamp(_hl["ts"], _dt.timezone.utc)
+        ck("0903 README host_link, read at", "1", 1 if _m.group(1) == _hlt.strftime("%H:%M:%S") else 0)
+        _pg = open(os.path.join(_c3, "PROGRESS.txt"), encoding="utf-8").read().splitlines()
+        _st0 = next(l for l in _pg if "campaign start rev2" in l)[:8]
+        ck("0903 README host_link, the run started at", "1", 1 if _m.group(3) == _st0 else 0)
+        _mins = round((_hlt - _hlt.replace(hour=int(_st0[:2]), minute=int(_st0[3:5]), second=int(_st0[6:8]))).total_seconds() / 60)
+        ck("0903 README host_link, minutes after", {"eight": 8, "seven": 7, "nine": 9}.get(_m.group(2), -1), _mins)
+        ck("0903 README host_link, both root ports x16", "2", sum(1 for c in _hl["cards"] if c["width"] == "x16"))
+    # the three failures: what they said, and when
+    _c3ev = sorted([r for r in _c3rows if r.get("kind") in ("config_complete", "config_failed", "note")], key=lambda r: r["ts"])
+    _ts = {(r["kind"], r["cfg"]): r["ts"] for r in _c3ev if r["kind"] != "note"}
+    for r in _c3ev:   # the first capacity note per arm is rev2's; rev3's later ones do not overwrite it
+        if r["kind"] == "note" and "kv_max_len" in r.get("note", "") and ("note", r["cfg"]) not in _ts:
+            _ts[("note", r["cfg"])] = r["ts"]
+    _m = re.search(r"Both died before loading a weight, (\d+) s after the\s+previous arm finished", _c3r)
+    ck("0903 README failures, the timing sentence is there", "1", 1 if _m else 0)
+    if _m:
+        ck("0903 README failures, the 8B died after", _m.group(1), round(_ts[("config_failed", "B-8B-tp2-long")] - _ts[("config_complete", "A-12B-tp2-long")]))
+        ck("0903 README failures, the Muse died after", _m.group(1), round(_ts[("config_failed", "G-30B-tp2-long")] - _ts[("config_complete", "E-26B-tp2-long")]))
+    _m = re.search(r"died at CUDA-graph capture,\s+twenty minutes in and ten after the retry", _c3r)
+    ck("0903 README failures, the 27B's timing sentence is there", "1", 1 if _m else 0)
+    ck("0903 README failures, the 27B died twenty minutes in", "20",
+       round((_ts[("config_failed", "D8-27B-tp2-long")] - _ts[("config_failed", "G-30B-tp2-long")]) / 60))
+    ck("0903 README failures, and ten after its retry", "10",
+       round((_ts[("config_failed", "D8-27B-tp2-long")] - _ts[("note", "D8-27B-tp2-long")]) / 60))
+    _caps = json.load(open(os.path.join(_c3, "position_caps.json"), encoding="utf-8"))
+    _capof = {c["model"]: c for c in _caps["checkpoints"]}
+    for _mdl, _cap, _where in (("Qwen3-8B", 40960, "top"), ("Muse-Glimmer-30B-INT4", 131072, "text_config")):
+        ck("0903 README failures, %s's cap as read from its config.json" % _mdl, str(_cap), _capof[_mdl]["max_position_embeddings"])
+        ck("0903 README failures, and where in the file", "1", 1 if _capof[_mdl]["where"] == _where else 0)
+        ck("0903 README failures, and the README quotes it", "1", 1 if re.search(r"\*\*%s %s\*\*" % (str(_cap)[:-3], str(_cap)[-3:]), _c3r) else 0)
+    ck("0903 README failures, the other four caps admit 132 000", "4",
+       sum(1 for c in _caps["checkpoints"] if c["max_position_embeddings"] >= 132000))
+    ck("0903 README failures, the README names the guard's file", "1", 1 if "vllm/config/model.py" in _c3r and "vllm/config/model.py" in _caps["guard"] else 0)
+    ck("0903 README failures, rev3 caps the two checkpoints at those values", "2",
+       sum(1 for c in ("40960", "131072") if ("mml=%s" % c) in open(os.path.join(_c3, "runner.py"), encoding="utf-8").read()))
+    # the Mamba refusal: rev2's count survives in runner.py's comment, rev3's in the note row
+    _rev3 = open(os.path.join(_c3, "runner.py"), encoding="utf-8").read()
+    _mm = re.search(r"mml 122 633 with (\d+) blocks against (\d+)", _rev3)
+    ck("0903 README failures, runner.py records rev2's Mamba count", "1", 1 if _mm else 0)
+    if _mm:
+        ck("0903 README failures, and the README quotes it", "1",
+           1 if "`max_num_seqs (%s) exceeds\navailable Mamba cache blocks (%s)`" % (_mm.group(2), _mm.group(1)) in _c3r
+           or "`max_num_seqs (%s) exceeds available Mamba cache blocks (%s)`" % (_mm.group(2), _mm.group(1)) in _c3r else 0)
+    _mn = [re.search(r"mamba_blocks=(\d+), mns->(\d+)", r["note"]).groups() for r in _c3rows
+           if r.get("kind") == "note" and r.get("cfg") == "D8-27B-tp2-long" and "mamba_blocks=" in r.get("note", "")]
+    ck("0903 README failures, rev3's Mamba notes in results.jsonl", "2", len(_mn))
+    for _blocks, _mns in _mn:
+        ck("0903 README failures, and the README quotes the %s-block reading" % _blocks, "1",
+           1 if ("held **%s**" % _blocks) in _c3r and ("--max-num-seqs %s" % _mns) in _c3r else 0)
+    if _mm and _mn:
+        ck("0903 README failures, rev3 read rev2's count at the same max_model_len", "1",
+           1 if _mm.group(1) in [b for b, _ in _mn] else 0)
+    _kv = [r for r in _c3rows if r.get("kind") == "note" and r.get("cfg") == "D8-27B-tp2-long" and "kv_max_len" in r.get("note", "")]
+    ck("0903 README failures, the 27B's capacity retries", "2", len(_kv))
+    ck("0903 README failures, both to the same max_model_len", "1", 1 if len({r["note"] for r in _kv}) == 1 and "122 633" in _c3r else 0)
+    ck("0903 README failures, the 27B's four note rows", "4", len(_mn) + len(_kv))
+    ck("0903 README failures, and says the rev2 serve logs were overwritten", "1",
+       1 if "overwrote" in _c3r or "overwritten" in _c3r else 0)
+    # the container: the version line every serve log opens with
+    _c3v = "0.23.1.dev1+g9ddef7117.d20260715"
+    ck("0903 README container, the README names the version", "1", 1 if _c3v in _c3r else 0)
+    ck("0903 README container, and every serve log prints it", str(len(list(glob.glob(os.path.join(_c3, "logs", "*.log"))))),
+       sum(1 for f in glob.glob(os.path.join(_c3, "logs", "*.log")) if _c3v in open(f, encoding="utf-8", errors="replace").read()))
+    # the runner: rev3 in the tree, rev2 kept, the md5s the README prints
+    import hashlib as _hh
+    for _fn, _tag in (("runner.py", "rev3"), ("runner-rev2.py", "rev2")):
+        _md = _hh.md5(open(os.path.join(_c3, _fn), "rb").read()).hexdigest()
+        ck("0903 README runner, %s md5 is printed" % _tag, "1", 1 if ("md5 %s…" % _md[:8]) in _c3r else 0)
+    ck("0903 README runner, rev3 parses the Mamba message", "1",
+       1 if "exceeds available Mamba cache blocks" in open(os.path.join(_c3, "runner.py"), encoding="utf-8").read() else 0)
+    ck("0903 README runner, rev3 caps the two checkpoints", "2",
+       sum(1 for s in ("40960", "131072") if s in open(os.path.join(_c3, "runner.py"), encoding="utf-8").read()))
+    # the headline counts
+    _m = re.search(r"— ([\d ]+) measurements, (\d+) errors, telemetry", _c3r)
+    ck("0903 README, measurements", _m.group(1).replace(" ", "") if _m else "-1",
+       sum(1 for r in _c3rows if r.get("kind") in ("decode", "prefill")))
+    ck("0903 README, errors", _m.group(2) if _m else "-1",
+       sum(int(r.get("err", 0)) for r in _c3rows if r.get("kind") == "config_complete"))
+    ck("0903 README, and every measurement carries telemetry", "0",
+       sum(1 for r in _c3rows if r.get("kind") in ("decode", "prefill") and not r.get("tele_samples")))
+    # the backends: nobody asked for one, the logs say which vLLM chose
+    ck("0903 README backends, no serve script passes one", "0",
+       sum(1 for f in glob.glob(os.path.join(_c3, "serve-*.sh")) if "attention-backend" in open(f, encoding="utf-8").read()))
+    ck("0903 README backends, the 8B's log carries the override", "1",
+       1 if "Overriding with ROCM_ATTN" in open(os.path.join(_c3, "logs", "B-8B-tp2-long.log"), encoding="utf-8", errors="replace").read() else 0)
+    ck("0903 README backends, and the three gemma logs say TRITON_ATTN", "3",
+       sum(1 for c in ("A-12B-tp2-long", "E-26B-tp2-long", "C-31B-tp2-long")
+           if "Using TRITON_ATTN backend" in open(os.path.join(_c3, "logs", "%s.log" % c), encoding="utf-8", errors="replace").read()))
+    ck("0903 README backends, the projection agrees for the 8B, Muse and the 27B", "1",
+       1 if {r["attn_backend"] for c in ("B-8B-tp2-long", "G-30B-tp2-long", "D8-27B-tp2-long") for r in _c3d(c)} == {"ROCM_ATTN"} else 0)
+    ck("0903 README backends, and the three logs carry the override", "3",
+       sum(1 for c in ("B-8B-tp2-long", "G-30B-tp2-long", "D8-27B-tp2-long")
+           if "Overriding with ROCM_ATTN" in open(os.path.join(_c3, "logs", "%s.log" % c), encoding="utf-8", errors="replace").read()))
+    ck("0903 README backends, and for the gemma arms", "1",
+       1 if {r["attn_backend"] for c in ("A-12B-tp2-long", "E-26B-tp2-long", "C-31B-tp2-long") for r in _c3d(c)} == {"TRITON_ATTN"} else 0)
+    ck("0903 README backends, the README says which arms are on ROCM_ATTN", "1",
+       1 if "the three arms on ROCM_ATTN" in _c3r and "the bf16\n8B, the int4 Muse and the AWQ 27B" in _c3r else 0)
+    _m = re.search(r"`mem_busy` stays\s+high at depth, (\d+) % at both ends", _c3r)
+    ck("0903 README, the 8B's mem_busy at both ends", "2" if _m else "-1",
+       sum(1 for t in (500, 32000) if _m and abs(_c3cell("B-8B-tp2-long", t)[2] - float(_m.group(1))) <= 0.5))
+    # the 27B's level is the slow-kernel checkpoint's: the README says so, with Figure 1's number
+    _m = re.search(r"decodes at ([\d.]+) tok/s where Figure 1's\s+line for the same model, on vLLM 0.27, starts at ([\d.]+)", _c3r)
+    ck("0903 README, the 27B's level sentence is there", "1", 1 if _m else 0)
+    if _m:
+        ck("0903 README, the 27B at 500 here", _m.group(1), round(_c3d("D8-27B-tp2-long")[0]["decode_tok_s"], 2))
+        # Figure 1's line, as the figure draws it: the series the generator picked for the model on the pair
+        _fi = json.load(open(os.path.join(ROOT, "site", "src", "figures-index.json"), encoding="utf-8"))["best"]["series"]
+        _q38 = [x for x in _fi if x["machine"] == "rdna3" and x["model"] == "Qwen3.8-27B" and x["lit"]]
+        ck("0903 README, and Figure 1's line for that model", "1", len(_q38))
+        ck("0903 README, and where it starts", _m.group(2), _rhu(_q38[0]["points"][0]["tok_s"], 1) if _q38 else -1)
+    _m = re.search(r"its `mem_busy` at 500 tokens, \*\*(\d+) %\*\*", _c3r)
+    ck("0903 README, the 27B's mem_busy at 500", _m.group(1) if _m else "-1", _c3cell("D8-27B-tp2-long", 500)[2])
+    # the finding's numbers: the gemma arms at the cap with mem_busy 24-25 % at 128 000, Muse at 74 %
+    for _c, _lo, _hi in (("A-12B-tp2-long", 24, 25), ("E-26B-tp2-long", 24, 25)):
+        ck("0903 README finding, %s mem_busy at 128 000 inside 24-25" % _c, "1",
+           1 if _lo - 0.5 <= _c3cell(_c, 128000)[2] <= _hi + 0.5 else 0)
+    ck("0903 README finding, Muse's mem_busy at 128 000", "74", _c3cell("G-30B-tp2-long", 128000)[2])
+    ck("0903 README finding, the H100 ordering it cites is in cuda-modal's README", "3",
+       sum(1 for t in ("−4.8 %", "−21.8 %", "−22.0 %") if t in open(os.path.join(_BR, "cuda-modal", "README.md"), encoding="utf-8").read()))
+    ck("0903 README, the 27B's KV pool", "123399", int(_c3meta["D8-27B-tp2-long"]["kv_tokens"]))
+    ck("0903 README, and its fifteen rungs end at 96 000", "96000", max(r["ctx"] for r in _c3d("D8-27B-tp2-long")))
+    ck("0903 README, Muse's pool", "484921", int(_c3meta["G-30B-tp2-long"]["kv_tokens"]))
+    ck("0903 README, the 8B's pool", "122352", int(_c3meta["B-8B-tp2-long"]["kv_tokens"]))
+    _m = re.search(r"`b/c` sits at ([\d ]+)–([\d ]+) tokens", _c3r)
+    _xo = sorted(round(_c3fits[c]["b_us_tok"] / 1e6 / (_c3fits[c]["c_ns_tok2"] / 1e9)) for c in ("A-12B-tp2-long", "E-26B-tp2-long", "C-31B-tp2-long", "G-30B-tp2-long"))
+    ck("0903 README, the crossover range, low end", _m.group(1).replace(" ", "") if _m else "-1", _xo[0])
+    ck("0903 README, the crossover range, high end", _m.group(2).replace(" ", "") if _m else "-1", _xo[-1])
+    ck("0903 README, and the 27B's is the largest b", "1",
+       1 if max(_c3fits, key=lambda c: _c3fits[c]["b_us_tok"]) == "D8-27B-tp2-long" else 0)
     ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
@@ -5499,8 +5903,8 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "61", len(XB["series"]))
-    ck("index figure, points", "651", sum(len(x["points"]) for x in XB["series"]))
+    ck("index figure, series", "60", len(XB["series"]))
+    ck("index figure, points", "640", sum(len(x["points"]) for x in XB["series"]))
     # Every line is one session at the campaign ladder -- not a three-point probe
     # beside an eleven-rung campaign -- unless the card could not hold the KV for
     # the next rung, which two of the single-card lines could not. A short line
@@ -5529,7 +5933,7 @@ def main():
        sum(1 for x in XB["series"] if x["spec"]))
     ck("index figure, and none of them is lit without being asked", "0",
        sum(1 for x in XB["series"] if x["spec"] and x["lit"]))
-    ck("index figure, lines on the Radeons", "10",
+    ck("index figure, lines on the Radeons", "9",
        sum(1 for x in XB["series"] if x["machine"] == "rdna3"))
     # The alternative arm: same model, same machine, same day, same stack, one
     # flag. It is not a pick competing for "fastest" -- it is the other half of
@@ -5627,9 +6031,9 @@ def main():
        max(c["worst_pct"] for c in XCC), 0.01)
     ck("index figure, and inside the chart-grade cut", "1",
        1 if max(c["worst_pct"] for c in XCC) <= 8.0 else 0)
-    ck("index figure, lit without being asked", "4",
+    ck("index figure, lit without being asked", "5",
        sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "rdna3"))
-    ck("index figure, and the same models on the other machine", "4",
+    ck("index figure, and the same models on the other machine", "5",
        sum(1 for x in XB["series"] if x["lit"] and x["machine"] == "a100"))
 
     # One colour per model, seven of them defined, and adding a machine must not
@@ -5638,7 +6042,23 @@ def main():
     # the same thing. Every A100 model is already a Radeon model, which is why
     # nine new lines cost no colours -- this is the check that says so.
     xmodels = sorted({x["model"] for x in XB["series"]})
-    ck("index figure, models drawn", "7", len(xmodels))
+    ck("index figure, models drawn", "6", len(xmodels))   # gemma-3-27b left the figure 2026-09-03; see OMIT in genfig-index.py
+    # the caption's arithmetic -- "N of the M Radeon lines come from a single
+    # campaign ... the other K" -- against the figure: M is the models on the
+    # pair, N the backbone campaign's, K the rest
+    _xen = open(os.path.join(HERE, "..", "..", "site", "src", "index-body.html"), encoding="utf-8").read()
+    _xzh = open(os.path.join(HERE, "..", "..", "site", "src", "index-body-zh.html"), encoding="utf-8").read()
+    _xw = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
+    _xz = {"一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8}
+    _xpair = len({x["model"] for x in XB["series"] if x["machine"] == "rdna3"})
+    _m = re.search(r"(\w+) of the (\w+) Radeon lines come from a single campaign[^;]*; the other (\w+)", _xen)
+    ck("index caption, en: the Radeon lines", str(_xw.get(_m.group(2).lower(), -1) if _m else -1), _xpair)
+    ck("index caption, en: from the one campaign", str(_xw.get(_m.group(1).lower(), -1) if _m else -1), XB["campaign"]["models"])
+    ck("index caption, en: and the rest", str(_xw.get(_m.group(3).lower(), -1) if _m else -1), _xpair - XB["campaign"]["models"])
+    _m = re.search(r"Radeon 这边([一二三四五六七八九十两]+)条里\s*有([一二三四五六七八九十两]+)条出自同一场[^；]*；另外([一二三四五六七八九十两]+)条", _xzh)
+    ck("index caption, zh: the Radeon lines", str(_xz.get(_m.group(1), -1) if _m else -1), _xpair)
+    ck("index caption, zh: from the one campaign", str(_xz.get(_m.group(2), -1) if _m else -1), XB["campaign"]["models"])
+    ck("index caption, zh: and the rest", str(_xz.get(_m.group(3), -1) if _m else -1), _xpair - XB["campaign"]["models"])
     ck("index figure, and a colour for each without wrapping", "1",
        1 if len(xmodels) <= len(set(re.findall(r"--m(\d):",
           open(os.path.join(HERE, "..", "..", "site", "src", "index-extra.css"),
@@ -5716,6 +6136,13 @@ def main():
        1 if all(any(r["model"] == m for r in XLED) for m in XB["omitted"]) else 0)
     ck("index figure, and is not drawn", "0",
        sum(1 for x in XB["series"] if x["model"] in XB["omitted"]))
+    # each omitted model names the string that explains it, in both languages
+    _xsen = json.loads(block(open(os.path.join(HERE, "..", "..", "site", "src", "index-body.html"), encoding="utf-8").read(), "strings"))
+    _xszh = json.loads(block(open(os.path.join(HERE, "..", "..", "site", "src", "index-body-zh.html"), encoding="utf-8").read(), "strings"))
+    ck("index figure, every omitted model says why", "0",
+       sum(1 for m in XB["omitted"] if not XB.get("omitted_why", {}).get(m)))
+    ck("index figure, and both pages carry each reason", str(2 * len(XB["omitted"])),
+       sum(1 for m in XB["omitted"] for s in (_xsen, _xszh) if s.get(XB.get("omitted_why", {}).get(m, ""))))
     # the A100 pair, recomputed from the campaign file rather than quoted
     import collections as _co
     XA = _co.defaultdict(lambda: _co.defaultdict(list))
@@ -5927,12 +6354,13 @@ def main():
         _caps[_lang] = [len(re.findall(r"<dt>", _c))
                         for _c in re.findall(r"<figcaption>(.*?)</figcaption>", _t, re.S)
                         if "capnotes" in _c]
-    ck("index captions, structured ones in en", "2", len(_caps["en"]))
+    # four since 2026-09-03: Figures 3 and 4 carry the same lede-plus-blocks shape
+    ck("index captions, structured ones in en", "4", len(_caps["en"]))
     ck("index captions, and the same number in zh", str(len(_caps["en"])),
        len(_caps["zh"]))
     ck("index captions, the two languages carry the same blocks", "1",
        1 if _caps["en"] == _caps["zh"] else 0)
-    ck("index captions, and every structured one opens with a lede", "4",
+    ck("index captions, and every structured one opens with a lede", "8",
        sum(1 for _f in XIP
            for _c in re.findall(r"<figcaption>(.*?)</figcaption>", XI[_f], re.S)
            if "capnotes" in _c and 'class="caplede"' in _c))
@@ -6217,24 +6645,51 @@ def main():
     XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
     ck("prefill figure, no rung past 32 000 is drawn", "0",
        sum(1 for x in XP["series"] for p in x["points"] if p["tokens"] > 33000))
-    ck("prefill figure, lines", "53", len(XP["series"]))
+    ck("prefill figure, lines", "52", len(XP["series"]))
     ck("prefill figure, machines", "11", len({x["machine"] for x in XP["series"]}))
-    ck("prefill figure, models", "7", len({x["model"] for x in XP["series"]}))
+    ck("prefill figure, models", "6", len({x["model"] for x in XP["series"]}))
     ck("prefill figure, single-card lines", "36",
        sum(1 for x in XP["series"] if x["tp"] == 1))
-    ck("prefill figure, and lines on the pair", "17",
+    ck("prefill figure, and lines on the pair", "16",
        sum(1 for x in XP["series"] if x["tp"] == 2))
-    # eight lit: the two models every machine ran, on all four machines
-    ck("prefill figure, lit to start", "20",
+    # the same five models Figure 1 lights, on every machine that ran them --
+    # 42 lines on 2026-09-03, when the page went to one question at a time and
+    # lit went from two models to the five the page is about
+    ck("prefill figure, lit to start", "42",
        sum(1 for x in XP["series"] if x["lit"]))
-    ck("prefill figure, and they are the models every machine ran", "2",
+    ck("prefill figure, and they are the five models Figure 1 lights", "5",
        len({x["model"] for x in XP["series"] if x["lit"]}))
+    ck("prefill figure, and the same five", "1",
+       1 if {x["model"] for x in XP["series"] if x["lit"]}
+       == {x["model"] for x in XB["series"] if x["lit"]} else 0)
     # every model this repository has a chart-grade prefill ladder for is drawn
     ck("prefill figure, models with a fittable ladder left undrawn", "0",
        len({f["model"] for f in _bpf.fits(XPFROWS)
             if f.get("rungs", 0) >= 4 and "b_us_tok" in f
             and f["machine"] == "RX 7900 XT" and f["spec"] is None}
-           - {x["model"] for x in XP["series"]} - {"Qwen3.6-27B"}))
+           - {x["model"] for x in XP["series"]} - set(XB["omitted"])))
+    # the page's own words for the figure are held to the figure
+    for _lang, _fn, _pat in (("en", "index-body.html", r"(\w+) models, (\w+)-?(\w*) lines,"),
+                             ("zh", "index-body-zh.html", r"([一二三四五六七八九十]+)个模型、([一二三四五六七八九十]+)条线")):
+        _src = open(os.path.join(HERE, "..", "..", "site", "src", _fn), encoding="utf-8").read()
+        _m = re.search(_pat, _src)
+        _w = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+              "fifty": 50, "forty": 40, "sixty": 60}
+        _zh = {"六": 6, "七": 7, "八": 8, "五十二": 52, "五十三": 53, "五十一": 51, "五十四": 54}
+        if _lang == "en":
+            ck("prefill figure, %s prose counts the models" % _lang, str(_w.get(_m.group(1).lower(), -1) if _m else -1),
+               len({x["model"] for x in XP["series"]}))
+            ck("prefill figure, %s prose counts the lines" % _lang,
+               str((_w.get(_m.group(2).lower(), -1) + _w.get(_m.group(3).lower(), 0)) if _m else -1), len(XP["series"]))
+        else:
+            ck("prefill figure, %s prose counts the models" % _lang, str(_zh.get(_m.group(1), -1) if _m else -1),
+               len({x["model"] for x in XP["series"]}))
+            ck("prefill figure, %s prose counts the lines" % _lang, str(_zh.get(_m.group(2), -1) if _m else -1), len(XP["series"]))
+        _sb = json.loads(block(_src, "strings"))
+        _u = _sb.get("preUnit", "")
+        ck("prefill figure, %s unit string counts the models" % _lang, str(len({x["model"] for x in XP["series"]})),
+           _w.get(re.search(r"(\w+) models", _u).group(1).lower(), -1) if _lang == "en" and re.search(r"(\w+) models", _u)
+           else _zh.get(re.search(r"([一二三四五六七八九十]+)个模型", _u).group(1), -1) if _lang == "zh" and re.search(r"([一二三四五六七八九十]+)个模型", _u) else -1)
     # The whole reason the A100 was re-run. Four of the six lines are the CUDA
     # campaigns and had the cache off; one is the Radeon MoE, whose 0.23
     # container has it ON and produced no hits anyway -- its rounds agree to
@@ -6246,7 +6701,7 @@ def main():
        sum(1 for x in XP["series"] if x["prefix_caching"] is False))
     ck("prefill figure, lines that had it on and show no hits", "2",
        sum(1 for x in XP["series"] if x["prefix_caching"] is True))
-    ck("prefill figure, lines with no log to say", "7",
+    ck("prefill figure, lines with no log to say", "6",
        sum(1 for x in XP["series"] if x["prefix_caching"] is None))
     # this column is for what was read: five logs survive and all five say
     # TRITON_ATTN, and none of the six records anything else
@@ -6299,7 +6754,7 @@ def main():
        sum(1 for d in _drop.values() if d == [500]))
     ck("prefill figure, lines dropping the 4000 rung", "3",
        sum(1 for d in _drop.values() if d == [4000]))
-    ck("prefill figure, lines dropping nothing", "25",
+    ck("prefill figure, lines dropping nothing", "24",
        sum(1 for d in _drop.values() if not d))
 
     _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
@@ -6329,7 +6784,7 @@ def main():
     # Qwen3-8B measured eleven rungs everywhere -- its own config.json caps
     # context at 40 960 -- so its six rented lines are not truncated and do
     # not claim to be.
-    ck("prefill figure, while the rest fit the whole ladder", "25",
+    ck("prefill figure, while the rest fit the whole ladder", "24",
        sum(1 for x in XP["series"] if x.get("fit_scope") == "the whole ladder"))
     ck("prefill figure, points that do not match prefill.jsonl", "0", _bad_pts)
     # a rung whose two rounds disagree is not a measurement; none may be drawn
@@ -6428,10 +6883,16 @@ def main():
     _worst = min((_de(_pal[_slot[a]], _pal[_slot[b]])
                   for i, a in enumerate(_pf_lit) for b in _pf_lit[i + 1:]),
                  default=None)
-    ck("prefill figure, the lit models are far enough apart to tell", "78.7",
+    # Five models lit since 2026-09-03, and a muted palette with them: the
+    # worst pair among five hues at chroma 32 is what the search could reach,
+    # and the floor moves from 40 for a pair of lines to 30 for five -- still
+    # twice the 17.8 the first palette's closest pair sat at.
+    # (_pal keeps the last value findall meets for each slot, which is the
+    # dark theme's; the light theme's five sit 39.2 apart at worst)
+    ck("prefill figure, the lit models are far enough apart to tell", "41.2",
        _worst, 0.01)
     ck("prefill figure, which the palette's closest pair is not", "1",
-       1 if _worst >= 40 else 0)
+       1 if _worst >= 30 else 0)
 
     # What the second card buys, on the coefficients that reproduce. This is the
     # replacement for the claim docs/benchmarks.md section 4 withdrew, and the
@@ -6495,6 +6956,124 @@ def main():
     ck("prefill figure, its machines are Figure 1's", "1",
        1 if {x["machine"] for x in XP["series"]} <=
        {m["id"] for m in XB["machines"]} else 0)
+
+    # --- Figures 3 and 4: past 32 000 ------------------------------------
+    # The pair on its 2026-09-03 ladder to 128 000 as the subject, the machines
+    # rented that day as the background. Every line is recomputed from the
+    # projection it names, the pair's six lines are required to be there and
+    # lit, and the derived numbers the note prints -- what each line keeps,
+    # where c*S^2 overtakes b*S -- are re-derived here from the rows and the
+    # fitter rather than read back from the figure.
+    XL = XFIG["long"]
+    XLD, XLP = XL["decode"], XL["prefill"]
+    ck("long figures, the pair's configurations, drawn and explained", "6",
+       len(XL["pair_cfgs"]) + len(XL["pair_absent"]))
+    ck("long figures, and every absent one says why", "0",
+       sum(1 for a in XL["pair_absent"] if not a.get("why")))
+    ck("long figures, and the absent one is the capped 8B", "1",
+       1 if [a["cfg"] for a in XL["pair_absent"]] == ["B-8B-tp2-long"] else 0)
+    ck("long figures, decode lines", str(len(XLP["series"])), len(XLD["series"]))
+    ck("long figures, and the same lines on both", "1",
+       1 if [(x["machine"], x["cfg"]) for x in XLD["series"]]
+       == [(x["machine"], x["cfg"]) for x in XLP["series"]] else 0)
+    ck("long figures, lines on the pair", "5",
+       sum(1 for x in XLD["series"] if x["machine"] == "rdna3"))
+    ck("long figures, and every one of them is lit", "5",
+       sum(1 for x in XLD["series"] if x["machine"] == "rdna3" and x["lit"]))
+    ck("long figures, and no other line is", "0",
+       sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
+    ck("long figures, machines offered", "8", len(XL["machines"]))
+    ck("long figures, and only the pair is on by default", "1",
+       1 if [m["id"] for m in XL["machines"] if m["default"]] == ["rdna3"] else 0)
+    ck("long figures, every line reaches past 32 000", "0",
+       sum(1 for x in XLD["series"] + XLP["series"]
+           if max(p["ctx"] for p in x["points"]) <= XL["fig12_max_ctx"]))
+    ck("long figures, the axis ends at 128 000", "128000", XLD["ctx_max"])
+    ck("long figures, and starts at 500", "500", XLD["ctx_min"])
+    ck("long figures, decode ticks", "9", len(XLD["ticks"]))
+    ck("long figures, prefill ticks", "9", len(XLP["ticks"]))
+    # every decode point is decode.jsonl's, on the date the figure names
+    _lbad = _lret = 0
+    for x in XLD["series"]:
+        rows = {r["ctx"]: r for r in XDEC if r["machine"] == x["machine_name"]
+                and r["cfg"] == x["cfg"] and r["date"] == XL["date"]}
+        for p in x["points"]:
+            r = rows.get(p["ctx"])
+            if not r or abs(r["decode_tok_s"] - p["tok_s"]) > 1e-9 or r["chart_grade"] != p["graded"]:
+                _lbad += 1
+        good = sorted([r for r in rows.values() if r["chart_grade"]], key=lambda r: r["ctx"])
+        want = (good[-1]["decode_tok_s"] / good[0]["decode_tok_s"] - 1) * 100
+        if (abs(x["retained"]["change_pct"] - want) > 1e-9
+                or x["retained"]["from_ctx"] != good[0]["ctx"]
+                or x["retained"]["to_ctx"] != good[-1]["ctx"]):
+            _lret += 1
+    ck("long figures, decode points that are not the projection's", "0", _lbad)
+    ck("long figures, retention figures that do not recompute", "0", _lret)
+    # every prefill point is chart-grade and prefill.jsonl's; the fit is the
+    # whole-ladder fit build_prefill reports; the crossover is b/c
+    _lfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpm.fits(XPFROWS)}
+    _lbad = _lfit = _lder = _lung = 0
+    for x in XLP["series"]:
+        rows = {r["ctx"]: r for r in XPFROWS if r["machine"] == x["machine_name"]
+                and r["cfg"] == x["cfg"] and r["date"] == XL["date"]}
+        for p in x["points"]:
+            r = rows.get(p["ctx"])
+            if not r or abs(r["prefill_tok_s"] - p["tok_s"]) > 1e-9:
+                _lbad += 1
+            elif not r["chart_grade"]:
+                _lung += 1
+        f = _lfits.get((x["machine_name"], x["cfg"], x["date"]))
+        if (not f or abs(f["b_us_tok"] - x["fit"]["b_us_tok"]) > 1e-9
+                or abs(f["c_ns_tok2"] - x["fit"]["c_ns_tok2"]) > 1e-9
+                or x["fit_scope"] != "the whole ladder"):
+            _lfit += 1
+        a, b, c = f["a_ms"] / 1e3, f["b_us_tok"] / 1e6, f["c_ns_tok2"] / 1e9
+        S = x["quadratic_share_deepest"]["tokens"]
+        if (abs(x["crossover_tokens"] - b / c) > 1e-6
+                or abs(x["quadratic_share_deepest"]["pct"]
+                       - c * S * S / (a + b * S + c * S * S) * 100) > 1e-9):
+            _lder += 1
+    ck("long figures, prefill points that are not the projection's", "0", _lbad)
+    ck("long figures, ungraded prefill rungs drawn", "0", _lung)
+    ck("long figures, fits that are not the whole-ladder fit", "0", _lfit)
+    ck("long figures, crossovers and shares that do not recompute", "0", _lder)
+    # the one model left out is left out on every machine, for its own ceiling
+    ck("long figures, models deliberately absent", "1",
+       len({n["model"] for n in XLD["not_drawn"]}))
+    ck("long figures, and it is Qwen3-8B", "1",
+       1 if {n["model"] for n in XLD["not_drawn"]} == {"Qwen3-8B"} else 0)
+    ck("long figures, and none of its ladders passes 32 000", "0",
+       sum(1 for n in XLD["not_drawn"] if n["deepest"] > XL["fig12_max_ctx"]))
+    ck("long figures, and Qwen3-8B is on no line", "0",
+       sum(1 for x in XLD["series"] if x["model"] == "Qwen3-8B"))
+    # the pages: both languages carry the strings, the containers, and the
+    # timeline moved to Figure 5 to make room
+    for _lang, _fn in (("en", "index-body.html"), ("zh", "index-body-zh.html")):
+        _sb = json.loads(block(open(os.path.join(
+            HERE, "..", "..", "site", "src", _fn), encoding="utf-8").read(), "strings"))
+        ck("long figures, strings in %s" % _lang, "9",
+           sum(1 for k in ("longDecUnit", "longPreUnit", "longHeadRetained", "longRetained",
+                           "longHeadShare", "longShare", "longStops", "longNotDrawn", "fitScope")
+               if _sb.get(k)))
+        # the three controls every figure shares: the question, the two rows'
+        # roles, the stroke rule, and the one-model view's stock-arm note
+        ck("long figures, %s names both questions" % _lang, "2",
+           len([k for k in ("machine", "model") if (_sb.get("mode") or {}).get(k)]))
+        ck("long figures, %s labels the rows and their roles" % _lang, "5",
+           len([k for k in ("machine", "model", "pick", "lines", "compare")
+                if (_sb.get("ctl") or {}).get(k)]))
+        # the one-model view's arms are switches that default off, so there is no
+        # separate stock-arm note; the stroke rule and the numbers panel are the strings
+        ck("long figures, %s states the stroke rule and names the numbers panel" % _lang, "2",
+           sum(1 for k in ("strokeRule", "numbers") if _sb.get(k)))
+        _src = open(os.path.join(HERE, "..", "..", "site", "src", _fn), encoding="utf-8").read()
+        ck("long figures, %s carries both containers" % _lang, "2",
+           sum(1 for i in ('id="figlong"', 'id="figlongpre"') if i in _src))
+        ck("long figures, %s numbers the timeline fifth" % _lang, "1",
+           1 if ("Figure 5 · the date each article carries" in _src
+                 or "图 5 · 每篇文章带的日期" in _src) else 0)
+        ck("long figures, %s and no figure is numbered 3 twice" % _lang, "1",
+           _src.count("Figure 3 ·") + _src.count("图 3 ·"))
 
     # --- what section 4 of benchmarks.md withdrew, and what it kept ----------
     # The claims retired on 2026-08-30 were retired because nothing recomputed
@@ -6800,13 +7379,14 @@ def main():
     # 6000s. The sentence no longer needs a special case for the one that runs
     # furthest, because seven of the sixteen now rise and the spread across
     # one checkpoint is 134 points.
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "16", len(_lad))
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "17", len(_lad))
     ck("hybrid section 6, rising by more than 1 pct", "7",
        sum(1 for x in _lad if x > 1))
     ck("hybrid section 6, flat inside 1 pct", "1",
        sum(1 for x in _lad if 0 < x <= 1))
-    ck("hybrid section 6, and falling", "8", sum(1 for x in _lad if x < 0))
-    ck("hybrid section 6, the steepest fall", "-31.1", min(_lad), 0.01)
+    ck("hybrid section 6, and falling", "9", sum(1 for x in _lad if x < 0))
+    ck("hybrid section 6, the steepest fall", "-38.7", min(_lad), 0.01)
+    ck("hybrid section 6, and the range across one checkpoint", "142", round(max(_lad) - min(_lad)))
     ck("hybrid section 6, and the steepest rise", "103.0", max(_lad), 0.01)
     # the two ends are one checkpoint on two machines, which is the claim
     _ends = {}
@@ -6815,8 +7395,14 @@ def main():
         if len(_rs) > 1:
             _ends[_k] = (_rs[-1]["prefill_tok_s"] / _rs[0]["prefill_tok_s"] - 1) * 100
     _lo = min(_ends, key=lambda k: _ends[k]); _hi = max(_ends, key=lambda k: _ends[k])
-    ck("hybrid section 6, the fall is the Radeon pair pinned to Triton", "1",
-       1 if _lo[1] == "RX 7900 XT" and "triton" in _lo[0] else 0)
+    # 2026-09-03 evening: the pair's own sixteen-rung ladder of the same
+    # checkpoint (campaign-2026-09-03, ROCM_ATTN, to 96 000) falls further than
+    # the Triton-pinned arm did to 32 000, so the low end moved
+    ck("hybrid section 6, the fall is the Radeon pair's 2026-09-03 ladder", "1",
+       1 if _lo[1] == "RX 7900 XT" and _lo[0].endswith("-long") else 0)
+    ck("hybrid section 6, and the article says which ladder", "2",
+       sum(1 for f, t in (("article-body.html", "the 2026-09-03\nladder to 96 000, on <code>ROCM_ATTN</code>"), ("article-body-zh.html", "2026-09-03 那条到 96 000 的阶梯（<code>ROCM_ATTN</code>）"))
+           if t in open(os.path.join(HERE, "..", "..", "site", "src", f), encoding="utf-8").read()))
     ck("hybrid section 6, and the rise is two H100s", "1",
        1 if _hi[1] == "H100-80GB-HBM3-x2" else 0)
     ck("hybrid section 6, both are the same checkpoint", "1",
@@ -6889,10 +7475,12 @@ def main():
                  or fl("原来写的是这个 checkpoint 的预填充「从来没有上升过」") in _t)
            else 0)
         ck("hybrid section 6 %s, quotes both ends of the spread" % _lang,
-           "2", sum(1 for _v in ("31.1 %", "103.0 %") if fl(_v) in _t))
-        ck("hybrid section 6 %s, and counts sixteen ladders" % _lang, "1",
-           1 if (fl("sixteen stock hybrid-SSM ladders") in _t
-                 or fl("十六条 stock hybrid-SSM 阶梯") in _t) else 0)
+           "2", sum(1 for _v in ("38.7 %", "103.0 %") if fl(_v) in _t))
+        ck("hybrid section 6 %s, and counts seventeen ladders" % _lang, "1",
+           1 if (fl("seventeen stock hybrid-SSM ladders") in _t
+                 or fl("十七条 stock hybrid-SSM 阶梯") in _t) else 0)
+        ck("hybrid section 6 %s, and the old low end is gone" % _lang, "0",
+           sum(1 for _v in ("31.1 %", "sixteen stock hybrid-SSM ladders", "十六条 stock hybrid-SSM 阶梯") if fl(_v) in _t))
         ck("hybrid section 6 %s, and no longer counts nine or eight" % _lang, "0",
            1 if (fl("nine stock hybrid-SSM ladders") in _t
                  or fl("eight stock hybrid-SSM ladders") in _t

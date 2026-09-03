@@ -29,24 +29,18 @@ that has a section of its own further down, in the same order:
 | `prompts/` | Prompt-ladder manifests (the token counts as measured) + the cutter that rebuilds the ladders from the public-domain source |
 | `speculative-decoding/` | Results behind [speculative-decoding-on-rdna.md](../docs/speculative-decoding-on-rdna.md) |
 
-**The campaigns**
+**The campaigns** — every experiment directory, generated from the tree
 
-| Path | What it is |
-|---|---|
-| `campaign-2026-08-29/` | **Speculation, both arms, on two attention backends** — eight configurations on the Radeons |
-| `cuda-a100/campaign-2026-08-29/` | The other half of that campaign — twelve configurations on an A100-SXM4-80GB |
-| `campaign-2026-08-30/` | **The MoE on one card** — `gemma-4-26B-A4B` at TP=1, and the ceiling that stops it |
-| `cuda-t4/preflight-2026-08-30/` | **Why the T4 needs a patch to run gemma-4 at all** |
-| `cuda-l4/campaign-2026-08-30/` | **The spine's fourth machine** — one NVIDIA L4, prefix caching off |
-| `campaign-2026-08-30b/` | **Qwen3-8B on one 7900 XT at util 0.95**, fully stock on the 0.27 image |
-| `cuda-l4/campaign-2026-08-30b/` | **The L4's second pass**, after the runner gained the capacity retry |
-| `cuda-a100/campaign-2026-08-30/` | **The A100 measured again with prefix caching off**, because 2026-08-29's prefill is not usable |
-| `cuda-l4/campaign-2026-08-30c/` | **What fits on a 23 GB L4 and what does not**, with an `--enforce-eager` fallback |
-| `cuda-a100/52684-kv-depth/` | **Does the `BLOCK_M` crossover move with KV depth on CUDA? It moves the other way** |
-| `cuda-t4/campaign-2026-08-30/` | **The fifth machine**, with [vllm#39018](https://github.com/vllm-project/vllm/pull/39018) applied |
-| `cuda-l4/campaign-2026-09-02/` | **The first CUDA cells with hardware telemetry** — the L4 is power-capped in every cell, and the 500 rung is stable there |
-| `cuda-t4/campaign-2026-09-02/` | **The same nine cells on the T4** — round 1 is the high outlier and it is heat; at 32 K the T4 is compute-bound, not bandwidth-bound |
-| `cuda-a100/campaign-2026-09-02/` | **What the derived bandwidth figures are worth** — measured against hardware counters for the first time: a decode step reads 82–86 % of its checkpoint, not all of it |
+The table that stood here was typed by hand and named eighteen of the
+forty-three directories that carry a README by 2026-09-03.
+[`CAMPAIGNS.md`](CAMPAIGNS.md) replaces it: `analyze/build_campaigns.py` walks
+`benchmarks/`, takes each README's first heading as the row, marks the
+directories whose `results.jsonl` the projections read, and `--check` fails
+when the tree and the index disagree. The rented sweep of 2026-09-03 — six
+machine configurations on the ladder, eight on the collective, context to
+128 000 — is summarised in [`cuda-modal/README.md`](cuda-modal/README.md); the
+pair's own sixteen-rung ladder of the same day, six models to 128 000 where
+each holds it, is [`campaign-2026-09-03/README.md`](campaign-2026-09-03/README.md).
 
 **Standalone findings**
 
@@ -76,7 +70,7 @@ lands in, plus `runs`, `range_pct` and `chart_grade`. It is a projection, not a 
 
 **Every prefill point in one row format, across machines**, built by
 `analyze/build_prefill.py`. The ledger is the Radeon box's and has no machine column;
-this one does, because prefill is asked across five machines. Same row discipline plus
+this one does, because prefill is asked across twelve machine configurations. Same row discipline plus
 `machine`, `cuda`, `driver`, `prefix_caching` and `route`; `--fits` reports `T(S) = a + b·S +
 c·S²` per (machine, cfg, date, patches). Two rules it encodes are not obvious and each
 moved a number: rungs group by `target` rather than the measured `prompt_tokens`,
@@ -583,6 +577,20 @@ BENCH_TARGETS=500,8000 python3 bench_runner.py   # a subset of the ladder
 
 It is **checkpointed**: results already in `results.jsonl` are skipped, so an
 interrupted run resumes where it stopped.
+
+### `campaign-2026-09-03/`
+
+The pair past 32 000: the same six checkpoints as the rented sweep, on a
+sixteen-rung ladder to 128 000, each arm carried as far as its KV pool and its
+own position cap allow — 352 measurements, 0 errors, telemetry on every row.
+Four arms reach 128 000, the 31B stops at 80 000 and the hybrid 27B at 96 000,
+both on the runner's capacity retry; Qwen3-8B is capped at 40 960 by its own
+config and stays an eleven-rung ladder. The curves keep the shape the H100 gave
+them (Muse-Glimmer flattest, the hybrid no flatter than dense) and the
+telemetry says why: at 128 000 the gemma arms sit at the power cap with
+`mem_busy` at 24–25 %, Muse at 74 %. Two runner revisions, three failed starts
+and a prompt cut that could not be reproduced for every tokenizer are all in
+the README, with what is and is not on record for each.
 
 ### Four things it does that a naive script would get wrong
 

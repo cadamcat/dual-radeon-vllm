@@ -1,0 +1,131 @@
+09:17:50 | === campaign start rev2 (['A-12B-tp2-long', 'B-8B-tp2-long', 'E-26B-tp2-long', 'G-30B-tp2-long', 'D8-27B-tp2-long', 'C-31B-tp2-long']) ===
+09:23:23 | A-12B-tp2-long: still starting (5 min, idle 22s) [compiling 1 graph(s)]
+09:28:23 | A-12B-tp2-long: still starting (10 min, idle 21s) [compiling 1 graph(s)]
+09:33:23 | A-12B-tp2-long: still starting (15 min, idle 0s)
+09:34:40 | A-12B-tp2-long: ready (mml=132000, util=0.85), 16 points x 2 rounds
+09:34:59 | A-12B-tp2-long: point 500 done
+09:35:22 | A-12B-tp2-long: point 1000 done
+09:35:47 | A-12B-tp2-long: point 2000 done
+09:36:16 | A-12B-tp2-long: point 4000 done
+09:36:49 | A-12B-tp2-long: point 6000 done
+09:37:26 | A-12B-tp2-long: point 8000 done
+09:38:13 | A-12B-tp2-long: point 12000 done
+09:39:11 | A-12B-tp2-long: point 16000 done
+09:40:22 | A-12B-tp2-long: point 20000 done
+09:41:46 | A-12B-tp2-long: point 24000 done
+09:43:41 | A-12B-tp2-long: point 32000 done
+09:46:56 | A-12B-tp2-long: point 48000 done
+09:51:54 | A-12B-tp2-long: point 64000 done
+09:59:00 | A-12B-tp2-long: point 80000 done
+10:08:37 | A-12B-tp2-long: point 96000 done
+10:24:23 | A-12B-tp2-long: point 128000 done
+10:24:23 | A-12B-tp2-long: COMPLETE (64 ok, 0 err)
+10:24:59 | B-8B-tp2-long: startup crash, config FAILED
+10:30:19 | E-26B-tp2-long: still starting (5 min, idle 29s) [compiling 1 graph(s)]
+10:35:19 | E-26B-tp2-long: still starting (10 min, idle 29s) [compiling 1 graph(s)]
+10:40:19 | E-26B-tp2-long: still starting (15 min, idle 29s) [compiling 1 graph(s)]
+10:45:19 | E-26B-tp2-long: still starting (20 min, idle 29s) [compiling 1 graph(s)]
+10:50:19 | E-26B-tp2-long: still starting (25 min, idle 28s) [compiling 1 graph(s)]
+10:53:51 | E-26B-tp2-long: ready (mml=132000, util=0.85), 16 points x 2 rounds
+10:54:04 | E-26B-tp2-long: point 500 done
+10:54:19 | E-26B-tp2-long: point 1000 done
+10:54:35 | E-26B-tp2-long: point 2000 done
+10:54:55 | E-26B-tp2-long: point 4000 done
+10:55:17 | E-26B-tp2-long: point 6000 done
+10:55:42 | E-26B-tp2-long: point 8000 done
+10:56:15 | E-26B-tp2-long: point 12000 done
+10:56:55 | E-26B-tp2-long: point 16000 done
+10:57:44 | E-26B-tp2-long: point 20000 done
+10:58:42 | E-26B-tp2-long: point 24000 done
+11:00:01 | E-26B-tp2-long: point 32000 done
+11:02:13 | E-26B-tp2-long: point 48000 done
+11:05:34 | E-26B-tp2-long: point 64000 done
+11:10:18 | E-26B-tp2-long: point 80000 done
+11:16:40 | E-26B-tp2-long: point 96000 done
+11:27:01 | E-26B-tp2-long: point 128000 done
+11:27:01 | E-26B-tp2-long: COMPLETE (64 ok, 0 err)
+11:27:36 | G-30B-tp2-long: startup crash, config FAILED
+11:32:57 | D8-27B-tp2-long: still starting (5 min, idle 45s)
+11:37:12 | D8-27B-tp2-long: KV holds only 123872 tok -> retry mml 122633
+11:42:32 | D8-27B-tp2-long: still starting (5 min, idle 22s)
+11:47:22 | D8-27B-tp2-long: startup crash, config FAILED
+11:51:18 | C-31B-tp2-long: KV holds only 83392 tok -> retry mml 82558
+11:56:39 | C-31B-tp2-long: still starting (5 min, idle 2s)
+11:58:15 | C-31B-tp2-long: ready (mml=82558, util=0.85), 14 points x 2 rounds
+11:58:42 | C-31B-tp2-long: point 500 done
+11:59:14 | C-31B-tp2-long: point 1000 done
+11:59:50 | C-31B-tp2-long: point 2000 done
+12:00:34 | C-31B-tp2-long: point 4000 done
+12:01:28 | C-31B-tp2-long: point 6000 done
+12:02:31 | C-31B-tp2-long: point 8000 done
+12:03:56 | C-31B-tp2-long: point 12000 done
+12:05:48 | C-31B-tp2-long: point 16000 done
+12:08:08 | C-31B-tp2-long: point 20000 done
+12:11:02 | C-31B-tp2-long: point 24000 done
+12:15:12 | C-31B-tp2-long: point 32000 done
+12:22:38 | C-31B-tp2-long: point 48000 done
+12:34:19 | C-31B-tp2-long: point 64000 done
+12:51:10 | C-31B-tp2-long: point 80000 done
+12:51:10 | C-31B-tp2-long: COMPLETE (56 ok, 0 err)
+12:51:21 | === campaign end: container stopped, services restored ===
+12:54:49 | === campaign start rev3 (['A-12B-tp2-long', 'B-8B-tp2-long', 'E-26B-tp2-long', 'G-30B-tp2-long', 'D8-27B-tp2-long', 'C-31B-tp2-long']) ===
+12:54:51 | A-12B-tp2-long: already complete, skip
+12:57:38 | B-8B-tp2-long: ready (mml=40960, util=0.85), 11 points x 2 rounds
+12:57:55 | B-8B-tp2-long: point 500 done
+12:58:14 | B-8B-tp2-long: point 1000 done
+12:58:33 | B-8B-tp2-long: point 2000 done
+12:58:54 | B-8B-tp2-long: point 4000 done
+12:59:18 | B-8B-tp2-long: point 6000 done
+12:59:45 | B-8B-tp2-long: point 8000 done
+13:00:18 | B-8B-tp2-long: point 12000 done
+13:00:59 | B-8B-tp2-long: point 16000 done
+13:01:49 | B-8B-tp2-long: point 20000 done
+13:02:49 | B-8B-tp2-long: point 24000 done
+13:04:12 | B-8B-tp2-long: point 32000 done
+13:04:12 | B-8B-tp2-long: COMPLETE (44 ok, 0 err)
+13:04:12 | E-26B-tp2-long: already complete, skip
+13:09:33 | G-30B-tp2-long: still starting (5 min, idle 32s) [compiling 1 graph(s)]
+13:14:13 | G-30B-tp2-long: ready (mml=131072, util=0.85), 16 points x 2 rounds
+13:14:43 | G-30B-tp2-long: point 500 done
+13:15:14 | G-30B-tp2-long: point 1000 done
+13:15:52 | G-30B-tp2-long: point 2000 done
+13:16:34 | G-30B-tp2-long: point 4000 done
+13:17:22 | G-30B-tp2-long: point 6000 done
+13:18:17 | G-30B-tp2-long: point 8000 done
+13:19:25 | G-30B-tp2-long: point 12000 done
+13:20:49 | G-30B-tp2-long: point 16000 done
+13:22:29 | G-30B-tp2-long: point 20000 done
+13:24:28 | G-30B-tp2-long: point 24000 done
+13:27:09 | G-30B-tp2-long: point 32000 done
+13:31:31 | G-30B-tp2-long: point 48000 done
+13:38:03 | G-30B-tp2-long: point 64000 done
+13:47:12 | G-30B-tp2-long: point 80000 done
+13:59:20 | G-30B-tp2-long: point 96000 done
+14:18:48 | G-30B-tp2-long: point 128000 done
+14:18:48 | G-30B-tp2-long: COMPLETE (64 ok, 0 err)
+14:21:03 | D8-27B-tp2-long: Mamba cache holds 198 blocks -> retry mns 198
+14:26:24 | D8-27B-tp2-long: still starting (5 min, idle 26s)
+14:30:59 | D8-27B-tp2-long: KV holds only 123872 tok -> retry mml 122633
+14:36:20 | D8-27B-tp2-long: still starting (5 min, idle 25s)
+14:40:50 | D8-27B-tp2-long: Mamba cache holds 161 blocks -> retry mns 161
+14:46:10 | D8-27B-tp2-long: still starting (5 min, idle 31s)
+14:51:10 | D8-27B-tp2-long: still starting (10 min, idle 1s)
+14:52:42 | D8-27B-tp2-long: ready (mml=122633, util=0.85), 15 points x 2 rounds
+14:54:11 | D8-27B-tp2-long: point 500 done
+14:55:43 | D8-27B-tp2-long: point 1000 done
+14:57:20 | D8-27B-tp2-long: point 2000 done
+14:59:04 | D8-27B-tp2-long: point 4000 done
+15:00:57 | D8-27B-tp2-long: point 6000 done
+15:02:58 | D8-27B-tp2-long: point 8000 done
+15:05:17 | D8-27B-tp2-long: point 12000 done
+15:07:54 | D8-27B-tp2-long: point 16000 done
+15:10:51 | D8-27B-tp2-long: point 20000 done
+15:14:09 | D8-27B-tp2-long: point 24000 done
+15:18:11 | D8-27B-tp2-long: point 32000 done
+15:23:54 | D8-27B-tp2-long: point 48000 done
+15:31:40 | D8-27B-tp2-long: point 64000 done
+15:41:44 | D8-27B-tp2-long: point 80000 done
+15:54:26 | D8-27B-tp2-long: point 96000 done
+15:54:26 | D8-27B-tp2-long: COMPLETE (60 ok, 0 err)
+15:54:26 | C-31B-tp2-long: already complete, skip
+15:54:37 | === campaign end: container stopped, services restored ===

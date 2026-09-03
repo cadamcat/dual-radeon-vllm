@@ -1,0 +1,82 @@
+[
+  {
+    "target": 500,
+    "est_prompt_tokens": 498,
+    "chars": 2303
+  },
+  {
+    "target": 1000,
+    "est_prompt_tokens": 948,
+    "chars": 4645
+  },
+  {
+    "target": 2000,
+    "est_prompt_tokens": 2021,
+    "chars": 10305
+  },
+  {
+    "target": 4000,
+    "est_prompt_tokens": 4007,
+    "chars": 20523
+  },
+  {
+    "target": 6000,
+    "est_prompt_tokens": 6022,
+    "chars": 30837
+  },
+  {
+    "target": 8000,
+    "est_prompt_tokens": 7959,
+    "chars": 40394
+  },
+  {
+    "target": 12000,
+    "est_prompt_tokens": 12028,
+    "chars": 60238
+  },
+  {
+    "target": 16000,
+    "est_prompt_tokens": 16004,
+    "chars": 80327
+  },
+  {
+    "target": 20000,
+    "est_prompt_tokens": 19995,
+    "chars": 100739
+  },
+  {
+    "target": 24000,
+    "est_prompt_tokens": 23995,
+    "chars": 121051
+  },
+  {
+    "target": 32000,
+    "est_prompt_tokens": 31995,
+    "chars": 160974
+  },
+  {
+    "target": 48000,
+    "est_prompt_tokens": 48003,
+    "chars": 241736
+  },
+  {
+    "target": 64000,
+    "est_prompt_tokens": 64011,
+    "chars": 322522
+  },
+  {
+    "target": 80000,
+    "est_prompt_tokens": 80009,
+    "chars": 403178
+  },
+  {
+    "target": 96000,
+    "est_prompt_tokens": 95990,
+    "chars": 483063
+  },
+  {
+    "target": 128000,
+    "est_prompt_tokens": 128001,
+    "chars": 647690
+  }
+]

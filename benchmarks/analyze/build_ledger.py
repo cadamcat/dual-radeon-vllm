@@ -109,6 +109,17 @@ CFG = {
     "A12-tp2-p45450":            ("gemma-4-12B-it", "w4a16 QAT", "dense", 2),
     "B8-tp1-p45450":             ("Qwen3-8B", "bf16", "dense", 1),
     "B8-tp2-p45450":             ("Qwen3-8B", "bf16", "dense", 2),
+    # 2026-09-03. The same six models as the rented sweep of that day, on the
+    # pair, with the ladder carried to 128 000 -- the first Radeon rows past
+    # 32 000. `-long` because the ladder is a new sixteen-rung cut and not the
+    # eleven every earlier arm measured, so these are not a third sitting of
+    # `A-12B-tp2` and must not be picked up as one.
+    "A-12B-tp2-long":            ("gemma-4-12B-it", "w4a16 QAT", "dense", 2),
+    "B-8B-tp2-long":             ("Qwen3-8B", "bf16", "dense", 2),
+    "E-26B-tp2-long":            ("gemma-4-26B-A4B", "int4 AWQ", "MoE, 128 experts", 2),
+    "G-30B-tp2-long":            ("Muse-Glimmer-30B", "int4", "sliding window 2048", 2),
+    "D8-27B-tp2-long":           ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "C-31B-tp2-long":            ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
 }
 
 # What each 2026-08-29 arm ran with, beyond the model.
@@ -161,6 +172,21 @@ ARMS = {
     "B8-tp2-p45450":             (None,   "ROCM_ATTN"),
     "B8-tp2-r5":                 (None,   "ROCM_ATTN"),
     "B8-tp1-r5":                 (None,   "ROCM_ATTN"),
+    # 2026-09-03, read from each arm's serve log in campaign-2026-09-03/logs/.
+    # gemma-4 is forced onto TRITON_ATTN by the engine ("selected via
+    # --attention-backend" in 0.23's wording, though no flag was passed).
+    "A-12B-tp2-long":            (None,   "TRITON_ATTN"),
+    "E-26B-tp2-long":            (None,   "TRITON_ATTN"),
+    "C-31B-tp2-long":            (None,   "TRITON_ATTN"),
+    # the bf16 8B: no flag, vLLM's own `Overriding with ROCM_ATTN` line, the
+    # same choice as B8-tp1-u95 and every Q38 arm above (logs/B-8B-tp2-long.log)
+    "B-8B-tp2-long":             (None,   "ROCM_ATTN"),
+    # Muse-Glimmer int4: the same `Overriding with ROCM_ATTN` line, twice, in
+    # logs/G-30B-tp2-long.log; no backend flag anywhere in this campaign
+    "G-30B-tp2-long":            (None,   "ROCM_ATTN"),
+    # Qwen3.8-27B int4 AWQ: the override line again (logs/D8-27B-tp2-long.log),
+    # as Q38-tp2 / Q38-tp2-x16 above; served at max_num_seqs 161
+    "D8-27B-tp2-long":           (None,   "ROCM_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 

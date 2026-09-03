@@ -276,6 +276,20 @@ SOURCES = [
          cuda=None, kernel="7.0.0-30", prefix_caching=True,
          patches=["vllm#45916 split-KV", "window block-skip",
                   "vllm#45450 3D admission"]),
+    # 2026-09-03. The pair, six models, TP=2, on a sixteen-rung ladder to
+    # 128 000: the first Radeon rows past 32 000. Every earlier arm on this
+    # machine set mml 33 000 while its KV pool held several times that, so
+    # the ceiling was the campaign's and not the machine's. The prompts are a
+    # NEW cut (`prompts-v2/` beside the results): the committed eleven cannot
+    # be reproduced under this container's tokenizer, so the whole ladder was
+    # cut once and its overlap with the old rungs is stated in the README.
+    # Same container and the same three patches as campaign-2026-09-02d,
+    # md5-asserted before the run; `host_link.json` is the preflight's reading.
+    dict(file="campaign-2026-09-03/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-03", vllm="0.23.1.dev1+g9ddef7117.d20260715", rocm="7.14",
+         cuda=None, kernel="7.0.0-30", prefix_caching=True,
+         patches=["vllm#45916 split-KV", "window block-skip",
+                  "vllm#45450 3D admission"]),
     # 2026-08-30. The spine's fourth machine, and the first CUDA rows in this
     # repository measured with prefix caching off. Both configurations are 11
     # rungs x 2 rounds, 22 measurements, 0 errors. `driver` is from nvidia-smi

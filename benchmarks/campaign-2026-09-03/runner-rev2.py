@@ -80,20 +80,11 @@ CFGS = [
     # repository has, so if the long ladder is going to break it breaks here.
     dict(id="A-12B-tp2-long", model="/models/gemma-4-12B-it-qat-w4a16-ct",
          tp=2, prompts=GEMMA_P),
-    # rev3: a model whose own config caps its positions cannot be asked for
-    # 132 000. vLLM refuses `max_model_len` above `max_position_embeddings`
-    # unless VLLM_ALLOW_LONG_MAX_MODEL_LEN is set, and that would measure
-    # positions the model was never trained on. Qwen3-8B's cap is 40 960, so
-    # its ladder is the eleven rungs to 32 000 on this cut -- the same scope
-    # as its 2026-08-24 arm, which makes it the overlap control rather than a
-    # long line; Muse-Glimmer's is 131 072, which holds the 128 000 rung and
-    # its 512 generated tokens. The first attempt of rev2 asked both for
-    # 132 000 and both died at config time (results-failed-attempts.jsonl).
-    dict(id="B-8B-tp2-long", model="/models/Qwen3-8B", tp=2, prompts=QWEN_P, mml=40960),
+    dict(id="B-8B-tp2-long", model="/models/Qwen3-8B", tp=2, prompts=QWEN_P),
     dict(id="E-26B-tp2-long", model="/models/gemma-4-26B-A4B-AWQ",
          tp=2, prompts=P26),
     dict(id="G-30B-tp2-long", model="/models/Muse-Glimmer-30B-INT4",
-         tp=2, prompts=MUSE_P, mml=131072),
+         tp=2, prompts=MUSE_P),
     dict(id="D8-27B-tp2-long", model="/models/Qwen3.8-27B-AWQ-INT4",
          tp=2, prompts=QWEN_P),
     # Last, and expected to settle short: its pool held 85 766 tokens at
@@ -250,14 +241,6 @@ def start_server(cfg, mml, util):
         # 0.27 says it a second way, with no number attached; halve and retry
         if "No available memory for the cache blocks" in txt:
             return "capacity", -1
-        # rev3: a hybrid-SSM model reserves one Mamba block per decode
-        # sequence, and at a long mml the state pool holds fewer of them than
-        # the default max_num_seqs. The H100 runner learned this on 2026-09-03
-        # (`Q38: Mamba cache holds 969 blocks -> retry mns 969`); Qwen3.8-27B
-        # died of it here at mml 122 633 with 161 blocks against 256.
-        m = re.search(r"exceeds available Mamba cache blocks \((\d+)\)", txt)
-        if m:
-            return "mamba", int(m.group(1))
         # "Traceback" also appears *inside* torch's own logged warnings:
         # triton_bundler.py:242 prints a whole formatted traceback at W level
         # when an AOT cubin is missing from the cache and it falls back to
@@ -315,15 +298,11 @@ def run_cfg(cfg, done, util=None, attempt=1):
         log(f"{cid}: already complete, skip"); return
     if util is None:
         util = cfg.get("util", DEFAULT_UTIL)
-    mml = cfg.get("mml", MML); txt = None   # rev3: a per-model ceiling, see CFGS
-    for _ in range(4):                       # rev3: mml retry, then a Mamba retry, then ready
+    mml = MML; txt = None
+    for _ in range(3):
         st, info = start_server(cfg, mml, util)
         if st == "ready":
             txt = info; break
-        if st == "mamba":
-            log(f"{cid}: Mamba cache holds {info} blocks -> retry mns {info}")
-            emit({"kind": "note", "cfg": cid, "note": f"mamba_blocks={info}, mns->{info}"})
-            cfg = dict(cfg, mns=info); continue
         if st == "capacity":
             if info == -1:            # no number given: halve the ladder and retry
                 mml = max(1200, mml // 2)
@@ -439,7 +418,7 @@ def main():
     if only:
         CFGS = [c for c in CFGS if c["id"] in only.split(",")]
     os.makedirs(f"{D}/serve-logs", exist_ok=True)
-    log(f"=== campaign start rev3 ({[c['id'] for c in CFGS]}) ===")
+    log(f"=== campaign start rev2 ({[c['id'] for c in CFGS]}) ===")
     sh("sudo systemctl stop ollama llamacpp-hub"); time.sleep(2)
     r = sh("sudo fuser -v /dev/kfd 2>&1 | tail -2")
     if re.search(r"\b\d{2,}\b", r.stdout + r.stderr):

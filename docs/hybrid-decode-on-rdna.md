@@ -413,8 +413,22 @@ remains the better choice for this model**. The *slope* is fixed; the baseline i
 
 - **CDNA is untested.** The `_ON_GFX9` branch of `use_rocm_custom_paged_attention`
   has looser conditions, so this may not reproduce on MI-series.
-- **No NVIDIA comparison.** We cannot say whether the same model decodes flat on
-  CUDA, where the custom-kernel question does not arise in this form.
+- ~~**No NVIDIA comparison.**~~ *Superseded 2026-09-03.* The same `Qwen3.8-27B`
+  checkpoint now has sixteen-rung ladders to 128 000 tokens on an H100, an H200,
+  a B300, an RTX PRO 6000 and two pairs
+  ([`benchmarks/cuda-modal/`](../benchmarks/cuda-modal/README.md)). It does not
+  decode flat there either: on the H100 it loses 21.8 % between 500 and 128 000,
+  as far as the dense 31B's 22.0 %, while the bounded-window Muse-Glimmer loses
+  4.8 %. That confirms across vendors that the attention layers set the depth
+  cost, not the recurrent state. It is **not** the same-kernel A/B this page's
+  argument rests on: every one of those machines chose its own attention
+  backend, so the cross-machine curves carry a backend term as well as a card.
+  The same evening the pair itself ran the checkpoint to 96 000 on the 0.23
+  container this page measures — the asymmetric-AWQ arm, on the slow kernel —
+  and it lost **27.6 %** between 500 and 96 000, against Muse-Glimmer's 17.3 %
+  to 128 000 on the same cards
+  ([`campaign-2026-09-03/`](../benchmarks/campaign-2026-09-03/README.md)): the
+  same ordering, on this page's own kernels.
 - **A fix now exists, and it is not ours — see §6.5.** This item used to say
   none was in sight: widening the gating is not one, since there is no
   `head_size=256` kernel to fall through to, and a real fix would mean adding
