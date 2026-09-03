@@ -112,10 +112,23 @@ def main():
     ap.add_argument("--out", default=HERE, help="where to write prompt_<n>.txt (default: here)")
     ap.add_argument("--check-only", action="store_true",
                     help="verify against the manifests, write nothing")
+    ap.add_argument("--targets", default="",
+                    help="comma-separated EXTRA targets to cut beside the eleven "
+                         "committed ones, e.g. 48000,64000,128000. Additive on "
+                         "purpose: the eleven are what every campaign before "
+                         "2026-09-03 measured and they must keep reproducing "
+                         "byte for byte while a longer ladder is added.")
     ap.add_argument("--only", default="",
                     help="comma-separated family labels to process (default: all present). "
                          "Use this to add a ladder without rewriting the existing ones.")
     a = ap.parse_args()
+    targets = list(TARGETS)
+    if a.targets:
+        extra = sorted({int(x) for x in a.targets.split(",") if x.strip()})
+        if set(extra) & set(TARGETS):
+            ap.error("--targets adds to the eleven; it cannot restate one of them")
+        targets += extra
+        print(f"targets: the committed {len(TARGETS)} plus {extra}")
 
     from transformers import AutoTokenizer      # late import: not needed for --help
     passage = source_text()
@@ -155,7 +168,7 @@ def main():
         if not a.check_only:
             os.makedirs(out_dir, exist_ok=True)
         rebuilt = []
-        for t in TARGETS:
+        for t in targets:
             text, got = cut_for(tok, passage, t, ends)
             e = {"target": t, "est_prompt_tokens": got, "chars": len(text)}
             for m, ta in alts.items():
