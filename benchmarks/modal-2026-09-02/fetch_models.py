@@ -37,6 +37,13 @@ MODELS = {
     "gemma-4-26B-A4B-AWQ":            "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit",
     "gemma-4-31B-it-qat-w4a16-ct":    "google/gemma-4-31B-it-qat-w4a16-ct",
     "Qwen3.8-27B-AWQ-INT4":           "cyankiwi/Qwen3.8-27B-AWQ-INT4",
+    # Added 2026-09-03, after the H100 run made it worth the storage. It is the
+    # missing third case: gemma-4 and Qwen3-8B read a KV that grows without
+    # bound with context, Qwen3.8-27B carries a recurrent state that does not
+    # grow at all, and Muse-Glimmer attends through a 2 048-token window -- a
+    # term that grows and then stops. On an A100 its decode falls 9.8 % from
+    # 500 to 32 000 where every other model there falls 28-44 %.
+    "Muse-Glimmer-30B-INT4":          "RedHatAI/Muse-Glimmer-30B-INT4",
 }
 
 # vLLM reads safetensors and json. A repo that also ships .bin or .gguf would

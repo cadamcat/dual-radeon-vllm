@@ -1,33 +1,39 @@
-"""runner_cuda.py — the template a new CUDA campaign starts from.
+"""run.py -- the controls campaign-2026-09-03 named and did not buy.
 
-Copy this beside the campaign's data, set BENCH_MACHINE, edit the config
-table and run it. It is `cuda-l4/campaign-2026-08-30c/run.py` with one thing
-changed, and that one thing is why this file exists: the CUDA runners
-sampled no hardware at all. Not power, not clocks, not temperature. A Colab
-T4 measured on 2026-09-02 ran a 300-step matmul at 1245 MHz against a
-1590 MHz ceiling while pinned at its 70 W cap, and nothing in the old schema
-could have told that from a slow kernel.
+Copied from `harness/runner_cuda.py`. One H100, TP=1, and three questions the
+first H100 run left open in its own README:
 
-Telemetry now comes from `harness/telemetry.py`, the module the gfx1100
-runner uses too, so both platforms emit the same field names. On CUDA it
-reads NVML in-process: 9.2 ms for a full sample against 29.8 ms for one
-nvidia-smi subprocess, measured on the T4 above.
+  * **Muse-Glimmer-30B**, which is not a control but the missing third case.
+    gemma-4 and Qwen3-8B read a KV that grows with context without bound;
+    Qwen3.8-27B carries a recurrent state that does not grow at all; this one
+    attends through a 2 048-token window, a term that grows and then stops.
+    On an A100 its decode falls 9.8 % from 500 to 32 000 where every other
+    model measured there falls 28-44 %. The first H100 run found the machine's
+    lead over an A100 growing with depth for the three attention models
+    (1.4x -> 2.1x) and flat for the SSM (1.41x -> 1.45x). **The prediction,
+    written before the run: Muse-Glimmer lands between them, nearer the SSM.**
+  * **`mml` 132 000 against 33 000.** Four configurations there carried long
+    rungs and therefore ran at 132 000, while every A100 and Radeon row they
+    were compared with ran at 33 000. Four arms here repeat the eleven-rung
+    ladder at 33 000 on the same card, which is the control that README lists
+    as unbought.
+  * **`max_num_seqs` 512 against 16.** The A100 pinned `mns` to 16 for
+    Qwen3.8-27B and Muse-Glimmer; the H100 run had it forced to 969 by the
+    Mamba pool. Neither can be compared with the other without knowing what
+    the knob is worth, and the only measurement of that is the A100
+    campaign's own note -- under 0.7 %, on someone else's hardware. Two arms
+    here differ in `mns` and in nothing else.
 
-Everything else is 30c's, unchanged. Its own notes follow.
+Why 512 for the arm that is not the 16: it is the smallest value that
+produces the same CUDA graph capture set as the default. Read out of this
+campaign's own logs, `mns` 969 and the default 1 024 both cap at
+`max_cudagraph_capture_size` 512 and capture [1, 2, 4, 8, 16, 24, 32, ...,
+512]; `mns` 16 captures [1, 2, 4, 8, 16, 24, 32], a prefix of it. At batch 1
+every one of those replays the size-1 graph, so what the knob actually
+changes here is the memory reserved for graphs it never replays and the
+Mamba blocks reserved for sequences that never arrive.
 
---- 30c: The A100 half of the campaign: nine configurations, eleven rungs, two rounds.
-
-Same ladder as 2026-07-25 -- the eleven targets cut from Darwin's Origin of
-Species, Gutenberg #1228, the source benchmarks/prompts/cut_prompts.py uses.
-A rung is a token count, so the ladder is cut per tokenizer.
-
-The measurement is the campaign one: an OpenAI-compatible server, streaming,
-temperature 0.8, 512 generated tokens, two rounds per rung, decode rate from the
-stream's own token timings. What differs from the Radeon side is only the
-machine and the stack, both of which every row records.
-
-Checkpointed: a rung already in results.jsonl is not measured again, so a killed
-session resumes instead of restarting.
+    modal run benchmarks/cuda-h100/campaign-2026-09-03b/app.py
 """
 import json
 import os
@@ -65,30 +71,36 @@ HARD_START_S = int(os.environ.get("BENCH_HARD_START_S", 1200))
 STALL_S = int(os.environ.get("BENCH_STALL_S", 420))
 
 # BENCH_CFGS picks a subset by id, as the Radeon runner does.
+
+LONG = [48000, 64000, 80000, 96000, 128000]
+# 131 072, not 132 000: Muse-Glimmer's own config.json caps context there,
+# and asking for 132 000 cost this configuration 31 s and a crash on the
+# first attempt. The runner retries on it now; the table no longer needs it to.
+LONG_MML = 131072
+# Only the new model carries long rungs here; every other arm in this campaign
+# exists to be compared with an eleven-rung ladder at mml 33 000.
+LONG_CAPABLE = {"MG30"}
+LONG_ON = ({c for c in os.environ.get("BENCH_LONG_CFGS", "").split(",") if c}
+           & LONG_CAPABLE)
+
 CFGS = [
-    # 2026-08-30, third L4 attempt: the two arms the second one could not fit.
-    #
-    # Both failed at util 0.95 with mns=16, G31 with four "no room for KV" retries
-    # down to mml 2062. That is a measurement of THAT configuration, not of the
-    # card: vLLM sizes activations and CUDA graphs for max_num_seqs and charges
-    # them against the same budget as the KV pool, and the T4 pre-flight put that
-    # at 4.57 GiB of a 13.50 GiB budget for a 12B model at the default mns.
-    #
-    # So: mns=1, which is what the harness actually uses -- it issues one request
-    # at a time -- and an --enforce-eager fallback if that is still not enough.
-    # Raising util past 0.95 is deliberately NOT tried: the runner's own rev2 note
-    # says these cards keep scratch above that, and on the Radeon it produced
-    # HSA_STATUS_ERROR_OUT_OF_RESOURCES rather than a bigger KV pool.
-    #
-    # gemma-4-31B is 18.7 GiB of weights against the L4's 22.49, and its KV is
-    # 204.6 KiB/token -- the heterogeneous 256/512 head dims. Every GiB freed is
-    # about 5 100 tokens, so the difference between no ladder and six rungs is
-    # roughly 2 GiB.
-    dict(id="G31", model="gemma-4-31B-it-qat-w4a16-ct",
-         util=0.95, mns=1, eager_fallback=True),
-    dict(id="Q38", model="Qwen3.8-27B-AWQ-INT4",
-         util=0.95, mns=1, eager_fallback=True),
+    # The new model first: it is the only one here that answers a question
+    # rather than closing a caveat. Default mns, like every other H100 arm in
+    # this campaign -- the A100's MG30 ran at 16, and what that is worth is
+    # measured two rows below.
+    dict(id="MG30", model="Muse-Glimmer-30B-INT4"),
+    # The mns pair. Same model, same mml, same everything else; 512 against 16.
+    dict(id="Q38-mml33", model="Qwen3.8-27B-AWQ-INT4", mml=33000, mns=512),
+    dict(id="Q38-mml33-mns16", model="Qwen3.8-27B-AWQ-INT4", mml=33000, mns=16),
+    # The mml controls, against 2026-09-03's arms at 132 000.
+    dict(id="G31-mml33", model="gemma-4-31B-it-qat-w4a16-ct", mml=33000),
+    dict(id="G12-mml33", model="gemma-4-12B-it-qat-w4a16-ct", mml=33000),
+    dict(id="G26A4B-mml33", model="gemma-4-26B-A4B-AWQ", mml=33000),
 ]
+for _c in CFGS:
+    if _c["id"] in LONG_ON:
+        _c["targets"] = TARGETS + LONG
+        _c["mml"] = LONG_MML
 
 # gemma-4 registers image, video and audio. vLLM only drops the mm-prefix
 # backend requirement when every registered modality is zero, and without that
@@ -605,4 +617,4 @@ if __name__ == "__main__":
             emit({"kind": "config_failed", "cfg": cfg["id"], "why": repr(ex)[:400]})
     subprocess.run("pkill -f 'vllm serve' 2>/dev/null", shell=True)
     log(f"=== {MACHINE} run end ===")
-    print("A100_CAMPAIGN_DONE", flush=True)
+    print("CAMPAIGN_DONE", flush=True)

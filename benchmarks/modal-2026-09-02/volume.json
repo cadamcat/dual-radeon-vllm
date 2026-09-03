@@ -9,8 +9,8 @@
   "complete": true,
   "missing": [],
   "wrong_size": [],
-  "fetch_s": 100.1,
-  "mib_s": 156.3
+  "fetch_s": 2.3,
+  "mib_s": 6771.6
  },
  {
   "name": "gemma-4-12B-it-qat-w4a16-ct",
@@ -22,8 +22,8 @@
   "complete": true,
   "missing": [],
   "wrong_size": [],
-  "fetch_s": 68.5,
-  "mib_s": 143.4
+  "fetch_s": 3.2,
+  "mib_s": 3089.1
  },
  {
   "name": "gemma-4-26B-A4B-AWQ",
@@ -35,8 +35,8 @@
   "complete": true,
   "missing": [],
   "wrong_size": [],
-  "fetch_s": 110.2,
-  "mib_s": 149.1
+  "fetch_s": 3.5,
+  "mib_s": 4710.6
  },
  {
   "name": "gemma-4-31B-it-qat-w4a16-ct",
@@ -48,8 +48,8 @@
   "complete": true,
   "missing": [],
   "wrong_size": [],
-  "fetch_s": 160.7,
-  "mib_s": 138.3
+  "fetch_s": 3.4,
+  "mib_s": 6489.0
  },
  {
   "name": "Qwen3.8-27B-AWQ-INT4",
@@ -61,7 +61,20 @@
   "complete": true,
   "missing": [],
   "wrong_size": [],
-  "fetch_s": 124.8,
-  "mib_s": 160.8
+  "fetch_s": 3.7,
+  "mib_s": 5475.0
+ },
+ {
+  "name": "Muse-Glimmer-30B-INT4",
+  "repo": "RedHatAI/Muse-Glimmer-30B-INT4",
+  "revision": "f5b410ce4234fad70eef8be99b4680ee4e30b418",
+  "n_files": 11,
+  "bytes": 22229606792,
+  "gib": 20.703,
+  "complete": true,
+  "missing": [],
+  "wrong_size": [],
+  "fetch_s": 149.0,
+  "mib_s": 142.2
  }
 ]

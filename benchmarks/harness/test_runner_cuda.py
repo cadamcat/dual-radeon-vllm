@@ -132,6 +132,15 @@ def main():
         cl = g["classify"]
         check("the Mamba block message asks for a lower mns",
               cl(MAMBA) == ("mns", 969), str(cl(MAMBA))[:70])
+        # 2026-09-03: Muse-Glimmer refused mml 132 000 in 31 s. Copied from
+        # that log; the number vLLM derives is a float in the message.
+        MAXLEN = ("(APIServer pid=48) pydantic_core._pydantic_core.ValidationError: "
+                  "1 validation error for ModelConfig\n  Value error, User-specified "
+                  "max_model_len (132000) is greater than the derived max_model_len "
+                  "(max_position_embeddings=131072.0 or model_max_length=None in "
+                  "model's config.json).")
+        check("a too-long max_model_len asks for the model's own limit",
+              cl(MAXLEN) == ("maxlen", 131072), str(cl(MAXLEN))[:70])
         check("a KV-length message still asks for a lower mml",
               cl("estimated maximum model length is 15792") == ("capacity", 15792),
               str(cl("estimated maximum model length is 15792")))
