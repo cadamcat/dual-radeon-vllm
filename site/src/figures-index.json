@@ -25,6 +25,7 @@
      "r2": 0.999999548873335,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -137,6 +138,7 @@
      "r2": 0.9999812027105862,
      "rungs": 11
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -252,6 +254,7 @@
      "r2": 0.9999944680801438,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 4000,
@@ -364,6 +367,7 @@
      "r2": 0.9999883647893757,
      "rungs": 6
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 4000,
@@ -444,6 +448,7 @@
      "r2": 0.9998709807340846,
      "rungs": 4
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -508,6 +513,7 @@
      "r2": 0.9999889026787383,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -620,6 +626,7 @@
      "r2": 0.9999787725525956,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -732,6 +739,7 @@
      "r2": 0.9999997876084521,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -844,6 +852,7 @@
      "r2": 0.9999988896502918,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -956,6 +965,7 @@
      "r2": 0.9999989510971085,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -1068,6 +1078,7 @@
      "r2": 0.9999924906251758,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -1180,6 +1191,7 @@
      "r2": 0.9999783793770356,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 4000,
@@ -1292,6 +1304,7 @@
      "r2": 0.9999967863814119,
      "rungs": 11
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -1407,6 +1420,7 @@
      "r2": 0.999996663782665,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -1519,6 +1533,7 @@
      "r2": 0.9999630806219442,
      "rungs": 11
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -1634,6 +1649,7 @@
      "r2": 0.9999968590910995,
      "rungs": 11
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -1749,6 +1765,7 @@
      "r2": 0.9999957917009363,
      "rungs": 11
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -1864,6 +1881,7 @@
      "r2": 0.9998783786867539,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [],
     "points": [
      {
@@ -1977,6 +1995,7 @@
      "r2": 0.9997181653448902,
      "rungs": 10
     },
+    "fit_scope": "the whole ladder",
     "dropped": [
      {
       "ctx": 500,
@@ -2065,6 +2084,3885 @@
       "range_pct": 0.23494679016400066
      }
     ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 7.357735653408737,
+     "b_us_tok": 23.449304698599192,
+     "c_ns_tok2": 0.526747235294053,
+     "r2": 0.9999859372610218,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 13.270142180094787
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 31353.032659409022,
+      "ttft_s": 0.03215,
+      "runs": 2,
+      "range_pct": 0.9331259720062262
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 35013.07759372276,
+      "ttft_s": 0.05735,
+      "runs": 2,
+      "range_pct": 2.266782911944207
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 36173.285198555954,
+      "ttft_s": 0.11080000000000001,
+      "runs": 2,
+      "range_pct": 2.346570397111918
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 36051.605160516054,
+      "ttft_s": 0.16665,
+      "runs": 2,
+      "range_pct": 0.900090009000901
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 34870.455040278684,
+      "ttft_s": 0.22965,
+      "runs": 2,
+      "range_pct": 1.0886131069018081
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 32617.139752818148,
+      "ttft_s": 0.36815,
+      "runs": 2,
+      "range_pct": 0.9506994431617556
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 30681.360804983233,
+      "ttft_s": 0.5217499999999999,
+      "runs": 2,
+      "range_pct": 1.0924772400574851
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 28988.698927847003,
+      "ttft_s": 0.6901999999999999,
+      "runs": 2,
+      "range_pct": 0.40567951318458784
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 27544.745296007346,
+      "ttft_s": 0.8715999999999999,
+      "runs": 2,
+      "range_pct": 0.2753556677375022
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 24541.30726471152,
+      "ttft_s": 1.3042500000000001,
+      "runs": 2,
+      "range_pct": 0.8663983132068305
+     }
+    ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 7.152611315011424,
+     "b_us_tok": 70.19156657340446,
+     "c_ns_tok2": 0.42175000446163424,
+     "r2": 0.9999722693287928,
+     "rungs": 10
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 8.610567514677106
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 12429.447852760735,
+      "ttft_s": 0.0815,
+      "runs": 2,
+      "range_pct": 1.226993865030676
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 13182.711198428291,
+      "ttft_s": 0.1527,
+      "runs": 2,
+      "range_pct": 1.1787819253438088
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 13473.224777572603,
+      "ttft_s": 0.29785,
+      "runs": 2,
+      "range_pct": 1.1079402383750108
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 13579.494128274617,
+      "ttft_s": 0.44279999999999997,
+      "runs": 2,
+      "range_pct": 0.4516711833784884
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 13511.50830452744,
+      "ttft_s": 0.5930500000000001,
+      "runs": 2,
+      "range_pct": 0.9274091560576594
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 13213.441126326788,
+      "ttft_s": 0.90915,
+      "runs": 2,
+      "range_pct": 0.16498927569708596
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 12810.4,
+      "ttft_s": 1.25,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 12662.048021258423,
+      "ttft_s": 1.5805500000000001,
+      "runs": 2,
+      "range_pct": 0.10755749580840927
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 12390.928558528343,
+      "ttft_s": 1.9379499999999998,
+      "runs": 2,
+      "range_pct": 0.42828762351969735
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 11896.542113380034,
+      "ttft_s": 2.69095,
+      "runs": 2,
+      "range_pct": 0.35303517345175733
+     }
+    ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 16.48908450390297,
+     "b_us_tok": 25.428989676624248,
+     "c_ns_tok2": 0.30026183607680046,
+     "r2": 0.9999179184784281,
+     "rungs": 9
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 15.774647887323944
+     },
+     {
+      "ctx": 1000,
+      "range_pct": 9.523809523809536
+     }
+    ],
+    "points": [
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 28332.16045038705,
+      "ttft_s": 0.07105,
+      "runs": 2,
+      "range_pct": 3.8001407459535645
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 32284.794851166534,
+      "ttft_s": 0.1243,
+      "runs": 2,
+      "range_pct": 0.3218020917135942
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 33230.174081237914,
+      "ttft_s": 0.18095,
+      "runs": 2,
+      "range_pct": 3.3710969881182615
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 33881.6067653277,
+      "ttft_s": 0.2365,
+      "runs": 2,
+      "range_pct": 0.761099365750527
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 32258.324382384533,
+      "ttft_s": 0.3724,
+      "runs": 2,
+      "range_pct": 0.26852846401718605
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 31857.157067542026,
+      "ttft_s": 0.50265,
+      "runs": 2,
+      "range_pct": 0.49736397095395557
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 30812.93302540416,
+      "ttft_s": 0.6495,
+      "runs": 2,
+      "range_pct": 1.2317167051578148
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 30087.70830722967,
+      "ttft_s": 0.7981,
+      "runs": 2,
+      "range_pct": 0.42601177797268
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 28023.810565938635,
+      "ttft_s": 1.14235,
+      "runs": 2,
+      "range_pct": 0.46395588042194447
+     }
+    ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 4.674864894969697,
+     "b_us_tok": 186.68939777073024,
+     "c_ns_tok2": 1.078250925061193,
+     "r2": 0.9999902229157922,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 4592.65890778872,
+      "ttft_s": 0.1117,
+      "runs": 2,
+      "range_pct": 1.4324082363473627
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 5082.789764174611,
+      "ttft_s": 0.1993,
+      "runs": 2,
+      "range_pct": 0.30105368790767156
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 5282.078194699554,
+      "ttft_s": 0.3811,
+      "runs": 2,
+      "range_pct": 0.05247966413014379
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 5286.175327669103,
+      "ttft_s": 0.75915,
+      "runs": 2,
+      "range_pct": 0.5927682276229926
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 5128.139524966951,
+      "ttft_s": 1.1725500000000002,
+      "runs": 2,
+      "range_pct": 0.025585262888573358
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 5125.531710749352,
+      "ttft_s": 1.56335,
+      "runs": 2,
+      "range_pct": 0.08315476380849324
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 5001.87367281509,
+      "ttft_s": 2.4017,
+      "runs": 2,
+      "range_pct": 0.14156639047341757
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 4890.436269794005,
+      "ttft_s": 3.27435,
+      "runs": 2,
+      "range_pct": 0.07024294898223979
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 4787.111897813711,
+      "ttft_s": 4.1806,
+      "runs": 2,
+      "range_pct": 0.02870401377792345
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 4695.9089486858575,
+      "ttft_s": 5.1136,
+      "runs": 2,
+      "range_pct": 0.10951188986231584
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 4516.697941504296,
+      "ttft_s": 7.0877,
+      "runs": 2,
+      "range_pct": 0.13826770320414597
+     }
+    ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "MG30",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03b/results.jsonl",
+    "fit": {
+     "a_ms": 9.383578806999068,
+     "b_us_tok": 83.88371985856905,
+     "c_ns_tok2": 0.22765445529038245,
+     "r2": 0.999903084357895,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 555,
+      "tok_s": 8289.76848394324,
+      "ttft_s": 0.06695000000000001,
+      "runs": 2,
+      "range_pct": 3.136669156086638
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1055,
+      "tok_s": 10252.672497570458,
+      "ttft_s": 0.10289999999999999,
+      "runs": 2,
+      "range_pct": 0.3887269193391619
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2055,
+      "tok_s": 10890.302066772656,
+      "ttft_s": 0.18869999999999998,
+      "runs": 2,
+      "range_pct": 0.4239533651298332
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4055,
+      "tok_s": 11827.329736036168,
+      "ttft_s": 0.34285,
+      "runs": 2,
+      "range_pct": 0.08750182295465145
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6055,
+      "tok_s": 11777.864228749271,
+      "ttft_s": 0.5141,
+      "runs": 2,
+      "range_pct": 0.31122349737406063
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8055,
+      "tok_s": 11753.11884438608,
+      "ttft_s": 0.68535,
+      "runs": 2,
+      "range_pct": 0.3355949514846383
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12055,
+      "tok_s": 11299.090823882276,
+      "ttft_s": 1.0669,
+      "runs": 2,
+      "range_pct": 0.4124097853594489
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16055,
+      "tok_s": 11295.599254230134,
+      "ttft_s": 1.42135,
+      "runs": 2,
+      "range_pct": 0.10553347169942906
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 11229.003359462486,
+      "ttft_s": 1.786,
+      "runs": 2,
+      "range_pct": 0.15677491601344545
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24055,
+      "tok_s": 11113.421113421115,
+      "ttft_s": 2.1645,
+      "runs": 2,
+      "range_pct": 0.018480018480016444
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32055,
+      "tok_s": 10931.691845991203,
+      "ttft_s": 2.9322999999999997,
+      "runs": 2,
+      "range_pct": 0.34784981072877147
+     }
+    ]
+   },
+   {
+    "machine": "h100",
+    "machine_name": "H100-80GB-HBM3",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03/results-q38.jsonl",
+    "fit": {
+     "a_ms": 9.341013670954643,
+     "b_us_tok": 161.46445075309305,
+     "c_ns_tok2": 0.28738845039459565,
+     "r2": 0.9999704809716323,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 4902.3090586145645,
+      "ttft_s": 0.1126,
+      "runs": 2,
+      "range_pct": 3.9076376554174077
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1051,
+      "tok_s": 5578.556263269638,
+      "ttft_s": 0.1884,
+      "runs": 2,
+      "range_pct": 0.8492569002123238
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 5962.516344617173,
+      "ttft_s": 0.34415,
+      "runs": 2,
+      "range_pct": 2.411739067267172
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 6229.533399953878,
+      "ttft_s": 0.65045,
+      "runs": 2,
+      "range_pct": 1.0608040587285752
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 6072.342346861988,
+      "ttft_s": 0.99665,
+      "runs": 2,
+      "range_pct": 0.09030251341995806
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 6070.109310214851,
+      "ttft_s": 1.3265,
+      "runs": 2,
+      "range_pct": 0.030154542027889628
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 6031.2773676967345,
+      "ttft_s": 1.99825,
+      "runs": 2,
+      "range_pct": 0.18516201676468202
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 6006.248713775233,
+      "ttft_s": 2.67255,
+      "runs": 2,
+      "range_pct": 0.06360966118501186
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 5947.910177686808,
+      "ttft_s": 3.3711,
+      "runs": 2,
+      "range_pct": 0.24324404497048394
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 5903.562706331382,
+      "ttft_s": 4.0741499999999995,
+      "runs": 2,
+      "range_pct": 0.10063448817545291
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 5851.681454704788,
+      "ttft_s": 5.477399999999999,
+      "runs": 2,
+      "range_pct": 0.1898711067294655
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 13.628329293134202,
+     "b_us_tok": 23.010265338287628,
+     "c_ns_tok2": 0.562779373118051,
+     "r2": 0.9998611243020121,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 13.793103448275874
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 25200.0,
+      "ttft_s": 0.04,
+      "runs": 2,
+      "range_pct": 5.999999999999998
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 33550.543024227234,
+      "ttft_s": 0.05985,
+      "runs": 2,
+      "range_pct": 1.1695906432748526
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 34626.349892008635,
+      "ttft_s": 0.11575,
+      "runs": 2,
+      "range_pct": 0.4319654427645792
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 34828.985507246376,
+      "ttft_s": 0.1725,
+      "runs": 2,
+      "range_pct": 3.5942028985507317
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 33946.58753709199,
+      "ttft_s": 0.2359,
+      "runs": 2,
+      "range_pct": 1.356506994489182
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 31826.133050622848,
+      "ttft_s": 0.37729999999999997,
+      "runs": 2,
+      "range_pct": 0.21203286509408098
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 30232.29461756374,
+      "ttft_s": 0.5295,
+      "runs": 2,
+      "range_pct": 1.586402266288945
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 28368.07032468453,
+      "ttft_s": 0.7053,
+      "runs": 2,
+      "range_pct": 0.056713455267271645
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 27243.12056737589,
+      "ttft_s": 0.88125,
+      "runs": 2,
+      "range_pct": 0.4425531914893634
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 24025.52073559767,
+      "ttft_s": 1.3322500000000002,
+      "runs": 2,
+      "range_pct": 0.3077500469131163
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 12.151424422239133,
+     "b_us_tok": 70.75900419972751,
+     "c_ns_tok2": 0.4325032046440439,
+     "r2": 0.9999787000294243,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 9404.216315307058,
+      "ttft_s": 0.05455,
+      "runs": 2,
+      "range_pct": 4.582951420714944
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 11636.99023549684,
+      "ttft_s": 0.08705,
+      "runs": 2,
+      "range_pct": 2.642159678345774
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 12891.450528338135,
+      "ttft_s": 0.15615,
+      "runs": 2,
+      "range_pct": 0.06404098623119868
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 13310.11608623549,
+      "ttft_s": 0.3015,
+      "runs": 2,
+      "range_pct": 0.4643449419568864
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 13334.072513582436,
+      "ttft_s": 0.45095,
+      "runs": 2,
+      "range_pct": 0.022175407473109875
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 13272.049689440993,
+      "ttft_s": 0.60375,
+      "runs": 2,
+      "range_pct": 0.5134575569358164
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 13065.419544292783,
+      "ttft_s": 0.91945,
+      "runs": 2,
+      "range_pct": 0.07613247049865929
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 12671.018793273986,
+      "ttft_s": 1.26375,
+      "runs": 2,
+      "range_pct": 0.023738872403558216
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 12468.770443288373,
+      "ttft_s": 1.6050499999999999,
+      "runs": 2,
+      "range_pct": 0.33020778168903525
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 12222.844344904815,
+      "ttft_s": 1.9646,
+      "runs": 2,
+      "range_pct": 0.08144151481217783
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 11757.382106654915,
+      "ttft_s": 2.7228,
+      "runs": 2,
+      "range_pct": 0.3672689878066618
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 22.26753690521983,
+     "b_us_tok": 25.52405528495768,
+     "c_ns_tok2": 0.29043103438470974,
+     "r2": 0.9999324074319732,
+     "rungs": 9
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 20.124666073018695
+     },
+     {
+      "ctx": 1000,
+      "range_pct": 8.403361344537823
+     }
+    ],
+    "points": [
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 26556.728232189973,
+      "ttft_s": 0.0758,
+      "runs": 2,
+      "range_pct": 6.068601583113465
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 30540.334855403344,
+      "ttft_s": 0.13140000000000002,
+      "runs": 2,
+      "range_pct": 2.4353120243531263
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 31865.394806571276,
+      "ttft_s": 0.1887,
+      "runs": 2,
+      "range_pct": 1.8018018018018092
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 32887.33839523907,
+      "ttft_s": 0.24365,
+      "runs": 2,
+      "range_pct": 0.20521239482864784
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 31907.0385126162,
+      "ttft_s": 0.3765,
+      "runs": 2,
+      "range_pct": 0.8499335989375778
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 31680.680581659908,
+      "ttft_s": 0.50545,
+      "runs": 2,
+      "range_pct": 0.0593530517360922
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 30631.3614448611,
+      "ttft_s": 0.65335,
+      "runs": 2,
+      "range_pct": 0.5663120838754169
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 30006.87285223368,
+      "ttft_s": 0.8002499999999999,
+      "runs": 2,
+      "range_pct": 0.8872227428928455
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 28080.347353186262,
+      "ttft_s": 1.14005,
+      "runs": 2,
+      "range_pct": 0.16665935704574472
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 8.490747755458932,
+     "b_us_tok": 186.2020489884486,
+     "c_ns_tok2": 1.0796996198762714,
+     "r2": 0.9999970342777117,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 4521.815777875717,
+      "ttft_s": 0.11345,
+      "runs": 2,
+      "range_pct": 1.4984574702512061
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 5081.51492350138,
+      "ttft_s": 0.19935,
+      "runs": 2,
+      "range_pct": 1.4547278655630869
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 5234.689897282538,
+      "ttft_s": 0.38455,
+      "runs": 2,
+      "range_pct": 0.5981016772851303
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 5227.983324648254,
+      "ttft_s": 0.7676000000000001,
+      "runs": 2,
+      "range_pct": 0.20844189682125255
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 5127.483584889572,
+      "ttft_s": 1.1726999999999999,
+      "runs": 2,
+      "range_pct": 0.6310224268781318
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 5103.009074988059,
+      "ttft_s": 1.5702500000000001,
+      "runs": 2,
+      "range_pct": 0.05731571405826466
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 5003.4361398613055,
+      "ttft_s": 2.40095,
+      "runs": 2,
+      "range_pct": 0.2124159186988527
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 4899.863833172688,
+      "ttft_s": 3.2680499999999997,
+      "runs": 2,
+      "range_pct": 0.015299643518311134
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 4797.957397839924,
+      "ttft_s": 4.17115,
+      "runs": 2,
+      "range_pct": 0.016781942629733888
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 4703.497311643669,
+      "ttft_s": 5.10535,
+      "runs": 2,
+      "range_pct": 0.0763904531520989
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 4523.910462947261,
+      "ttft_s": 7.0764,
+      "runs": 2,
+      "range_pct": 0.062178508846299184
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "MG30",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 8.128045477429199,
+     "b_us_tok": 86.04337577510591,
+     "c_ns_tok2": 0.270874826884893,
+     "r2": 0.9999081182826608,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 555,
+      "tok_s": 8066.860465116279,
+      "ttft_s": 0.0688,
+      "runs": 2,
+      "range_pct": 6.104651162790711
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1055,
+      "tok_s": 10267.639902676397,
+      "ttft_s": 0.10275000000000001,
+      "runs": 2,
+      "range_pct": 0.09732360097323879
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2055,
+      "tok_s": 10881.652104845116,
+      "ttft_s": 0.18885,
+      "runs": 2,
+      "range_pct": 1.3238019592269008
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4055,
+      "tok_s": 11701.05323907084,
+      "ttft_s": 0.34655,
+      "runs": 2,
+      "range_pct": 0.2597027845909555
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6055,
+      "tok_s": 11513.5957406351,
+      "ttft_s": 0.5259,
+      "runs": 2,
+      "range_pct": 0.22818026240729772
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8055,
+      "tok_s": 11171.983356449377,
+      "ttft_s": 0.721,
+      "runs": 2,
+      "range_pct": 0.859916782246877
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12055,
+      "tok_s": 10951.126453488372,
+      "ttft_s": 1.1008,
+      "runs": 2,
+      "range_pct": 0.10901162790696473
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16055,
+      "tok_s": 10949.701619778345,
+      "ttft_s": 1.46625,
+      "runs": 2,
+      "range_pct": 0.2796248934356346
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 10910.72302921495,
+      "ttft_s": 1.8380999999999998,
+      "runs": 2,
+      "range_pct": 0.33730482563516584
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24055,
+      "tok_s": 10739.798196267526,
+      "ttft_s": 2.2398,
+      "runs": 2,
+      "range_pct": 0.1964461112599321
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32055,
+      "tok_s": 10523.292078395325,
+      "ttft_s": 3.0461,
+      "runs": 2,
+      "range_pct": 0.18384163356423858
+     }
+    ]
+   },
+   {
+    "machine": "h200",
+    "machine_name": "H200-143GB-HBM3e",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h200/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 21.847636771673375,
+     "b_us_tok": 158.85317255795096,
+     "c_ns_tok2": 0.348246132850002,
+     "r2": 0.9999855181730657,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 4403.669724770642,
+      "ttft_s": 0.12535000000000002,
+      "runs": 2,
+      "range_pct": 4.547267650578388
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1051,
+      "tok_s": 5585.968642040925,
+      "ttft_s": 0.18814999999999998,
+      "runs": 2,
+      "range_pct": 3.454690406590475
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 5897.399051587872,
+      "ttft_s": 0.34795,
+      "runs": 2,
+      "range_pct": 2.0405230636585703
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 6117.149758454107,
+      "ttft_s": 0.6624,
+      "runs": 2,
+      "range_pct": 0.6642512077294626
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 6070.210631895687,
+      "ttft_s": 0.997,
+      "runs": 2,
+      "range_pct": 0.2206619859578716
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 6057.5512507052845,
+      "ttft_s": 1.32925,
+      "runs": 2,
+      "range_pct": 0.5642279480910334
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 6037.622423164592,
+      "ttft_s": 1.99615,
+      "runs": 2,
+      "range_pct": 0.12524108909651924
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 6019.199040047997,
+      "ttft_s": 2.6668000000000003,
+      "runs": 2,
+      "range_pct": 0.10499475026249196
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 5973.871203205767,
+      "ttft_s": 3.35645,
+      "runs": 2,
+      "range_pct": 0.8074006763097887
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 5949.8571410901795,
+      "ttft_s": 4.0424500000000005,
+      "runs": 2,
+      "range_pct": 0.13605610459005069
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 5850.506525508807,
+      "ttft_s": 5.4785,
+      "runs": 2,
+      "range_pct": 0.1934836177785758
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 9.483337079435906,
+     "b_us_tok": 12.108357157317824,
+     "c_ns_tok2": 0.25226046552581427,
+     "r2": 0.9997124128976401,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 9.620253164556956
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 40481.927710843374,
+      "ttft_s": 0.0249,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 56167.83216783216,
+      "ttft_s": 0.035750000000000004,
+      "runs": 2,
+      "range_pct": 3.636363636363643
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 65223.75915378356,
+      "ttft_s": 0.061450000000000005,
+      "runs": 2,
+      "range_pct": 0.48820179007323294
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 67429.85409652076,
+      "ttft_s": 0.0891,
+      "runs": 2,
+      "range_pct": 2.020202020202016
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 65132.16754778365,
+      "ttft_s": 0.12295,
+      "runs": 2,
+      "range_pct": 0.5693371289141977
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 63067.2268907563,
+      "ttft_s": 0.1904,
+      "runs": 2,
+      "range_pct": 1.6806722689075675
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 59854.17835109367,
+      "ttft_s": 0.26744999999999997,
+      "runs": 2,
+      "range_pct": 0.8599738268835388
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 55331.85840707964,
+      "ttft_s": 0.36160000000000003,
+      "runs": 2,
+      "range_pct": 0.16592920353982007
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 54114.73008001803,
+      "ttft_s": 0.44365,
+      "runs": 2,
+      "range_pct": 0.47334610616476747
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 48515.34672224328,
+      "ttft_s": 0.65975,
+      "runs": 2,
+      "range_pct": 1.5308829101932548
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 15.95553560155661,
+     "b_us_tok": 61.43447905585185,
+     "c_ns_tok2": 0.13851249681572297,
+     "r2": 0.9999939991577615,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 9932.236205227493,
+      "ttft_s": 0.05165,
+      "runs": 2,
+      "range_pct": 6.001936108422068
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 13328.94736842105,
+      "ttft_s": 0.07600000000000001,
+      "runs": 2,
+      "range_pct": 1.8421052631578925
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 14246.284501061573,
+      "ttft_s": 0.14129999999999998,
+      "runs": 2,
+      "range_pct": 2.2646850672328442
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 15080.796692972566,
+      "ttft_s": 0.2661,
+      "runs": 2,
+      "range_pct": 0.07515971439307703
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 15372.619199795476,
+      "ttft_s": 0.39115,
+      "runs": 2,
+      "range_pct": 0.025565639780132682
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 15512.535088568384,
+      "ttft_s": 0.5165500000000001,
+      "runs": 2,
+      "range_pct": 0.09679605072114139
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 15531.708578447218,
+      "ttft_s": 0.77345,
+      "runs": 2,
+      "range_pct": 0.16807809166720122
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 15461.787283348622,
+      "ttft_s": 1.03565,
+      "runs": 2,
+      "range_pct": 0.10621348911312711
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 15342.098202307485,
+      "ttft_s": 1.30445,
+      "runs": 2,
+      "range_pct": 0.17631952163748635
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 15284.682218898188,
+      "ttft_s": 1.57105,
+      "runs": 2,
+      "range_pct": 0.1845899239362148
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 15059.626014347878,
+      "ttft_s": 2.12575,
+      "runs": 2,
+      "range_pct": 0.09878866282488488
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 18.467141141791004,
+     "b_us_tok": 22.443761778079285,
+     "c_ns_tok2": 0.08891641674591569,
+     "r2": 0.9999301488515158,
+     "rungs": 9
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 8.306709265175714
+     },
+     {
+      "ctx": 2000,
+      "range_pct": 8.154188287620467
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 24527.84503631961,
+      "ttft_s": 0.0413,
+      "runs": 2,
+      "range_pct": 1.4527845036319522
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 35310.162780466344,
+      "ttft_s": 0.11365,
+      "runs": 2,
+      "range_pct": 1.1438627364716194
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 38105.19645120406,
+      "ttft_s": 0.1578,
+      "runs": 2,
+      "range_pct": 1.7743979721166012
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 39492.36076885165,
+      "ttft_s": 0.2029,
+      "runs": 2,
+      "range_pct": 1.182848693937907
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 40204.1499330656,
+      "ttft_s": 0.29879999999999995,
+      "runs": 2,
+      "range_pct": 0.1338688085676076
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 39937.64808579623,
+      "ttft_s": 0.40095000000000003,
+      "runs": 2,
+      "range_pct": 0.623519142037661
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 39279.68596663395,
+      "ttft_s": 0.5095000000000001,
+      "runs": 2,
+      "range_pct": 0.9028459273797935
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 39372.02820134448,
+      "ttft_s": 0.6099,
+      "runs": 2,
+      "range_pct": 0.39350713231676626
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 38628.05429864253,
+      "ttft_s": 0.8287500000000001,
+      "runs": 2,
+      "range_pct": 0.37405731523378477
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 19.009466720211076,
+     "b_us_tok": 154.783921363733,
+     "c_ns_tok2": 0.41677630808317107,
+     "r2": 0.9999974333315529,
+     "rungs": 10
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 2000,
+      "range_pct": 38.49788007268323
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 5064.165844027641,
+      "ttft_s": 0.1013,
+      "runs": 2,
+      "range_pct": 2.1717670286278454
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 5908.428113152523,
+      "ttft_s": 0.17145,
+      "runs": 2,
+      "range_pct": 0.40828229804608124
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 6181.930216436879,
+      "ttft_s": 0.64915,
+      "runs": 2,
+      "range_pct": 0.1694523607794964
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 6216.5934349961235,
+      "ttft_s": 0.9672499999999999,
+      "runs": 2,
+      "range_pct": 0.03101576634790158
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 6220.790311311233,
+      "ttft_s": 1.2881,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 6200.418075305169,
+      "ttft_s": 1.9374500000000001,
+      "runs": 2,
+      "range_pct": 0.04645281168545773
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 6147.968977962067,
+      "ttft_s": 2.6046,
+      "runs": 2,
+      "range_pct": 0.11518083390924187
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 6086.678832116788,
+      "ttft_s": 3.2880000000000003,
+      "runs": 2,
+      "range_pct": 0.09732360097323879
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 6043.5909697229,
+      "ttft_s": 3.9733,
+      "runs": 2,
+      "range_pct": 0.05536959202678383
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 5922.301359726205,
+      "ttft_s": 5.4055,
+      "runs": 2,
+      "range_pct": 0.10359818703171554
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "MG30",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 18.89475324364775,
+     "b_us_tok": 133.54495377109387,
+     "c_ns_tok2": 0.03552182490131886,
+     "r2": 0.9999937638880515,
+     "rungs": 10
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 2000,
+      "range_pct": 68.09760506100318
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 555,
+      "tok_s": 5970.952124798278,
+      "ttft_s": 0.09295,
+      "runs": 2,
+      "range_pct": 3.119956966110812
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1055,
+      "tok_s": 6683.560342096928,
+      "ttft_s": 0.15785,
+      "runs": 2,
+      "range_pct": 0.3167564143173902
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4055,
+      "tok_s": 7248.190186790598,
+      "ttft_s": 0.55945,
+      "runs": 2,
+      "range_pct": 0.1251228885512419
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6055,
+      "tok_s": 7262.804366078925,
+      "ttft_s": 0.8337,
+      "runs": 2,
+      "range_pct": 0.23989444644356506
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8055,
+      "tok_s": 7270.839915150968,
+      "ttft_s": 1.10785,
+      "runs": 2,
+      "range_pct": 1.4352123482420729
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12055,
+      "tok_s": 7300.972049783485,
+      "ttft_s": 1.65115,
+      "runs": 2,
+      "range_pct": 1.362686612361093
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16055,
+      "tok_s": 7369.749827863208,
+      "ttft_s": 2.1785,
+      "runs": 2,
+      "range_pct": 0.9272435161808581
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 7399.959411840673,
+      "ttft_s": 2.71015,
+      "runs": 2,
+      "range_pct": 0.12914414331309473
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24055,
+      "tok_s": 7395.394595259323,
+      "ttft_s": 3.2527,
+      "runs": 2,
+      "range_pct": 0.25209825683278464
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32055,
+      "tok_s": 7386.285082261855,
+      "ttft_s": 4.3398,
+      "runs": 2,
+      "range_pct": 0.03686805843586856
+     }
+    ]
+   },
+   {
+    "machine": "b300",
+    "machine_name": "B300-SXM6",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASHINFER",
+    "prefix_caching": false,
+    "source": "cuda-b300/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 24.31450255585575,
+     "b_us_tok": 133.70018754317724,
+     "c_ns_tok2": 0.12901360456834776,
+     "r2": 0.9999993488264743,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 5564.5161290322585,
+      "ttft_s": 0.0992,
+      "runs": 2,
+      "range_pct": 2.8225806451612874
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1051,
+      "tok_s": 6352.372317920823,
+      "ttft_s": 0.16544999999999999,
+      "runs": 2,
+      "range_pct": 1.1483831973405771
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 6828.618968386024,
+      "ttft_s": 0.3005,
+      "runs": 2,
+      "range_pct": 1.131447587354414
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 7106.901692537052,
+      "ttft_s": 0.5701499999999999,
+      "runs": 2,
+      "range_pct": 0.1227747084100735
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 7213.349225268176,
+      "ttft_s": 0.839,
+      "runs": 2,
+      "range_pct": 0.11918951132300368
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 7256.015139226817,
+      "ttft_s": 1.1097000000000001,
+      "runs": 2,
+      "range_pct": 0.03604577813825159
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 7284.8162475822055,
+      "ttft_s": 1.6543999999999999,
+      "runs": 2,
+      "range_pct": 0.04835589941973731
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 7289.0745618018345,
+      "ttft_s": 2.2022,
+      "runs": 2,
+      "range_pct": 0.06357279084553129
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 7249.882489062444,
+      "ttft_s": 2.7657,
+      "runs": 2,
+      "range_pct": 0.4700437502259951
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 7247.962151004233,
+      "ttft_s": 3.3184500000000003,
+      "runs": 2,
+      "range_pct": 0.25614368153807265
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 7214.937703294353,
+      "ttft_s": 4.44245,
+      "runs": 2,
+      "range_pct": 0.011255050704017177
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 11.064712775068184,
+     "b_us_tok": 41.12965681816504,
+     "c_ns_tok2": 1.044175477273455,
+     "r2": 0.9999594938905182,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 9.13978494623656
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 17394.30543572045,
+      "ttft_s": 0.05795,
+      "runs": 2,
+      "range_pct": 2.2433132010353796
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 19871.35081642751,
+      "ttft_s": 0.10105,
+      "runs": 2,
+      "range_pct": 1.2864918357248842
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 20543.311122501284,
+      "ttft_s": 0.1951,
+      "runs": 2,
+      "range_pct": 1.64018452075859
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 21169.83791402396,
+      "ttft_s": 0.2838,
+      "runs": 2,
+      "range_pct": 0.49330514446791995
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 19465.24064171123,
+      "ttft_s": 0.4114,
+      "runs": 2,
+      "range_pct": 0.437530384054454
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 18345.428156748912,
+      "ttft_s": 0.65455,
+      "runs": 2,
+      "range_pct": 0.22916507524252477
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 17030.69312197457,
+      "ttft_s": 0.9399500000000001,
+      "runs": 2,
+      "range_pct": 0.09574977392414616
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 15951.526747986925,
+      "ttft_s": 1.2543,
+      "runs": 2,
+      "range_pct": 0.047835446065529294
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 14981.123833889738,
+      "ttft_s": 1.60255,
+      "runs": 2,
+      "range_pct": 0.05616049421234289
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 13349.181524345739,
+      "ttft_s": 2.3977500000000003,
+      "runs": 2,
+      "range_pct": 0.19601709936399322
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 7.586905871750332,
+     "b_us_tok": 84.44298582927976,
+     "c_ns_tok2": 1.7512568607394947,
+     "r2": 0.9999971033436288,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 8968.531468531468,
+      "ttft_s": 0.0572,
+      "runs": 2,
+      "range_pct": 4.545454545454555
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 10448.684889118103,
+      "ttft_s": 0.09695,
+      "runs": 2,
+      "range_pct": 1.5471892728210432
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 11003.006285870457,
+      "ttft_s": 0.18295,
+      "runs": 2,
+      "range_pct": 0.8198961464881123
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 10773.154362416108,
+      "ttft_s": 0.3725,
+      "runs": 2,
+      "range_pct": 0.05369127516777932
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 10439.236111111111,
+      "ttft_s": 0.576,
+      "runs": 2,
+      "range_pct": 0.0347222222222184
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 10068.480241251493,
+      "ttft_s": 0.79585,
+      "runs": 2,
+      "range_pct": 0.012565181881020295
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 9416.421712718009,
+      "ttft_s": 1.27575,
+      "runs": 2,
+      "range_pct": 0.1175778953556776
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 8852.34120183537,
+      "ttft_s": 1.8089,
+      "runs": 2,
+      "range_pct": 0.011056443142239924
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 8328.166288674809,
+      "ttft_s": 2.40305,
+      "runs": 2,
+      "range_pct": 0.004161378248466197
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 7884.3596604994,
+      "ttft_s": 3.04565,
+      "runs": 2,
+      "range_pct": 0.08208428414295624
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 7104.606131892275,
+      "ttft_s": 4.50595,
+      "runs": 2,
+      "range_pct": 0.05992077142444822
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 14.792120657437637,
+     "b_us_tok": 35.63994641056329,
+     "c_ns_tok2": 1.0545697033291983,
+     "r2": 0.9999790665401399,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 12682.323856613102,
+      "ttft_s": 0.04045,
+      "runs": 2,
+      "range_pct": 0.7416563658837941
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 19295.238095238095,
+      "ttft_s": 0.0525,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 22849.035187287172,
+      "ttft_s": 0.08810000000000001,
+      "runs": 2,
+      "range_pct": 1.8161180476731031
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 23263.76811594203,
+      "ttft_s": 0.1725,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 22724.867724867723,
+      "ttft_s": 0.2646,
+      "runs": 2,
+      "range_pct": 0.07558578987149583
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 21965.46052631579,
+      "ttft_s": 0.3648,
+      "runs": 2,
+      "range_pct": 0.05482456140350273
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 20118.908055602078,
+      "ttft_s": 0.5971,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 18695.855224751896,
+      "ttft_s": 0.8565,
+      "runs": 2,
+      "range_pct": 0.11675423234092244
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 17329.523314716196,
+      "ttft_s": 1.15485,
+      "runs": 2,
+      "range_pct": 0.12988699831147396
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 16234.8725576364,
+      "ttft_s": 1.4791,
+      "runs": 2,
+      "range_pct": 0.02704347238185085
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 14321.247231977095,
+      "ttft_s": 2.23535,
+      "runs": 2,
+      "range_pct": 0.031315006598525735
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 12.043697401499514,
+     "b_us_tok": 212.4734013643387,
+     "c_ns_tok2": 4.458727474245338,
+     "r2": 0.999996131911984,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 4025.1078854452726,
+      "ttft_s": 0.12745,
+      "runs": 2,
+      "range_pct": 2.746174970576699
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 4474.381625441696,
+      "ttft_s": 0.2264,
+      "runs": 2,
+      "range_pct": 0.9717314487632543
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 4441.747572815534,
+      "ttft_s": 0.4532,
+      "runs": 2,
+      "range_pct": 0.04413062665489364
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 4266.879319510898,
+      "ttft_s": 0.9405,
+      "runs": 2,
+      "range_pct": 0.02126528442317682
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 4131.794131794131,
+      "ttft_s": 1.4553,
+      "runs": 2,
+      "range_pct": 0.041228612657179545
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 3994.815165640501,
+      "ttft_s": 2.00585,
+      "runs": 2,
+      "range_pct": 0.3240521474686517
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 3736.6636598338982,
+      "ttft_s": 3.2149,
+      "runs": 2,
+      "range_pct": 0.4479143985816103
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 3508.8142166905877,
+      "ttft_s": 4.56365,
+      "runs": 2,
+      "range_pct": 0.24760882188599717
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 3298.66490852151,
+      "ttft_s": 6.067,
+      "runs": 2,
+      "range_pct": 0.2538322070215862
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 3126.1431909755447,
+      "ttft_s": 7.68135,
+      "runs": 2,
+      "range_pct": 0.3371803133563766
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 2809.057285885393,
+      "ttft_s": 11.39635,
+      "runs": 2,
+      "range_pct": 0.130743615280338
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "Muse-Glimmer-30B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "MG30",
+    "quant": "int4",
+    "quant_label": "INT4",
+    "arch": "sliding window 2048",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 12.171054369654748,
+     "b_us_tok": 161.5874677504396,
+     "c_ns_tok2": 0.4670175760505267,
+     "r2": 0.9999957769452417,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 555,
+      "tok_s": 5216.165413533835,
+      "ttft_s": 0.1064,
+      "runs": 2,
+      "range_pct": 2.2556390977443606
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1055,
+      "tok_s": 5803.080308030803,
+      "ttft_s": 0.1818,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2055,
+      "tok_s": 5933.304460805543,
+      "ttft_s": 0.34635,
+      "runs": 2,
+      "range_pct": 0.2598527501082754
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4055,
+      "tok_s": 6024.812421068272,
+      "ttft_s": 0.6730499999999999,
+      "runs": 2,
+      "range_pct": 0.07428868583315594
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6055,
+      "tok_s": 6006.646495709539,
+      "ttft_s": 1.00805,
+      "runs": 2,
+      "range_pct": 0.18848271415106305
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8055,
+      "tok_s": 5985.065200430954,
+      "ttft_s": 1.34585,
+      "runs": 2,
+      "range_pct": 0.12631422521083588
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12055,
+      "tok_s": 5937.399955672668,
+      "ttft_s": 2.03035,
+      "runs": 2,
+      "range_pct": 0.13298199817765038
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16055,
+      "tok_s": 5885.479673008542,
+      "ttft_s": 2.7279,
+      "runs": 2,
+      "range_pct": 0.007331647054526268
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20055,
+      "tok_s": 5838.427947598253,
+      "ttft_s": 3.435,
+      "runs": 2,
+      "range_pct": 0.11062590975254806
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24055,
+      "tok_s": 5757.539492580182,
+      "ttft_s": 4.178,
+      "runs": 2,
+      "range_pct": 0.03829583532790388
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32055,
+      "tok_s": 5651.196615099828,
+      "ttft_s": 5.67225,
+      "runs": 2,
+      "range_pct": 0.08285953545770558
+     }
+    ]
+   },
+   {
+    "machine": "pro6000",
+    "machine_name": "RTX-PRO-6000-Blackwell",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 1,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+    "fit": {
+     "a_ms": 10.125869213760705,
+     "b_us_tok": 162.63754369841374,
+     "c_ns_tok2": 0.6916732592334184,
+     "r2": 0.9999961391179376,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 4946.236559139785,
+      "ttft_s": 0.1116,
+      "runs": 2,
+      "range_pct": 5.197132616487455
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1051,
+      "tok_s": 5792.229264260127,
+      "ttft_s": 0.18145,
+      "runs": 2,
+      "range_pct": 1.1573436208321801
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 5991.240875912408,
+      "ttft_s": 0.3425,
+      "runs": 2,
+      "range_pct": 0.0
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 5971.556996536733,
+      "ttft_s": 0.67855,
+      "runs": 2,
+      "range_pct": 0.4863311472994003
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 5936.825583676672,
+      "ttft_s": 1.0194,
+      "runs": 2,
+      "range_pct": 0.05885815185404708
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 5899.333284489706,
+      "ttft_s": 1.3649,
+      "runs": 2,
+      "range_pct": 0.05861235255329415
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 5828.416674726763,
+      "ttft_s": 2.0678,
+      "runs": 2,
+      "range_pct": 0.029016345874839634
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 5725.5979026591285,
+      "ttft_s": 2.80355,
+      "runs": 2,
+      "range_pct": 0.010700718731614881
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 5647.453139742849,
+      "ttft_s": 3.55045,
+      "runs": 2,
+      "range_pct": 0.0647805207790553
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 5562.2492281720115,
+      "ttft_s": 4.3241499999999995,
+      "runs": 2,
+      "range_pct": 0.025438525490561175
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 5402.553621844844,
+      "ttft_s": 5.93275,
+      "runs": 2,
+      "range_pct": 0.02191226665542345
+     }
+    ]
+   },
+   {
+    "machine": "h100x2",
+    "machine_name": "H100-80GB-HBM3-x2",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 13.561985082252638,
+     "b_us_tok": 15.52009334124241,
+     "c_ns_tok2": 0.2735341652766575,
+     "r2": 0.9997411221154462,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 15.308641975308635
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 26526.315789473683,
+      "ttft_s": 0.038,
+      "runs": 2,
+      "range_pct": 4.736842105263148
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 44572.69700332963,
+      "ttft_s": 0.04505,
+      "runs": 2,
+      "range_pct": 7.325194228634844
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 50574.13249211357,
+      "ttft_s": 0.07925,
+      "runs": 2,
+      "range_pct": 4.416403785488963
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 52540.44599912549,
+      "ttft_s": 0.11435000000000001,
+      "runs": 2,
+      "range_pct": 6.383909051158712
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 51581.320450885665,
+      "ttft_s": 0.15525,
+      "runs": 2,
+      "range_pct": 0.7085346215780933
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 49466.52935118435,
+      "ttft_s": 0.24275,
+      "runs": 2,
+      "range_pct": 1.1946446961895012
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 48000.0,
+      "ttft_s": 0.3335,
+      "runs": 2,
+      "range_pct": 0.779610194902546
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 45560.74234316292,
+      "ttft_s": 0.43915000000000004,
+      "runs": 2,
+      "range_pct": 0.1593988386655991
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 44181.08207581892,
+      "ttft_s": 0.5434,
+      "runs": 2,
+      "range_pct": 0.7361059992638946
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 40503.638089212276,
+      "ttft_s": 0.79025,
+      "runs": 2,
+      "range_pct": 0.08857956342928477
+     }
+    ]
+   },
+   {
+    "machine": "h100x2",
+    "machine_name": "H100-80GB-HBM3-x2",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 14.67229176434715,
+     "b_us_tok": 40.418822358231395,
+     "c_ns_tok2": 0.2868522205188229,
+     "r2": 0.999898511687537,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 11752.57731958763,
+      "ttft_s": 0.043649999999999994,
+      "runs": 2,
+      "range_pct": 7.101947308132874
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 17865.961199294532,
+      "ttft_s": 0.0567,
+      "runs": 2,
+      "range_pct": 0.7054673721340345
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 21001.56494522692,
+      "ttft_s": 0.09584999999999999,
+      "runs": 2,
+      "range_pct": 0.7303077725612857
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 21995.06714168265,
+      "ttft_s": 0.18245,
+      "runs": 2,
+      "range_pct": 1.6990956426418151
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 22474.30386843581,
+      "ttft_s": 0.26754999999999995,
+      "runs": 2,
+      "range_pct": 0.9344047841524958
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 22674.023769100168,
+      "ttft_s": 0.35340000000000005,
+      "runs": 2,
+      "range_pct": 0.3961516694963249
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 22271.04189840563,
+      "ttft_s": 0.5394000000000001,
+      "runs": 2,
+      "range_pct": 1.3348164627363706
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 21801.22532334922,
+      "ttft_s": 0.7344999999999999,
+      "runs": 2,
+      "range_pct": 0.054458815520771545
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 21217.068645640076,
+      "ttft_s": 0.9432499999999999,
+      "runs": 2,
+      "range_pct": 0.34985422740524463
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 20639.477416304955,
+      "ttft_s": 1.16345,
+      "runs": 2,
+      "range_pct": 0.3352099359663083
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 20035.047094533278,
+      "ttft_s": 1.59785,
+      "runs": 2,
+      "range_pct": 0.14394342397596574
+     }
+    ]
+   },
+   {
+    "machine": "h100x2",
+    "machine_name": "H100-80GB-HBM3-x2",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 10.779503806339406,
+     "b_us_tok": 20.313342987236215,
+     "c_ns_tok2": 0.13838806970509537,
+     "r2": 0.9999473396051816,
+     "rungs": 8
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 14.27312775330397
+     },
+     {
+      "ctx": 1000,
+      "range_pct": 12.237762237762237
+     },
+     {
+      "ctx": 2000,
+      "range_pct": 13.991769547325102
+     }
+    ],
+    "points": [
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 40392.55158530448,
+      "ttft_s": 0.09935,
+      "runs": 2,
+      "range_pct": 5.133366884750888
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 42996.06721487308,
+      "ttft_s": 0.13985,
+      "runs": 2,
+      "range_pct": 3.2177332856632135
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 44270.7182320442,
+      "ttft_s": 0.181,
+      "runs": 2,
+      "range_pct": 1.1049723756906087
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 43235.558754723774,
+      "ttft_s": 0.27785,
+      "runs": 2,
+      "range_pct": 2.987223321936287
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 42924.54094625385,
+      "ttft_s": 0.37305,
+      "runs": 2,
+      "range_pct": 1.0990483849349932
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 41933.99685699319,
+      "ttft_s": 0.47725,
+      "runs": 2,
+      "range_pct": 0.6495547407019364
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 41527.02118460874,
+      "ttft_s": 0.5782499999999999,
+      "runs": 2,
+      "range_pct": 0.05188067444878132
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 39799.83837881519,
+      "ttft_s": 0.80435,
+      "runs": 2,
+      "range_pct": 0.509728352085534
+     }
+    ]
+   },
+   {
+    "machine": "h100x2",
+    "machine_name": "H100-80GB-HBM3-x2",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 13.662033042014714,
+     "b_us_tok": 99.71193367343719,
+     "c_ns_tok2": 0.6098641679677166,
+     "r2": 0.9999178811169601,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 7276.595744680851,
+      "ttft_s": 0.07050000000000001,
+      "runs": 2,
+      "range_pct": 6.52482269503547
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 8751.619870410368,
+      "ttft_s": 0.11574999999999999,
+      "runs": 2,
+      "range_pct": 0.9503239740820768
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 9147.920927062032,
+      "ttft_s": 0.22005,
+      "runs": 2,
+      "range_pct": 0.40899795501023034
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 9419.082267339514,
+      "ttft_s": 0.42605000000000004,
+      "runs": 2,
+      "range_pct": 0.305128506043897
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 9455.889290768988,
+      "ttft_s": 0.6359,
+      "runs": 2,
+      "range_pct": 0.03145148608271395
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 9609.065835232042,
+      "ttft_s": 0.8339,
+      "runs": 2,
+      "range_pct": 0.7195107327017635
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 9127.72585669782,
+      "ttft_s": 1.3161,
+      "runs": 2,
+      "range_pct": 0.22794620469570046
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 9127.33698130415,
+      "ttft_s": 1.7544,
+      "runs": 2,
+      "range_pct": 0.2279981760145921
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 8801.952764216916,
+      "ttft_s": 2.2737,
+      "runs": 2,
+      "range_pct": 0.1759247042265912
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 8699.57431392084,
+      "ttft_s": 2.76025,
+      "runs": 2,
+      "range_pct": 0.34417172357576536
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 8342.475927397814,
+      "ttft_s": 3.83735,
+      "runs": 2,
+      "range_pct": 0.45083195434349477
+     }
+    ]
+   },
+   {
+    "machine": "h100x2",
+    "machine_name": "H100-80GB-HBM3-x2",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 39.29999426439907,
+     "b_us_tok": 84.28813319619515,
+     "c_ns_tok2": 0.289746683149839,
+     "r2": 0.9997147323313906,
+     "rungs": 10
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 1000,
+      "range_pct": 84.13215449046069
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 4473.257698541329,
+      "ttft_s": 0.12340000000000001,
+      "runs": 2,
+      "range_pct": 2.917341977309567
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 10198.807157057654,
+      "ttft_s": 0.2012,
+      "runs": 2,
+      "range_pct": 3.3797216699801194
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 10757.998141510685,
+      "ttft_s": 0.37665000000000004,
+      "runs": 2,
+      "range_pct": 1.1947431302270022
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 11019.664967225055,
+      "ttft_s": 0.5492,
+      "runs": 2,
+      "range_pct": 1.056081573197383
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 11163.951473136916,
+      "ttft_s": 0.72125,
+      "runs": 2,
+      "range_pct": 0.34662045060659386
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 10903.333785678744,
+      "ttft_s": 1.10535,
+      "runs": 2,
+      "range_pct": 0.4071108698602206
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 10851.078212668155,
+      "ttft_s": 1.4792999999999998,
+      "runs": 2,
+      "range_pct": 0.3650375177448842
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 10803.34051724138,
+      "ttft_s": 1.8559999999999999,
+      "runs": 2,
+      "range_pct": 0.1508620689655126
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 10726.486197208224,
+      "ttft_s": 2.2423,
+      "runs": 2,
+      "range_pct": 0.24974356687329202
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 10569.671387821729,
+      "ttft_s": 3.03245,
+      "runs": 2,
+      "range_pct": 0.1154182261867413
+     }
+    ]
+   },
+   {
+    "machine": "pro6000x2",
+    "machine_name": "RTX-PRO-6000-Blackwell-x2",
+    "model": "Qwen3-8B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "B8",
+    "quant": "bf16",
+    "quant_label": "BF16",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 12.682930942682438,
+     "b_us_tok": 39.31814722904279,
+     "c_ns_tok2": 0.5160747145765704,
+     "r2": 0.9999708915236146,
+     "rungs": 10
+    },
+    "fit_scope": "the whole ladder",
+    "dropped": [
+     {
+      "ctx": 500,
+      "range_pct": 10.61946902654869
+     }
+    ],
+    "points": [
+     {
+      "ctx": 1000,
+      "tokens": 1008,
+      "tok_s": 19018.867924528302,
+      "ttft_s": 0.053,
+      "runs": 2,
+      "range_pct": 1.1320754716981196
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2008,
+      "tok_s": 21037.192247249866,
+      "ttft_s": 0.09545000000000001,
+      "runs": 2,
+      "range_pct": 0.7333682556312124
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4008,
+      "tok_s": 22003.84298654955,
+      "ttft_s": 0.18214999999999998,
+      "runs": 2,
+      "range_pct": 0.1646994235520147
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6008,
+      "tok_s": 23134.385829803618,
+      "ttft_s": 0.25970000000000004,
+      "runs": 2,
+      "range_pct": 0.15402387370042797
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8008,
+      "tok_s": 22081.897146008545,
+      "ttft_s": 0.36265000000000003,
+      "runs": 2,
+      "range_pct": 0.13787398317937416
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12008,
+      "tok_s": 21358.94699395233,
+      "ttft_s": 0.5622,
+      "runs": 2,
+      "range_pct": 0.5691924581999254
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16008,
+      "tok_s": 20682.170542635657,
+      "ttft_s": 0.774,
+      "runs": 2,
+      "range_pct": 0.025839793281650897
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20008,
+      "tok_s": 19829.534192269577,
+      "ttft_s": 1.009,
+      "runs": 2,
+      "range_pct": 0.31714568880078
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24008,
+      "tok_s": 19130.64265508586,
+      "ttft_s": 1.25495,
+      "runs": 2,
+      "range_pct": 0.23108490378101937
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32008,
+      "tok_s": 17784.692318377554,
+      "ttft_s": 1.79975,
+      "runs": 2,
+      "range_pct": 0.0055563272676754545
+     }
+    ]
+   },
+   {
+    "machine": "pro6000x2",
+    "machine_name": "RTX-PRO-6000-Blackwell-x2",
+    "model": "gemma-4-12B-it",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G12",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 10.929915326461014,
+     "b_us_tok": 65.52375448886035,
+     "c_ns_tok2": 0.8417339428957782,
+     "r2": 0.9999920557857772,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 10448.06517311609,
+      "ttft_s": 0.0491,
+      "runs": 2,
+      "range_pct": 2.036659877800409
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 13241.830065359478,
+      "ttft_s": 0.0765,
+      "runs": 2,
+      "range_pct": 0.26143790849673954
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 13892.339544513457,
+      "ttft_s": 0.1449,
+      "runs": 2,
+      "range_pct": 0.13802622498273154
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 13985.014810942672,
+      "ttft_s": 0.28695000000000004,
+      "runs": 2,
+      "range_pct": 0.1045478306325222
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 13850.051825405966,
+      "ttft_s": 0.43415,
+      "runs": 2,
+      "range_pct": 0.207301623862723
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 13571.005165551696,
+      "ttft_s": 0.59045,
+      "runs": 2,
+      "range_pct": 0.3217884664239161
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 13010.939023069424,
+      "ttft_s": 0.9233,
+      "runs": 2,
+      "range_pct": 0.08664572728256384
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 12543.474855083814,
+      "ttft_s": 1.2766000000000002,
+      "runs": 2,
+      "range_pct": 0.46999843333855584
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 12024.875322958602,
+      "ttft_s": 1.6643,
+      "runs": 2,
+      "range_pct": 0.0841194496184623
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 11572.808983348994,
+      "ttft_s": 2.0749500000000003,
+      "runs": 2,
+      "range_pct": 0.85303260319526
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 10748.568838450821,
+      "ttft_s": 2.97835,
+      "runs": 2,
+      "range_pct": 0.43984085147817126
+     }
+    ]
+   },
+   {
+    "machine": "pro6000x2",
+    "machine_name": "RTX-PRO-6000-Blackwell-x2",
+    "model": "gemma-4-26B-A4B",
+    "date": "2026-09-03",
+    "lit": true,
+    "caveat": null,
+    "cfg": "G26A4B",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "MoE, 128 experts",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 13.272508971405246,
+     "b_us_tok": 34.85676623337381,
+     "c_ns_tok2": 0.5408142941157298,
+     "r2": 0.9999902284143617,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 14657.142857142855,
+      "ttft_s": 0.035,
+      "runs": 2,
+      "range_pct": 1.7142857142857035
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 20715.746421267893,
+      "ttft_s": 0.0489,
+      "runs": 2,
+      "range_pct": 0.40899795501022246
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 23907.363420427555,
+      "ttft_s": 0.0842,
+      "runs": 2,
+      "range_pct": 1.4251781472684164
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 25049.937578027464,
+      "ttft_s": 0.1602,
+      "runs": 2,
+      "range_pct": 0.37453183520600325
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 24694.045174537987,
+      "ttft_s": 0.2435,
+      "runs": 2,
+      "range_pct": 0.41067761806981556
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 24583.525080533826,
+      "ttft_s": 0.32594999999999996,
+      "runs": 2,
+      "range_pct": 0.15339776039269842
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 23442.287052395353,
+      "ttft_s": 0.5124500000000001,
+      "runs": 2,
+      "range_pct": 0.13659869255537785
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 22555.10951475456,
+      "ttft_s": 0.70995,
+      "runs": 2,
+      "range_pct": 0.014085498978799772
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 21536.72316384181,
+      "ttft_s": 0.92925,
+      "runs": 2,
+      "range_pct": 0.20446596717783294
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 20572.28528592846,
+      "ttft_s": 1.1672500000000001,
+      "runs": 2,
+      "range_pct": 0.9852216748768529
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 18993.177098783744,
+      "ttft_s": 1.6855,
+      "runs": 2,
+      "range_pct": 0.2610501334915431
+     }
+    ]
+   },
+   {
+    "machine": "pro6000x2",
+    "machine_name": "RTX-PRO-6000-Blackwell-x2",
+    "model": "gemma-4-31B-it",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "G31",
+    "quant": "w4a16 QAT",
+    "quant_label": "W4A16 QAT",
+    "arch": "dense",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "TRITON_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 6.799017065181596,
+     "b_us_tok": 147.92062672666572,
+     "c_ns_tok2": 2.061076998582456,
+     "r2": 0.999998193701315,
+     "rungs": 11
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 513,
+      "tok_s": 5709.515859766277,
+      "ttft_s": 0.08985000000000001,
+      "runs": 2,
+      "range_pct": 2.114635503617138
+     },
+     {
+      "ctx": 1000,
+      "tokens": 1013,
+      "tok_s": 6319.401122894573,
+      "ttft_s": 0.1603,
+      "runs": 2,
+      "range_pct": 0.873362445414855
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2013,
+      "tok_s": 6487.270383499838,
+      "ttft_s": 0.3103,
+      "runs": 2,
+      "range_pct": 0.25781501772477194
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4013,
+      "tok_s": 6358.23496791571,
+      "ttft_s": 0.63115,
+      "runs": 2,
+      "range_pct": 0.04753228234175188
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6013,
+      "tok_s": 6216.914805624483,
+      "ttft_s": 0.9672000000000001,
+      "runs": 2,
+      "range_pct": 0.041356492969403115
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8013,
+      "tok_s": 6047.090785601087,
+      "ttft_s": 1.3251,
+      "runs": 2,
+      "range_pct": 0.15093200513168833
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12013,
+      "tok_s": 5768.547418967587,
+      "ttft_s": 2.0825,
+      "runs": 2,
+      "range_pct": 0.057623049219681526
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16013,
+      "tok_s": 5510.607911626546,
+      "ttft_s": 2.90585,
+      "runs": 2,
+      "range_pct": 0.03785467247105325
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20013,
+      "tok_s": 5270.115472224782,
+      "ttft_s": 3.79745,
+      "runs": 2,
+      "range_pct": 0.04476688303992391
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24013,
+      "tok_s": 5060.108944168748,
+      "ttft_s": 4.74555,
+      "runs": 2,
+      "range_pct": 0.02739408498487288
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32013,
+      "tok_s": 4670.49881096538,
+      "ttft_s": 6.8543,
+      "runs": 2,
+      "range_pct": 0.008753629108727219
+     }
+    ]
+   },
+   {
+    "machine": "pro6000x2",
+    "machine_name": "RTX-PRO-6000-Blackwell-x2",
+    "model": "Qwen3.8-27B",
+    "date": "2026-09-03",
+    "lit": false,
+    "caveat": null,
+    "cfg": "Q38",
+    "quant": "int4 AWQ",
+    "quant_label": "INT4 AWQ",
+    "arch": "hybrid SSM",
+    "tp": 2,
+    "vllm": "0.28.0",
+    "attn_backend": "FLASH_ATTN",
+    "prefix_caching": false,
+    "source": "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+    "fit": {
+     "a_ms": 13.67555588178282,
+     "b_us_tok": 121.5773814779688,
+     "c_ns_tok2": 0.33758363777448447,
+     "r2": 0.9999951767422923,
+     "rungs": 10
+    },
+    "fit_scope": "11 rungs to 32 000 of the 16 measured",
+    "dropped": [
+     {
+      "ctx": 1000,
+      "range_pct": 60.61493411420204
+     }
+    ],
+    "points": [
+     {
+      "ctx": 500,
+      "tokens": 552,
+      "tok_s": 6330.275229357798,
+      "ttft_s": 0.0872,
+      "runs": 2,
+      "range_pct": 2.981651376146779
+     },
+     {
+      "ctx": 2000,
+      "tokens": 2052,
+      "tok_s": 7783.045704532525,
+      "ttft_s": 0.26365,
+      "runs": 2,
+      "range_pct": 0.03792907263416992
+     },
+     {
+      "ctx": 4000,
+      "tokens": 4052,
+      "tok_s": 7983.449906413162,
+      "ttft_s": 0.50755,
+      "runs": 2,
+      "range_pct": 0.019702492365303918
+     },
+     {
+      "ctx": 6000,
+      "tokens": 6052,
+      "tok_s": 7974.700224008433,
+      "ttft_s": 0.7589,
+      "runs": 2,
+      "range_pct": 0.026353933324545782
+     },
+     {
+      "ctx": 8000,
+      "tokens": 8052,
+      "tok_s": 7914.680296849659,
+      "ttft_s": 1.01735,
+      "runs": 2,
+      "range_pct": 0.08846512999460589
+     },
+     {
+      "ctx": 12000,
+      "tokens": 12052,
+      "tok_s": 7898.807183117053,
+      "ttft_s": 1.5258,
+      "runs": 2,
+      "range_pct": 0.026215755669154274
+     },
+     {
+      "ctx": 16000,
+      "tokens": 16052,
+      "tok_s": 7806.633595953701,
+      "ttft_s": 2.0562,
+      "runs": 2,
+      "range_pct": 0.03890672113607197
+     },
+     {
+      "ctx": 20000,
+      "tokens": 20051,
+      "tok_s": 7745.885806999924,
+      "ttft_s": 2.5885999999999996,
+      "runs": 2,
+      "range_pct": 0.15452368075407574
+     },
+     {
+      "ctx": 24000,
+      "tokens": 24052,
+      "tok_s": 7671.110544109205,
+      "ttft_s": 3.1353999999999997,
+      "runs": 2,
+      "range_pct": 0.05740894303756464
+     },
+     {
+      "ctx": 32000,
+      "tokens": 32052,
+      "tok_s": 7529.422819422584,
+      "ttft_s": 4.2569,
+      "runs": 2,
+      "range_pct": 0.03288778218892363
+     }
+    ]
    }
   ],
   "compare": [
@@ -2081,6 +5979,42 @@
     "c_ratio": 3.007997112202907
    },
    {
+    "model": "gemma-4-12B-it",
+    "machine": "h100",
+    "b_ratio": 6.824061517786732,
+    "c_ratio": 57.27707845799465
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "h200",
+    "b_ratio": 6.769337326663218,
+    "c_ratio": 55.85301527439511
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "b300",
+    "b_ratio": 7.796787336493402,
+    "c_ratio": 174.40020684448834
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "pro6000",
+    "b_ratio": 5.672366551499287,
+    "c_ratio": 13.793869212885268
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "h100x2",
+    "b_ratio": 11.850705695515817,
+    "c_ratio": 84.2127282526073
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "pro6000x2",
+    "b_ratio": 7.310197226384028,
+    "c_ratio": 28.698626566137705
+   },
+   {
     "model": "gemma-4-26B-A4B",
     "machine": "a100",
     "b_ratio": 5.753098172650137,
@@ -2091,6 +6025,42 @@
     "machine": "l4",
     "b_ratio": 1.761498955941099,
     "c_ratio": 2.3729667008008275
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h100",
+    "b_ratio": 14.156763228713789,
+    "c_ratio": 43.72916069038905
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h200",
+    "b_ratio": 14.104035662762966,
+    "c_ratio": 45.20934929288991
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "b300",
+    "b_ratio": 16.039743673851472,
+    "c_ratio": 147.66899701451126
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "pro6000",
+    "b_ratio": 10.100806040793566,
+    "c_ratio": 12.45076360295825
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h100x2",
+    "b_ratio": 17.72195675638303,
+    "c_ratio": 94.87955216785726
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "pro6000x2",
+    "b_ratio": 10.327756269389674,
+    "c_ratio": 24.278570706905
    }
   ],
   "tp_gain": [
@@ -2136,11 +6106,16 @@
    {
     "model": "Muse-Glimmer-30B",
     "backends": [
+     "FLASHINFER",
      "FLASH_ATTN"
     ],
-    "kernel": "unknown",
+    "kernel": "different",
     "machines": [
      "a100",
+     "b300",
+     "h100",
+     "h200",
+     "pro6000",
      "rdna3"
     ],
     "unrecorded": 1
@@ -2148,11 +6123,18 @@
    {
     "model": "Qwen3-8B",
     "backends": [
+     "FLASHINFER",
      "FLASH_ATTN"
     ],
-    "kernel": "unknown",
+    "kernel": "different",
     "machines": [
+     "b300",
+     "h100",
+     "h100x2",
+     "h200",
      "l4",
+     "pro6000",
+     "pro6000x2",
      "rdna3",
      "rdna3-1"
     ],
@@ -2161,12 +6143,19 @@
    {
     "model": "Qwen3.8-27B",
     "backends": [
+     "FLASHINFER",
      "FLASH_ATTN",
      "TRITON_ATTN"
     ],
     "kernel": "different",
     "machines": [
      "a100",
+     "b300",
+     "h100",
+     "h100x2",
+     "h200",
+     "pro6000",
+     "pro6000x2",
      "rdna3"
     ],
     "unrecorded": 0
@@ -2174,12 +6163,20 @@
    {
     "model": "gemma-4-12B-it",
     "backends": [
+     "FLASHINFER",
+     "FLASH_ATTN",
      "TRITON_ATTN"
     ],
-    "kernel": "unknown",
+    "kernel": "different",
     "machines": [
      "a100",
+     "b300",
+     "h100",
+     "h100x2",
+     "h200",
      "l4",
+     "pro6000",
+     "pro6000x2",
      "rdna3",
      "rdna3-1",
      "t4"
@@ -2189,12 +6186,20 @@
    {
     "model": "gemma-4-26B-A4B",
     "backends": [
+     "FLASHINFER",
+     "FLASH_ATTN",
      "TRITON_ATTN"
     ],
-    "kernel": "unknown",
+    "kernel": "different",
     "machines": [
      "a100",
+     "b300",
+     "h100",
+     "h100x2",
+     "h200",
      "l4",
+     "pro6000",
+     "pro6000x2",
      "rdna3",
      "rdna3-1"
     ],
@@ -2203,11 +6208,19 @@
    {
     "model": "gemma-4-31B-it",
     "backends": [
+     "FLASHINFER",
+     "FLASH_ATTN",
      "TRITON_ATTN"
     ],
-    "kernel": "same",
+    "kernel": "different",
     "machines": [
      "a100",
+     "b300",
+     "h100",
+     "h100x2",
+     "h200",
+     "pro6000",
+     "pro6000x2",
      "rdna3"
     ],
     "unrecorded": 0
@@ -4654,6 +8667,3440 @@
     "alt_label": null
    },
    {
+    "model": "Qwen3-8B",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 150.68345,
+      "runs": 2,
+      "range_pct": 0.011879207703299442,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 149.8467,
+      "runs": 2,
+      "range_pct": 0.004804910618660032,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 148.72199999999998,
+      "runs": 2,
+      "range_pct": 0.02245800890251632,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 146.4647,
+      "runs": 2,
+      "range_pct": 0.06308687349238268,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 144.1454,
+      "runs": 2,
+      "range_pct": 0.026501019109883183,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 142.1103,
+      "runs": 2,
+      "range_pct": 0.02589537844899314,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 138.32209999999998,
+      "runs": 2,
+      "range_pct": 0.06752355552728205,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 134.27575000000002,
+      "runs": 2,
+      "range_pct": 0.6899980078309034,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 131.37234999999998,
+      "runs": 2,
+      "range_pct": 0.02991497069208036,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 127.8906,
+      "runs": 2,
+      "range_pct": 0.027992674989411995,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 121.75025,
+      "runs": 2,
+      "range_pct": 0.008624212270605846,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 160.60105,
+      "runs": 2,
+      "range_pct": 0.20504224598781748,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 159.6917,
+      "runs": 2,
+      "range_pct": 0.002504826487550135,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 159.04145,
+      "runs": 2,
+      "range_pct": 0.5375328255621327,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 159.0627,
+      "runs": 2,
+      "range_pct": 0.14396838479416293,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 158.489,
+      "runs": 2,
+      "range_pct": 0.11016537425310154,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 157.89285,
+      "runs": 2,
+      "range_pct": 0.10317123289623792,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 157.34735,
+      "runs": 2,
+      "range_pct": 0.002605700064217159,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 156.40195,
+      "runs": 2,
+      "range_pct": 0.0877866292587669,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 156.1739,
+      "runs": 2,
+      "range_pct": 0.0024331850584588463,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 154.9973,
+      "runs": 2,
+      "range_pct": 0.056517113523918805,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 154.24975,
+      "runs": 2,
+      "range_pct": 0.08019461944021644,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 230.56310000000002,
+      "runs": 2,
+      "range_pct": 0.04788277048669041,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 228.73325,
+      "runs": 2,
+      "range_pct": 0.8253719124788381,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 228.50815,
+      "runs": 2,
+      "range_pct": 0.024287973973792617,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 227.46859999999998,
+      "runs": 2,
+      "range_pct": 0.06356921350902804,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 227.28035,
+      "runs": 2,
+      "range_pct": 0.004795839147551629,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 226.5915,
+      "runs": 2,
+      "range_pct": 0.047133277285344374,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 220.30115,
+      "runs": 2,
+      "range_pct": 4.077917886493102,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 223.1518,
+      "runs": 2,
+      "range_pct": 0.0791389538421862,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 222.2603,
+      "runs": 2,
+      "range_pct": 0.12111924621716612,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 220.7821,
+      "runs": 2,
+      "range_pct": 0.0644073953458972,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 217.8764,
+      "runs": 2,
+      "range_pct": 0.018818008742570017,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 85.9232,
+      "runs": 2,
+      "range_pct": 1.2087538639156858,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 85.3565,
+      "runs": 2,
+      "range_pct": 1.140393525976344,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 85.18515,
+      "runs": 2,
+      "range_pct": 0.9770482296503433,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 85.87119999999999,
+      "runs": 2,
+      "range_pct": 0.01141244095808429,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 85.44975,
+      "runs": 2,
+      "range_pct": 0.02539504211539017,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 85.10794999999999,
+      "runs": 2,
+      "range_pct": 0.017507177649088306,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 84.33935,
+      "runs": 2,
+      "range_pct": 0.03521487893848529,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.63499999999999,
+      "runs": 2,
+      "range_pct": 0.005978358342810622,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.93764999999999,
+      "runs": 2,
+      "range_pct": 0.0066314876295600865,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.09085,
+      "runs": 2,
+      "range_pct": 0.05518276397430097,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 80.74555000000001,
+      "runs": 2,
+      "range_pct": 0.007306904219503264,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "MG30",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 83.36615,
+      "runs": 2,
+      "range_pct": 0.01331475664883049,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 83.3496,
+      "runs": 2,
+      "range_pct": 0.006238782189719078,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 83.22704999999999,
+      "runs": 2,
+      "range_pct": 0.003965057033752936,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 82.5487,
+      "runs": 2,
+      "range_pct": 0.05960118087868013,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 83.0353,
+      "runs": 2,
+      "range_pct": 0.05587984869084754,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 82.89125,
+      "runs": 2,
+      "range_pct": 0.003981119840750214,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 82.6925,
+      "runs": 2,
+      "range_pct": 0.043534782477251704,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 82.18975,
+      "runs": 2,
+      "range_pct": 0.0054751352814591415,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.59055000000001,
+      "runs": 2,
+      "range_pct": 0.04879492871761695,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.49690000000001,
+      "runs": 2,
+      "range_pct": 0.005818400448990233,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 82.0589,
+      "runs": 2,
+      "range_pct": 0.6609886313367601,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "h100",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 98.5475,
+      "runs": 2,
+      "range_pct": 0.1885385220325228,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 98.45830000000001,
+      "runs": 2,
+      "range_pct": 0.04570462825379039,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 98.2021,
+      "runs": 2,
+      "range_pct": 0.0725035411666396,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 97.7728,
+      "runs": 2,
+      "range_pct": 0.04193395300124044,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 97.36269999999999,
+      "runs": 2,
+      "range_pct": 0.011914213554062685,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 97.03694999999999,
+      "runs": 2,
+      "range_pct": 0.006698479290623433,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 96.08744999999999,
+      "runs": 2,
+      "range_pct": 0.020918444604367526,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 95.25915,
+      "runs": 2,
+      "range_pct": 0.05259337292008219,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 94.30940000000001,
+      "runs": 2,
+      "range_pct": 0.010603396904237663,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 93.34125,
+      "runs": 2,
+      "range_pct": 0.02474790084769537,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 91.858,
+      "runs": 2,
+      "range_pct": 0.029610921204476105,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 189.03235,
+      "runs": 2,
+      "range_pct": 0.014653576491013336,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 188.37225,
+      "runs": 2,
+      "range_pct": 0.012475298245885108,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 186.9047,
+      "runs": 2,
+      "range_pct": 0.0005350320243443716,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 184.30415,
+      "runs": 2,
+      "range_pct": 0.049863228798705646,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 181.4794,
+      "runs": 2,
+      "range_pct": 0.045404602395647614,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 179.12765000000002,
+      "runs": 2,
+      "range_pct": 0.02752227252464269,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 174.50885,
+      "runs": 2,
+      "range_pct": 0.0342102993630365,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 170.19310000000002,
+      "runs": 2,
+      "range_pct": 0.0142191428442041,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 166.57164999999998,
+      "runs": 2,
+      "range_pct": 0.018430507232170636,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 162.7517,
+      "runs": 2,
+      "range_pct": 0.16921482233364724,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 155.6816,
+      "runs": 2,
+      "range_pct": 0.031474496664974004,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 172.1912,
+      "runs": 2,
+      "range_pct": 0.10058586036917593,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 170.9939,
+      "runs": 2,
+      "range_pct": 0.01941589729223889,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 170.4796,
+      "runs": 2,
+      "range_pct": 0.4089638877613564,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 170.58535,
+      "runs": 2,
+      "range_pct": 0.20159996154417173,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 170.3318,
+      "runs": 2,
+      "range_pct": 0.06000054012228516,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 169.98305,
+      "runs": 2,
+      "range_pct": 0.011707049614656823,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 168.8638,
+      "runs": 2,
+      "range_pct": 0.09013181037024717,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 168.26575,
+      "runs": 2,
+      "range_pct": 0.05616116173373503,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 167.89870000000002,
+      "runs": 2,
+      "range_pct": 0.032400489104451265,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 167.12565,
+      "runs": 2,
+      "range_pct": 0.1681968028247066,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 166.43955,
+      "runs": 2,
+      "range_pct": 0.018805626427124713,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 240.7303,
+      "runs": 2,
+      "range_pct": 0.007643408411814191,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 217.15109999999999,
+      "runs": 2,
+      "range_pct": 17.752155066218872,
+      "graded": false
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 238.93875,
+      "runs": 2,
+      "range_pct": 0.029421766038356993,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 238.373,
+      "runs": 2,
+      "range_pct": 0.024918929576760278,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 237.5093,
+      "runs": 2,
+      "range_pct": 0.07477601929692185,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 236.90494999999999,
+      "runs": 2,
+      "range_pct": 0.012283407332771933,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 235.42610000000002,
+      "runs": 2,
+      "range_pct": 0.003822855664680394,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 234.3349,
+      "runs": 2,
+      "range_pct": 0.032261519730952815,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 233.22944999999999,
+      "runs": 2,
+      "range_pct": 0.057754284461066535,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 232.04930000000002,
+      "runs": 2,
+      "range_pct": 0.026459894513803886,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 229.1495,
+      "runs": 2,
+      "range_pct": 0.026707455176648298,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 90.23179999999999,
+      "runs": 2,
+      "range_pct": 12.431537440237262,
+      "graded": false
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 95.74005,
+      "runs": 2,
+      "range_pct": 0.04648002586169458,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 95.4488,
+      "runs": 2,
+      "range_pct": 0.2340521829504384,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 95.6494,
+      "runs": 2,
+      "range_pct": 0.5469976811145735,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 95.55555,
+      "runs": 2,
+      "range_pct": 0.06645349223567315,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 95.20490000000001,
+      "runs": 2,
+      "range_pct": 0.015545418355561455,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 94.4482,
+      "runs": 2,
+      "range_pct": 0.08216143875689497,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 93.6842,
+      "runs": 2,
+      "range_pct": 0.11079776525816792,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 92.8454,
+      "runs": 2,
+      "range_pct": 0.05708414202534242,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 92.1623,
+      "runs": 2,
+      "range_pct": 0.004774186408112597,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 90.64935,
+      "runs": 2,
+      "range_pct": 0.006508596035158452,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "MG30",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 90.77770000000001,
+      "runs": 2,
+      "range_pct": 0.0295226691136638,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 90.52995,
+      "runs": 2,
+      "range_pct": 0.05158513839893548,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 90.6257,
+      "runs": 2,
+      "range_pct": 0.043696214208544575,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 89.9497,
+      "runs": 2,
+      "range_pct": 0.022456995409659685,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 90.33735,
+      "runs": 2,
+      "range_pct": 0.008523606238172603,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 90.392,
+      "runs": 2,
+      "range_pct": 0.04270289406142403,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 90.21255,
+      "runs": 2,
+      "range_pct": 0.0027712330490734798,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 89.55365,
+      "runs": 2,
+      "range_pct": 0.04477762771254478,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 89.89195000000001,
+      "runs": 2,
+      "range_pct": 0.17187300976338674,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 89.91120000000001,
+      "runs": 2,
+      "range_pct": 0.014903593768078165,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 89.3917,
+      "runs": 2,
+      "range_pct": 0.6199680730985189,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "h200",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 110.76135,
+      "runs": 2,
+      "range_pct": 0.14129477475672544,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 110.70525,
+      "runs": 2,
+      "range_pct": 9.032995272501422e-05,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 110.4024,
+      "runs": 2,
+      "range_pct": 0.003985420606801987,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 109.9457,
+      "runs": 2,
+      "range_pct": 0.0007276319128425537,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 109.56815,
+      "runs": 2,
+      "range_pct": 0.022360512612472964,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 109.40369999999999,
+      "runs": 2,
+      "range_pct": 0.008226412817848338,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 108.71155,
+      "runs": 2,
+      "range_pct": 0.02934370818924702,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 107.92375,
+      "runs": 2,
+      "range_pct": 0.03789712644343205,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 107.36325,
+      "runs": 2,
+      "range_pct": 0.018907773376836096,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 106.63485,
+      "runs": 2,
+      "range_pct": 0.07586637951851552,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 105.33189999999999,
+      "runs": 2,
+      "range_pct": 0.0432917283368032,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 250.1764,
+      "runs": 2,
+      "range_pct": 0.01407007215707589,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 248.2924,
+      "runs": 2,
+      "range_pct": 0.0077328182417116574,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 245.57580000000002,
+      "runs": 2,
+      "range_pct": 0.08608340072596632,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 240.40665,
+      "runs": 2,
+      "range_pct": 0.22965254912874675,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 237.05110000000002,
+      "runs": 2,
+      "range_pct": 0.32026849907045046,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 235.06185,
+      "runs": 2,
+      "range_pct": 0.07534187278794745,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 230.85455000000002,
+      "runs": 2,
+      "range_pct": 0.014078128414622481,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 226.91455000000002,
+      "runs": 2,
+      "range_pct": 0.046228855752094726,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 222.94729999999998,
+      "runs": 2,
+      "range_pct": 0.034447602639735925,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 218.4767,
+      "runs": 2,
+      "range_pct": 0.261538186909639,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 211.0779,
+      "runs": 2,
+      "range_pct": 0.07930721311894161,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 166.49445,
+      "runs": 2,
+      "range_pct": 3.327258055748995,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 168.31435,
+      "runs": 2,
+      "range_pct": 0.050916633073771055,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 168.01845,
+      "runs": 2,
+      "range_pct": 0.5988032861867274,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 168.5897,
+      "runs": 2,
+      "range_pct": 0.003440305072014238,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 168.4272,
+      "runs": 2,
+      "range_pct": 0.014249479893984408,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 168.37115,
+      "runs": 2,
+      "range_pct": 0.026786061626347987,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 167.6689,
+      "runs": 2,
+      "range_pct": 0.0002385654107499106,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 167.4116,
+      "runs": 2,
+      "range_pct": 0.040140587629539363,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 166.62285,
+      "runs": 2,
+      "range_pct": 0.16066223810239155,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 165.99165,
+      "runs": 2,
+      "range_pct": 0.015362218521229149,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 164.64794999999998,
+      "runs": 2,
+      "range_pct": 0.017431131089082133,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 229.31985,
+      "runs": 2,
+      "range_pct": 0.02420200431842032,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 225.45855,
+      "runs": 2,
+      "range_pct": 0.79486894597699,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 227.86005,
+      "runs": 2,
+      "range_pct": 0.01909066552034661,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 227.91745,
+      "runs": 2,
+      "range_pct": 0.030230243449979405,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 227.73295000000002,
+      "runs": 2,
+      "range_pct": 0.06336368979544481,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 227.61700000000002,
+      "runs": 2,
+      "range_pct": 0.08022247898883117,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 226.8736,
+      "runs": 2,
+      "range_pct": 0.08154320291122558,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 225.7601,
+      "runs": 2,
+      "range_pct": 0.028703034770090504,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 224.6406,
+      "runs": 2,
+      "range_pct": 0.21963972674574778,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 224.25615,
+      "runs": 2,
+      "range_pct": 0.06015442608819763,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 223.38254999999998,
+      "runs": 2,
+      "range_pct": 0.04131925255575895,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 102.77189999999999,
+      "runs": 2,
+      "range_pct": 1.2125882658586655,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 102.36695,
+      "runs": 2,
+      "range_pct": 1.786611792184884,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 103.19720000000001,
+      "runs": 2,
+      "range_pct": 0.017829941122433312,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 103.87944999999999,
+      "runs": 2,
+      "range_pct": 0.031478795854224584,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 103.71885,
+      "runs": 2,
+      "range_pct": 0.02150043121380667,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 103.46170000000001,
+      "runs": 2,
+      "range_pct": 0.002126390732031252,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 102.95145,
+      "runs": 2,
+      "range_pct": 0.06770181478745314,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 102.67035,
+      "runs": 2,
+      "range_pct": 0.006136143492264502,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 102.104,
+      "runs": 2,
+      "range_pct": 0.0370210765494048,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 101.61645,
+      "runs": 2,
+      "range_pct": 0.0036411427480581545,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 100.69995,
+      "runs": 2,
+      "range_pct": 0.04816288389417273,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "MG30",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 118.0043,
+      "runs": 2,
+      "range_pct": 0.06592980086318576,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 117.46870000000001,
+      "runs": 2,
+      "range_pct": 0.01719607010208052,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 117.1123,
+      "runs": 2,
+      "range_pct": 0.006660273942193208,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 116.08435,
+      "runs": 2,
+      "range_pct": 0.4332194649838768,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 116.41135,
+      "runs": 2,
+      "range_pct": 0.2213701670842232,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 115.61595,
+      "runs": 2,
+      "range_pct": 1.098377862224033,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 115.3803,
+      "runs": 2,
+      "range_pct": 1.0500926067968188,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 115.76625,
+      "runs": 2,
+      "range_pct": 0.6185740662758028,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 115.02420000000001,
+      "runs": 2,
+      "range_pct": 0.028689614881043508,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 115.70644999999999,
+      "runs": 2,
+      "range_pct": 0.048484764678201356,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 115.68105,
+      "runs": 2,
+      "range_pct": 0.044691848837826904,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "b300",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 123.30449999999999,
+      "runs": 2,
+      "range_pct": 0.015733407945374683,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 123.19635,
+      "runs": 2,
+      "range_pct": 0.003977390563930136,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 123.18775,
+      "runs": 2,
+      "range_pct": 0.012907127535004108,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 122.84264999999999,
+      "runs": 2,
+      "range_pct": 0.006105371383641911,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 122.34559999999999,
+      "runs": 2,
+      "range_pct": 0.00016347134673615435,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 121.89160000000001,
+      "runs": 2,
+      "range_pct": 0.007219529483568763,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 121.35390000000001,
+      "runs": 2,
+      "range_pct": 0.025050698823853378,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 120.87985,
+      "runs": 2,
+      "range_pct": 0.01199538219148864,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 120.4559,
+      "runs": 2,
+      "range_pct": 0.0071395423553360805,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 119.9581,
+      "runs": 2,
+      "range_pct": 0.0166724881437854,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 119.1016,
+      "runs": 2,
+      "range_pct": 0.006381106551042554,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 83.53635,
+      "runs": 2,
+      "range_pct": 0.03746871870748682,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 83.5684,
+      "runs": 2,
+      "range_pct": 0.3046606133418809,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 83.02015,
+      "runs": 2,
+      "range_pct": 0.014815680289677162,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 81.62505,
+      "runs": 2,
+      "range_pct": 0.0013476255144812706,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 79.7021,
+      "runs": 2,
+      "range_pct": 0.010790179932525332,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 79.18725,
+      "runs": 2,
+      "range_pct": 0.017553330870806187,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 76.7975,
+      "runs": 2,
+      "range_pct": 0.047136951072636483,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 74.56675,
+      "runs": 2,
+      "range_pct": 0.006839509566929996,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 72.48785,
+      "runs": 2,
+      "range_pct": 0.018899719056366063,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 70.5042,
+      "runs": 2,
+      "range_pct": 0.04396901177519341,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 66.85585,
+      "runs": 2,
+      "range_pct": 0.04711629573177828,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 124.15870000000001,
+      "runs": 2,
+      "range_pct": 1.6470855445490342,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 124.0351,
+      "runs": 2,
+      "range_pct": 0.0025799148789274503,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 121.8449,
+      "runs": 2,
+      "range_pct": 0.6304736595458597,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 117.5315,
+      "runs": 2,
+      "range_pct": 0.028247746348857874,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 112.81995,
+      "runs": 2,
+      "range_pct": 0.022070564647478006,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 108.37475,
+      "runs": 2,
+      "range_pct": 0.010426782991417674,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 103.5308,
+      "runs": 2,
+      "range_pct": 0.01410208363115276,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 98.19059999999999,
+      "runs": 2,
+      "range_pct": 0.01894275012069016,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 92.4893,
+      "runs": 2,
+      "range_pct": 0.007784684282410659,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 89.56405000000001,
+      "runs": 2,
+      "range_pct": 0.02266534396334911,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 86.1412,
+      "runs": 2,
+      "range_pct": 0.01741327030503472,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 190.74990000000003,
+      "runs": 2,
+      "range_pct": 0.7625692071136074,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 189.11175,
+      "runs": 2,
+      "range_pct": 0.2597934818962988,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 186.3893,
+      "runs": 2,
+      "range_pct": 0.45785890069869545,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 180.48964999999998,
+      "runs": 2,
+      "range_pct": 0.07983837300366463,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 173.79270000000002,
+      "runs": 2,
+      "range_pct": 0.10898041172040379,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 167.55200000000002,
+      "runs": 2,
+      "range_pct": 0.6209415584415615,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 160.86214999999999,
+      "runs": 2,
+      "range_pct": 0.0637191533247517,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 152.6991,
+      "runs": 2,
+      "range_pct": 0.25265374845037664,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 143.9688,
+      "runs": 2,
+      "range_pct": 0.015836764632329713,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 139.5796,
+      "runs": 2,
+      "range_pct": 0.0022925986318864233,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 134.45780000000002,
+      "runs": 2,
+      "range_pct": 0.0005949822174675887,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 58.97580000000001,
+      "runs": 2,
+      "range_pct": 1.1377548079042579,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 59.2809,
+      "runs": 2,
+      "range_pct": 0.0013495071768447097,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 58.624750000000006,
+      "runs": 2,
+      "range_pct": 0.04861427980503299,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 58.17115,
+      "runs": 2,
+      "range_pct": 0.012892989050414656,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 56.6475,
+      "runs": 2,
+      "range_pct": 0.008120393662555956,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 55.234300000000005,
+      "runs": 2,
+      "range_pct": 0.0028967507508982217,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 53.5985,
+      "runs": 2,
+      "range_pct": 0.008955474500224865,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 51.7596,
+      "runs": 2,
+      "range_pct": 0.010819248989561665,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 49.801950000000005,
+      "runs": 2,
+      "range_pct": 0.011846925672597182,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 48.7248,
+      "runs": 2,
+      "range_pct": 0.001231405772827393,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 47.45925,
+      "runs": 2,
+      "range_pct": 0.01706727350305554,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Muse-Glimmer-30B",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4",
+    "arch": "sliding window 2048",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "MG30",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 67.23525000000001,
+      "runs": 2,
+      "range_pct": 0.4635961047218351,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 65.4876,
+      "runs": 2,
+      "range_pct": 0.00488642124614819,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 62.642399999999995,
+      "runs": 2,
+      "range_pct": 0.0188370815932993,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 62.2177,
+      "runs": 2,
+      "range_pct": 0.009643558022878099,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 62.5202,
+      "runs": 2,
+      "range_pct": 0.013755554204883017,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 62.458749999999995,
+      "runs": 2,
+      "range_pct": 0.004963275761997043,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 62.1133,
+      "runs": 2,
+      "range_pct": 0.5844158980443794,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 62.019450000000006,
+      "runs": 2,
+      "range_pct": 0.5835266194717924,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 62.0715,
+      "runs": 2,
+      "range_pct": 0.0009666271960653554,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 61.83385,
+      "runs": 2,
+      "range_pct": 0.005983777494045794,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 61.7209,
+      "runs": 2,
+      "range_pct": 0.013933691828863923,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "pro6000",
+    "tp": 1,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 69.00370000000001,
+      "runs": 2,
+      "range_pct": 0.4388170489408609,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 69.38615,
+      "runs": 2,
+      "range_pct": 0.023491719889345484,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 69.1768,
+      "runs": 2,
+      "range_pct": 0.010408113702876746,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 68.7856,
+      "runs": 2,
+      "range_pct": 0.002907585308566836,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 68.1788,
+      "runs": 2,
+      "range_pct": 0.005573580057141296,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 68.0116,
+      "runs": 2,
+      "range_pct": 0.004116944756494018,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 67.2346,
+      "runs": 2,
+      "range_pct": 0.002379727104788712,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 66.4839,
+      "runs": 2,
+      "range_pct": 0.022261028609925,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 65.7613,
+      "runs": 2,
+      "range_pct": 0.00669086529613883,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 65.01820000000001,
+      "runs": 2,
+      "range_pct": 0.033836679575881164,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 63.5622,
+      "runs": 2,
+      "range_pct": 0.037758290304616436,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "h100x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 223.6028,
+      "runs": 2,
+      "range_pct": 0.054113812528278224,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 222.63895000000002,
+      "runs": 2,
+      "range_pct": 4.491577057981977e-05,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 220.6257,
+      "runs": 2,
+      "range_pct": 0.05266838813428902,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 218.24,
+      "runs": 2,
+      "range_pct": 0.026576246334307517,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 215.4725,
+      "runs": 2,
+      "range_pct": 0.012066505006444192,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 212.77530000000002,
+      "runs": 2,
+      "range_pct": 0.03609441509424259,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 208.18245000000002,
+      "runs": 2,
+      "range_pct": 0.029445325482521982,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 203.67495000000002,
+      "runs": 2,
+      "range_pct": 0.033533824360822764,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 199.4581,
+      "runs": 2,
+      "range_pct": 0.15712573217131892,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 195.6553,
+      "runs": 2,
+      "range_pct": 0.04538594150018957,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 188.34325,
+      "runs": 2,
+      "range_pct": 0.0020706874284136963,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "h100x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 201.15445,
+      "runs": 2,
+      "range_pct": 0.811963145732058,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 201.4181,
+      "runs": 2,
+      "range_pct": 0.0194620046559837,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 200.0461,
+      "runs": 2,
+      "range_pct": 0.9217875279747989,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 199.93394999999998,
+      "runs": 2,
+      "range_pct": 0.0019506442002550242,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 198.9866,
+      "runs": 2,
+      "range_pct": 0.09799654851130336,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 198.6954,
+      "runs": 2,
+      "range_pct": 0.06743991053643644,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 197.38479999999998,
+      "runs": 2,
+      "range_pct": 0.12088063518568354,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 196.1378,
+      "runs": 2,
+      "range_pct": 0.048231396497775546,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 194.73075,
+      "runs": 2,
+      "range_pct": 0.014841004823337589,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 193.9557,
+      "runs": 2,
+      "range_pct": 0.14302234994898322,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 192.43405,
+      "runs": 2,
+      "range_pct": 0.11105103280837703,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "h100x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 237.31425000000002,
+      "runs": 2,
+      "range_pct": 0.057940052061777596,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 235.15915,
+      "runs": 2,
+      "range_pct": 0.6341662656970802,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 236.51495,
+      "runs": 2,
+      "range_pct": 0.7046066221183841,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 236.3672,
+      "runs": 2,
+      "range_pct": 0.1548438192777955,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 235.61135000000002,
+      "runs": 2,
+      "range_pct": 0.0323838388939985,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 234.99939999999998,
+      "runs": 2,
+      "range_pct": 0.43676707259677916,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 233.9361,
+      "runs": 2,
+      "range_pct": 0.07899593094011383,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 232.80360000000002,
+      "runs": 2,
+      "range_pct": 0.014604585152471969,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 231.76695,
+      "runs": 2,
+      "range_pct": 0.0963467828350827,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 230.8429,
+      "runs": 2,
+      "range_pct": 0.013082490299683367,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 229.50775,
+      "runs": 2,
+      "range_pct": 0.004139293771126565,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "h100x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 118.9522,
+      "runs": 2,
+      "range_pct": 5.80771099651793,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 121.2427,
+      "runs": 2,
+      "range_pct": 1.13458377287869,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 121.71785,
+      "runs": 2,
+      "range_pct": 0.505841994415777,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 121.65029999999999,
+      "runs": 2,
+      "range_pct": 0.554211539141292,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 121.94715,
+      "runs": 2,
+      "range_pct": 0.02320677441005168,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 121.40299999999999,
+      "runs": 2,
+      "range_pct": 0.05815342289729158,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 120.51625,
+      "runs": 2,
+      "range_pct": 0.17748643855081395,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 119.61635,
+      "runs": 2,
+      "range_pct": 0.045896735688727756,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 118.64815,
+      "runs": 2,
+      "range_pct": 0.09212111608987616,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 117.78094999999999,
+      "runs": 2,
+      "range_pct": 0.027423789670576133,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 115.9478,
+      "runs": 2,
+      "range_pct": 0.019146546980622313,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "h100x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 139.3225,
+      "runs": 2,
+      "range_pct": 0.0070340397279783865,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 139.1278,
+      "runs": 2,
+      "range_pct": 0.008768916061353011,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 138.72205,
+      "runs": 2,
+      "range_pct": 0.058606400352358416,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 138.12439999999998,
+      "runs": 2,
+      "range_pct": 0.02273313042445127,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 137.64974999999998,
+      "runs": 2,
+      "range_pct": 0.03581553907652439,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 137.23215,
+      "runs": 2,
+      "range_pct": 0.0201847744861609,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 136.41365000000002,
+      "runs": 2,
+      "range_pct": 0.056079431933667614,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 135.3012,
+      "runs": 2,
+      "range_pct": 0.0637097084135181,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 134.59965,
+      "runs": 2,
+      "range_pct": 0.07778623495676237,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 133.88035000000002,
+      "runs": 2,
+      "range_pct": 0.021885213177293243,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 132.23645,
+      "runs": 2,
+      "range_pct": 0.11335755005522485,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3-8B",
+    "machine": "pro6000x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "bf16",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": null,
+    "cfg": "B8",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 133.74439999999998,
+      "runs": 2,
+      "range_pct": 0.7740137157144549,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 134.04345,
+      "runs": 2,
+      "range_pct": 0.009176129083525091,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 133.33625,
+      "runs": 2,
+      "range_pct": 0.01657463742980223,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 131.6646,
+      "runs": 2,
+      "range_pct": 0.018380035332205884,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 129.4885,
+      "runs": 2,
+      "range_pct": 0.01992454928430233,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 128.46994999999998,
+      "runs": 2,
+      "range_pct": 0.008951509672093636,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 123.61834999999999,
+      "runs": 2,
+      "range_pct": 0.0042873893722017815,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 122.2975,
+      "runs": 2,
+      "range_pct": 0.012592244322246683,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 119.51635,
+      "runs": 2,
+      "range_pct": 0.04811057231918858,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 116.82544999999999,
+      "runs": 2,
+      "range_pct": 0.03192797459800231,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 111.8819,
+      "runs": 2,
+      "range_pct": 0.02377506996216721,
+      "graded": true
+     }
+    ],
+    "quant_label": "BF16",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-12B-it",
+    "machine": "pro6000x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G12",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 178.14995,
+      "runs": 2,
+      "range_pct": 3.771934822322441,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 178.4212,
+      "runs": 2,
+      "range_pct": 0.005156337923980553,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 170.49349999999998,
+      "runs": 2,
+      "range_pct": 1.7872822131049009,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 163.2715,
+      "runs": 2,
+      "range_pct": 0.0063697583472952625,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 154.04944999999998,
+      "runs": 2,
+      "range_pct": 0.028627171340102835,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 145.68144999999998,
+      "runs": 2,
+      "range_pct": 0.005010933100964441,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 136.9727,
+      "runs": 2,
+      "range_pct": 0.034167392480413124,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 127.65465,
+      "runs": 2,
+      "range_pct": 0.03062951486687308,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 118.09235000000001,
+      "runs": 2,
+      "range_pct": 0.01210916710524073,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 113.2741,
+      "runs": 2,
+      "range_pct": 0.007768766205155196,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 108.0666,
+      "runs": 2,
+      "range_pct": 0.01554596887475268,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-26B-A4B",
+    "machine": "pro6000x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "MoE, 128 experts",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G26A4B",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 229.29194999999999,
+      "runs": 2,
+      "range_pct": 0.5231321902055315,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 227.3742,
+      "runs": 2,
+      "range_pct": 0.1445194749448242,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 224.64589999999998,
+      "runs": 2,
+      "range_pct": 0.39270692231640253,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 215.5694,
+      "runs": 2,
+      "range_pct": 1.0615606853291906,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 206.6329,
+      "runs": 2,
+      "range_pct": 0.0075496206073700145,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 197.27325000000002,
+      "runs": 2,
+      "range_pct": 0.03492617473479729,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 187.19105000000002,
+      "runs": 2,
+      "range_pct": 0.02954201068908838,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 176.22685,
+      "runs": 2,
+      "range_pct": 0.007887560834235353,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 164.49035,
+      "runs": 2,
+      "range_pct": 0.002857310474452705,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 158.6454,
+      "runs": 2,
+      "range_pct": 0.025465598120087515,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 152.27125,
+      "runs": 2,
+      "range_pct": 0.014776262754793143,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "gemma-4-31B-it",
+    "machine": "pro6000x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "w4a16 QAT",
+    "arch": "dense",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "TRITON_ATTN",
+    "cfg": "G31",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 92.72745,
+      "runs": 2,
+      "range_pct": 0.5246558597265344,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 92.1584,
+      "runs": 2,
+      "range_pct": 1.1896907932429257,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 91.30865,
+      "runs": 2,
+      "range_pct": 0.42832743666672807,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 88.7056,
+      "runs": 2,
+      "range_pct": 0.03224148193574847,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 85.29745,
+      "runs": 2,
+      "range_pct": 0.015358020667685318,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 82.09785,
+      "runs": 2,
+      "range_pct": 0.004750428908919746,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 78.52545,
+      "runs": 2,
+      "range_pct": 0.04597235673274139,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 74.61785,
+      "runs": 2,
+      "range_pct": 0.017020056192982337,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 70.4836,
+      "runs": 2,
+      "range_pct": 0.01957902263789501,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 68.31135,
+      "runs": 2,
+      "range_pct": 0.019176901056697514,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 65.9029,
+      "runs": 2,
+      "range_pct": 0.01395993196049456,
+      "graded": true
+     }
+    ],
+    "quant_label": "W4A16 QAT",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
+    "model": "Qwen3.8-27B",
+    "machine": "pro6000x2",
+    "tp": 2,
+    "lit": false,
+    "vllm": "0.28.0",
+    "patches": [],
+    "harness": "campaign-server",
+    "date": "2026-09-03",
+    "quant": "int4 AWQ",
+    "arch": "hybrid SSM",
+    "spec": false,
+    "spec_desc": null,
+    "attn_backend": "FLASH_ATTN",
+    "cfg": "Q38",
+    "rungs_capped": null,
+    "alt": null,
+    "source": "benchmarks/decode.jsonl",
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 102.92815,
+      "runs": 2,
+      "range_pct": 0.28592761066821143,
+      "graded": true
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 103.01395,
+      "runs": 2,
+      "range_pct": 0.011357685051398095,
+      "graded": true
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 102.80754999999999,
+      "runs": 2,
+      "range_pct": 0.025581778770145006,
+      "graded": true
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 102.38785,
+      "runs": 2,
+      "range_pct": 9.766783852119138e-05,
+      "graded": true
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 101.83355,
+      "runs": 2,
+      "range_pct": 0.041341974231483544,
+      "graded": true
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 101.5659,
+      "runs": 2,
+      "range_pct": 0.012011905570675881,
+      "graded": true
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 100.18285,
+      "runs": 2,
+      "range_pct": 0.05120636915399959,
+      "graded": true
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 99.80925,
+      "runs": 2,
+      "range_pct": 0.012924653777081694,
+      "graded": true
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 98.9913,
+      "runs": 2,
+      "range_pct": 0.028891427832544166,
+      "graded": true
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 97.2599,
+      "runs": 2,
+      "range_pct": 0.02179726691061087,
+      "graded": true
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 95.31370000000001,
+      "runs": 2,
+      "range_pct": 0.020983342373652496,
+      "graded": true
+     }
+    ],
+    "quant_label": "INT4 AWQ",
+    "spec_label": null,
+    "alt_label": null
+   },
+   {
     "model": "gemma-4-12B-it",
     "machine": "t4",
     "tp": 1,
@@ -5455,6 +12902,36 @@
     "id": "t4",
     "default": false,
     "cards": 1
+   },
+   {
+    "id": "h100",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "h200",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "b300",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "pro6000",
+    "default": false,
+    "cards": 1
+   },
+   {
+    "id": "h100x2",
+    "default": false,
+    "cards": 2
+   },
+   {
+    "id": "pro6000x2",
+    "default": false,
+    "cards": 2
    }
   ],
   "cache_control": [
@@ -5493,7 +12970,7 @@
    16000,
    32000
   ],
-  "fastest": 160.96895
+  "fastest": 250.1764
  },
  "cards": {
   "hybrid-ssm-collapse": {

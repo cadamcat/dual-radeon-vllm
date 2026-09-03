@@ -12,7 +12,7 @@ as each configuration will hold it. `points_for` recomputes which rungs fit
 after every capacity retry, so a model that cannot hold 128 000 settles on the
 longest ladder it can and says so in a `note` row rather than failing.
 
-**The prompts are a new cut and that is deliberate.** `/rb/v2/` holds sixteen
+**The prompts are a new cut and that is deliberate.** `/data/rccl-build/v2/` holds sixteen
 rungs per tokenizer, cut in one pass on 2026-09-03. The committed eleven were
 not extended, because they cannot be reproduced: the same 2 158 characters that
 `manifest-gemma.json` records as 481 tokens are 511 under the tokenizer in this
@@ -45,16 +45,16 @@ CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-027")
 OTHER_CONTAINERS = ("vllm-027", "vllm-tp2")
 # the 2026-09-03 cut: sixteen rungs per tokenizer in one pass. See the
 # docstring for why the committed eleven were not extended in place.
-MUSE_P = "/rb/v2/prompts-muse"
+MUSE_P = "/data/rccl-build/v2/prompts-muse"
 RES = f"{D}/results.jsonl"
 PROG = f"{D}/PROGRESS.txt"
 MACHINE = os.environ.get("BENCH_MACHINE", "RX 7900 XT")
 PORT = 8000
 URL = f"http://127.0.0.1:{PORT}/v1/chat/completions"
 HEALTH = f"http://127.0.0.1:{PORT}/health"
-GEMMA_P = "/rb/v2/prompts"
-QWEN_P = "/rb/v2/prompts-qwen"
-P26 = "/rb/v2/prompts-26b"
+GEMMA_P = "/data/rccl-build/v2/prompts"
+QWEN_P = "/data/rccl-build/v2/prompts-qwen"
+P26 = "/data/rccl-build/v2/prompts-26b"
 MML = 132000         # 128 000 tok + 512 output + template; the capacity
                      # retry lowers it per configuration to what fits
 DEFAULT_UTIL = 0.85  # 0.90 leaves no scratch headroom on 20 GiB cards (see rev2 note)

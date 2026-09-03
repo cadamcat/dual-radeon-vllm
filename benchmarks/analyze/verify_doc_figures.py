@@ -5499,8 +5499,8 @@ def main():
        1 if all((s["behaviour"] == "works") == r["ok"]
                 for s, r in zip(_rc, _card("rccl-atomics-hostcall")["rows"])) else 0)
     XLED = [json.loads(l) for l in open(os.path.join(HERE, "..", "ledger.jsonl"))]
-    ck("index figure, series", "27", len(XB["series"]))
-    ck("index figure, points", "277", sum(len(x["points"]) for x in XB["series"]))
+    ck("index figure, series", "61", len(XB["series"]))
+    ck("index figure, points", "651", sum(len(x["points"]) for x in XB["series"]))
     # Every line is one session at the campaign ladder -- not a three-point probe
     # beside an eleven-rung campaign -- unless the card could not hold the KV for
     # the next rung, which two of the single-card lines could not. A short line
@@ -5557,7 +5557,22 @@ def main():
        sum(1 for x in XB["series"] if x["machine"] == "rdna3-1"))
     ck("index figure, lines on the L4", "4",
        sum(1 for x in XB["series"] if x["machine"] == "l4"))
-    ck("index figure, machines offered", "5", len(XB["machines"]))
+    # Two properties the front page is asked to have, and neither was gated
+    # until breaking both on purpose moved nothing: the machines rented on
+    # 2026-09-03 are off until a reader asks for them, and Figures 1 and 2 stop
+    # at 32 000 because the rungs past it are Figures 3 and 4's subject.
+    _RENTED_IDS = {"h100", "h200", "b300", "pro6000", "h100x2", "pro6000x2"}
+    ck("index figure, the rented machines are offered", str(len(_RENTED_IDS)),
+       sum(1 for m in XB["machines"] if m["id"] in _RENTED_IDS))
+    ck("index figure, and every one of them is off by default", "0",
+       sum(1 for m in XB["machines"] if m["id"] in _RENTED_IDS and m["default"]))
+    ck("index figure, exactly one machine is on by default", "1",
+       sum(1 for m in XB["machines"] if m["default"]))
+    ck("index figure, and it is the pair this repository is about", "1",
+       1 if [m["id"] for m in XB["machines"] if m["default"]] == ["rdna3"] else 0)
+    ck("index figure, no rung past 32 000 is drawn", "32000",
+       max(p["ctx"] for s in XB["series"] for p in s["points"]))
+    ck("index figure, machines offered", "11", len(XB["machines"]))
     ck("index figure, and one of them is on by default", "1",
        sum(1 for m in XB["machines"] if m["default"]))
     # every machine the figure draws has to have a name in both languages, or
@@ -6200,15 +6215,17 @@ def main():
     import build_prefill as _bpf
     XP = XFIG["prefill"]
     XPFROWS = [json.loads(l) for l in open(os.path.join(HERE, "..", "prefill.jsonl"))]
-    ck("prefill figure, lines", "19", len(XP["series"]))
-    ck("prefill figure, machines", "5", len({x["machine"] for x in XP["series"]}))
+    ck("prefill figure, no rung past 32 000 is drawn", "0",
+       sum(1 for x in XP["series"] for p in x["points"] if p["tokens"] > 33000))
+    ck("prefill figure, lines", "53", len(XP["series"]))
+    ck("prefill figure, machines", "11", len({x["machine"] for x in XP["series"]}))
     ck("prefill figure, models", "7", len({x["model"] for x in XP["series"]}))
-    ck("prefill figure, single-card lines", "12",
+    ck("prefill figure, single-card lines", "36",
        sum(1 for x in XP["series"] if x["tp"] == 1))
-    ck("prefill figure, and lines on the pair", "7",
+    ck("prefill figure, and lines on the pair", "17",
        sum(1 for x in XP["series"] if x["tp"] == 2))
     # eight lit: the two models every machine ran, on all four machines
-    ck("prefill figure, lit to start", "8",
+    ck("prefill figure, lit to start", "20",
        sum(1 for x in XP["series"] if x["lit"]))
     ck("prefill figure, and they are the models every machine ran", "2",
        len({x["model"] for x in XP["series"] if x["lit"]}))
@@ -6225,7 +6242,7 @@ def main():
     # campaign, whose serve logs were not kept and which therefore records
     # neither. The flag is not the discriminator; repeatability is, and no
     # ungraded rung is drawn.
-    ck("prefill figure, lines measured with prefix caching off", "10",
+    ck("prefill figure, lines measured with prefix caching off", "44",
        sum(1 for x in XP["series"] if x["prefix_caching"] is False))
     ck("prefill figure, lines that had it on and show no hits", "2",
        sum(1 for x in XP["series"] if x["prefix_caching"] is True))
@@ -6233,14 +6250,14 @@ def main():
        sum(1 for x in XP["series"] if x["prefix_caching"] is None))
     # this column is for what was read: five logs survive and all five say
     # TRITON_ATTN, and none of the six records anything else
-    ck("prefill figure, lines recording TRITON_ATTN", "9",
+    ck("prefill figure, lines recording TRITON_ATTN", "15",
        sum(1 for x in XP["series"] if x["attn_backend"] == "TRITON_ATTN"))
     # Two lines do record a different one, and it is not an anomaly: vLLM sends
     # Qwen3.8 and Muse-Glimmer to FLASH_ATTN on the A100 and to TRITON_ATTN (or
     # an unrecorded backend) on the Radeons. That is why `backend_mixed` exists
     # -- a c ratio across those lines is a kernel difference as well as a card
     # one, and the figure has to say so rather than let it be assumed.
-    ck("prefill figure, lines recording FLASH_ATTN", "3",
+    ck("prefill figure, lines recording FLASH_ATTN", "25",
        sum(1 for x in XP["series"] if x["attn_backend"] == "FLASH_ATTN"))
     # --- the one line drawn on different terms -------------------------------
     # Its kernel was patched, so its c is not this card against the others, and
@@ -6263,11 +6280,14 @@ def main():
        sum(1 for c in XP["compare"] if c["machine"] == "t4"))
     # The ratios are still every uncaveated single-card line for those models,
     # so excluding one is not quietly excluding others.
-    ck("prefill figure, ratios drawn", "4", len(XP["compare"]))
+    ck("prefill figure, ratios drawn", "16", len(XP["compare"]))
 
+    ck("prefill figure, lines recording FLASHINFER", "6",
+       sum(1 for x in XP["series"] if x["attn_backend"] == "FLASHINFER"))
     ck("prefill figure, and no line records anything else", "0",
        sum(1 for x in XP["series"]
-           if x["attn_backend"] not in (None, "TRITON_ATTN", "FLASH_ATTN")))
+           if x["attn_backend"] not in (None, "TRITON_ATTN", "FLASH_ATTN",
+                                        "FLASHINFER")))
     # Which rung each line had to drop, and it is not one story. On the four
     # CUDA lines it is the shallowest -- the cold engine's first request, which
     # the runner did not discard until 2026-08-30. On both Radeon lines it is
@@ -6275,11 +6295,11 @@ def main():
     # 1 slower than round 2 each time, and this repository does not know why.
     _drop = {(x["machine"], x["model"]): [d["ctx"] for d in x["dropped"]]
              for x in XP["series"]}
-    ck("prefill figure, lines dropping their shallowest rung", "10",
+    ck("prefill figure, lines dropping their shallowest rung", "17",
        sum(1 for d in _drop.values() if d == [500]))
     ck("prefill figure, lines dropping the 4000 rung", "3",
        sum(1 for d in _drop.values() if d == [4000]))
-    ck("prefill figure, lines dropping nothing", "6",
+    ck("prefill figure, lines dropping nothing", "25",
        sum(1 for d in _drop.values() if not d))
 
     _xfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpf.fits(XPFROWS)}
@@ -6298,7 +6318,19 @@ def main():
                 _bad_pts += 1
             elif not r["chart_grade"]:
                 _ungraded += 1
-    ck("prefill figure, lines whose fit is not the projection's", "0", _bad_fit)
+    # A line may fit on fewer rungs than the projection does, and 34 of them do:
+    # Figures 1 and 2 stop at 32 000 and the 2026-09-03 ladders run to 128 000,
+    # so their coefficients are fitted on what is drawn. What is not allowed is
+    # for that to be silent, so every divergent line must say so on itself.
+    ck("prefill figure, lines whose fit is not the projection's", "28", _bad_fit)
+    ck("prefill figure, and every one of them declares the scope", "28",
+       sum(1 for x in XP["series"]
+           if x.get("fit_scope") == "11 rungs to 32 000 of the 16 measured"))
+    # Qwen3-8B measured eleven rungs everywhere -- its own config.json caps
+    # context at 40 960 -- so its six rented lines are not truncated and do
+    # not claim to be.
+    ck("prefill figure, while the rest fit the whole ladder", "25",
+       sum(1 for x in XP["series"] if x.get("fit_scope") == "the whole ladder"))
     ck("prefill figure, points that do not match prefill.jsonl", "0", _bad_pts)
     # a rung whose two rounds disagree is not a measurement; none may be drawn
     ck("prefill figure, ungraded rungs drawn", "0", _ungraded)
@@ -6309,24 +6341,30 @@ def main():
     # serve log did not survive a reclaim.
     _bm = {m["model"]: m for m in XP["backend_mixed"]}
     ck("prefill figure, models drawn on more than one machine", "6", len(_bm))
-    ck("prefill figure, and one is known to differ in kernel", "1",
+    ck("prefill figure, and one is known to differ in kernel", "6",
        sum(1 for m in _bm.values() if m["kernel"] == "different"))
     ck("prefill figure, and that one is Qwen3.8", "1",
        1 if _bm["Qwen3.8-27B"]["kernel"] == "different" else 0)
-    ck("prefill figure, models known to share a kernel", "1",
+    ck("prefill figure, models known to share a kernel", "0",
        sum(1 for m in _bm.values() if m["kernel"] == "same"))
     # the cleanest cross-machine comparison in the repository, and it is the
     # model a100-vs-two-radeons is about
-    ck("prefill figure, and that one is gemma-4-31B", "1",
-       1 if _bm["gemma-4-31B-it"]["kernel"] == "same" else 0)
-    ck("prefill figure, the rest have a backend nobody recorded", "4",
+    # Until 2026-09-03 gemma-4-31B was the one model drawn on two machines that
+    # was known to share a quantisation kernel across them, and this figure's
+    # cleanest cross-machine line. Six rented machines ended that: every model
+    # here now appears on at least two machines whose kernels differ, which is
+    # the same fact cuda-modal/README.md reports as three attention backends
+    # nobody asked for. There is no shared-kernel comparison left on this page.
+    ck("prefill figure, and gemma-4-31B no longer shares one", "1",
+       1 if _bm["gemma-4-31B-it"]["kernel"] == "different" else 0)
+    ck("prefill figure, the rest have a backend nobody recorded", "0",
        sum(1 for m in _bm.values() if m["kernel"] == "unknown"))
 
     # The argument. Against one 7900 XT the A100 leads on both terms and leads
     # by more on the quadratic; the L4 is BEHIND on the linear term and ahead on
     # the quadratic, which is the crossing that a single tok/s number hides.
     _cmp = {(c["model"], c["machine"]): c for c in XP["compare"]}
-    ck("prefill figure, ratios stated", "4", len(XP["compare"]))
+    ck("prefill figure, ratios stated", "16", len(XP["compare"]))
     ck("prefill figure, A100 b on the 12B", "3.29",
        _cmp[("gemma-4-12B-it", "a100")]["b_ratio"], 0.01)
     ck("prefill figure, A100 c on the 12B", "6.67",

@@ -312,6 +312,60 @@ def _decode_series(machine_name, cfg, date, mid, rungs, capped=None, lit=False):
                         "graded": r["chart_grade"]} for r in rows]}
 
 
+# --- 2026-09-03, the rented sweep -------------------------------------------
+# Six more machine configurations, every one of them off by default. Figures 1
+# and 2 ask what happens between 500 and 32 000 tokens, and these ladders run
+# four times further; the rungs past 32 000 are Figures 3 and 4's subject and
+# are cut here rather than allowed to stretch this figure's axis. Nothing is
+# re-aggregated: the points come out of decode.jsonl, the projection this
+# repository gates.
+RENTED = [("h100",     "H100-80GB-HBM3",            1),
+          ("h200",     "H200-143GB-HBM3e",          1),
+          ("b300",     "B300-SXM6",                 1),
+          ("pro6000",  "RTX-PRO-6000-Blackwell",    1),
+          ("h100x2",   "H100-80GB-HBM3-x2",         2),
+          ("pro6000x2", "RTX-PRO-6000-Blackwell-x2", 2)]
+FIG12_MAX_CTX = 32000
+
+
+def _rented_decode(machine_name, mid, cfg):
+    """one line, from decode.jsonl, cut to what Figures 1 and 2 are about"""
+    rows = sorted([r for r in _DEC if r["machine"] == machine_name
+                   and r["cfg"] == cfg and r["date"] == "2026-09-03"
+                   and r["ctx"] <= FIG12_MAX_CTX], key=lambda r: r["ctx"])
+    assert len(rows) == 11, f"{mid}/{cfg}: {len(rows)} rungs at or below 32 000"
+    r0 = rows[0]
+    return {"model": r0["model"], "machine": mid, "tp": r0["tp"], "lit": False,
+            "vllm": r0["vllm"], "patches": list(r0["patches"]),
+            "harness": r0["harness"], "date": r0["date"], "quant": r0["quant"],
+            "arch": r0["arch"], "spec": False, "spec_desc": None,
+            "attn_backend": r0["attn_backend"], "cfg": cfg,
+            "rungs_capped": None, "alt": None,
+            "source": "benchmarks/decode.jsonl",
+            "points": [{"ctx": r["ctx"], "tok_s": r["decode_tok_s"],
+                        "runs": r["runs"], "range_pct": r["range_pct"],
+                        "graded": r["chart_grade"]} for r in rows]}
+
+
+# The control arms are deliberately not drawn. `G31-mml33` and the two `Q38`
+# arms exist to measure what `mml` and `max_num_seqs` are worth -- 0.10 % and
+# 0.33 %, in cuda-h100/campaign-2026-09-03b -- so on a figure asking how fast a
+# machine is they would be three near-identical lines for one model, and the
+# thing they establish is a number in a README rather than a curve. Named, not
+# pattern-matched, so a new control has to be looked at rather than swept in.
+FIG12_CONTROLS = {"G31-mml33", "G12-mml33", "G26A4B-mml33",
+                  "Q38-mml33", "Q38-mml33-mns16"}
+
+_RENTED_CFGS = {}
+for _mid, _mname, _cards in RENTED:
+    _cfgs = sorted({r["cfg"] for r in _DEC if r["machine"] == _mname
+                    and r["date"] == "2026-09-03"} - FIG12_CONTROLS)
+    assert _cfgs, _mname
+    assert not (set(_cfgs) & FIG12_CONTROLS), _mname
+    _RENTED_CFGS[_mid] = _cfgs
+    for _cfg in _cfgs:
+        series.append(_rented_decode(_mname, _mid, _cfg))
+
 # The fifth machine. It exists here at all because of vllm#39018: without it the
 # engine does not start on sm75, dying at kernel load asking 98 304 bytes of
 # shared memory against Turing's 65 536. **Decode is unaffected by that patch**
@@ -649,6 +703,10 @@ PF_LINES = [
     ("rdna3",   "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp2"),
     ("rdna3",   "RX 7900 XT",     "Muse-Glimmer-30B", "2026-08-24", "G-30B-tp2"),
     ("rdna3",   "RX 7900 XT",     "gemma-3-27b-it",   "2026-08-24", "F-27B-tp2"),
+    # 2026-09-03, the rented sweep: every line off by default, cut at 32 000.
+    # Built below from prefill.jsonl rather than typed, because six machines
+    # times six models is thirty-four lines and a hand-typed table of that
+    # length is a table that drifts.
     # 2026-09-02, not 2026-08-29: those two sittings ran with one card trained
     # at PCIe 3.0 x8, and this figure's argument is the split between b and c,
     # which is exactly what a narrowed link moves. Re-measured on the restored
@@ -699,17 +757,42 @@ PF_CAVEAT = {
 # nothing.
 PF_LIT = {"gemma-4-12B-it", "gemma-4-26B-A4B"}
 
-_fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
+# Figures 1 and 2 stop at 32 000, so the coefficients they display are fitted
+# on the rungs they draw. For every machine that measured no further the two
+# fits are the same object of study, and that is asserted rather than assumed:
+# if a pre-2026-09-03 line's fit moved when the ladder was cut, the cut is
+# reaching rungs it should not.
+_PF32 = [r for r in _PF if r["ctx"] <= FIG12_MAX_CTX]
+_fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF32)}
+_fits_full = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
+for _k, _f in _fits.items():
+    if _k[2] == "2026-09-03":
+        continue
+    _g = _fits_full.get(_k)
+    if _g and "b_us_tok" in _f and "b_us_tok" in _g:
+        assert abs(_f["b_us_tok"] - _g["b_us_tok"]) < 1e-9, _k
+for _mid, _mname, _cards in RENTED:
+    for _cfg in _RENTED_CFGS[_mid]:
+        _r0 = next(r for r in _PF if r["machine"] == _mname and r["cfg"] == _cfg
+                   and r["date"] == "2026-09-03")
+        PF_LINES.append((_mid, _mname, _r0["model"], "2026-09-03", _cfg))
+
 pf_series = []
 for mid, machine, model, date, cfg in PF_LINES:
     rows = sorted([r for r in _PF if r["machine"] == machine and r["cfg"] == cfg
-                   and r["date"] == date], key=lambda r: r["ctx"])
+                   and r["date"] == date and r["ctx"] <= FIG12_MAX_CTX],
+                  key=lambda r: r["ctx"])
     assert rows, (machine, cfg, date)
     good = [r for r in rows if r["chart_grade"]]
     assert len(good) >= 4, (cfg, len(good))
     f = _fits[(machine, cfg, date)]
     assert "b_us_tok" in f, (cfg, f.get("note"))
     quant, arch = _QA[model]
+    # how many rungs this arm actually measured, against how many this figure
+    # draws -- B8 stops at 32 000 because its own config.json does, so its
+    # ladder is not truncated here and must not say it is
+    _n_measured = len([r for r in _PF if r["machine"] == machine
+                       and r["cfg"] == cfg and r["date"] == date])
     pf_series.append({
         "machine": mid, "machine_name": machine, "model": model, "date": date,
         # A caveated line is never lit by default: it has to be asked for, so a
@@ -721,8 +804,16 @@ for mid, machine, model, date, cfg in PF_LINES:
         "attn_backend": rows[0]["attn_backend"],
         "prefix_caching": rows[0]["prefix_caching"],
         "source": rows[0]["source"],
+        # Fitted on the rungs this figure draws, which for a 2026-09-03 line is
+        # eleven of the sixteen measured. `fit_scope` says so on the line
+        # itself, because a coefficient fitted to 32 000 and one fitted to
+        # 128 000 are different numbers for the same arm and the tooltip must
+        # not present them as one.
         "fit": {"a_ms": f["a_ms"], "b_us_tok": f["b_us_tok"],
                 "c_ns_tok2": f["c_ns_tok2"], "r2": f["r2"], "rungs": f["rungs"]},
+        "fit_scope": ("%d rungs to 32 000 of the %d measured"
+                      % (len(rows), _n_measured)
+                      if _n_measured > len(rows) else "the whole ladder"),
         "dropped": [{"ctx": r["ctx"], "range_pct": r["range_pct"]}
                     for r in rows if not r["chart_grade"]],
         "points": [{"ctx": r["ctx"], "tokens": r["prompt_tokens"],
@@ -894,7 +985,9 @@ out = {
                      {"id": "a100", "default": False, "cards": 1},
                      {"id": "rdna3-1", "default": False, "cards": 1},
                      {"id": "l4", "default": False, "cards": 1},
-                     {"id": "t4", "default": False, "cards": 1}],
+                     {"id": "t4", "default": False, "cards": 1}]
+                    + [{"id": m, "default": False, "cards": c}
+                       for m, _n, c in RENTED],
         "cache_control": cache_control,
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),
         "ctx_max": max(p["ctx"] for s in series for p in s["points"]),

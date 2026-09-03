@@ -59,7 +59,7 @@ __CHIPS__
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">图 2 · 预填充吞吐，所有有阶梯的模型，五台机器
+    <div class="figtitle">图 2 · 预填充吞吐，所有有阶梯的模型，十一台机器
       <span class="prov yes">可从仓库重算</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -69,7 +69,7 @@ __CHIPS__
   </div>
   <figcaption>
     <p class="caplede"><b>图 2.</b> 同一个问题的另一半：图 1 是每台机器<em>生成</em>得多快，这张是它读提示词
-    读得多快。七个模型、十九条线、五台机器 —— 本仓库所有 chart-grade 的预填充阶梯。自七月起每场 campaign
+    读得多快。七个模型、五十三条线、十一台机器 —— 本仓库在 <strong>500 到 32 000 token 之间</strong>所有 chart-grade 的预填充阶梯。自七月起每场 campaign
     都在 decode 旁边记了 prefill，却从没画过。颜色和线型沿用图 1。</p>
     <dl class="capnotes">
       <dt>为什么拆两项</dt>
@@ -165,13 +165,13 @@ __CHIPS__
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
  "bestHint": "点模型名可以加上或去掉它那条线 · 点机器名可以把它叠上来 · 模型旁边的小开关会加上这个模型的投机臂，开关上写的是它实际跑的那种方法",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1", "t4": "一张 T4 16G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1", "t4": "一张 T4 16G · TP=1", "h100": "一张 H100 80G · TP=1", "h200": "一张 H200 143G · TP=1", "b300": "一张 B300 275G · TP=1", "pro6000": "一张 RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
  "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
  "bestStroke": "实线：这两张卡 · 长虚线：A100 · 点线：其中一张卡 · 点划线：L4 · 双点划线：T4 · 短虚线：同一条线开着投机",
  "bestCapped": "{m} 停在 {k}，因为{w}",
- "preHint": "点模型或机器可增删对应的线 · 五台机器中有四台跑过的两个模型默认点亮，其余五个只有那对卡跑过",
+ "preHint": "点模型或机器可增删对应的线 · 2026-09-03 租用的六台机器默认关闭，需要时自行打开；它们的阶梯在这里截到 32\u00a0000，更深的档位是图 3 和图 4 的主题",
  "preAxisX": "提示词 token 数",
  "preAxisY": "预填充 tok/s",
  "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 七个模型、五台机器，本仓库所有 chart-grade 的阶梯",

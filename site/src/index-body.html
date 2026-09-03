@@ -70,7 +70,7 @@ own whole campaign on one afternoon. Every line says which it is.</p>
 
 <figure class="rv" id="figpre">
   <div class="figbox">
-    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, five machines
+    <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, eleven machines
       <span class="prov yes">recomputable from repo</span></div>
     <p class="hint" id="prehint"></p>
     <div class="legend" id="premach"></div>
@@ -80,8 +80,9 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   </div>
   <figcaption>
     <p class="caplede"><b>Figure 2.</b> The other half of the same question: Figure 1 is how fast each
-    machine <em>generates</em>, this is how fast it reads the prompt. Seven models, nineteen lines,
-    five machines &mdash; every chart-grade prefill ladder this repository has, recorded beside
+    machine <em>generates</em>, this is how fast it reads the prompt. Seven models, fifty-three lines,
+    eleven machines &mdash; every chart-grade prefill ladder this repository has <strong>between 500 and
+    32&nbsp;000 tokens</strong>, recorded beside
     decode since July and never drawn until now. Colour and stroke are Figure 1's.</p>
     <dl class="capnotes">
       <dt>Why two terms</dt>
@@ -194,13 +195,13 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
  "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
- "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1"},
+ "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1", "h100": "one H100 80G · TP=1", "h200": "one H200 143G · TP=1", "b300": "one B300 275G · TP=1", "pro6000": "one RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
  "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4 · short dash: the same line with speculation on",
  "bestCapped": "{m} stops at {k} because {w}",
- "preHint": "click a model or a machine to add or remove its lines · two models ran on four of the five machines and are lit; the other five are the pair\u2019s alone",
+ "preHint": "click a model or a machine to add or remove its lines · the six machines rented on 2026-09-03 are off until you ask for them, and their ladders are cut at 32\u00a0000 here \u2014 the rungs beyond are Figures 3 and 4",
  "preAxisX": "prompt tokens",
  "preAxisY": "prefill tok/s",
  "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, five machines, every chart-grade ladder this repository has",
