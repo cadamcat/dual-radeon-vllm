@@ -1254,6 +1254,7 @@ fig = lambda n: json.load(open(D / n))
 
 A_HYB, A_A100, A_SPEC = fig("figures.json"), fig("figures-a100.json"), fig("figures-spec.json")
 A_W4, A_MEAS, A_MOE = fig("figures-w4a16.json"), fig("figures-measure.json"), fig("figures-moe.json")
+A_MODAL = fig("figures-modal.json")
 A_LOAD, A_RCCL, A_RD = fig("figures-loader.json"), fig("figures-rccl.json"), fig("figures-rdna3.json")
 A_GQA, A_65 = fig("figures-gqa.json"), fig("figures-6565.json")
 
@@ -1265,6 +1266,19 @@ _gqaex = [r for r in _gqa023["rows"] if not r["admitted"]]
 _meas = A_MEAS["fig2"]["rows"][0]
 
 cards = {
+ # the rented sweep: the most memory-bound model's gain in each of the five
+ # settings, the article's Figure 1 in one bar each; a bar below parity is
+ # the slower card (the PRO 6000), drawn as such
+ "mem-busy-orders-five-settings": {
+   "form": "bars", "unit": "cRatioX", "rule": 1.0, "ruleT": "@cParity",
+   # the card's label column is narrow; the article's own long names truncate
+   # there, so each setting gets its short form, keyed by the setting id
+   "bars": [{"label": {"radeon2": "second 7900 XT", "h200": "H200 / H100", "b300": "B300 / H100",
+                       "pro6000": "PRO 6000 / H100", "h100x2": "second H100"}.get(st["id"], st["what"]),
+             "v": st["models"][0]["ratio"],
+             "kind": "bad" if st["models"][0]["ratio"] < 1 else None}
+            for st in A_MODAL["fig1"]["settings"]],
+   "src": "figures-modal.json fig1"},
  # what this article compares is the SLOPE -- "fourteen to forty times steeper
  # than any dense model" -- so the card draws each model against its own rate at
  # the shortest depth. On absolute tok/s the hybrid's 12.1 sits so far under the

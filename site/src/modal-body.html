@@ -1,0 +1,590 @@
+<header class="top">
+  <div class="kicker">CUDA · Hopper, Blackwell, Ada, Ampere · a rented sweep · read against 2× RX 7900 XT</div>
+  <h1>One counter orders five settings it was never fitted to,<br>and sizes none of them</h1>
+  <p class="sub">Seven rented machines in one night, and what a memory controller's busy fraction predicts</p>
+  <p class="lede">A decode step on <code>Qwen3-8B</code> keeps one card's memory controller busy
+  <strong>87 %</strong> of the time; on <code>gemma-4-26B-A4B</code>, <strong>38 %</strong>. Read that
+  number on one card and it says which of the two gains more from a faster card, from a second card,
+  from faster memory, and loses more to slower memory &mdash; on hardware it was never measured on. It
+  does not say by how much, and a prediction committed before the data says so.</p>
+  <div class="meta">
+__CHIPS__
+  </div>
+</header>
+
+<div class="abstract"> <h3>Abstract</h3>
+<p>Every projection in this repository was built from two Radeons under a desk and whatever Colab
+offered. This is what <strong>$29.94</strong> of rented time added: six machine configurations on the
+decode and prefill ladder &mdash; H100, H200, B300, RTX PRO 6000, two H100s, two PRO 6000s &mdash; eight
+on the collective, <strong>586 ladder measurements and 385 collective cells with 0 errors</strong>, and
+the first context past 32&nbsp;000 anywhere here. Two platform controls come first: an A100 and an L4
+rented on the same platform reproduce Colab's committed rows to <strong>0.07&nbsp;%</strong> and
+0.9&nbsp;%, which is what lets any of the ratios below be read as a card difference.</p>
+<p><strong>The finding is one counter.</strong> <code>campaign-2026-09-02d</code> found that what a
+second Radeon is worth is decided by <code>mem_busy</code>, the memory controller's busy fraction on
+one card &mdash; 90&nbsp;% and 1.70&times; on the bf16 8B, 56&nbsp;% and 1.20&times; on the w4a16 12B.
+That was five cells on one box. It now orders the answer in five settings &mdash; one on the pair and
+four against a single H100 baseline: an H200, a B300, a PRO 6000 &mdash; the other direction, because
+its memory is slower &mdash; and a second H100 over NVLink, which is worth <strong>2.9&nbsp;%</strong>
+to the model that reads least. <strong>It does not predict magnitude.</strong>
+A prediction for the H200 was committed before that run: the ordering came back right at both ends and
+the spread came back nearly double, with the memory-bound end exceeding the memory-clock ratio itself,
+which the form used cannot produce. Ordinal, not cardinal, and on the record as such.</p>
+<p><strong>The wire is not the axis, and now that is measured.</strong> Across eight configurations the
+collective's bandwidth end spans <strong>62&times;</strong> and its latency end <strong>3.2&times;</strong>;
+batch-1 decode reduces one row and lands on the latency end. NVLink is worth 20&nbsp;% at two cards and
+171&nbsp;% at four. Three more things fell out: four cards chose three attention backends with no flag
+set; a $7.10/h B300 loses to a $3.95/h H100 on the MoE and wins by 66&nbsp;% on the 8B; and past 32&nbsp;000
+what flattens a decode curve is a bounded attention window, not a recurrent state &mdash; which falsified
+a prediction written into the runner before the run.</p> </div>
+
+<h2><span class="n">1</span>Two controls, before any ratio</h2>
+
+<p>Every number below divides a card rented on Modal by an A100 or an L4 that Colab measured in August.
+That gap between platforms was an assumption until it was measured, so the same two cards were rented
+on the same platform and run on the same models at the context budget and ladder Colab used.</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · the same A100, on two platforms, three sittings
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="tab ctrl" id="ctrl"></div>
+    <div class="barunit" id="ctrlnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> <code>gemma-4-12B</code> decode on an A100-SXM4-80GB at four rungs: Colab on
+    2026-08-29 and 2026-08-30, Modal on 2026-09-03. The Modal sitting lands inside <strong>0.07&nbsp;%</strong>
+    of Colab's second on every rung, closer than Colab's own two sittings agree with each other. The band
+    was not chosen after seeing the answer: the four Colab rows have been committed since August. The L4
+    control says the same on a card that appears in no conclusion, 25.29 tok/s at 32&nbsp;000 against
+    Colab's 25.07 and 25.17.
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>One counter orders five settings</h2>
+
+<p><code>mem_busy_pct</code> is the fraction of samples in which the card's memory controller was busy,
+read by the same sampler on every machine (<code>harness/telemetry.py</code>: amdgpu's
+<code>mem_busy_percent</code> on the Radeons, NVML's <code>utilization.memory</code> on CUDA). It is a
+busy fraction, not an achieved bandwidth &mdash; the harness records achieved bandwidth as absent on both
+platforms and says why &mdash; and on 2026-09-02 it was read on one Radeon, on two models, and found to
+decide what the second card was worth. Five settings now, the model held fixed in each and the two ends of
+the counter's range compared:</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · five settings, two models, one ordering
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="set" id="set"></div>
+    <div class="barunit" id="setnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Each row is one model's decode rate at the 500 rung in the setting named, divided by
+    the same model on the base machine; the percentage is <code>mem_busy</code> on that base at the same
+    rung. The pair's own setting is 2026-09-02d and its two models are the bf16 8B and the w4a16 12B,
+    which is what that campaign ran; the four rented settings compare the two ends of the H100's own
+    range, <code>Qwen3-8B</code> at 87&nbsp;% and the MoE at 38&nbsp;%. In every setting the memory-bound
+    end moves further from 1.0 than the compute-bound end, in whichever direction the setting moves
+    &mdash; including the PRO 6000, whose memory is slower, where the model that gains most from more
+    bandwidth loses most from less. Read the last row twice: at 38&nbsp;% <code>mem_busy</code> a second
+    H100 over NVLink is worth 2.9&nbsp;%.
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>And sizes none of them</h2>
+
+<p>An ordering across five settings is a correlation until it predicts something. An H200 is an H100 with
+the same compute capability, the same 700&nbsp;W cap, the same SM clock ceiling and faster memory, so it
+is the cleanest test the counter could be given: if a decode step spends a fraction <code>f</code> of its
+time waiting on memory and the rest on everything else, then multiplying memory speed by <code>r</code>
+gives <code>1 / ((1 &minus; f) + f / r)</code>. <code>f</code> was taken as <code>mem_busy</code> on the
+H100 and <code>r</code> as the two cards' <em>measured</em> maximum memory clocks &mdash; 2&nbsp;619
+against 3&nbsp;201&nbsp;MHz, so 1.222; the vendors' bandwidth figures were not used because this
+repository did not measure them. The six predictions were committed before the run.</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · the prediction, and what came back
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="tab pred" id="pred"></div>
+    <div class="barunit" id="prednote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Predicted H200/H100 from the form above, against the measured ratio at the shallowest
+    rung whose two rounds agree within 1&nbsp;% on both machines &mdash; a rule fixed before the numbers
+    were looked at; <code>gemma-4-31B</code> uses 2&nbsp;000 because its H200 500-rung rounds came back
+    13&nbsp;% apart. The two ends are in the right order and clearly separated. The spread is not: measured
+    <strong>0.210</strong> against <strong>0.114</strong> predicted, and <code>Qwen3-8B</code>'s 1.254&times;
+    exceeds <code>r</code> itself, which that form cannot produce for any <code>f &le; 1</code>, so the error
+    is in <code>f</code> and not in <code>r</code>, and not by a constant scaling. The counter orders and does not
+    size. An independent check that the
+    mechanism is right where the arithmetic is not: on the H200 <code>mem_busy</code> is lower than on the
+    H100 for every one of the six models, with no crossings &mdash; faster memory doing the same work leaves
+    the controller busy for less of the time, which the model says should happen and was not fitted to.
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>Why the second card's value is not on the wire</h2>
+
+<p>The a100 article's section 9 used to say the second Radeon's bandwidth was spent on the interconnect.
+<code>allreduce-2026-09-02</code> withdrew that with a measurement on the pair: 16.6&ndash;21.5&nbsp;&micro;s
+per collective under graph replay, about a tenth of a step, paid equally by a model the second card helps
+1.70&times; and one it helps 1.20&times;. The same sweep on seven NVIDIA configurations gives the withdrawal
+a mechanism.</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · one all-reduce, both ends, eight configurations
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="coll" id="coll"></div>
+    <div class="barunit" id="collnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 4.</b> <code>t_graph_us</code> at hidden 4&nbsp;096 &mdash; <code>Qwen3-8B</code>'s row
+    &mdash; for one token, which is a decode step, and for 16&nbsp;384 tokens, which is a prefill; NCCL
+    2.29.7 on every NVIDIA run, RCCL 2.27.7 on the Radeons, the same script. The bandwidth end spans
+    <strong>62&times;</strong> across the eight and the latency end <strong>3.2&times;</strong>; among the
+    pairs alone the latency end spans <strong>1.5&times;</strong> against the same 62&times;. Batch-1 decode
+    reduces one row and lands on the latency end, where a B300 pair beats the Radeon pair by 1.2&times;
+    while beating it by 62&times; on the other end. That is why the second card's value tracks the memory
+    controller and not the interconnect: the interconnect's range is real and inference never enters it.
+    <em>What NVLink is for is the fourth card.</em> Adding cards three and four costs the H100
+    &times;1.22 on a decode step and &times;1.30 at the bandwidth end; the PRO 6000, on PCIe with no NVLink,
+    &times;2.71 and &times;2.99. Two cards without NVLink cost 20&nbsp;% over two with it; four cost
+    171&nbsp;%. And four H200s agree with four H100s to 1&nbsp;% at both ends, so none of the H200's ladder
+    advantage in section 3 arrives through the wire.
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>Four cards, three attention backends, nobody asked for any of them</h2>
+
+<p>One vLLM, one command line, no backend flag anywhere in the sweep &mdash; and the runner reads the
+backend out of every serve log rather than trusting a table, which is the only reason the following is
+known. vLLM 0.28 has no flag for the decoder's backend at all (<code>attention_backend</code> exists only
+in <code>config/speculative.py</code>, read out of the installed package), so the control that would
+separate the card from the kernel is not available.</p>
+
+<figure class="rv" id="fig5">
+  <div class="figbox">
+    <div class="figtitle">Figure 5 · which backend served each model on each card
+      <span class="prov yes">read from every serve log</span></div>
+    <div class="tab be" id="be"></div>
+    <div class="set" id="pro"></div>
+    <div class="barunit" id="benote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 5.</b> The decoder's attention backend per (model, card), from each arm's own serve log,
+    and the W4A16 kernel each checkpoint landed on. Both Hoppers serve everything on FlashAttention; the
+    B300 on FlashInfer; the PRO 6000 sends gemma-4 to Triton and the Qwen and Muse checkpoints to
+    FlashAttention. Every cross-machine comparison in this article therefore carries a backend term.
+    Within the PRO 6000 the split is clean, same card, same sitting: the three Triton arms lose
+    39&ndash;52&nbsp;% of their decode rate between 500 and 128&nbsp;000 tokens and the two FlashAttention arms
+    13&ndash;28&nbsp;%. The backend is confounded with the model, so this is not attribution &mdash; but it is
+    one card in one sitting, which the cross-machine version is not.
+  </figcaption>
+</figure>
+
+<h2><span class="n">6</span>The newest card is not the fastest card</h2>
+
+<figure class="rv" id="fig6">
+  <div class="figbox">
+    <div class="figtitle">Figure 6 · a B300 against an H100, and what a dollar buys
+      <span class="prov typed">the prices are a list, not a measurement</span></div>
+    <div class="tab price" id="price"></div>
+    <div class="barunit" id="pricenote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 6.</b> Decode at the 500 rung, one card each. A B300 at $7.10/h beats an H100 at $3.95/h by
+    <strong>66&nbsp;%</strong> on <code>Qwen3-8B</code>, by 4&nbsp;% on <code>gemma-4-12B</code>, and
+    <em>loses</em> on <code>gemma-4-26B-A4B</code> &mdash; the same ordering as the counter's, because the
+    B300's advantage is bandwidth and the MoE reads least. Per dollar it loses on all three. The B300 also
+    changed attention backend, so machine and backend move together in its column; the prices are Modal's
+    list on 2026-09-03 and are the only typed numbers on this page.
+  </figcaption>
+</figure>
+
+<h2><span class="n">7</span>Past 32 000: what makes a curve flat</h2>
+
+<p>Every ladder in this repository stopped at 32&nbsp;000 tokens until this night; the H100 carried five
+models to 128&nbsp;000. A prediction was written into the runner before the run: gemma-4 reads a KV cache
+that grows without bound, <code>Qwen3.8-27B</code> carries a recurrent state that does not grow at all,
+and <code>Muse-Glimmer-30B</code> attends through a 2&nbsp;048-token window &mdash; a term that grows and
+then stops &mdash; so it should land between the two.</p>
+
+<figure class="rv" id="fig7">
+  <div class="figbox">
+    <div class="figtitle">Figure 7 · five models to 128 000 tokens on one H100
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="deepkey"></div>
+    <svg class="chart" id="deep" role="img"></svg>
+    <div class="barunit" id="deepnote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 7.</b> Decode rate against context on the H100, sixteen rungs, two rounds a cell, log axis.
+    It landed below both. <code>Muse-Glimmer-30B</code> keeps all but <strong>4.8&nbsp;%</strong> of its
+    500-token rate at 128&nbsp;000; the hybrid SSM loses <strong>21.8&nbsp;%</strong>, as far as the dense
+    31B's 22.0&nbsp;%. The recurrent-state model is not the flat one. What flattens a curve is a bounded
+    attention window, not a constant-size state &mdash; the SSM still carries attention layers whose cost
+    grows with depth. The same ordering appears in an independent quantity: moving from an A100 to this
+    H100 at 32&nbsp;000 is worth 1.36&times; to Muse-Glimmer, 1.45&times; to the SSM and
+    1.90&ndash;2.16&times; to the three gemma models. One confound, and it runs against the conclusion:
+    Muse-Glimmer is the one model whose W4A16 kernel changes between machines, Machete on the Hoppers and
+    Marlin elsewhere, and Machete is the faster of the two on Hopper.
+  </figcaption>
+</figure>
+
+<h2><span class="n">8</span>What is not established</h2>
+
+<h3>The counter's magnitude</h3>
+<p>Section 3 is the whole of it: the form <code>1 / ((1 &minus; f) + f / r)</code> with <code>f</code> read
+off one card under-predicts the spread by half and cannot produce the memory-bound end at all. Either the
+effective bandwidth ratio exceeds the memory-clock ratio &mdash; the vendors' figures give 1.43, at which the
+same form over-predicts every row &mdash; or the H200 differs from the H100 in something the prediction
+assumed away. Nothing here separates those.</p>
+
+<h3>A backend control</h3>
+<p>The B300's column in Figure 6 and every gemma-4 comparison across the four cards carry a backend as well
+as a card, and vLLM 0.28 offers no way to hold the decoder's backend still. Not measured.</p>
+
+<h3>Two configurations, by arithmetic and by budget</h3>
+<p><code>gemma-4-26B-A4B</code> at TP=4 cannot run: <em>CompressedTensors WNA16 MoE with static group
+scales requires the MoE intermediate size per tensor-parallel partition to be divisible by
+group_size (32)</em>, a property of the checkpoint and not a failure to retry. The other four models at
+TP=4, and Muse-Glimmer at TP=2 on the rented pairs, were not bought.</p>
+
+<h3>Achieved bandwidth, and one counter on two vendors</h3>
+<p><code>mem_busy</code> is a busy fraction. 87&nbsp;% at one absolute rate is not 87&nbsp;% at another, and
+the harness records achieved bandwidth as absent on both platforms. The counter travels; what it is a
+fraction of does not. It is also two counters: amdgpu's <code>mem_busy_percent</code> on the Radeons and
+NVML's <code>utilization.memory</code> on the CUDA cards, read by one sampler but defined by two drivers.
+That the same two models land at 90/56 on one and 87/53 on the other is evidence they measure alike, not
+proof.</p>
+
+<h3>Four of the five settings share a baseline</h3>
+<p>The H200, B300, PRO 6000 and second-H100 rows all divide by the same H100 sitting, so an error in that
+sitting would move four rows together. The two platform controls bound that sitting against Colab to
+0.07&nbsp;%, and the pair's row rests on a different box entirely; the five are one independent check
+on the pair's finding, not five.</p>
+
+<h3>Where the dropped prefill rungs sit</h3>
+<p>Twenty-three prefill cells on the rented cards failed the repeatability cut, and every one of them is at
+500 to 2&nbsp;000 tokens &mdash; the cold engine's first requests. Two decode cells failed it too, both on
+the H200: <code>gemma-4-26B-A4B</code> at 1&nbsp;000 and <code>gemma-4-31B</code> at 500. Nothing above
+rests on any of them.</p>
+
+<h2><span class="n">9</span>What has changed since</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-09-03 · two ranges were written wrong before publication and the gate caught both</span>
+  The latency range in section 4 was first written as 1.8&times; for the whole set &mdash; that is the pairs
+  only, and the PRO 6000 &times;4 at 39.10&nbsp;&micro;s puts the full set at 3.2&times;. The pairs figure was
+  then written as 1.8&times; as well, which came from reading 21.49&nbsp;&micro;s off the Radeon's hidden-2816
+  row while every other number is hidden 4096; at 4096 the pairs span 1.5&times;. Both corrections are in
+  <code>benchmarks/cuda-modal/README.md</code>, and the check that recomputes them from the rows is what
+  found them.
+</div>
+
+<div class="foot-note">
+  <p><strong>Everything here.</strong> The campaign directories, the runners, every serve log, the
+  collective sweep and the document this article condenses are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-modal/README.md"><code>benchmarks/cuda-modal/</code></a>.
+  The prediction and its verdict are one file,
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"><code>cuda-h200/campaign-2026-09-03/PREDICTION.md</code></a>,
+  the verdict appended below the prediction rather than replacing it. Every number on this page is
+  recomputed from the committed rows by
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
+  except two list prices, which are marked.</p>
+  <p>The counter itself, and the five cells on the pair that made it worth testing, are
+  <a href="a100-vs-two-radeons.html">a different article</a>'s section 9.</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "ctrlH": ["rung", "Colab 08-29", "Colab 08-30", "Modal 09-03", "Modal − Colab 08-30"],
+ "ctrlNote": "gemma-4-12B decode tok/s on an A100-SXM4-80GB, mml 33 000, two rounds a cell · worst of the four rungs {w} % · the L4 control: {m} tok/s at 32 000 against Colab's {a} and {b}",
+ "setH": ["model", "on the base", "against the base", "ratio"],
+ "setKind": "{k} · against {b} · {d}",
+ "setBusy": "mem_busy {p} %",
+ "setNote": "decode at the 500 rung · the fill is the ratio, the mark is 1.0 · in every one of the {n} settings the memory-bound end moves further from 1.0 than the compute-bound end",
+ "predH": ["model", "mem_busy, H100 → H200", "predicted", "measured", "rung"],
+ "predNote": "r = {r} from measured memory clocks, {a} → {b} MHz · spread predicted {p}, measured {m} · {x} exceeds r itself",
+ "collH": ["configuration", "link", "one token, a decode step", "µs", "16 384 tokens", "µs"],
+ "collNote": "t_graph_us at hidden 4096, both bars on a log scale · bandwidth end spans {b}×, latency end {l}× · pairs only, the latency end spans {p}× · the fourth card costs the H100 ×{h1} / ×{h2} and the PRO 6000 ×{p1} / ×{p2}",
+ "beH": ["model", "H100", "H200", "B300", "RTX PRO 6000"],
+ "beKernel": "W4A16 kernel: {k}",
+ "beNoKernel": "bf16, none",
+ "proHead": "RTX PRO 6000, decode from 500 to 128 000, by the backend it got",
+ "beNote": "three backends across four cards, none asked for · on the PRO 6000 the Triton arms lose {t1}–{t2} % and the FlashAttention arms {f1}–{f2} %",
+ "priceH": ["model", "mem_busy, H100", "H100 $3.95/h", "B300 $7.10/h", "B300 / H100", "per $"],
+ "priceNote": "decode tok/s at the 500 rung, one card each · list prices typed from Modal on 2026-09-03, not measured",
+ "deepAxisX": "context length",
+ "deepAxisY": "decode tok/s",
+ "deepUnit": "decode tok/s at batch 1 on one H100 · sixteen rungs, two rounds a cell · click a model to add or remove its line",
+ "deepRow": "{m}  {p}  ·  {s}  ·  A100 → H100 at 32 000: {r}×",
+ "deepHead": "500 → 128 000, and what each model's attention does with depth:",
+ "deepPred": "predicted before the run: {p}"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to */ }
+      });
+    });
+  })();
+
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function x(v, d) { return v.toFixed(d === undefined ? 3 : d) + "×"; }
+  function pct(v, d) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d === undefined ? 1 : d) + " %"; }
+  function kctx(n) { return n >= 1000 ? Math.round(n / 1000) + "K" : String(n); }
+  // a percentage the sampler read as a whole number on both rounds prints as
+  // one; a cell whose two rounds differ by a point prints the half
+  function busy(v) { return v === Math.round(v) ? String(v) : v.toFixed(1); }
+  var fills = [];
+  function grow() { fills.forEach(function (f) { f.el.style.width = f.w + "%"; }); }
+
+  /* ---------- Figure 1: the controls ---------- */
+  (function () {
+    var box = document.getElementById("ctrl");
+    S.ctrlH.forEach(function (h, i) { el(box, "h" + (i ? " n" : " k"), esc(h)); });
+    F.fig6.a100.forEach(function (r) {
+      el(box, "k rv", kctx(r.ctx));
+      el(box, "n dim rv", r.colab_0829.toFixed(2));
+      el(box, "n dim rv", r.colab_0830.toFixed(2));
+      el(box, "n hi rv", r.modal.toFixed(2));
+      el(box, "n good rv", pct(r.delta_pct, 2));
+    });
+    document.getElementById("ctrlnote").textContent = fmt(S.ctrlNote, {
+      w: F.fig6.worst_delta_pct.toFixed(2), m: F.fig6.l4.modal.toFixed(2),
+      a: F.fig6.l4.colab[0].toFixed(2), b: F.fig6.l4.colab[1].toFixed(2) });
+  })();
+
+  /* ---------- Figure 2: five settings ---------- */
+  (function () {
+    var box = document.getElementById("set");
+    S.setH.forEach(function (h, i) { el(box, "h " + ["m", "b", "", "v"][i], esc(h)); });
+    var top = 0;
+    F.fig1.settings.forEach(function (s) {
+      s.models.forEach(function (m) { if (m.ratio > top) top = m.ratio; });
+    });
+    F.fig1.settings.forEach(function (s) {
+      el(box, "g rv", esc(s.what) + '<span class="tag">' +
+         esc(fmt(S.setKind, { k: s.kind, b: s.base, d: s.date })) + "</span>");
+      s.models.forEach(function (m, i) {
+        el(box, "m rv", esc(m.model));
+        el(box, "b rv", esc(fmt(S.setBusy, { p: busy(m.mem_busy) })));
+        var t = el(box, "track rv");
+        var one = el(t, "one"); one.style.left = (1 / top * 100).toFixed(1) + "%";
+        var f = el(t, "fill" + (i ? " lo" : "") + (m.ratio < 1 ? " bad" : ""));
+        fills.push({ el: f, w: m.ratio / top * 100 });
+        el(box, "v rv" + (i ? "" : " hi"), x(m.ratio));
+      });
+    });
+    document.getElementById("setnote").textContent = fmt(S.setNote, { n: F.fig1.settings.length });
+  })();
+
+  /* ---------- Figure 3: the prediction ---------- */
+  (function () {
+    var box = document.getElementById("pred");
+    S.predH.forEach(function (h, i) { el(box, "h" + (i === 1 ? " n b" : i ? " n" : " k"), esc(h)); });
+    F.fig2.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.model));
+      el(box, "n dim b rv", busy(r.mem_busy_h100) + " → " + busy(r.mem_busy_h200));
+      el(box, "n rv", x(r.predicted));
+      var over = F.fig2.exceed_r.indexOf(r.cfg) >= 0;
+      el(box, "n hi rv" + (over ? " bad" : ""), x(r.measured));
+      el(box, "n dim rv", kctx(r.ctx));
+    });
+    document.getElementById("prednote").textContent = fmt(S.predNote, {
+      r: F.fig2.r_clock.toFixed(3), a: Math.round(F.fig2.mclk_h100), b: Math.round(F.fig2.mclk_h200),
+      p: F.fig2.spread_predicted.toFixed(3), m: F.fig2.spread_measured.toFixed(3),
+      x: F.fig2.rows.filter(function (r) { return F.fig2.exceed_r.indexOf(r.cfg) >= 0; })
+          .map(function (r) { return r.model; }).join(", ") });
+  })();
+
+  /* ---------- Figure 4: the collective ---------- */
+  (function () {
+    var box = document.getElementById("coll");
+    S.collH.forEach(function (h, i) { el(box, "h " + ["k", "l", "track lat", "v lat", "", "v"][i], esc(h)); });
+    var lo1 = 1e9, hi1 = 0, loB = 1e9, hiB = 0;
+    F.fig3.rows.forEach(function (r) {
+      lo1 = Math.min(lo1, r.n1_us); hi1 = Math.max(hi1, r.n1_us);
+      loB = Math.min(loB, r.n16384_us); hiB = Math.max(hiB, r.n16384_us);
+    });
+    // one log scale for both columns so the two ends are drawn to the same rule
+    var lo = Math.log(Math.min(lo1, loB)), hi = Math.log(Math.max(hi1, hiB));
+    var scale = function (v) { return (Math.log(v) - lo) / (hi - lo) * 100; };
+    F.fig3.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.label));
+      el(box, "l rv" + (/no/.test(r.link) ? " no" : ""), esc(r.link));
+      var t1 = el(box, "track lat rv"); fills.push({ el: el(t1, "fill lat"), w: scale(r.n1_us) });
+      el(box, "v lat rv", r.n1_us.toFixed(2));
+      var t2 = el(box, "track rv"); fills.push({ el: el(t2, "fill bw"), w: scale(r.n16384_us) });
+      el(box, "v rv", Math.round(r.n16384_us).toLocaleString("en-US").replace(/,/g, " "));
+    });
+    var fc = F.fig3.fourth_card;
+    document.getElementById("collnote").textContent = fmt(S.collNote, {
+      b: F.fig3.bandwidth_range.toFixed(0), l: F.fig3.latency_range.toFixed(1),
+      p: F.fig3.latency_range_pairs.toFixed(1),
+      h1: fc[0].n1.toFixed(2), h2: fc[0].n16384.toFixed(2),
+      p1: fc[1].n1.toFixed(2), p2: fc[1].n16384.toFixed(2) });
+  })();
+
+  /* ---------- Figure 5: the backends ---------- */
+  (function () {
+    var box = document.getElementById("be");
+    S.beH.forEach(function (h, i) { el(box, "h" + (i ? " c" : " k"), esc(h)); });
+    var cls = { FLASH_ATTN: "fa", FLASHINFER: "fi", TRITON_ATTN: "tr" };
+    F.fig4.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.model));
+      r.cells.forEach(function (c) {
+        // a bf16 checkpoint lands on no quantisation kernel at all, and the
+        // row says so rather than printing a null
+        var qk = c.quant_kernel ? c.quant_kernel.replace("LinearKernel", "") : S.beNoKernel;
+        el(box, "c rv " + (cls[c.attn_backend] || ""), esc(c.attn_backend) +
+           '<br><span class="l" title="' + esc(fmt(S.beKernel, { k: qk })) + '">' +
+           esc(qk) + "</span>");
+      });
+    });
+    var pro = document.getElementById("pro");
+    el(pro, "g rv", esc(S.proHead));
+    var worst = 0;
+    F.fig4.pro6000.forEach(function (p) { worst = Math.max(worst, -p.change_pct); });
+    F.fig4.pro6000.forEach(function (p) {
+      el(pro, "m rv", esc(p.model));
+      el(pro, "b rv " + (cls[p.attn_backend] || ""), esc(p.attn_backend));
+      var t = el(pro, "track rv");
+      fills.push({ el: el(t, "fill" + (p.attn_backend === "TRITON_ATTN" ? " bad" : "")),
+                   w: -p.change_pct / worst * 100 });
+      el(pro, "v rv", pct(p.change_pct));
+    });
+    var sp = F.fig4.pro6000_split;
+    document.getElementById("benote").textContent = fmt(S.beNote, {
+      t1: (-sp.triton_best).toFixed(0), t2: (-sp.triton_worst).toFixed(0),
+      f1: (-sp.flash_best).toFixed(0), f2: (-sp.flash_worst).toFixed(0) });
+  })();
+
+  /* ---------- Figure 6: the price ---------- */
+  (function () {
+    var box = document.getElementById("price");
+    S.priceH.forEach(function (h, i) { el(box, "h" + (i === 1 ? " n b" : i ? " n" : " k"), esc(h)); });
+    F.fig6.price.forEach(function (p) {
+      el(box, "k rv", esc(p.model));
+      el(box, "n dim b rv", busy(p.mem_busy_h100) + " %");
+      el(box, "n rv", p.h100.toFixed(1));
+      el(box, "n rv", p.b300.toFixed(1));
+      el(box, "n hi rv" + (p.ratio < 1 ? " bad" : " good"), x(p.ratio));
+      el(box, "n bad rv", x(p.per_dollar, 2));
+    });
+    document.getElementById("pricenote").textContent = S.priceNote;
+  })();
+
+  /* ---------- Figure 7: past 32 000 ---------- */
+  (function () {
+    var svg = document.getElementById("deep"), key = document.getElementById("deepkey");
+    var rows = F.fig5.rows;
+    var on = {};
+    rows.forEach(function (r) { on[r.cfg] = true; });
+    var ser = rows.map(function (r, i) {
+      return { colour: "var(--s" + (i % 5 + 1) + ")",
+               tip: function (j) {
+                 var p = r.points[j];
+                 return '<span class="hd">' + esc(r.model) + " · H100</span><br>" + kctx(p.ctx) +
+                        " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s";
+               },
+               points: r.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
+    });
+    var ticks = [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
+    var isLit = function (i) { return on[rows[i].cfg]; };
+    var chart = window.lineChart({
+      el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
+      fitLit: true, lit: isLit,
+      x: { scale: "log", min: 500, max: 128000, label: S.deepAxisX, fmt: kctx, ticks: ticks },
+      y: { label: S.deepAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    rows.forEach(function (r, i) {
+      var b = document.createElement("button");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(--s" + (i % 5 + 1) + ")");
+      b.innerHTML = '<span class="sw"></span>' + esc(r.model);
+      b.setAttribute("aria-pressed", "true");
+      b.addEventListener("click", function () {
+        on[r.cfg] = !on[r.cfg];
+        b.setAttribute("aria-pressed", String(on[r.cfg]));
+        b.classList.toggle("on", on[r.cfg]);
+        chart.setLit(isLit);
+      });
+      key.appendChild(b);
+    });
+    var lines = [esc(S.deepUnit), '<span class="nhead">' + esc(S.deepHead) + "</span>"];
+    rows.forEach(function (r) {
+      lines.push('<span class="nrow">' + esc(fmt(S.deepRow, {
+        m: r.model, p: pct(r.change_pct), s: r.structure,
+        r: r.a100_to_h100_at_32k.toFixed(2) })) + "</span>");
+    });
+    lines.push(esc(fmt(S.deepPred, { p: F.fig5.prediction })));
+    document.getElementById("deepnote").innerHTML = lines.join("<br>");
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+    grow();
+  } else {
+    var grown = false;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        if (!grown) { grown = true; grow(); }
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

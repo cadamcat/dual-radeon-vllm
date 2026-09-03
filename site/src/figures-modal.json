@@ -1,0 +1,977 @@
+{
+ "_what": "Every figure in mem-busy-orders-five-settings.html. Recomputed from benchmarks/decode.jsonl, benchmarks/prefill.jsonl, the campaign files' telemetry and benchmarks/allreduce-2026-09-03/ by site/src/genfig-modal.py; edit the data, not this. The only typed numbers are two list prices.",
+ "fig1": {
+  "settings": [
+   {
+    "id": "radeon2",
+    "what": "second RX 7900 XT",
+    "kind": "second card, no P2P",
+    "date": "2026-09-02",
+    "base": "one RX 7900 XT",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 90,
+      "ratio": 1.6958983123264257,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-12B-it",
+      "cfg": "G12",
+      "mem_busy": 56.5,
+      "ratio": 1.1982160555004955,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "h200",
+    "what": "H200 against H100",
+    "kind": "faster memory, same compute",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.2544997476497917,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 1.0440972558054606,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "b300",
+    "what": "B300 against H100",
+    "kind": "a newer card",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.660277887186682,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 0.9946077668109077,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "pro6000",
+    "what": "RTX PRO 6000 against H100",
+    "kind": "slower memory",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 0.5543830460478573,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 0.8273218914908761,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "slower"
+   },
+   {
+    "id": "h100x2",
+    "what": "second H100",
+    "kind": "second card, NVLink",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.483924080580847,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 1.0292811382220313,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   }
+  ],
+  "ends": {
+   "hi": "Qwen3-8B",
+   "lo": "gemma-4-26B-A4B"
+  },
+  "mem_busy_h100": {
+   "Qwen3-8B": 87,
+   "gemma-4-31B-it": 67,
+   "Qwen3.8-27B": 65,
+   "gemma-4-12B-it": 53,
+   "Muse-Glimmer-30B": 51,
+   "gemma-4-26B-A4B": 37.5
+  }
+ },
+ "fig2": {
+  "r_clock": 1.2222222222222223,
+  "mclk_h100": 2619.0,
+  "mclk_h200": 3201.0,
+  "rows": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "mem_busy_h100": 87,
+    "mem_busy_h200": 76,
+    "predicted": 1.187904967602592,
+    "measured": 1.2544997476497917,
+    "ctx": 500
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "mem_busy_h100": 67,
+    "mem_busy_h200": 53,
+    "predicted": 1.1387163561076605,
+    "measured": 1.1204863758530685,
+    "ctx": 2000
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "mem_busy_h100": 65,
+    "mem_busy_h200": 51.5,
+    "predicted": 1.1340206185567012,
+    "measured": 1.123938709759253,
+    "ctx": 500
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "mem_busy_h100": 53,
+    "mem_busy_h200": 39,
+    "predicted": 1.1066398390342054,
+    "measured": 1.0721673363903912,
+    "ctx": 500
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "mem_busy_h100": 51,
+    "mem_busy_h200": 39,
+    "predicted": 1.1022044088176353,
+    "measured": 1.0889035897663502,
+    "ctx": 500
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "mem_busy_h100": 37.5,
+    "mem_busy_h200": 27.5,
+    "predicted": 1.07421875,
+    "measured": 1.0440972558054606,
+    "ctx": 500
+   }
+  ],
+  "spread_predicted": 0.1136862176025919,
+  "spread_measured": 0.21040249184433102,
+  "ends_ordered": true,
+  "exceed_r": [
+   "B8"
+  ],
+  "mem_busy_falls_on_every_model": true,
+  "prediction_file": "benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"
+ },
+ "fig3": {
+  "rows": [
+   {
+    "label": "H100 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 12.061,
+    "n16384_us": 474.492,
+    "source": "benchmarks/allreduce-2026-09-03/H100-80GB-HBM3-x2-results.jsonl",
+    "ratio": 39.34101649946108
+   },
+   {
+    "label": "H100 ×4",
+    "link": "NVLink",
+    "cards": 4,
+    "n1_us": 14.764,
+    "n16384_us": 616.73,
+    "source": "benchmarks/allreduce-2026-09-03/H100-80GB-HBM3-x4-results.jsonl",
+    "ratio": 41.772554863180716
+   },
+   {
+    "label": "H200 ×4",
+    "link": "NVLink",
+    "cards": 4,
+    "n1_us": 14.97,
+    "n16384_us": 615.942,
+    "source": "benchmarks/allreduce-2026-09-03/H200-143GB-HBM3e-x4-results.jsonl",
+    "ratio": 41.14509018036072
+   },
+   {
+    "label": "B300 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 14.236,
+    "n16384_us": 290.493,
+    "source": "benchmarks/allreduce-2026-09-03/B300-SXM6-x2-results.jsonl",
+    "ratio": 20.405521213824105
+   },
+   {
+    "label": "A100 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 17.739,
+    "n16384_us": 759.415,
+    "source": "benchmarks/allreduce-2026-09-03/A100-SXM4-80GB-x2-results.jsonl",
+    "ratio": 42.81047409662325
+   },
+   {
+    "label": "RTX PRO 6000 ×2",
+    "link": "PCIe, no NVLink",
+    "cards": 2,
+    "n1_us": 14.444,
+    "n16384_us": 3775.238,
+    "source": "benchmarks/allreduce-2026-09-03/RTX-PRO-6000-Blackwell-x2-results.jsonl",
+    "ratio": 261.37067294378284
+   },
+   {
+    "label": "RTX PRO 6000 ×4",
+    "link": "PCIe, no NVLink",
+    "cards": 4,
+    "n1_us": 39.104,
+    "n16384_us": 11294.213,
+    "source": "benchmarks/allreduce-2026-09-03/RTX-PRO-6000-Blackwell-x4-results.jsonl",
+    "ratio": 288.8250051145663
+   },
+   {
+    "label": "RX 7900 XT ×2",
+    "link": "PCIe 3.0, no P2P",
+    "cards": 2,
+    "n1_us": 16.649,
+    "n16384_us": 18050.198,
+    "source": "benchmarks/allreduce-2026-09-02/results.jsonl",
+    "ratio": 1084.1610907562015
+   }
+  ],
+  "hidden": 4096,
+  "bandwidth_range": 62.136430137731374,
+  "latency_range": 3.242185556753171,
+  "latency_range_pairs": 1.4707735676975375,
+  "fourth_card": [
+   {
+    "family": "H100",
+    "link": "NVLink",
+    "n1": 1.2241107702512228,
+    "n16384": 1.2997690161267208
+   },
+   {
+    "family": "RTX PRO 6000",
+    "link": "PCIe",
+    "n1": 2.707283301024647,
+    "n16384": 2.9916558903041346
+   }
+  ],
+  "h200_vs_h100_x4": {
+   "n1": 1.0139528583039827,
+   "n16384": 0.9987222933860846
+  }
+ },
+ "fig4": {
+  "machines": [
+   "H100",
+   "H200",
+   "B300",
+   "RTX PRO 6000"
+  ],
+  "rows": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": null
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     }
+    ]
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MacheteLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MacheteLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   }
+  ],
+  "distinct": [
+   "FLASHINFER",
+   "FLASH_ATTN",
+   "TRITON_ATTN"
+  ],
+  "pro6000": [
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -51.967643024612855,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -50.996592920887515,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -38.99870794461457,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "attn_backend": "FLASH_ATTN",
+    "change_pct": -28.15530181714895,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "attn_backend": "FLASH_ATTN",
+    "change_pct": -13.075655998899393,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   }
+  ],
+  "pro6000_split": {
+   "triton_worst": -51.967643024612855,
+   "triton_best": -38.99870794461457,
+   "flash_worst": -28.15530181714895,
+   "flash_best": -13.075655998899393
+  }
+ },
+ "fig5": {
+  "machine": "H100",
+  "rows": [
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "structure": "attention through a 2 048-token window",
+    "change_pct": -4.82599952138848,
+    "a100_to_h100_at_32k": 1.3617406484866486,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 83.36615
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 83.3496
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 83.22704999999999
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 82.5487
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 83.0353
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 82.89125
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 82.6925
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 82.18975
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.59055000000001
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.49690000000001
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 82.0589
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 81.41225
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 81.17375
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 80.8612
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 80.40385
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 79.3429
+     }
+    ]
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "structure": "sliding 1 024, one global layer in six",
+    "change_pct": -11.901821314368732,
+    "a100_to_h100_at_32k": 2.1649741009728714,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 160.60105
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 159.6917
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 159.04145
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 159.0627
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 158.489
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 157.89285
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 157.34735
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 156.40195
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 156.1739
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 154.9973
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 154.24975
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 152.05615
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 149.5444
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 147.37405
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 144.8408
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 141.4866
+     }
+    ]
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "structure": "the same, mixture of experts",
+    "change_pct": -17.861704670001398,
+    "a100_to_h100_at_32k": 2.052774938169827,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 230.56310000000002
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 228.73325
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 228.50815
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 227.46859999999998
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 227.28035
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 226.5915
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 220.30115
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 223.1518
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 222.2603
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 220.7821
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 217.8764
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 209.5298
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 205.56459999999998
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 198.9998
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 197.02925
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 189.38060000000002
+     }
+    ]
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "structure": "hybrid SSM: recurrent state plus attention layers",
+    "change_pct": -21.766204114766985,
+    "a100_to_h100_at_32k": 1.4453581060455867,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 98.5475
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 98.45830000000001
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 98.2021
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 97.7728
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 97.36269999999999
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 97.03694999999999
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 96.08744999999999
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 95.25915
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 94.30940000000001
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 93.34125
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 91.858
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 89.14385
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 86.2124
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 83.75999999999999
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 81.43895
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 77.09745000000001
+     }
+    ]
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "structure": "sliding 1 024, one global layer in six",
+    "change_pct": -22.027636307772514,
+    "a100_to_h100_at_32k": 1.90401693076778,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 85.9232
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 85.3565
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 85.18515
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 85.87119999999999
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 85.44975
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 85.10794999999999
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 84.33935
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.63499999999999
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.93764999999999
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.09085
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 80.74555000000001
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 78.2124
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 75.5648
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 73.2882
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 69.68225000000001
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 66.99635
+     }
+    ]
+   }
+  ],
+  "prediction": "Muse-Glimmer was written down, before the run, as landing between the attention models and the SSM; it landed flatter than both",
+  "prediction_file": "benchmarks/cuda-h100/campaign-2026-09-03b/run.py",
+  "ssm_falls_as_far_as_dense": true
+ },
+ "fig6": {
+  "a100": [
+   {
+    "ctx": 500,
+    "modal": 114.95304999999999,
+    "colab_0829": 115.0498,
+    "colab_0830": 114.9045,
+    "delta_pct": 0.04225247923275166
+   },
+   {
+    "ctx": 8000,
+    "modal": 94.00104999999999,
+    "colab_0829": 94.17445,
+    "colab_0830": 94.0204,
+    "delta_pct": -0.020580639946232715
+   },
+   {
+    "ctx": 16000,
+    "modal": 83.04785000000001,
+    "colab_0829": 83.2601,
+    "colab_0830": 83.09375,
+    "delta_pct": -0.05523881158329136
+   },
+   {
+    "ctx": 32000,
+    "modal": 71.2967,
+    "colab_0829": 71.25775,
+    "colab_0830": 71.24785,
+    "delta_pct": 0.06856347244161842
+   }
+  ],
+  "worst_delta_pct": 0.06856347244161842,
+  "l4": {
+   "modal": 25.288800000000002,
+   "colab": [
+    25.07405,
+    25.16985
+   ]
+  },
+  "price": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "mem_busy_h100": 87,
+    "h100": 150.68345,
+    "b300": 250.1764,
+    "ratio": 1.660277887186682,
+    "per_dollar": 0.9236757259700553
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "mem_busy_h100": 53,
+    "h100": 160.60105,
+    "b300": 166.49445,
+    "ratio": 1.03669589955981,
+    "per_dollar": 0.5767533525720069
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "mem_busy_h100": 37.5,
+    "h100": 230.56310000000002,
+    "b300": 229.31985,
+    "ratio": 0.9946077668109077,
+    "per_dollar": 0.5533381237891669
+   }
+  ],
+  "price_usd_per_card_hour": {
+   "H100": 3.95,
+   "B300": 7.1
+  },
+  "price_source": "Modal list prices, 2026-09-03, typed"
+ }
+}

@@ -1359,7 +1359,7 @@ the same day one click away as the background.</p>
 
 <h2><span class="n">2</span>Articles</h2>
 
-<p>Eleven write-ups, newest first by the date on the card — the last day evidence for that article
+<p>Twelve write-ups, newest first by the date on the card — the last day evidence for that article
 was taken here, reported upstream or re-read. Under each title is the line that article used to lead
 with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
 two cannot describe a finding differently.</p>
@@ -1369,7 +1369,7 @@ two cannot describe a finding differently.</p>
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
 <p>The date on an article is the date its evidence was taken, not the date it was written. Three of
-the eleven are dated to the last week of July and eight to the last week of August. The machine
+the twelve are dated to the last week of July, eight to the last week of August and one to the first week of September. The machine
 itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks — the second
 cluster is largely re-measurement of the first under conditions the first got wrong. A bar spanning
 two dates is an article whose evidence comes from two separate sittings, not one that ran
@@ -1384,7 +1384,7 @@ throughout.</p>
     <div class="barunit" id="tlnote"></div>
   </div>
   <figcaption>
-    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the eleven are not
+    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the twelve are not
     measurements of this machine: one records the date a defect was reported upstream, and the
     synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
     rather than given a measurement date they do not have.
@@ -24655,6 +24655,40 @@ topology. The shapes transfer; the levels are the worst case.</p>
   "fastest": 250.1764
  },
  "cards": {
+  "mem-busy-orders-five-settings": {
+   "form": "bars",
+   "unit": "cRatioX",
+   "rule": 1.0,
+   "ruleT": "@cParity",
+   "bars": [
+    {
+     "label": "second 7900 XT",
+     "v": 1.6958983123264257,
+     "kind": null
+    },
+    {
+     "label": "H200 / H100",
+     "v": 1.2544997476497917,
+     "kind": null
+    },
+    {
+     "label": "B300 / H100",
+     "v": 1.660277887186682,
+     "kind": null
+    },
+    {
+     "label": "PRO 6000 / H100",
+     "v": 0.5543830460478573,
+     "kind": "bad"
+    },
+    {
+     "label": "second H100",
+     "v": 1.483924080580847,
+     "kind": null
+    }
+   ],
+   "src": "figures-modal.json fig1"
+  },
   "hybrid-ssm-collapse": {
    "form": "line",
    "unit": "cRetained",
@@ -25187,6 +25221,97 @@ topology. The shapes transfer; the levels are the worst case.</p>
 }</script>
 <script type="application/json" id="articles">{
  "articles": [
+  {
+   "slug": "mem-busy-orders-five-settings",
+   "href": {
+    "en": "articles/mem-busy-orders-five-settings.html",
+    "zh": "articles/mem-busy-orders-five-settings.zh.html"
+   },
+   "title": {
+    "en": "One counter orders five settings it was never fitted to, and sizes none of them",
+    "zh": "一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小"
+   },
+   "sub": {
+    "en": "Seven rented machines in one night, and what a memory controller's busy fraction predicts",
+    "zh": "一夜租七台机器，以及一张卡的内存控制器忙碌比例能预测什么"
+   },
+   "blurb": {
+    "en": "Seven rented machines in one night. A memory controller's busy fraction, read on one card, orders what a second card, a faster card or faster memory is worth in five settings that share no hardware, and a prediction committed before the data says it does not size any of them.",
+    "zh": "一夜租七台机器。在一张卡上读出内存控制器的忙碌比例，它就能给第二张卡、更快的卡、更快的显存值多少排序，五种互不共享硬件的场景都排对了；一份在数据之前写下的预测记下了它一个都没算准。"
+   },
+   "establishes": {
+    "en": "what a second card or a faster card is worth is ordered by the memory controller's busy fraction, not by the interconnect, and the ordering carries to hardware it was never fitted to",
+    "zh": "第二张卡或更快的卡值多少，排序由内存控制器的忙碌比例决定而不是互联，而且这个排序能搬到从未拟合过的硬件上"
+   },
+   "dates": [
+    "2026-09-03"
+   ],
+   "date": "2026-09-03",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwRentedSingles",
+     "v": [
+      "H100",
+      "H200",
+      "B300",
+      "RTX PRO 6000"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwRentedPairs",
+     "v": [
+      "H100",
+      "RTX PRO 6000"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwAgainstPair",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackTwo",
+     "v": [
+      "vLLM 0.28.0",
+      "CUDA 13.0"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleSweep",
+     "v": [
+      "586",
+      "385",
+      "$29.94"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-09-03"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "rented",
+    "mem_busy",
+    "H100",
+    "B300"
+   ]
+  },
   {
    "slug": "a100-vs-two-radeons",
    "href": {
@@ -26027,7 +26152,11 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "kDate": "date",
  "kLink": "repository link",
  "hwOneAndTwo": "1× and 2× <b>{0}</b> · {1}",
- "modelThree": "<b>{0}</b>, <b>{1}</b> and <b>{2}</b>"
+ "modelThree": "<b>{0}</b>, <b>{1}</b> and <b>{2}</b>",
+ "hwRentedSingles": "one <b>{0}</b>, <b>{1}</b>, <b>{2}</b> and <b>{3}</b> · TP=1, rented",
+ "hwRentedPairs": "2× <b>{0}</b> and 2× <b>{1}</b> · TP=2, rented",
+ "hwAgainstPair": "read against 2× <b>{0}</b> · {1}",
+ "scaleSweep": "<b>{0}</b> ladder measurements · <b>{1}</b> collective cells · <b>{2}</b>"
 }</script>
 <script type="application/json" id="strings">{
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1", "h100": "one H100 80G · TP=1", "h200": "one H200 143G · TP=1", "b300": "one B300 275G · TP=1", "pro6000": "one RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
@@ -26073,6 +26202,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestOne": "one run",
  "estLabel": "establishes",
  "cTokS": "decode tok/s at batch 1 · higher is better",
+ "cRatioX": "how many times faster each setting makes the most memory-bound model · 1 is parity",
  "cAdv": "how many times ahead one A100 is, against context",
  "cPct": "per cent change from turning speculation on, against context",
  "cMs": "milliseconds per decode step the packaging costs, against context",
@@ -26187,7 +26317,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
      variable, because the build check asserts that the script references each
      key it declares -- an indirect S[k] would hide an unused or misspelt one. */
   var CFUNIT = {
-    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
+    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun, cRatioX: S.cRatioX,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
     cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
     cRetained: S.cRetained

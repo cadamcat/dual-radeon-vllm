@@ -1,0 +1,2517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小</title>
+<meta name="description" content="Qwen3-8B 的一步解码让单卡的内存控制器 87 % 的时间在忙；gemma-4-26B-A4B 是 38 %。在一张卡上读出这个数，它就能说出这两个模型里哪一个从更快的卡、第二张卡、更快的显存中赚得更多——而且是在它从没被测过的硬件上。它说不出多少。">
+<style>
+  /* ===================== theme =====================
+     Light lives on bare :root so a viewer with no preference and no stored
+     choice still gets a complete palette. Dark is applied twice: once for the
+     system preference (unless the reader has explicitly chosen light) and once
+     for an explicit dark choice, so the toggle wins in both directions. */
+  :root {
+    --bg:#f7f4ed; --bg-grad:radial-gradient(1100px 560px at 80% -10%, #efe7d5 0%, rgba(239,231,213,0) 62%);
+    --surface:#fffdf8; --surface-2:#f2eee3; --surface-3:#e9e4d6;
+    --border:#e0d9c8; --border-2:#cfc7b2;
+    --text:#1e1b15; --text-2:#544e3f; --text-dim:#736b59;
+    --accent:#a06a12; --accent-2:#7d5208;
+    --red:#b4402a; --red-bg:#f8e8e3; --green:#1e7548; --green-bg:#e3f1e8;
+    --blue:#1d6390; --blue-bg:#e3edf4;
+    --code-bg:#1c1a15; --code-bg-2:#26231c; --code-bar:#2f2b22;
+    --code-text:#eae4d5; --code-dim:#9a927d;
+    --shadow:0 1px 2px rgba(46,38,14,.05), 0 10px 32px rgba(46,38,14,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,
+           "PingFang SC","Noto Sans SC",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    /* qualitative series set, tuned for legibility on paper and on near-black */
+    --s1:#c1462c; --s2:#1c6b96; --s3:#2d7d54; --s4:#6b47b2; --s5:#a5761a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+      --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+      --border:#332f23; --border-2:#45402f;
+      --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+      --accent:#e0aa46; --accent-2:#f2c56b;
+      --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+      --blue:#5fabe2; --blue-bg:#142430;
+      --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+      --code-text:#e6e0cf; --code-dim:#8a8269;
+      --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+      --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100e0a; --bg-grad:radial-gradient(1100px 580px at 82% -12%, #241d0e 0%, rgba(36,29,14,0) 64%);
+    --surface:#191711; --surface-2:#211e16; --surface-3:#2b271d;
+    --border:#332f23; --border-2:#45402f;
+    --text:#ede7d7; --text-2:#b9b19c; --text-dim:#8b8371;
+    --accent:#e0aa46; --accent-2:#f2c56b;
+    --red:#ea7a60; --red-bg:#33201b; --green:#5fc086; --green-bg:#16281d;
+    --blue:#5fabe2; --blue-bg:#142430;
+    --code-bg:#0b0a07; --code-bg-2:#15140e; --code-bar:#1e1c14;
+    --code-text:#e6e0cf; --code-dim:#8a8269;
+    --shadow:0 1px 2px rgba(0,0,0,.32), 0 12px 36px rgba(0,0,0,.38);
+    --s1:#f08a6d; --s2:#63b3e0; --s3:#67c795; --s4:#b096ec; --s5:#e7b45c;
+  }
+
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.78; font-size:17px;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background-color .35s ease, color .35s ease;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:0 24px 120px; }
+  @media (max-width:640px){ body{font-size:16px;} .wrap{padding:0 16px 80px;} }
+  a { color:var(--accent-2); text-decoration:none; border-bottom:1px solid transparent;
+      transition:color .2s ease, border-color .25s ease; }
+  a:hover { border-bottom-color:var(--accent); }
+  h1,h2,h3,h4 { line-height:1.3; font-weight:700; color:var(--text); }
+  h1 { font-size:2.45rem; letter-spacing:-.022em; margin:.2em 0 .3em; }
+  @media (max-width:640px){ h1{font-size:1.85rem;} }
+  h2 { font-size:1.6rem; margin:3.4em 0 .25em; letter-spacing:-.012em; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.55em; font-weight:800; }
+  /* the section number settles into place with its heading. It starts dim and
+     offset rather than invisible: this is static markup, and an observer that
+     never fires -- a background tab, no IntersectionObserver at all -- must
+     leave the page readable rather than blank. */
+  h2 .n.nq { display:inline-block; color:var(--text-dim); transform:translateX(-.3em);
+             transition:color .55s ease, transform .55s cubic-bezier(.22,1,.36,1); }
+  h2 .n.nin { color:var(--accent); transform:none; }
+  h3 { font-size:1.16rem; margin:2.2em 0 .1em; }
+  p { margin:.9em 0; }
+  strong { color:var(--text); font-weight:700; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-3);
+         padding:.12em .38em; border-radius:4px; border:1px solid var(--border);
+         overflow-wrap:anywhere; }
+  /* the title says what was found; the subtitle is the line the article used to
+     lead with, kept because it says what the piece is about */
+  .top .sub { font-size:1.28rem; line-height:1.42; font-weight:400; color:var(--text-dim);
+              margin:.15em 0 0; letter-spacing:-.008em; }
+  @media (max-width:640px){ .top .sub{ font-size:1.06rem; } }
+  .lede { font-size:1.13rem; color:var(--text-2); margin:1.1em 0 0; }
+
+  /* ---- theme toggle ---- */
+  /* fixed, so content scrolls under it; it steps out of the way going down the
+     page and comes back on any upward scroll, which keeps it reachable without
+     covering a figure title on a narrow screen */
+  .themebar { position:fixed; top:14px; right:16px; z-index:60; display:flex; gap:4px;
+              transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+              background:color-mix(in srgb, var(--surface) 88%, transparent);
+              border:1px solid var(--border); border-radius:99px; padding:4px;
+              box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+  .themebar button { border:0; background:transparent; cursor:pointer; border-radius:99px;
+                     width:30px; height:30px; display:grid; place-items:center;
+                     color:var(--text-dim); transition:background .2s, color .2s; }
+  .themebar button:hover { color:var(--text-2); }
+  .themebar button:active { transform:scale(.88); }
+  .themebar button[aria-pressed="true"] { background:var(--surface-3); color:var(--accent); }
+  .themebar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+                  stroke-linecap:round; stroke-linejoin:round; }
+  .themebar .sep { width:1px; align-self:stretch; margin:3px 3px; background:var(--border); }
+  .themebar .lang { font-family:var(--mono); font-size:.73rem; font-weight:700; letter-spacing:.02em;
+                    height:30px; padding:0 .62em; display:grid; place-items:center; border-radius:99px;
+                    color:var(--text-dim); border-bottom:0; transition:background .2s, color .2s; }
+  .themebar .lang:hover { color:var(--text-2); }
+  .themebar .lang[aria-current="page"] { background:var(--surface-3); color:var(--accent); }
+  /* Back to the index, on every page that is not it. An article is usually
+     arrived at from a card on the front page and there was no way back except
+     the browser's own button, which is not there when the link was opened in a
+     new tab or shared. It sits leftmost because it goes to the widest thing. */
+  .themebar .home { display:inline-flex; align-items:center; gap:.4em; border-radius:99px;
+                    padding:5px 10px 5px 8px; color:var(--text-dim); border-bottom:0;
+                    font-family:var(--mono); font-size:.73rem; letter-spacing:.02em;
+                    transition:background .2s, color .2s; }
+  .themebar .home:hover { background:var(--surface-3); color:var(--accent); }
+  .themebar .home svg { width:15px; height:15px; }
+  /* the label is the first thing a narrow bar should give up: the arrow keeps
+     the target, and the accessible name is on the link either way */
+  @media (max-width:560px){ .themebar .home span { display:none; }
+                            .themebar .home { padding:5px 8px; } }
+  .themebar.away { transform:translateY(-150%); opacity:0; pointer-events:none; }
+  @media (max-width:640px){ .themebar { top:8px; right:8px; } }
+
+  /* ---- masthead ---- */
+  .top { border-bottom:1px solid var(--border); margin-bottom:2.4em; padding:2.6em 0 1.7em; }
+  .kicker { font-family:var(--mono); font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+            color:var(--accent); font-weight:700; }
+  .meta { display:flex; flex-wrap:wrap; gap:.5em; margin-top:1.5em; }
+  .chip { font-family:var(--mono); font-size:.73rem; background:var(--surface-2);
+          border:1px solid var(--border); border-radius:99px; padding:.32em .85em; color:var(--text-2); }
+  .chip b { color:var(--text); font-weight:700; }
+  /* chips are typed, and the type is the dot: hardware, model, stack, platform,
+     scale, upstream, date. The dot is decoration, so the type is also spelled
+     out in the chip's own words rather than carried by colour alone. */
+  .chip::before { content:""; display:inline-block; width:5px; height:5px; border-radius:99px;
+                  margin-right:.55em; vertical-align:.1em; background:var(--ck,var(--text-dim)); }
+  .chip.k-hardware { --ck:var(--s2); }
+  .chip.k-model    { --ck:var(--s4); }
+  .chip.k-stack    { --ck:var(--s3); }
+  .chip.k-platform { --ck:var(--s5); }
+  .chip.k-upstream { --ck:var(--s1); }
+  .chip.k-date     { --ck:var(--accent); }
+  .chip.k-scale    { --ck:var(--text-dim); }
+  .chip.k-link::before { display:none; }
+  /* the masthead chips land one after another; --i is written by build.py, so
+     the order is the order they are declared in and not a script's guess */
+  .meta .chip { animation:chipin .5s cubic-bezier(.22,1,.36,1) both;
+                animation-delay:calc(var(--i,0) * 55ms + 130ms); }
+  @keyframes chipin { from { opacity:0; transform:translateY(7px); } }
+
+  /* ---- reading progress ---- */
+  .prog { position:fixed; top:0; left:0; height:2px; width:0; z-index:70;
+          background:linear-gradient(90deg, var(--accent), var(--accent-2));
+          transition:width .12s linear; pointer-events:none; }
+
+  /* ---- abstract ---- */
+  .abstract { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+              border-radius:12px; padding:1.4em 1.6em; box-shadow:var(--shadow); margin:2.2em 0; }
+  .abstract h3 { margin:0 0 .4em; font-size:.78rem; font-family:var(--mono); letter-spacing:.14em;
+                 text-transform:uppercase; color:var(--accent); }
+  .abstract p { margin:.6em 0; color:var(--text-2); }
+  .abstract p:first-of-type { color:var(--text); }
+
+  /* ---- callouts ---- */
+  .note { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1.05em 1.3em; margin:1.8em 0; font-size:.96rem; color:var(--text-2); }
+  .note.warn { background:var(--red-bg); border-color:color-mix(in srgb, var(--red) 32%, transparent); }
+  .note.ok { background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 32%, transparent); }
+  .note .lbl { font-family:var(--mono); font-size:.71rem; letter-spacing:.11em; text-transform:uppercase;
+               font-weight:700; display:block; margin-bottom:.4em; }
+  .note.warn .lbl { color:var(--red); } .note.ok .lbl { color:var(--green); }
+  .note:not(.warn):not(.ok) .lbl { color:var(--accent); }
+
+  /* ---- code, as a window ---- */
+  .codewin { margin:1.8em 0; border-radius:11px; overflow:hidden; border:1px solid var(--border-2);
+             box-shadow:var(--shadow); background:var(--code-bg); }
+  .codebar { display:flex; align-items:center; gap:7px; padding:.55em .9em;
+             background:var(--code-bar); border-bottom:1px solid rgba(255,255,255,.05); }
+  .codebar .d { width:11px; height:11px; border-radius:99px; }
+  .codebar .d:nth-child(1){ background:#ff5f57; } .codebar .d:nth-child(2){ background:#febc2e; }
+  .codebar .d:nth-child(3){ background:#28c840; }
+  .codebar .t { margin-left:.7em; font-family:var(--mono); font-size:.72rem; color:var(--code-dim); }
+  .codewin pre { margin:0; border:0; border-radius:0; box-shadow:none; }
+  pre { background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:1.05em 1.2em;
+        overflow-x:auto; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+        border:1px solid var(--border-2); margin:1.6em 0; }
+  pre .c { color:var(--code-dim); } pre .k { color:#e0aa46; }
+  pre .r { color:#ea7a60; } pre .g { color:#5fc086; }
+
+  /* ---- tables ---- */
+  .tbl { overflow-x:auto; margin:1.8em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th,td { padding:.6em .75em; border-bottom:1px solid var(--border); text-align:left; }
+  th { font-family:var(--mono); font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border-2); }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  tbody tr:hover { background:var(--surface-2); }
+
+  /* ---- figures ---- */
+  figure { margin:2.8em 0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:1.4em 1.5em 1.2em; box-shadow:var(--shadow); }
+  figcaption { font-size:.87rem; color:var(--text-dim); margin-top:1em; line-height:1.65; }
+  figcaption b { color:var(--text-2); }
+  .figtitle { font-family:var(--mono); font-size:.73rem; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--accent); font-weight:700; margin-bottom:1em; display:flex;
+              flex-wrap:wrap; align-items:center; gap:.6em; }
+  .prov { font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; padding:.15em .55em;
+          border-radius:4px; border:1px solid var(--border-2); color:var(--text-dim);
+          white-space:nowrap; }
+  .prov.yes { color:var(--green); border-color:color-mix(in srgb, var(--green) 42%, transparent); }
+  .prov.no { color:var(--red); border-color:color-mix(in srgb, var(--red) 42%, transparent); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:.45em; margin-bottom:1em; }
+  .lg { display:inline-flex; align-items:center; gap:.5em; font-size:.79rem; font-family:var(--mono);
+        background:var(--surface-2); border:1px solid var(--border); border-radius:99px;
+        padding:.34em .85em; cursor:pointer; color:var(--text-dim); user-select:none;
+        transition:color .25s, border-color .25s, background .25s, transform .18s; }
+  .lg:hover { transform:translateY(-1px); border-color:var(--border-2); }
+  /* flex:0 0 auto or the key squeezes the swatch: in a .lg with a long label
+     the 9px dot was rendering at 3.3px, and a 15px dashed bar at 5px, which
+     is most of why two stroke patterns were not telling apart. */
+  .lg .sw { width:9px; height:9px; flex:0 0 auto; border-radius:99px; background:currentColor;
+            opacity:.4; transition:opacity .25s, box-shadow .25s; }
+  .lg.on { color:var(--c); border-color:currentColor; background:var(--surface); font-weight:600; }
+  .lg.on .sw { opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+  /* The section rail. Every page here is long -- the shortest article is seven
+     sections and four figures -- and at any width wide enough to have a left
+     margin that margin is empty. The rail says what is on the page and where in
+     it the reader is.
+
+     Two levels. The first is the page's own <h2>. The second is everything
+     under one: its <h3> sub-headings and its figures, and on the index the
+     eleven article cards, which are <h3> inside a link and so come out of the
+     same rule. Only the section being read has its second level open, which is
+     what keeps a rail four lines long on a page with eighteen entries.
+
+     Hidden below 1280px: .wrap is 880px centred, so a 180px rail plus a gap
+     needs about that much viewport before it starts overlapping the text. */
+  .toc { position:fixed; top:50%; transform:translateY(-50%);
+         left:calc((100vw - 880px) / 2 - 196px); width:180px; z-index:40;
+         font-family:var(--mono); font-size:.75rem; display:none;
+         max-height:76vh; overflow-y:auto; overscroll-behavior:contain; }
+  @media (min-width:1280px){ .toc { display:block; } }
+  .toc ol { list-style:none; margin:0; padding:0; }
+  .toc > ol { padding-left:13px; border-left:1px solid var(--border); position:relative; }
+  .toc .mark { position:absolute; left:-1px; width:2px; top:0; height:0;
+               background:var(--accent); border-radius:1px;
+               transition:top .34s cubic-bezier(.22,1,.36,1),
+                          height .34s cubic-bezier(.22,1,.36,1); }
+  .toc a { display:block; padding:.4em 0; color:var(--text-dim); border-bottom:0;
+           line-height:1.34; transition:color .2s; }
+  .toc a:hover { color:var(--text-2); }
+  .toc a[aria-current] { color:var(--accent); }
+  .toc .n { display:inline-block; width:1.5em; opacity:.55; font-weight:600; }
+  /* Opened by grid rather than by a measured height. A height in pixels has to
+     be read off the element, and reading it while the rail is display:none --
+     which it is on any page loaded below 1280px -- gives zero, and the zero
+     then sticks until something else resizes. 0fr to 1fr needs no measurement
+     and cannot be stale. */
+  .toc .sub { display:grid; grid-template-rows:0fr; opacity:0;
+              transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1), opacity .22s; }
+  .toc li.on > .sub { grid-template-rows:1fr; opacity:1; }
+  .toc .sub > ol { overflow:hidden; min-height:0; }
+  /* A figure title is a sentence and an article title is a finding; at 180px
+     either runs to four lines and the rail stops being scannable. Two lines,
+     and the whole of it is on the link's title attribute. */
+  .toc .sub a { padding:.28em 0 .28em 1em; font-size:.95em; position:relative;
+                display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                overflow:hidden; }
+  .toc .sub a::before { content:"·"; position:absolute; left:.15em; opacity:.45; }
+  /* an entry that leaves the page is marked as one: under "Articles" on the
+     index every child is another page, not a place to scroll to */
+  .toc .sub a.out::before { content:"\2192"; font-size:.9em; opacity:.5; }
+  @media (prefers-reduced-motion:reduce){
+    .toc .mark, .toc .sub, .toc a { transition:none; } }
+
+  .hint { font-size:.77rem; color:var(--text-dim); font-family:var(--mono); margin-bottom:.85em; }
+
+  svg.chart { width:100%; height:auto; display:block; overflow:visible; }
+  /* the viewBox scales uniformly, so a narrow figure shrinks the axis text with
+     it. Below the breakpoint the chart keeps a legible size and the box scrolls,
+     which is what .covwrap already does for a wide grid. */
+  @media (max-width:640px){
+    .figbox > svg.chart { min-width:520px; }
+    .figbox:has(> svg.chart) { overflow-x:auto; }
+  }
+  .grid line { stroke:var(--border); stroke-width:1; }
+  .axis text { fill:var(--text-dim); font-family:var(--mono); font-size:10.5px; }
+  .axis .ttl { fill:var(--text-2); font-size:11px; font-weight:700; }
+  .ln { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
+        transition:opacity .3s, stroke-width .3s; }
+  .dot { transition:opacity .3s; cursor:pointer; }
+  .dim { opacity:.14; } .dim.ln { stroke-width:1.6; }
+  .rule { stroke-width:1.4; opacity:.75; }
+  .rulab { font-family:var(--mono); font-size:10px; letter-spacing:.04em; }
+  .dot { cursor:default; }
+  .dot[data-tip] { cursor:pointer; }
+  .tip { position:fixed; pointer-events:none; background:var(--code-bg); color:var(--code-text);
+         font-family:var(--mono); font-size:.74rem; line-height:1.6; padding:.6em .8em;
+         border-radius:8px; opacity:0; transition:opacity .14s; z-index:70; max-width:270px;
+         box-shadow:0 10px 30px rgba(0,0,0,.34); border:1px solid var(--border-2); }
+  .tip .hd { color:var(--accent-2); font-weight:700; }
+  .tip .sub { color:var(--code-dim); }
+
+  /* ---- bar charts: one grid per figure so every track shares a left edge ---- */
+  .bars { display:grid; grid-template-columns:var(--labw, 150px) 1fr max-content;
+          column-gap:1.1em; row-gap:.55em; align-items:center; }
+  @media (max-width:640px){ .bars { --labw:104px; column-gap:.7em; } }
+  .bars .lab { font-family:var(--mono); font-size:.78rem; color:var(--text-2);
+               text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .track { background:var(--surface-3); border-radius:99px; height:20px; overflow:hidden; }
+  .bars .fill { height:100%; border-radius:99px; width:0;
+                transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .bars .val { font-family:var(--mono); font-size:.81rem; font-variant-numeric:tabular-nums;
+               color:var(--text); font-weight:700; white-space:nowrap; }
+  .bars .head { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem;
+                color:var(--text-2); margin:.9em 0 -.1em; }
+  .bars .head:first-child { margin-top:0; }
+  /* a group heading spans the whole row. It lived in four articles' own CSS and
+     not in the fifth that used the class, whose rows then each took one cell
+     and walked diagonally down the figure. */
+  .bars .grp { grid-column:1 / -1; font-family:var(--mono); font-size:.79rem;
+               color:var(--text); margin:1em 0 .1em; }
+  .bars .grp:first-child { margin-top:0; }
+  .bars .grp .tagline { color:var(--text-dim); font-size:.73rem; }
+  .bars .foot { grid-column:2 / -1; font-family:var(--mono); font-size:.74rem;
+                margin:-.25em 0 .5em; }
+  .barunit { font-family:var(--mono); font-size:.75rem; color:var(--text-dim); margin-top:1em; }
+  .bars > .barunit { grid-column:1 / -1; }
+
+  /* .rv hides content until a script reveals it, so the one browser without
+     IntersectionObserver would get a page of empty figure frames. The root
+     carries the capability and the rule opts out. */
+  .no-io .rv { opacity:1 !important; transform:none !important; }
+  /* ---- provenance variants used by this article ---- */
+  .prov.src { color:var(--blue); border-color:color-mix(in srgb, var(--blue) 42%, transparent); }
+  .prov.typed { color:var(--amber); border-color:color-mix(in srgb, var(--amber) 42%, transparent); }
+
+  /* ---- a grid of settings, models and ratios ---- */
+  .set { display:grid; grid-template-columns:max-content max-content 1fr max-content;
+         column-gap:1em; align-items:center; font-size:.86rem; }
+  .set > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .set > div:nth-last-child(-n+4) { border-bottom:0; }
+  .set .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+            text-transform:uppercase; color:var(--text-dim);
+            border-bottom:1px solid var(--border-2); }
+  .set .g { grid-column:1 / -1; font-family:var(--mono); font-size:.78rem; color:var(--text);
+            padding-top:.9em; border-bottom:0; }
+  .set .g .tag { color:var(--text-dim); font-size:.72rem; margin-left:.6em; }
+  .set .m { font-family:var(--mono); font-size:.78rem; color:var(--text-2); }
+  .set .b { font-family:var(--mono); font-size:.76rem; color:var(--text-dim);
+            font-variant-numeric:tabular-nums; text-align:right; }
+  .set .track { background:var(--surface-3); border-radius:99px; height:14px; overflow:hidden;
+                position:relative; }
+  .set .track .one { position:absolute; top:0; bottom:0; width:1px; background:var(--text-dim); }
+  .set .fill { height:100%; border-radius:99px; background:var(--s1); width:0;
+               transition:width .8s cubic-bezier(.2,.7,.2,1); }
+  .set .fill.lo { background:var(--s3); }
+  .set .fill.bad { background:var(--red); }
+  .set .v { font-family:var(--mono); font-size:.8rem; font-variant-numeric:tabular-nums;
+            text-align:right; color:var(--text); }
+  .set .v.hi { font-weight:700; }
+  @media (max-width:560px){ .set { grid-template-columns:max-content 1fr max-content; }
+                            .set .b { display:none; } }
+
+  /* ---- a plain numeric grid: prediction, controls, backends ---- */
+  .tab { display:grid; column-gap:1em; align-items:center; font-size:.85rem; }
+  .tab > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .tab .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+            text-transform:uppercase; color:var(--text-dim);
+            border-bottom:1px solid var(--border-2); }
+  .tab .k { font-family:var(--mono); font-size:.78rem; color:var(--text-2); overflow-wrap:anywhere; }
+  .tab .n { font-family:var(--mono); font-size:.8rem; font-variant-numeric:tabular-nums;
+            text-align:right; color:var(--text); }
+  .tab .n.dim { color:var(--text-dim); }
+  .tab .n.good { color:var(--green); }
+  .tab .n.bad { color:var(--red); }
+  .tab .n.hi { font-weight:700; }
+  .tab .c { font-family:var(--mono); font-size:.72rem; text-align:center; overflow-wrap:anywhere; }
+  .tab .c.fa { color:var(--blue); }
+  .tab .c.fi { color:var(--amber); }
+  .tab .c.tr { color:var(--red); }
+  .tab .foot { grid-column:1 / -1; font-family:var(--mono); font-size:.74rem;
+               color:var(--text-dim); border-bottom:0; padding-top:.6em; }
+  .tab.pred { grid-template-columns:minmax(6.5em, 1fr) minmax(0, 1fr) max-content max-content max-content; }
+  .tab.ctrl { grid-template-columns:max-content 1fr 1fr 1fr max-content; }
+  .tab.be { grid-template-columns:minmax(0, 1.3fr) repeat(4, minmax(0, 1fr)); }
+  .tab.price { grid-template-columns:minmax(6.5em, 1.3fr) repeat(5, minmax(0, 1fr)); }
+  .tab .b { color:var(--text-dim); }
+  @media (max-width:640px){ .tab .b { display:none; } .tab.price { grid-template-columns:minmax(6.5em, 1.3fr) repeat(4, minmax(0, 1fr)); }
+                            .tab.pred { grid-template-columns:minmax(6.5em, 1fr) max-content max-content max-content; } }
+  @media (max-width:640px){ .tab { font-size:.78rem; column-gap:.6em; } }
+
+  /* ---- the collective: two log bars per row ---- */
+  .coll { display:grid; grid-template-columns:max-content max-content 1fr max-content 1fr max-content;
+          column-gap:.8em; align-items:center; font-size:.84rem; }
+  .coll > div { padding:.4em 0; border-bottom:1px solid var(--border); }
+  .coll > div:nth-last-child(-n+6) { border-bottom:0; }
+  .coll .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+             text-transform:uppercase; color:var(--text-dim);
+             border-bottom:1px solid var(--border-2); }
+  .coll .k { font-family:var(--mono); font-size:.78rem; color:var(--text); }
+  .coll .l { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+  .coll .l.no { color:var(--amber); }
+  .coll .h.track { background:none; height:auto; border-radius:0; }
+  .coll .track { background:var(--surface-3); border-radius:99px; height:12px; overflow:hidden; }
+  .coll .fill { height:100%; border-radius:99px; width:0;
+                transition:width .8s cubic-bezier(.2,.7,.2,1); }
+  .coll .fill.lat { background:var(--s1); }
+  .coll .fill.bw { background:var(--s5); }
+  .coll .v { font-family:var(--mono); font-size:.78rem; font-variant-numeric:tabular-nums;
+             text-align:right; color:var(--text); }
+  @media (max-width:640px){ .coll { grid-template-columns:max-content 1fr max-content; }
+                            .coll .l, .coll .track.lat, .coll .v.lat { display:none; } }
+
+  .rv { opacity:0; transform:translateY(14px);
+        transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+  .rv.in { opacity:1; transform:none; }
+
+  .foot-note { margin-top:4.2em; padding-top:1.7em; border-top:1px solid var(--border);
+               font-size:.88rem; color:var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:.001ms !important; animation-delay:.001ms !important;
+                              transition-duration:.001ms !important; }
+    .rv { opacity:1; transform:none; }
+    .prog { transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="prog" id="prog" aria-hidden="true"></div>
+<nav class="themebar" aria-label="语言与配色主题">
+  <a class="home" href="../index.zh.html" title="全部文章" aria-label="全部文章"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4"/><path d="M10 6l-6 6 6 6"/></svg><span>全部文章</span></a>
+  <span class="sep" aria-hidden="true"></span>
+  <a class="lang" href="mem-busy-orders-five-settings.html" hreflang="en">EN</a>
+  <a class="lang" href="mem-busy-orders-five-settings.zh.html" hreflang="zh" aria-current="page">中</a>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="th-auto" aria-pressed="false" title="跟随系统">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8"/></svg>
+  </button>
+  <button id="th-light" aria-pressed="false" title="浅色">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="th-dark" aria-pressed="false" title="深色">
+    <svg viewBox="0 0 24 24"><path d="M20 13.4A8.2 8.2 0 1 1 10.6 4a6.6 6.6 0 0 0 9.4 9.4z"/></svg>
+  </button>
+</nav>
+<script id="chrome">
+/* ---- the shared line chart ----
+   Seven figures across four articles show a few series over an ordered axis --
+   context length, almost always -- and were drawn as grouped bars, which makes
+   a reader assemble the shape out of four lengths. One implementation lives
+   here rather than seven in the bodies, for the same reason .bars .grp does:
+   the copy an article did not have is the one that broke.
+
+   window.lineChart(opts) -> { redraw }
+     el       the <svg class="chart"> to draw into
+     x        {values, label, fmt}          ordered, shared by every series
+              {scale:"log"|"linear", min, max, ticks, label, fmt}   numeric instead
+     y        {label, fmt, ticks, min, max, zero}
+     series   [{label, colour, values, dash, dashPattern, dashSegs, tip}]
+              values parallel to x.values. `dash` strokes the whole series
+              dashed; `dashPattern` is its stroke-dasharray, default "6 5", for
+              when two dashed series have to be told apart. NOT `dashSegs`,
+              which is a list of *segment indices* drawn as a second, softer
+              path -- passing a pattern string there silently splits the line,
+              because "2 3".indexOf(2) is 0.
+              or [{label, colour, points:[[x,y],...], ...}]   on a numeric x
+     rules    [{y, label, at, colour, labelColour}]  horizontal reference lines
+     band     {lo, hi}                               a shaded y range behind everything
+     legend   an element to fill with one swatch per labelled series
+     reduce   true to skip the draw-in animation
+     fitLit   true to scale y to the lit series only, rather than to every
+              series the chart holds, and to leave the unlit ones out of the
+              drawing entirely. For a chart whose legend can switch most of its
+              lines off this is the difference between an axis that describes
+              what the reader is looking at and one set by a line they cannot
+              see -- the index chart holds an A100 model peaking at 161 tok/s
+              behind a default view whose own top is 108. The two halves go
+              together: once the axis stops covering a series, dimming it
+              rather than dropping it draws it off the top of the frame, which
+              is worse than not drawing it -- a line that leaves and re-enters
+              reads as a plateau it never had.
+     lit      the initial predicate, so the first draw already fits and the
+              first setLit finds nothing to change
+   A null in a series' values is a gap, not a zero.
+   Returns {redraw, setLit}: setLit(fn) dims every series for which fn(i) is
+   false. Without fitLit it does not redraw, so a legend toggle does not replay
+   the animation; with it, it redraws -- without animating -- whenever the set
+   of shown series actually changed, and not otherwise. */
+window.lineChart = function (opts) {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var el = opts.el, xs = opts.x.values, ser = opts.series, rules = opts.rules || [];
+  var W = opts.w || 760, H = opts.h || 340;
+  var M = opts.m || { t: 16, r: 18, b: 44, l: 62 };
+  var tip = document.querySelector(".tip") || (function () {
+    var t = document.createElement("div");
+    t.className = "tip";
+    document.body.appendChild(t);
+    return t;
+  })();
+
+  function mk(n, a, style) {
+    var e = document.createElementNS(NS, n);
+    for (var k in a) e.setAttribute(k, a[k]);
+    if (style) e.setAttribute("style", style);
+    return e;
+  }
+  function show(ev, html) {
+    tip.innerHTML = html;
+    tip.style.opacity = "1";
+    var r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX + 14, innerWidth - r.width - 10) + "px";
+    tip.style.top = Math.max(8, ev.clientY - r.height - 12) + "px";
+  }
+  function hide() { tip.style.opacity = "0"; }
+
+  var paths = [], dots = [], owner = [], dotOwner = [];
+  var litFn = opts.lit || null, drawnKey = null;
+
+  // Under fitLit a series the reader has switched off is not drawn at all, so
+  // what has to be compared between draws is the set and not just the extent.
+  function shown(i) { return !opts.fitLit || !litFn || litFn(i); }
+  function litKey() {
+    var k = "";
+    ser.forEach(function (_, i) { k += shown(i) ? "1" : "0"; });
+    return k;
+  }
+
+  // What sets the y axis. Under fitLit a series the reader has switched off
+  // does not, which is the whole point; if that leaves nothing at all, the
+  // frame stays as it was rather than collapsing onto an empty chart.
+  function yvals() {
+    var vals = [], all = !opts.fitLit || !litFn;
+    function take(s) {
+      if (s.points) { s.points.forEach(function (p) { vals.push(p[1]); }); return; }
+      s.values.forEach(function (v) { if (v !== null && v !== undefined) vals.push(v); });
+    }
+    ser.forEach(function (s, i) { if (all || shown(i)) take(s); });
+    if (!vals.length) ser.forEach(take);
+    rules.forEach(function (r) { vals.push(r.y); });
+    if (opts.band) { vals.push(opts.band.lo); vals.push(opts.band.hi); }
+    return vals;
+  }
+  function yext() {
+    var v = yvals();
+    return [opts.y.min !== undefined ? opts.y.min : Math.min.apply(null, v),
+            opts.y.max !== undefined ? opts.y.max : Math.max.apply(null, v)];
+  }
+
+  function draw(animate) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    paths = []; dots = []; owner = []; dotOwner = [];
+    el.setAttribute("viewBox", "0 0 " + W + " " + H);
+    el.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    var ext = yext(), lo = ext[0], hi = ext[1];
+    drawnKey = litKey();
+    if (opts.y.zero && lo > 0) lo = 0;
+    var pad = (hi - lo) * 0.08 || 1;
+    if (opts.y.min === undefined) lo -= pad;
+    if (opts.y.max === undefined) hi += pad;
+    var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
+    // Ordinal by default: a ladder of depths spaced by value buries 1K and 8K
+    // against the left edge. A chart whose series do not share one ladder asks
+    // for scale:"log" (or "linear") and gives each series its own points.
+    var num = opts.x.scale === "log" || opts.x.scale === "linear";
+    var lg = opts.x.scale === "log";
+    var xall = [];
+    if (num) {
+      ser.forEach(function (s) {
+        (s.points || []).forEach(function (p) { xall.push(p[0]); });
+      });
+      if (opts.x.ticks) opts.x.ticks.forEach(function (v) { xall.push(v); });
+    }
+    var xlo = num ? (opts.x.min !== undefined ? opts.x.min : Math.min.apply(null, xall)) : 0;
+    var xhi = num ? (opts.x.max !== undefined ? opts.x.max : Math.max.apply(null, xall)) : 1;
+    var xscale = function (v) { return lg ? Math.log(v) : v; };
+    var X = function (i) {
+      if (num) {
+        return xhi === xlo ? (M.l + W - M.r) / 2
+          : M.l + (xscale(i) - xscale(xlo)) / (xscale(xhi) - xscale(xlo)) * (W - M.l - M.r);
+      }
+      return xs.length === 1 ? (M.l + W - M.r) / 2
+        : M.l + i / (xs.length - 1) * (W - M.l - M.r);
+    };
+
+    var ticks = opts.y.ticks;
+    if (!ticks) {
+      // round tick values, not five equal slices of whatever the data spans:
+      // an axis reading -42, -31, -19, -8, 3 is arithmetic the reader has to do
+      var raw = (hi - lo) / 4;
+      var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+      var step = [1, 2, 2.5, 5, 10].reduce(function (a, m) {
+        return Math.abs(m * mag - raw) < Math.abs(a * mag - raw) ? m : a; }, 1) * mag;
+      ticks = [];
+      for (var t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) ticks.push(t);
+    }
+    var g = mk("g", { "class": "grid" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      g.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v) }));
+    });
+    el.appendChild(g);
+
+    var ax = mk("g", { "class": "axis" });
+    ticks.forEach(function (v) {
+      if (v < lo || v > hi) return;
+      var n = mk("text", { x: M.l - 10, y: Y(v) + 3.5, "text-anchor": "end" });
+      n.textContent = (opts.y.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    (num ? (opts.x.ticks || []) : xs).forEach(function (v, i) {
+      // outside the range is outside the frame: the y ticks have always been
+      // clipped this way and the x ones were not, so a 50 000 tick on an axis
+      // that stops at 32 000 printed itself past the right-hand edge
+      if (num && (v < xlo || v > xhi)) return;
+      var n = mk("text", { x: X(num ? v : i), y: H - M.b + 20, "text-anchor": "middle" });
+      n.textContent = (opts.x.fmt || String)(v);
+      ax.appendChild(n);
+    });
+    if (opts.x.label) {
+      var xt = mk("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle",
+                            "class": "ttl" });
+      xt.textContent = opts.x.label;
+      ax.appendChild(xt);
+    }
+    if (opts.y.label) {
+      var yt = mk("text", { x: -(H - M.b + M.t) / 2, y: 15, "text-anchor": "middle",
+                            "class": "ttl", transform: "rotate(-90)" });
+      yt.textContent = opts.y.label;
+      ax.appendChild(yt);
+    }
+    el.appendChild(ax);
+
+    if (opts.band) {
+      // the spread the individual cells occupy, behind the medians: without it
+      // a reader has no scale against which "flat" means anything
+      el.appendChild(mk("rect", { x: M.l, y: Y(opts.band.hi), width: W - M.l - M.r,
+                                  height: Math.abs(Y(opts.band.lo) - Y(opts.band.hi)) },
+                        "fill:var(--surface-3);opacity:.55"));
+    }
+    rules.forEach(function (r) {
+      if (r.y < lo || r.y > hi) return;
+      el.appendChild(mk("line", { x1: M.l, x2: W - M.r, y1: Y(r.y), y2: Y(r.y),
+                                  "class": "rule" },
+                        "stroke:" + (r.colour || "var(--border-2)") +
+                        (r.dash === false ? "" : ";stroke-dasharray:5 4")));
+      if (!r.label) return;
+      // a rule label sits where the data often is, so it carries its own
+      // backing rather than printing on top of a line
+      var ry = Y(r.y) < M.t + 18 ? Y(r.y) + 15 : Y(r.y) - 6;
+      var left = r.at === "left";
+      var g2 = mk("g", { "class": "rulab" });
+      var n = mk("text", { x: left ? M.l + 4 : W - M.r - 4, y: ry,
+                           "text-anchor": left ? "start" : "end" },
+                 "fill:" + (r.labelColour || "var(--text-dim)"));
+      n.textContent = r.label;
+      g2.appendChild(n);
+      el.appendChild(g2);
+      var bb = n.getBBox();
+      var bg = mk("rect", { x: bb.x - 4, y: bb.y - 1.5, width: bb.width + 8,
+                            height: bb.height + 3, rx: 3 },
+                  "fill:var(--surface)");
+      g2.insertBefore(bg, n);
+    });
+
+    ser.forEach(function (s, si) {
+      if (!shown(si)) return;
+      var soft = s.dashSegs || [];
+      var vs = s.points ? s.points.map(function (p) { return p[1]; }) : s.values;
+      // On a numeric axis X takes the value; on an ordinal one it takes the
+      // slot. A series carrying `points` on an ordinal axis used to hand the
+      // value in as though it were a slot, which put a point at 32 000 seven
+      // thousand widths off the right of the frame instead of at the last
+      // category -- silently, because nothing was left on screen to look wrong.
+      var at = s.points
+        ? (num ? function (i) { return X(s.points[i][0]); }
+               : function (i) { return X(xs.indexOf(s.points[i][0])); })
+        : function (i) { return X(i); };
+      var firm = "", loose = "", open = false;
+      vs.forEach(function (v, i) {
+        if (v === null || v === undefined) { open = false; return; }
+        var here = at(i) + " " + Y(v);
+        if (!open) { firm += " M" + here; open = true; return; }
+        if (soft.indexOf(i - 1) >= 0) {
+          loose += " M" + at(i - 1) + " " + Y(vs[i - 1]) + " L" + here;
+          firm += " M" + here;
+        } else {
+          firm += " L" + here;
+        }
+      });
+      var p = mk("path", { "class": "ln", d: firm.trim() },
+                 "stroke:" + s.colour +
+                 (s.dash ? ";stroke-dasharray:" + (s.dashPattern || "6 5") : ""));
+      el.appendChild(p);
+      paths.push(p); owner.push(si);
+      if (loose) {
+        var lp = mk("path", { "class": "ln", d: loose.trim() },
+                    "stroke:" + s.colour + ";stroke-dasharray:4 5;opacity:.75");
+        el.appendChild(lp);
+        paths.push(lp); owner.push(si);
+      }
+      var dg = [];
+      vs.forEach(function (v, i) {
+        if (v === null || v === undefined) return;
+        var c = mk("circle", { "class": "dot", cx: at(i), cy: Y(v), r: 4.2 },
+                   "stroke:" + s.colour + ";stroke-width:2;fill:var(--surface)");
+        if (s.tip) {
+          c.setAttribute("data-tip", "");
+          c.addEventListener("mouseenter", function (e) { show(e, s.tip(i)); });
+          c.addEventListener("mousemove", function (e) { show(e, tip.innerHTML); });
+          c.addEventListener("mouseleave", hide);
+        }
+        el.appendChild(c);
+        dg.push(c);
+      });
+      dots.push(dg); dotOwner.push(si);
+    });
+
+    if (!animate || opts.reduce) return;
+    // the lines draw themselves in, and every dot created by this redraw is
+    // faded in by this redraw: an observer set up on an earlier pass would
+    // never see these nodes
+    paths.forEach(function (p) {
+      // The draw-in borrows stroke-dasharray to hide the line, so whatever
+      // pattern the series asked for has to be handed back when it finishes.
+      // Without this every dashed line ends up solid once the animation has
+      // run, and a key that distinguishes them by stroke is describing
+      // something the reader cannot see.
+      var want = p.style.strokeDasharray;
+      var L = p.getTotalLength();
+      p.style.strokeDasharray = L;
+      p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = "stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)";
+      p.style.strokeDashoffset = "0";
+      setTimeout(function () {
+        p.style.transition = "";
+        p.style.strokeDasharray = want;
+        p.style.strokeDashoffset = "";
+      }, 1400);
+    });
+    dots.forEach(function (dg) {
+      dg.forEach(function (c, i) {
+        c.style.opacity = "0";
+        setTimeout(function () { c.style.opacity = ""; }, 300 + i * 60);
+      });
+    });
+  }
+
+  if (opts.legend) {
+    // the key belongs to the chart, so a series and its swatch cannot drift and
+    // no article has to carry its own swatch helper for this
+    opts.legend.innerHTML = "";
+    ser.forEach(function (s) {
+      if (!s.label) return;
+      var g = document.createElement("div");
+      g.className = "lg on";
+      g.style.setProperty("--c", s.colour);
+      g.style.cursor = "default";
+      var sw = document.createElement("div");
+      sw.className = "sw";
+      // A dashed series needs a dashed swatch. Without this, two lines that
+      // differ only in stroke pattern arrive in the key as the same dot, and a
+      // figure drawing one machine's arms in one colour hands the reader three
+      // labels and one swatch.
+      if (s.dash) {
+        var seg = String(s.dashPattern || "6 5").split(/[ ,]+/).map(Number);
+        var on = seg[0] || 5, off = seg[1] || 4, sc = 1.4;
+        sw.className = "sw dash";
+        sw.style.width = "15px";
+        sw.style.height = "3px";
+        sw.style.borderRadius = "1px";
+        sw.style.background =
+          "repeating-linear-gradient(90deg, currentColor 0 " + (on * sc).toFixed(1) +
+          "px, transparent " + (on * sc).toFixed(1) + "px " +
+          ((on + off) * sc).toFixed(1) + "px)";
+      }
+      g.appendChild(sw);
+      var t = document.createElement("span");
+      t.textContent = s.label;
+      g.appendChild(t);
+      opts.legend.appendChild(g);
+    });
+  }
+
+  function setLit(fn) {
+    litFn = fn;
+    // Under fitLit the axis and the drawing both belong to what is lit, so a
+    // toggle rebuilds -- but only when it actually changed the set. The first
+    // call lands while the draw-in is still running and must find nothing to
+    // change, which is what opts.lit is for.
+    if (opts.fitLit && litKey() !== drawnKey) draw(false);
+    // a series can own two paths when part of it is drawn as an inference
+    paths.forEach(function (p, i) { p.classList.toggle("dim", !fn(owner[i])); });
+    dots.forEach(function (dg, i) {
+      dg.forEach(function (c) { c.classList.toggle("dim", !fn(dotOwner[i])); });
+    });
+  }
+
+  draw(true);
+  return { redraw: draw, setLit: setLit };
+};
+
+if (!window.IntersectionObserver) document.documentElement.classList.add("no-io");
+
+function esc0(s) {
+  return String(s).replace(/[&<>]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+  });
+}
+
+addEventListener("DOMContentLoaded", function () {
+  "use strict";
+  var bar = document.getElementById("prog"), queued = false;
+  function draw() {
+    var h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.width = (h > 0 ? Math.min(1, Math.max(0, scrollY / h)) * 100 : 0) + "%";
+    queued = false;
+  }
+  addEventListener("scroll", function () {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(draw);
+  }, { passive: true });
+  addEventListener("resize", draw, { passive: true });
+  draw();
+
+  /* ---------- the section rail ----------
+     Built from the page's own headings, so it cannot list a section that is not
+     there or miss one that is, and it carries no text of its own but its label:
+     a first-level entry is an <h2>, a second-level one is an <h3> or a figure
+     title under it. That makes it identical on both language versions, which
+     share this file.
+
+     It is built here rather than in a body script because every page has one
+     and none of them should have to know that. This runs on DOMContentLoaded,
+     after the body scripts that create the index's cards, so those cards' own
+     <h3> titles are in the document by the time it looks.
+
+     Which section is current is a scroll question and not a visibility one, so
+     it is a throttled scroll listener rather than an IntersectionObserver: a
+     reader is in the last section whose heading has passed a line a third of
+     the way down, including when two headings are on screen and when none is. */
+  (function () {
+    var wrap = document.querySelector(".wrap");
+    if (!wrap) return;
+    var h2s = [].slice.call(wrap.querySelectorAll("h2"));
+    if (h2s.length < 3) return;
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function label(el) {
+      // a figure title carries a provenance badge; the rail wants the title
+      var c = el.cloneNode(true), b = c.querySelector(".prov");
+      if (b) b.remove();
+      return c.textContent.replace(/\s+/g, " ").trim();
+    }
+    var nav = document.createElement("nav");
+    nav.className = "toc";
+    nav.setAttribute("aria-label", "本页目录");
+    var root = document.createElement("ol");
+    var mark = document.createElement("div");
+    mark.className = "mark";
+    mark.setAttribute("aria-hidden", "true");
+    root.appendChild(mark);
+
+    // every candidate child, in document order, assigned to the h2 above it
+    var kids = [].slice.call(wrap.querySelectorAll("h3, .figtitle"));
+    var tops = [], subs = [], links = [];
+    h2s.forEach(function (h, i) {
+      if (!h.id) h.id = "sec" + (i + 1);
+      var num = h.querySelector(".n"), n = num ? num.textContent : "";
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.innerHTML = '<span class="n">' + esc0(n) + "</span>" + esc0(label(h).slice(n.length));
+      li.appendChild(a);
+      var box = document.createElement("div");
+      box.className = "sub";
+      var ol = document.createElement("ol");
+      box.appendChild(ol);
+      li.appendChild(box);
+      root.appendChild(li);
+      tops.push({ h: h, li: li, a: a, ol: ol });
+      links.push(a);
+      subs.push(ol);
+    });
+    function ownerOf(el) {
+      var k = -1;
+      for (var i = 0; i < h2s.length; i++) {
+        if (h2s[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) k = i;
+      }
+      return k;
+    }
+    kids.forEach(function (el, i) {
+      var k = ownerOf(el);
+      if (k < 0) return;                       // the abstract, above every section
+      var card = el.closest ? el.closest("a.card") : null;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      if (card) { a.href = card.getAttribute("href"); a.className = "out"; }
+      else {
+        var host = el.classList.contains("figtitle")
+          ? (el.closest ? el.closest("figure") : null) : el;
+        if (host && !host.id) host.id = "sub" + (i + 1);
+        a.href = "#" + (host ? host.id : tops[k].h.id);
+      }
+      a.textContent = label(el);
+      a.title = a.textContent;
+      li.appendChild(a);
+      subs[k].appendChild(li);
+    });
+
+    nav.appendChild(root);
+    document.body.appendChild(nav);
+
+    var cur = -1, timer = 0;
+    function place() {
+      var a = links[cur];
+      mark.style.top = a.offsetTop + "px";
+      mark.style.height = a.offsetHeight + "px";
+    }
+    function open(k) {
+      tops.forEach(function (t, i) { t.li.classList.toggle("on", i === k); });
+      // the open list changes where every entry below it sits, and the mark
+      // points at one of them, so it has to follow the layout rather than be
+      // placed once against a layout that is still moving
+      place();
+      if (reduce) return;
+      cancelAnimationFrame(timer);
+      var until = Date.now() + 380;
+      (function step() {
+        place();
+        if (Date.now() < until) timer = requestAnimationFrame(step);
+      })();
+    }
+    function sync() {
+      var line = innerHeight * 0.3, k = 0;
+      for (var i = 0; i < h2s.length; i++) {
+        if (h2s[i].getBoundingClientRect().top <= line) k = i;
+      }
+      if (k === cur) return;
+      cur = k;
+      links.forEach(function (a, i) {
+        if (i === k) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+      open(k);
+    }
+    var q = false;
+    addEventListener("scroll", function () {
+      if (q) return;
+      q = true;
+      requestAnimationFrame(function () { q = false; sync(); });
+    }, { passive: true });
+    // a resize re-wraps labels, which moves every entry under the one that grew
+    addEventListener("resize", function () { if (cur >= 0) place(); }, { passive: true });
+    sync();
+  })();
+
+  // The section numbers settle in with their heading. Headings come from the
+  // source and are never redrawn, so one observer over them cannot miss a node
+  // the way it would for anything a figure rebuilds -- and the start state is
+  // dim rather than hidden, so a paused observer costs a shade of colour and
+  // not the number itself.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!window.IntersectionObserver) return;
+  var ns = document.querySelectorAll("h2 .n");
+  Array.prototype.forEach.call(ns, function (n) { n.classList.add("nq"); });
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("nin");
+      io.unobserve(e.target);
+    });
+  }, { threshold: 1 });
+  Array.prototype.forEach.call(ns, function (n) { io.observe(n); });
+});
+</script>
+<div class="wrap">
+<header class="top">
+  <div class="kicker">CUDA · Hopper、Blackwell、Ada、Ampere · 一次租机横扫 · 对照 2× RX 7900 XT 来读</div>
+  <h1>一个计数器给五种它从未拟合过的场景排了序，<br>却一个都没算准大小</h1>
+  <p class="sub">一夜租七台机器，以及一张卡的内存控制器忙碌比例能预测什么</p>
+  <p class="lede"><code>Qwen3-8B</code> 的一步解码让单卡的内存控制器 <strong>87 %</strong> 的时间在忙；
+  <code>gemma-4-26B-A4B</code> 是 <strong>38 %</strong>。在一张卡上读出这个数，它就能说出这两个模型里哪一个
+  从更快的卡、第二张卡、更快的显存中赚得更多，又在更慢的显存上亏得更多 —— 而且是在它从没被测过的硬件上。
+  它说不出多少；一份在数据之前写下的预测记下了这一点。</p>
+  <div class="meta">
+    <span class="chip k-hardware" title="硬件" style="--i:0">一张 <b>H100</b>、<b>H200</b>、<b>B300</b> 与 <b>RTX PRO 6000</b> · TP=1，租用</span>
+    <span class="chip k-hardware" title="硬件" style="--i:1">2× <b>H100</b> 与 2× <b>RTX PRO 6000</b> · TP=2，租用</span>
+    <span class="chip k-hardware" title="硬件" style="--i:2">对照 2× <b>RX 7900 XT</b> · gfx1100</span>
+    <span class="chip k-stack" title="软件栈" style="--i:3">vLLM 0.28.0 · CUDA 13.0</span>
+    <span class="chip k-scale" title="规模" style="--i:4"><b>586</b> 次阶梯测量 · <b>385</b> 个集合通信格 · <b>$29.94</b></span>
+    <span class="chip k-date" title="日期" style="--i:5">实测 <b>2026-09-03</b></span>
+  </div>
+</header>
+
+<div class="abstract"> <h3>摘要</h3>
+<p>这个仓库里的每一份投影，都出自桌子底下的两张 Radeon 和 Colab 给什么用什么。这篇讲的是 <strong>$29.94</strong>
+的租机时间添了什么：解码与预填充阶梯上的六种机器配置 —— H100、H200、B300、RTX PRO 6000、两张 H100、两张 PRO 6000
+—— 集合通信上的八种，<strong>586 次阶梯测量、385 个集合通信格、0 个错误</strong>，以及本仓库第一次超过 32&nbsp;000
+的上下文。两个平台对照先行：在同一平台租下的一张 A100 和一张 L4，把 Colab 已入库的行复现到 <strong>0.07&nbsp;%</strong>
+和 0.9&nbsp;%，正是这一点让下面所有的比值能被当作卡与卡的差别来读。</p>
+<p><strong>结论是一个计数器。</strong><code>campaign-2026-09-02d</code> 发现第二张 Radeon 值多少，是由
+<code>mem_busy</code> 决定的 —— 单卡上内存控制器的忙碌比例：bf16 的 8B 上 90&nbsp;% 对应 1.70&times;，w4a16 的 12B 上
+56&nbsp;% 对应 1.20&times;。那是一台机器上的五个格子。现在它在五种场景里给出了同样的次序 —— 一种在这一对卡上，四种对着同一张 H100 基线：
+H200，B300，PRO 6000 —— 方向相反，因为它的显存更慢 —— 以及 NVLink 上的第二张 H100，
+对读得最少的那个模型只值 <strong>2.9&nbsp;%</strong>。<strong>它预测不了幅度。</strong>H200 那一场之前提交了一份预测：
+两端的次序回来是对的，跨度回来却接近两倍，而且吃显存最重的那一端超过了显存时钟比本身 —— 所用的公式根本给不出这个值。
+只是序数，不是基数，并且已如此记录在案。</p>
+<p><strong>线路不是那条轴，现在这一点是测出来的。</strong>八种配置上，集合通信的带宽端跨 <strong>62&times;</strong>，
+延迟端跨 <strong>3.2&times;</strong>；batch-1 解码归约的是一行，落在延迟端。NVLink 在两张卡时值 20&nbsp;%，在四张卡时值
+171&nbsp;%。另外落下三件事：四张卡在没有任何 flag 的情况下选了三种 attention 后端；$7.10/h 的 B300 在 MoE 上输给 $3.95/h 的
+H100，在 8B 上赢 66&nbsp;%；过了 32&nbsp;000，让解码曲线变平的是有界的 attention 窗口，而不是循环状态 —— 这推翻了跑之前
+写进 runner 里的一条预测。</p> </div>
+
+<h2><span class="n">1</span>先做两个对照，再谈任何比值</h2>
+
+<p>下面每一个数，都是把在 Modal 上租的卡除以 Colab 在八月测的 A100 或 L4。这两个平台之间的差距在被测量之前只是一个假设，
+所以同样两张卡在同一平台上租了下来，用 Colab 用过的上下文预算和阶梯跑同样的模型。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 同一张 A100，两个平台，三次会话
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="tab ctrl" id="ctrl"></div>
+    <div class="barunit" id="ctrlnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> <code>gemma-4-12B</code> 在一张 A100-SXM4-80GB 上四个档位的解码：Colab 于 2026-08-29 与 2026-08-30，
+    Modal 于 2026-09-03。Modal 这次在每一档都落在 Colab 第二次的 <strong>0.07&nbsp;%</strong> 之内，比 Colab 自己两次会话
+    之间还要近。这个区间不是看了答案之后定的：那四行 Colab 数据从八月起就已入库。L4 对照在一张不进入任何结论的卡上说了
+    同样的话：32&nbsp;000 处 25.29 tok/s，对 Colab 的 25.07 与 25.17。
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>一个计数器给五种场景排序</h2>
+
+<p><code>mem_busy_pct</code> 是采样中显卡内存控制器处于忙碌的那部分比例，由同一个采样器在每台机器上读出
+（<code>harness/telemetry.py</code>：Radeon 上是 amdgpu 的 <code>mem_busy_percent</code>，CUDA 上是 NVML 的
+<code>utilization.memory</code>）。它是忙碌比例，不是实际达到的带宽 —— harness 在两个平台上都把实际带宽记为不可得，
+并说明了原因 —— 2026-09-02 它在一张 Radeon 上、两个模型上被读出，并且发现它决定了第二张卡值多少。现在是五种场景，
+每一种里模型固定，比较这个计数器区间的两端：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 五种场景，两个模型，一个次序
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="set" id="set"></div>
+    <div class="barunit" id="setnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 每一行是一个模型在该场景下 500 档的解码速率，除以同一模型在基准机器上的值；百分数是基准机器同一档上的
+    <code>mem_busy</code>。这一对卡自己的场景是 2026-09-02d，它的两个模型是 bf16 的 8B 和 w4a16 的 12B —— 那场 campaign
+    跑的就是它们；四种租机场景比较的是 H100 自身区间的两端，87&nbsp;% 的 <code>Qwen3-8B</code> 和 38&nbsp;% 的 MoE。
+    在每一种场景里，吃显存重的那一端离 1.0 都比吃算力重的那一端更远，不论场景往哪个方向走 —— 包括显存更慢的 PRO 6000，
+    在那上面从更多带宽赚得最多的模型，也在更少带宽上亏得最多。最后一行读两遍：<code>mem_busy</code> 38&nbsp;% 时，
+    NVLink 上的第二张 H100 值 2.9&nbsp;%。
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>却一个都没算准大小</h2>
+
+<p>跨五种场景的一个次序，在它预测出什么之前只是相关。H200 就是一张 H100 换上更快的显存 —— 同样的计算能力、同样的
+700&nbsp;W 功耗上限、同样的 SM 时钟上限 —— 所以它是这个计数器能得到的最干净的检验：如果一步解码把 <code>f</code>
+比例的时间花在等显存上、其余花在别的事上，那么把显存速度乘以 <code>r</code>，得到 <code>1 / ((1 &minus; f) + f / r)</code>。
+<code>f</code> 取 H100 上的 <code>mem_busy</code>，<code>r</code> 取两张卡<em>实测</em>的最高显存时钟 —— 2&nbsp;619 对
+3&nbsp;201&nbsp;MHz，即 1.222；厂商的带宽数字没有用，因为本仓库没有测过它们。六个预测在跑之前就提交了。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 预测，以及回来的结果
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="tab pred" id="pred"></div>
+    <div class="barunit" id="prednote"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 用上面的公式预测的 H200/H100，对照实测比值 —— 取两台机器上两轮都吻合在 1&nbsp;% 之内的最浅一档，
+    这条规则在看数字之前就定下了；<code>gemma-4-31B</code> 用 2&nbsp;000，因为它在 H200 上 500 档的两轮相差 13&nbsp;%。
+    两端的次序是对的，而且分得很开。跨度不对：实测 <strong>0.210</strong> 对预测的 <strong>0.114</strong>，而且
+    <code>Qwen3-8B</code> 的 1.254&times; 超过了 <code>r</code> 本身 —— 对任何 <code>f &le; 1</code>，那个公式都给不出这个值，
+    所以错的是 <code>f</code> 而不是 <code>r</code>，而且不是差一个常数倍。这个计数器能排序，不能定量。一个独立的旁证说明机制是对的、只是算术不对：H200 上六个模型的 <code>mem_busy</code>
+    全都低于 H100，没有一个交叉 —— 更快的显存做同样的活，让控制器忙碌的时间更短，这正是模型说应该发生的事，
+    而它不是拟合出来的。
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>为什么第二张卡的价值不在线路上</h2>
+
+<p>a100 那篇文章的第 9 节原来说，第二张 Radeon 的带宽花在了互连上。<code>allreduce-2026-09-02</code> 用这一对卡上的一次测量
+撤回了它：graph 回放下每次集合通信 16.6&ndash;21.5&nbsp;&micro;s，约一步的十分之一，一个被第二张卡帮到 1.70&times; 的模型和一个
+只帮到 1.20&times; 的模型付的是同样的价钱。同一套扫描在七种 NVIDIA 配置上跑出来，给这次撤回配上了机制。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 一次 all-reduce，两端，八种配置
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="coll" id="coll"></div>
+    <div class="barunit" id="collnote"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> hidden 4&nbsp;096（<code>Qwen3-8B</code> 的一行）处的 <code>t_graph_us</code>：一个 token，即一步解码；
+    以及 16&nbsp;384 个 token，即一次预填充。所有 NVIDIA 运行都是 NCCL 2.29.7，Radeon 上是 RCCL 2.27.7，同一个脚本。
+    八种配置上带宽端跨 <strong>62&times;</strong>，延迟端跨 <strong>3.2&times;</strong>；只看双卡，延迟端跨
+    <strong>1.5&times;</strong>，对面仍是同样的 62&times;。batch-1 解码归约的是一行，落在延迟端 —— 在那里一对 B300 只比这一对
+    Radeon 快 1.2&times;，而在另一端快 62&times;。这就是第二张卡的价值跟着内存控制器走、而不跟着互连走的原因：互连的
+    区间是真实的，推理从来不曾进入它。<em>NVLink 是为第四张卡准备的。</em>加上第三、第四张卡，H100 一步解码变成
+    &times;1.22、带宽端 &times;1.30；PCIe 上没有 NVLink 的 PRO 6000 是 &times;2.71 与 &times;2.99。没有 NVLink 的两张卡比有的贵
+    20&nbsp;%；四张卡贵 171&nbsp;%。而四张 H200 与四张 H100 在两端都吻合在 1&nbsp;% 之内，所以第 3 节里 H200 阶梯上的优势
+    没有一分是从线路上来的。
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>四张卡，三种 attention 后端，谁也没要过</h2>
+
+<p>同一个 vLLM，同一条命令行，整场横扫里没有任何后端 flag —— 而 runner 从每一份 serve 日志里读出后端，而不是信一张表，
+这是下面这些事能被知道的唯一原因。vLLM 0.28 根本没有指定解码器后端的 flag（<code>attention_backend</code> 只存在于
+<code>config/speculative.py</code>，从已安装的包里读出来），所以能把卡和内核分开的对照并不存在。</p>
+
+<figure class="rv" id="fig5">
+  <div class="figbox">
+    <div class="figtitle">图 5 · 每张卡上每个模型拿到的后端
+      <span class="prov yes">从每份 serve 日志读出</span></div>
+    <div class="tab be" id="be"></div>
+    <div class="set" id="pro"></div>
+    <div class="barunit" id="benote"></div>
+  </div>
+  <figcaption>
+    <b>图 5.</b> 每个（模型，卡）的解码器 attention 后端，取自各条臂自己的 serve 日志，以及每个 checkpoint 落到的 W4A16 内核。
+    两张 Hopper 全部走 FlashAttention；B300 走 FlashInfer；PRO 6000 把 gemma-4 送到 Triton、把 Qwen 和 Muse 的
+    checkpoint 送到 FlashAttention。因此本文里每一个跨机器比较都带着一项后端因素。在 PRO 6000 内部这个分裂很干净，同一张卡、
+    同一场会话：三条 Triton 臂在 500 到 128&nbsp;000 token 之间丢掉 39&ndash;52&nbsp;% 的解码速率，两条 FlashAttention 臂丢
+    13&ndash;28&nbsp;%。后端和模型混在一起，所以这不是归因 —— 但它是一张卡上的一场会话，而跨机器的版本不是。
+  </figcaption>
+</figure>
+
+<h2><span class="n">6</span>最新的卡不是最快的卡</h2>
+
+<figure class="rv" id="fig6">
+  <div class="figbox">
+    <div class="figtitle">图 6 · 一张 B300 对一张 H100，以及一美元买到什么
+      <span class="prov typed">价格是价目表，不是测量</span></div>
+    <div class="tab price" id="price"></div>
+    <div class="barunit" id="pricenote"></div>
+  </div>
+  <figcaption>
+    <b>图 6.</b> 500 档的解码，各一张卡。$7.10/h 的 B300 在 <code>Qwen3-8B</code> 上比 $3.95/h 的 H100 快
+    <strong>66&nbsp;%</strong>，在 <code>gemma-4-12B</code> 上快 4&nbsp;%，在 <code>gemma-4-26B-A4B</code> 上<em>输了</em>
+    —— 次序与计数器的一样，因为 B300 的优势是带宽，而 MoE 读得最少。按美元算它三个都输。B300 还换了 attention 后端，
+    所以它那一列里机器和后端一起在动；价格是 Modal 在 2026-09-03 的价目表，是本页上仅有的手打数字。
+  </figcaption>
+</figure>
+
+<h2><span class="n">7</span>过了 32 000：什么让曲线变平</h2>
+
+<p>直到这一夜，本仓库里的每一条阶梯都停在 32&nbsp;000 token；H100 把五个模型带到了 128&nbsp;000。跑之前有一条预测写进了
+runner：gemma-4 读的 KV cache 无界增长，<code>Qwen3.8-27B</code> 带的循环状态根本不增长，而
+<code>Muse-Glimmer-30B</code> 通过一个 2&nbsp;048 token 的窗口做 attention —— 一项先增长、然后停住的开销 —— 所以它应该落在
+两者之间。</p>
+
+<figure class="rv" id="fig7">
+  <div class="figbox">
+    <div class="figtitle">图 7 · 一张 H100 上五个模型到 128 000 token
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="deepkey"></div>
+    <svg class="chart" id="deep" role="img"></svg>
+    <div class="barunit" id="deepnote"></div>
+  </div>
+  <figcaption>
+    <b>图 7.</b> H100 上解码速率对上下文，十六档，每格两轮，横轴取对数。它落在了两者之下。<code>Muse-Glimmer-30B</code>
+    在 128&nbsp;000 处只丢掉 500 token 速率的 <strong>4.8&nbsp;%</strong>；hybrid SSM 丢掉 <strong>21.8&nbsp;%</strong>，
+    和稠密 31B 的 22.0&nbsp;% 一样远。带循环状态的模型不是平的那个。让曲线变平的是有界的 attention 窗口，不是固定大小的状态
+    —— SSM 仍然带着开销随深度增长的 attention 层。同样的次序出现在一个独立的量上：32&nbsp;000 处从 A100 换到这张 H100，
+    对 Muse-Glimmer 值 1.36&times;，对 SSM 值 1.45&times;，对三个 gemma 模型值 1.90&ndash;2.16&times;。一个混淆因素，
+    而且它反着结论走：Muse-Glimmer 是唯一一个 W4A16 内核随机器变化的模型 —— Hopper 上是 Machete，别处是 Marlin —— 而
+    Machete 在 Hopper 上是两者中更快的那个。
+  </figcaption>
+</figure>
+
+<h2><span class="n">8</span>尚未确立的</h2>
+
+<h3>计数器的幅度</h3>
+<p>第 3 节就是全部：<code>1 / ((1 &minus; f) + f / r)</code> 这个公式，用一张卡上读出的 <code>f</code>，把跨度低估了一半，
+而且根本给不出吃显存重的那一端。要么有效带宽比超过显存时钟比 —— 厂商的数字给出 1.43，而在那个 <code>r</code> 下同一公式
+把每一行都高估 —— 要么 H200 与 H100 在某个预测假设掉的地方不同。这里没有任何东西能把这两者分开。</p>
+
+<h3>后端对照</h3>
+<p>图 6 里 B300 那一列，以及四张卡上每一个 gemma-4 的比较，都同时带着后端和卡，而 vLLM 0.28 没有办法把解码器的后端固定住。
+没有测。</p>
+
+<h3>两种配置，一个受限于算术，一个受限于预算</h3>
+<p><code>gemma-4-26B-A4B</code> 在 TP=4 上跑不起来：<em>CompressedTensors WNA16 MoE with static group scales requires the
+MoE intermediate size per tensor-parallel partition to be divisible by group_size (32)</em> —— 这是 checkpoint 的性质，
+不是没重试。另外四个模型的 TP=4，以及 Muse-Glimmer 在租来的双卡上的 TP=2，没有买。</p>
+
+<h3>实际达到的带宽，以及两个厂商上的同一个计数器</h3>
+<p><code>mem_busy</code> 是一个忙碌比例。某个绝对速率下的 87&nbsp;% 和另一个速率下的 87&nbsp;% 不是一回事，而 harness 在两个
+平台上都把实际带宽记为不可得。计数器能跨机器；它所占比例的那个基数不能。它其实也是两个计数器：Radeon 上是 amdgpu 的
+<code>mem_busy_percent</code>，CUDA 卡上是 NVML 的 <code>utilization.memory</code>，同一个采样器读出，却由两个驱动各自定义。
+同样两个模型在一边落在 90/56、另一边落在 87/53，是两者度量相近的证据，不是证明。</p>
+
+<h3>五种场景里有四种共用一条基线</h3>
+<p>H200、B300、PRO 6000 和第二张 H100 这四行除的都是同一场 H100 会话，那场会话若有偏差，四行会一起动。两个平台对照把那场会话
+对 Colab 的差距框在 0.07&nbsp;% 之内，而这一对卡那一行完全在另一台机器上；这五种是对这一对卡结论的一次独立检验，不是五次。</p>
+
+<h3>被丢弃的预填充档位在哪里</h3>
+<p>租用卡上有二十三个预填充格子没过重复性门槛，全部在 500 到 2&nbsp;000 token —— 冷引擎的头几次请求。解码也有两个格子没过，都在 H200 上：
+<code>gemma-4-26B-A4B</code> 的 1&nbsp;000 档和 <code>gemma-4-31B</code> 的 500 档。上面没有任何结论压在这些格子上。</p>
+
+<h2><span class="n">9</span>此后有什么变化</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-09-03 · 两个区间在发表前写错了，闸门把两个都抓了出来</span>
+  第 4 节的延迟区间最初对整套配置写成了 1.8&times; —— 那只是双卡的数，PRO 6000 &times;4 的 39.10&nbsp;&micro;s 把整套推到
+  3.2&times;。随后双卡的数也写成了 1.8&times;，那来自从 Radeon 的 hidden-2816 行读出的 21.49&nbsp;&micro;s，而其余每个数都是
+  hidden 4096；在 4096 上双卡跨 1.5&times;。两处更正都在 <code>benchmarks/cuda-modal/README.md</code> 里，找出它们的正是
+  从数据行重算这些数的那道检查。
+</div>
+
+<div class="foot-note">
+  <p><strong>全部材料。</strong>各 campaign 目录、runner、每一份 serve 日志、集合通信扫描，以及本文所浓缩的那份文档，都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-modal/README.md"><code>benchmarks/cuda-modal/</code></a>。
+  预测和它的裁决在同一个文件里：
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"><code>cuda-h200/campaign-2026-09-03/PREDICTION.md</code></a>，
+  裁决附在预测之下而不是替换它。本页上每一个数都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从已入库的数据行重算，两个价目表数字除外，它们已标明。</p>
+  <p>这个计数器本身，以及让它值得一测的那一对卡上的五个格子，在
+  <a href="a100-vs-two-radeons.zh.html">另一篇文章</a>的第 9 节。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">{
+ "_what": "Every figure in mem-busy-orders-five-settings.html. Recomputed from benchmarks/decode.jsonl, benchmarks/prefill.jsonl, the campaign files' telemetry and benchmarks/allreduce-2026-09-03/ by site/src/genfig-modal.py; edit the data, not this. The only typed numbers are two list prices.",
+ "fig1": {
+  "settings": [
+   {
+    "id": "radeon2",
+    "what": "second RX 7900 XT",
+    "kind": "second card, no P2P",
+    "date": "2026-09-02",
+    "base": "one RX 7900 XT",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 90,
+      "ratio": 1.6958983123264257,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-12B-it",
+      "cfg": "G12",
+      "mem_busy": 56.5,
+      "ratio": 1.1982160555004955,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "h200",
+    "what": "H200 against H100",
+    "kind": "faster memory, same compute",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.2544997476497917,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 1.0440972558054606,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "b300",
+    "what": "B300 against H100",
+    "kind": "a newer card",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.660277887186682,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 0.9946077668109077,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   },
+   {
+    "id": "pro6000",
+    "what": "RTX PRO 6000 against H100",
+    "kind": "slower memory",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 0.5543830460478573,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 0.8273218914908761,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "slower"
+   },
+   {
+    "id": "h100x2",
+    "what": "second H100",
+    "kind": "second card, NVLink",
+    "date": "2026-09-03",
+    "base": "one H100",
+    "models": [
+     {
+      "model": "Qwen3-8B",
+      "cfg": "B8",
+      "mem_busy": 87,
+      "ratio": 1.483924080580847,
+      "ctx": 500
+     },
+     {
+      "model": "gemma-4-26B-A4B",
+      "cfg": "G26A4B",
+      "mem_busy": 37.5,
+      "ratio": 1.0292811382220313,
+      "ctx": 500
+     }
+    ],
+    "ordered": true,
+    "direction": "faster"
+   }
+  ],
+  "ends": {
+   "hi": "Qwen3-8B",
+   "lo": "gemma-4-26B-A4B"
+  },
+  "mem_busy_h100": {
+   "Qwen3-8B": 87,
+   "gemma-4-31B-it": 67,
+   "Qwen3.8-27B": 65,
+   "gemma-4-12B-it": 53,
+   "Muse-Glimmer-30B": 51,
+   "gemma-4-26B-A4B": 37.5
+  }
+ },
+ "fig2": {
+  "r_clock": 1.2222222222222223,
+  "mclk_h100": 2619.0,
+  "mclk_h200": 3201.0,
+  "rows": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "mem_busy_h100": 87,
+    "mem_busy_h200": 76,
+    "predicted": 1.187904967602592,
+    "measured": 1.2544997476497917,
+    "ctx": 500
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "mem_busy_h100": 67,
+    "mem_busy_h200": 53,
+    "predicted": 1.1387163561076605,
+    "measured": 1.1204863758530685,
+    "ctx": 2000
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "mem_busy_h100": 65,
+    "mem_busy_h200": 51.5,
+    "predicted": 1.1340206185567012,
+    "measured": 1.123938709759253,
+    "ctx": 500
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "mem_busy_h100": 53,
+    "mem_busy_h200": 39,
+    "predicted": 1.1066398390342054,
+    "measured": 1.0721673363903912,
+    "ctx": 500
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "mem_busy_h100": 51,
+    "mem_busy_h200": 39,
+    "predicted": 1.1022044088176353,
+    "measured": 1.0889035897663502,
+    "ctx": 500
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "mem_busy_h100": 37.5,
+    "mem_busy_h200": 27.5,
+    "predicted": 1.07421875,
+    "measured": 1.0440972558054606,
+    "ctx": 500
+   }
+  ],
+  "spread_predicted": 0.1136862176025919,
+  "spread_measured": 0.21040249184433102,
+  "ends_ordered": true,
+  "exceed_r": [
+   "B8"
+  ],
+  "mem_busy_falls_on_every_model": true,
+  "prediction_file": "benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"
+ },
+ "fig3": {
+  "rows": [
+   {
+    "label": "H100 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 12.061,
+    "n16384_us": 474.492,
+    "source": "benchmarks/allreduce-2026-09-03/H100-80GB-HBM3-x2-results.jsonl",
+    "ratio": 39.34101649946108
+   },
+   {
+    "label": "H100 ×4",
+    "link": "NVLink",
+    "cards": 4,
+    "n1_us": 14.764,
+    "n16384_us": 616.73,
+    "source": "benchmarks/allreduce-2026-09-03/H100-80GB-HBM3-x4-results.jsonl",
+    "ratio": 41.772554863180716
+   },
+   {
+    "label": "H200 ×4",
+    "link": "NVLink",
+    "cards": 4,
+    "n1_us": 14.97,
+    "n16384_us": 615.942,
+    "source": "benchmarks/allreduce-2026-09-03/H200-143GB-HBM3e-x4-results.jsonl",
+    "ratio": 41.14509018036072
+   },
+   {
+    "label": "B300 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 14.236,
+    "n16384_us": 290.493,
+    "source": "benchmarks/allreduce-2026-09-03/B300-SXM6-x2-results.jsonl",
+    "ratio": 20.405521213824105
+   },
+   {
+    "label": "A100 ×2",
+    "link": "NVLink",
+    "cards": 2,
+    "n1_us": 17.739,
+    "n16384_us": 759.415,
+    "source": "benchmarks/allreduce-2026-09-03/A100-SXM4-80GB-x2-results.jsonl",
+    "ratio": 42.81047409662325
+   },
+   {
+    "label": "RTX PRO 6000 ×2",
+    "link": "PCIe, no NVLink",
+    "cards": 2,
+    "n1_us": 14.444,
+    "n16384_us": 3775.238,
+    "source": "benchmarks/allreduce-2026-09-03/RTX-PRO-6000-Blackwell-x2-results.jsonl",
+    "ratio": 261.37067294378284
+   },
+   {
+    "label": "RTX PRO 6000 ×4",
+    "link": "PCIe, no NVLink",
+    "cards": 4,
+    "n1_us": 39.104,
+    "n16384_us": 11294.213,
+    "source": "benchmarks/allreduce-2026-09-03/RTX-PRO-6000-Blackwell-x4-results.jsonl",
+    "ratio": 288.8250051145663
+   },
+   {
+    "label": "RX 7900 XT ×2",
+    "link": "PCIe 3.0, no P2P",
+    "cards": 2,
+    "n1_us": 16.649,
+    "n16384_us": 18050.198,
+    "source": "benchmarks/allreduce-2026-09-02/results.jsonl",
+    "ratio": 1084.1610907562015
+   }
+  ],
+  "hidden": 4096,
+  "bandwidth_range": 62.136430137731374,
+  "latency_range": 3.242185556753171,
+  "latency_range_pairs": 1.4707735676975375,
+  "fourth_card": [
+   {
+    "family": "H100",
+    "link": "NVLink",
+    "n1": 1.2241107702512228,
+    "n16384": 1.2997690161267208
+   },
+   {
+    "family": "RTX PRO 6000",
+    "link": "PCIe",
+    "n1": 2.707283301024647,
+    "n16384": 2.9916558903041346
+   }
+  ],
+  "h200_vs_h100_x4": {
+   "n1": 1.0139528583039827,
+   "n16384": 0.9987222933860846
+  }
+ },
+ "fig4": {
+  "machines": [
+   "H100",
+   "H200",
+   "B300",
+   "RTX PRO 6000"
+  ],
+  "rows": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": null
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     }
+    ]
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": null
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MacheteLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MacheteLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "cells": [
+     {
+      "machine": "H100",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "H200",
+      "attn_backend": "FLASH_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "B300",
+      "attn_backend": "FLASHINFER",
+      "quant_kernel": "MarlinLinearKernel"
+     },
+     {
+      "machine": "RTX PRO 6000",
+      "attn_backend": "TRITON_ATTN",
+      "quant_kernel": "MarlinLinearKernel"
+     }
+    ]
+   }
+  ],
+  "distinct": [
+   "FLASHINFER",
+   "FLASH_ATTN",
+   "TRITON_ATTN"
+  ],
+  "pro6000": [
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -51.967643024612855,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -50.996592920887515,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "attn_backend": "TRITON_ATTN",
+    "change_pct": -38.99870794461457,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "attn_backend": "FLASH_ATTN",
+    "change_pct": -28.15530181714895,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   },
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "attn_backend": "FLASH_ATTN",
+    "change_pct": -13.075655998899393,
+    "from_ctx": 500,
+    "to_ctx": 128000
+   }
+  ],
+  "pro6000_split": {
+   "triton_worst": -51.967643024612855,
+   "triton_best": -38.99870794461457,
+   "flash_worst": -28.15530181714895,
+   "flash_best": -13.075655998899393
+  }
+ },
+ "fig5": {
+  "machine": "H100",
+  "rows": [
+   {
+    "cfg": "MG30",
+    "model": "Muse-Glimmer-30B",
+    "structure": "attention through a 2 048-token window",
+    "change_pct": -4.82599952138848,
+    "a100_to_h100_at_32k": 1.3617406484866486,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 83.36615
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 83.3496
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 83.22704999999999
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 82.5487
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 83.0353
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 82.89125
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 82.6925
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 82.18975
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.59055000000001
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.49690000000001
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 82.0589
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 81.41225
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 81.17375
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 80.8612
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 80.40385
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 79.3429
+     }
+    ]
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "structure": "sliding 1 024, one global layer in six",
+    "change_pct": -11.901821314368732,
+    "a100_to_h100_at_32k": 2.1649741009728714,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 160.60105
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 159.6917
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 159.04145
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 159.0627
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 158.489
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 157.89285
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 157.34735
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 156.40195
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 156.1739
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 154.9973
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 154.24975
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 152.05615
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 149.5444
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 147.37405
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 144.8408
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 141.4866
+     }
+    ]
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "structure": "the same, mixture of experts",
+    "change_pct": -17.861704670001398,
+    "a100_to_h100_at_32k": 2.052774938169827,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 230.56310000000002
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 228.73325
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 228.50815
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 227.46859999999998
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 227.28035
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 226.5915
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 220.30115
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 223.1518
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 222.2603
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 220.7821
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 217.8764
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 209.5298
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 205.56459999999998
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 198.9998
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 197.02925
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 189.38060000000002
+     }
+    ]
+   },
+   {
+    "cfg": "Q38",
+    "model": "Qwen3.8-27B",
+    "structure": "hybrid SSM: recurrent state plus attention layers",
+    "change_pct": -21.766204114766985,
+    "a100_to_h100_at_32k": 1.4453581060455867,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 98.5475
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 98.45830000000001
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 98.2021
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 97.7728
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 97.36269999999999
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 97.03694999999999
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 96.08744999999999
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 95.25915
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 94.30940000000001
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 93.34125
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 91.858
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 89.14385
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 86.2124
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 83.75999999999999
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 81.43895
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 77.09745000000001
+     }
+    ]
+   },
+   {
+    "cfg": "G31",
+    "model": "gemma-4-31B-it",
+    "structure": "sliding 1 024, one global layer in six",
+    "change_pct": -22.027636307772514,
+    "a100_to_h100_at_32k": 1.90401693076778,
+    "points": [
+     {
+      "ctx": 500,
+      "tok_s": 85.9232
+     },
+     {
+      "ctx": 1000,
+      "tok_s": 85.3565
+     },
+     {
+      "ctx": 2000,
+      "tok_s": 85.18515
+     },
+     {
+      "ctx": 4000,
+      "tok_s": 85.87119999999999
+     },
+     {
+      "ctx": 6000,
+      "tok_s": 85.44975
+     },
+     {
+      "ctx": 8000,
+      "tok_s": 85.10794999999999
+     },
+     {
+      "ctx": 12000,
+      "tok_s": 84.33935
+     },
+     {
+      "ctx": 16000,
+      "tok_s": 83.63499999999999
+     },
+     {
+      "ctx": 20000,
+      "tok_s": 82.93764999999999
+     },
+     {
+      "ctx": 24000,
+      "tok_s": 82.09085
+     },
+     {
+      "ctx": 32000,
+      "tok_s": 80.74555000000001
+     },
+     {
+      "ctx": 48000,
+      "tok_s": 78.2124
+     },
+     {
+      "ctx": 64000,
+      "tok_s": 75.5648
+     },
+     {
+      "ctx": 80000,
+      "tok_s": 73.2882
+     },
+     {
+      "ctx": 96000,
+      "tok_s": 69.68225000000001
+     },
+     {
+      "ctx": 128000,
+      "tok_s": 66.99635
+     }
+    ]
+   }
+  ],
+  "prediction": "Muse-Glimmer was written down, before the run, as landing between the attention models and the SSM; it landed flatter than both",
+  "prediction_file": "benchmarks/cuda-h100/campaign-2026-09-03b/run.py",
+  "ssm_falls_as_far_as_dense": true
+ },
+ "fig6": {
+  "a100": [
+   {
+    "ctx": 500,
+    "modal": 114.95304999999999,
+    "colab_0829": 115.0498,
+    "colab_0830": 114.9045,
+    "delta_pct": 0.04225247923275166
+   },
+   {
+    "ctx": 8000,
+    "modal": 94.00104999999999,
+    "colab_0829": 94.17445,
+    "colab_0830": 94.0204,
+    "delta_pct": -0.020580639946232715
+   },
+   {
+    "ctx": 16000,
+    "modal": 83.04785000000001,
+    "colab_0829": 83.2601,
+    "colab_0830": 83.09375,
+    "delta_pct": -0.05523881158329136
+   },
+   {
+    "ctx": 32000,
+    "modal": 71.2967,
+    "colab_0829": 71.25775,
+    "colab_0830": 71.24785,
+    "delta_pct": 0.06856347244161842
+   }
+  ],
+  "worst_delta_pct": 0.06856347244161842,
+  "l4": {
+   "modal": 25.288800000000002,
+   "colab": [
+    25.07405,
+    25.16985
+   ]
+  },
+  "price": [
+   {
+    "cfg": "B8",
+    "model": "Qwen3-8B",
+    "mem_busy_h100": 87,
+    "h100": 150.68345,
+    "b300": 250.1764,
+    "ratio": 1.660277887186682,
+    "per_dollar": 0.9236757259700553
+   },
+   {
+    "cfg": "G12",
+    "model": "gemma-4-12B-it",
+    "mem_busy_h100": 53,
+    "h100": 160.60105,
+    "b300": 166.49445,
+    "ratio": 1.03669589955981,
+    "per_dollar": 0.5767533525720069
+   },
+   {
+    "cfg": "G26A4B",
+    "model": "gemma-4-26B-A4B",
+    "mem_busy_h100": 37.5,
+    "h100": 230.56310000000002,
+    "b300": 229.31985,
+    "ratio": 0.9946077668109077,
+    "per_dollar": 0.5533381237891669
+   }
+  ],
+  "price_usd_per_card_hour": {
+   "H100": 3.95,
+   "B300": 7.1
+  },
+  "price_source": "Modal list prices, 2026-09-03, typed"
+ }
+}</script>
+<script type="application/json" id="strings">{
+ "ctrlH": ["档位", "Colab 08-29", "Colab 08-30", "Modal 09-03", "Modal − Colab 08-30"],
+ "ctrlNote": "gemma-4-12B 在一张 A100-SXM4-80GB 上的解码 tok/s，mml 33 000，每格两轮 · 四档里最差 {w} % · L4 对照：32 000 处 {m} tok/s，对 Colab 的 {a} 与 {b}",
+ "setH": ["模型", "基准机器上", "对其基准", "比值"],
+ "setKind": "{k} · 对 {b} · {d}",
+ "setBusy": "mem_busy {p} %",
+ "setNote": "500 档的解码 · 填充长度是比值，刻线是 1.0 · 在 {n} 种场景的每一种里，吃显存重的那一端都比吃算力重的那一端离 1.0 更远",
+ "predH": ["模型", "mem_busy，H100 → H200", "预测", "实测", "档位"],
+ "predNote": "r = {r}，取自实测显存时钟 {a} → {b} MHz · 跨度预测 {p}，实测 {m} · {x} 超过了 r 本身",
+ "collH": ["配置", "链路", "一个 token，一步解码", "µs", "16 384 个 token", "µs"],
+ "collNote": "hidden 4096 处的 t_graph_us，两条填充都是对数刻度 · 带宽端跨 {b}×，延迟端跨 {l}× · 只看双卡，延迟端跨 {p}× · 第四张卡让 H100 变成 ×{h1} / ×{h2}，让 PRO 6000 变成 ×{p1} / ×{p2}",
+ "beH": ["模型", "H100", "H200", "B300", "RTX PRO 6000"],
+ "beKernel": "W4A16 内核：{k}",
+ "beNoKernel": "bf16，无",
+ "proHead": "RTX PRO 6000，500 到 128 000 的解码，按它拿到的后端",
+ "beNote": "四张卡上三种后端，谁也没要过 · PRO 6000 上 Triton 臂丢 {t1}–{t2} %，FlashAttention 臂丢 {f1}–{f2} %",
+ "priceH": ["模型", "mem_busy，H100", "H100 $3.95/h", "B300 $7.10/h", "B300 / H100", "按美元"],
+ "priceNote": "500 档的解码 tok/s，各一张卡 · 价格是 2026-09-03 从 Modal 价目表手打的，不是测的",
+ "deepAxisX": "上下文长度",
+ "deepAxisY": "解码 tok/s",
+ "deepUnit": "一张 H100 上 batch 1 的解码 tok/s · 十六档，每格两轮 · 点模型可增删它的线",
+ "deepRow": "{m}  {p}  ·  {s}  ·  32 000 处 A100 → H100：{r}×",
+ "deepHead": "500 → 128 000，以及每个模型的 attention 随深度做了什么：",
+ "deepPred": "跑之前的预测：{p}"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to */ }
+      });
+    });
+  })();
+
+  function el(parent, cls, html) {
+    var d = document.createElement("div");
+    if (cls) d.className = cls;
+    if (html !== undefined) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  function fmt(t, o) { return t.replace(/\{(\w+)\}/g, function (_, k) { return o[k]; }); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function x(v, d) { return v.toFixed(d === undefined ? 3 : d) + "×"; }
+  function pct(v, d) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d === undefined ? 1 : d) + " %"; }
+  function kctx(n) { return n >= 1000 ? Math.round(n / 1000) + "K" : String(n); }
+  // a percentage the sampler read as a whole number on both rounds prints as
+  // one; a cell whose two rounds differ by a point prints the half
+  function busy(v) { return v === Math.round(v) ? String(v) : v.toFixed(1); }
+  var fills = [];
+  function grow() { fills.forEach(function (f) { f.el.style.width = f.w + "%"; }); }
+
+  /* ---------- Figure 1: the controls ---------- */
+  (function () {
+    var box = document.getElementById("ctrl");
+    S.ctrlH.forEach(function (h, i) { el(box, "h" + (i ? " n" : " k"), esc(h)); });
+    F.fig6.a100.forEach(function (r) {
+      el(box, "k rv", kctx(r.ctx));
+      el(box, "n dim rv", r.colab_0829.toFixed(2));
+      el(box, "n dim rv", r.colab_0830.toFixed(2));
+      el(box, "n hi rv", r.modal.toFixed(2));
+      el(box, "n good rv", pct(r.delta_pct, 2));
+    });
+    document.getElementById("ctrlnote").textContent = fmt(S.ctrlNote, {
+      w: F.fig6.worst_delta_pct.toFixed(2), m: F.fig6.l4.modal.toFixed(2),
+      a: F.fig6.l4.colab[0].toFixed(2), b: F.fig6.l4.colab[1].toFixed(2) });
+  })();
+
+  /* ---------- Figure 2: five settings ---------- */
+  (function () {
+    var box = document.getElementById("set");
+    S.setH.forEach(function (h, i) { el(box, "h " + ["m", "b", "", "v"][i], esc(h)); });
+    var top = 0;
+    F.fig1.settings.forEach(function (s) {
+      s.models.forEach(function (m) { if (m.ratio > top) top = m.ratio; });
+    });
+    F.fig1.settings.forEach(function (s) {
+      el(box, "g rv", esc(s.what) + '<span class="tag">' +
+         esc(fmt(S.setKind, { k: s.kind, b: s.base, d: s.date })) + "</span>");
+      s.models.forEach(function (m, i) {
+        el(box, "m rv", esc(m.model));
+        el(box, "b rv", esc(fmt(S.setBusy, { p: busy(m.mem_busy) })));
+        var t = el(box, "track rv");
+        var one = el(t, "one"); one.style.left = (1 / top * 100).toFixed(1) + "%";
+        var f = el(t, "fill" + (i ? " lo" : "") + (m.ratio < 1 ? " bad" : ""));
+        fills.push({ el: f, w: m.ratio / top * 100 });
+        el(box, "v rv" + (i ? "" : " hi"), x(m.ratio));
+      });
+    });
+    document.getElementById("setnote").textContent = fmt(S.setNote, { n: F.fig1.settings.length });
+  })();
+
+  /* ---------- Figure 3: the prediction ---------- */
+  (function () {
+    var box = document.getElementById("pred");
+    S.predH.forEach(function (h, i) { el(box, "h" + (i === 1 ? " n b" : i ? " n" : " k"), esc(h)); });
+    F.fig2.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.model));
+      el(box, "n dim b rv", busy(r.mem_busy_h100) + " → " + busy(r.mem_busy_h200));
+      el(box, "n rv", x(r.predicted));
+      var over = F.fig2.exceed_r.indexOf(r.cfg) >= 0;
+      el(box, "n hi rv" + (over ? " bad" : ""), x(r.measured));
+      el(box, "n dim rv", kctx(r.ctx));
+    });
+    document.getElementById("prednote").textContent = fmt(S.predNote, {
+      r: F.fig2.r_clock.toFixed(3), a: Math.round(F.fig2.mclk_h100), b: Math.round(F.fig2.mclk_h200),
+      p: F.fig2.spread_predicted.toFixed(3), m: F.fig2.spread_measured.toFixed(3),
+      x: F.fig2.rows.filter(function (r) { return F.fig2.exceed_r.indexOf(r.cfg) >= 0; })
+          .map(function (r) { return r.model; }).join(", ") });
+  })();
+
+  /* ---------- Figure 4: the collective ---------- */
+  (function () {
+    var box = document.getElementById("coll");
+    S.collH.forEach(function (h, i) { el(box, "h " + ["k", "l", "track lat", "v lat", "", "v"][i], esc(h)); });
+    var lo1 = 1e9, hi1 = 0, loB = 1e9, hiB = 0;
+    F.fig3.rows.forEach(function (r) {
+      lo1 = Math.min(lo1, r.n1_us); hi1 = Math.max(hi1, r.n1_us);
+      loB = Math.min(loB, r.n16384_us); hiB = Math.max(hiB, r.n16384_us);
+    });
+    // one log scale for both columns so the two ends are drawn to the same rule
+    var lo = Math.log(Math.min(lo1, loB)), hi = Math.log(Math.max(hi1, hiB));
+    var scale = function (v) { return (Math.log(v) - lo) / (hi - lo) * 100; };
+    F.fig3.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.label));
+      el(box, "l rv" + (/no/.test(r.link) ? " no" : ""), esc(r.link));
+      var t1 = el(box, "track lat rv"); fills.push({ el: el(t1, "fill lat"), w: scale(r.n1_us) });
+      el(box, "v lat rv", r.n1_us.toFixed(2));
+      var t2 = el(box, "track rv"); fills.push({ el: el(t2, "fill bw"), w: scale(r.n16384_us) });
+      el(box, "v rv", Math.round(r.n16384_us).toLocaleString("en-US").replace(/,/g, " "));
+    });
+    var fc = F.fig3.fourth_card;
+    document.getElementById("collnote").textContent = fmt(S.collNote, {
+      b: F.fig3.bandwidth_range.toFixed(0), l: F.fig3.latency_range.toFixed(1),
+      p: F.fig3.latency_range_pairs.toFixed(1),
+      h1: fc[0].n1.toFixed(2), h2: fc[0].n16384.toFixed(2),
+      p1: fc[1].n1.toFixed(2), p2: fc[1].n16384.toFixed(2) });
+  })();
+
+  /* ---------- Figure 5: the backends ---------- */
+  (function () {
+    var box = document.getElementById("be");
+    S.beH.forEach(function (h, i) { el(box, "h" + (i ? " c" : " k"), esc(h)); });
+    var cls = { FLASH_ATTN: "fa", FLASHINFER: "fi", TRITON_ATTN: "tr" };
+    F.fig4.rows.forEach(function (r) {
+      el(box, "k rv", esc(r.model));
+      r.cells.forEach(function (c) {
+        // a bf16 checkpoint lands on no quantisation kernel at all, and the
+        // row says so rather than printing a null
+        var qk = c.quant_kernel ? c.quant_kernel.replace("LinearKernel", "") : S.beNoKernel;
+        el(box, "c rv " + (cls[c.attn_backend] || ""), esc(c.attn_backend) +
+           '<br><span class="l" title="' + esc(fmt(S.beKernel, { k: qk })) + '">' +
+           esc(qk) + "</span>");
+      });
+    });
+    var pro = document.getElementById("pro");
+    el(pro, "g rv", esc(S.proHead));
+    var worst = 0;
+    F.fig4.pro6000.forEach(function (p) { worst = Math.max(worst, -p.change_pct); });
+    F.fig4.pro6000.forEach(function (p) {
+      el(pro, "m rv", esc(p.model));
+      el(pro, "b rv " + (cls[p.attn_backend] || ""), esc(p.attn_backend));
+      var t = el(pro, "track rv");
+      fills.push({ el: el(t, "fill" + (p.attn_backend === "TRITON_ATTN" ? " bad" : "")),
+                   w: -p.change_pct / worst * 100 });
+      el(pro, "v rv", pct(p.change_pct));
+    });
+    var sp = F.fig4.pro6000_split;
+    document.getElementById("benote").textContent = fmt(S.beNote, {
+      t1: (-sp.triton_best).toFixed(0), t2: (-sp.triton_worst).toFixed(0),
+      f1: (-sp.flash_best).toFixed(0), f2: (-sp.flash_worst).toFixed(0) });
+  })();
+
+  /* ---------- Figure 6: the price ---------- */
+  (function () {
+    var box = document.getElementById("price");
+    S.priceH.forEach(function (h, i) { el(box, "h" + (i === 1 ? " n b" : i ? " n" : " k"), esc(h)); });
+    F.fig6.price.forEach(function (p) {
+      el(box, "k rv", esc(p.model));
+      el(box, "n dim b rv", busy(p.mem_busy_h100) + " %");
+      el(box, "n rv", p.h100.toFixed(1));
+      el(box, "n rv", p.b300.toFixed(1));
+      el(box, "n hi rv" + (p.ratio < 1 ? " bad" : " good"), x(p.ratio));
+      el(box, "n bad rv", x(p.per_dollar, 2));
+    });
+    document.getElementById("pricenote").textContent = S.priceNote;
+  })();
+
+  /* ---------- Figure 7: past 32 000 ---------- */
+  (function () {
+    var svg = document.getElementById("deep"), key = document.getElementById("deepkey");
+    var rows = F.fig5.rows;
+    var on = {};
+    rows.forEach(function (r) { on[r.cfg] = true; });
+    var ser = rows.map(function (r, i) {
+      return { colour: "var(--s" + (i % 5 + 1) + ")",
+               tip: function (j) {
+                 var p = r.points[j];
+                 return '<span class="hd">' + esc(r.model) + " · H100</span><br>" + kctx(p.ctx) +
+                        " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s";
+               },
+               points: r.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
+    });
+    var ticks = [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
+    var isLit = function (i) { return on[rows[i].cfg]; };
+    var chart = window.lineChart({
+      el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
+      fitLit: true, lit: isLit,
+      x: { scale: "log", min: 500, max: 128000, label: S.deepAxisX, fmt: kctx, ticks: ticks },
+      y: { label: S.deepAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    rows.forEach(function (r, i) {
+      var b = document.createElement("button");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(--s" + (i % 5 + 1) + ")");
+      b.innerHTML = '<span class="sw"></span>' + esc(r.model);
+      b.setAttribute("aria-pressed", "true");
+      b.addEventListener("click", function () {
+        on[r.cfg] = !on[r.cfg];
+        b.setAttribute("aria-pressed", String(on[r.cfg]));
+        b.classList.toggle("on", on[r.cfg]);
+        chart.setLit(isLit);
+      });
+      key.appendChild(b);
+    });
+    var lines = [esc(S.deepUnit), '<span class="nhead">' + esc(S.deepHead) + "</span>"];
+    rows.forEach(function (r) {
+      lines.push('<span class="nrow">' + esc(fmt(S.deepRow, {
+        m: r.model, p: pct(r.change_pct), s: r.structure,
+        r: r.a100_to_h100_at_32k.toFixed(2) })) + "</span>");
+    });
+    lines.push(esc(fmt(S.deepPred, { p: F.fig5.prediction })));
+    document.getElementById("deepnote").innerHTML = lines.join("<br>");
+  })();
+
+  /* ---------- reveal ---------- */
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+    grow();
+  } else {
+    var grown = false;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        if (!grown) { grown = true; grow(); }
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; io.observe(e);
+    });
+  }
+})();
+</script>
+</body>
+</html>

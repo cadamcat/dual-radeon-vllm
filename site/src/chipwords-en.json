@@ -38,5 +38,9 @@
  "kDate": "date",
  "kLink": "repository link",
  "hwOneAndTwo": "1× and 2× <b>{0}</b> · {1}",
- "modelThree": "<b>{0}</b>, <b>{1}</b> and <b>{2}</b>"
+ "modelThree": "<b>{0}</b>, <b>{1}</b> and <b>{2}</b>",
+ "hwRentedSingles": "one <b>{0}</b>, <b>{1}</b>, <b>{2}</b> and <b>{3}</b> · TP=1, rented",
+ "hwRentedPairs": "2× <b>{0}</b> and 2× <b>{1}</b> · TP=2, rented",
+ "hwAgainstPair": "read against 2× <b>{0}</b> · {1}",
+ "scaleSweep": "<b>{0}</b> ladder measurements · <b>{1}</b> collective cells · <b>{2}</b>"
 }

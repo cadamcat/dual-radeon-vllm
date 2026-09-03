@@ -1330,7 +1330,7 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
 
 <h2><span class="n">2</span>文章</h2>
 
-<p>十一篇，按卡片上的日期从新到旧 —— 那是这篇文章的证据最后一次在这台机器上实测、
+<p>十二篇，按卡片上的日期从新到旧 —— 那是这篇文章的证据最后一次在这台机器上实测、
 向上游上报、或者被重新核对的日子。标题下面一行是这篇文章原来的引子；
 再下面一行是它确立了什么，用的是综述篇给它分类时的原话，所以两处不会把同一个结论说成两回事。</p>
 
@@ -1338,7 +1338,7 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
 
 <h2><span class="n">3</span>它们各自记的是哪一天</h2>
 
-<p>文章上的日期是证据取得的日期，不是撰写的日期。十一篇里有三篇记在七月最后一周，八篇记在八月最后一周。
+<p>文章上的日期是证据取得的日期，不是撰写的日期。十二篇里有三篇记在七月最后一周，八篇记在八月最后一周，一篇记在九月第一周。
 机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，之后三周没有再跑——第二批基本上是在第一批搞错了的
 条件下重测一遍。跨两个日期的条形，说明这篇文章的证据来自两次分开的测量，而不是中间一直在跑。</p>
 
@@ -1350,7 +1350,7 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     <div class="tl" id="tl"></div>
     <div class="barunit" id="tlnote"></div>
   </div>
-  <figcaption><b>图 5.</b> 按日期排，不按发表顺序。十一篇里有两篇不是对这台机器的测量：
+  <figcaption><b>图 5.</b> 按日期排，不按发表顺序。十二篇里有两篇不是对这台机器的测量：
   一篇的日期是把缺陷上报到上游的日期，而综述篇是把十六条上游 issue 与 PR 重读了一遍，没有跑任何东西。
   这两篇都如实标出，而不是安一个它们并没有的测量日期。</figcaption>
 </figure>
@@ -24616,6 +24616,40 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
   "fastest": 250.1764
  },
  "cards": {
+  "mem-busy-orders-five-settings": {
+   "form": "bars",
+   "unit": "cRatioX",
+   "rule": 1.0,
+   "ruleT": "@cParity",
+   "bars": [
+    {
+     "label": "second 7900 XT",
+     "v": 1.6958983123264257,
+     "kind": null
+    },
+    {
+     "label": "H200 / H100",
+     "v": 1.2544997476497917,
+     "kind": null
+    },
+    {
+     "label": "B300 / H100",
+     "v": 1.660277887186682,
+     "kind": null
+    },
+    {
+     "label": "PRO 6000 / H100",
+     "v": 0.5543830460478573,
+     "kind": "bad"
+    },
+    {
+     "label": "second H100",
+     "v": 1.483924080580847,
+     "kind": null
+    }
+   ],
+   "src": "figures-modal.json fig1"
+  },
   "hybrid-ssm-collapse": {
    "form": "line",
    "unit": "cRetained",
@@ -25148,6 +25182,97 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
 }</script>
 <script type="application/json" id="articles">{
  "articles": [
+  {
+   "slug": "mem-busy-orders-five-settings",
+   "href": {
+    "en": "articles/mem-busy-orders-five-settings.html",
+    "zh": "articles/mem-busy-orders-five-settings.zh.html"
+   },
+   "title": {
+    "en": "One counter orders five settings it was never fitted to, and sizes none of them",
+    "zh": "一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小"
+   },
+   "sub": {
+    "en": "Seven rented machines in one night, and what a memory controller's busy fraction predicts",
+    "zh": "一夜租七台机器，以及一张卡的内存控制器忙碌比例能预测什么"
+   },
+   "blurb": {
+    "en": "Seven rented machines in one night. A memory controller's busy fraction, read on one card, orders what a second card, a faster card or faster memory is worth in five settings that share no hardware, and a prediction committed before the data says it does not size any of them.",
+    "zh": "一夜租七台机器。在一张卡上读出内存控制器的忙碌比例，它就能给第二张卡、更快的卡、更快的显存值多少排序，五种互不共享硬件的场景都排对了；一份在数据之前写下的预测记下了它一个都没算准。"
+   },
+   "establishes": {
+    "en": "what a second card or a faster card is worth is ordered by the memory controller's busy fraction, not by the interconnect, and the ordering carries to hardware it was never fitted to",
+    "zh": "第二张卡或更快的卡值多少，排序由内存控制器的忙碌比例决定而不是互联，而且这个排序能搬到从未拟合过的硬件上"
+   },
+   "dates": [
+    "2026-09-03"
+   ],
+   "date": "2026-09-03",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwRentedSingles",
+     "v": [
+      "H100",
+      "H200",
+      "B300",
+      "RTX PRO 6000"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwRentedPairs",
+     "v": [
+      "H100",
+      "RTX PRO 6000"
+     ]
+    },
+    {
+     "kind": "hardware",
+     "w": "hwAgainstPair",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackTwo",
+     "v": [
+      "vLLM 0.28.0",
+      "CUDA 13.0"
+     ]
+    },
+    {
+     "kind": "scale",
+     "w": "scaleSweep",
+     "v": [
+      "586",
+      "385",
+      "$29.94"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dMeasured",
+     "v": [
+      "2026-09-03"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "rented",
+    "mem_busy",
+    "H100",
+    "B300"
+   ]
+  },
   {
    "slug": "a100-vs-two-radeons",
    "href": {
@@ -25988,7 +26113,11 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
  "kDate": "日期",
  "kLink": "仓库链接",
  "hwOneAndTwo": "1× 与 2× <b>{0}</b> · {1}",
- "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>"
+ "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>",
+ "hwRentedSingles": "一张 <b>{0}</b>、<b>{1}</b>、<b>{2}</b> 与 <b>{3}</b> · TP=1，租用",
+ "hwRentedPairs": "2× <b>{0}</b> 与 2× <b>{1}</b> · TP=2，租用",
+ "hwAgainstPair": "对照 2× <b>{0}</b> · {1}",
+ "scaleSweep": "<b>{0}</b> 次阶梯测量 · <b>{1}</b> 个集合通信格 · <b>{2}</b>"
 }</script>
 <script type="application/json" id="strings">{
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1", "t4": "一张 T4 16G · TP=1", "h100": "一张 H100 80G · TP=1", "h200": "一张 H200 143G · TP=1", "b300": "一张 B300 275G · TP=1", "pro6000": "一张 RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
@@ -26034,6 +26163,7 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
  "bestOne": "一次运行",
  "estLabel": "确立了",
  "cTokS": "batch 1 解码 tok/s · 越高越好",
+ "cRatioX": "每种场景让最受内存约束的模型快多少倍 · 1 为持平",
  "cAdv": "一张 A100 领先多少倍，横轴是上下文",
  "cPct": "打开投机后的百分比变化，横轴是上下文",
  "cMs": "打包方式每步多花的毫秒，横轴是上下文",
@@ -26148,7 +26278,7 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
      variable, because the build check asserts that the script references each
      key it declares -- an indirect S[k] would hide an unused or misspelt one. */
   var CFUNIT = {
-    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
+    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun, cRatioX: S.cRatioX,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
     cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
     cRetained: S.cRetained

@@ -138,6 +138,7 @@ Q_EN, Q_ZH = "gqa-gate-costs-nothing.html", "gqa-gate-costs-nothing.zh.html"
 N_EN, N_ZH = "reporting-a-non-reproduction.html", "reporting-a-non-reproduction.zh.html"
 X_EN, X_ZH = "measuring-decode.html", "measuring-decode.zh.html"
 Z_EN, Z_ZH = "rdna3-second-class.html", "rdna3-second-class.zh.html"
+V_EN, V_ZH = "mem-busy-orders-five-settings.html", "mem-busy-orders-five-settings.zh.html"
 
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
@@ -253,6 +254,23 @@ if (D / "a100-body-zh.html").exists():
                            "而两端都关于张量并行，不关于硅片本身。",
                       out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
 
+built.append(page("modal-body.html", lang="en", figures="figures-modal.json",
+                  extra_css="modal-extra.css",
+                  title='One counter orders five settings it was never fitted to, and sizes none of them',
+                  desc="A decode step on Qwen3-8B keeps one card's memory controller busy 87 % of the "
+                       "time; on gemma-4-26B-A4B, 38 %. Read on one card, that number says which of the "
+                       "two gains more from a faster card, a second card or faster memory, on hardware "
+                       "it was never measured on. It does not say by how much.",
+                  out="articles/" + V_EN, nav=lang_nav("en", V_EN, V_ZH), labels=EN_LABELS))
+if (D / "modal-body-zh.html").exists():
+    built.append(page("modal-body-zh.html", lang="zh-CN", figures="figures-modal.json",
+                      extra_css="modal-extra.css", script_from="modal-body.html",
+                      title='一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小',
+                      desc="Qwen3-8B 的一步解码让单卡的内存控制器 87 % 的时间在忙；gemma-4-26B-A4B 是 38 %。"
+                           "在一张卡上读出这个数，它就能说出这两个模型里哪一个从更快的卡、第二张卡、"
+                           "更快的显存中赚得更多——而且是在它从没被测过的硬件上。它说不出多少。",
+                      out="articles/" + V_ZH, nav=lang_nav("zh", V_EN, V_ZH), labels=ZH_LABELS))
+
 built.append(page("gqa-body.html", lang="en", figures="figures-gqa.json",
                   extra_css="gqa-extra.css",
                   title='The excluded kernel wins all sixty cells, and the two bands overlap',
@@ -328,6 +346,14 @@ ESTABLISHES = {f["slug"]: {"en": f["mechanism"], "zh": f["mechanism_zh"]} for f 
 # the three the synthesis does not classify: it is one of them itself, and the
 # other two are about method rather than about a mechanism in the stack
 ESTABLISHES.update({
+    "mem-busy-orders-five-settings": {
+        "en": "what a second card or a faster card is worth is ordered by the memory "
+              "controller's busy fraction, not by the interconnect, and the ordering "
+              "carries to hardware it was never fitted to",
+        "zh": "第二张卡或更快的卡值多少，"
+              "排序由内存控制器的忙碌比例"
+              "决定而不是互联，而且这个排"
+              "序能搬到从未拟合过的硬件上"},
     "reporting-a-non-reproduction": {
         "en": "a clean run says something only once you have shown what the "
               "instrument is blind to",
@@ -350,6 +376,20 @@ ESTABLISHES.update({
 })
 
 ART = [
+ {"slug": "mem-busy-orders-five-settings", "en": V_EN, "zh": V_ZH, "zhbody": "modal-body-zh.html",
+  "tags": ["rented", "mem_busy", "H100", "B300"],
+  "blurb": {
+   "en": "Seven rented machines in one night. A memory controller's busy fraction, read on one "
+         "card, orders what a second card, a faster card or faster memory is worth in five "
+         "settings that share no hardware, and a prediction committed before the data says "
+         "it does not size any of them.",
+   "zh": "一夜租七台机器。在一张卡上"
+         "读出内存控制器的忙碌比例，"
+         "它就能给第二张卡、更快的卡"
+         "、更快的显存值多少排序，五"
+         "种互不共享硬件的场景都排对"
+         "了；一份在数据之前写下的预"
+         "测记下了它一个都没算准。"}},
  {"slug": "rdna3-second-class", "en": Z_EN, "zh": Z_ZH, "zhbody": "rdna3-body-zh.html",
   "tags": ["synthesis", "RDNA3", "ROCm"],
   "blurb": {

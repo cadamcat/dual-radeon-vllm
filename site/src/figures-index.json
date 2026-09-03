@@ -23237,6 +23237,40 @@
   "fastest": 250.1764
  },
  "cards": {
+  "mem-busy-orders-five-settings": {
+   "form": "bars",
+   "unit": "cRatioX",
+   "rule": 1.0,
+   "ruleT": "@cParity",
+   "bars": [
+    {
+     "label": "second 7900 XT",
+     "v": 1.6958983123264257,
+     "kind": null
+    },
+    {
+     "label": "H200 / H100",
+     "v": 1.2544997476497917,
+     "kind": null
+    },
+    {
+     "label": "B300 / H100",
+     "v": 1.660277887186682,
+     "kind": null
+    },
+    {
+     "label": "PRO 6000 / H100",
+     "v": 0.5543830460478573,
+     "kind": "bad"
+    },
+    {
+     "label": "second H100",
+     "v": 1.483924080580847,
+     "kind": null
+    }
+   ],
+   "src": "figures-modal.json fig1"
+  },
   "hybrid-ssm-collapse": {
    "form": "line",
    "unit": "cRetained",

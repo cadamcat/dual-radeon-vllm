@@ -38,5 +38,9 @@
  "kDate": "日期",
  "kLink": "仓库链接",
  "hwOneAndTwo": "1× 与 2× <b>{0}</b> · {1}",
- "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>"
+ "modelThree": "<b>{0}</b>、<b>{1}</b> 与 <b>{2}</b>",
+ "hwRentedSingles": "一张 <b>{0}</b>、<b>{1}</b>、<b>{2}</b> 与 <b>{3}</b> · TP=1，租用",
+ "hwRentedPairs": "2× <b>{0}</b> 与 2× <b>{1}</b> · TP=2，租用",
+ "hwAgainstPair": "对照 2× <b>{0}</b> · {1}",
+ "scaleSweep": "<b>{0}</b> 次阶梯测量 · <b>{1}</b> 个集合通信格 · <b>{2}</b>"
 }

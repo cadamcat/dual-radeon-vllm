@@ -1,0 +1,278 @@
+<header class="top">
+  <div class="kicker">CUDA · Hopper、Blackwell、Ada、Ampere · 一次租机横扫 · 对照 2× RX 7900 XT 来读</div>
+  <h1>一个计数器给五种它从未拟合过的场景排了序，<br>却一个都没算准大小</h1>
+  <p class="sub">一夜租七台机器，以及一张卡的内存控制器忙碌比例能预测什么</p>
+  <p class="lede"><code>Qwen3-8B</code> 的一步解码让单卡的内存控制器 <strong>87 %</strong> 的时间在忙；
+  <code>gemma-4-26B-A4B</code> 是 <strong>38 %</strong>。在一张卡上读出这个数，它就能说出这两个模型里哪一个
+  从更快的卡、第二张卡、更快的显存中赚得更多，又在更慢的显存上亏得更多 —— 而且是在它从没被测过的硬件上。
+  它说不出多少；一份在数据之前写下的预测记下了这一点。</p>
+  <div class="meta">
+__CHIPS__
+  </div>
+</header>
+
+<div class="abstract"> <h3>摘要</h3>
+<p>这个仓库里的每一份投影，都出自桌子底下的两张 Radeon 和 Colab 给什么用什么。这篇讲的是 <strong>$29.94</strong>
+的租机时间添了什么：解码与预填充阶梯上的六种机器配置 —— H100、H200、B300、RTX PRO 6000、两张 H100、两张 PRO 6000
+—— 集合通信上的八种，<strong>586 次阶梯测量、385 个集合通信格、0 个错误</strong>，以及本仓库第一次超过 32&nbsp;000
+的上下文。两个平台对照先行：在同一平台租下的一张 A100 和一张 L4，把 Colab 已入库的行复现到 <strong>0.07&nbsp;%</strong>
+和 0.9&nbsp;%，正是这一点让下面所有的比值能被当作卡与卡的差别来读。</p>
+<p><strong>结论是一个计数器。</strong><code>campaign-2026-09-02d</code> 发现第二张 Radeon 值多少，是由
+<code>mem_busy</code> 决定的 —— 单卡上内存控制器的忙碌比例：bf16 的 8B 上 90&nbsp;% 对应 1.70&times;，w4a16 的 12B 上
+56&nbsp;% 对应 1.20&times;。那是一台机器上的五个格子。现在它在五种场景里给出了同样的次序 —— 一种在这一对卡上，四种对着同一张 H100 基线：
+H200，B300，PRO 6000 —— 方向相反，因为它的显存更慢 —— 以及 NVLink 上的第二张 H100，
+对读得最少的那个模型只值 <strong>2.9&nbsp;%</strong>。<strong>它预测不了幅度。</strong>H200 那一场之前提交了一份预测：
+两端的次序回来是对的，跨度回来却接近两倍，而且吃显存最重的那一端超过了显存时钟比本身 —— 所用的公式根本给不出这个值。
+只是序数，不是基数，并且已如此记录在案。</p>
+<p><strong>线路不是那条轴，现在这一点是测出来的。</strong>八种配置上，集合通信的带宽端跨 <strong>62&times;</strong>，
+延迟端跨 <strong>3.2&times;</strong>；batch-1 解码归约的是一行，落在延迟端。NVLink 在两张卡时值 20&nbsp;%，在四张卡时值
+171&nbsp;%。另外落下三件事：四张卡在没有任何 flag 的情况下选了三种 attention 后端；$7.10/h 的 B300 在 MoE 上输给 $3.95/h 的
+H100，在 8B 上赢 66&nbsp;%；过了 32&nbsp;000，让解码曲线变平的是有界的 attention 窗口，而不是循环状态 —— 这推翻了跑之前
+写进 runner 里的一条预测。</p> </div>
+
+<h2><span class="n">1</span>先做两个对照，再谈任何比值</h2>
+
+<p>下面每一个数，都是把在 Modal 上租的卡除以 Colab 在八月测的 A100 或 L4。这两个平台之间的差距在被测量之前只是一个假设，
+所以同样两张卡在同一平台上租了下来，用 Colab 用过的上下文预算和阶梯跑同样的模型。</p>
+
+<figure class="rv" id="fig1">
+  <div class="figbox">
+    <div class="figtitle">图 1 · 同一张 A100，两个平台，三次会话
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="tab ctrl" id="ctrl"></div>
+    <div class="barunit" id="ctrlnote"></div>
+  </div>
+  <figcaption>
+    <b>图 1.</b> <code>gemma-4-12B</code> 在一张 A100-SXM4-80GB 上四个档位的解码：Colab 于 2026-08-29 与 2026-08-30，
+    Modal 于 2026-09-03。Modal 这次在每一档都落在 Colab 第二次的 <strong>0.07&nbsp;%</strong> 之内，比 Colab 自己两次会话
+    之间还要近。这个区间不是看了答案之后定的：那四行 Colab 数据从八月起就已入库。L4 对照在一张不进入任何结论的卡上说了
+    同样的话：32&nbsp;000 处 25.29 tok/s，对 Colab 的 25.07 与 25.17。
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>一个计数器给五种场景排序</h2>
+
+<p><code>mem_busy_pct</code> 是采样中显卡内存控制器处于忙碌的那部分比例，由同一个采样器在每台机器上读出
+（<code>harness/telemetry.py</code>：Radeon 上是 amdgpu 的 <code>mem_busy_percent</code>，CUDA 上是 NVML 的
+<code>utilization.memory</code>）。它是忙碌比例，不是实际达到的带宽 —— harness 在两个平台上都把实际带宽记为不可得，
+并说明了原因 —— 2026-09-02 它在一张 Radeon 上、两个模型上被读出，并且发现它决定了第二张卡值多少。现在是五种场景，
+每一种里模型固定，比较这个计数器区间的两端：</p>
+
+<figure class="rv" id="fig2">
+  <div class="figbox">
+    <div class="figtitle">图 2 · 五种场景，两个模型，一个次序
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="set" id="set"></div>
+    <div class="barunit" id="setnote"></div>
+  </div>
+  <figcaption>
+    <b>图 2.</b> 每一行是一个模型在该场景下 500 档的解码速率，除以同一模型在基准机器上的值；百分数是基准机器同一档上的
+    <code>mem_busy</code>。这一对卡自己的场景是 2026-09-02d，它的两个模型是 bf16 的 8B 和 w4a16 的 12B —— 那场 campaign
+    跑的就是它们；四种租机场景比较的是 H100 自身区间的两端，87&nbsp;% 的 <code>Qwen3-8B</code> 和 38&nbsp;% 的 MoE。
+    在每一种场景里，吃显存重的那一端离 1.0 都比吃算力重的那一端更远，不论场景往哪个方向走 —— 包括显存更慢的 PRO 6000，
+    在那上面从更多带宽赚得最多的模型，也在更少带宽上亏得最多。最后一行读两遍：<code>mem_busy</code> 38&nbsp;% 时，
+    NVLink 上的第二张 H100 值 2.9&nbsp;%。
+  </figcaption>
+</figure>
+
+<h2><span class="n">3</span>却一个都没算准大小</h2>
+
+<p>跨五种场景的一个次序，在它预测出什么之前只是相关。H200 就是一张 H100 换上更快的显存 —— 同样的计算能力、同样的
+700&nbsp;W 功耗上限、同样的 SM 时钟上限 —— 所以它是这个计数器能得到的最干净的检验：如果一步解码把 <code>f</code>
+比例的时间花在等显存上、其余花在别的事上，那么把显存速度乘以 <code>r</code>，得到 <code>1 / ((1 &minus; f) + f / r)</code>。
+<code>f</code> 取 H100 上的 <code>mem_busy</code>，<code>r</code> 取两张卡<em>实测</em>的最高显存时钟 —— 2&nbsp;619 对
+3&nbsp;201&nbsp;MHz，即 1.222；厂商的带宽数字没有用，因为本仓库没有测过它们。六个预测在跑之前就提交了。</p>
+
+<figure class="rv" id="fig3">
+  <div class="figbox">
+    <div class="figtitle">图 3 · 预测，以及回来的结果
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="tab pred" id="pred"></div>
+    <div class="barunit" id="prednote"></div>
+  </div>
+  <figcaption>
+    <b>图 3.</b> 用上面的公式预测的 H200/H100，对照实测比值 —— 取两台机器上两轮都吻合在 1&nbsp;% 之内的最浅一档，
+    这条规则在看数字之前就定下了；<code>gemma-4-31B</code> 用 2&nbsp;000，因为它在 H200 上 500 档的两轮相差 13&nbsp;%。
+    两端的次序是对的，而且分得很开。跨度不对：实测 <strong>0.210</strong> 对预测的 <strong>0.114</strong>，而且
+    <code>Qwen3-8B</code> 的 1.254&times; 超过了 <code>r</code> 本身 —— 对任何 <code>f &le; 1</code>，那个公式都给不出这个值，
+    所以错的是 <code>f</code> 而不是 <code>r</code>，而且不是差一个常数倍。这个计数器能排序，不能定量。一个独立的旁证说明机制是对的、只是算术不对：H200 上六个模型的 <code>mem_busy</code>
+    全都低于 H100，没有一个交叉 —— 更快的显存做同样的活，让控制器忙碌的时间更短，这正是模型说应该发生的事，
+    而它不是拟合出来的。
+  </figcaption>
+</figure>
+
+<h2><span class="n">4</span>为什么第二张卡的价值不在线路上</h2>
+
+<p>a100 那篇文章的第 9 节原来说，第二张 Radeon 的带宽花在了互连上。<code>allreduce-2026-09-02</code> 用这一对卡上的一次测量
+撤回了它：graph 回放下每次集合通信 16.6&ndash;21.5&nbsp;&micro;s，约一步的十分之一，一个被第二张卡帮到 1.70&times; 的模型和一个
+只帮到 1.20&times; 的模型付的是同样的价钱。同一套扫描在七种 NVIDIA 配置上跑出来，给这次撤回配上了机制。</p>
+
+<figure class="rv" id="fig4">
+  <div class="figbox">
+    <div class="figtitle">图 4 · 一次 all-reduce，两端，八种配置
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="coll" id="coll"></div>
+    <div class="barunit" id="collnote"></div>
+  </div>
+  <figcaption>
+    <b>图 4.</b> hidden 4&nbsp;096（<code>Qwen3-8B</code> 的一行）处的 <code>t_graph_us</code>：一个 token，即一步解码；
+    以及 16&nbsp;384 个 token，即一次预填充。所有 NVIDIA 运行都是 NCCL 2.29.7，Radeon 上是 RCCL 2.27.7，同一个脚本。
+    八种配置上带宽端跨 <strong>62&times;</strong>，延迟端跨 <strong>3.2&times;</strong>；只看双卡，延迟端跨
+    <strong>1.5&times;</strong>，对面仍是同样的 62&times;。batch-1 解码归约的是一行，落在延迟端 —— 在那里一对 B300 只比这一对
+    Radeon 快 1.2&times;，而在另一端快 62&times;。这就是第二张卡的价值跟着内存控制器走、而不跟着互连走的原因：互连的
+    区间是真实的，推理从来不曾进入它。<em>NVLink 是为第四张卡准备的。</em>加上第三、第四张卡，H100 一步解码变成
+    &times;1.22、带宽端 &times;1.30；PCIe 上没有 NVLink 的 PRO 6000 是 &times;2.71 与 &times;2.99。没有 NVLink 的两张卡比有的贵
+    20&nbsp;%；四张卡贵 171&nbsp;%。而四张 H200 与四张 H100 在两端都吻合在 1&nbsp;% 之内，所以第 3 节里 H200 阶梯上的优势
+    没有一分是从线路上来的。
+  </figcaption>
+</figure>
+
+<h2><span class="n">5</span>四张卡，三种 attention 后端，谁也没要过</h2>
+
+<p>同一个 vLLM，同一条命令行，整场横扫里没有任何后端 flag —— 而 runner 从每一份 serve 日志里读出后端，而不是信一张表，
+这是下面这些事能被知道的唯一原因。vLLM 0.28 根本没有指定解码器后端的 flag（<code>attention_backend</code> 只存在于
+<code>config/speculative.py</code>，从已安装的包里读出来），所以能把卡和内核分开的对照并不存在。</p>
+
+<figure class="rv" id="fig5">
+  <div class="figbox">
+    <div class="figtitle">图 5 · 每张卡上每个模型拿到的后端
+      <span class="prov yes">从每份 serve 日志读出</span></div>
+    <div class="tab be" id="be"></div>
+    <div class="set" id="pro"></div>
+    <div class="barunit" id="benote"></div>
+  </div>
+  <figcaption>
+    <b>图 5.</b> 每个（模型，卡）的解码器 attention 后端，取自各条臂自己的 serve 日志，以及每个 checkpoint 落到的 W4A16 内核。
+    两张 Hopper 全部走 FlashAttention；B300 走 FlashInfer；PRO 6000 把 gemma-4 送到 Triton、把 Qwen 和 Muse 的
+    checkpoint 送到 FlashAttention。因此本文里每一个跨机器比较都带着一项后端因素。在 PRO 6000 内部这个分裂很干净，同一张卡、
+    同一场会话：三条 Triton 臂在 500 到 128&nbsp;000 token 之间丢掉 39&ndash;52&nbsp;% 的解码速率，两条 FlashAttention 臂丢
+    13&ndash;28&nbsp;%。后端和模型混在一起，所以这不是归因 —— 但它是一张卡上的一场会话，而跨机器的版本不是。
+  </figcaption>
+</figure>
+
+<h2><span class="n">6</span>最新的卡不是最快的卡</h2>
+
+<figure class="rv" id="fig6">
+  <div class="figbox">
+    <div class="figtitle">图 6 · 一张 B300 对一张 H100，以及一美元买到什么
+      <span class="prov typed">价格是价目表，不是测量</span></div>
+    <div class="tab price" id="price"></div>
+    <div class="barunit" id="pricenote"></div>
+  </div>
+  <figcaption>
+    <b>图 6.</b> 500 档的解码，各一张卡。$7.10/h 的 B300 在 <code>Qwen3-8B</code> 上比 $3.95/h 的 H100 快
+    <strong>66&nbsp;%</strong>，在 <code>gemma-4-12B</code> 上快 4&nbsp;%，在 <code>gemma-4-26B-A4B</code> 上<em>输了</em>
+    —— 次序与计数器的一样，因为 B300 的优势是带宽，而 MoE 读得最少。按美元算它三个都输。B300 还换了 attention 后端，
+    所以它那一列里机器和后端一起在动；价格是 Modal 在 2026-09-03 的价目表，是本页上仅有的手打数字。
+  </figcaption>
+</figure>
+
+<h2><span class="n">7</span>过了 32 000：什么让曲线变平</h2>
+
+<p>直到这一夜，本仓库里的每一条阶梯都停在 32&nbsp;000 token；H100 把五个模型带到了 128&nbsp;000。跑之前有一条预测写进了
+runner：gemma-4 读的 KV cache 无界增长，<code>Qwen3.8-27B</code> 带的循环状态根本不增长，而
+<code>Muse-Glimmer-30B</code> 通过一个 2&nbsp;048 token 的窗口做 attention —— 一项先增长、然后停住的开销 —— 所以它应该落在
+两者之间。</p>
+
+<figure class="rv" id="fig7">
+  <div class="figbox">
+    <div class="figtitle">图 7 · 一张 H100 上五个模型到 128 000 token
+      <span class="prov yes">可由仓库重算</span></div>
+    <div class="legend" id="deepkey"></div>
+    <svg class="chart" id="deep" role="img"></svg>
+    <div class="barunit" id="deepnote"></div>
+  </div>
+  <figcaption>
+    <b>图 7.</b> H100 上解码速率对上下文，十六档，每格两轮，横轴取对数。它落在了两者之下。<code>Muse-Glimmer-30B</code>
+    在 128&nbsp;000 处只丢掉 500 token 速率的 <strong>4.8&nbsp;%</strong>；hybrid SSM 丢掉 <strong>21.8&nbsp;%</strong>，
+    和稠密 31B 的 22.0&nbsp;% 一样远。带循环状态的模型不是平的那个。让曲线变平的是有界的 attention 窗口，不是固定大小的状态
+    —— SSM 仍然带着开销随深度增长的 attention 层。同样的次序出现在一个独立的量上：32&nbsp;000 处从 A100 换到这张 H100，
+    对 Muse-Glimmer 值 1.36&times;，对 SSM 值 1.45&times;，对三个 gemma 模型值 1.90&ndash;2.16&times;。一个混淆因素，
+    而且它反着结论走：Muse-Glimmer 是唯一一个 W4A16 内核随机器变化的模型 —— Hopper 上是 Machete，别处是 Marlin —— 而
+    Machete 在 Hopper 上是两者中更快的那个。
+  </figcaption>
+</figure>
+
+<h2><span class="n">8</span>尚未确立的</h2>
+
+<h3>计数器的幅度</h3>
+<p>第 3 节就是全部：<code>1 / ((1 &minus; f) + f / r)</code> 这个公式，用一张卡上读出的 <code>f</code>，把跨度低估了一半，
+而且根本给不出吃显存重的那一端。要么有效带宽比超过显存时钟比 —— 厂商的数字给出 1.43，而在那个 <code>r</code> 下同一公式
+把每一行都高估 —— 要么 H200 与 H100 在某个预测假设掉的地方不同。这里没有任何东西能把这两者分开。</p>
+
+<h3>后端对照</h3>
+<p>图 6 里 B300 那一列，以及四张卡上每一个 gemma-4 的比较，都同时带着后端和卡，而 vLLM 0.28 没有办法把解码器的后端固定住。
+没有测。</p>
+
+<h3>两种配置，一个受限于算术，一个受限于预算</h3>
+<p><code>gemma-4-26B-A4B</code> 在 TP=4 上跑不起来：<em>CompressedTensors WNA16 MoE with static group scales requires the
+MoE intermediate size per tensor-parallel partition to be divisible by group_size (32)</em> —— 这是 checkpoint 的性质，
+不是没重试。另外四个模型的 TP=4，以及 Muse-Glimmer 在租来的双卡上的 TP=2，没有买。</p>
+
+<h3>实际达到的带宽，以及两个厂商上的同一个计数器</h3>
+<p><code>mem_busy</code> 是一个忙碌比例。某个绝对速率下的 87&nbsp;% 和另一个速率下的 87&nbsp;% 不是一回事，而 harness 在两个
+平台上都把实际带宽记为不可得。计数器能跨机器；它所占比例的那个基数不能。它其实也是两个计数器：Radeon 上是 amdgpu 的
+<code>mem_busy_percent</code>，CUDA 卡上是 NVML 的 <code>utilization.memory</code>，同一个采样器读出，却由两个驱动各自定义。
+同样两个模型在一边落在 90/56、另一边落在 87/53，是两者度量相近的证据，不是证明。</p>
+
+<h3>五种场景里有四种共用一条基线</h3>
+<p>H200、B300、PRO 6000 和第二张 H100 这四行除的都是同一场 H100 会话，那场会话若有偏差，四行会一起动。两个平台对照把那场会话
+对 Colab 的差距框在 0.07&nbsp;% 之内，而这一对卡那一行完全在另一台机器上；这五种是对这一对卡结论的一次独立检验，不是五次。</p>
+
+<h3>被丢弃的预填充档位在哪里</h3>
+<p>租用卡上有二十三个预填充格子没过重复性门槛，全部在 500 到 2&nbsp;000 token —— 冷引擎的头几次请求。解码也有两个格子没过，都在 H200 上：
+<code>gemma-4-26B-A4B</code> 的 1&nbsp;000 档和 <code>gemma-4-31B</code> 的 500 档。上面没有任何结论压在这些格子上。</p>
+
+<h2><span class="n">9</span>此后有什么变化</h2>
+
+<div class="note warn">
+  <span class="lbl">2026-09-03 · 两个区间在发表前写错了，闸门把两个都抓了出来</span>
+  第 4 节的延迟区间最初对整套配置写成了 1.8&times; —— 那只是双卡的数，PRO 6000 &times;4 的 39.10&nbsp;&micro;s 把整套推到
+  3.2&times;。随后双卡的数也写成了 1.8&times;，那来自从 Radeon 的 hidden-2816 行读出的 21.49&nbsp;&micro;s，而其余每个数都是
+  hidden 4096；在 4096 上双卡跨 1.5&times;。两处更正都在 <code>benchmarks/cuda-modal/README.md</code> 里，找出它们的正是
+  从数据行重算这些数的那道检查。
+</div>
+
+<div class="foot-note">
+  <p><strong>全部材料。</strong>各 campaign 目录、runner、每一份 serve 日志、集合通信扫描，以及本文所浓缩的那份文档，都在
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-modal/README.md"><code>benchmarks/cuda-modal/</code></a>。
+  预测和它的裁决在同一个文件里：
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"><code>cuda-h200/campaign-2026-09-03/PREDICTION.md</code></a>，
+  裁决附在预测之下而不是替换它。本页上每一个数都由
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
+  从已入库的数据行重算，两个价目表数字除外，它们已标明。</p>
+  <p>这个计数器本身，以及让它值得一测的那一对卡上的五个格子，在
+  <a href="a100-vs-two-radeons.zh.html">另一篇文章</a>的第 9 节。</p>
+</div>
+</div>
+
+<div class="tip" id="tip"></div>
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "ctrlH": ["档位", "Colab 08-29", "Colab 08-30", "Modal 09-03", "Modal − Colab 08-30"],
+ "ctrlNote": "gemma-4-12B 在一张 A100-SXM4-80GB 上的解码 tok/s，mml 33 000，每格两轮 · 四档里最差 {w} % · L4 对照：32 000 处 {m} tok/s，对 Colab 的 {a} 与 {b}",
+ "setH": ["模型", "基准机器上", "对其基准", "比值"],
+ "setKind": "{k} · 对 {b} · {d}",
+ "setBusy": "mem_busy {p} %",
+ "setNote": "500 档的解码 · 填充长度是比值，刻线是 1.0 · 在 {n} 种场景的每一种里，吃显存重的那一端都比吃算力重的那一端离 1.0 更远",
+ "predH": ["模型", "mem_busy，H100 → H200", "预测", "实测", "档位"],
+ "predNote": "r = {r}，取自实测显存时钟 {a} → {b} MHz · 跨度预测 {p}，实测 {m} · {x} 超过了 r 本身",
+ "collH": ["配置", "链路", "一个 token，一步解码", "µs", "16 384 个 token", "µs"],
+ "collNote": "hidden 4096 处的 t_graph_us，两条填充都是对数刻度 · 带宽端跨 {b}×，延迟端跨 {l}× · 只看双卡，延迟端跨 {p}× · 第四张卡让 H100 变成 ×{h1} / ×{h2}，让 PRO 6000 变成 ×{p1} / ×{p2}",
+ "beH": ["模型", "H100", "H200", "B300", "RTX PRO 6000"],
+ "beKernel": "W4A16 内核：{k}",
+ "beNoKernel": "bf16，无",
+ "proHead": "RTX PRO 6000，500 到 128 000 的解码，按它拿到的后端",
+ "beNote": "四张卡上三种后端，谁也没要过 · PRO 6000 上 Triton 臂丢 {t1}–{t2} %，FlashAttention 臂丢 {f1}–{f2} %",
+ "priceH": ["模型", "mem_busy，H100", "H100 $3.95/h", "B300 $7.10/h", "B300 / H100", "按美元"],
+ "priceNote": "500 档的解码 tok/s，各一张卡 · 价格是 2026-09-03 从 Modal 价目表手打的，不是测的",
+ "deepAxisX": "上下文长度",
+ "deepAxisY": "解码 tok/s",
+ "deepUnit": "一张 H100 上 batch 1 的解码 tok/s · 十六档，每格两轮 · 点模型可增删它的线",
+ "deepRow": "{m}  {p}  ·  {s}  ·  32 000 处 A100 → H100：{r}×",
+ "deepHead": "500 → 128 000，以及每个模型的 attention 随深度做了什么：",
+ "deepPred": "跑之前的预测：{p}"
+}</script>
+__SCRIPT__
+</body>
+</html>

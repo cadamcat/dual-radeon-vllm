@@ -80,6 +80,15 @@
   {"kind": "date", "tl": "reviewed", "w": "dChecked", "v": ["2026-08-29"]}
  ],
 
+ "mem-busy-orders-five-settings": [
+  {"kind": "hardware", "w": "hwRentedSingles", "v": ["H100", "H200", "B300", "RTX PRO 6000"]},
+  {"kind": "hardware", "w": "hwRentedPairs", "v": ["H100", "RTX PRO 6000"]},
+  {"kind": "hardware", "w": "hwAgainstPair", "v": ["RX 7900 XT", "gfx1100"]},
+  {"kind": "stack", "w": "stackTwo", "v": ["vLLM 0.28.0", "CUDA 13.0"]},
+  {"kind": "scale", "w": "scaleSweep", "v": ["586", "385", "$29.94"]},
+  {"kind": "date", "tl": "measured", "w": "dMeasured", "v": ["2026-09-03"]}
+ ],
+
  "index": [
   {"kind": "hardware", "w": "hwTriple", "v": ["RX 7900 XT", "gfx1100", "TP=2"]},
   {"kind": "platform", "w": "platVfioNoP2P", "v": ["PCIe 3.0"]},

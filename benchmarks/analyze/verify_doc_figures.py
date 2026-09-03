@@ -936,7 +936,8 @@ def main():
              ["reporting-a-non-reproduction.html",
               "reporting-a-non-reproduction.zh.html"],
              ["measuring-decode.html", "measuring-decode.zh.html"],
-             ["rdna3-second-class.html", "rdna3-second-class.zh.html"]]
+             ["rdna3-second-class.html", "rdna3-second-class.zh.html"],
+             ["mem-busy-orders-five-settings.html", "mem-busy-orders-five-settings.zh.html"]]
     LANGS = [fn for pair in PAIRS for fn in pair]
     pages = {}
     for fn in LANGS:
@@ -5725,9 +5726,9 @@ def main():
     # which one each date is
     XTLK = ["measured", "reported", "reviewed"]
     XDC = {s: [c for c in CH[s] if c.get("kind") == "date"] for s in XSLUGS if s != "index"}
-    ck("chips, every article carries exactly one date chip", "11",
+    ck("chips, every article carries exactly one date chip", "12",
        sum(1 for v in XDC.values() if len(v) == 1))
-    ck("chips, every date chip says what kind of claim it is", "11",
+    ck("chips, every date chip says what kind of claim it is", "12",
        sum(1 for v in XDC.values() if len(v) == 1 and v[0].get("tl") in XTLK))
     ck("chips, every date is an ISO date", "0",
        sum(1 for v in XDC.values() for c in v for d in c.get("v", [])
@@ -5739,7 +5740,7 @@ def main():
        1 if sorted(s for s, v in XDC.items() if v and v[0].get("tl") == "reviewed")
        == ["rdna3-second-class"] else 0)
 
-    ck("index, one record per article", "11", len(AJ))
+    ck("index, one record per article", "12", len(AJ))
 
     ck("index, every record's dates come from its date chip", "0",
        sum(1 for a in AJ if a.get("dates") != (XDC.get(a.get("slug")) or [{}])[0].get("v")))
@@ -5759,7 +5760,8 @@ def main():
        sum(1 for a in AJ if a.get("slug") in ZF
            and (a.get("establishes") or {}).get("en") == ZF[a["slug"]].get("mechanism")
            and (a.get("establishes") or {}).get("zh") == ZF[a["slug"]].get("mechanism_zh")))
-    ck("index, and the other three are written for it", "3",
+    # four since 2026-09-03: the rented-sweep article is also outside the synthesis
+    ck("index, and the other four are written for it", "4",
        sum(1 for a in AJ if a.get("slug") not in ZF
            and (a.get("establishes") or {}).get("en")
            and (a.get("establishes") or {}).get("zh")))
@@ -5871,7 +5873,7 @@ def main():
     # claim about the timeline drawn directly below it
     XSIT = sorted({d for a in AJ for d in (a.get("dates") or [])})
     xday = lambda d: (int(d[:4]), int(d[5:7]), int(d[8:10]))
-    ck("index, distinct sitting dates on the timeline", "10", len(XSIT))
+    ck("index, distinct sitting dates on the timeline", "11", len(XSIT))
     ck("index, the sittings before the long gap", "4",
        sum(1 for d in XSIT if d <= "2026-08-01"))
     ck("index, the long gap is three weeks", "22",
@@ -5882,6 +5884,12 @@ def main():
                         "\u5728 7 \u6708 25\u300126\u300128 \u65e5\u548c 8 \u6708 1 \u65e5\u8dd1\u7684")):
         ck("index %s, the prose names the sittings" % fn, "1",
            1 if fl(phrase) in re.sub(r"\s+", " ", XI[fn]) else 0)
+    # the page's own count of its write-ups, in both languages, against the index
+    _xw12 = {"eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "十一": 11, "十二": 12, "十三": 13, "十四": 14}
+    _m = re.search(r"<p>(\w+) write-ups, newest first", XI["index.html"])
+    ck("index, the en prose counts the write-ups", str(_xw12.get(_m.group(1).lower(), -1) if _m else -1), len(AJ))
+    _m = re.search(r"<p>([一二三四五六七八九十]+)篇，按卡片上的日期从新到旧", XI["index.zh.html"])
+    ck("index, the zh prose counts the write-ups", str(_xw12.get(_m.group(1), -1) if _m else -1), len(AJ))
 
     # --- the index's best-measured-today figure -------------------------------
     # Every line is recomputed from the file it claims, and the claim the whole
@@ -5897,7 +5905,7 @@ def main():
     XCARD = json.loads(xblock(XI["index.html"], "bestdata"))["cards"]
     _sd = os.path.join(HERE, "..", "..", "site", "src")
     _af = lambda n: json.load(open(os.path.join(_sd, n), encoding="utf-8"))
-    ck("index cards, one per article", "11", len(XCARD))
+    ck("index cards, one per article", "12", len(XCARD))
     ck("index cards, every article has one", "0",
        sum(1 for a in AJ if a["slug"] not in XCARD))
 
@@ -7592,6 +7600,289 @@ def main():
        sum(1 for x in _f5
            if abs(_pfix[(x["machine"], x["cfg"], x["date"],
                          x["deep_ctx"])]["prefill_tok_s"] - x["deep_tok_s"]) > 1e-9))
+
+    # --- mem-busy-orders-five-settings: the rented sweep as an article ------
+    _mbr = os.path.join(HERE, "..")   # _BR is a regex by this point in main; the benchmarks root afresh
+    # Every number the article states is recomputed here from the rows, not
+    # from figures-modal.json: the figures file is checked against the same
+    # recomputation, so the page, its data block and the projections cannot
+    # drift apart from one another. Prices are the one exception and are
+    # marked on the page as a list rather than a measurement.
+    _MA = json.loads(block(pages["mem-busy-orders-five-settings.html"], "figures"))
+    _mat = {fn: flat[fn] for fn in ("mem-busy-orders-five-settings.html",
+                                    "mem-busy-orders-five-settings.zh.html")}
+    _mrow = lambda mach, cfg, ctx, date="2026-09-03": next(
+        r for r in XDEC if r["machine"] == mach and r["cfg"] == cfg
+        and r["ctx"] == ctx and r["date"] == date)
+    _m500 = lambda mach, cfg: _mrow(mach, cfg, 500)["decode_tok_s"]
+    _MH1, _MH2, _MB3, _MP6, _MX2 = ("H100-80GB-HBM3", "H200-143GB-HBM3e", "B300-SXM6",
+                                    "RTX-PRO-6000-Blackwell", "H100-80GB-HBM3-x2")
+
+    def _mbusy(paths, cfg, ctx=500):
+        _v = []
+        for _p in paths:
+            for _l in open(os.path.join(_mbr, _p), encoding="utf-8"):
+                _r = json.loads(_l)
+                if _r.get("kind") == "decode" and _r["cfg"] == cfg and _r["target"] == ctx:
+                    _v.append(_r["mem_busy_pct_max"])
+        return sum(_v) / len(_v)
+
+    _mh_raw = ["cuda-h100/campaign-2026-09-03/results.jsonl",
+               "cuda-h100/campaign-2026-09-03/results-q38.jsonl",
+               "cuda-h100/campaign-2026-09-03b/results.jsonl"]
+    _mb_h100 = {c: _mbusy(_mh_raw, c) for c in ("B8", "G31", "Q38", "G12", "MG30", "G26A4B")}
+    _mb_h200 = {c: _mbusy(["cuda-h200/campaign-2026-09-03/results.jsonl"], c) for c in _mb_h100}
+    # the five settings, two models each, ratio at 500 against the base
+    _ms = {s["id"]: s for s in _MA["fig1"]["settings"]}
+    ck("modal article, settings", "5", len(_ms))
+    _rad2 = {"B8": _mrow("RX 7900 XT", "B8-tp2-p45450", 500, "2026-09-02")["decode_tok_s"]
+             / _mrow("RX 7900 XT", "B8-tp1-p45450", 500, "2026-09-02")["decode_tok_s"],
+             "G12": _mrow("RX 7900 XT", "A12-tp2-p45450", 500, "2026-09-02")["decode_tok_s"]
+             / _mrow("RX 7900 XT", "A12-tp1-p45450", 500, "2026-09-02")["decode_tok_s"]}
+    ck("modal article, second Radeon on the 8B", "1.696", _rad2["B8"])
+    ck("modal article, and on the 12B", "1.198", _rad2["G12"])
+    ck("modal article, fig1 carries both", "1",
+       1 if abs(_ms["radeon2"]["models"][0]["ratio"] - _rad2["B8"]) < 1e-9
+       and abs(_ms["radeon2"]["models"][1]["ratio"] - _rad2["G12"]) < 1e-9 else 0)
+    ck("modal article, the pair's own mem_busy, 8B", "90",
+       _mbusy(["campaign-2026-09-02d/results.jsonl"], "B8-tp1-p45450"))
+    ck("modal article, and 12B", "56.5",
+       _mbusy(["campaign-2026-09-02d/results.jsonl"], "A12-tp1-p45450"))
+    for _sid, _num, _want in (("h200", _MH2, ("1.254", "1.044")),
+                              ("b300", _MB3, ("1.660", "0.995")),
+                              ("pro6000", _MP6, ("0.554", "0.827")),
+                              ("h100x2", _MX2, ("1.484", "1.029"))):
+        for _i, _cfg in enumerate(("B8", "G26A4B")):
+            _got = _m500(_num, _cfg) / _m500(_MH1, _cfg)
+            ck("modal article, %s on %s" % (_sid, _cfg), _want[_i], _got)
+            ck("modal article, fig1 %s %s is that" % (_sid, _cfg), "1",
+               1 if abs(_ms[_sid]["models"][_i]["ratio"] - _got) < 1e-9 else 0)
+    ck("modal article, H100 mem_busy on the 8B", "87", _mb_h100["B8"])
+    ck("modal article, and on the MoE", "37.5", _mb_h100["G26A4B"])
+    # the ordering claim: in every setting the memory-bound end moves further
+    ck("modal article, settings where the memory-bound end moves further", "5",
+       sum(1 for s in _ms.values()
+           if abs(s["models"][0]["ratio"] - 1) > abs(s["models"][1]["ratio"] - 1)))
+    # the block's own `ordered` flag is what the page draws; it must be that comparison
+    ck("modal article, and every setting's ordered flag is that comparison", "0",
+       sum(1 for s in _ms.values()
+           if bool(s.get("ordered")) != (abs(s["models"][0]["ratio"] - 1) > abs(s["models"][1]["ratio"] - 1))))
+    ck("modal article, and the one that moves the other way is the PRO 6000", "1",
+       1 if [s["id"] for s in _ms.values() if s["models"][0]["ratio"] < 1] == ["pro6000"] else 0)
+    # the prediction, recomputed on the whole-percent inputs it was committed with
+    _mm = {m["gpu_arg"]: float(m["clocks.max.memory"].split()[0]) for m in
+           (json.loads(l) for l in open(os.path.join(_mbr, "modal-2026-09-02", "machines.jsonl")))}
+    _mr = _mm["H200"] / _mm["H100"]
+    ck("modal article, r from the measured memory clocks", "1.222", _mr)
+    _mpred = lambda f: 1.0 / ((1 - round(f) / 100.0) + round(f) / 100.0 / _mr)
+    _mrows = {p["cfg"]: p for p in _MA["fig2"]["rows"]}
+    ck("modal article, prediction rows", "6", len(_mrows))
+    _mbad = 0
+    for _cfg, _p in _mrows.items():
+        _ctx = _p["ctx"]
+        _meas = _mrow(_MH2, _cfg, _ctx)["decode_tok_s"] / _mrow(_MH1, _cfg, _ctx)["decode_tok_s"]
+        if abs(_p["predicted"] - _mpred(_mb_h100[_cfg])) > 1e-9 or abs(_p["measured"] - _meas) > 1e-9:
+            _mbad += 1
+        # the rung rule: the shallowest whose rounds agree within 1 % on both
+        _first = next(c for c in sorted({r["ctx"] for r in XDEC if r["machine"] == _MH1
+                                         and r["cfg"] == _cfg and r["date"] == "2026-09-03"})
+                      if _mrow(_MH1, _cfg, c)["range_pct"] <= 1.0
+                      and _mrow(_MH2, _cfg, c)["range_pct"] <= 1.0)
+        if _first != _ctx:
+            _mbad += 1
+    ck("modal article, prediction rows that do not recompute", "0", _mbad)
+    ck("modal article, the 31B uses the 2000 rung", "2000", _mrows["G31"]["ctx"])
+    _msp = _mpred(_mb_h100["B8"]) - _mpred(_mb_h100["G26A4B"])
+    _mms = (_mrows["B8"]["measured"] - _mrows["G26A4B"]["measured"])
+    ck("modal article, spread predicted", "0.114", _msp)
+    ck("modal article, and measured", "0.210", _mms)
+    ck("modal article, the 8B exceeds r", "1", 1 if _mrows["B8"]["measured"] > _mr else 0)
+    ck("modal article, and nothing else does", "1",
+       sum(1 for p in _mrows.values() if p["measured"] > _mr))
+    ck("modal article, mem_busy falls on the H200 for every model", "6",
+       sum(1 for c in _mb_h100 if _mb_h200[c] < _mb_h100[c]))
+    # the collective, both ends, from the rows
+
+    def _ar_cell(source, ntok):
+        for _l in open(os.path.join(_mbr, source.split("benchmarks/", 1)[1]), encoding="utf-8"):
+            _r = json.loads(_l)
+            if _r.get("kind") == "allreduce" and _r["hidden"] == 4096 and _r["ntok"] == ntok:
+                return _r["t_graph_us"]
+
+    _mcoll = {c["label"]: c for c in _MA["fig3"]["rows"]}
+    ck("modal article, collective configurations", "8", len(_mcoll))
+    _n1 = [c["n1_us"] for c in _mcoll.values()]
+    _nb = [c["n16384_us"] for c in _mcoll.values()]
+    ck("modal article, collective bandwidth range", "62", max(_nb) / min(_nb), 0.01)
+    ck("modal article, and latency range", "3.2", max(_n1) / min(_n1), 0.02)
+    # the block carries the two ranges as numbers the page prints; hold them to the rows it carries
+    ck("modal article, fig3 bandwidth_range is that ratio", "1",
+       1 if abs(_MA["fig3"]["bandwidth_range"] - max(_nb) / min(_nb)) < 1e-9 else 0)
+    ck("modal article, and fig3 latency_range is that ratio", "1",
+       1 if abs(_MA["fig3"]["latency_range"] - max(_n1) / min(_n1)) < 1e-9 else 0)
+    ck("modal article, pairs-only latency range", "1.5",
+       max(c["n1_us"] for c in _mcoll.values() if c["cards"] == 2)
+       / min(c["n1_us"] for c in _mcoll.values() if c["cards"] == 2), 0.03)
+    ck("modal article, every collective cell is the file's", "0",
+       sum(1 for c in _mcoll.values()
+           if abs(_ar_cell(c["source"], 1) - c["n1_us"]) > 1e-9
+           or abs(_ar_cell(c["source"], 16384) - c["n16384_us"]) > 1e-9))
+    ck("modal article, B300 pair over Radeon pair at one token", "1.2",
+       _mcoll["RX 7900 XT ×2"]["n1_us"] / _mcoll["B300 ×2"]["n1_us"], 0.05)
+    ck("modal article, a second card without NVLink costs this pct", "20",
+       (_mcoll["RTX PRO 6000 ×2"]["n1_us"] / _mcoll["H100 ×2"]["n1_us"] - 1) * 100, 0.02)
+    ck("modal article, the third and fourth on PCIe", "171",
+       (_mcoll["RTX PRO 6000 ×4"]["n1_us"] / _mcoll["RTX PRO 6000 ×2"]["n1_us"] - 1) * 100, 0.005)
+    ck("modal article, and on NVLink", "22",
+       (_mcoll["H100 ×4"]["n1_us"] / _mcoll["H100 ×2"]["n1_us"] - 1) * 100, 0.02)
+    ck("modal article, fourth card ratios as stated", "4",
+       sum(1 for f, w in zip(_MA["fig3"]["fourth_card"],
+                              (("1.22", "1.30"), ("2.71", "2.99")))
+           for k, s in zip(("n1", "n16384"), w)
+           if abs(f[k] - float(s)) <= 0.005))
+    ck("modal article, four H200s against four H100s, worst end, pct", "1.4",
+       max(abs(_mcoll["H200 ×4"][k] / _mcoll["H100 ×4"][k] - 1) * 100
+           for k in ("n1_us", "n16384_us")), 0.05)
+    # the backends: three, read from prefill.jsonl's log-derived column
+    _mbe = {(r["machine"], r["cfg"]): r["attn_backend"] for r in XPFROWS
+            if r["date"] == "2026-09-03"}
+    ck("modal article, backends across the four cards", "3",
+       len({_mbe[(m, c)] for m in (_MH1, _MH2, _MB3, _MP6)
+            for c in ("B8", "G31", "Q38", "G12", "MG30", "G26A4B")}))
+    ck("modal article, fig4 says the same", "1",
+       1 if _MA["fig4"]["distinct"] == ["FLASHINFER", "FLASH_ATTN", "TRITON_ATTN"] else 0)
+    _mpro = {}
+    for _cfg in ("G12", "G26A4B", "G31", "Q38", "MG30"):
+        _mpro[_cfg] = (_mrow(_MP6, _cfg, 128000)["decode_tok_s"]
+                       / _mrow(_MP6, _cfg, 500)["decode_tok_s"] - 1) * 100
+    ck("modal article, PRO 6000 Triton arms lose at least", "39",
+       -max(_mpro[c] for c in ("G12", "G26A4B", "G31")), 0.02)
+    ck("modal article, and at most", "52", -min(_mpro[c] for c in ("G12", "G26A4B", "G31")), 0.01)
+    ck("modal article, FlashAttention arms lose at least", "13", -_mpro["MG30"], 0.05)
+    ck("modal article, and at most", "28", -_mpro["Q38"], 0.02)
+    ck("modal article, the Triton arms are all on TRITON_ATTN", "3",
+       sum(1 for c in ("G12", "G26A4B", "G31") if _mbe[(_MP6, c)] == "TRITON_ATTN"))
+    # the price: ratios at 500, per-dollar from the two typed prices
+    _mpr = {p["cfg"]: p for p in _MA["fig6"]["price"]}
+    ck("modal article, B300 over H100 on the 8B", "1.660", _m500(_MB3, "B8") / _m500(_MH1, "B8"))
+    ck("modal article, on the 12B", "1.037", _m500(_MB3, "G12") / _m500(_MH1, "G12"))
+    ck("modal article, and on the MoE", "0.995", _m500(_MB3, "G26A4B") / _m500(_MH1, "G26A4B"))
+    ck("modal article, and per dollar it loses on all three", "3",
+       sum(1 for p in _mpr.values() if p["per_dollar"] < 1))
+    ck("modal article, the prices are the two the README states", "1",
+       1 if _MA["fig6"]["price_usd_per_card_hour"] == {"H100": 3.95, "B300": 7.10} else 0)
+    # past 32 000 on the H100
+    _mdeep = {}
+    for _cfg in ("MG30", "G12", "G26A4B", "Q38", "G31"):
+        _mdeep[_cfg] = (_mrow(_MH1, _cfg, 128000)["decode_tok_s"]
+                        / _mrow(_MH1, _cfg, 500)["decode_tok_s"] - 1) * 100
+    ck("modal article, Muse-Glimmer from 500 to 128 000", "-4.8", _mdeep["MG30"])
+    ck("modal article, the SSM", "-21.8", _mdeep["Q38"])
+    ck("modal article, the dense 31B", "-22.0", _mdeep["G31"])
+    ck("modal article, and the window model is the flattest", "1",
+       1 if max(_mdeep, key=_mdeep.get) == "MG30" else 0)
+    _ma100 = lambda c: _mrow("A100-SXM4-80GB", c, 32000, "2026-08-30")["decode_tok_s"]
+    ck("modal article, A100 to H100 at 32K, Muse-Glimmer", "1.36",
+       _mrow(_MH1, "MG30", 32000)["decode_tok_s"] / _ma100("MG30"))
+    ck("modal article, the SSM", "1.45", _mrow(_MH1, "Q38", 32000)["decode_tok_s"] / _ma100("Q38"))
+    ck("modal article, the gemmas, least", "1.90",
+       min(_mrow(_MH1, c, 32000)["decode_tok_s"] / _ma100(c) for c in ("G12", "G26A4B", "G31")))
+    ck("modal article, and most", "2.16",
+       max(_mrow(_MH1, c, 32000)["decode_tok_s"] / _ma100(c) for c in ("G12", "G26A4B", "G31")))
+    # the controls
+    _mc = {c["ctx"]: c for c in _MA["fig6"]["a100"]}
+    ck("modal article, control rungs", "4", len(_mc))
+    ck("modal article, worst Modal-against-Colab, pct", "0.07",
+       max(abs(_mrow("A100-SXM4-80GB", "G12", t)["decode_tok_s"]
+               / _mrow("A100-SXM4-80GB", "G12", t, "2026-08-30")["decode_tok_s"] - 1) * 100
+           for t in (500, 8000, 16000, 32000)))
+    ck("modal article, closer than Colab's two sittings", "1",
+       1 if max(abs(c["modal"] / c["colab_0830"] - 1) for c in _mc.values())
+       < max(abs(c["colab_0829"] / c["colab_0830"] - 1) for c in _mc.values()) else 0)
+    ck("modal article, the L4 control at 32K", "25.29", _mrow("L4", "G12", 32000)["decode_tok_s"])
+    ck("modal article, against Colab's", "25.07",
+       _mrow("L4", "G12", 32000, "2026-08-30")["decode_tok_s"])
+    ck("modal article, and", "25.17", _mrow("L4", "G12", 32000, "2026-09-02")["decode_tok_s"])
+    # the scale the abstract states, recounted from the files
+    _mfiles = ["cuda-h100/campaign-2026-09-03/results.jsonl",
+               "cuda-h100/campaign-2026-09-03/results-q38.jsonl",
+               "cuda-h100/campaign-2026-09-03b/results.jsonl",
+               "cuda-h100/campaign-2026-09-03-tp2/results.jsonl",
+               "cuda-h100/campaign-2026-09-03-tp4/results.jsonl",
+               "cuda-h200/campaign-2026-09-03/results.jsonl",
+               "cuda-b300/campaign-2026-09-03/results.jsonl",
+               "cuda-pro6000/campaign-2026-09-03/results.jsonl",
+               "cuda-pro6000/campaign-2026-09-03-tp2/results.jsonl",
+               "cuda-a100/campaign-2026-09-03/results.jsonl",
+               "cuda-l4/campaign-2026-09-03/results.jsonl"]
+    # cuda-modal/README.md counts ladder points -- one (configuration, rung) cell,
+    # two rounds of decode and prefill each -- and the article quotes that count
+    _mpts, _merr = set(), 0
+    for _f in _mfiles:
+        for _l in open(os.path.join(_mbr, _f), encoding="utf-8"):
+            _r = json.loads(_l)
+            if _r.get("kind") == "decode":
+                _mpts.add((_f, _r["cfg"], _r["target"]))
+            _merr += 1 if _r.get("kind") == "error" else 0
+    ck("modal article, ladder points", "586", len(_mpts))
+    ck("modal article, and errors", "0", _merr)
+    # the dropped prefill rungs on the rented cards: every one at 500-2000
+    _mdrop = [r for r in XPFROWS if r["date"] == "2026-09-03"
+              and r["machine"] in (_MH1, _MH2, _MB3, _MP6, _MX2, "RTX-PRO-6000-Blackwell-x2",
+                                   "H100-80GB-HBM3-x4")
+              and not r["chart_grade"]]
+    ck("modal article, prefill cells that failed the cut on the rented cards", "23", len(_mdrop))
+    ck("modal article, and the page counts them", "2",
+       sum(1 for fn, w in (("mem-busy-orders-five-settings.html", "Twenty-three prefill cells"),
+                           ("mem-busy-orders-five-settings.zh.html", "二十三个预填充格子")) if w in pages[fn]))
+    ck("modal article, and every one of them is at 2000 tokens or below", "0",
+       sum(1 for r in _mdrop if r["ctx"] > 2000))
+    _mdd = sorted((r["machine"], r["cfg"], r["ctx"]) for r in XDEC
+                  if r["date"] == "2026-09-03" and r["machine"] != "RX 7900 XT" and not r["chart_grade"])
+    ck("modal article, decode cells that failed the cut off the pair", "2", len(_mdd))
+    ck("modal article, and both are the H200's", "1",
+       1 if _mdd == [(_MH2, "G26A4B", 1000), (_MH2, "G31", 500)] else 0)
+    ck("modal article, and the page names them", "2",
+       sum(1 for fn, w in (("mem-busy-orders-five-settings.html", "Two decode cells failed it too, both on\nthe H200"),
+                           ("mem-busy-orders-five-settings.zh.html", "解码也有两个格子没过，都在 H200 上")) if w in pages[fn]))
+    ck("modal article, collective cells", "385",
+       sum(1 for _f in os.listdir(_AR) if _f.endswith("-results.jsonl")
+           for _l in open(os.path.join(_AR, _f), encoding="utf-8")
+           if json.loads(_l).get("kind") == "allreduce"))
+    # the prose, both languages, states what the figures hold
+    for _lang, _t in _mat.items():
+        _z = _lang.endswith(".zh.html")
+        ck("modal article %s, abstract quotes the control" % _lang, "1",
+           1 if "0.07&nbsp;%" in _t else 0)
+        ck("modal article %s, and both collective ranges" % _lang, "2",
+           sum(1 for x in ("62&times;", "3.2&times;") if x in _t))
+        ck("modal article %s, and the second H100's worth to the MoE" % _lang, "1",
+           1 if "2.9&nbsp;%" in _t else 0)
+        ck("modal article %s, states the spread both ways" % _lang, "2",
+           sum(1 for x in ("0.210", "0.114") if x in _t))
+        ck("modal article %s, says ordinal not cardinal" % _lang, "1",
+           1 if ("orders and does not\n    size" in _t or "orders and does not size" in _t
+                 or "能排序，不能定量" in _t) else 0)
+        ck("modal article %s, the price section says it loses per dollar" % _lang, "1",
+           1 if ("Per dollar it loses on all three" in _t or "按美元算它三个都输" in _t) else 0)
+        ck("modal article %s, the depth section says the SSM is not the flat one" % _lang, "1",
+           1 if ("The recurrent-state model is not the flat one" in _t
+                 or "带循环状态的模型不是平的那个" in _t) else 0)
+        ck("modal article %s, and quotes Muse-Glimmer's retention" % _lang, "1",
+           1 if "4.8&nbsp;%" in _t else 0)
+        ck("modal article %s, names what is not established" % _lang, "6",
+           sum(1 for x in (("The counter's magnitude", "计数器的幅度"),
+                           ("A backend control", "后端对照"),
+                           ("Two configurations, by arithmetic and by budget", "两种配置"),
+                           ("Achieved bandwidth, and one counter on two vendors", "实际达到的带宽，以及两个厂商上的同一个计数器"),
+                           ("Four of the five settings share a baseline", "五种场景里有四种共用一条基线"),
+                           ("Where the dropped prefill rungs sit", "被丢弃的预填充档位在哪里"))
+               if x[1 if _z else 0] in _t))
+        ck("modal article %s, and no longer calls the settings hardware-independent" % _lang, "0",
+           _t.count("share no hardware") + _t.count("不共用任何硬件"))
+        ck("modal article %s, marks the prices as typed" % _lang, "1",
+           1 if ("the prices are a list, not a measurement" in _t
+                 or "价格是价目表，不是测量" in _t) else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

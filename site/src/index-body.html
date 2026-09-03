@@ -205,7 +205,7 @@ the same day one click away as the background.</p>
 
 <h2><span class="n">2</span>Articles</h2>
 
-<p>Eleven write-ups, newest first by the date on the card — the last day evidence for that article
+<p>Twelve write-ups, newest first by the date on the card — the last day evidence for that article
 was taken here, reported upstream or re-read. Under each title is the line that article used to lead
 with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
 two cannot describe a finding differently.</p>
@@ -215,7 +215,7 @@ two cannot describe a finding differently.</p>
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
 <p>The date on an article is the date its evidence was taken, not the date it was written. Three of
-the eleven are dated to the last week of July and eight to the last week of August. The machine
+the twelve are dated to the last week of July, eight to the last week of August and one to the first week of September. The machine
 itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks — the second
 cluster is largely re-measurement of the first under conditions the first got wrong. A bar spanning
 two dates is an article whose evidence comes from two separate sittings, not one that ran
@@ -230,7 +230,7 @@ throughout.</p>
     <div class="barunit" id="tlnote"></div>
   </div>
   <figcaption>
-    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the eleven are not
+    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the twelve are not
     measurements of this machine: one records the date a defect was reported upstream, and the
     synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
     rather than given a measurement date they do not have.
@@ -309,6 +309,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "bestOne": "one run",
  "estLabel": "establishes",
  "cTokS": "decode tok/s at batch 1 · higher is better",
+ "cRatioX": "how many times faster each setting makes the most memory-bound model · 1 is parity",
  "cAdv": "how many times ahead one A100 is, against context",
  "cPct": "per cent change from turning speculation on, against context",
  "cMs": "milliseconds per decode step the packaging costs, against context",
@@ -423,7 +424,7 @@ topology. The shapes transfer; the levels are the worst case.</p>
      variable, because the build check asserts that the script references each
      key it declares -- an indirect S[k] would hide an unused or misspelt one. */
   var CFUNIT = {
-    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun,
+    cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun, cRatioX: S.cRatioX,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
     cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
     cRetained: S.cRetained

@@ -20,7 +20,7 @@
 | H200 143G · B300 275G | 1 | Modal 租的 | 500 – 128 000 | 2026-09-03 |
 | RTX PRO 6000 96G | 1、2 | Modal 租的 | 500 – 128 000 | 2026-09-03 |
 
-十三种机器配置、八个 checkpoint、56 个结果文件里 5 624 条请求级测量、两份跨机器投影里 2 247 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、11 篇中英对照的长文——这些计数和下面每个数字一样,都由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
+十三种机器配置、八个 checkpoint、56 个结果文件里 5 624 条请求级测量、两份跨机器投影里 2 247 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、12 篇中英对照的长文——这些计数和下面每个数字一样,都由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
 
 ### 主要发现
 
