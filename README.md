@@ -38,10 +38,79 @@ Three things, each usable on its own:
 | | |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
+| 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
-### Which GPUs this applies to
+### Who this is for
+
+You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actually work. You are probably here because of one of these:
+
+- 🔴 **It crashes immediately**: `NCCL error: unhandled cuda error`, or
+  `HIP failure 'the operation cannot be performed in the present state'`.
+  → **[Jump to the 60-second triage](#am-i-hit-by-the-rccl-bug)**. This is the single biggest blocker on consumer Radeon, it has been open upstream for months with no published root cause, and this repository explains and fixes it.
+- 🟡 **It runs, but you do not know what to expect** → [The pair, measured](#the-pair-measured)
+- 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
+
+**Not a vLLM fork.** The RCCL fix lives below vLLM — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against. [`patches/`](patches/) does carry downstream vLLM changes, but only the ones the 2026-08-24 campaign needed; none of them is part of the fix this repository is about.
+
+**Status.** A reproducible engineering record, not a supported product:
+
+- The RCCL fix exists because upstream has been silent for months. **When ROCm
+  ships an RCCL whose device kernels declare no hostcall, that part becomes
+  obsolete** and will be marked as such.
+- ROCm releases roughly every 6 weeks; expect version drift. Binaries are tied to
+  **both** an architecture and a ROCm version.
+- Verified on **gfx1100 only**. Prebuilt binaries cover more architectures
+  because they cost nothing extra to compile — they are **not verified**.
+- Welcome: `hipgate3` output from any machine, benchmark numbers, corrections.
+  Out of scope: general ROCm/vLLM support.
+
+[**docs/open-questions.md**](docs/open-questions.md) lists what we deliberately
+have *not* proven — including which upstream change flipped shipped binaries
+from zero hostcall to three.
+
+---
+
+## Findings
+
+One line each, the number first, the write-up behind the link. Every figure is
+recomputed from the committed rows by `verify_doc_figures.py` before it is
+published, and the page each link opens says how.
+
+- **What a second card is worth is decided by the memory controller, not the
+  interconnect** — `mem_busy` orders the answer in five settings that share no
+  hardware, second Radeon to second H100 ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
+- **The collective spans 62× across seven pairs and quads, and inference uses
+  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
+  ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
+- **Four rented cards chose three attention backends** with no flag anywhere,
+  so every cross-machine ratio carries a backend term — read out of each serve
+  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
+- **What flattens a curve at 128 000 tokens is a bounded attention window, not a
+  recurrent state**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
+  21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
+- **The pair itself now reaches 128 000** — four of six models run the sixteen-rung ladder to 128 000 on two 20 GB cards, the gemma arms ending at about half their 500-token rate (the 12B −52.5 %) and the bounded-window Muse-Glimmer at −17.3 %, with the telemetry saying which of those is compute and which is memory ([`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)).
+- **Eleven lines in the paged-decode kernel are worth 2.75× and 3.15× at 32 K**
+  on the two sliding-window models, because the stock loop reads the whole
+  sequence and masks the window away ([why](docs/sliding-window-block-skip.md)).
+- **Speculative decoding's 3.4× collapse at 32 K is a path choice**: two query
+  tokens a step drop the Triton attention launcher from the segmented 3D path to
+  the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
+  to 32.57 tok/s at 32 K, validated on both vendors
+  ([why](docs/speculative-decoding-on-rdna.md)).
+- **The second Radeon buys 1.70× on BF16 and 1.19× on w4a16**, and the RCCL fix
+  that makes it possible at all is the section after next
+  ([the pair, measured](#the-pair-measured)).
+
+---
+
+## The RCCL bug
+
+What stops most people before they start: `--tensor-parallel-size 2` dies in the
+first collective. Who it hits, how to tell in sixty seconds, and the one-line
+and the ninety-minute fix.
+
+### Who is hit
 
 The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU that
 cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
@@ -89,19 +158,7 @@ two-GPU build can land in exactly this shape with no VM involved.
 >   [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) checks the result
 >   independently of who compiled it.
 
----
-
-## Who this is for
-
-You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actually work. You are probably here because of one of these:
-
-- 🔴 **It crashes immediately**: `NCCL error: unhandled cuda error`, or
-  `HIP failure 'the operation cannot be performed in the present state'`.
-  → **[Jump to the 60-second triage](#am-i-hit-by-the-rccl-bug)**. This is the single biggest blocker on consumer Radeon, it has been open upstream for months with no published root cause, and this repository explains and fixes it.
-- 🟡 **It runs, but you do not know what to expect** → [What performance to expect](#what-performance-to-expect)
-- 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
-
-**Not a vLLM fork.** The RCCL fix lives below vLLM — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against. [`patches/`](patches/) does carry downstream vLLM changes, but only the ones the 2026-08-24 campaign needed; none of them is part of the fix this repository is about.
+### The messages
 
 <details>
 <summary><b>Did you get here from a search engine?</b> These are the exact messages this repository explains</summary>
@@ -134,9 +191,7 @@ it is one of the 11 combinations in `diagnose/sweep.sh`.
 
 </details>
 
----
-
-## Verified configuration
+### Verified configuration
 
 Everything below was measured on this machine. Nothing is extrapolated.
 
@@ -151,9 +206,7 @@ Everything below was measured on this machine. Nothing is extrapolated.
 > The topology is intentionally hostile. If it works here, a bare-metal box with
 > P2P should do at least as well.
 
----
-
-## Am I hit by the RCCL bug?
+### Am I hit by the RCCL bug?
 
 **If your GPUs are passed through to a VM, check one thing first.** Passing a
 card's audio function alongside the GPU stops QEMU from advertising PCIe
@@ -190,45 +243,9 @@ dispatch was refused and the `printf` silently never arrives. It also runs per
 device: a machine can have one affected GPU behind the chipset and one healthy one
 on CPU-direct lanes.
 
-<details>
-<summary><b>What is actually wrong</b> (click to expand)</summary>
-
-```
-PCIe AtomicOps cannot reach the GPU
-   (a consumer chipset switch does not route them to slots behind
-    it; a QEMU root port advertises no completer support unless the
-    device is passed as a single function -- see docs/vfio-atomics.md)
-        ▼
-amdgpu disables PCIe atomics    →  dmesg: "PCIE atomic ops is not supported"
-        ▼
-ROCr cannot establish a hostcall buffer (its signalling needs atomics)
-        ▼
-Any kernel that *declares* hidden_hostcall_buffer is refused at dispatch
-        ▼
-RCCL ≥ 2.27.7-b43 device kernels declare it — because of device-side assert(),
-a debug facility that never runs on the happy path
-        ▼
-The first cross-GPU collective dies with hipErrorIllegalState
-```
-
-Confirmed at the driver level with `AMD_LOG_LEVEL=4`:
-
-```
-rocvirtual.cpp:4208  Pcie atomics not enabled, hostcall not supported
-rocvirtual.cpp:4636  AQL dispatch failed!
-```
-
-**This is not a Radeon-only problem.** The trigger is the PCIe path, not the card,
-so it reaches **any VFIO/QEMU passthrough guest whose emulated root port declines
-to advertise completer support — including virtualised Instinct.** On the Proxmox
-default that is because the card is passed multifunction, and passing the
-function explicitly fixes it; `vfio_pci_enable_rp_atomics()` has six other ways
-to decline, listed in [vfio-atomics.md](docs/vfio-atomics.md) §1.
-
-Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
-**[docs/root-cause.md](docs/root-cause.md)**
-
-</details>
+The chain from a missing PCIe AtomicOp to `hipErrorIllegalState` is five steps,
+each with the command that shows it, in **[docs/root-cause.md](docs/root-cause.md)** —
+with the 13 hypotheses that were tested and the 12 that were eliminated.
 
 **→ Fix it: [docs/deploy-vllm.md](docs/deploy-vllm.md)** · **→ Not sure yet: [docs/diagnosis.md](docs/diagnosis.md)**
 
@@ -246,7 +263,7 @@ Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
 
 ---
 
-## What performance to expect
+## The pair, measured
 
 **The 2026-07-25 baseline, the pair alone.** Five models × eleven context lengths, 292 measurements, zero errors, on stock
 vLLM. Full write-up in **[docs/benchmarks.md](docs/benchmarks.md)**; raw data and
@@ -532,11 +549,6 @@ file each came from, and exits non-zero if one disagrees.
 - **Architecture beats parameter count.** The fastest model here is the 26B MoE,
   ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
   both measured in the 2026-08-24 campaign.
-  *(Corrected 2026-08-27: this used to read "the slowest is a 27B, beaten 3.6× by
-  a larger 31B dense". That comparison is confounded — the 27B's checkpoint is
-  asymmetric int4 and misses the native W4A16 kernel, worth up to 3.24× on its
-  own, see [w4a16-symmetry](benchmarks/w4a16-symmetry/). The MoE-over-dense
-  result is not confounded: every model in it is on its best kernel path.)*
 - **Never benchmark with `--enforce-eager`.** It costs **3.8–7.2×** on this stack and
   invents artefacts (asymmetric power, context-independence). Two wrong conclusions
   in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
@@ -545,38 +557,10 @@ file each came from, and exits non-zero if one disagrees.
   1.19×, because the quantised model was never bandwidth-bound in the first place.
   For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
   151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
-  *(2026-09-02: **measured, on the memory controller.** One sitting, both models,
-  both topologies: the 8B's single card runs at **90 % `mem_busy`** and the 12B's
-  at **56 %**, and across five cells the second card's gain follows that number
-  and nothing else in the row. So "never bandwidth-bound in the first place" is
-  no longer an inference from the scaling it explains
-  ([data](benchmarks/campaign-2026-09-02d/)). Two other candidates are out with
-  counters: the collective, which both models pay within 0.6 ms of each other
-  per step, and the power cap — both TP=1 arms sit at 52 % of it.)*
 - **Attention parallelises across two cards at about 90 %**, because it needs no
   communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
   1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
   method. The linear term improves 1.23–1.31×.
-  ~~Below ~1 K prompt tokens, one card prefills faster than two (3460 vs 2270
-  tok/s at 512): TP adds a ~76 ms per-request communication floor, 72
-  all-reduces at ~1.05 ms each.~~ **Withdrawn 2026-08-30.** Both halves rested
-  on the fitted intercept `a`, which does not survive re-measurement — the same
-  configurations give +76 ms in one campaign and +1.6 ms in the next, and one
-  fit returns a fixed cost below zero. `b` and `c` reproduce to a few percent;
-  `a` and the peak position do not
-  ([details](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)).
-  **The collective has since been timed** — 16.6–21.5 µs at the batch-1 shape,
-  1.20 ms across the 8B's 72 of them, so the withdrawn 1.05 ms *each* was 49 to
-  63 times the measurement
-  ([`benchmarks/allreduce-2026-09-02/`](benchmarks/allreduce-2026-09-02/)).
-  **The crossover is still unmeasured**, and the reading offered for it here
-  until 2026-09-02 — a first-request cost, round 1 slow — is wrong on this box:
-  five rounds of that cell, twice, put round 1 *fastest* in three of the four
-  arm-by-sitting combinations, and the spread tracks the clock the card had
-  reached, not the request number
-  ([`campaign-2026-09-02b/`](benchmarks/campaign-2026-09-02b/)). A 500-token
-  cell here carries roughly 15 % of noise however many rounds you give it, and
-  the three sittings that have measured it split 2:1 for the pair being ahead.
 - **Long context: avoid hybrid-SSM *under vLLM*.** The 27B costs 4.84 µs of decode
   time per token of context, **41× the dense 8B**; dense and MoE lose only 23–32 %
   out to 32 K. The cause is not the SSM layers — it is the model's few
@@ -589,6 +573,25 @@ file each came from, and exits non-zero if one disagrees.
   PR is not merged.
 - Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
   (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
+
+---
+
+## Beyond the pair
+
+The same ladder, the same six checkpoints and the same harness on eleven other
+machine configurations. The document for the rented sweep is
+[`benchmarks/cuda-modal/README.md`](benchmarks/cuda-modal/README.md); the four
+tables it turns on, in one line each:
+
+| | |
+|---|---|
+| **Two controls first** | A Modal A100 and a Modal L4 reproduce Colab's August rows inside 0.07 % and 0.9 %, so every rented ratio below is a card difference, not a platform one. |
+| **`mem_busy` predicts, ordinally** | The most memory-bound model gains most from bandwidth and loses most without it, in five settings; a prediction committed before the H200 run got the order right and the magnitude wrong. |
+| **The newest card is not the fastest card** | A B300 loses to an H100 on the 26B MoE and wins by 66 % on the 8B, at 1.8× the price. |
+| **NVLink is for the fourth card** | Adding cards three and four costs ×1.22 with NVLink and ×2.71 without; two without cost 20 % over two with. |
+
+The front page's [Figures 3 and 4](https://cadamcat.github.io/dual-radeon-vllm/#figlong)
+draw the pair's 2026-09-03 ladder against every rented machine, to 128 000.
 
 ---
 
@@ -723,38 +726,17 @@ benchmarks/   The measurement data and everything that produced it
                        so a slow kernel and a throttled card stop looking alike.
                        `preflight_host_link.sh` reads the host's PCIe root ports
                        before a Radeon campaign and refuses below x16
-  allreduce-2026-09-02/  the TP=2 collective, timed: 16.6-21.5 us at the
-                       batch-1 shape under graph replay, three timing modes,
-                       and the per-card PCIe ceiling it is a fraction of
-  campaign-2026-09-02/   gemma-4-31B TP=2 prefill on the link a reboot restored
-                       to x16; fitted `b` 868.7 -> 722.6
-  campaign-2026-09-02b/  the 500-token rung, five rounds, both arms of the 8B:
-                       what the shallowest rung's disagreement actually is
-  campaign-2026-09-02c/  the other two lines that had been measured on the
-                       narrowed link, and one run thrown away because the
-                       container had silently lost a patch
-  gfx1100-greedy-attn-ab/  the same two models forced onto the other attention
-                       backend with the quantisation kernel held fixed: the
-                       greedy non-determinism is not the attention backend
-  modal-2026-09-02/    six rented GPUs described before anything is measured --
-                       B300, B200, H100, RTX PRO 6000, L40S, A100-80GB -- for
-                       $0.054 and 39 seconds of GPU time
+  CAMPAIGNS.md         ★ every campaign directory, generated from the READMEs
+                       (the entries that used to be listed here, and the
+                       thirty that were not)
   prompts/             rebuild the prompt ladders from Gutenberg #1228, and check
                        them against the counts that were actually measured
   repro-mmap-prot.py   host→device copy from a writable mapping; kernel-sensitive
   repro-mmap-prot.hip.cpp  the same case in plain HIP, for machines with no
                        PyTorch — a hypervisor host, a rescue image, a bare ROCm
                        install
-  cuda-a100/           one day on a rented A100: the gemma-4 MTP collapse
-                       reproduced on CUDA and removed by rerouting — the
-                       cross-vendor control for docs/speculative-decoding-on-rdna.md
-  cuda-l4/             one NVIDIA L4 24G, sm89. Three campaigns: the spine's two
-                       models, then Qwen3-8B and a symmetric-int4 Qwen3.8, then
-                       what does and does not fit on 23 GiB
-  cuda-t4/             one Tesla T4 16G, sm75. The pre-flight is why there was no
-                       T4 row for a month; the campaign is what vllm#39018 makes
-                       possible — and the only rows here measured with a patch
-                       that changes an attention kernel
+  cuda-*/              the rented and granted CUDA cards, one directory per
+                       card; cuda-modal/README.md is the 2026-09-03 sweep
   ledger.jsonl         ★ the Radeon box's decode projection, one row per
                        (configuration, rung), with the stack and patch list of
                        every point. Built and gated by analyze/build_ledger.py
@@ -805,23 +787,52 @@ for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
 
 ---
 
-## Status and support policy
+## Corrections
 
-**A reproducible engineering record, not a supported product.**
+Every correction this page has carried stays on it. The bullets above now
+state what holds; what they used to say, and what changed it, is here.
 
-- The RCCL fix exists because upstream has been silent for months. **When ROCm
-  ships an RCCL whose device kernels declare no hostcall, that part becomes
-  obsolete** and will be marked as such.
-- ROCm releases roughly every 6 weeks; expect version drift. Binaries are tied to
-  **both** an architecture and a ROCm version.
-- Verified on **gfx1100 only**. Prebuilt binaries cover more architectures
-  because they cost nothing extra to compile — they are **not verified**.
-- Welcome: `hipgate3` output from any machine, benchmark numbers, corrections.
-  Out of scope: general ROCm/vLLM support.
+**Under *Architecture beats parameter count*.**
 
-[**docs/open-questions.md**](docs/open-questions.md) lists what we deliberately
-have *not* proven — including which upstream change flipped shipped binaries
-from zero hostcall to three.
+*(Corrected 2026-08-27: this used to read "the slowest is a 27B, beaten 3.6× by
+a larger 31B dense". That comparison is confounded — the 27B's checkpoint is
+asymmetric int4 and misses the native W4A16 kernel, worth up to 3.24× on its
+own, see [w4a16-symmetry](benchmarks/w4a16-symmetry/). The MoE-over-dense
+result is not confounded: every model in it is on its best kernel path.)*
+
+**Under *What the second card buys depends on the model*.**
+
+*(2026-09-02: **measured, on the memory controller.** One sitting, both models,
+both topologies: the 8B's single card runs at **90 % `mem_busy`** and the 12B's
+at **56 %**, and across five cells the second card's gain follows that number
+and nothing else in the row. So "never bandwidth-bound in the first place" is
+no longer an inference from the scaling it explains
+([data](benchmarks/campaign-2026-09-02d/)). Two other candidates are out with
+counters: the collective, which both models pay within 0.6 ms of each other
+per step, and the power cap — both TP=1 arms sit at 52 % of it.)*
+
+**Under *Attention parallelises across two cards at about 90 %*.**
+
+~~Below ~1 K prompt tokens, one card prefills faster than two (3460 vs 2270
+tok/s at 512): TP adds a ~76 ms per-request communication floor, 72
+all-reduces at ~1.05 ms each.~~ **Withdrawn 2026-08-30.** Both halves rested
+on the fitted intercept `a`, which does not survive re-measurement — the same
+configurations give +76 ms in one campaign and +1.6 ms in the next, and one
+fit returns a fixed cost below zero. `b` and `c` reproduce to a few percent;
+`a` and the peak position do not
+([details](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)).
+**The collective has since been timed** — 16.6–21.5 µs at the batch-1 shape,
+1.20 ms across the 8B's 72 of them, so the withdrawn 1.05 ms *each* was 49 to
+63 times the measurement
+([`benchmarks/allreduce-2026-09-02/`](benchmarks/allreduce-2026-09-02/)).
+**The crossover is still unmeasured**, and the reading offered for it here
+until 2026-09-02 — a first-request cost, round 1 slow — is wrong on this box:
+five rounds of that cell, twice, put round 1 *fastest* in three of the four
+arm-by-sitting combinations, and the spread tracks the clock the card had
+reached, not the request number
+([`campaign-2026-09-02b/`](benchmarks/campaign-2026-09-02b/)). A 500-token
+cell here carries roughly 15 % of noise however many rounds you give it, and
+the three sittings that have measured it split 2:1 for the pair being ahead.
 
 ---
 

@@ -22,6 +22,19 @@
 
 十三种机器配置、八个 checkpoint、56 个结果文件里 5 624 条请求级测量、两份跨机器投影里 2 247 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、11 篇中英对照的长文——这些计数和下面每个数字一样,都由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
 
+### 主要发现
+
+一行一条，数字在前，链接后面是正文；每个数字发布前都由 `verify_doc_figures.py` 从已入库的行重算。
+
+- **第二张卡值多少，由内存控制器决定，不由互联决定**——`mem_busy` 在五种互不共享硬件的设定里都排对了顺序，从第二张 Radeon 到第二张 H100（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
+- **集合通信在七组双卡/四卡上跨 62 倍，而推理一点没用到**：batch 1 解码落在延迟端，那一端只跨 3.2 倍（[`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)）。
+- **四张租来的卡自己选了三种注意力后端**，没人传过参数，所以每个跨机器比值都带一项后端差——从每份 serve 日志里读出来的，不是假定的（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
+- **128 000 token 处让曲线变平的是有界注意力窗口，不是循环状态**：H100 上 Muse-Glimmer 掉 4.8 %，混合 SSM 的 27B 掉 21.8 %，跟稠密 31B 一样深（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
+- **这对卡自己也到了 128 000**——六个模型里四个在两张 20 GB 卡上跑完十六档到 128 000，gemma 各臂到头只剩 500 token 时的一半左右（12B −52.5 %），有界窗口的 Muse-Glimmer 只掉 17.3 %，遥测能说清哪一个是算力、哪一个是内存（[`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)）。
+- **分页解码内核里改十一行，两个滑窗模型在 32 K 各值 2.75 倍和 3.15 倍**，因为原版循环把整段序列读一遍再把窗口外的掩掉（[为什么](docs/sliding-window-block-skip.md)）。
+- **投机解码在 32 K 慢 3.4 倍，是路径选择的问题**：每步两个 query token 让 Triton 注意力从分段的 3D 路径掉到串行的 2D 路径，放回 3D（vllm#45450）后这对卡在 32 K 从 8.81 回到 32.57 tok/s，两家厂商的卡上都验证过（[为什么](docs/speculative-decoding-on-rdna.md)）。
+- **第二张 Radeon 在 BF16 上值 1.70 倍，w4a16 上 1.19 倍**，而让它能跑起来的那个 RCCL 修复在下一节。
+
 > 这是一页浓缩的中文导览,只讲三件事:怎么确诊、怎么修、能跑多快。**所有数字与细节以英文文档为准**;报错、命令、配置一律保留英文原样,因为你要搜的、要跑的就是它们。
 
 ## 我是不是中招了?

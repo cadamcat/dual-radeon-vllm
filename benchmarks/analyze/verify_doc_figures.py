@@ -3117,12 +3117,13 @@ def main():
     # every campaign directory this round produced has a line in the map -- and
     # "in the map", not "somewhere on the page": each of these is also a link
     # in the prose above, so a substring test passes on a map that lost the row.
+    # since commit C (2026-09-03) the map names CAMPAIGNS.md instead of listing
+    # campaign directories by hand; the five this round produced are held to
+    # the generated index in the "README C map" gates below
     _map = _RM[_RM.index("## Repository map"):]
     _map = _map[:_map.index("\n## ", 1)]
-    for _d in ("allreduce-2026-09-02/", "campaign-2026-09-02/",
-               "campaign-2026-09-02b/", "campaign-2026-09-02c/",
-               "gfx1100-greedy-attn-ab/"):
-        ck("README map, lists %s" % _d, "1", 1 if _d in _map else 0)
+    ck("README map, points at the generated campaign index", "1",
+       len(re.findall(r"^  CAMPAIGNS\.md +★", _map, re.M)))
 
     # ...and the a100 article's section 9, which this measurement replaced.
     #: what marks a paragraph as retracting rather than asserting
@@ -3756,6 +3757,91 @@ def main():
     ck("0903 README, the crossover range, high end", _m.group(2).replace(" ", "") if _m else "-1", _xo[-1])
     ck("0903 README, and the 27B's is the largest b", "1",
        1 if max(_c3fits, key=lambda c: _c3fits[c]["b_us_tok"]) == "D8-27B-tp2-long" else 0)
+    # --- README after the 2026-09-03 restructure (commit C) --------------------
+    # The page moved its sections and grew four: Findings, The RCCL bug, Beyond
+    # the pair, Corrections. Moved sentences keep their own gates above; what
+    # is new is held here -- every anchor resolves, every number in the two new
+    # lists is the number the linked document carries (and that document is
+    # gated to the data), and the map points at the generated index instead of
+    # listing campaigns by hand.
+    _rC = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    _rCz = open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read()
+    for _h in ("## Findings", "## The RCCL bug", "## The pair, measured", "## Beyond the pair", "## Corrections"):
+        ck("README C, section %s" % _h[3:], "1", _rC.count("\n" + _h + "\n"))
+    ck("README C, and the old top-level headers are gone", "0",
+       sum(1 for h in ("\n## Who this is for\n", "\n## Verified configuration\n", "\n## Am I hit by the RCCL bug?\n",
+                       "\n## What performance to expect\n", "\n## Status and support policy\n") if h in _rC))
+    _order = [_rC.find("\n" + h + "\n") for h in ("## Findings", "## The RCCL bug", "## The pair, measured", "## Beyond the pair",
+                                                   "## What does *not* work", "## Hardware notes", "## Repository map",
+                                                   "## Corrections", "## Credits and licence")]
+    ck("README C, the order is the approved one", "1",
+       1 if all(i >= 0 for i in _order) and _order == sorted(_order) else 0)
+    # every in-page anchor resolves to a header, in both languages
+    def _slugs(t):
+        return {re.sub(r"[^a-z0-9一-鿿 -]", "", re.sub(r"[*`]", "", h).lower()).strip().replace(" ", "-")
+                for h in re.findall(r"^#{1,6} (.*)$", t, re.M)}
+    for _lang, _t in (("en", _rC), ("zh", _rCz)):
+        _anch = set(re.findall(r"\]\(#([^)]+)\)", _t))
+        ck("README C, %s: in-page anchors that resolve" % _lang, str(len(_anch)),
+           sum(1 for a in _anch if a in _slugs(_t)))
+    # the two new lists quote numbers that live in gated documents; each number
+    # must be the same string there, so a change in the source shows up here
+    def _sec(t, a, b):
+        """the text between two headers, or "" when either is missing -- the
+        section gates above say which, and nothing below may crash on it"""
+        i, j = t.find(a), t.find(b)
+        return t[i:j] if i >= 0 and j > i else ""
+    _fnd = _sec(_rC, "## Findings", "## The RCCL bug")
+    _byd = _sec(_rC, "## Beyond the pair", "## What does *not* work")
+    _cm = open(os.path.join(_BR, "cuda-modal", "README.md"), encoding="utf-8").read()
+    _sw = open(os.path.join(ROOT, "docs", "sliding-window-block-skip.md"), encoding="utf-8").read()
+    _sp = open(os.path.join(ROOT, "docs", "speculative-decoding-on-rdna.md"), encoding="utf-8").read()
+    for _num, _doc, _name in (("62×", _cm, "collective range"), ("3.2×", _cm, "latency range"),
+                              ("4.8 %", _cm, "Muse at 128 000"), ("21.8 %", _cm, "the 27B at 128 000"),
+                              ("22.0 %", _cm, "the 31B at 128 000"),
+                              ("2.75×", _sw, "gemma-3 block skip"), ("3.15×", _sw, "the other block skip"),
+                              ("3.4x", _sp, "the MTP collapse"), ("8.81", _rC, "2D path at 32 K"), ("32.57", _rC, "3D path at 32 K"),
+                              ("1.70×", _rC, "the second card on BF16"), ("1.19×", _rC, "the second card on w4a16")):
+        _in_list = _num in _fnd or _num.replace("x", "×") in _fnd
+        ck("README C findings, %s is in the list" % _name, "1", 1 if _in_list else 0)
+        ck("README C findings, and %s is what the source says" % _name, "1", 1 if _num in _doc else 0)
+    ck("README C findings, eight of them", "8", len(re.findall(r"^- \*\*", _fnd, re.M)))
+    ck("README C findings, and every one links somewhere", "8", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
+    ck("README C findings, the pair's own 128 000 line is filled in", "0", _fnd.count("[PAIR_128K_LINE"))
+    for _num, _name in (("0.07 %", "the A100 control"), ("66 %", "B300 over H100 on the 8B"), ("1.8×", "the B300's price"),
+                        ("×1.22", "cards three and four with NVLink"), ("×2.71", "and without"), ("20 %", "two without over two with")):
+        ck("README C beyond, %s is quoted" % _name, "1", 1 if _num in _byd else 0)
+        ck("README C beyond, and %s is what cuda-modal says" % _name, "1", 1 if _num in _cm else 0)
+    # the L4 control: 25.29 against Colab's 25.07 and 25.17 -> inside 0.9 %
+    _l4 = [r for r in _RTD if r["machine"] == "L4" and r["cfg"] == "G12" and r["ctx"] == 32000]
+    _l4m = [r["decode_tok_s"] for r in _l4 if r["date"] == "2026-09-03"]
+    _l4c = [r["decode_tok_s"] for r in _l4 if r["date"] != "2026-09-03"]
+    ck("README C beyond, the L4 control's worst disagreement", "0.9",
+       max(abs(_l4m[0] / c - 1) * 100 for c in _l4c) if _l4m and _l4c else -1)
+    ck("README C beyond, four rows", "4", sum(1 for l in _byd.split("\n") if l.startswith("| **")))
+    # the map: campaigns live in the generated index now
+    _mapC = _sec(_rC, "## Repository map", "## Corrections")
+    # the map's own entry, not a mention of the file somewhere in the section
+    ck("README C map, points at CAMPAIGNS.md", "1", len(re.findall(r"^  CAMPAIGNS\.md +★", _mapC, re.M)))
+    _camp = open(os.path.join(_BR, "CAMPAIGNS.md"), encoding="utf-8").read()
+    for _d in ("allreduce-2026-09-02/", "campaign-2026-09-02/", "campaign-2026-09-02b/",
+               "campaign-2026-09-02c/", "gfx1100-greedy-attn-ab/", "campaign-2026-09-03/", "cuda-modal/"):
+        ck("README C map, %s is in the index it points at" % _d, "1", 1 if _d in _camp else 0)
+    ck("README C map, and no longer lists campaign directories by hand", "0",
+       len(re.findall(r"\n  campaign-20\d\d-\d\d-\d\d\w*/", _mapC)))
+    # the corrections: moved, not dropped
+    _corr = _sec(_rC, "## Corrections", "## Credits and licence")
+    for _mark in ("Corrected 2026-08-27", "2026-09-02: **measured, on the memory controller.**", "Withdrawn 2026-08-30"):
+        ck("README C corrections, carries %s" % _mark[:20], "1", _corr.count(_mark))
+        ck("README C corrections, and the bullet above no longer does", "0",
+           _sec(_rC, "### How to read this", "## Beyond the pair").count(_mark))
+    # the Chinese page mirrors the list, item for item
+    _zf = _sec(_rCz, "### 主要发现", "> 这是一页浓缩的中文导览")
+    ck("README C zh, the Findings section is there", "1", 1 if _zf else 0)
+    ck("README C zh, eight findings", "8", len(re.findall(r"^- \*\*", _zf, re.M)))
+    ck("README C zh, the same numbers", "10",
+       sum(1 for n in ("62", "3.2", "4.8 %", "21.8 %", "2.75", "3.15", "3.4", "8.81", "32.57", "1.70") if n in _zf))
+    ck("README C zh, the pair's line is filled in", "0", _zf.count("[PAIR_128K_LINE"))
     ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())
