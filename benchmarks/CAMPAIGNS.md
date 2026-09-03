@@ -12,6 +12,7 @@ finding, a preflight, or a sweep that writes its own files.
 |---|---|--:|:--:|
 | [`gfx1100-greedy-attn-ab/`](gfx1100-greedy-attn-ab/README.md) | Is the greedy non-determinism the attention backend? — 2026-09-02 | — |  |
 | [`gfx1100-greedy-eager-ab/`](gfx1100-greedy-eager-ab/README.md) | Does `--enforce-eager` remove the greedy non-determinism? — 2026-08-30 | — |  |
+| [`gfx1100-w4a16-54706/`](gfx1100-w4a16-54706/README.md) | The greedy non-determinism is the W4A16 kernel — vllm#54706 built and A/B'd, 2026-09-03 | — |  |
 | [`harness-calibration/`](harness-calibration/README.md) | Do this repository's two decode harnesses measure the same thing? | — |  |
 | [`rccl-6565/`](rccl-6565/README.md) | ROCm#6565 does not reproduce at RCCL 2.30.4 on a contrasting dual-gfx1100 box | — |  |
 | [`vllm-50603/`](vllm-50603/README.md) | The gfx11 `gqa_ratio >= 3` gate costs 2-7x, and buys nothing | — |  |
@@ -64,4 +65,4 @@ finding, a preflight, or a sweep that writes its own files.
 | [`allreduce-2026-09-02/`](allreduce-2026-09-02/README.md) | The TP=2 all-reduce, timed — 2026-09-02 | 55 |  |
 | [`allreduce-2026-09-03/`](allreduce-2026-09-03/README.md) | The collective, on seven rented configurations — 2026-09-03 | — |  |
 
-43 directories; 26 feed the projections.
+44 directories; 26 feed the projections.

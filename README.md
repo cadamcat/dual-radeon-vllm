@@ -98,6 +98,11 @@ published, and the page each link opens says how.
   the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
   to 32.57 tok/s at 32 K, validated on both vendors
   ([why](docs/speculative-decoding-on-rdna.md)).
+- **The greedy non-determinism is the W4A16 kernel's split-K epilogue**: with
+  vllm#54706's fixed-order reduction built into this container's own vLLM
+  commit, 32 of 32 greedy generations come back identical where the same build
+  without it varies in two of four cells, backend held
+  ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
 - **The second Radeon buys 1.70× on BF16 and 1.19× on w4a16**, and the RCCL fix
   that makes it possible at all is the section after next
   ([the pair, measured](#the-pair-measured)).

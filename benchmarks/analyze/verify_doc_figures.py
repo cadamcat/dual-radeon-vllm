@@ -3846,17 +3846,19 @@ def main():
     _cm = open(os.path.join(_BR, "cuda-modal", "README.md"), encoding="utf-8").read()
     _sw = open(os.path.join(ROOT, "docs", "sliding-window-block-skip.md"), encoding="utf-8").read()
     _sp = open(os.path.join(ROOT, "docs", "speculative-decoding-on-rdna.md"), encoding="utf-8").read()
+    _c1r = open(os.path.join(_BR, "gfx1100-w4a16-54706", "README.md"), encoding="utf-8").read()
     for _num, _doc, _name in (("62×", _cm, "collective range"), ("3.2×", _cm, "latency range"),
                               ("4.8 %", _cm, "Muse at 128 000"), ("21.8 %", _cm, "the 27B at 128 000"),
                               ("22.0 %", _cm, "the 31B at 128 000"),
                               ("2.75×", _sw, "gemma-3 block skip"), ("3.15×", _sw, "the other block skip"),
                               ("3.4x", _sp, "the MTP collapse"), ("8.81", _rC, "2D path at 32 K"), ("32.57", _rC, "3D path at 32 K"),
-                              ("1.70×", _rC, "the second card on BF16"), ("1.19×", _rC, "the second card on w4a16")):
+                              ("1.70×", _rC, "the second card on BF16"), ("1.19×", _rC, "the second card on w4a16"),
+                              ("32 of 32", _c1r, "the patched kernel's generations"), ("two of four", _c1r, "the unpatched kernel's cells")):
         _in_list = _num in _fnd or _num.replace("x", "×") in _fnd
         ck("README C findings, %s is in the list" % _name, "1", 1 if _in_list else 0)
         ck("README C findings, and %s is what the source says" % _name, "1", 1 if _num in _doc else 0)
-    ck("README C findings, eight of them", "8", len(re.findall(r"^- \*\*", _fnd, re.M)))
-    ck("README C findings, and every one links somewhere", "8", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
+    ck("README C findings, nine of them", "9", len(re.findall(r"^- \*\*", _fnd, re.M)))
+    ck("README C findings, and every one links somewhere", "9", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
     ck("README C findings, the pair's own 128 000 line is filled in", "0", _fnd.count("[PAIR_128K_LINE"))
     for _num, _name in (("0.07 %", "the A100 control"), ("66 %", "B300 over H100 on the 8B"), ("1.8×", "the B300's price"),
                         ("×1.22", "cards three and four with NVLink"), ("×2.71", "and without"), ("20 %", "two without over two with")):
@@ -3888,10 +3890,73 @@ def main():
     # the Chinese page mirrors the list, item for item
     _zf = _sec(_rCz, "### 主要发现", "> 这是一页浓缩的中文导览")
     ck("README C zh, the Findings section is there", "1", 1 if _zf else 0)
-    ck("README C zh, eight findings", "8", len(re.findall(r"^- \*\*", _zf, re.M)))
+    ck("README C zh, nine findings", "9", len(re.findall(r"^- \*\*", _zf, re.M)))
     ck("README C zh, the same numbers", "10",
        sum(1 for n in ("62", "3.2", "4.8 %", "21.8 %", "2.75", "3.15", "3.4", "8.81", "32.57", "1.70") if n in _zf))
+    ck("README C zh, and the kernel line's numbers", "2", sum(1 for n in ("32 次贪心生成 32 次一致", "四个格子里有两个") if n in _zf))
     ck("README C zh, the pair's line is filled in", "0", _zf.count("[PAIR_128K_LINE"))
+    # --- gfx1100-w4a16-54706: the kernel A/B, 2026-09-03 --------------------
+    # Every cell of the README's table is recomputed from the eight sequences
+    # each run wrote; the arms' objects are the ones the build logs produced;
+    # the restore put the shipped object back; and the README's words are
+    # the ones the data supports.
+    _k1 = os.path.join(_BR, "gfx1100-w4a16-54706")
+    _k1r = open(os.path.join(_k1, "README.md"), encoding="utf-8").read()
+    _k1log = open(os.path.join(_k1, "c1-ab.log"), encoding="utf-8", errors="replace").read()
+    _k1cells = {}
+    for _arm in ("baseline", "pr54706"):
+        for _w in ("muse", "gemma3"):
+            _j = json.load(open(os.path.join(_k1, "nondet-c1-%s-%s-ROCM_ATTN-p1.json" % (_arm, _w)), encoding="utf-8"))
+            ck("kernel A/B, %s %s ran on ROCM_ATTN" % (_arm, _w), "1", 1 if _j["attn_backend"] == "ROCM_ATTN" else 0)
+            for _row in _j["rows"]:
+                ck("kernel A/B, %s %s at %d: eight repeats" % (_arm, _w, _row["depth"]), "8", _row["repeats"])
+                ck("kernel A/B, %s %s at %d: distinct is the count of distinct sequences" % (_arm, _w, _row["depth"]),
+                   str(_row["distinct"]), len({json.dumps(s) for s in _row["seqs"]}))
+                _k1cells[(_arm, _w, _row["depth"])] = _row["distinct"]
+    _k1ship = {}
+    for _w in ("muse", "gemma3"):
+        _j = json.load(open(os.path.join(_BR, "gfx1100-greedy-attn-ab", "nondet-attn-%s-ROCM_ATTN-p1.json" % _w), encoding="utf-8"))
+        for _row in _j["rows"]:
+            _k1ship[(_w, _row["depth"])] = _row["distinct"]
+    for _name, _w, _d in (("Muse-Glimmer-30B, 512", "muse", 512), ("Muse-Glimmer-30B, 8 192", "muse", 8192),
+                          ("gemma-3-27b w4a16, 512", "gemma3", 512), ("gemma-3-27b w4a16, 8 192", "gemma3", 8192)):
+        _m = re.search(r"^\| " + re.escape(_name) + r" \| (\d+)(?: distinct)? of 8 \| \**(\d+)(?: distinct)? of 8\** \| (\d+) of 8 \|$", _k1r, re.M)
+        ck("kernel A/B README, row for %s" % _name, "1", 1 if _m else 0)
+        if _m:
+            ck("kernel A/B README, %s: the wheel" % _name, _m.group(1), _k1ship[(_w, _d)])
+            ck("kernel A/B README, %s: our baseline" % _name, _m.group(2), _k1cells[("baseline", _w, _d)])
+            ck("kernel A/B README, %s: with the PR" % _name, _m.group(3), _k1cells[("pr54706", _w, _d)])
+    ck("kernel A/B, the patched arm: 32 of 32 identical", "4",
+       sum(1 for k, d in _k1cells.items() if k[0] == "pr54706" and d == 1))
+    ck("kernel A/B, the unpatched arm varies in two of four cells", "2",
+       sum(1 for k, d in _k1cells.items() if k[0] == "baseline" and d > 1))
+    ck("kernel A/B README, says 32 of 32 and two of four", "2",
+       sum(1 for w in ("**32 of 32**", "two of four") if w in _k1r))
+    # the arms are the built objects, and the shipped one came back
+    _k1b = {arm: open(os.path.join(_k1, "build-%s" % arm, "build.log"), encoding="utf-8", errors="replace").read() for arm in ("baseline", "pr54706")}
+    _k1so = {arm: re.search(r"^([0-9a-f]{32})  /rb/c1[bc]/build/_rocm_C\.abi3\.so$", _k1b[arm], re.M).group(1) for arm in _k1b}
+    for _arm in ("baseline", "pr54706"):
+        ck("kernel A/B, %s installed what its build produced" % _arm, "1",
+           1 if re.search(r"arm=%s installed: %s  /opt/[^ ]+_rocm_C\.abi3\.so %s " % (_arm, _k1so[_arm], _k1so[_arm]), _k1log) else 0)
+        ck("kernel A/B, %s build is HEAD 9ddef7117" % _arm, "1", 1 if "9ddef71179f5058983a487bb0f94ead39abba900" in _k1b[_arm] else 0)
+        ck("kernel A/B README, names %s's object" % _arm, "1", 1 if ("`%s…`" % _k1so[_arm][:8]) in _k1r else 0)
+    ck("kernel A/B, the baseline build says it applied no patch", "1", 1 if "baseline: PR not applied" in _k1b["baseline"] else 0)
+    ck("kernel A/B, the patched build modified the two files", "2", sum(1 for f in ("q_gemm_rdna3.cu", "q_gemm_rdna3_wmma.cu") if (" M csrc/rocm/%s" % f) in _k1b["pr54706"]))
+    _k1md = {arm: dict(re.findall(r"^([0-9a-f]{32})  csrc/rocm/(q_gemm_rdna3(?:_wmma)?\.cu)$", _k1b[arm], re.M)[i][::-1] for i in range(2)) for arm in _k1b}
+    ck("kernel A/B, the two files differ between the arms", "2",
+       sum(1 for f in ("q_gemm_rdna3.cu", "q_gemm_rdna3_wmma.cu") if _k1md["baseline"].get(f) != _k1md["pr54706"].get(f)))
+    ck("kernel A/B README, quotes the four file md5s", "4",
+       sum(1 for arm in _k1md for f in _k1md[arm] if ("`%s…`" % _k1md[arm][f][:8]) in _k1r))
+    _m = re.search(r"^([0-9a-f]{32})  /opt/python/[^\n]+_rocm_C\.abi3\.so\n([0-9a-f]{32})  /rb/c1ab/_rocm_C\.abi3\.so\.shipped", _k1log, re.M)
+    ck("kernel A/B, the shipped object was put back", "1", 1 if _m and _m.group(1) == _m.group(2) else 0)
+    ck("kernel A/B README, names the shipped object", "1", 1 if _m and ("`%s…`" % _m.group(1)[:8]) in _k1r else 0)
+    ck("kernel A/B, services restored and VRAM at baseline", "2",
+       (1 if "services: active active" in _k1log else 0) + (1 if "vram: 27971584 27971584" in _k1log else 0))
+    ck("kernel A/B, the attention patch state was left as found", "1", 1 if "patch state (first_block sites, left as found): 3" in _k1log else 0)
+    ck("kernel A/B, every run named its backend and kernel", "8",
+       _k1log.count("backend in log: Using ROCM_ATTN backend") + _k1log.count("quant kernel:   Using RDNA3W4A16LinearKernel"))
+    ck("kernel A/B, the PR diff applies to the two files at that commit", "1",
+       1 if "csrc/rocm/q_gemm_rdna3.cu" in open(os.path.join(_k1, "pr54706.diff"), encoding="utf-8").read() else 0)
     ck("benchmarks README, ledger rows", "265", len(led))
     ck("benchmarks README, ledger still matches its sources", "1",
        1 if build_ledger.dump(build_ledger.build())

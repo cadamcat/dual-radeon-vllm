@@ -71,6 +71,14 @@ candidate survives. **It cannot be A/B'd by swapping a file:** it changes
 extension compiled for gfx1100, and the PR carries no runtime switch. Budget a
 build, not an hour.
 
+**Resolved, 2026-09-03.** The build was made and the A/B run, in
+[`../gfx1100-w4a16-54706/`](../gfx1100-w4a16-54706/README.md): our own build
+of this container's vLLM commit varies in two of four cells like the wheel;
+the same build with #54706's two files returns 32 of 32 greedy generations
+identical, backend held at ROCM_ATTN and both logs naming the kernel. The
+quantisation kernel's split-K epilogue is the source; the paragraph above is
+kept as the state of knowledge this directory reached.
+
 ## The attempt that measured nothing, and why it is kept
 
 `logs-attempt1/` is a complete run of `muse` under both arms in which **both

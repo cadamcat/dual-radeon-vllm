@@ -32,7 +32,7 @@ that has a section of its own further down, in the same order:
 **The campaigns** — every experiment directory, generated from the tree
 
 The table that stood here was typed by hand and named eighteen of the
-forty-three directories that carry a README by 2026-09-03.
+forty-four directories that carry a README by 2026-09-03.
 [`CAMPAIGNS.md`](CAMPAIGNS.md) replaces it: `analyze/build_campaigns.py` walks
 `benchmarks/`, takes each README's first heading as the row, marks the
 directories whose `results.jsonl` the projections read, and `--check` fails
@@ -577,6 +577,16 @@ BENCH_TARGETS=500,8000 python3 bench_runner.py   # a subset of the ladder
 
 It is **checkpointed**: results already in `results.jsonl` are skipped, so an
 interrupted run resumes where it stopped.
+
+### `gfx1100-w4a16-54706/`
+
+The greedy non-determinism, settled: vllm#54706's two kernel files built into
+this container's own vLLM commit (`_rocm_C` for gfx1100, from the ROCm fork,
+with an unpatched build of the same source as the control), then the published
+harness at ROCM_ATTN on the two unstable models. The unpatched build varies in
+two of four cells as the wheel does; the patched one returns 32 of 32 greedy
+generations identical. The split-K epilogue is the source and the PR is the
+fix, on this box.
 
 ### `campaign-2026-09-03/`
 
