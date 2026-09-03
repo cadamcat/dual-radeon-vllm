@@ -27,7 +27,19 @@ Patch state, read out of the container before the run (the rule
 campaign-2026-09-02c earned): vllm 0.23.1.dev1+g9ddef7117.d20260715,
 chunked_prefill_paged_decode.py 63f0505d (vllm#45916 split-KV),
 triton_attn.py 7e275cdc (vllm#45450). The same container and the same two
-patches as campaign-2026-09-02d.
+patches as campaign-2026-09-02d -- which is `vllm-tp2`, and `CONTAINER` below
+says so.
+
+That last sentence was false for the first three attempts of this campaign.
+This file is copied from `harness/runner_radeon.py`, whose `CONTAINER`
+defaults to `vllm-027`; the md5s above were read out of `vllm-tp2` and the
+runs went to `vllm-027`, a different ROCm and a different vLLM. The
+verification was real and described a container that was not the one being
+measured, which is the same failure `campaign-2026-09-02c` is about, arrived
+at from the other direction. Both stacks have committed rows -- 172 on
+0.23/ROCm 7.14 against 94 on 0.27/ROCm 10.0 -- so this is a choice, not a
+repair, and it is made for 0.23 because the eleven rungs these sixteen extend
+were measured there.
 """
 import json, os, re, subprocess, sys, time, random, string, threading
 import requests
@@ -35,13 +47,17 @@ import requests
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from harness.telemetry import Sampler, describe   # noqa: E402
 
-D = "/data/rccl-build/bench0830d"
-D_IN_CONTAINER = "/rb/bench0830d"
+# Its own directory. The template carries the 2026-08-30 campaign's, and
+# the first three attempts of this one appended their rows and serve logs
+# to that campaign's files -- a work directory is not a detail when the
+# runner appends.
+D = "/data/rccl-build/bench0903"
+D_IN_CONTAINER = "/rb/bench0903"
 # gemma-4 cannot be served on the 0.27 ROCm image at all -- its Quark plugin
 # reads head_dim off a heterogeneous config and dies before loading. Its rows
 # come from the 0.23 container, which is the stack the 08-24 campaign used,
 # so the MTP arm has that campaign's own ladder as its control.
-CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-027")
+CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-tp2")
 OTHER_CONTAINERS = ("vllm-027", "vllm-tp2")
 # the 2026-09-03 cut: sixteen rungs per tokenizer in one pass. See the
 # docstring for why the committed eleven were not extended in place.
