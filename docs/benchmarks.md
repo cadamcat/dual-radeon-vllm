@@ -24,7 +24,15 @@ Five models were chosen to isolate *architecture*, not size:
 
 ---
 
-## Where the machine stands, across every campaign
+## Where the machine stands, across the July and August campaigns
+
+*This document is the pair's own record: the campaigns of 2026-07-25 and
+2026-08-24 on 2× RX 7900 XT, read against each other. The cross-machine
+picture — twelve machine configurations, context to 128 000 — lives in
+[`benchmarks/prefill.jsonl`](../benchmarks/prefill.jsonl),
+[`benchmarks/decode.jsonl`](../benchmarks/decode.jsonl) and
+[`benchmarks/cuda-modal/README.md`](../benchmarks/cuda-modal/README.md), and is
+drawn on the front page.*
 
 Everything below this section is per-campaign: one software stack, one
 afternoon, every model pinned to it, which is what makes the controls in §6
@@ -679,7 +687,7 @@ controlling it ([open-questions.md §8](open-questions.md)).
 |---|---|---|
 | **speed with a large model** | **gemma-4-26B-A4B (MoE, compiled)** | 107.8 tok/s, still 72.8 at 32 K, concurrency 9.5×; costs a 26-minute first engine start, whose warm cost §1 says was not measured here |
 | best single-model quality | gemma-4-31B w4a16 | 43.2 tok/s, 29.5 at 32 K; concurrency only 1.74× |
-| short prompts, low latency | one card — or llama.cpp | below ~1 K tokens TP=1 has better TTFT; llama.cpp on one card still does 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
+| short prompts, low latency | one card — or llama.cpp | the short-prompt crossover between one card and two is **unmeasured** (the intercept-based claim was withdrawn in §4); what is measured is llama.cpp on one card at 64.9 tok/s on the 12B, above vLLM's dual-card 59.9 |
 | many concurrent users | 12B w4a16, TP=2 | 354 707 KV tokens, concurrency 10.75× |
 | **long context** | **Muse-Glimmer-30B, patched** | 37.4 tok/s at 32 K, a 0.122 µs slope, flat from its 2 048-token window onward; needs the window block-skip and a downstream port ([§6](#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)) |
 | long context, stock vLLM | **avoid hybrid-SSM** | the 27B drops to 4.2 tok/s at 32 K; dense and MoE lose only 23–32 %. [#45916](https://github.com/vllm-project/vllm/pull/45916) takes the same architecture to 10.7 tok/s and a 12.4× flatter slope, but it is unmerged, so on a stock install this stands |

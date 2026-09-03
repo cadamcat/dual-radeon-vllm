@@ -1165,12 +1165,12 @@ prefill never rises. On an H100 it rises <strong>19.4 %</strong> across the same
 the <code>Qwen3.6</code> arm this section is about. The claim was written about a model and was only
 ever true of the machines the model had been run on.)</em> Meanwhile <code>gemma-4-26B-A4B</code>, a
 MoE with no linear-attention layer at all, rises further than <code>Qwen3.6</code> does, 23.8 % in
-July and 21.9 % in August. Of the sixteen stock hybrid-SSM ladders now in
+July and 21.9 % in August. Of the seventeen stock hybrid-SSM ladders now in
 <code>benchmarks/prefill.jsonl</code> — one checkpoint family across seven machine configurations —
-<strong>seven rise by more than 1 %, one is flat, and eight fall</strong>. The same
-<code>Qwen3.8-27B</code> checkpoint runs from <strong>−31.1 %</strong> on two Radeons pinned to
-Triton to <strong>+103.0 %</strong> on two H100s. One architecture, one checkpoint, both signs and a
-range of 134 points — which is the point: what a rising prefill curve indicates is that a short
+<strong>seven rise by more than 1 %, one is flat, and nine fall</strong>. The same
+<code>Qwen3.8-27B</code> checkpoint runs from <strong>−38.7 %</strong> on two Radeons — the 2026-09-03
+ladder to 96 000, on <code>ROCM_ATTN</code> — to <strong>+103.0 %</strong> on two H100s. One architecture, one
+checkpoint, both signs and a range of 142 points — which is the point: what a rising prefill curve indicates is that a short
 prompt's fixed cost outweighs the quadratic term on that arm — not that the model carries a
 recurrent state. The decode collapse this article is about is unaffected either way:
 it is measured, not inferred from the same reasoning.</p>
@@ -1225,9 +1225,13 @@ newer stack this checkpoint also picks a different W4A16 linear kernel, worth ro
 nothing to do with attention. <strong>The absolute levels in the two figures are not comparable</strong>;
 the ratios and the shape are.</p>
 
-<h3>One machine</h3>
-<p>Single box, single vendor, batch 1 throughout. The occupancy argument predicts that the collapse should
-soften as batch size rises, and that is untested here.</p>
+<h3>One machine for the causal A/B</h3>
+<p>The kernel A/B that carries this article ran on a single box, single vendor, batch 1 throughout. The
+same architecture now has decode ladders to 128&nbsp;000 tokens on four rented NVIDIA cards
+(<code>Qwen3.8-27B</code> falls 21.8&nbsp;% on an H100, as far as the dense 31B), which says the
+attention layers set the depth cost on every vendor measured &mdash; but each card chose its own attention
+backend, so none of those is the same-kernel comparison this page rests on. The occupancy argument predicts
+that the collapse should soften as batch size rises, and that is untested anywhere here.</p>
 
 <h3>What the fix does not fix</h3>
 <p>Paged attention falls from about 68 % of the decode step to 11 %. The remainder is dominated by the

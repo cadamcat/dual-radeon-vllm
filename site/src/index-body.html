@@ -12,7 +12,7 @@ __CHIPS__
 <h2><span class="n">1</span>What this machine does today</h2>
 
 <p>One line per model per machine, each of them that model's fastest measured configuration rather
-than a common one. Five of the seven Radeon lines come from a single campaign on one stack and are
+than a common one. Four of the six Radeon lines come from a single campaign on one stack and are
 directly comparable; the other two are drawn from a later stack, because on those two models the
 campaign is no longer the best this machine can do. The A100 carries five of the same models, its
 own whole campaign on one afternoon. Every line says which it is.</p>
@@ -21,22 +21,26 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <div class="figbox">
     <div class="figtitle">Figure 1 · decode rate at batch 1, best measured configuration per model
       <span class="prov yes">recomputable from repo</span></div>
-    <p class="hint" id="besthint"></p>
-    <div class="legend" id="bestmach"></div>
-    <div class="legend" id="bestkey"></div>
+    <div class="ctl">
+      <div class="lab">compare</div><div class="seg" id="bestmode"></div>
+      <div class="lab" id="bestmachlab"></div><div class="row" id="bestmach"></div>
+      <div class="lab" id="bestkeylab"></div><div class="row" id="bestkey"></div>
+    </div>
     <svg class="chart" id="best" role="img"></svg>
     <div class="barunit" id="bestnote"></div>
   </div>
   <figcaption>
     <p class="caplede"><b>Figure 1.</b> Decode rate at batch 1 against context length, log axis. The
-    default view is 2&times; RX 7900 XT at tensor parallelism 2; the machine row above the chart
-    overlays the others.</p>
+    default view is every model on 2&times; RX 7900 XT at tensor parallelism 2; the switch above the
+    chart turns the question round, to one model on every machine, and colour follows the question:
+    the model in one view, the card in the other.</p>
     <dl class="capnotes">
-      <dt>Five machines</dt>
-      <dd>Four of them a <em>single</em> card: one A100 80G, one of these 7900 XTs, one L4 24G and
-        one Tesla T4 16G. The checkpoint is what they share &mdash; TP=1 on vLLM 0.28.0 for the CUDA
-        cards against TP=2 on 0.23.1 for the pair. The split and the stack are not shared, and every
-        line's tooltip carries its own.</dd>
+      <dt>Eleven machines</dt>
+      <dd>The pair; one of its cards; an A100 80G, an L4 24G and a Tesla T4 16G from Colab; and six
+        rented on 2026-09-03 &mdash; an H100, an H200, a B300, an RTX PRO 6000, and two H100s and two
+        PRO 6000s at TP=2. The checkpoint is what they share &mdash; vLLM 0.28.0 on every CUDA card
+        against 0.23.1 on the pair. The split and the stack are not shared, and every line's tooltip
+        carries its own.</dd>
       <dt>The T4</dt>
       <dd>It is here at all only because of
         <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a>: without it the
@@ -72,15 +76,17 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   <div class="figbox">
     <div class="figtitle">Figure 2 · prefill throughput, every model with a ladder, eleven machines
       <span class="prov yes">recomputable from repo</span></div>
-    <p class="hint" id="prehint"></p>
-    <div class="legend" id="premach"></div>
-    <div class="legend" id="prekey"></div>
+    <div class="ctl">
+      <div class="lab">compare</div><div class="seg" id="premode"></div>
+      <div class="lab" id="premachlab"></div><div class="row" id="premach"></div>
+      <div class="lab" id="prekeylab"></div><div class="row" id="prekey"></div>
+    </div>
     <svg class="chart" id="pre" role="img"></svg>
     <div class="barunit" id="prenote"></div>
   </div>
   <figcaption>
     <p class="caplede"><b>Figure 2.</b> The other half of the same question: Figure 1 is how fast each
-    machine <em>generates</em>, this is how fast it reads the prompt. Seven models, fifty-three lines,
+    machine <em>generates</em>, this is how fast it reads the prompt. Six models, fifty-two lines,
     eleven machines &mdash; every chart-grade prefill ladder this repository has <strong>between 500 and
     32&nbsp;000 tokens</strong>, recorded beside
     decode since July and never drawn until now. Colour and stroke are Figure 1's.</p>
@@ -131,6 +137,72 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   </figcaption>
 </figure>
 
+<p>Every ladder on this machine stopped at 32&nbsp;000 tokens until 2026-09-03, and that read as the
+machine's limit. It was the campaign's: each arm set <code>max_model_len</code> to 33&nbsp;000 while
+its KV pool held several times that. The two figures below are the same two questions asked to
+128&nbsp;000 &mdash; the pair as the subject, on one ladder cut for it that day, and the machines rented
+the same day one click away as the background.</p>
+
+<figure class="rv" id="figlong">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · decode rate to 128 000 tokens, the pair and the rented machines
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="ctl">
+      <div class="lab">compare</div><div class="seg" id="longmode"></div>
+      <div class="lab" id="longmachlab"></div><div class="row" id="longmach"></div>
+      <div class="lab" id="longkeylab"></div><div class="row" id="longkey"></div>
+    </div>
+    <svg class="chart" id="long" role="img"></svg>
+    <div class="barunit" id="longnote"></div>
+  </div>
+  <figcaption>
+    <p class="caplede"><b>Figure 3.</b> Decode rate at batch 1 against context length, 500 to
+    128&nbsp;000, log axis. The default view is 2&times; RX 7900 XT at tensor parallelism 2 on the
+    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; and the switch above
+    the chart puts one model on every machine rented that day instead. The controls are Figure 1's.</p>
+    <dl class="capnotes">
+      <dt>The whole ladder</dt>
+      <dd>Sixteen rungs, 500 upward, rather than only the five past 32&nbsp;000: a curve's shape at depth
+        is only readable against where it started. Where a rung is on both this ladder and Figure 1's,
+        the two are different sittings on different prompt cuts, and the tooltip carries each point's
+        own date.</dd>
+      <dt>Deliberately absent</dt>
+      <dd>Qwen3-8B, on every machine. Its own config caps context at 40&nbsp;960, so its ladder is
+        Figure 1's eleven rungs everywhere it was run &mdash; a ceiling the model carries, not the
+        campaign.</dd>
+    </dl>
+  </figcaption>
+</figure>
+
+<figure class="rv" id="figlongpre">
+  <div class="figbox">
+    <div class="figtitle">Figure 4 · prefill throughput to 128 000 tokens, the pair and the rented machines
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="ctl">
+      <div class="lab">compare</div><div class="seg" id="longpremode"></div>
+      <div class="lab" id="longpremachlab"></div><div class="row" id="longpremach"></div>
+      <div class="lab" id="longprekeylab"></div><div class="row" id="longprekey"></div>
+    </div>
+    <svg class="chart" id="longpre" role="img"></svg>
+    <div class="barunit" id="longprenote"></div>
+  </div>
+  <figcaption>
+    <p class="caplede"><b>Figure 4.</b> Prefill throughput against prompt length to 128&nbsp;000, the
+    same lines as Figure 3. <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> is fitted over the whole
+    ladder here, and the note under the chart says on each of the pair's lines where
+    <b>c&middot;S&sup2;</b> overtakes <b>b&middot;S</b> and what share of the deepest rung it is.</p>
+    <dl class="capnotes">
+      <dt>Two fits for one arm</dt>
+      <dd>Figure 2 fits each line on the rungs it draws, to 32&nbsp;000; this figure fits the sixteen.
+        For the same arm those are two different pairs of coefficients, and each tooltip says which it
+        is carrying.</dd>
+      <dt>Dropped rungs</dt>
+      <dd>Only rungs whose two rounds agree are drawn, as in Figure 2, and each line's tooltip names the
+        rung it dropped and how far apart the rounds were.</dd>
+    </dl>
+  </figcaption>
+</figure>
+
 <h2><span class="n">2</span>Articles</h2>
 
 <p>Eleven write-ups, newest first by the date on the card — the last day evidence for that article
@@ -151,14 +223,14 @@ throughout.</p>
 
 <figure class="rv" id="figtl">
   <div class="figbox">
-    <div class="figtitle">Figure 3 · the date each article carries <span class="prov yes">the dates
+    <div class="figtitle">Figure 5 · the date each article carries <span class="prov yes">the dates
     the articles carry</span></div>
     <div class="legend" id="tlkey"></div>
     <div class="tl" id="tl"></div>
     <div class="barunit" id="tlnote"></div>
   </div>
   <figcaption>
-    <b>Figure 3.</b> Positioned by date, not by publication order. Two of the eleven are not
+    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the eleven are not
     measurements of this machine: one records the date a defect was reported upstream, and the
     synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
     rather than given a measurement date they do not have.
@@ -194,18 +266,14 @@ topology. The shapes transfer; the levels are the worst case.</p>
 <script type="application/json" id="articles">__ARTICLES_JSON__</script>
 <script type="application/json" id="chipwords">__CHIPWORDS_JSON__</script>
 <script type="application/json" id="strings">{
- "bestHint": "click a model to add or remove its line · click a machine to overlay it · the switch beside a model adds that model's speculative arm, named for the method it ran",
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "one A100 80G · TP=1", "rdna3-1": "one RX 7900 XT · TP=1", "l4": "one L4 24G · TP=1", "t4": "one T4 16G · TP=1", "h100": "one H100 80G · TP=1", "h200": "one H200 143G · TP=1", "b300": "one B300 275G · TP=1", "pro6000": "one RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
  "bestAxisX": "context length",
  "bestAxisY": "decode tok/s",
  "bestUnit": "decode tok/s at batch 1 · one line is one session, eleven rungs, two rounds a cell — never a best-of stitched across days. Different lines may be different days and stacks, and each point's tooltip carries its own",
- "bestStroke": "solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4 · short dash: the same line with speculation on",
  "bestCapped": "{m} stops at {k} because {w}",
- "preHint": "click a model or a machine to add or remove its lines · the six machines rented on 2026-09-03 are off until you ask for them, and their ladders are cut at 32\u00a0000 here \u2014 the rungs beyond are Figures 3 and 4",
  "preAxisX": "prompt tokens",
  "preAxisY": "prefill tok/s",
- "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · seven models, five machines, every chart-grade ladder this repository has",
- "preStroke": "stroke is the machine, as in Figure 1 · solid: these two cards · long dash: the A100 · dotted: one of these cards · dash-dot: the L4 · dash-dot-dot: the T4",
+ "preUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · six models, eleven machines, every chart-grade ladder this repository has between 500 and 32 000",
  "preFit": "fit: b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "{m} on {x}  b {b}×  c {c}×",
  "preDropped": "{n} rung dropped, rounds {r}% apart",
@@ -215,9 +283,24 @@ topology. The shapes transfer; the levels are the worst case.</p>
  "preHeadTp": "and what the second card buys, same stack, same day:",
  "preTpGain": "{m}  b {b}×  c {c}×",
  "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
+ "longDecUnit": "decode tok/s at batch 1 · one line is one session, sixteen rungs from 500 to 128 000, two rounds a cell · a line that stops short stops where its KV pool ran out, and says so",
+ "longPreUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · the fit is over the whole ladder, so b and c here are not Figure 2's for the same arm",
+ "longHeadRetained": "what the pair keeps between its shallowest and its deepest measured rung:",
+ "longRetained": "{m}  {a} → {b} tok/s, {j} to {k}  {p}",
+ "longHeadShare": "and on the pair, where attention's quadratic term takes over:",
+ "longShare": "{m}  b {b} µs/tok · c {c} ns/tok² · b·S = c·S² at {x} tokens · c·S² is {s} % of the {k} prefill",
+ "longStops": "{m} stops at {k} because {w}",
+ "longNotDrawn": "{m} is on no line here: its own config caps context at 40 960, so its ladder is Figure 1's on every machine",
+ "ctl": {"machine": "machine", "model": "model", "pick": "pick one", "lines": "the lines · click one to hide it, hover to single it out", "compare": "compare"},
+ "mode": {"machine": "every model on one machine", "model": "one model on every machine"},
+ "strokeRule": "in the one-model view colour is the card: dotted is one of these Radeons, dashed is a rented pair, solid is one card or these two",
+ "notMeasured": "{m} was not measured on {x}",
+ "numbers": "the numbers",
+ "fitScope": "fitted on {s}",
  "bestCampaign": "{n} of them are one campaign on {d}: vLLM {v}, one harness, one afternoon",
  "bestRepro": "the same models re-run thirty days apart agree to {w}% at worst and {m}% at the median, across {c} cells",
- "bestOmit": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
+ "bestOmitSuperseded": "{m} is left out: the ledger has it only as the superseded run the split-KV work replaced",
+ "bestOmitControl": "{m} is left out: one sitting on one machine of a checkpoint gemma-4 replaced, kept in the data as the 2026-08-24 control it was measured as",
  "bestSpec": "{s} on",
  "bestSpecOf": "{m}: draw the same line with {s} on, measured beside it as its control",
  "bestSpecAway": "{m}'s {s} arm was only ever measured on {x} — add that machine to see it",
@@ -498,59 +581,31 @@ topology. The shapes transfer; the levels are the worst case.</p>
     box.appendChild(card);
   });
 
-  /* ---------- Figure 1: what the machine does today ----------
-     Seven models on one pair of axes, each drawn in the fastest configuration
-     it has been measured in, on either machine that has run it. The lines are
-     not one experiment and the figure does not pretend otherwise: five share a
-     campaign, two do not, the A100 side is a third, and every one of them
-     carries the stack it needed into its tooltip. Speculation is a switch on
-     each model that has an arm rather than one button over all of them,
-     because the arms are not one thing -- three are MTP and the fourth is a
-     block-diffusion drafter -- and a single button would have to call them
-     all by one name. */
+  /* ---------- Figures 1 to 4: one question at a time ----------
+     Every figure on this page used to let a reader overlay any machine on any
+     model, which put up to sixty lines on one pair of axes and had to tell
+     eleven machines apart by stroke. Each now answers one question at a time:
+     "every model on one machine", where colour is the model, or "one model on
+     every machine", where colour is the card and the dash is how many of it.
+     At most eleven lines are ever drawn and colour carries the whole
+     distinction. The three controls have three looks so a reader can tell
+     them apart without reading: a segmented switch for the question, filled
+     pills or boxes for the one thing held fixed, and a key of line samples
+     for the lines drawn. A machine is always a pill and a model always a box,
+     whichever row is doing which job. One builder serves all four figures. */
   (function () {
-    var F = JSON.parse(document.getElementById("bestdata").textContent).best;
-    var svg = document.getElementById("best");
-    var key = document.getElementById("bestkey"), mach = document.getElementById("bestmach");
-    var note = document.getElementById("bestnote");
-    document.getElementById("besthint").textContent = S.bestHint;
-
-    // one colour per model, assigned in the order the data lists them so a
-    // model keeps its colour whatever is lit
-    // The order is decided in genfig-index.py and read here, so Figure 2 can
-    // draw two of the same models in the same colours: a reader who has learnt
-    // that gemma-4-26B-A4B is this colour should not have to learn it twice.
-    // Lit models take the first four, which are the four furthest apart in both
-    // themes; the rest follow.
-    var models = F.model_order.slice();
-    var colour = {};
-    models.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
-
-    var on = {};
-    models.forEach(function (m) { on[m] = false; });
-    F.series.forEach(function (x) { if (x.lit) on[x.model] = true; });
-    var machOn = {};
-    F.machines.forEach(function (m) { machOn[m.id] = m["default"]; });
-    // Speculation is off until asked for, and it is asked for per model. It is
-    // a different way of running the same model, not a faster reading of the
-    // same thing -- on every arm drawn here it is a net loss against that
-    // model's own control -- so it does not belong in a default view of what
-    // these machines do. The switch's name comes from the data, not from here:
-    // three of the four arms resolved to mtp and Muse-Glimmer's is dflash, a
-    // block-diffusion drafter at k=8, which a switch marked MTP would misname.
-    var specOn = {}, specLabel = {};
-    // And the same again for an alternative arm that is not speculation: on
-    // Qwen3.8 the pair differs in one flag, and the line drawn is the one that
-    // is faster at decode. It is slower at prefill by more (Figure 2), so the
-    // other arm is a switch rather than an omission.
-    var altOn = {}, altLabel = {};
-    models.forEach(function (m) {
-      specOn[m] = false;
-      specLabel[m] = (F.labels[m] || {}).spec_label || null;
-      altOn[m] = false;
-      altLabel[m] = (F.labels[m] || {}).alt_label || null;
-    });
-
+    var ALL = JSON.parse(document.getElementById("bestdata").textContent);
+    var BB = ALL.best, PF = ALL.prefill, LG = ALL.long;
+    var mcol = {};
+    BB.model_order.forEach(function (m, i) { mcol[m] = "var(--m" + (i % 7 + 1) + ")"; });
+    var fcol = { radeon: "var(--text)" };
+    BB.family_order.forEach(function (f, i) { fcol[f] = "var(--m" + (i % 7 + 1) + ")"; });
+    function ktok(n) {
+      var s = String(Math.round(n)), out = "";
+      while (s.length > 3) { out = " " + s.slice(-3) + out; s = s.slice(0, -3); }
+      return s + out;
+    }
+    function pct(v) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) + " %"; }
     function stack(x) {
       var bits = ["vLLM " + x.vllm, "TP=" + x.tp];
       if (x.patches.length) bits.push(x.patches.join(" + "));
@@ -558,345 +613,364 @@ topology. The shapes transfer; the levels are the worst case.</p>
       bits.push(x.date);
       return bits.join(" · ");
     }
-    function tipFor(x) {
-      return function (i) {
-        var p = x.points[i];
-        return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
-          " · " + esc(S.bestMach[x.machine]) +
-          "</span><br>" + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
-          '<span class="sub">' +
-          (p.runs > 1 && p.range_pct !== null
-            ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) })
-            : S.bestOne) +
-          "<br>" + esc(stack(x)) +
-          // A line that stops early is not an abandoned run: the card could not
-          // hold the KV for the next rung. Saying so on the line itself is the
-          // difference between a finding and a gap.
-          (x.rungs_capped
-            ? "<br>" + esc(fmt(S.bestCapped, { m: x.model,
-                k: kctx(x.points[x.points.length - 1].ctx),
-                w: x.rungs_capped.why }))
-            : "") + "</span>";
-      };
+    function head(x) {
+      return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
+             " · " + esc(S.bestMach[x.machine]) + "</span><br>";
     }
-    // One model can now own several lines -- five machines by two arms -- and they
-    // share a colour, so the stroke has to carry machine and arm both. The
-    // table is the machine's; speculation overrides it, because a speculative
-    // arm exists on only two of the four and reading "this is the arm" matters
-    // more there than reading which card it ran on, which the tooltip says.
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
-    function stroke(x) {
-      if (x.spec) return x.machine === "rdna3" ? "2 4" : "7 4 2 4";
-      // an alternative arm shares its line's machine, so it needs its own
-      // pattern or the two would be one stroke in one colour
-      if (x.alt) return "3 2 1 2";
-      return STROKE[x.machine];
+    function sample(lk) {
+      return '<svg viewBox="0 0 28 10" aria-hidden="true"><line x1="1" y1="5" x2="27" y2="5" ' +
+             'stroke="' + lk.colour + '" stroke-width="2.2" stroke-linecap="round"' +
+             (lk.dash ? ' stroke-dasharray="' + lk.dash + '"' : "") + "/></svg>";
     }
-    var ser = F.series.map(function (x) {
-      var d = stroke(x);
-      return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
-               points: x.points.map(function (p) { return [p.ctx, p.tok_s]; }) };
-    });
-    // A line the reader has switched off must not set the axis. The chart holds
-    // an A100 model that peaks at 161 tok/s behind a default view whose own top
-    // is 108, and without fitLit that one hidden line would flatten the four
-    // lit ones into the bottom two thirds of the frame.
-    function isLit(i) {
-      var x = F.series[i];
-      return on[x.model] && machOn[x.machine] && (!x.spec || specOn[x.model])
-             && (!x.alt || altOn[x.model]);
-    }
-    var chart = window.lineChart({
-      el: svg, reduce: reduce, h: 380, m: { t: 16, r: 20, b: 46, l: 62 },
-      fitLit: true, lit: isLit,
-      // the ticks are the ladder's own doubling depths, generated beside the
-      // points, so the left edge says 500 rather than leaving a reader to read
-      // an unlabelled origin as zero, and nothing is labelled past 32K
-      x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.bestAxisX, fmt: kctx,
-           ticks: F.ctx_ticks },
-      y: { label: S.bestAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
-      series: ser
-    });
-    // One legend entry per model, and each entry owns its own elements rather
-    // than being found again by position: the previous version mapped
-    // key.children[i] to models[i] and skipped a trailing global button, which
-    // only held while there was exactly one extra child and it was last.
-    var entries = [];
-    // Two of the four arms were only ever run on the A100, so their switches
-    // have nothing to draw while that machine is off. Left live they press and
-    // change nothing, which reads as broken rather than as absent; so they go
-    // inert, and the wrapper says which machine has the arm.
-    function armShown(m) {
-      return F.series.some(function (x) {
-        return x.spec && x.model === m && machOn[x.machine];
+    function build(o) {
+      var F = o.data, machMeta = {};
+      o.machines.forEach(function (m) { machMeta[m.id] = m; });
+      var svg = document.getElementById(o.svg);
+      var segEl = document.getElementById(o.ids.seg);
+      var machRow = document.getElementById(o.ids.mach), modelRow = document.getElementById(o.ids.model);
+      var machLab = document.getElementById(o.ids.machLab), modelLab = document.getElementById(o.ids.modelLab);
+      var note = document.getElementById(o.ids.note);
+      var models = BB.model_order.filter(function (m) {
+        return F.series.some(function (x) { return x.model === m; });
       });
-    }
-    function armOn(m) {
-      var x = F.series.filter(function (y) { return y.spec && y.model === m; })[0];
-      return x ? S.bestMach[x.machine] : "";
-    }
-    function altShown(m) {
-      return F.series.some(function (x) {
-        return x.alt && x.model === m && machOn[x.machine];
-      });
-    }
-    function apply() {
-      chart.setLit(isLit);
-      entries.forEach(function (e) {
-        e.btn.classList.toggle("on", on[e.model]);
-        if (!e.sw) return;
-        var live = armShown(e.model);
-        e.sw.classList.toggle("on", specOn[e.model]);
-        e.sw.classList.toggle("na", !live);
-        e.sw.disabled = !live;
-        // the title moves to the wrapper: a disabled button shows none
-        e.wrap.setAttribute("title", live ? ""
-          : fmt(S.bestSpecAway, { m: e.model, s: specLabel[e.model],
-                                  x: armOn(e.model) }));
-        e.sw.setAttribute("title", live
-          ? fmt(S.bestSpecOf, { m: e.model, s: specLabel[e.model] }) : "");
-      });
-      entries.forEach(function (e) {
-        if (!e.alt) return;
-        var live = altShown(e.model);
-        e.alt.classList.toggle("on", altOn[e.model]);
-        e.alt.classList.toggle("na", !live);
-        e.alt.disabled = !live;
-        e.alt.setAttribute("title", live
-          ? fmt(S.bestAltOf, { m: e.model, b: altLabel[e.model] }) : "");
-      });
-      Array.prototype.forEach.call(mach.children, function (b, i) {
-        var id = F.machines[i].id;
-        b.classList.toggle("on", machOn[id]);
-        b.classList.toggle("off", !machOn[id]);
-      });
-    }
-    F.machines.forEach(function (m) {
-      var b = document.createElement("button");
-      b.className = "lg";
-      b.style.setProperty("--c", "var(--text-2)");
-      b.innerHTML = '<span class="sw"></span>' + esc(S.bestMach[m.id]);
-      b.setAttribute("aria-pressed", String(!!m["default"]));
-      b.addEventListener("click", function () {
-        machOn[m.id] = !machOn[m.id];
-        b.setAttribute("aria-pressed", String(machOn[m.id]));
-        apply();
-      });
-      mach.appendChild(b);
-    });
-    models.forEach(function (m) {
-      // a model and its speculative switch are one control, so they sit in one
-      // wrapper: a button cannot contain another button, and two loose buttons
-      // would wrap apart from each other on a narrow screen
-      var wrap = document.createElement("span");
-      wrap.className = "lgw";
-      var b = document.createElement("button");
-      b.className = "lg";
-      b.style.setProperty("--c", colour[m]);
-      // the quantisation is part of the name: "gemma-4-31B-it" does not say
-      // whether this is the 4-bit checkpoint or the 16-bit one
-      b.innerHTML = '<span class="sw"></span>' + esc(m) +
-                    '<span class="q">' + esc(F.labels[m].quant_label) + "</span>";
-      // the two spans are flex items with a gap between them, so the space a
-      // reader sees is not in the text a screen reader gets
-      b.setAttribute("aria-label", m + " " + F.labels[m].quant_label);
-      b.setAttribute("aria-pressed", String(on[m]));
-      b.addEventListener("click", function () {
-        on[m] = !on[m];
-        b.setAttribute("aria-pressed", String(on[m]));
-        apply();
-      });
-      wrap.appendChild(b);
-      var sw = null;
-      if (specLabel[m]) {
-        sw = document.createElement("button");
-        sw.className = "lgs";
-        sw.style.setProperty("--c", colour[m]);
-        sw.textContent = specLabel[m];
-        sw.setAttribute("aria-pressed", "false");
-        sw.addEventListener("click", function () {
-          specOn[m] = !specOn[m];
-          sw.setAttribute("aria-pressed", String(specOn[m]));
-          apply();
-        });
-        wrap.appendChild(sw);
-      }
-      // The alternative arm sits in the same wrapper, after the speculative
-      // switch, so a model's controls stay one unit when the row wraps.
-      var alt = null;
-      if (altLabel[m]) {
-        alt = document.createElement("button");
-        alt.className = "lgs";
-        alt.style.setProperty("--c", colour[m]);
-        alt.textContent = altLabel[m];
-        alt.setAttribute("aria-pressed", "false");
-        alt.addEventListener("click", function () {
-          altOn[m] = !altOn[m];
-          alt.setAttribute("aria-pressed", String(altOn[m]));
-          apply();
-        });
-        wrap.appendChild(alt);
-      }
-      key.appendChild(wrap);
-      entries.push({ model: m, btn: b, sw: sw, alt: alt, wrap: wrap });
-    });
-    apply();
-    note.innerHTML = esc(S.bestStroke) + "<br>" + esc(S.bestUnit) + "<br>" +
-      esc(fmt(S.bestCampaign, { n: F.campaign.models, d: F.campaign.date,
-                                v: F.campaign.vllm })) + "<br>" +
-      esc(fmt(S.bestRepro, { w: F.repro.worst_pct.toFixed(1),
-                             m: F.repro.median_pct.toFixed(2), c: F.repro.cells })) + "<br>" +
-      esc(fmt(S.bestOmit, { m: F.omitted.join(", ") }));
-  })();
-
-  /* ---------- Figure 2: prefill on one card ----------
-     The same two axes a reader has just learnt, asking the other half of the
-     question. Colour and stroke are Figure 1's -- the colour order comes out
-     of genfig-index.py so both figures read from one decision, and the stroke
-     table is the same machine table -- so a line that is the L4 in one is the
-     L4 in the other without being relearnt.
-
-     Every line is lit to start. There are six, not twenty-three, and the point
-     of the figure is the comparison between them; hiding two thirds of it
-     behind a click would be hiding the finding. */
-  (function () {
-    var ALL = JSON.parse(document.getElementById("bestdata").textContent);
-    var F = ALL.prefill, BB = ALL.best;
-    var svg = document.getElementById("pre");
-    var key = document.getElementById("prekey"), mach = document.getElementById("premach");
-    var note = document.getElementById("prenote");
-    document.getElementById("prehint").textContent = S.preHint;
-
-    var colour = {};
-    BB.model_order.forEach(function (m, i) { colour[m] = "var(--m" + (i % 7 + 1) + ")"; });
-    var STROKE = { "rdna3": null, "a100": "7 5", "rdna3-1": "1 3", "l4": "6 3 1 3", "t4": "6 3 1 3 1 3" };
-
-    // Models in Figure 1's colour order so the two figures agree; machines in
-    // Figure 1's row order for the same reason.
-    var models = BB.model_order.filter(function (m) {
-      return F.series.some(function (x) { return x.model === m; });
-    });
-    var machines = BB.machines.map(function (m) { return m.id; })
-      .filter(function (id) {
+      var machines = o.machines.map(function (m) { return m.id; }).filter(function (id) {
         return F.series.some(function (x) { return x.machine === id; });
       });
-    // Every machine is on -- comparing them is the point -- but only the two
-    // models every machine ran are lit, because fourteen lines at once is
-    // showing everything and saying nothing.
-    var on = {}, machOn = {};
-    models.forEach(function (m) {
-      on[m] = F.series.some(function (x) { return x.model === m && x.lit; });
-    });
-    machines.forEach(function (m) { machOn[m] = true; });
-
-    function tipFor(x) {
-      return function (i) {
-        var p = x.points[i];
-        return '<span class="hd">' + esc(x.model) + " · " + esc(x.quant_label) +
-          " · " + esc(S.bestMach[x.machine]) + "</span><br>" +
-          kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(0) + "</b> tok/s<br>" +
-          '<span class="sub">' + p.ttft_s.toFixed(3) + " s to first token · " +
-          p.tokens + " tok<br>" +
-          fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "<br>" +
-          esc(fmt(S.preFit, { b: x.fit.b_us_tok.toFixed(1),
-                              c: x.fit.c_ns_tok2.toFixed(2),
-                              r: x.fit.r2.toFixed(4) })) +
-          (x.dropped.length
-            ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
-                r: x.dropped[0].range_pct.toFixed(0) }))
-            : "") +
-          // A caveated line states its caveat where its coefficients are read,
-          // not only in the caption. The T4 is drawn because its ladder is
-          // real; its b and c are not this figure's b and c, and the tooltip
-          // is where a reader meets them.
-          (x.caveat
-            ? '<br><b class="warn">' + esc(fmt(S.preCaveat, {
-                m: x.model, p: x.caveat.patch,
-                b: x.caveat.b_undetermined_pct.toFixed(0) })) + "</b>"
-            : "") + "</span>";
+      var defMachine = o.machines.filter(function (m) { return m["default"]; })[0].id;
+      var litModels = {};
+      models.forEach(function (m) {
+        litModels[m] = F.series.some(function (x) { return x.model === m && x.lit; });
+      });
+      var mode = "machine", pick = defMachine, hide = {}, specOn = {}, altOn = {};
+      models.forEach(function (m) { hide[m] = !litModels[m]; });
+      var chart = null;
+      // the key of an arm switch: the model in the one-machine view, the
+      // machine in the one-model view -- the thing the entry it hangs on names
+      function armKey(x) { return mode === "machine" ? x.model : x.machine; }
+      function measured(model, machine) {
+        return F.series.some(function (x) {
+          return x.model === model && x.machine === machine && !x.spec && !x.alt;
+        });
+      }
+      // how a series is drawn under each question
+      function look(x) {
+        var armDash = x.spec ? (x.machine === "rdna3" ? "2 4" : "7 4 2 4") : x.alt ? "3 2 1 2" : null;
+        if (mode === "machine") return { colour: mcol[x.model], dash: armDash };
+        var meta = machMeta[x.machine] || {};
+        var dash = meta.family === "radeon" ? (meta.cards === 1 ? "1 3" : null)
+                                            : (meta.cards > 1 ? "7 4" : null);
+        return { colour: fcol[meta.family] || "var(--text-dim)", dash: armDash || dash };
+      }
+      function isLit(i) {
+        var x = F.series[i];
+        var on = mode === "machine" ? (x.machine === pick && !hide[x.model])
+                                    : (x.model === pick && !hide[x.machine]);
+        return on && (!x.spec || !!specOn[armKey(x)]) && (!x.alt || !!altOn[armKey(x)]);
+      }
+      function shownSeries() {
+        var out = [];
+        F.series.forEach(function (x, i) { if (isLit(i)) out.push(x); });
+        return out;
+      }
+      // the k-th drawn series owns the k-th path and the dots after it
+      function groups() {
+        var out = [], cur = null;
+        Array.prototype.forEach.call(svg.children, function (c) {
+          if (c.tagName === "path" && c.classList.contains("ln")) { cur = [c]; out.push(cur); }
+          else if (c.tagName === "circle" && cur) cur.push(c);
+        });
+        return out;
+      }
+      function focus(keyOf, which) {
+        var shown = shownSeries();
+        groups().forEach(function (g, k) {
+          var x = shown[k];
+          var dim = which !== null && x && keyOf(x) !== which;
+          g.forEach(function (e) { e.style.opacity = dim ? ".16" : ""; });
+        });
+      }
+      function mount() {
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+        var ser = F.series.map(function (x) {
+          var lk = look(x);
+          return { colour: lk.colour, dash: !!lk.dash, dashPattern: lk.dash, tip: o.tip(x),
+                   points: x.points.map(function (p) { return [p[o.xkey], p.tok_s]; }) };
+        });
+        chart = window.lineChart({
+          el: svg, reduce: reduce, h: o.h, m: { t: 16, r: 20, b: 46, l: 62 },
+          fitLit: true, lit: isLit,
+          // Figure 1's data names its ticks ctx_ticks, the other three ticks
+          x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: o.xlabel,
+               fmt: kctx, ticks: F.ticks || F.ctx_ticks },
+          y: { label: o.ylabel, min: 0, fmt: function (v) { return v.toFixed(0); } },
+          series: ser
+        });
+      }
+      function relight() { chart.setLit(isLit); }
+      var mlabel = function (m) {
+        return esc(m) + '<span class="q">' + esc(BB.labels[m].quant_label) + "</span>";
       };
+      var xlabel = function (id) { return esc(S.bestMach[id]); };
+      function labOf(dim, role) {
+        return esc(S.ctl[dim]) + "<small>" + esc(S.ctl[role]) + "</small>";
+      }
+      function radio(row, items, labelOf, shape) {
+        row.innerHTML = "";
+        items.forEach(function (it) {
+          var b = document.createElement("button");
+          b.className = "pk " + shape + (it === pick ? " on" : "");
+          b.innerHTML = labelOf(it);
+          b.setAttribute("aria-pressed", String(it === pick));
+          b.addEventListener("click", function () {
+            if (pick !== it) { pick = it; render(); relight(); }
+          });
+          row.appendChild(b);
+        });
+      }
+      function legend(row, items, labelOf, lookOf, keyOf, shape, has, absent) {
+        row.innerHTML = "";
+        items.forEach(function (it) {
+          var wrap = document.createElement("span");
+          wrap.className = "kyw";
+          var b = document.createElement("button");
+          var live = has(it);
+          b.className = "ky " + shape + (live ? (hide[it] ? " off" : "") : " na");
+          b.innerHTML = sample(lookOf(it)) + labelOf(it);
+          b.disabled = !live;
+          b.setAttribute("aria-pressed", String(live && !hide[it]));
+          if (live) {
+            b.addEventListener("click", function () { hide[it] = !hide[it]; render(); relight(); });
+            b.addEventListener("mouseenter", function () { if (!hide[it]) focus(keyOf, it); });
+            b.addEventListener("mouseleave", function () { focus(keyOf, null); });
+          } else {
+            wrap.setAttribute("title", absent(it));
+          }
+          wrap.appendChild(b);
+          if (live) arms(wrap, it);
+          row.appendChild(wrap);
+        });
+      }
+      // Figure 1's arms: a model's speculative arm and its backend alternative
+      // are switches attached to that model's entry, live only while the arm
+      // was measured on the machine picked -- a switch that presses and
+      // changes nothing reads as broken rather than as absent.
+      function arms(wrap, it) {
+        if (!o.arms) return;
+        var m = mode === "machine" ? it : pick, mach = mode === "machine" ? pick : it;
+        var lab = BB.labels[m] || {};
+        [["spec", lab.spec_label, specOn, S.bestSpecOf, S.bestSpecAway],
+         ["alt", lab.alt_label, altOn, S.bestAltOf, null]].forEach(function (a) {
+          if (!a[1]) return;
+          var arm = F.series.filter(function (x) { return x[a[0]] && x.model === m; });
+          var live = arm.some(function (x) { return x.machine === mach; });
+          // in the one-model view a machine that never ran the arm gets no
+          // switch at all; a dead switch on every machine would be noise
+          if (!live && mode === "model") return;
+          var sw = document.createElement("button");
+          sw.className = "lgs" + (a[2][it] ? " on" : "") + (live ? "" : " na");
+          sw.textContent = a[1];
+          sw.disabled = !live;
+          sw.setAttribute("aria-pressed", String(!!a[2][it]));
+          if (!live && a[4]) {
+            wrap.setAttribute("title", fmt(a[4], { m: m, s: a[1],
+                                                   x: arm.length ? S.bestMach[arm[0].machine] : "" }));
+          }
+          sw.setAttribute("title", live ? fmt(a[3], { m: m, s: a[1], b: a[1] }) : "");
+          sw.addEventListener("click", function () {
+            a[2][it] = !a[2][it]; render(); relight();
+          });
+          wrap.appendChild(sw);
+        });
+      }
+      function render() {
+        segEl.innerHTML = "";
+        ["machine", "model"].forEach(function (m) {
+          var b = document.createElement("button");
+          b.className = mode === m ? "on" : "";
+          b.textContent = S.mode[m];
+          b.setAttribute("aria-pressed", String(mode === m));
+          b.addEventListener("click", function () {
+            if (mode === m) return;
+            mode = m; hide = {}; specOn = {}; altOn = {};
+            if (mode === "machine") {
+              pick = defMachine;
+              models.forEach(function (mm) { hide[mm] = !litModels[mm]; });
+            } else {
+              pick = models.filter(function (mm) { return litModels[mm]; })[0] || models[0];
+            }
+            render(); mount();
+          });
+          segEl.appendChild(b);
+        });
+        if (mode === "machine") {
+          machLab.innerHTML = labOf("machine", "pick"); modelLab.innerHTML = labOf("model", "lines");
+          radio(machRow, machines, xlabel, "mach");
+          legend(modelRow, models, mlabel,
+                 function (m) { return look({ model: m, machine: pick }); },
+                 function (x) { return x.model; }, "model",
+                 function (m) { return measured(m, pick); },
+                 function (m) { return fmt(S.notMeasured, { m: m, x: S.bestMach[pick] }); });
+        } else {
+          machLab.innerHTML = labOf("machine", "lines"); modelLab.innerHTML = labOf("model", "pick");
+          legend(machRow, machines, xlabel,
+                 function (id) { return look({ model: pick, machine: id }); },
+                 function (x) { return x.machine; }, "mach",
+                 function (id) { return measured(pick, id); },
+                 function (id) { return fmt(S.notMeasured, { m: pick, x: S.bestMach[id] }); });
+          radio(modelRow, models, mlabel, "model");
+        }
+        var lines = [esc(o.unit), esc(S.strokeRule)];
+        var rest = o.lines(shownSeries, mode);
+        if (rest.length) lines.push("<details><summary>" + esc(S.numbers) + "</summary>" + rest.join("<br>") + "</details>");
+        note.innerHTML = lines.join("<br>");
+      }
+      render(); mount();
     }
-    var ser = F.series.map(function (x) {
-      var d = STROKE[x.machine];
-      return { colour: colour[x.model], dash: !!d, dashPattern: d, tip: tipFor(x),
-               points: x.points.map(function (p) { return [p.tokens, p.tok_s]; }) };
+
+    /* Figure 1: decode, best measured configuration per model */
+    build({
+      data: BB, machines: BB.machines, svg: "best", h: 380, xkey: "ctx", arms: true,
+      ids: { seg: "bestmode", mach: "bestmach", model: "bestkey", machLab: "bestmachlab",
+             modelLab: "bestkeylab", note: "bestnote" },
+      xlabel: S.bestAxisX, ylabel: S.bestAxisY, unit: S.bestUnit,
+      tip: function (x) {
+        return function (i) {
+          var p = x.points[i];
+          return head(x) + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+            '<span class="sub">' +
+            (p.runs > 1 && p.range_pct !== null
+              ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) : S.bestOne) +
+            "<br>" + esc(stack(x)) +
+            (x.rungs_capped
+              ? "<br>" + esc(fmt(S.bestCapped, { m: x.model,
+                  k: kctx(x.points[x.points.length - 1].ctx), w: x.rungs_capped.why }))
+              : "") + "</span>";
+        };
+      },
+      lines: function () {
+        return [esc(fmt(S.bestCampaign, { n: BB.campaign.models, d: BB.campaign.date,
+                                          v: BB.campaign.vllm })),
+                esc(fmt(S.bestRepro, { w: BB.repro.worst_pct.toFixed(1),
+                                       m: BB.repro.median_pct.toFixed(2), c: BB.repro.cells })),
+               ].concat(BB.omitted.map(function (m) {
+                 /* each omission names its reason; both are page strings, referenced
+                    here by name so the string gate can see them */
+                 var why = { bestOmitSuperseded: S.bestOmitSuperseded,
+                             bestOmitControl: S.bestOmitControl }[BB.omitted_why[m]];
+                 return esc(fmt(why, { m: m }));
+               }));
+      }
     });
-    function isLit(i) {
-      var x = F.series[i];
-      return on[x.model] && machOn[x.machine];
-    }
-    var chart = window.lineChart({
-      el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
-      fitLit: true, lit: isLit,
-      x: { scale: "log", min: F.ctx_min, max: F.ctx_max, label: S.preAxisX,
-           fmt: kctx, ticks: F.ticks },
-      y: { label: S.preAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
-      series: ser
+
+    /* Figure 2: prefill, every model with a ladder */
+    build({
+      data: PF, machines: BB.machines, svg: "pre", h: 340, xkey: "tokens",
+      ids: { seg: "premode", mach: "premach", model: "prekey", machLab: "premachlab",
+             modelLab: "prekeylab", note: "prenote" },
+      xlabel: S.preAxisX, ylabel: S.preAxisY, unit: S.preUnit,
+      tip: function (x) {
+        return function (i) {
+          var p = x.points[i];
+          return head(x) + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(0) + "</b> tok/s<br>" +
+            '<span class="sub">' + p.ttft_s.toFixed(3) + " s to first token · " + p.tokens +
+            " tok<br>" + fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "<br>" +
+            esc(fmt(S.preFit, { b: x.fit.b_us_tok.toFixed(1), c: x.fit.c_ns_tok2.toFixed(2),
+                                r: x.fit.r2.toFixed(4) })) +
+            (x.fit_scope ? " · " + esc(fmt(S.fitScope, { s: x.fit_scope })) : "") +
+            (x.dropped.length
+              ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
+                  r: x.dropped[0].range_pct.toFixed(0) }))
+              : "") +
+            (x.caveat
+              ? '<br><b class="warn">' + esc(fmt(S.preCaveat, {
+                  m: x.model, p: x.caveat.patch,
+                  b: x.caveat.b_undetermined_pct.toFixed(0) })) + "</b>"
+              : "") + "</span>";
+        };
+      },
+      lines: function () {
+        var out = [esc(S.preNote), '<span class="nhead">' + esc(S.preHeadCards) + "</span>"];
+        PF.compare.forEach(function (c) {
+          out.push('<span class="nrow">' + esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
+                   b: c.b_ratio.toFixed(2), c: c.c_ratio.toFixed(2) })) + "</span>");
+        });
+        out.push('<span class="nhead">' + esc(S.preHeadTp) + "</span>");
+        PF.tp_gain.forEach(function (g) {
+          out.push('<span class="nrow">' + esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
+                   c: g.c_gain.toFixed(2) })) + "</span>");
+        });
+        var bt = PF.backend_tradeoff;
+        out.push(esc(fmt(S.preTrade, { m: bt.model, k: kctx(bt.ctx), p: bt.prefill_gain.toFixed(2),
+                                       d: bt.decode_gain.toFixed(2) })));
+        return out;
+      }
     });
-    function apply() {
-      chart.setLit(isLit);
-      Array.prototype.forEach.call(mach.children, function (b, i) {
-        b.classList.toggle("on", machOn[machines[i]]);
-        b.classList.toggle("off", !machOn[machines[i]]);
-      });
-      Array.prototype.forEach.call(key.children, function (b, i) {
-        b.classList.toggle("on", on[models[i]]);
-      });
-    }
-    machines.forEach(function (id) {
-      var b = document.createElement("button");
-      b.className = "lg on";
-      b.style.setProperty("--c", "var(--text-2)");
-      b.innerHTML = '<span class="sw"></span>' + esc(S.bestMach[id]);
-      b.setAttribute("aria-pressed", "true");
-      b.addEventListener("click", function () {
-        machOn[id] = !machOn[id];
-        b.setAttribute("aria-pressed", String(machOn[id]));
-        apply();
-      });
-      mach.appendChild(b);
+
+    /* Figures 3 and 4: the same two questions, to 128 000 */
+    build({
+      data: LG.decode, machines: LG.machines, svg: "long", h: 380, xkey: "ctx",
+      ids: { seg: "longmode", mach: "longmach", model: "longkey", machLab: "longmachlab",
+             modelLab: "longkeylab", note: "longnote" },
+      xlabel: S.bestAxisX, ylabel: S.bestAxisY, unit: S.longDecUnit,
+      tip: function (x) {
+        return function (i) {
+          var p = x.points[i];
+          return head(x) + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(2) + "</b> tok/s<br>" +
+            '<span class="sub">' +
+            (p.runs > 1 && p.range_pct !== null
+              ? fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) : S.bestOne) +
+            "<br>" + esc(stack(x)) +
+            (x.rungs_capped
+              ? "<br>" + esc(fmt(S.longStops, { m: x.model,
+                  k: kctx(x.points[x.points.length - 1].ctx), w: x.rungs_capped.why }))
+              : "") + "</span>";
+        };
+      },
+      lines: function (shown) {
+        var out = ['<span class="nhead">' + esc(S.longHeadRetained) + "</span>"];
+        shown().forEach(function (x) {
+          var r = x.retained;
+          out.push('<span class="nrow">' + esc(fmt(S.longRetained, {
+            m: x.model, x: S.bestMach[x.machine], a: r.from_tok_s.toFixed(1), b: r.to_tok_s.toFixed(1),
+            j: kctx(r.from_ctx), k: kctx(r.to_ctx), p: pct(r.change_pct) })) + "</span>");
+        });
+        LG.decode.not_drawn.slice(0, 1).forEach(function (n) {
+          out.push(esc(fmt(S.longNotDrawn, { m: n.model })));
+        });
+        return out;
+      }
     });
-    models.forEach(function (m) {
-      var b = document.createElement("button");
-      b.className = "lg on";
-      b.style.setProperty("--c", colour[m]);
-      var q = BB.labels[m].quant_label;
-      b.innerHTML = '<span class="sw"></span>' + esc(m) +
-                    '<span class="q">' + esc(q) + "</span>";
-      b.setAttribute("aria-label", m + " " + q);
-      b.setAttribute("aria-pressed", "true");
-      b.addEventListener("click", function () {
-        on[m] = !on[m];
-        b.setAttribute("aria-pressed", String(on[m]));
-        apply();
-      });
-      key.appendChild(b);
+    build({
+      data: LG.prefill, machines: LG.machines, svg: "longpre", h: 340, xkey: "tokens",
+      ids: { seg: "longpremode", mach: "longpremach", model: "longprekey", machLab: "longpremachlab",
+             modelLab: "longprekeylab", note: "longprenote" },
+      xlabel: S.preAxisX, ylabel: S.preAxisY, unit: S.longPreUnit,
+      tip: function (x) {
+        return function (i) {
+          var p = x.points[i];
+          return head(x) + kctx(p.ctx) + " · <b>" + p.tok_s.toFixed(0) + "</b> tok/s<br>" +
+            '<span class="sub">' + p.ttft_s.toFixed(3) + " s to first token · " + p.tokens +
+            " tok<br>" + fmt(S.bestRuns, { n: p.runs, r: p.range_pct.toFixed(2) }) + "<br>" +
+            esc(fmt(S.preFit, { b: x.fit.b_us_tok.toFixed(1), c: x.fit.c_ns_tok2.toFixed(2),
+                                r: x.fit.r2.toFixed(4) })) + " · " +
+            esc(fmt(S.fitScope, { s: x.fit_scope })) +
+            (x.dropped.length
+              ? "<br>" + esc(fmt(S.preDropped, { n: kctx(x.dropped[0].ctx),
+                  r: x.dropped[0].range_pct.toFixed(0) }))
+              : "") + "<br>" + esc(stack(x)) + "</span>";
+        };
+      },
+      lines: function (shown) {
+        var out = ['<span class="nhead">' + esc(S.longHeadShare) + "</span>"];
+        shown().forEach(function (x) {
+          var q = x.quadratic_share_deepest;
+          out.push('<span class="nrow">' + esc(fmt(S.longShare, {
+            m: x.model, x: S.bestMach[x.machine], b: x.fit.b_us_tok.toFixed(1), c: x.fit.c_ns_tok2.toFixed(2),
+            t: ktok(x.crossover_tokens), s: q.pct.toFixed(0), k: kctx(q.ctx) })) + "</span>");
+        });
+        return out;
+      }
     });
-    apply();
-    // The ratios are the figure's argument, so they are written under it rather
-    // than left to be read off fourteen curves by eye.
-    var lines = [esc(S.preStroke), esc(S.preUnit), esc(S.preNote)];
-    // Eleven sentences of 12px monospace is a paragraph, not a note. The seven
-    // that are one句 frame with different numbers become two labelled groups,
-    // and the clause they each repeated now lives once, in the caption.
-    lines.push('<span class="nhead">' + esc(S.preHeadCards) + "</span>");
-    F.compare.forEach(function (c) {
-      lines.push('<span class="nrow">' +
-                 esc(fmt(S.preRatio, { m: c.model, x: S.bestMach[c.machine],
-                                       b: c.b_ratio.toFixed(2),
-                                       c: c.c_ratio.toFixed(2) })) + "</span>");
-    });
-    lines.push('<span class="nhead">' + esc(S.preHeadTp) + "</span>");
-    F.tp_gain.forEach(function (g) {
-      lines.push('<span class="nrow">' +
-                 esc(fmt(S.preTpGain, { m: g.model, b: g.b_gain.toFixed(2),
-                                        c: g.c_gain.toFixed(2) })) + "</span>");
-    });
-    var bt = F.backend_tradeoff;
-    lines.push(esc(fmt(S.preTrade, { m: bt.model, k: kctx(bt.ctx),
-                                     p: bt.prefill_gain.toFixed(2),
-                                     d: bt.decode_gain.toFixed(2) })));
-    note.innerHTML = lines.join("<br>");
   })();
 
   /* ---------- the timeline ----------

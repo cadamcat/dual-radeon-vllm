@@ -1226,6 +1226,16 @@ reproducible. TP=1 is untested, and the source is above the kernel but not furth
   带宽陈述, which is bandwidth; it now reads 区间.
 </div>
 
+<div class="note">
+  <span class="lbl">2026-09-02 · the attention backend is excluded as the source of the non-determinism</span>
+  Section 6 says the greedy outputs this machine produces vary across processes. Holding the W4A16
+  kernel at <code>RDNA3W4A16LinearKernel</code> and forcing <code>TRITON_ATTN</code> on the two
+  unstable models left both unstable, against zero varying cells for the two the earlier reading
+  called stable; the backend is not the axis, and the quantisation kernel is the remaining named
+  candidate, not established
+  (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/gfx1100-greedy-attn-ab"><code>gfx1100-greedy-attn-ab/</code></a>).
+</div>
+
 <div class="foot-note"> <p><strong>Run it yourself.</strong> The calibration probe and its four
 rounds are in
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/harness-calibration/README.md"><code>benchmarks/harness-calibration/</code></a>;

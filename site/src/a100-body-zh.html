@@ -275,7 +275,7 @@ Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">图 7 · 解码时每张卡实到的显存带宽
+    <div class="figtitle">图 7 · 解码时每张卡推得的显存带宽 —— 一个上界
       <span class="prov yes">可由仓库重算</span></div>
     <div class="bars" id="util"></div>
   </div>
@@ -307,7 +307,7 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
 所以前两步由另外两个模型承担，31B 从第三步起才出现 ——
 在那里，这一对卡本来就是这台机器跑得动它的唯一方式。</p>
 
-<h3>A100 自己的实到带宽</h3>
+<h3>A100 自己的推得带宽</h3>
 <p>图 7 只有 Radeon 这边，没有对应的一半。图 3 里那个 1.27× 是两个规格书数字的比值，
 读者应当把它当成"单靠带宽差能解释的上界"，而不是任何一侧被拿去对照过的预测。</p>
 
@@ -338,8 +338,15 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
 <p>而且同一台机器上，<code>Qwen3-8B</code> 的第二张卡在解码上值 <strong>1.70×</strong>，
 12B 只值 <strong>1.185×</strong>，两者每步的集合通信开销相差不到 0.6&nbsp;ms。
 如果一次固定的 all-reduce 真吃掉了第二张卡贡献的大半，8B 不可能拿到 1.70×。
-<strong>拖住 12B 的不是那根线，而这一页并不知道它是什么。</strong>
-减去「完美对半」和量到的集合通信，12B 还剩 4.97&nbsp;ms 无法解释，8B 只剩 0.68&nbsp;ms。</p>
+<strong>拖住 12B 的不是那根线。</strong>
+减去「完美对半」和量到的集合通信，12B 还剩 4.97&nbsp;ms 无法解释，8B 只剩 0.68&nbsp;ms。
+<em>（2026-09-02 有了答案，而且问题出在前提上。）</em>那道减法假定每一步都在等字节；单卡上 8B 让内存控制器
+<strong>90&nbsp;%</strong> 的时间在忙，12B 只有 <strong>56&nbsp;%</strong>，五个格子里第二张卡的收益跟着这个计数器走、
+不跟着行里的任何别的东西走
+（<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>）。
+12B 的 4.97&nbsp;ms 不是一笔丢失的开销，而是零模型对一个内存控制器半闲着的模型算错了。
+同一个计数器此后又给四种租用 NVIDIA 配置上更快的显存、第二张卡和更慢的卡排了序，那是
+<a href="mem-busy-orders-five-settings.zh.html">另一篇文章</a>。</p>
 
 <p>老句子里关于 attention 的那一半仍然成立：attention 的并行完全不需要通信，
 上面的预填充数字说的就是这件事。三条曾试图从拟合截距给这个下限定价的结论仍然撤回——
@@ -462,7 +469,7 @@ campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负�
  "wgUnit": "batch 1 下的 workgroup 数",
  "econUnit": "打开投机所得的百分比，各取该平台最长的深度",
  "econNote": "在一张卡上比在两张卡上值 {r} 倍",
- "utilUnit": "解码时每张卡实到 800 GB/s 的百分比，TP=2",
+ "utilUnit": "解码时每张卡推得占 800 GB/s 的百分比，TP=2 · 是上界：在数过的地方一步只读 checkpoint 的 82–86 %",
  "utilSubject": "这个对比里的模型跑到 {p}%",
  "gib": "{n} GiB/token",
  "runs": "一次运行",

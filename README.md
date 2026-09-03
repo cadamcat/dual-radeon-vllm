@@ -6,6 +6,8 @@ English | [中文](README.zh.md)
 
 `gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: deliberately the least favourable topology.
 
+Since then the same ladder has been run on eleven other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
+
 <table>
 <tr>
 <td><b>43 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
@@ -15,6 +17,20 @@ English | [中文](README.zh.md)
 </tr>
 </table>
 
+### Measured on
+
+| machine | cards | whose | context ladder | since |
+|---|---|---|---|---|
+| **RX 7900 XT** (gfx1100, ROCm 7.14) — the subject of everything here | 2, and 1 | ours | 500 – 32 000, and to **128 000** from 2026-09-03 | 2026-07-25 |
+| A100 SXM4 80G | 1 | Colab | 500 – 32 000 | 2026-08-29 |
+| L4 24G · T4 16G | 1 | Colab | 500 – 32 000, the L4 to 128 000 | 2026-08-30 |
+| A100 SXM4 40G | 1 | Colab | one measurement: what the derived bandwidth figures are worth | 2026-09-02 |
+| H100 80G | 1, 2 and 4 | rented on Modal | 500 – 128 000 | 2026-09-03 |
+| H200 143G · B300 275G | 1 | rented on Modal | 500 – 128 000 | 2026-09-03 |
+| RTX PRO 6000 96G | 1 and 2 | rented on Modal | 500 – 128 000 | 2026-09-03 |
+
+Thirteen machine configurations, eight checkpoints, 5 624 request-level measurements in 56 results files, 2 247 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 11 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
+
 ### What is in here
 
 Three things, each usable on its own:
@@ -22,7 +38,7 @@ Three things, each usable on its own:
 | | |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | Seven model architectures across eleven context lengths on **five machines** — two consumer Radeons together and apart, a rented A100 80G, an L4 24G and a Tesla T4 16G — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and a sixth machine, an A100 40G, appears in the projections for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
+| 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#what-performance-to-expect) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ### Which GPUs this applies to
@@ -232,7 +248,7 @@ Full evidence chain, and the 13 hypotheses we tested and the 12 we eliminated:
 
 ## What performance to expect
 
-Five models × eleven context lengths, 292 measurements, zero errors, on stock
+**The 2026-07-25 baseline, the pair alone.** Five models × eleven context lengths, 292 measurements, zero errors, on stock
 vLLM. Full write-up in **[docs/benchmarks.md](docs/benchmarks.md)**; raw data and
 the runner in [`benchmarks/`](benchmarks/). Every run uses a random prefix to
 defeat prefix caching; decode is measured first-token-to-last, so TTFT is
@@ -695,8 +711,10 @@ deploy/       Inject into a ROCm/vLLM container (3 pieces, all required)
 benchmarks/   The measurement data and everything that produced it
   results-2026-08-24.jsonl 372 measurements on the patched container, same ladder,
                        six of the nine configurations rerun as controls
-  results.jsonl        ★ 292 measurements, one record per request; the source of
-                         the 2026-07-25 tables and charts
+  results.jsonl        ★ the 2026-07-25 campaign: 292 measurements, one record per
+                         request; the source of that day's tables and charts. The
+                         cross-machine data is prefill.jsonl, decode.jsonl and
+                         CAMPAIGNS.md, the generated index of every campaign
   analyze/             turn that into the tables and charts; no GPU needed
   bench_runner.py      the campaign runner: serial, checkpointed, VRAM-safe
   harness/             one telemetry shape for every machine, and the schema

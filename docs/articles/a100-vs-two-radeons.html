@@ -1286,7 +1286,7 @@ against 800 GB/s — puts this comparison's model at 63 %:</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
-    <div class="figtitle">Figure 7 · realized memory bandwidth at decode, per card
+    <div class="figtitle">Figure 7 · derived memory bandwidth at decode, per card — an upper bound
     <span class="prov yes">recomputable from repo</span></div>
     <div class="bars" id="util"></div>
   </div>
@@ -1321,7 +1321,7 @@ prompt is therefore outside what these fits describe.</p>
 So the first two steps are carried by the other two models, and the 31B appears only from the third
 step on, where the pair is the only way this machine runs it at all.</p>
 
-<h3>The A100's own realized bandwidth</h3>
+<h3>The A100's own derived bandwidth</h3>
 <p>Figure 7 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 3 is a ratio of
 datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
 can explain, not as a prediction either side was measured against.</p>
@@ -1353,9 +1353,17 @@ step</strong>, about a ninth of it.</p>
 <p>And the same box gives <code>Qwen3-8B</code> <strong>1.70×</strong> from its second card at decode
 while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0.6&nbsp;ms of each
 other per step. If a fixed all-reduce were eating most of what the second card contributes, the 8B
-could not be getting 1.70×. <strong>What holds the 12B back is not the wire, and this page does not
-say what it is.</strong> Subtracting perfect halving and the measured collectives leaves
-4.97&nbsp;ms of its step unexplained; the same subtraction on the 8B leaves 0.68&nbsp;ms.</p>
+could not be getting 1.70×. <strong>What holds the 12B back is not the wire.</strong> Subtracting
+perfect halving and the measured collectives leaves
+4.97&nbsp;ms of its step unexplained; the same subtraction on the 8B
+leaves 0.68&nbsp;ms. <em>(Answered 2026-09-02, and the premise was the problem.)</em> The subtraction assumed a step that was waiting on bytes; on one card the 8B keeps
+the memory controller <strong>90&nbsp;%</strong> busy and the 12B <strong>56&nbsp;%</strong>, and
+across five cells the second card's gain follows that counter and nothing else in the row
+(<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
+The 12B's 4.97&nbsp;ms is not a cost gone missing; it is the null model being wrong for a model whose
+memory controller is half idle. The same counter has since ordered the worth of faster memory, a
+second card and a slower card on four rented NVIDIA configurations, which is
+<a href="mem-busy-orders-five-settings.html">its own article</a>.</p>
 
 <p>The half of the old sentence about attention still stands: attention parallelises with no
 communication at all, and that is what the prefill numbers above show. The three claims that tried
@@ -3439,7 +3447,7 @@ measurement is in the repository</a>, with the library it ran through identified
  "wgUnit": "workgroups at batch 1",
  "econUnit": "per cent gained by turning speculation on, at each platform's longest depth",
  "econNote": "{r}× more worth having on one card than on two",
- "utilUnit": "per cent of 800 GB/s realized at decode, per card, TP=2",
+ "utilUnit": "per cent of 800 GB/s derived at decode, per card, TP=2 · an upper bound: a step reads 82–86 % of the checkpoint where it was counted",
  "utilSubject": "the model in this comparison reaches {p}%",
  "gib": "{n} GiB/token",
  "runs": "one run",

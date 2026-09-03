@@ -128,10 +128,18 @@ context. Running the same model under llama.cpp on the same two cards retains
 which puts the problem in vLLM's attention path rather than in ROCm, the hardware
 or the architecture.
 
-**Prefill, however, keeps the promise.** The 27B's prefill gets *faster* with
-length (805 → 883 tok/s, +9.6 %) while dense models lose 8–61 %; the 26B MoE
-also gains, +24 %, which is more. Linear attention does deliver O(S) prefill
-here.
+**Prefill keeps the promise on this configuration, and only on it.** The 27B's
+prefill gets *faster* with length here (805 → 883 tok/s, +9.6 %) while dense
+models lose 8–61 %; the 26B MoE also gains, +24 %, which is more. *(Narrowed
+2026-09-03.)* That rise is a property of the arm rather than of linear
+attention: the same architecture's `Qwen3.8-27B` checkpoint, on sixteen stock
+ladders across seven machine configurations, runs from **−31.1 %** on this pair
+pinned to Triton to **+103.0 %** on two H100s — both signs from one checkpoint.
+What a rising prefill curve says is that a short prompt's fixed cost outweighs
+the quadratic term on that arm, which depends on the backend, the card and the
+vLLM path as much as on the model. The sentence that used to stand here,
+"linear attention does deliver O(S) prefill", is withdrawn; see the hybrid-SSM
+article's section 6.
 
 **What to do:** use **llama.cpp** for Qwen3.5/3.6. Measured at matched context
 depth on the same two cards, plain Q4_K_M with no speculative decoding, it is

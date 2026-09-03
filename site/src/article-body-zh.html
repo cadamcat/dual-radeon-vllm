@@ -209,10 +209,10 @@ kernel 手里有多少可并行的东西。</p>
 <code>Qwen3.6</code> 臂涨得还多。这个论断是按「模型的性质」写的，而它只在跑过它的那几台机器上成立。）</em>
 与此同时 <code>gemma-4-26B-A4B</code> —— 一个 MoE，根本没有线性注意力层 ——
 涨得比 <code>Qwen3.6</code> 还多，7 月 23.8 %、8 月 21.9 %。
-<code>benchmarks/prefill.jsonl</code> 里现在有十六条 stock hybrid-SSM 阶梯 ——
-同一个 checkpoint 家族，跨七种机器配置 —— 其中<strong>七条上升超过 1 %、一条持平、八条下降</strong>。
-同一份 <code>Qwen3.8-27B</code> 权重，从双 Radeon 钉在 Triton 上的 <strong>−31.1 %</strong>
-一直到双 H100 上的 <strong>+103.0 %</strong>。同一个架构、同一份权重、两个方向的符号、134 个百分点的跨度 ——
+<code>benchmarks/prefill.jsonl</code> 里现在有十七条 stock hybrid-SSM 阶梯 ——
+同一个 checkpoint 家族，跨七种机器配置 —— 其中<strong>七条上升超过 1 %、一条持平、九条下降</strong>。
+同一份 <code>Qwen3.8-27B</code> 权重，从双 Radeon 上 2026-09-03 那条到 96 000 的阶梯（<code>ROCM_ATTN</code>）的 <strong>−38.7 %</strong>
+一直到双 H100 上的 <strong>+103.0 %</strong>。同一个架构、同一份权重、两个方向的符号、142 个百分点的跨度 ——
 这正是要点：预填充曲线上升说明的是：在那条臂上，短提示的固定开销盖过了二次项 —— 而不是模型带着一个循环状态。
 这篇文章讲的解码崩塌不受影响：那是测出来的，不是靠同一套推理推出来的。</p>
 
@@ -261,8 +261,11 @@ kernel 手里有多少可并行的东西。</p>
 在新栈上这个检查点还会选到不同的 W4A16 线性 kernel，光那一项就值大约 3 倍，与注意力无关。
 <strong>两张图的绝对水平不可比</strong>；可比的是比值和形状。</p>
 
-<h3>一台机器</h3>
-<p>单机、单一厂商、全程 batch 为 1。占用率那套解释预测：batch 增大时崩溃应当减轻。这一点这里没有测。</p>
+<h3>因果 A/B 只有一台机器</h3>
+<p>支撑本文的那次内核 A/B 在单机、单一厂商、全程 batch 为 1 下跑的。同一架构现在在四张租用的 NVIDIA 卡上有到
+128&nbsp;000 token 的解码阶梯（<code>Qwen3.8-27B</code> 在 H100 上掉 21.8&nbsp;%，和稠密 31B 一样远），说明在每个测过的厂商上
+都是 attention 层决定深度代价 —— 但每张卡各自选了 attention 后端，所以那些都不是本页所依赖的同内核比较。占用率那套解释预测：
+batch 增大时崩溃应当减轻，这一点这里哪儿都没测。</p>
 
 <h3>这个修复没修掉的东西</h3>
 <p>paged attention 从解码步的约 68 % 降到 11 %。剩下的由量化 GEMM 主导，在短上下文时约占一个解码步的 77 %。

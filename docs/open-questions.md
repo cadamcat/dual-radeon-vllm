@@ -798,6 +798,53 @@ ceiling is real, but raising it is not expected to fix the throughput gap above.
 
 ---
 
+## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s? — **ANSWERED: the checkpoint's kernel**
+
+> **Answered 2026-08-27.** The checkpoint is asymmetric int4, so every quantised
+> linear misses vLLM's native gfx1100 W4A16 kernel and runs on Triton instead.
+> The same model with a symmetric checkpoint is **3.24× faster at 1 K**, and the
+> penalty is a flat ~60 ms per decode step across a 32× context range
+> ([benchmarks/w4a16-symmetry](../benchmarks/w4a16-symmetry/)).
+>
+> **What is answered:** the 2× against llama.cpp at short context is the
+> quantisation kernel the checkpoint lands on, not the architecture. **What is
+> not:** the per-kernel profile of gemma-4-31B that the paragraph below asks
+> for was never run, and is no longer needed to answer this question; it would
+> only refine how the remaining Triton time divides.
+
+<details>
+<summary>How it was reasoned about before it was answered (kept for the mistake)</summary>
+
+The reasoning below eliminated the right suspect on a bad comparison, and is
+left in place because the mistake is the reusable part: "gemma-4-31B is also
+w4a16" is true and irrelevant, because *also w4a16* is not *also the same
+kernel*. gemma-4-31B is symmetric and runs the native HIP kernel; this model
+is asymmetric and runs Triton. Two kernels behind one word in a config file.
+The 77 % figure below was right the whole time.
+
+*As written before 2026-08-27:* the context **slope** is settled — it is the
+paged-attention fallback, see [hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md).
+The baseline is not.
+
+At 512 tokens of context, before the slope has done anything, `Qwen3.6-27B` does
+12.1 tok/s under vLLM while llama.cpp on the same two cards does 24.89. Something
+costs 2× before long context is involved at all.
+
+`architecture-notes.md` offers four candidates, all about the gated-delta-net
+kernels. The profile makes all four look too small to matter: at 1 K context the
+two GDN kernels together are **0.56 %** of decode time. The dominant item is
+`triton_w4a16_gemm_kernel` at **77 %** — but gemma-4-31B is also w4a16 and decodes
+at 43.2 tok/s, so "the quantised GEMM is slow" is not an answer either.
+
+What would settle it: profile gemma-4-31B the same way and compare the per-step
+breakdown. If its w4a16 GEMM share is much lower, the question becomes what about
+this model's shapes makes the same kernel so much more expensive. That run has not
+been done.
+
+</details>
+
+---
+
 ## 10. Does the bandwidth-utilisation derivation hold on gfx1100? — **not answerable on this hardware**
 
 Every utilisation figure this repository publishes is derived: decode tok/s
@@ -853,42 +900,6 @@ not transferable to them: those run `RDNA3W4A16LinearKernel` where the A100 runs
 Marlin, and a kernel that reads its weights differently would have a different
 factor. The unread amount there was 1.89 GB on the 12B and 3.35 GB on the 31B,
 and that campaign did not attribute it kernel by kernel.
-
----
-
-## 9. Why is the hybrid-SSM model's *baseline* decode only 12.1 tok/s? ANSWERED
-
-> **Answered 2026-08-27.** The checkpoint is asymmetric int4, so every quantised
-> linear misses vLLM's native gfx1100 W4A16 kernel and runs on Triton instead.
-> The same model with a symmetric checkpoint is **3.24× faster at 1 K**, and the
-> penalty is a flat ~60 ms per decode step across a 32× context range
-> ([benchmarks/w4a16-symmetry](../benchmarks/w4a16-symmetry/)).
->
-> The reasoning below eliminated the right suspect on a bad comparison, and is
-> left in place because the mistake is the reusable part: "gemma-4-31B is also
-> w4a16" is true and irrelevant, because *also w4a16* is not *also the same
-> kernel*. gemma-4-31B is symmetric and runs the native HIP kernel; this model
-> is asymmetric and runs Triton. Two kernels behind one word in a config file.
-> The 77 % figure below was right the whole time.
-
-
-The context **slope** is settled — it is the paged-attention fallback, see
-[hybrid-decode-on-rdna.md](hybrid-decode-on-rdna.md). The baseline is not.
-
-At 512 tokens of context, before the slope has done anything, `Qwen3.6-27B` does
-12.1 tok/s under vLLM while llama.cpp on the same two cards does 24.89. Something
-costs 2× before long context is involved at all.
-
-`architecture-notes.md` offers four candidates, all about the gated-delta-net
-kernels. The profile makes all four look too small to matter: at 1 K context the
-two GDN kernels together are **0.56 %** of decode time. The dominant item is
-`triton_w4a16_gemm_kernel` at **77 %** — but gemma-4-31B is also w4a16 and decodes
-at 43.2 tok/s, so "the quantised GEMM is slow" is not an answer either.
-
-What would settle it: profile gemma-4-31B the same way and compare the per-step
-breakdown. If its w4a16 GEMM share is much lower, the question becomes what about
-this model's shapes makes the same kernel so much more expensive. That run has not
-been done.
 
 ---
 

@@ -19,14 +19,22 @@ led = [json.loads(l) for l in open(B / "ledger.jsonl")]
 # The backbone: one day, one stack, one harness, so these lines are one
 # experiment and may be read against each other.
 CAMPAIGN = "2026-08-24"
-BACKBONE = ["gemma-4-26B-A4B", "Qwen3-8B", "Muse-Glimmer-30B", "gemma-3-27b-it",
-            "gemma-4-12B-it"]
+BACKBONE = ["gemma-4-26B-A4B", "Qwen3-8B", "Muse-Glimmer-30B", "gemma-4-12B-it"]
 # What the reader is most likely to be here for, lit without being asked.
-LIT = ["Qwen3.8-27B", "gemma-4-31B-it", "Muse-Glimmer-30B", "gemma-4-26B-A4B"]
+LIT = ["gemma-4-31B-it", "gemma-4-26B-A4B", "gemma-4-12B-it", "Qwen3.8-27B",
+       "Muse-Glimmer-30B"]
 # Deliberately absent: Qwen3.6-27B exists in the ledger only as the superseded
 # 2026-07-25 stock run whose collapse the split-KV work fixed, so it is not a
-# statement about today.
-OMIT = ["Qwen3.6-27B"]
+# statement about today. gemma-3-27b-it is one sitting on one machine
+# (2026-08-24, F-27B-tp2) of a checkpoint gemma-4 replaced; it stays in the
+# projections and in the 2026-08-24 write-ups as the control it was measured
+# as, and since 2026-09-03 it is not offered on the front page, where a model
+# with nothing to compare against is a button that does nothing.
+OMIT = ["Qwen3.6-27B", "gemma-3-27b-it"]
+# each omission names the page string that explains it, so the two languages
+# can say why in their own words and a third omission cannot borrow a reason
+OMIT_WHY = {"Qwen3.6-27B": "bestOmitSuperseded", "gemma-3-27b-it": "bestOmitControl"}
+assert set(OMIT_WHY) == set(OMIT)
 
 sid = lambda r: (r["model"], r["tp"], r["vllm"], tuple(r["patches"]), r["harness"], r["date"])
 
@@ -702,7 +710,8 @@ PF_LINES = [
     ("rdna3",   "RX 7900 XT",     "gemma-4-26B-A4B",  "2026-08-24", "E-26B-tp2"),
     ("rdna3",   "RX 7900 XT",     "Qwen3-8B",         "2026-08-24", "B-8B-tp2"),
     ("rdna3",   "RX 7900 XT",     "Muse-Glimmer-30B", "2026-08-24", "G-30B-tp2"),
-    ("rdna3",   "RX 7900 XT",     "gemma-3-27b-it",   "2026-08-24", "F-27B-tp2"),
+    # gemma-3-27b-it's 2026-08-24 line is in prefill.jsonl and not here: OMIT
+    # above says why, and the OMIT check below holds this figure to it too.
     # 2026-09-03, the rented sweep: every line off by default, cut at 32 000.
     # Built below from prefill.jsonl rather than typed, because six machines
     # times six models is thirty-four lines and a hand-typed table of that
@@ -751,11 +760,10 @@ PF_CAVEAT = {
         "c_undetermined_pct": 12.8,
     },
 }
-# Lit to start: the two models every machine ran, which is the comparison the
-# figure exists to make. The other five are the pair's alone and are one click
-# away; lighting fourteen lines at once would be showing everything and saying
-# nothing.
-PF_LIT = {"gemma-4-12B-it", "gemma-4-26B-A4B"}
+# Lit to start: the same five models Figure 1 lights, so a reader who has
+# learnt the five colours there reads them here. The other two are one click
+# away in the key.
+PF_LIT = set(LIT)
 
 # Figures 1 and 2 stop at 32 000, so the coefficients they display are fitted
 # on the rungs they draw. For every machine that measured no further the two
@@ -827,6 +835,9 @@ for mid, machine, model, date, cfg in PF_LINES:
 # GEMM throughput -- the compute -- and c is how badly attention scales, and on
 # these lines they do not move together. Card against card only; the pair is a
 # different question and is answered below.
+for m in OMIT:
+    assert not any(x["model"] == m for x in pf_series), f"{m} was not omitted from Figure 2"
+
 pf_cmp = []
 for model in ("gemma-4-12B-it", "gemma-4-26B-A4B"):
     ref = next(x for x in pf_series if x["model"] == model and x["machine"] == "rdna3-1")
@@ -941,6 +952,207 @@ MODEL_ORDER = _lit_models + sorted(_tail, key=lambda m: (m not in _pf_models,
                                                          _tail.index(m)))
 assert len(MODEL_ORDER) == len(set(MODEL_ORDER)) == len({x["model"] for x in series})
 
+# --- Figures 3 and 4: past 32 000 ------------------------------------------
+# Figures 1 and 2 stop at FIG12_MAX_CTX and say so. These two take the rungs
+# above it, and they have a subject: the pair this repository is about, on
+# the 2026-09-03 ladder that runs to 128 000 -- the first Radeon rows past
+# 32 000 anywhere here. The rented machines from the same day are the
+# background, off until asked for, exactly as they are in Figures 1 and 2.
+# The whole ladder is drawn, 500 upward, because a curve's shape at depth is
+# only readable against where it started; the cut is on the machine, not on
+# the rung.
+#
+# Everything comes out of the two projections this repository gates, and a
+# line has to reach past 32 000 to be here at all: a ladder that stops at
+# 32 000 is Figure 1's and Figure 2's, not these.
+LONG_DATE = "2026-09-03"
+LONG_PAIR = ["A-12B-tp2-long", "B-8B-tp2-long", "E-26B-tp2-long",
+             "G-30B-tp2-long", "D8-27B-tp2-long", "C-31B-tp2-long"]
+# A configuration the campaign ran and this figure cannot draw has to say why,
+# here, or the missing line reads as an abandoned run. Qwen3-8B's own config
+# caps its positions at 40 960, so on this cut its ladder is the eleven rungs
+# Figure 1 already has -- on every machine, which is the not_drawn rule below.
+LONG_PAIR_ABSENT = {
+    "B-8B-tp2-long": "its own config caps context at 40 960, so its ladder "
+                     "stops at 32 000 and is Figure 1's",
+}
+# The L4 ran gemma-4-12B to 128 000 on the same day, as the platform control
+# that lets every rented ratio be read as a card difference. It is a real
+# sixteen-rung ladder on a card Figure 1 already names, so it is offered here
+# too, off by default like every other background line.
+LONG_EXTRA = [("l4", "L4", "G12")]
+LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
+
+
+def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind):
+    rows = sorted([r for r in rows_all if r["machine"] == machine_name
+                   and r["cfg"] == cfg and r["date"] == date], key=lambda r: r["ctx"])
+    assert rows, (machine_name, cfg, date)
+    assert rows[-1]["ctx"] > FIG12_MAX_CTX, \
+        f"{machine_name}/{cfg}: stops at {rows[-1]['ctx']}, which is Figure 1's subject"
+    r0 = rows[0]
+    quant, arch = _QA[r0["model"]]
+    s = {"model": r0["model"], "machine": mid, "machine_name": machine_name,
+         "tp": r0["tp"], "lit": lit, "vllm": r0["vllm"], "patches": list(r0["patches"]),
+         "harness": r0["harness"], "date": date, "quant": quant,
+         "quant_label": qlabel(quant), "arch": arch, "attn_backend": r0["attn_backend"],
+         "prefix_caching": r0.get("prefix_caching"), "cfg": cfg,
+         "source": "benchmarks/decode.jsonl" if kind == "decode" else "benchmarks/prefill.jsonl",
+         "rungs_measured": len(rows)}
+    if kind == "decode":
+        s["points"] = [{"ctx": r["ctx"], "tok_s": r["decode_tok_s"], "runs": r["runs"],
+                        "range_pct": r["range_pct"], "graded": r["chart_grade"]}
+                       for r in rows]
+        # what the line keeps from its shallowest rung to its deepest, on the
+        # rungs that are measurements: a cell whose two rounds disagree is not
+        # one, and the H200 has two such cells at the shallow end
+        good = [r for r in rows if r["chart_grade"]]
+        assert len(good) >= 4, (machine_name, cfg, len(good))
+        s["retained"] = {"from_ctx": good[0]["ctx"], "to_ctx": good[-1]["ctx"],
+                         "from_tok_s": good[0]["decode_tok_s"],
+                         "to_tok_s": good[-1]["decode_tok_s"],
+                         "change_pct": (good[-1]["decode_tok_s"] / good[0]["decode_tok_s"]
+                                        - 1) * 100.0}
+    else:
+        good = [r for r in rows if r["chart_grade"]]
+        assert len(good) >= 4, (machine_name, cfg, len(good))
+        f = _fits_full[(machine_name, cfg, date)]
+        assert "b_us_tok" in f, (cfg, f.get("note"))
+        s["points"] = [{"ctx": r["ctx"], "tokens": r["prompt_tokens"],
+                        "tok_s": r["prefill_tok_s"], "ttft_s": r["ttft_s"],
+                        "runs": r["runs"], "range_pct": r["range_pct"]} for r in good]
+        s["dropped"] = [{"ctx": r["ctx"], "range_pct": r["range_pct"]}
+                        for r in rows if not r["chart_grade"]]
+        s["fit"] = {"a_ms": f["a_ms"], "b_us_tok": f["b_us_tok"],
+                    "c_ns_tok2": f["c_ns_tok2"], "r2": f["r2"], "rungs": f["rungs"]}
+        # Fitted on every chart-grade rung of the ladder, which is what makes
+        # these coefficients different objects from Figure 2's for the same
+        # arm: that figure fits the rungs it draws, to 32 000.
+        s["fit_scope"] = "the whole ladder"
+        # Where the quadratic term overtakes the linear one -- b*S = c*S^2 at
+        # S = b/c -- and what share of the deepest rung's time it is. Both are
+        # arithmetic on the fit, so they are stated here rather than read off
+        # a curve by eye.
+        a, b, c = f["a_ms"] / 1e3, f["b_us_tok"] / 1e6, f["c_ns_tok2"] / 1e9
+        S = good[-1]["prompt_tokens"]
+        s["crossover_tokens"] = b / c if c > 0 else None
+        s["quadratic_share_deepest"] = {
+            "ctx": good[-1]["ctx"], "tokens": S,
+            "pct": c * S * S / (a + b * S + c * S * S) * 100.0} if c > 0 else None
+    return s
+
+
+def _long_figure(rows_all, kind):
+    CFG_MODEL = {r["cfg"]: r["model"] for r in rows_all}
+    out, cfgs_on_pair = [], sorted({r["cfg"] for r in rows_all
+                                    if r["machine"] == "RX 7900 XT"
+                                    and r["date"] == LONG_DATE
+                                    and r["cfg"].endswith("-long")})
+    assert set(cfgs_on_pair) <= set(LONG_PAIR), cfgs_on_pair
+    # every configuration the campaign named is either drawn or explained;
+    # a line that is neither is the assertion, not a quiet gap. Two ways to be
+    # absent: no rows at all, or rows that never pass 32 000 -- B8's ladder on
+    # this cut is eleven rungs on the pair as on every rented card, because
+    # its config.json caps context at 40 960. Both have to be in
+    # LONG_PAIR_ABSENT, and the second is also listed with the not-drawn
+    # ladders below, so the "left out on every machine" rule sees it.
+    deepest_on_pair = {c: max(r["ctx"] for r in rows_all if r["machine"] == "RX 7900 XT"
+                              and r["date"] == LONG_DATE and r["cfg"] == c)
+                       for c in cfgs_on_pair}
+    missing = [c for c in LONG_PAIR if c not in cfgs_on_pair]
+    shallow = [c for c in cfgs_on_pair if deepest_on_pair[c] <= FIG12_MAX_CTX]
+    assert set(missing) | set(shallow) == set(LONG_PAIR_ABSENT), \
+        f"the pair's long campaign: {missing} absent, {shallow} never past 32 000, {sorted(LONG_PAIR_ABSENT)} explained"
+    not_drawn = []
+    # the pair first, in the order the campaign ran them
+    for cfg in LONG_PAIR:
+        if cfg in LONG_PAIR_ABSENT:
+            if cfg in shallow:
+                not_drawn.append({"machine": "rdna3", "cfg": cfg, "model": CFG_MODEL[cfg],
+                                  "deepest": deepest_on_pair[cfg]})
+            continue
+        out.append(_long_series(rows_all, "RX 7900 XT", "rdna3", cfg, LONG_DATE,
+                                CFG_MODEL[cfg] in LIT, kind))
+    # the rented machines, from the same day, every one off by default. B8 is
+    # not here on any of them and that is arithmetic: its config.json caps
+    # context at 40 960, so its ladder is Figure 1's eleven rungs everywhere.
+    for mid, mname, _cards in RENTED:
+        for cfg in _RENTED_CFGS[mid]:
+            deepest = max(r["ctx"] for r in rows_all if r["machine"] == mname
+                          and r["cfg"] == cfg and r["date"] == LONG_DATE)
+            if deepest <= FIG12_MAX_CTX:
+                not_drawn.append({"machine": mid, "cfg": cfg,
+                                  "model": next(r["model"] for r in rows_all
+                                                if r["machine"] == mname and r["cfg"] == cfg),
+                                  "deepest": deepest})
+                continue
+            out.append(_long_series(rows_all, mname, mid, cfg, LONG_DATE, False, kind))
+    for mid, mname, cfg in LONG_EXTRA:
+        out.append(_long_series(rows_all, mname, mid, cfg, LONG_DATE, False, kind))
+    return out, not_drawn
+
+
+long_dec, long_dec_nd = _long_figure(_DEC, "decode")
+long_pre, long_pre_nd = _long_figure(_PF, "prefill")
+# the same machines and models on both, or a reader carrying a colour or a
+# stroke between the two figures is carrying it to the wrong line
+assert [(x["machine"], x["cfg"]) for x in long_dec] == [(x["machine"], x["cfg"]) for x in long_pre]
+assert long_dec_nd == long_pre_nd, (long_dec_nd, long_pre_nd)
+# only Qwen3-8B is left out, and only for its own ceiling
+assert {n["model"] for n in long_dec_nd} == {"Qwen3-8B"}, long_dec_nd
+assert all(n["deepest"] == FIG12_MAX_CTX for n in long_dec_nd), long_dec_nd
+# a model's label is the same on every line, as the check above insists for
+# Figure 1, and every model here is already one Figure 1 draws
+for x in long_dec + long_pre:
+    assert x["model"] in labels and labels[x["model"]]["quant"] == x["quant"], x["model"]
+
+
+def _long_ticks(ser):
+    """the ladder's own doubling depths, by the rung's nominal length -- a
+    prefill point is drawn at its measured token count, which is never exactly
+    the rung, so the ticks come from `ctx` on both figures as Figure 2's do"""
+    cs = sorted({p["ctx"] for x in ser for p in x["points"]})
+    ticks = [c for c in cs if c in LONG_TICKS_ALL]
+    assert ticks[0] == cs[0] and ticks[-1] == cs[-1], (ticks, cs[0], cs[-1])
+    assert ticks[-1] == 128000, ticks
+    return ticks
+
+
+# The card behind a machine id, whatever the count of them. In the one-model
+# view colour is the family and the dash is the count, so two H100s and one
+# read as kin; the Radeons are the subject and take the page's text colour.
+FAMILY = {"rdna3": "radeon", "rdna3-1": "radeon", "a100": "a100", "l4": "l4", "t4": "t4",
+          "h100": "h100", "h100x2": "h100", "h200": "h200", "b300": "b300",
+          "pro6000": "pro6000", "pro6000x2": "pro6000"}
+# the order the seven NVIDIA families take the seven palette slots in; the
+# Radeons are outside the palette on purpose
+FAMILY_ORDER = ["h100", "h200", "b300", "pro6000", "a100", "l4", "t4"]
+LONG_MACHINES = ([{"id": "rdna3", "default": True, "cards": 2, "family": "radeon"}]
+                 + [{"id": m, "default": False, "cards": c, "family": FAMILY[m]}
+                    for m, _n, c in RENTED]
+                 + [{"id": "l4", "default": False, "cards": 1, "family": "l4"}])
+assert [m["id"] for m in LONG_MACHINES] == list(dict.fromkeys(
+    [x["machine"] for x in long_dec])), "the machine row is not the lines' order"
+LONG_OUT = {
+    "decode": {"series": long_dec, "ticks": _long_ticks(long_dec),
+               "ctx_min": min(p["ctx"] for x in long_dec for p in x["points"]),
+               "ctx_max": max(p["ctx"] for x in long_dec for p in x["points"]),
+               "not_drawn": long_dec_nd},
+    # the prefill axis spans the measured token counts, and the 500 tick has
+    # to stay on it whether or not any line's shallowest prompt fell short of
+    # 500 -- an axis whose first label is 1K reads as starting at zero
+    "prefill": {"series": long_pre, "ticks": _long_ticks(long_pre),
+                "ctx_min": min([500] + [p["tokens"] for x in long_pre for p in x["points"]]),
+                "ctx_max": max(p["tokens"] for x in long_pre for p in x["points"]),
+                "not_drawn": long_pre_nd},
+    "machines": LONG_MACHINES,
+    "family_order": FAMILY_ORDER,
+    "pair_cfgs": [c for c in LONG_PAIR if c not in LONG_PAIR_ABSENT],
+    "pair_absent": [{"cfg": c, "why": w} for c, w in LONG_PAIR_ABSENT.items()],
+    "date": LONG_DATE,
+    "fig12_max_ctx": FIG12_MAX_CTX,
+}
+
 out = {
     "_what": "The index's best-measured-today figure. One line per model per machine, "
              "each the fastest configuration that model has been measured in; five of "
@@ -960,6 +1172,7 @@ out = {
         "ctx_min": min(p["tokens"] for x in pf_series for p in x["points"]),
         "ctx_max": max(p["tokens"] for x in pf_series for p in x["points"]),
     },
+    "long": LONG_OUT,
     "best": {
         "series": series,
         "campaign": {"date": CAMPAIGN, "models": len(BACKBONE),
@@ -970,6 +1183,7 @@ out = {
         "mtp_pairs": mtp_pairs,
         "alt_pairs": alt_pairs,
         "omitted": OMIT,
+        "omitted_why": OMIT_WHY,
         # Measured, in both projections, and deliberately absent from this
         # chart. `omitted` is a model this repository has nothing current to say
         # about; this is a series it has plenty to say about that this figure's
@@ -981,13 +1195,14 @@ out = {
         # is still "what does this box do", and a reader who wants the
         # cross-vendor single-card comparison presses for it -- or reads
         # Figure 2, which asks only that.
-        "machines": [{"id": "rdna3", "default": True, "cards": 2},
-                     {"id": "a100", "default": False, "cards": 1},
-                     {"id": "rdna3-1", "default": False, "cards": 1},
-                     {"id": "l4", "default": False, "cards": 1},
-                     {"id": "t4", "default": False, "cards": 1}]
-                    + [{"id": m, "default": False, "cards": c}
+        "machines": [{"id": "rdna3", "default": True, "cards": 2, "family": "radeon"},
+                     {"id": "a100", "default": False, "cards": 1, "family": "a100"},
+                     {"id": "rdna3-1", "default": False, "cards": 1, "family": "radeon"},
+                     {"id": "l4", "default": False, "cards": 1, "family": "l4"},
+                     {"id": "t4", "default": False, "cards": 1, "family": "t4"}]
+                    + [{"id": m, "default": False, "cards": c, "family": FAMILY[m]}
                        for m, _n, c in RENTED],
+        "family_order": FAMILY_ORDER,
         "cache_control": cache_control,
         "ctx_min": min(p["ctx"] for s in series for p in s["points"]),
         "ctx_max": max(p["ctx"] for s in series for p in s["points"]),

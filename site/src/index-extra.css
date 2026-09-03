@@ -115,38 +115,73 @@
      The shared --s1..--s5 set is tuned for figures that never carry more than
      five series. These repeat the head's three-way structure so an explicit
      theme choice still wins over the system preference. */
-  :root { --m1:#1c6b96; --m2:#2d7d54; --m3:#a5761a; --m4:#6b47b2;
-          --m5:#c1462c; --m6:#9c3070; --m7:#3f6d7a; }
+  /* Muted on purpose, 2026-09-03. Five models are lit to start now, so the
+     five slots they take are five hues 72 degrees apart at chroma 32 in Lab,
+     with the lightness stepped so neighbours separate on two axes, and the
+     two tail slots are low-chroma greys as far from the five as a grey gets.
+     Chosen by search on the same CIE76 the gate uses: the five are never
+     closer than 39 in the light theme, and the gate holds that floor. */
+  :root { --m1:#2b6d9c; --m2:#a76f9a; --m3:#cd8b73; --m4:#6c7a43;
+          --m5:#309d97; --m6:#78645d; --m7:#7e949f; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
-      --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+      --m1:#8ac6ff; --m2:#d092c1; --m3:#be7b62; --m4:#aaba7b;
+      --m5:#33a9a2; --m6:#dfc7bf; --m7:#8ea4b0; }
   }
   :root[data-theme="dark"] {
-    --m1:#63b3e0; --m2:#67c795; --m3:#e7b45c; --m4:#b096ec;
-    --m5:#f08a6d; --m6:#ee86bd; --m7:#84c8d8; }
+    --m1:#8ac6ff; --m2:#d092c1; --m3:#be7b62; --m4:#aaba7b;
+    --m5:#33a9a2; --m6:#dfc7bf; --m7:#8ea4b0; }
 
-  /* the machine row reads as a pair of switches rather than a colour key */
-  #bestmach .lg .sw { border-radius:3px; }
-  #bestmach { margin-bottom:.55em; }
-  .lg.off { opacity:.55; }
-  .lg.off .sw { opacity:.25; }
+  /* ---- the three controls every figure carries, three looks ----
+     The segmented switch is the question, the filled pill or box is the one
+     thing held fixed, and the key of line samples is the lines drawn. Shape
+     is the dimension -- a machine is always a pill and a model always a box
+     -- whichever row is doing which job. */
+  .ctl { display:grid; grid-template-columns:8.5em minmax(0, 1fr); column-gap:1.2em; row-gap:.6em;
+         align-items:center; margin:.3em 0 1.1em; }
+  .ctl .lab { font-family:var(--mono); font-size:.64rem; letter-spacing:.09em; text-transform:uppercase;
+              color:var(--text-2); line-height:1.35; }
+  .ctl .lab small { display:block; font-size:.62rem; letter-spacing:.03em; text-transform:none;
+                    color:var(--text-dim); line-height:1.35; margin-top:.15em; }
+  .ctl .row { display:flex; flex-wrap:wrap; gap:.4em .45em; align-items:center; }
+  .seg { display:inline-flex; padding:3px; border:1px solid var(--border-2); border-radius:999px;
+         background:var(--surface-2); width:max-content; max-width:100%; }
+  .seg button { border:0; background:none; padding:.34em 1em; border-radius:999px; cursor:pointer;
+                font-family:var(--mono); font-size:.76rem; font-weight:600; color:var(--text-dim); }
+  .seg button.on { background:var(--surface); color:var(--text);
+                   box-shadow:0 1px 2px rgba(0,0,0,.16), inset 0 0 0 1px var(--border-2); }
+  .pk, .ky { border:1px solid var(--border-2); background:var(--surface); color:var(--text-2);
+             padding:.32em .85em; font-family:var(--mono); font-size:.76rem; cursor:pointer;
+             display:inline-flex; align-items:center; gap:.5em;
+             transition:border-color .12s, background .12s, opacity .12s; }
+  .pk.mach, .ky.mach { border-radius:999px; }
+  .pk.model, .ky.model { border-radius:7px; }
+  .pk:hover, .ky:hover { border-color:var(--text-dim); }
+  .pk.on { background:var(--text); color:var(--bg); border-color:var(--text); font-weight:600; }
+  .ky svg { width:26px; height:10px; flex:0 0 auto; }
+  .ky.off { opacity:.4; border-style:dashed; text-decoration:line-through; }
+  /* an entry with nothing to draw on the machine or model picked: inert, and
+     dotted rather than struck through, because nobody switched it off */
+  .ky.na { opacity:.35; border-style:dotted; cursor:default; }
+  .ky.na:hover { border-color:var(--border-2); }
+  .pk .q, .ky .q { opacity:.55; font-size:.9em; }
+  .pk.on .q { opacity:.75; }
+  .barunit details summary { cursor:pointer; color:var(--text-2); }
+  .barunit details .nrow { display:block; padding-left:1.4em; }
+  @media (max-width:560px){ .ctl { grid-template-columns:1fr; row-gap:.35em; }
+                            .ctl .lab { padding-top:.45em; } }
 
   /* A model and its speculative switch are one control. They sit in a wrapper
      so the pair wraps as a unit -- two loose buttons broke across lines on a
      narrow screen and the switch arrived under a different model's name -- and
-     the seam between them is flattened so the pair reads as one pill. A button
+     the seam between them is flattened so the pair reads as one box. A button
      cannot contain a button, which is why this is not simply nesting. */
-  #bestkey .lgw { display:inline-flex; align-items:stretch; }
-  #bestkey .lgw:has(.lgs) .lg { border-top-right-radius:0; border-bottom-right-radius:0;
-                                border-right-width:0; padding-right:.6em; }
-  /* the quantisation rides with the name, dimmer, because it identifies the
-     checkpoint rather than naming it */
-  #bestkey .lg .q { opacity:.62; font-size:.92em; letter-spacing:.01em; }
-  #bestkey .lg.on .q { opacity:.78; }
+  .kyw { display:inline-flex; align-items:stretch; }
+  .kyw:has(.lgs) .ky { border-top-right-radius:0; border-bottom-right-radius:0;
+                       border-right-width:0; padding-right:.6em; }
   .lgs { display:inline-flex; align-items:center; font-size:.72rem; font-family:var(--mono);
          background:var(--surface-2); border:1px solid var(--border);
-         border-radius:0 99px 99px 0; padding:.34em .8em .34em .62em; cursor:pointer;
+         border-radius:0 7px 7px 0; padding:.34em .8em .34em .62em; cursor:pointer;
          color:var(--text-dim); user-select:none; letter-spacing:.02em;
          transition:color .25s, border-color .25s, background .25s; }
   .lgs::before { content:""; width:11px; height:0; flex:0 0 auto; margin-right:.45em;

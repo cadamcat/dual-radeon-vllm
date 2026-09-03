@@ -298,7 +298,12 @@ first divergence is usually early, index 0 to 9 of 64, after which greedy
 decoding amplifies it.
 
 `gemma-4-31B`, on the `TRITON_ATTN` backend, was deterministic in all four of its
-cells. The affected models are the ones on `ROCM_ATTN`.
+cells. ~~The affected models are the ones on `ROCM_ATTN`.~~ *Withdrawn
+2026-09-02:* holding the W4A16 kernel at `RDNA3W4A16LinearKernel` and forcing
+`TRITON_ATTN` on the two unstable models left both unstable (`muse` 7 of 8 at
+512, `gemma3` 3 of 8 at 8 192), so the attention backend is **excluded** as the
+axis ([`gfx1100-greedy-attn-ab/`](../benchmarks/gfx1100-greedy-attn-ab/)). The
+quantisation kernel is the remaining named candidate and is not established.
 
 **It is inside a single process, and a warm-up does not fix it.** One engine, one
 prompt, a warm-up call, then eight identical greedy generations back to back:
