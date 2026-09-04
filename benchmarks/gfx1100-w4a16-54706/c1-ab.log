@@ -1,0 +1,38 @@
+21:48:28 | ===== start =====
+069f038d310f8b8057b128be55427f99  /opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so
+069f038d310f8b8057b128be55427f99  /rb/c1ab/_rocm_C.abi3.so.shipped
+-rw-r--r-- 1 root root 514664296 Jul 15 20:06 /opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so
+-rw-r--r-- 1 root root 514664296 Jul 15 20:06 /rb/c1ab/_rocm_C.abi3.so.shipped
+21:48:35 | patch state (first_block sites, left as found): 3
+21:48:35 | arm=baseline installed: 4f4c1b9336ea5c0f723acc039737f62a  /opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so 4f4c1b9336ea5c0f723acc039737f62a  /rb/c1c/build/_rocm_C.abi3.so 
+21:48:36 | --- baseline muse backend=ROCM_ATTN ---
+  [within] muse backend=ROCM_ATTN proc=1 ctx=   512 -> 6 distinct of 8  first_div=[9, 9, 9, 37, 9, 29, 9]
+  [within] muse backend=ROCM_ATTN proc=1 ctx=  8192 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  === NONDET DONE ===
+21:51:55 | backend in log: Using ROCM_ATTN backend 
+21:51:55 | quant kernel:   Using RDNA3W4A16LinearKernel 
+21:51:56 | --- baseline gemma3 backend=ROCM_ATTN ---
+  [within] gemma3 backend=ROCM_ATTN proc=1 ctx=   512 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  [within] gemma3 backend=ROCM_ATTN proc=1 ctx=  8192 -> 2 distinct of 8  first_div=[None, None, None, 4, None, None, None]
+  === NONDET DONE ===
+21:56:00 | backend in log: Using ROCM_ATTN backend 
+21:56:00 | quant kernel:   Using RDNA3W4A16LinearKernel 
+21:56:00 | arm=pr54706 installed: 83f1d74c528519513f2b4598361bee62  /opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so 83f1d74c528519513f2b4598361bee62  /rb/c1b/build/_rocm_C.abi3.so 
+21:56:00 | --- pr54706 muse backend=ROCM_ATTN ---
+  [within] muse backend=ROCM_ATTN proc=1 ctx=   512 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  [within] muse backend=ROCM_ATTN proc=1 ctx=  8192 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  === NONDET DONE ===
+21:59:21 | backend in log: Using ROCM_ATTN backend 
+21:59:21 | quant kernel:   Using RDNA3W4A16LinearKernel 
+21:59:21 | --- pr54706 gemma3 backend=ROCM_ATTN ---
+  [within] gemma3 backend=ROCM_ATTN proc=1 ctx=   512 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  [within] gemma3 backend=ROCM_ATTN proc=1 ctx=  8192 -> 1 distinct of 8  first_div=[None, None, None, None, None, None, None]
+  === NONDET DONE ===
+22:03:18 | backend in log: Using ROCM_ATTN backend 
+22:03:18 | quant kernel:   Using RDNA3W4A16LinearKernel 
+22:03:18 | restore: putting the shipped _rocm_C back
+069f038d310f8b8057b128be55427f99  /opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so
+069f038d310f8b8057b128be55427f99  /rb/c1ab/_rocm_C.abi3.so.shipped
+22:03:39 | services: active active 
+22:03:39 | vram: 27971584 27971584 
+22:03:39 | === C1-AB COMPLETE ===

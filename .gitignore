@@ -20,6 +20,13 @@ diagnose/logs/*-full.txt
 # ...but benchmark session logs ARE the raw layer verify_doc_figures.py
 # recomputes from, so they have to travel with the repo.
 !benchmarks/**/logs*/**/*.log
+# The W4A16 A/B keeps its evidence beside the campaign rather than in a logs/
+# directory, so the rule above misses it and c28e4c1 shipped a gate that could
+# not run from a clean checkout: `verify_doc_figures.py` died with
+# FileNotFoundError on c1-ab.log. Found 2026-09-04 by running the gate in a
+# pristine worktree, which is the test this class of defect needs.
+!benchmarks/gfx1100-w4a16-54706/c1-ab.log
+!benchmarks/gfx1100-w4a16-54706/build-*/build.log
 
 # OS / editor
 .DS_Store

@@ -1,0 +1,249 @@
+fatal: couldn't find remote ref 9ddef7117
+9ddef71179f5058983a487bb0f94ead39abba900
+ M csrc/rocm/q_gemm_rdna3.cu
+ M csrc/rocm/q_gemm_rdna3_wmma.cu
+c4c7520e2f257715c37f95980b799d6f  csrc/rocm/q_gemm_rdna3.cu
+584960b927b240b2af0aedf3ac8de476  csrc/rocm/q_gemm_rdna3_wmma.cu
+2.11.0+rocm7.14.0 /opt/python/lib/python3.14/site-packages/torch/share/cmake
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Build type: Release
+-- Target device: rocm
+-- Found Python: /opt/python/bin/python3 (found version "3.14.6") found components: Interpreter Development.Module Development.SABIModule
+-- Found python matching: /opt/python/bin/python3.
+Building PyTorch for GPU arch: gfx1100
+-- Found HIP: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel (found suitable version "7.14.60850-0000000", minimum required is "1.0")
+HIP VERSION: 7.14.60850-0000000
+-- HIP: Using hipcc from relative path: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin/hipcc
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+hip VERSION: 7.14.60850
+HIP version: 7.14.60850
+-- Reading ROCM version from: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/include/rocm-core/rocm_version.h
+-- Content: 
+
+***** ROCm version from rocm_version.h ****
+
+ROCM_VERSION_DEV: 7.14.0
+ROCM_VERSION_DEV_MAJOR: 7
+ROCM_VERSION_DEV_MINOR: 14
+ROCM_VERSION_DEV_PATCH: 0
+ROCM_VERSION_DEV_INT:   71400
+HIP_VERSION_MAJOR: 7
+HIP_VERSION_MINOR: 14
+TORCH_HIP_VERSION: 714
+
+***** Library versions from cmake find_package *****
+
+amd_comgr VERSION: 3.3.0
+-- HIP: Using hipcc from relative path: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin/hipcc
+rocrand VERSION: 4.5.0
+hiprand VERSION: 3.4.0
+rocblas VERSION: 5.5.0
+hipblas VERSION: 3.5.0
+miopen VERSION: 3.5.2
+hipfft VERSION: 1.0.24
+hipsparse VERSION: 4.6.0
+rocprim VERSION: 4.5.0
+hipcub VERSION: 4.5.0
+rocthrust VERSION: 4.5.0
+hipsolver VERSION: 3.5.0
+rocsolver VERSION: 3.35.0
+hiprtc VERSION: 7.14.60850
+hipblaslt VERSION: 1.4.1
+-- HIP: Using hipcc from relative path: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin/hipcc
+rccl VERSION: 2.30.4
+hsa-runtime64 VERSION: 1.21.0
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- Checking for module 'libdrm'
+--   Found libdrm, version 2.4.125
+rocm_smi VERSION: 7.8.0.0-local-build-0-2b22ab01
+hipsparselt VERSION: 0.2.9
+hipblaslt is using scale pointer outer vec
+CMake Warning at /opt/python/lib/python3.14/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  library kineto not found.
+Call Stack (most recent call first):
+  /opt/python/lib/python3.14/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:119 (append_torchlib_if_found)
+  CMakeLists.txt:95 (find_package)
+
+
+-- Found Torch: /opt/python/lib/python3.14/site-packages/torch/lib/libtorch.so
+-- The HIP compiler identification is Clang 23.0.0
+-- Detecting HIP compiler ABI info
+-- Detecting HIP compiler ABI info - done
+-- Check for working HIP compiler: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ - skipped
+-- Detecting HIP compile features
+-- Detecting HIP compile features - done
+-- HIP supported arches: gfx906;gfx908;gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151;gfx1152;gfx1153;gfx1200;gfx1201
+-- FetchContent base directory: /rb/c1b/build/_deps
+-- Enabling cumem allocator extension.
+-- Found libamdhip64 at /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so
+-- Enabling C extension.
+-- Enabling C_stable extension.
+-- Enabling moe extension.
+-- [triton_kernels] Fetch from https://github.com/triton-lang/triton.git:v3.5.1
+-- [triton_kernels] triton_kernels is available at /rb/c1b/build/_deps/triton_kernels-src/python/triton_kernels/triton_kernels/
+-- Configuring done (63.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /rb/c1b/build
+[1/8] Running hipify on all extension source files.
+/rb/c1b/build/csrc/core/math.hpp -> /rb/c1b/build/csrc/core/math.hpp [skipped, no changes]
+/rb/c1b/build/csrc/cuda_compat.h -> /rb/c1b/build/csrc/hip_compat.h [ok]
+/rb/c1b/build/csrc/dispatch_utils.h -> /rb/c1b/build/csrc/dispatch_utils.h [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/vectorization.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/vectorization.cuh [skipped, no changes]
+/rb/c1b/build/csrc/quantization/utils.cuh -> /rb/c1b/build/csrc/quantization/utils.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/torch_utils.h -> /rb/c1b/build/csrc/libtorch_stable/torch_utils_hip.h [ok]
+/rb/c1b/build/csrc/attention/attention_generic.cuh -> /rb/c1b/build/csrc/attention/attention_generic.cuh [skipped, no changes]
+/rb/c1b/build/csrc/attention/dtype_float32.cuh -> /rb/c1b/build/csrc/attention/dtype_float32.cuh [skipped, no changes]
+/rb/c1b/build/csrc/attention/dtype_float16.cuh -> /rb/c1b/build/csrc/attention/dtype_float16.cuh [skipped, no changes]
+/rb/c1b/build/csrc/attention/dtype_bfloat16.cuh -> /rb/c1b/build/csrc/attention/dtype_bfloat16_hip.cuh [ok]
+/rb/c1b/build/csrc/torch_utils.h -> /rb/c1b/build/csrc/torch_utils.h [skipped, no changes]
+/rb/c1b/build/csrc/attention/dtype_fp8.cuh -> /rb/c1b/build/csrc/attention/dtype_fp8.cuh [skipped, no changes]
+/rb/c1b/build/csrc/attention/attention_dtypes.h -> /rb/c1b/build/csrc/attention/attention_dtypes_hip.h [ok]
+/rb/c1b/build/csrc/quantization/w8a8/fp8/nvidia/quant_utils.cuh -> /rb/c1b/build/csrc/quantization/w8a8/fp8/nvidia/quant_utils_hip.cuh [ok]
+/rb/c1b/build/csrc/quantization/w8a8/fp8/amd/quant_utils.cuh -> /rb/c1b/build/csrc/quantization/w8a8/fp8/amd/quant_utils_hip.cuh [ok]
+/rb/c1b/build/csrc/quantization/w8a8/fp8/common.cuh -> /rb/c1b/build/csrc/quantization/w8a8/fp8/common_hip.cuh [ok]
+/rb/c1b/build/csrc/core/registration.h -> /rb/c1b/build/csrc/core/registration.h [skipped, no changes]
+/rb/c1b/build/csrc/quantization/activation_kernels.cu -> /rb/c1b/build/csrc/quantization/activation_kernels.hip [ok]
+/rb/c1b/build/csrc/quickreduce/base.h -> /rb/c1b/build/csrc/quickreduce/base.h [skipped, no changes]
+/rb/c1b/build/csrc/quickreduce/quick_reduce_impl.cuh -> /rb/c1b/build/csrc/quickreduce/quick_reduce_impl.cuh [skipped, no changes]
+/rb/c1b/build/csrc/quickreduce/quick_reduce.h -> /rb/c1b/build/csrc/quickreduce/quick_reduce_hip.h [ok]
+/rb/c1b/build/csrc/custom_quickreduce.cu -> /rb/c1b/build/csrc/custom_quickreduce.hip [ok]
+/rb/c1b/build/csrc/cuda_view.cu -> /rb/c1b/build/csrc/hip_view.hip [ok]
+/rb/c1b/build/csrc/cuda_utils.h -> /rb/c1b/build/csrc/hip_utils.h [ok]
+/rb/c1b/build/csrc/libtorch_stable/cuda_utils_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/hip_utils_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/cuda_vec_utils.cuh -> /rb/c1b/build/csrc/libtorch_stable/hip_vec_utils.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/dispatch_utils.h -> /rb/c1b/build/csrc/libtorch_stable/dispatch_utils.h [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/activation_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/activation_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/vectorization_utils.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/vectorization_utils.cuh [skipped, no changes]
+/rb/c1b/build/csrc/cub_helpers.h -> /rb/c1b/build/csrc/cub_helpers_hip.h [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/scaled_quant.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/scaled_quant.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/common.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/common.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/per_token_group_quant_8bit.h -> /rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/per_token_group_quant_8bit.h [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/per_token_group_quant.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/per_token_group_quant.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/per_token_group_quant.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/per_token_group_quant.cu [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/permute_cols.cu -> /rb/c1b/build/csrc/libtorch_stable/permute_cols.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/compat.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/compat.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_util.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_util.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/matrix_view.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/matrix_view_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_2.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_2.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_3.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_3.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_4.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_4.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_8.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/qdq_8.cuh [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/q_gemm.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/gptq/q_gemm.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/ggml-common.h -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/ggml-common_hip.h [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/vecdotq.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/vecdotq_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/dequantize.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/dequantize_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/mmvq.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/mmvq_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/mmq.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/mmq_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/moe.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/moe_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/moe_vec.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/moe_vec_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/gguf_kernel.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/gguf/gguf_kernel.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/pos_encoding_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/pos_encoding_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/async_util.cuh -> /rb/c1b/build/csrc/libtorch_stable/async_util.cuh [skipped, no changes]
+/rb/c1b/build/csrc/type_convert.cuh -> /rb/c1b/build/csrc/type_convert_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/fused_qknorm_rope_kernel.cu -> /rb/c1b/build/csrc/libtorch_stable/fused_qknorm_rope_kernel.hip [ok]
+/rb/c1b/build/csrc/core/batch_invariant.hpp -> /rb/c1b/build/csrc/core/batch_invariant.hpp [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/layernorm_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/layernorm_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/layernorm_quant_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/layernorm_quant_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/quant_conversions.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/quant_conversions_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/layernorm_utils.cuh -> /rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/layernorm_utils_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_layernorm_dynamic_per_token_quant.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_layernorm_dynamic_per_token_quant.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_silu_mul_block_quant.cu -> /rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_silu_mul_block_quant.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/attention/attention_utils.cuh -> /rb/c1b/build/csrc/libtorch_stable/attention/attention_utils_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/attention/merge_attn_states.cu -> /rb/c1b/build/csrc/libtorch_stable/attention/merge_attn_states.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/sampler.cu -> /rb/c1b/build/csrc/libtorch_stable/sampler.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/persistent_topk.cuh -> /rb/c1b/build/csrc/libtorch_stable/persistent_topk_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/topk.cu -> /rb/c1b/build/csrc/libtorch_stable/topk.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/mamba/selective_scan.h -> /rb/c1b/build/csrc/libtorch_stable/mamba/selective_scan_hip.h [ok]
+/rb/c1b/build/csrc/libtorch_stable/mamba/static_switch.h -> /rb/c1b/build/csrc/libtorch_stable/mamba/static_switch.h [skipped, no changes]
+/rb/c1b/build/csrc/libtorch_stable/mamba/selective_scan_fwd.cu -> /rb/c1b/build/csrc/libtorch_stable/mamba/selective_scan_fwd.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/attention/attention_kernels.cuh -> /rb/c1b/build/csrc/libtorch_stable/attention/attention_kernels_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v1.cu -> /rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v1.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v2.cu -> /rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v2.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/concat_mla_q.cuh -> /rb/c1b/build/csrc/libtorch_stable/concat_mla_q_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/cache_kernels.cu -> /rb/c1b/build/csrc/libtorch_stable/cache_kernels.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/cache_kernels_fused.cu -> /rb/c1b/build/csrc/libtorch_stable/cache_kernels_fused.hip [ok]
+/rb/c1b/build/csrc/custom_all_reduce.cuh -> /rb/c1b/build/csrc/custom_all_reduce_hip.cuh [ok]
+/rb/c1b/build/csrc/libtorch_stable/custom_all_reduce.cu -> /rb/c1b/build/csrc/libtorch_stable/custom_all_reduce.hip [ok]
+/rb/c1b/build/csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu -> /rb/c1b/build/csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.hip [ok]
+/rb/c1b/build/csrc/moe/moe_align_sum_kernels.cu -> /rb/c1b/build/csrc/moe/moe_align_sum_kernels.hip [ok]
+/rb/c1b/build/csrc/moe/topk_softmax_kernels.cu -> /rb/c1b/build/csrc/moe/topk_softmax_kernels.hip [ok]
+/rb/c1b/build/csrc/moe/topk_softplus_sqrt_kernels.cu -> /rb/c1b/build/csrc/moe/topk_softplus_sqrt_kernels.hip [ok]
+/rb/c1b/build/csrc/rocm/skinny_gemms.cu -> /rb/c1b/build/csrc/rocm/skinny_gemms.hip [ok]
+/rb/c1b/build/csrc/rocm/attention.cu -> /rb/c1b/build/csrc/rocm/attention.hip [ok]
+/rb/c1b/build/csrc/rocm/qdq_4_rdna3.cuh -> /rb/c1b/build/csrc/rocm/qdq_4_rdna3.cuh [skipped, no changes]
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3.cu -> /rb/c1b/build/csrc/rocm/q_gemm_rdna3.hip [ok]
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.cu -> /rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip [ok]
+/rb/c1b/build/csrc/rocm/moe_q_gemm_rdna3.cu -> /rb/c1b/build/csrc/rocm/moe_q_gemm_rdna3.hip [ok]
+Successfully preprocessed all matching files.
+Total number of unsupported CUDA function calls: 0
+
+
+Total number of replaced kernel launches: 212
+/rb/c1b/build/csrc/quantization/activation_kernels.hip
+/rb/c1b/build/csrc/custom_quickreduce.hip
+/rb/c1b/build/csrc/hip_view.hip
+/rb/c1b/build/csrc/libtorch_stable/hip_utils_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/activation_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/scaled_quant.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/common.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/fp8/per_token_group_quant.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/w8a8/int8/per_token_group_quant.hip
+/rb/c1b/build/csrc/libtorch_stable/permute_cols.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/gptq/q_gemm.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/gguf/gguf_kernel.hip
+/rb/c1b/build/csrc/libtorch_stable/pos_encoding_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/fused_qknorm_rope_kernel.hip
+/rb/c1b/build/csrc/libtorch_stable/layernorm_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/layernorm_quant_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_layernorm_dynamic_per_token_quant.hip
+/rb/c1b/build/csrc/libtorch_stable/quantization/fused_kernels/fused_silu_mul_block_quant.hip
+/rb/c1b/build/csrc/libtorch_stable/attention/merge_attn_states.hip
+/rb/c1b/build/csrc/libtorch_stable/sampler.hip
+/rb/c1b/build/csrc/libtorch_stable/topk.hip
+/rb/c1b/build/csrc/libtorch_stable/mamba/selective_scan_fwd.hip
+/rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v1.hip
+/rb/c1b/build/csrc/libtorch_stable/attention/paged_attention_v2.hip
+/rb/c1b/build/csrc/libtorch_stable/cache_kernels.hip
+/rb/c1b/build/csrc/libtorch_stable/cache_kernels_fused.hip
+/rb/c1b/build/csrc/libtorch_stable/custom_all_reduce.hip
+/rb/c1b/build/csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.hip
+/rb/c1b/build/csrc/moe/moe_align_sum_kernels.hip
+/rb/c1b/build/csrc/moe/topk_softmax_kernels.hip
+/rb/c1b/build/csrc/moe/topk_softplus_sqrt_kernels.hip
+/rb/c1b/build/csrc/rocm/skinny_gemms.hip
+/rb/c1b/build/csrc/rocm/attention.hip
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3.hip
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip
+/rb/c1b/build/csrc/rocm/moe_q_gemm_rdna3.hip
+[2/8] Building CXX object CMakeFiles/_rocm_C.dir/csrc/rocm/torch_bindings.cpp.o
+[3/8] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/q_gemm_rdna3.hip.o
+[4/8] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/moe_q_gemm_rdna3.hip.o
+[5/8] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/q_gemm_rdna3_wmma.hip.o
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: warning: first argument in call to '__builtin_memcpy' is a pointer to non-trivially copyable type 'bf162_t' (aka '__hip_bfloat162') [-Wnontrivial-memcall]
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: note: explicitly cast the pointer to silence this warning
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+      |                      (void*)
+1 warning generated when compiling for gfx1100.
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: warning: first argument in call to '__builtin_memcpy' is a pointer to non-trivially copyable type 'bf162_t' (aka '__hip_bfloat162') [-Wnontrivial-memcall]
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+/rb/c1b/build/csrc/rocm/q_gemm_rdna3_wmma.hip:218:22: note: explicitly cast the pointer to silence this warning
+  218 |     __builtin_memcpy(&cur, &old, sizeof(cur));
+      |                      ^
+      |                      (void*)
+1 warning generated when compiling for host.
+[6/8] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/skinny_gemms.hip.o
+[7/8] Building HIP object CMakeFiles/_rocm_C.dir/csrc/rocm/attention.hip.o
+[8/8] Linking HIP shared module _rocm_C.abi3.so
+-rwxr-xr-x 1 root root 30052528 Sep  3 21:26 /rb/c1b/build/_rocm_C.abi3.so
+83f1d74c528519513f2b4598361bee62  /rb/c1b/build/_rocm_C.abi3.so
