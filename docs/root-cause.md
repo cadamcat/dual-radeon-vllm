@@ -188,7 +188,10 @@ hostcall:
 PCIe atomics are irrelevant to inference performance — decode is
 bandwidth-bound and prefill never touches them. They were only ever a
 precondition for hostcall, which is a debug facility, and AMD shipped a build
-without it. The step from there to "removing the dependency costs nothing" is
-an argument, not a measurement: no A/B between the stock library with atomics
-and this one without was run. [open-questions.md §6](open-questions.md) records
-it as assumed.
+without it. Whether removing the dependency costs anything was an argument
+rather than a measurement until 2026-09-04; the
+[±NDEBUG A/B](../benchmarks/rccl-ndebug-ab-2026-09-04/README.md) then measured
+it on one source tree, two builds one line apart: free at the 8 KB decode shape
+and end to end (≤ 0.6 % in every cell), 2.7–4.6 % slower without the fix from
+16 KB to 512 KB, and no different from 2 MB up.
+[open-questions.md §6](open-questions.md) has the summary.

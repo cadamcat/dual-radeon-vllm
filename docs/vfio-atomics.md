@@ -227,9 +227,12 @@ configuration default.
   the same guest on a separate root port while the GPU keeps atomics.
 - **Other hypervisors.** Only Proxmox/QEMU was tested. The QEMU condition is
   generic, but libvirt and others compose devices differently.
-- **Performance.** Whether stock RCCL with real atomics is faster or slower than
-  our no-hostcall build was not measured. Only correctness was. The adjacent
-  question is measured now: the same no-hostcall build with the capability
+- **Performance.** Measured on 2026-09-04, after this page was written: the
+  [±NDEBUG A/B](../benchmarks/rccl-ndebug-ab-2026-09-04/README.md) compares two
+  builds of one RCCL source with the capability present — free at the 8 KB
+  decode shape and end to end, 2.7–4.6 % slower without the fix from 16 KB to
+  512 KB, no different from 2 MB up. The adjacent question was measured
+  earlier: the same no-hostcall build with the capability
   present against absent moved +0.07 % under a matched machine state
   ([gemma-4-31b-campaign-offset.json](../benchmarks/gemma-4-31b-campaign-offset.json),
   the 2026-08-26 A/B), so the platform capability itself is

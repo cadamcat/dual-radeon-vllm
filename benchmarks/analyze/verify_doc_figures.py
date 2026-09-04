@@ -8147,6 +8147,11 @@ def _run_checks(_opened, _audit_state):
        len({k: v for k, v in _h0.items() if not _is_test(k)}))
     ck("hostcall-abi README, 10.0 libraries declaring a hostcall", "4",
        sum(1 for k, v in _h0.items() if not _is_test(k) and v["hc"] > 0))
+    ck("hostcall-abi README, the licensed sentence uses the scanned denominator", "1",
+       1 if "**Licensed.** Three of 153 shipped device libraries for gfx1100" in _hrm
+       else 0)
+    ck("hostcall-abi README, and no second denominator survives", "0",
+       _hrm.count("of 192 shipped"))
     ck("hostcall-abi README, librccl declared NOBITS fatbin bytes", "525569016",
        next(r["fatbin_size"] for r in
             [json.loads(l) for l in open(os.path.join(HDIR, "rocm714-gfx1100.jsonl"))]
@@ -8564,6 +8569,84 @@ def _run_checks(_opened, _audit_state):
         ("the strings correction", "so `strings` answers 0 whatever the kernels declare"),
     ):
         ck(f"B1 README, states {_what}", "1", 1 if _frag in _brm else 0)
+
+    # --- the cost is measured, and four pages stopped saying "assumed" ------
+    # 2026-09-04, after B1: the B1 README's own headline named a band (16 KB to
+    # 512 KB, six token counts, 30 cells) but counted 24 of 25 cells and 3-4.6 %,
+    # which are the numbers for 16 KB to 256 KB; and it said the Qwen repeats
+    # agree to 0.2-0.4 % when the 500-token cell spreads 1.7 %. Both sentences
+    # now say what the rows say, and the four pages that still called the cost
+    # "assumed" -- open-questions §6, root-cause §6, README, vfio-atomics §5 --
+    # quote the segmented result. Every figure they quote recomputes here.
+    _band = [k for k in _bkeys if 2 <= k[1] <= 64]
+    _bpairs = [_b1.means(_bruns, k, "t_graph_us") for k in _band]
+    ck("B1 README, 16 KB-512 KB band cells", "30", len(_band))
+    ck("B1 README, 16 KB-512 KB band cells where nondebug is slower", "29",
+       sum(1 for a, b in _bpairs if b > a))
+    _bmed = [statistics.median(b / a for a, b in
+                               [_b1.means(_bruns, k, "t_graph_us")
+                                for k in _bkeys if k[1] == t])
+             for t in (2, 4, 8, 16, 32, 64)]
+    ck("B1 README, band low pct", "2.7", (min(_bmed) - 1) * 100)
+    ck("B1 README, band high pct", "4.6", (max(_bmed) - 1) * 100)
+    ck("B1 README, states the band with its own cell count", "1",
+       1 if "nondebug 2.7-4.6 % slower, 29 of 30 cells" in _brm else 0)
+    _q8 = [(max(v[a]) - min(v[a])) / statistics.fmean(v[a]) * 100
+           for k, v in _dc.items() if k[0] == "Q8" and k[1] >= 8000
+           for a in ("ndebug", "nondebug")]
+    ck("B1 decode README, Q8 repeat spread at 8000 and 32000, low pct", "0.2",
+       min(_q8))
+    ck("B1 decode README, Q8 repeat spread at 8000 and 32000, high pct", "0.4",
+       max(_q8))
+    ck("B1 decode README, scopes the 0.2-0.4 % agreement to two depths", "1",
+       1 if ("On Qwen3-8B at 8 000 and 32 000 tokens the five repeats agree to "
+             "0.2–0.4 %") in _brm else 0)
+    _n1 = statistics.median(b / a for a, b in
+                            [_b1.means(_bruns, k, "t_graph_us")
+                             for k in _bkeys if k[1] == 1])
+    _big = [k for k in _bkeys if k[1] >= 256]
+    _brs, _bsl, _bpv = _b1.block(_bruns, _big, "t_graph_us")
+    _dworst = max(abs(statistics.fmean(v["nondebug"])
+                      / statistics.fmean(v["ndebug"]) - 1)
+                  for v in _dc.values()) * 100
+    for _page, _frag_new, _frag_old in (
+        ("docs/open-questions.md",
+         "## 6. Performance impact of removing hostcall: measured 2026-09-04, "
+         "and it is segmented",
+         "## 6. Performance impact of removing hostcall: assumed zero, not measured"),
+        ("docs/open-questions.md",
+         "**2.7–4.6 % slower from 16 KB to 512 KB** (29 of 30 cells)",
+         "We did not benchmark a with-hostcall vs without-hostcall build"),
+        ("docs/root-cause.md",
+         "2.7–4.6 % slower without the fix from\n16 KB to 512 KB, and no "
+         "different from 2 MB up",
+         "records\nit as assumed"),
+        ("README.md",
+         "2.7–4.6 % of all-reduce latency from 16 KB to 512 KB, nothing from "
+         "2 MB up",
+         "assumed\nzero and has not been measured"),
+        ("docs/vfio-atomics.md",
+         "2.7–4.6 % slower without the fix from 16 KB to\n  512 KB, no "
+         "different from 2 MB up",
+         "was not measured. Only correctness was"),
+    ):
+        _t = open(os.path.join(ROOT, _page), encoding="utf-8").read()
+        ck(f"{_page} quotes the measured cost", "1", 1 if _frag_new in _t else 0)
+        ck(f"{_page} no longer says it is assumed", "0", _t.count(_frag_old))
+    ck("measured-cost pages, ntok=1 ratio", "0.987", _n1)
+    ck("measured-cost pages, >= 2 MB median ratio", "1.0001",
+       statistics.median(_brs))
+    ck("measured-cost pages, >= 2 MB slower", "11", _bsl)
+    ck("measured-cost pages, >= 2 MB cells", "20", len(_big))
+    ck("measured-cost pages, >= 2 MB sign p", "0.82", _bpv)
+    ck("measured-cost pages, decode worst cell inside 0.6 pct", "1",
+       1 if _dworst <= 0.6 else 0)
+    _oq6 = open(os.path.join(ROOT, "docs", "open-questions.md"),
+                encoding="utf-8").read()
+    ck("open-questions §6 quotes every one of those", "1",
+       1 if all(f in _oq6 for f in ("0.987", "29 of 30 cells",
+                                    "median 1.0001, 11 of 20, p = 0.82",
+                                    "≤ 0.6 % in every cell")) else 0)
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

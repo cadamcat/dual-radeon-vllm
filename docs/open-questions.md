@@ -302,12 +302,30 @@ repository, but the reason we gave for dismissing it was wrong.
 
 ---
 
-## 6. Performance impact of removing hostcall: assumed zero, not measured
+## 6. Performance impact of removing hostcall: measured 2026-09-04, and it is segmented
 
-We argue it is zero because `assert()` and trace `printf` never execute on the
-working path, and our post-fix throughput matches expectations for the hardware.
-We did not benchmark a with-hostcall vs without-hostcall build side by side on a
-platform where both can run (which would require a machine that *has* atomics).
+This section said *assumed zero, not measured* from the day the fix was found
+until 2026-09-04. The reason was platform, not inclination: until 2026-08-23
+this box had no PCIe AtomicOps, so a library that declares a hostcall could not
+be dispatched here at all and there was nothing to compare against. It has
+atomics now, and [the ±NDEBUG A/B](../benchmarks/rccl-ndebug-ab-2026-09-04/README.md)
+measured the fix on one RCCL 2.27.7 source tree, two builds one line apart, with
+the capability present so that both run:
+
+- graph-replayed all-reduce latency, 55 cells, three interleaved sweeps per
+  arm: the unfixed arm is **faster at 8 KB** (0.987, slower in 0 of 5 cells),
+  **2.7–4.6 % slower from 16 KB to 512 KB** (29 of 30 cells), and **no different
+  from 2 MB up** (median 1.0001, 11 of 20, p = 0.82);
+- end to end, 60 served requests: decode differs by ≤ 0.6 % in every cell, five
+  of six nominally favouring the unfixed arm;
+- twelve correctness cases pass under both libraries, in both rounds.
+
+So the answer is neither "zero" nor "free": free where a batch-1 decode step
+runs, a few percent in a band above it, free again where the collective is
+bandwidth-bound. The argument this section used to make — that `assert()` and
+trace `printf` never execute on the working path — still holds, and it is not
+what the band measures: two builds differ in code layout as well as in a flag,
+and the 8 KB reversal is unexplained.
 
 ---
 

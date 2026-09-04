@@ -13,7 +13,7 @@ there was nothing to compare against. It has atomics now. Both libraries run.
 
     three interleaved sweeps per arm, 55 cells each, RX 7900 XT pair, TP=2
 
-    t_graph_us, 16 KB - 512 KB     nondebug 3-4.6 % slower, 24 of 25 cells
+    t_graph_us, 16 KB - 512 KB     nondebug 2.7-4.6 % slower, 29 of 30 cells
     t_graph_us, 2 MB and above     no difference (median 1.0001, 11/20, p=0.82)
     t_graph_us, 8 KB (ntok=1)      nondebug 1.3 % FASTER, 5 of 5 cells
     twelve correctness cases       12/12 under both libraries
@@ -160,8 +160,8 @@ beside that campaign's. Zero errors, and all four sessions verified that the
 | Qwen3-8B | 32 000 | 61.82 | 61.87 | 1.0008 | 0.39 % |
 
 **No cell differs by more than 0.6 %, five of six are inside 0.5 %, and five
-of six put the unfixed arm nominally ahead.** On Qwen3-8B the five repeats agree to 0.2–0.4 %, so this is not a
-measurement too blunt to see a difference; there is no difference to see. That
+of six put the unfixed arm nominally ahead.** On Qwen3-8B at 8 000 and 32 000 tokens the five repeats agree to 0.2–0.4 %,
+so this is not a measurement too blunt to see a difference; there is no difference to see. That
 is the same answer the collective sweep gives at ntok=1, which is the shape a
 batch-1 decode step reduces.
 

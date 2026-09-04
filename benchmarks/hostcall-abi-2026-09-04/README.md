@@ -205,7 +205,7 @@ scanning direction.
 
 ## What this licenses, and what it does not
 
-**Licensed.** Three of 192 shipped device libraries for gfx1100 in the
+**Licensed.** Three of 153 shipped device libraries for gfx1100 in the
 container this box serves from carry an unnegotiated platform requirement, and
 they are the collective library, the framework, and the inference engine — one
 from each layer of the stack, rather than one vendor library in isolation. The

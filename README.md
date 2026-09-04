@@ -659,9 +659,10 @@ that matters to a comparison it is called out at the comparison.
 
 **Do I need atomics for inference?** No. They are a precondition for *hostcall*,
 which is a debug facility (device `printf`/`assert`), and AMD's own ROCm 7.1.1
-build shipped with zero hostcall. The runtime cost of removing it is **assumed
-zero and has not been measured** — see
-[open-questions.md §6](docs/open-questions.md).
+build shipped with zero hostcall. The runtime cost of removing it was
+**measured on 2026-09-04**: free at the batch-1 decode shape and end to end,
+2.7–4.6 % of all-reduce latency from 16 KB to 512 KB, nothing from 2 MB up — see
+[the ±NDEBUG A/B](benchmarks/rccl-ndebug-ab-2026-09-04/README.md).
 
 **Two identical cards?** Strongly preferred. Mixed cards are limited by the
 smaller/slower one, and layer-splitting makes the older card the thermal hotspot.
