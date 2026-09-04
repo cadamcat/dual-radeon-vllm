@@ -18,6 +18,10 @@ there was nothing to compare against. It has atomics now. Both libraries run.
     t_graph_us, 8 KB (ntok=1)      nondebug 1.3 % FASTER, 5 of 5 cells
     twelve correctness cases       12/12 under both libraries
 
+    end to end, 2 models x 3 depths x 5 repeats, 60 runs, 0 errors
+    decode rate                    no difference: <= 0.6 % in every cell,
+                                   inside a noise floor of up to 4.9 %
+
 **The fix is free where it matters and cheap where it does not.** At the batch-1
 decode shape a served step actually reduces, the arm without the fix is not
 slower; in a band from 16 KB to 512 KB it is a few percent slower; past 2 MB the
@@ -131,6 +135,64 @@ neighbours. Two builds differ in more than a flag — code layout, alignment and
 the presence of the assert paths all move — so a small size-dependent
 difference that is not monotonic is exactly what an unexplained build effect
 would look like. It is reported as measured and not smoothed away.
+
+## End to end: no difference, and a confound the design caught
+
+Sixty served requests — gemma-4-12B and Qwen3-8B, 500 / 8 000 / 32 000 tokens,
+five repeats, both libraries, 256 generated tokens each, streaming, a random
+seed prefix so nothing comes from cache. The request shape is
+`benchmarks/campaign-2026-09-03/runner.py`'s, unchanged, so these rows sit
+beside that campaign's. Zero errors, and all four sessions verified that the
+**serving process** had mapped the arm's library, by md5 out of
+`/proc/<pid>/maps` rather than by what the orchestrator believed it installed.
+
+| model | depth | ndebug tok/s | nondebug tok/s | by arm | worst spread |
+|---|---|---|---|---|---|
+| gemma-4-12B | 500 | 59.66 | 59.81 | 1.0024 | 4.94 % |
+| gemma-4-12B | 8 000 | 52.23 | 52.47 | 1.0046 | 2.53 % |
+| gemma-4-12B | 32 000 | 41.71 | 41.64 | 0.9983 | 1.39 % |
+| Qwen3-8B | 500 | 79.22 | 79.62 | 1.0051 | 1.70 % |
+| Qwen3-8B | 8 000 | 73.42 | 73.43 | 1.0002 | 0.23 % |
+| Qwen3-8B | 32 000 | 61.82 | 61.87 | 1.0008 | 0.39 % |
+
+**No cell differs by more than 0.6 %, five of six are inside 0.5 %, and five
+of six put the unfixed arm nominally ahead.** On Qwen3-8B the five repeats agree to 0.2–0.4 %, so this is not a
+measurement too blunt to see a difference; there is no difference to see. That
+is the same answer the collective sweep gives at ntok=1, which is the shape a
+batch-1 decode step reduces.
+
+### The prefill cell that looked real, and was not
+
+Prefill on Qwen3-8B at 32 000 tokens separates completely — every ndebug run
+faster than every nondebug run, 2 134–2 146 against 2 052–2 073 tok/s, a 3.6 %
+gap with a 1 % spread and Mann-Whitney p = 0.008. Read as an arm effect it says
+the unfixed library costs 3.6 % of prefill.
+
+It is not an arm effect. `librccl` cannot be swapped under a running server, so
+each arm needs its own session, and **the arm order was balanced across the two
+models** — gemma ran ndebug first, Qwen ran nondebug first. That balance is
+what lets the two explanations be told apart:
+
+| | 2nd session / 1st | nondebug / ndebug |
+|---|---|---|
+| gemma-4-12B, 8 000 | 0.9991 | 0.9991 |
+| gemma-4-12B, 32 000 | 1.0026 | 1.0026 |
+| Qwen3-8B, 8 000 | **1.0087** | 0.9914 |
+| Qwen3-8B, 32 000 | **1.0376** | 0.9637 |
+
+The second session of a pair is faster in three of four cells and the sign by
+arm is not consistent, so what the Qwen 32 000 cell measures is **session
+order**, not the library. Its ndebug arm simply ran second. A blocked design —
+both models with the same arm first — would have produced the same numbers and
+published them as a 3.6 % cost.
+
+The order effect itself is unexplained and is not small: 3.8 % on one cell.
+Resolving it needs prefill measured with the arms interleaved, which for a
+served model means a server restart per repeat. Not done here.
+
+**The 500-token prefill and TTFT cells are uninterpretable** — spreads of 99 %
+and 236 %, because at that length TTFT is scheduling jitter. They are recorded
+and excluded from every statement above.
 
 ## Correctness
 

@@ -8439,8 +8439,79 @@ def _run_checks(_opened, _audit_state):
             ck(f"B1, {_tag} arm={_a} nothing passed on an unchanged buffer", "0",
                sum(1 for r in _cases if r.get("unchanged")))
 
+    # --- B1's end-to-end half -----------------------------------------------
+    _drows = [json.loads(l) for l in
+              open(os.path.join(_BDIR, "decode.jsonl"))]
+    _dmeta = [r for r in _drows if r["kind"] == "decode_meta"]
+    _druns = [r for r in _drows if r["kind"] == "decode"]
+    ck("B1 decode, runs", "60", len(_druns))
+    ck("B1 decode, errors", "0", sum(1 for r in _druns if "error" in r))
+    ck("B1 decode, sessions", "4", len(_dmeta))
+    ck("B1 decode, sessions that served the library they were given", "4",
+       sum(1 for m in _dmeta if m["library_matches"]))
+    ck("B1 decode, the arm order is balanced across the two models", "1",
+       1 if [(m["label"], m["arm"]) for m in _dmeta] ==
+       [("G12", "ndebug"), ("G12", "nondebug"),
+        ("Q8", "nondebug"), ("Q8", "ndebug")] else 0)
+    _dc, _dorder = _b1.decode_cells("decode_tps")
+    for _lab, _dep, _a, _b, _r, _n in (
+            ("G12", 500, "59.66", "59.81", "1.0024", "4.94"),
+            ("G12", 8000, "52.23", "52.47", "1.0046", "2.53"),
+            ("G12", 32000, "41.71", "41.64", "0.9983", "1.39"),
+            ("Q8", 500, "79.22", "79.62", "1.0051", "1.70"),
+            ("Q8", 8000, "73.42", "73.43", "1.0002", "0.23"),
+            ("Q8", 32000, "61.82", "61.87", "1.0008", "0.39")):
+        _A, _B = _dc[(_lab, _dep)]["ndebug"], _dc[(_lab, _dep)]["nondebug"]
+        ck(f"B1 decode README, {_lab} {_dep} ndebug tok/s", _a, statistics.fmean(_A))
+        ck(f"B1 decode README, {_lab} {_dep} nondebug tok/s", _b, statistics.fmean(_B))
+        ck(f"B1 decode README, {_lab} {_dep} by arm", _r,
+           statistics.fmean(_B) / statistics.fmean(_A))
+        ck(f"B1 decode README, {_lab} {_dep} worst spread pct", _n,
+           max((max(_A) - min(_A)) / statistics.fmean(_A),
+               (max(_B) - min(_B)) / statistics.fmean(_B)) * 100)
+        ck(f"B1 decode, {_lab} {_dep} repeats per arm", "5", min(len(_A), len(_B)))
+    ck("B1 decode README, cells inside half a percent", "5",
+       sum(1 for k, v in _dc.items()
+           if abs(statistics.fmean(v["nondebug"]) / statistics.fmean(v["ndebug"]) - 1)
+           <= 0.005))
+    ck("B1 decode README, and every cell inside 0.6 pct", "6",
+       sum(1 for k, v in _dc.items()
+           if abs(statistics.fmean(v["nondebug"]) / statistics.fmean(v["ndebug"]) - 1)
+           <= 0.006))
+    ck("B1 decode README, cells where the unfixed arm is nominally ahead", "5",
+       sum(1 for k, v in _dc.items()
+           if statistics.fmean(v["nondebug"]) > statistics.fmean(v["ndebug"])))
+
+    # the prefill cell that looked real, and the order analysis that says it is not
+    _pf, _ = _b1.decode_cells("prefill_tps")
+    _q32 = _pf[("Q8", 32000)]
+    ck("B1 README, Q8 32000 prefill separates completely", "1",
+       1 if min(_q32["ndebug"]) > max(_q32["nondebug"]) else 0)
+    ck("B1 README, Q8 32000 prefill ndebug low", "2134.7", min(_q32["ndebug"]))
+    ck("B1 README, Q8 32000 prefill ndebug high", "2146.3", max(_q32["ndebug"]))
+    ck("B1 README, Q8 32000 prefill nondebug low", "2052.5", min(_q32["nondebug"]))
+    ck("B1 README, Q8 32000 prefill nondebug high", "2073.3", max(_q32["nondebug"]))
+    _oe = _b1.order_effect("prefill_tps", drop_depth={500})
+    _ae = _b1.arm_effect("prefill_tps", drop_depth={500})
+    for _lab, _dep, _o, _a in (("G12", 8000, "0.9991", "0.9991"),
+                               ("G12", 32000, "1.0026", "1.0026"),
+                               ("Q8", 8000, "1.0087", "0.9914"),
+                               ("Q8", 32000, "1.0376", "0.9637")):
+        ck(f"B1 README, {_lab} {_dep} prefill 2nd/1st session", _o, _oe[(_lab, _dep)])
+        ck(f"B1 README, {_lab} {_dep} prefill nondebug/ndebug", _a, _ae[(_lab, _dep)])
+    ck("B1 README, prefill cells where the second session is faster", "3",
+       sum(1 for v in _oe.values() if v > 1))
+    ck("B1 README, prefill cells where the unfixed arm is faster", "1",
+       sum(1 for v in _ae.values() if v > 1))
+
     # and the prose says what the data licenses, including what it does not
     for _what, _frag in (
+        ("that decode shows no difference", "**No cell differs by more than 0.6 %, five of six are inside 0.5 %, and five"),
+        ("that the prefill cell is session order", "what the Qwen 32 000 cell measures is **session"),
+        ("what a blocked design would have published", "published them as a 3.6 % cost"),
+        ("that the order effect is itself unexplained", "The order effect itself is unexplained"),
+        ("that the 500-token prefill cells are unusable", "**The 500-token prefill and TTFT cells are uninterpretable**"),
+        ("that the library was verified in the serving process", "by md5 out of\n`/proc/<pid>/maps`"),
         ("the one-line diff", "> add_compile_definitions(NDEBUG)"),
         ("the arms' hostcall counts", "| `hidden_hostcall_buffer` | 0 | **6** |"),
         ("the identical kernel count", "| kernels | 126 | 126 |"),

@@ -14,24 +14,43 @@
  },
  "configure": {
   "identical_for_both_arms": "-DCMAKE_BUILD_TYPE=Release -DGPU_TARGETS=gfx1100 -DAMDGPU_TARGETS=gfx1100 -DROCM_PATH=$ROCM_PATH -DCMAKE_PREFIX_PATH=$ROCM_PATH;/opt/rocm",
-  "NDEBUG_in_build_ninja": {"ndebug": 251, "nondebug": 0},
-  "COLLTRACE": {"ndebug": "ON", "nondebug": "ON"},
-  "ENABLE_COLLTRACE_in_build_ninja": {"ndebug": 250, "nondebug": 250},
+  "NDEBUG_in_build_ninja": {
+   "ndebug": 251,
+   "nondebug": 0
+  },
+  "COLLTRACE": {
+   "ndebug": "ON",
+   "nondebug": "ON"
+  },
+  "ENABLE_COLLTRACE_in_build_ninja": {
+   "ndebug": 250,
+   "nondebug": 250
+  },
   "note": "-DROCM_PATH was not needed by the 2026-07 build; the CMake variable defaults to /opt/rocm, which does not exist in this wheel-SDK image, so CMakeLists.txt:191 died reading /opt/rocm/.info/version. Why it resolved in July and not now is not established."
  },
  "arms": {
   "ndebug": {
-   "raw_md5": "cfa3963ed99a50dda2ab3ab32c33b515", "raw_bytes": 19809352,
-   "deploy_md5": "76f1916fad88c97469f6359ebd731bc1", "deploy_bytes": 19875513,
-   "hidden_hostcall_buffer": 0, "kernels": 126,
-   "__assert_fail": 0, "__ockl_fprintf": 0, "ncclCommDump_exports": 1,
+   "raw_md5": "cfa3963ed99a50dda2ab3ab32c33b515",
+   "raw_bytes": 19809352,
+   "deploy_md5": "76f1916fad88c97469f6359ebd731bc1",
+   "deploy_bytes": 19875513,
+   "hidden_hostcall_buffer": 0,
+   "kernels": 126,
+   "__assert_fail": 0,
+   "__ockl_fprintf": 0,
+   "ncclCommDump_exports": 1,
    "build_wall": "91 min 46 s, 15:15:50 to 16:47:36 UTC"
   },
   "nondebug": {
-   "raw_md5": "6ad6dfdec384d70421d543b52253cc4c", "raw_bytes": 19761560,
-   "deploy_md5": "666c8aae61dac16c664e9e1ba3e021f9", "deploy_bytes": 19826401,
-   "hidden_hostcall_buffer": 6, "kernels": 126,
-   "__assert_fail": 4, "__ockl_fprintf": 3, "ncclCommDump_exports": 1,
+   "raw_md5": "6ad6dfdec384d70421d543b52253cc4c",
+   "raw_bytes": 19761560,
+   "deploy_md5": "666c8aae61dac16c664e9e1ba3e021f9",
+   "deploy_bytes": 19826401,
+   "hidden_hostcall_buffer": 6,
+   "kernels": 126,
+   "__assert_fail": 4,
+   "__ockl_fprintf": 3,
+   "ncclCommDump_exports": 1,
    "build_wall": "89 min 39 s, 16:47:45 to 18:17:24 UTC"
   }
  },
@@ -47,5 +66,27 @@
  },
  "atomics_precondition": "asserted before stopping anything: no 'PCIE atomic ops is not supported' in dmesg. Both root ports above the GPUs report AtomicOpsCap: 32bit+ 64bit+.",
  "gpu_touched": true,
- "lease_held": true
+ "lease_held": true,
+ "decode": {
+  "purpose": "B1's end-to-end half: 2 models x 3 depths x 5 repeats, both arms",
+  "models": [
+   "/models/gemma-4-12B-it-qat-w4a16-ct",
+   "/models/Qwen3-8B"
+  ],
+  "depths": [
+   500,
+   8000,
+   32000
+  ],
+  "repeats": 5,
+  "max_tokens": 256,
+  "serve": "vllm serve --tensor-parallel-size 2 --gpu-memory-utilization 0.85 --max-model-len 33000, env VLLM_CLONE_MMAP=1 NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0",
+  "request_shape": "identical to benchmarks/campaign-2026-09-03/runner.py chat(): streaming, random seed prefix, temperature 0.8, decode_tps = (completion_tokens-1)/(last-first)",
+  "sessions": "four, because librccl cannot be swapped under a running server. Order BALANCED across models: G12 ndebug then nondebug, Q8 nondebug then ndebug.",
+  "attribution": "each session read the SERVING process's /proc/<pid>/maps and md5'd the mapped librccl against the arm's; all four matched, and a mismatch aborts the session rather than producing a mislabelled row",
+  "vram_between_sessions": "re-asserted to 27971584 on both cards after every serve stop, because pkill'd vLLM leaves [VLLM::Worker_TP] children holding memory",
+  "wall": "19:59:33 to 20:22:10 UTC, 60 runs, 0 errors",
+  "client_md5": "fd072c47843aa6c8648e7aaa3adab951",
+  "known_confound": "prefill differences follow SESSION ORDER, not arm: the second session of a pair is faster in three of four interpretable cells, and the one cell with a significant separation (Q8 32000, p=0.008) is the largest order effect. Resolving it needs a server restart per repeat and was not done."
+ }
 }

@@ -68,6 +68,70 @@ def block(runs, keys, metric):
     return ratios, slower, sign_p(slower, len(keys))
 
 
+# ---------------------------------------------------------------- decode -----
+
+def decode_rows():
+    return [json.loads(l) for l in open(os.path.join(HERE, "decode.jsonl"))]
+
+
+def decode_cells(metric="decode_tps"):
+    """{(model, depth): {arm: [values]}} and the order the sessions ran in."""
+    rows = decode_rows()
+    order = {(m["label"], m["arm"]): i
+             for i, m in enumerate(r for r in rows if r["kind"] == "decode_meta")}
+    cells = {}
+    for r in rows:
+        if r["kind"] != "decode" or metric not in r:
+            continue
+        cells.setdefault((r["label"], r["depth"]), {}).setdefault(r["arm"], []).append(r[metric])
+    return cells, order
+
+
+def decode_report():
+    rows = decode_rows()
+    metas = [r for r in rows if r["kind"] == "decode_meta"]
+    runs = [r for r in rows if r["kind"] == "decode"]
+    print(f"\n=== end to end: {len(runs)} runs, "
+          f"{sum(1 for r in runs if 'error' in r)} errors, "
+          f"{sum(1 for m in metas if m['library_matches'])}/{len(metas)} sessions "
+          f"served the library they were given ===")
+    for m in metas:
+        print(f"  session {m['label']:4s} arm={m['arm']:9s} load {m['server_load_s']}s")
+
+    for metric in ("decode_tps", "prefill_tps"):
+        cells, order = decode_cells(metric)
+        print(f"\n  {metric}")
+        print(f"    {'model':5} {'depth':>6} {'ndebug':>9} {'nondebug':>9}"
+              f" {'by arm':>8} {'noise%':>7} {'2nd/1st':>8}")
+        for (lab, dep), arms in sorted(cells.items()):
+            a, b = arms["ndebug"], arms["nondebug"]
+            ma, mb = st.fmean(a), st.fmean(b)
+            noise = max((max(a) - min(a)) / ma, (max(b) - min(b)) / mb) * 100
+            first, second = sorted((order[(lab, x)], x) for x in ("ndebug", "nondebug"))
+            m1 = st.fmean(arms[first[1]]); m2 = st.fmean(arms[second[1]])
+            print(f"    {lab:5} {dep:>6} {ma:>9.2f} {mb:>9.2f} {mb/ma:>8.4f}"
+                  f" {noise:>6.2f}% {m2/m1:>8.4f}")
+
+
+def order_effect(metric, drop_depth=None):
+    """Ratio of the second session of a pair to the first, per cell."""
+    cells, order = decode_cells(metric)
+    out = {}
+    for (lab, dep), arms in cells.items():
+        if drop_depth and dep in drop_depth:
+            continue
+        first, second = sorted((order[(lab, x)], x) for x in ("ndebug", "nondebug"))
+        out[(lab, dep)] = st.fmean(arms[second[1]]) / st.fmean(arms[first[1]])
+    return out
+
+
+def arm_effect(metric, drop_depth=None):
+    cells, _ = decode_cells(metric)
+    return {(lab, dep): st.fmean(a["nondebug"]) / st.fmean(a["ndebug"])
+            for (lab, dep), a in cells.items()
+            if not (drop_depth and dep in drop_depth)}
+
+
 def main():
     runs, keys = load()
     print(f"cells shared by all six sweeps: {len(keys)}")
@@ -115,6 +179,16 @@ def main():
         ok += passed == len(cases) == 12
         print(f"correctness arm={a}: {passed}/{len(cases)} pass")
     print(f"both arms correct: {ok == 2}")
+    decode_report()
+    print("\n=== prefill: does the difference follow the arm or the session order? ===")
+    oe = order_effect("prefill_tps", drop_depth={500})
+    ae = arm_effect("prefill_tps", drop_depth={500})
+    for k in sorted(oe):
+        print(f"    {k[0]:4s} {k[1]:>6}  2nd/1st {oe[k]:.4f}   nondebug/ndebug {ae[k]:.4f}")
+    print(f"    cells where the SECOND session is faster: "
+          f"{sum(1 for v in oe.values() if v > 1)}/{len(oe)}")
+    print(f"    cells where the unfixed arm is faster:    "
+          f"{sum(1 for v in ae.values() if v > 1)}/{len(ae)}")
 
 
 if __name__ == "__main__":
