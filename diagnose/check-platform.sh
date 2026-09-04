@@ -205,8 +205,33 @@ else
       done
       if [ "${nobits:-0}" -gt 0 ] || [ -n "$kdir" ]; then
         say "   this install uses the split 'kpack' layout — device code is not in the .so."
-        [ -n "$kdir" ] && say "   (it lives in $kdir/rccl_lib_gfx<arch>.kpack, an opaque format)"
-        say "   >> static inspection impossible here; use the runtime probe hipgate3.cpp."
+        [ -n "$kdir" ] && say "   (it lives in $kdir/rccl_lib_gfx<arch>.kpack; kpack_hostcall.py reads it)"
+        if command -v python3 >/dev/null 2>&1; then
+          helper=$(cd "$(dirname "$0")" && pwd)/kpack_hostcall.py
+          if kpack_result=$(python3 "$helper" --lib "$LIB" 2>&1); then
+            say "   $kpack_result"
+            kpack_count=${kpack_result#hidden_hostcall_buffer=}
+            kpack_count=${kpack_count%% *}
+            case "$kpack_count" in
+              ''|*[!0-9]*)
+                say "   >> helper returned no usable hostcall count. Hostcall state UNKNOWN."
+                verdict_hostcall="unknown" ;;
+              0)
+                say "   >> This RCCL needs no hostcall. It will dispatch even without atomics."
+                verdict_hostcall="none" ;;
+              *)
+                say "   >> This RCCL REQUIRES a hostcall. On a platform without atomics it will fail."
+                verdict_hostcall="required" ;;
+            esac
+          else
+            say "   $kpack_result"
+            say "   >> Hostcall state UNKNOWN."
+            verdict_hostcall="unknown"
+          fi
+        else
+          say "   python3 not available; cannot inspect the split kpack layout. Hostcall state UNKNOWN."
+          verdict_hostcall="unknown"
+        fi
       else
         say "   could not extract a device image (no bundled gfx target?)."
       fi
