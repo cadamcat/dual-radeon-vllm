@@ -999,12 +999,12 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">CUDA · Hopper, Blackwell, Ada, Ampere · a rented sweep · read against 2× RX 7900 XT</div>
-  <h1>One counter orders five settings it was never fitted to,<br>and sizes none of them</h1>
-  <p class="sub">Seven rented machines in one night, and what a memory controller's busy fraction predicts</p>
+  <h1>A memory controller's busy fraction, read on one card, ranks five settings it never saw,<br>and under-predicts the one magnitude it was asked for by half</h1>
+  <p class="sub">Read as <code>mem_busy</code> on one card; checked against an H200, a B300, a PRO 6000 and a second H100, and against a prediction committed before the run</p>
   <p class="lede">A decode step on <code>Qwen3-8B</code> keeps one card's memory controller busy
   <strong>87 %</strong> of the time; on <code>gemma-4-26B-A4B</code>, <strong>38 %</strong>. Read that
-  number on one card and it says which of the two gains more from a faster card, from a second card,
-  from faster memory, and loses more to slower memory &mdash; on hardware it was never measured on. It
+  number on one card. It predicts which of the two gains more from a faster card, from a second card,
+  or from faster memory, and which loses more to slower memory &mdash; on hardware it was never measured on. It
   does not say by how much, and a prediction committed before the data says so.</p>
   <div class="meta">
     <span class="chip k-hardware" title="hardware" style="--i:0">one <b>H100</b>, <b>H200</b>, <b>B300</b> and <b>RTX PRO 6000</b> · TP=1, rented</span>
@@ -1018,35 +1018,36 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract"> <h3>Abstract</h3>
 <p>Every projection in this repository was built from two Radeons under a desk and whatever Colab
-offered. This is what <strong>$29.94</strong> of rented time added: six machine configurations on the
-decode and prefill ladder &mdash; H100, H200, B300, RTX PRO 6000, two H100s, two PRO 6000s &mdash; eight
-on the collective, <strong>586 ladder measurements and 385 collective cells with 0 errors</strong>, and
-the first context past 32&nbsp;000 anywhere here. Two platform controls come first: an A100 and an L4
-rented on the same platform reproduce Colab's committed rows to <strong>0.07&nbsp;%</strong> and
-0.9&nbsp;%, which is what lets any of the ratios below be read as a card difference.</p>
-<p><strong>The finding is one counter.</strong> <code>campaign-2026-09-02d</code> found that what a
-second Radeon is worth is decided by <code>mem_busy</code>, the memory controller's busy fraction on
-one card &mdash; 90&nbsp;% and 1.70&times; on the bf16 8B, 56&nbsp;% and 1.20&times; on the w4a16 12B.
-That was five cells on one box. It now orders the answer in five settings &mdash; one on the pair and
-four against a single H100 baseline: an H200, a B300, a PRO 6000 &mdash; the other direction, because
-its memory is slower &mdash; and a second H100 over NVLink, which is worth <strong>2.9&nbsp;%</strong>
-to the model that reads least. <strong>It does not predict magnitude.</strong>
-A prediction for the H200 was committed before that run: the ordering came back right at both ends and
-the spread came back nearly double, with the memory-bound end exceeding the memory-clock ratio itself,
-which the form used cannot produce. Ordinal, not cardinal, and on the record as such.</p>
+offered. The rented time added six machine configurations on the
+decode and prefill ladder &mdash; H100, H200, B300, RTX PRO 6000, two H100s, two PRO 6000s &mdash; and
+eight on the collective. The run produced <strong>586 ladder measurements and 385 collective cells with 0 errors</strong>,
+pushing context past 32&nbsp;000 tokens for the first time here. Two platform controls come first. An A100
+and an L4 rented on the same platform reproduce Colab's committed rows to <strong>0.07&nbsp;%</strong> and
+0.9&nbsp;%, which lets each ratio below be read as a card difference.</p>
+<p><strong>The finding is one counter.</strong> In <code>campaign-2026-09-02d</code>, the memory controller's
+busy fraction on one card (<code>mem_busy</code>) decided what a second Radeon was worth: 90&nbsp;% and
+1.70&times; on the bf16 8B, 56&nbsp;% and 1.20&times; on the w4a16 12B. That was five cells on one box.
+The counter now orders the outcome across five settings: one on the pair, and four against an H100 baseline.
+Those four are an H200, a B300, a PRO 6000 &mdash; the other direction, because its memory is slower &mdash; and
+a second H100 over NVLink, which is worth <strong>2.9&nbsp;%</strong> to the model that reads least.
+<strong>It does not predict magnitude.</strong> A prediction for the H200 was committed before that run.
+The ordering held at both ends, but the spread came back nearly double. At the memory-bound end, the gain
+exceeded the memory-clock ratio itself, which the formula used cannot produce. Ordinal, not cardinal,
+and on the record as such.</p>
 <p><strong>The wire is not the axis, and now that is measured.</strong> Across eight configurations the
-collective's bandwidth end spans <strong>62&times;</strong> and its latency end <strong>3.2&times;</strong>;
-batch-1 decode reduces one row and lands on the latency end. NVLink is worth 20&nbsp;% at two cards and
-171&nbsp;% at four. Three more things fell out: four cards chose three attention backends with no flag
-set; a $7.10/h B300 loses to a $3.95/h H100 on the MoE and wins by 66&nbsp;% on the 8B; and past 32&nbsp;000
-what flattens a decode curve is a bounded attention window, not a recurrent state &mdash; which falsified
-a prediction written into the runner before the run.</p> </div>
+collective's bandwidth end spans <strong>62&times;</strong> and its latency end <strong>3.2&times;</strong>.
+Batch-1 decode reduces one row and lands on the latency end. NVLink is worth 20&nbsp;% at two cards and
+171&nbsp;% at four. Three further findings emerged. Four cards chose three attention backends with no flag
+set. A $7.10/h B300 loses to a $3.95/h H100 on the MoE, but wins by 66&nbsp;% on the 8B. And past 32&nbsp;000
+tokens, a bounded attention window flattens the decode curve rather than a recurrent state &mdash; which
+falsified a prediction written into the runner before the run.</p> </div>
 
 <h2><span class="n">1</span>Two controls, before any ratio</h2>
 
-<p>Every number below divides a card rented on Modal by an A100 or an L4 that Colab measured in August.
-That gap between platforms was an assumption until it was measured, so the same two cards were rented
-on the same platform and run on the same models at the context budget and ladder Colab used.</p>
+<p>Every ratio below divides a card rented on Modal by an A100 or an L4 measured on Colab in August.
+Cross-platform comparisons assume the two environments behave alike. To test that assumption directly,
+the same two cards were rented on Modal and run on the same models at the context budget and ladder
+Colab used.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1067,13 +1068,13 @@ on the same platform and run on the same models at the context budget and ladder
 
 <h2><span class="n">2</span>One counter orders five settings</h2>
 
-<p><code>mem_busy_pct</code> is the fraction of samples in which the card's memory controller was busy,
-read by the same sampler on every machine (<code>harness/telemetry.py</code>: amdgpu's
-<code>mem_busy_percent</code> on the Radeons, NVML's <code>utilization.memory</code> on CUDA). It is a
-busy fraction, not an achieved bandwidth &mdash; the harness records achieved bandwidth as absent on both
-platforms and says why &mdash; and on 2026-09-02 it was read on one Radeon, on two models, and found to
-decide what the second card was worth. Five settings now, the model held fixed in each and the two ends of
-the counter's range compared:</p>
+<p>The metric <code>mem_busy_pct</code> records the fraction of samples in which the memory controller
+was busy. The same sampler reads it on every machine (<code>harness/telemetry.py</code>: amdgpu's
+<code>mem_busy_percent</code> on Radeons, NVML's <code>utilization.memory</code> on CUDA). It represents
+a busy fraction rather than achieved bandwidth &mdash; the harness marks achieved bandwidth absent on both
+platforms and explains why. On 2026-09-02, reading it on one Radeon across two models decided what the
+second card was worth. Five settings now test that ordering, holding the model fixed in each and comparing
+the two ends of the counter's range:</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1097,14 +1098,13 @@ the counter's range compared:</p>
 
 <h2><span class="n">3</span>And sizes none of them</h2>
 
-<p>An ordering across five settings is a correlation until it predicts something. An H200 is an H100 with
-the same compute capability, the same 700&nbsp;W cap, the same SM clock ceiling and faster memory, so it
-is the cleanest test the counter could be given: if a decode step spends a fraction <code>f</code> of its
-time waiting on memory and the rest on everything else, then multiplying memory speed by <code>r</code>
-gives <code>1 / ((1 &minus; f) + f / r)</code>. <code>f</code> was taken as <code>mem_busy</code> on the
-H100 and <code>r</code> as the two cards' <em>measured</em> maximum memory clocks &mdash; 2&nbsp;619
-against 3&nbsp;201&nbsp;MHz, so 1.222; the vendors' bandwidth figures were not used because this
-repository did not measure them. The six predictions were committed before the run.</p>
+<p>An ordering across five settings is a correlation until it predicts something. An H200 provides the
+cleanest test: it matches the H100 in compute capability, 700&nbsp;W cap, and SM clock ceiling, differing
+only in faster memory. If a decode step spends a fraction <code>f</code> of its time waiting on memory and the
+rest on everything else, multiplying memory speed by <code>r</code> gives <code>1 / ((1 &minus; f) + f / r)</code>.
+Here <code>f</code> was taken as <code>mem_busy</code> on the H100 baseline. The ratio <code>r</code> came from the two
+cards' <em>measured</em> maximum memory clocks &mdash; 2&nbsp;619 against 3&nbsp;201&nbsp;MHz, so 1.222 &mdash; rather
+than vendor bandwidth figures unmeasured by this repository. The six predictions were committed before the run.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1131,10 +1131,10 @@ repository did not measure them. The six predictions were committed before the r
 <h2><span class="n">4</span>Why the second card's value is not on the wire</h2>
 
 <p>The a100 article's section 9 used to say the second Radeon's bandwidth was spent on the interconnect.
-<code>allreduce-2026-09-02</code> withdrew that with a measurement on the pair: 16.6&ndash;21.5&nbsp;&micro;s
-per collective under graph replay, about a tenth of a step, paid equally by a model the second card helps
-1.70&times; and one it helps 1.20&times;. The same sweep on seven NVIDIA configurations gives the withdrawal
-a mechanism.</p>
+Campaign <code>allreduce-2026-09-02</code> withdrew that claim with direct measurements on the pair.
+Under graph replay, a collective took 16.6&ndash;21.5&nbsp;&micro;s &mdash; roughly a tenth of a step &mdash; paid
+equally by a model the second card helps 1.70&times; and one it helps 1.20&times;. The same sweep across seven
+NVIDIA configurations gives the withdrawal a mechanism.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -1162,11 +1162,11 @@ a mechanism.</p>
 
 <h2><span class="n">5</span>Four cards, three attention backends, nobody asked for any of them</h2>
 
-<p>One vLLM, one command line, no backend flag anywhere in the sweep &mdash; and the runner reads the
-backend out of every serve log rather than trusting a table, which is the only reason the following is
-known. vLLM 0.28 has no flag for the decoder's backend at all (<code>attention_backend</code> exists only
-in <code>config/speculative.py</code>, read out of the installed package), so the control that would
-separate the card from the kernel is not available.</p>
+<p>One vLLM, one command line, no backend flag anywhere in the sweep. The runner reads the backend
+directly out of every serve log rather than trusting a table, which is the only reason this split is
+known. Because vLLM 0.28 has no flag for the decoder's backend (<code>attention_backend</code> exists only
+in <code>config/speculative.py</code>, read out of the installed package), the control that would separate
+the card from the kernel is not available.</p>
 
 <figure class="rv" id="fig5">
   <div class="figbox">
@@ -1209,11 +1209,11 @@ separate the card from the kernel is not available.</p>
 
 <h2><span class="n">7</span>Past 32 000: what makes a curve flat</h2>
 
-<p>Every ladder in this repository stopped at 32&nbsp;000 tokens until this night; the H100 carried five
-models to 128&nbsp;000. A prediction was written into the runner before the run: gemma-4 reads a KV cache
-that grows without bound, <code>Qwen3.8-27B</code> carries a recurrent state that does not grow at all,
-and <code>Muse-Glimmer-30B</code> attends through a 2&nbsp;048-token window &mdash; a term that grows and
-then stops &mdash; so it should land between the two.</p>
+<p>Every ladder in this repository stopped at 32&nbsp;000 tokens until this sweep, where the H100 carried
+five models to 128&nbsp;000. A prediction was written into the runner before the run. The models featured
+three distinct attention designs: gemma-4 reads a KV cache that grows without bound; <code>Qwen3.8-27B</code>
+carries a recurrent state that does not grow at all; and <code>Muse-Glimmer-30B</code> attends through a
+2&nbsp;048-token window that grows and then stops. The prediction placed Muse-Glimmer between the two.</p>
 
 <figure class="rv" id="fig7">
   <div class="figbox">
@@ -1240,64 +1240,49 @@ then stops &mdash; so it should land between the two.</p>
 <h2><span class="n">8</span>What is not established</h2>
 
 <h3>The counter's magnitude</h3>
-<p>Section 3 is the whole of it: the form <code>1 / ((1 &minus; f) + f / r)</code> with <code>f</code> read
-off one card under-predicts the spread by half and cannot produce the memory-bound end at all. Either the
+<p>Section 3 has the limit. The form <code>1 / ((1 &minus; f) + f / r)</code>, with <code>f</code> read off
+one card, under-predicts the spread by half and cannot produce the memory-bound end at all. Either the
 effective bandwidth ratio exceeds the memory-clock ratio &mdash; the vendors' figures give 1.43, at which the
 same form over-predicts every row &mdash; or the H200 differs from the H100 in something the prediction
 assumed away. Nothing here separates those.</p>
 
 <h3>A backend control</h3>
-<p>The B300's column in Figure 6 and every gemma-4 comparison across the four cards carry a backend as well
-as a card, and vLLM 0.28 offers no way to hold the decoder's backend still. Not measured.</p>
+<p>Figure 6's B300 column and every gemma-4 comparison conflate the card with its backend. Because
+vLLM 0.28 cannot fix the decoder backend, this was not measured.</p>
 
 <h3>Two configurations, by arithmetic and by budget</h3>
-<p><code>gemma-4-26B-A4B</code> at TP=4 cannot run: <em>CompressedTensors WNA16 MoE with static group
+<p><code>gemma-4-26B-A4B</code> cannot run at TP=4: <em>CompressedTensors WNA16 MoE with static group
 scales requires the MoE intermediate size per tensor-parallel partition to be divisible by
-group_size (32)</em>, a property of the checkpoint and not a failure to retry. The other four models at
+group_size (32)</em> &mdash; a property of the checkpoint, not a failure to retry. The other four models at
 TP=4, and Muse-Glimmer at TP=2 on the rented pairs, were not bought.</p>
 
 <h3>Achieved bandwidth, and one counter on two vendors</h3>
-<p><code>mem_busy</code> is a busy fraction. 87&nbsp;% at one absolute rate is not 87&nbsp;% at another, and
-the harness records achieved bandwidth as absent on both platforms. The counter travels; what it is a
-fraction of does not. It is also two counters: amdgpu's <code>mem_busy_percent</code> on the Radeons and
-NVML's <code>utilization.memory</code> on the CUDA cards, read by one sampler but defined by two drivers.
-That the same two models land at 90/56 on one and 87/53 on the other is evidence they measure alike, not
-proof.</p>
+<p><code>mem_busy</code> is a busy fraction: 87&nbsp;% at one rate is not 87&nbsp;% at another, and achieved
+bandwidth is absent on both platforms. The counter travels; its denominator does not. It also spans two
+driver metrics: amdgpu's <code>mem_busy_percent</code> on Radeons and NVML's <code>utilization.memory</code>
+on CUDA. That the same two models land at 90/56 on one and 87/53 on the other is evidence the
+two counters measure alike. It is not proof.</p>
 
 <h3>Four of the five settings share a baseline</h3>
-<p>The H200, B300, PRO 6000 and second-H100 rows all divide by the same H100 sitting, so an error in that
-sitting would move four rows together. The two platform controls bound that sitting against Colab to
-0.07&nbsp;%, and the pair's row rests on a different box entirely; the five are one independent check
-on the pair's finding, not five.</p>
+<p>The H200, B300, PRO 6000, and second-H100 rows all divide by one H100 sitting, so any error there shifts
+four rows together. Platform controls bound that sitting against Colab to 0.07&nbsp;%, and the pair ran on
+separate hardware. The five are one independent check on the pair's finding, not five.</p>
 
 <h3>Where the dropped prefill rungs sit</h3>
-<p>Twenty-three prefill cells on the rented cards failed the repeatability cut, and every one of them is at
-500 to 2&nbsp;000 tokens &mdash; the cold engine's first requests. Two decode cells failed it too, both on
+<p>Twenty-three prefill cells failed the repeatability cut on the rented cards, all of them between
+500 and 2&nbsp;000 tokens, on the cold engine's first requests. Two decode cells failed it too, both on
 the H200: <code>gemma-4-26B-A4B</code> at 1&nbsp;000 and <code>gemma-4-31B</code> at 500. Nothing above
-rests on any of them.</p>
-
-<h2><span class="n">9</span>What has changed since</h2>
-
-<div class="note warn">
-  <span class="lbl">2026-09-03 · two ranges were written wrong before publication and the gate caught both</span>
-  The latency range in section 4 was first written as 1.8&times; for the whole set &mdash; that is the pairs
-  only, and the PRO 6000 &times;4 at 39.10&nbsp;&micro;s puts the full set at 3.2&times;. The pairs figure was
-  then written as 1.8&times; as well, which came from reading 21.49&nbsp;&micro;s off the Radeon's hidden-2816
-  row while every other number is hidden 4096; at 4096 the pairs span 1.5&times;. Both corrections are in
-  <code>benchmarks/cuda-modal/README.md</code>, and the check that recomputes them from the rows is what
-  found them.
-</div>
+depends on them.</p>
 
 <div class="foot-note">
-  <p><strong>Everything here.</strong> The campaign directories, the runners, every serve log, the
-  collective sweep and the document this article condenses are in
+  <p><strong>Everything here.</strong> The campaign directories, runners, serve logs, and collective
+  sweep are in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-modal/README.md"><code>benchmarks/cuda-modal/</code></a>.
-  The prediction and its verdict are one file,
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"><code>cuda-h200/campaign-2026-09-03/PREDICTION.md</code></a>,
-  the verdict appended below the prediction rather than replacing it. Every number on this page is
-  recomputed from the committed rows by
+  The prediction and appended verdict are in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-h200/campaign-2026-09-03/PREDICTION.md"><code>cuda-h200/campaign-2026-09-03/PREDICTION.md</code></a>.
+  Every number here is recomputed from committed rows by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
-  except two list prices, which are marked.</p>
+  except two marked list prices.</p>
   <p>The counter itself, and the five cells on the pair that made it worth testing, are
   <a href="a100-vs-two-radeons.html">a different article</a>'s section 9.</p>
 </div>

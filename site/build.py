@@ -379,17 +379,20 @@ ART = [
  {"slug": "mem-busy-orders-five-settings", "en": V_EN, "zh": V_ZH, "zhbody": "modal-body-zh.html",
   "tags": ["rented", "mem_busy", "H100", "B300"],
   "blurb": {
-   "en": "Seven rented machines in one night. A memory controller's busy fraction, read on one "
-         "card, orders what a second card, a faster card or faster memory is worth in five "
-         "settings that share no hardware, and a prediction committed before the data says "
-         "it does not size any of them.",
-   "zh": "一夜租七台机器。在一张卡上"
-         "读出内存控制器的忙碌比例，"
-         "它就能给第二张卡、更快的卡"
-         "、更快的显存值多少排序，五"
-         "种互不共享硬件的场景都排对"
-         "了；一份在数据之前写下的预"
-         "测记下了它一个都没算准。"}},
+   "en": "The memory controller's busy fraction, read on one card as mem_busy, orders what a "
+         "second card, a faster card or faster memory is worth across five settings it was "
+         "never fitted to. Four of the five share an H100 baseline, and the one prediction "
+         "committed before the data got the ordering right at both ends and the spread "
+         "wrong by half.",
+   "zh": "在一张卡上读出的内存控制器"
+         "忙碌比例（mem_busy），能给"
+         "第二张卡、更快的卡、更快的"
+         "显存各值多少排序，五种它从"
+         "未拟合过的场景都排对了。其"
+         "中四种共用同一条 H100 基线"
+         "；唯一一份在数据之前写下的"
+         "预测，两端的次序都对，跨度"
+         "却少算了一半。"}},
  {"slug": "rdna3-second-class", "en": Z_EN, "zh": Z_ZH, "zhbody": "rdna3-body-zh.html",
   "tags": ["synthesis", "RDNA3", "ROCm"],
   "blurb": {

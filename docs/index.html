@@ -25232,12 +25232,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小"
    },
    "sub": {
-    "en": "Seven rented machines in one night, and what a memory controller's busy fraction predicts",
-    "zh": "一夜租七台机器，以及一张卡的内存控制器忙碌比例能预测什么"
+    "en": "Read as <code>mem_busy</code> on one card; checked against an H200, a B300, a PRO 6000 and a second H100, and against a prediction committed before the run",
+    "zh": "在一张卡上读作 <code>mem_busy</code>；拿 H200、B300、PRO 6000 和第二张 H100 检验，并对照一份在跑数据之前就写下的预测"
    },
    "blurb": {
-    "en": "Seven rented machines in one night. A memory controller's busy fraction, read on one card, orders what a second card, a faster card or faster memory is worth in five settings that share no hardware, and a prediction committed before the data says it does not size any of them.",
-    "zh": "一夜租七台机器。在一张卡上读出内存控制器的忙碌比例，它就能给第二张卡、更快的卡、更快的显存值多少排序，五种互不共享硬件的场景都排对了；一份在数据之前写下的预测记下了它一个都没算准。"
+    "en": "The memory controller's busy fraction, read on one card as mem_busy, orders what a second card, a faster card or faster memory is worth across five settings it was never fitted to. Four of the five share an H100 baseline, and the one prediction committed before the data got the ordering right at both ends and the spread wrong by half.",
+    "zh": "在一张卡上读出的内存控制器忙碌比例（mem_busy），能给第二张卡、更快的卡、更快的显存各值多少排序，五种它从未拟合过的场景都排对了。其中四种共用同一条 H100 基线；唯一一份在数据之前写下的预测，两端的次序都对，跨度却少算了一半。"
    },
    "establishes": {
     "en": "what a second card or a faster card is worth is ordered by the memory controller's busy fraction, not by the interconnect, and the ordering carries to hardware it was never fitted to",
