@@ -15,8 +15,9 @@ anything in [4.15, 4.25], 0.391 admits [0.3905, 0.3915]. That is what quoting a
 rounded number means, and it is a tighter test than a percentage for the large
 figures and a looser one for the small. Pass an explicit tol= to override.
 """
+import builtins
 import glob
-import hashlib, json, os, re, statistics, sys
+import hashlib, json, os, re, statistics, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # The break-tests edit build_prefill.py and put it back. A same-length edit
@@ -33,6 +34,59 @@ import build_decode as _bpd    # noqa: E402  -- ...and this asserts it
 HERE = os.path.dirname(os.path.abspath(__file__))
 JULY = os.path.join(HERE, "..", "results.jsonl")
 AUG = os.path.join(HERE, "..", "results-2026-08-24.jsonl")
+
+
+def _tracked_input_violations(opened, root):
+    """Return distinct readable paths that are not committed repository files."""
+    repo = os.path.realpath(root)
+    source = os.path.realpath(__file__)
+    harness = os.path.join(repo, "break_0905_tracked_inputs.py")
+    candidates = []
+    seen = set()
+    for raw in opened:
+        try:
+            path = os.fspath(raw)
+        except TypeError:
+            continue
+        if isinstance(path, bytes):
+            path = os.fsdecode(path)
+        path = os.path.realpath(os.path.abspath(path))
+        parts = path.split(os.sep)
+        # The existing repository-wide link scan opens this local break harness
+        # too. It is test machinery, not a published verifier input.
+        if (path in (source, harness) or "__pycache__" in parts
+                or path.lower().endswith(".pyc")):
+            continue
+        if path not in seen:
+            seen.add(path)
+            candidates.append(path)
+
+    tracked = {
+        os.path.realpath(os.path.join(repo, os.fsdecode(path)))
+        for path in subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=repo,
+            check=True,
+            stdout=subprocess.PIPE,
+        ).stdout.split(b"\0")
+        if path
+    }
+    violations = []
+    for path in candidates:
+        try:
+            inside = os.path.commonpath((repo, path)) == repo
+        except ValueError:
+            inside = False
+        if not inside or path not in tracked:
+            violations.append(path)
+    return violations
+
+
+def _print_tracked_input_violations(paths):
+    if paths:
+        print(f"verifier inputs not committed ({len(paths)}):")
+        for path in paths:
+            print(f"  {path}")
 
 
 def decode(path):
@@ -83,7 +137,7 @@ def offset(a, b, cfg):
     return sum((tps(b, cfg, t) - tps(a, cfg, t)) / tps(a, cfg, t) * 100 for t in ts) / len(ts)
 
 
-def main():
+def _run_checks(_opened, _audit_state):
     verbose = "-v" in sys.argv
     jul, aug = decode(JULY), decode(AUG)
     ROOT = os.path.join(HERE, "..", "..")
@@ -8396,6 +8450,11 @@ def main():
     ):
         ck(f"B1 README, states {_what}", "1", 1 if _frag in _brm else 0)
 
+    _untracked = _tracked_input_violations(_opened, ROOT)
+    _audit_state["done"] = True
+    _print_tracked_input_violations(_untracked)
+    ck("verifier inputs are all committed", "0", len(_untracked))
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:
@@ -8403,6 +8462,37 @@ def main():
                   f"data {value:>9.3f}   allowed +-{allowed:.4g}")
     print(f"\n{len(checks) - len(failed)}/{len(checks)} figures agree with the data files")
     return 1 if failed else 0
+
+def main():
+    opened = []
+    audit_state = {"done": False}
+    original_open = builtins.open
+
+    def tracking_open(file, mode="r", *args, **kwargs):
+        try:
+            reads = "r" in mode or "+" in mode
+        except TypeError:
+            reads = False
+        if reads and not isinstance(file, int):
+            opened.append(file)
+        return original_open(file, mode, *args, **kwargs)
+
+    builtins.open = tracking_open
+    try:
+        return _run_checks(opened, audit_state)
+    except BaseException:
+        # A missing input can raise before _run_checks reaches its normal end.
+        # Still report the path before preserving the original exception.
+        if not audit_state["done"]:
+            audit_state["done"] = True
+            violations = _tracked_input_violations(
+                opened, os.path.join(HERE, "..", ".."))
+            _print_tracked_input_violations(violations)
+            print(f"  FAIL verifier inputs are all committed (count {len(violations)})")
+        raise
+    finally:
+        builtins.open = original_open
+
 
 
 if __name__ == "__main__":
