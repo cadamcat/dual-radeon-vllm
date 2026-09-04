@@ -25,6 +25,7 @@ finding, a preflight, or a sweep that writes its own files.
 | [`campaign-2026-09-02c/`](campaign-2026-09-02c/README.md) | The other two x8 prefill lines, re-measured — 2026-09-02c | 88 | yes |
 | [`campaign-2026-09-02d/`](campaign-2026-09-02d/README.md) | What the second card buys, and what decides it — 2026-09-02d | 44 | yes |
 | [`campaign-2026-09-03/`](campaign-2026-09-03/README.md) | The pair to 128 000 tokens — 2026-09-03 | 352 | yes |
+| [`hostcall-abi-2026-09-04/`](hostcall-abi-2026-09-04/README.md) | Who else asks for a hostcall — 2026-09-04 | — |  |
 
 ## Rented and granted NVIDIA cards
 
@@ -65,4 +66,4 @@ finding, a preflight, or a sweep that writes its own files.
 | [`allreduce-2026-09-02/`](allreduce-2026-09-02/README.md) | The TP=2 all-reduce, timed — 2026-09-02 | 55 |  |
 | [`allreduce-2026-09-03/`](allreduce-2026-09-03/README.md) | The collective, on seven rented configurations — 2026-09-03 | — |  |
 
-44 directories; 26 feed the projections.
+45 directories; 26 feed the projections.

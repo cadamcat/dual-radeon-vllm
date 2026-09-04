@@ -7998,6 +7998,196 @@ def main():
            1 if ("the prices are a list, not a measurement" in _t
                  or "价格是价目表，不是测量" in _t) else 0)
 
+
+    # --- benchmarks/hostcall-abi-2026-09-04, the C1 device-library scan ------
+    # Every figure below is recomputed from the two scan JSONLs, by the same
+    # library-level aggregation summarize.py uses: a kpack stores one library's
+    # device code in numbered shards, so the shard index is stripped, and the
+    # eight test binaries torch ships inside its kpack are counted apart from
+    # the libraries.
+    HDIR = os.path.join(HERE, "..", "hostcall-abi-2026-09-04")
+
+    def _hc_units(name):
+        rows = [json.loads(l) for l in open(os.path.join(HDIR, name))]
+        meta = next(r for r in rows if r.get("kind") == "meta")
+        units, nobits = {}, []
+        for r in rows:
+            if r.get("fatbin_nobits"):
+                nobits.append(r)
+            if (not r.get("device_code") or r.get("carrier") is None
+                    or r.get("image") is None):
+                # Declared but nothing extracted for this target: a kpack-backed
+                # .so whose .hip_fatbin is empty (its payload is counted under
+                # the kpack), or a library built for other targets only.
+                # Counting it would count one library twice.
+                continue
+            key = (r["binary"].split("#")[0] if r["carrier"] == "kpack"
+                   else r["file"])
+            u = units.setdefault(key, {"kern": 0, "hc": 0, "carrier": set()})
+            u["kern"] += r.get("kernels") or 0
+            u["hc"] += r.get("hostcall_kernels") or 0
+            u["carrier"].add(r["carrier"])
+        return meta, units, nobits
+
+    def _is_test(n):
+        return "/test" in n or n.split("/")[-1].startswith(("hip_", "test_"))
+
+    def _one(units, suffix):
+        hit = [v for k, v in units.items() if k == suffix or k.endswith(suffix)]
+        assert len(hit) == 1, (suffix, len(hit))
+        return hit[0]
+
+    _h7_meta, _h7, _h7nb = _hc_units("rocm714-gfx1100.jsonl")
+    _h0_meta, _h0, _h0nb = _hc_units("rocm10-gfx1100.jsonl")
+    _hrm = open(os.path.join(HDIR, "README.md")).read()
+
+    for _tag, _u, _nb, _claims in (
+        ("7.14", _h7, _h7nb, {
+            "librccl hostcall": ("13", "librccl.so.1.0", "hc"),
+            "librccl kernels": ("105", "librccl.so.1.0", "kern"),
+            "libtorch_hip hostcall": ("21", "lib/libtorch_hip.so", "hc"),
+            "libtorch_hip kernels": ("41407", "lib/libtorch_hip.so", "kern"),
+            "vllm _rocm_C hostcall": ("348", "vllm/_rocm_C.abi3.so", "hc"),
+            "vllm _rocm_C kernels": ("2350", "vllm/_rocm_C.abi3.so", "kern"),
+        }),
+        ("10.0", _h0, _h0nb, {
+            "librccl hostcall": ("13", "librccl.so.1.0", "hc"),
+            "librccl kernels": ("138", "librccl.so.1.0", "kern"),
+            "libtorch_hip hostcall": ("15", "lib/libtorch_hip.so", "hc"),
+            "libtorch_hip kernels": ("42761", "lib/libtorch_hip.so", "kern"),
+            "rocshmem hostcall": ("50", "lib/libtorch_rocshmem.so", "hc"),
+            "rocshmem kernels": ("68", "lib/libtorch_rocshmem.so", "kern"),
+            "vllm _rocm_C hostcall": ("348", "vllm/_rocm_C.abi3.so", "hc"),
+            "vllm _rocm_C kernels": ("3040", "vllm/_rocm_C.abi3.so", "kern"),
+        }),
+    ):
+        for _what, (_claim, _suffix, _field) in _claims.items():
+            ck(f"hostcall-abi README, ROCm {_tag} {_what}", _claim,
+               _one(_u, _suffix)[_field])
+        _libs = {k: v for k, v in _u.items() if not _is_test(k)}
+        _tests = {k: v for k, v in _u.items() if _is_test(k)}
+        ck(f"hostcall-abi README, ROCm {_tag} total kernels", 
+           "107085" if _tag == "7.14" else "113146",
+           sum(v["kern"] for v in _u.values()))
+        ck(f"hostcall-abi README, ROCm {_tag} total hostcall kernels",
+           "403" if _tag == "7.14" else "447",
+           sum(v["hc"] for v in _u.values()))
+        ck(f"hostcall-abi README, ROCm {_tag} NOBITS libraries",
+           "26" if _tag == "7.14" else "29", len(_nb))
+        ck(f"hostcall-abi README, ROCm {_tag} test binaries declaring", "5",
+           sum(1 for v in _tests.values() if v["hc"] > 0))
+        ck(f"hostcall-abi README, ROCm {_tag} test binaries", "8", len(_tests))
+
+    ck("hostcall-abi README, 7.14 libraries scanned", "153",
+       len({k: v for k, v in _h7.items() if not _is_test(k)}))
+    ck("hostcall-abi README, 7.14 libraries declaring a hostcall", "3",
+       sum(1 for k, v in _h7.items() if not _is_test(k) and v["hc"] > 0))
+    ck("hostcall-abi README, 7.14 kernels in units declaring none", "63181",
+       sum(v["kern"] for v in _h7.values() if v["hc"] == 0))
+    ck("hostcall-abi README, 7.14 kernels in test binaries that declare", "42",
+       sum(v["kern"] for k, v in _h7.items() if _is_test(k) and v["hc"] > 0))
+    ck("hostcall-abi README, 7.14 test-binary hostcall kernels", "21",
+       sum(v["hc"] for k, v in _h7.items() if _is_test(k)))
+    ck("hostcall-abi README, 10.0 libraries scanned", "3064",
+       len({k: v for k, v in _h0.items() if not _is_test(k)}))
+    ck("hostcall-abi README, 10.0 libraries declaring a hostcall", "4",
+       sum(1 for k, v in _h0.items() if not _is_test(k) and v["hc"] > 0))
+    ck("hostcall-abi README, librccl declared NOBITS fatbin bytes", "525569016",
+       next(r["fatbin_size"] for r in
+            [json.loads(l) for l in open(os.path.join(HDIR, "rocm714-gfx1100.jsonl"))]
+            if r.get("file", "").endswith("_rocm_sdk_libraries/lib/librccl.so.1")))
+    ck("hostcall-abi README, 7.14 NOBITS bytes declared and absent", "2739667243",
+       sum(r.get("fatbin_size", 0) for r in _h7nb))
+
+    # the loose carrier: 67 CCOB .co and 57 .hsaco, 8 603 kernels, none asking
+    _h7rows = [json.loads(l) for l in open(os.path.join(HDIR, "rocm714-gfx1100.jsonl"))]
+    _loose = [r for r in _h7rows if r.get("carrier") == "loose"]
+    ck("hostcall-abi README, 7.14 loose .co objects", "67",
+       sum(1 for r in _loose if r["file"].endswith(".co")))
+    ck("hostcall-abi README, 7.14 loose .hsaco objects", "57",
+       sum(1 for r in _loose if r["file"].endswith(".hsaco")))
+    ck("hostcall-abi README, 7.14 loose kernels", "8603",
+       sum(r.get("kernels") or 0 for r in _loose))
+    ck("hostcall-abi README, 7.14 loose hostcall kernels", "0",
+       sum(r.get("hostcall_kernels") or 0 for r in _loose))
+    # the README's per-carrier row counts libraries, so the eight shipped test
+    # binaries are out of it, as they are everywhere else in that table
+    for _c, _claim in (("kpack", "16"), ("elf", "13"), ("loose", "124")):
+        ck(f"hostcall-abi README, 7.14 {_c} device-code units", _claim,
+           sum(1 for k, v in _h7.items()
+               if _c in v["carrier"] and not _is_test(k)))
+    for _c, _claim in (("kpack", "18"), ("elf", "14"), ("loose", "3032")):
+        ck(f"hostcall-abi README, 10.0 {_c} device-code units", _claim,
+           sum(1 for k, v in _h0.items()
+               if _c in v["carrier"] and not _is_test(k)))
+
+    # cross-architecture: RCCL identical on every target it ships, both images
+    def _hc_cross(name):
+        rows = [json.loads(l) for l in open(os.path.join(HDIR, name))]
+        a = [r for r in rows if r.get("kind") == "arch"]
+        return a, {(r["kernels"], r["hostcall_kernels"]) for r in a}
+
+    for _name, _n, _k, _h in (("crossarch-rccl-rocm714.jsonl", "20", "105", "13"),
+                              ("crossarch-rccl-rocm10.jsonl", "21", "138", "13")):
+        _a, _sig = _hc_cross(_name)
+        ck(f"hostcall-abi README, {_name} architectures", _n, len(_a))
+        ck(f"hostcall-abi README, {_name} distinct (kernels, hostcall) pairs",
+           "1", len(_sig))
+        ck(f"hostcall-abi README, {_name} kernels on every target", _k,
+           _a[0]["kernels"])
+        ck(f"hostcall-abi README, {_name} hostcall on every target", _h,
+           _a[0]["hostcall_kernels"])
+        ck(f"hostcall-abi README, {_name} covers gfx942 and gfx950", "2",
+           sum(1 for r in _a if r["arch"] in ("gfx942", "gfx950")))
+
+    _t7, _ = _hc_cross("crossarch-torch-rocm714.jsonl")
+    ck("hostcall-abi README, torch 7.14 targets at 42", "21",
+       sum(1 for r in _t7 if r["hostcall_kernels"] == 42))
+    ck("hostcall-abi README, torch 7.14 CDNA targets at 30", "3",
+       sum(1 for r in _t7 if r["hostcall_kernels"] == 30))
+
+    # The recomputations above prove the numbers are derivable. These prove the
+    # README still *says* them: a gate that only recomputes passes happily while
+    # the published sentence drifts, which is the 2026-08-30 lesson [INV-006].
+    for _what, _frag in (
+        ("the headline librccl row", "librccl.so.1.0                     13 of    105 kernels"),
+        ("the headline libtorch_hip row", "lib/libtorch_hip.so                21 of 41 407 kernels"),
+        ("the headline vllm row", "vllm/_rocm_C.abi3.so              348 of  2 350 kernels"),
+        ("the headline test-binary row", "five of torch's 8 test binaries    21 of     42 kernels"),
+        ("the headline remainder row", "everything else                     0 of 63 181 kernels"),
+        ("the headline total", "403 of 107 085 kernels"),
+        ("the library denominator", "three shipped libraries out of 153"),
+        ("librccl's declared NOBITS size", "525 569 016 bytes"),
+        ("the NOBITS total", "26 libraries declare 2 739 667 243 bytes"),
+        ("the loose split", "the 67 `.co` files are `CCOB` and\nthe 57 `.hsaco` are not"),
+        ("the loose kernel count", "the 124 are 8 603 kernels"),
+        ("the two-version carrier row", "| 16 / 13 / 124 | 18 / 14 / 3 032 |"),
+        ("the two-version library row", "| 153 · **3** | 3 064 · **4** |"),
+        ("the rocshmem row", "| not shipped | **50 of 68** |"),
+        ("RCCL's two kernel counts", "| 13 of 105 | 13 of 138 |"),
+        ("the cross-architecture invariance",
+         "105 kernels, 13 hostcall — identical on all 20 targets"),
+        ("and its 10.0 half",
+         "138 kernels, 13 hostcall — identical on all 21 targets"),
+        ("torch's CDNA variation", "42 on 21 RDNA/gfx908 targets · 30 on gfx90a, gfx942, gfx950"),
+    ):
+        ck(f"hostcall-abi README, prints {_what}", "1",
+           1 if _frag in _hrm else 0)
+
+    # and the prose says the things the data licenses
+    ck("hostcall-abi README, names the kpack trap", "1",
+       1 if "strings -a librccl.so.1 | grep -c hidden_hostcall_buffer" in _hrm else 0)
+    ck("hostcall-abi README, explains what NOBITS means", "1",
+       1 if "a section header with no bytes behind it" in _hrm else 0)
+    ck("hostcall-abi README, warns the version string is not an identifier", "1",
+       1 if "The RCCL version string is not an\nidentifier" in _hrm else 0)
+    ck("hostcall-abi README, says dispatch is not measured here", "1",
+       1 if "is not measured here" in _hrm else 0)
+    ck("hostcall-abi README, marks the allreduce harness shortcut", "1",
+       1 if "allreduce.py` records" in _hrm else 0)
+    ck("hostcall-abi README, keeps the not-licensed section", "1",
+       1 if "**Not licensed.**" in _hrm else 0)
+
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:
         if verbose or not ok:

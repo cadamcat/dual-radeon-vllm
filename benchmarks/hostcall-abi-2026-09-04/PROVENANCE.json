@@ -1,0 +1,65 @@
+{
+ "purpose": "CAL experiment C1: count hidden_hostcall_buffer across every shipped device code object in two ROCm containers, gfx1100 and 21 other targets. CPU only, no GPU, no lease.",
+ "date": "2026-09-04",
+ "host": "VM 101 (the VFIO guest), scanned inside docker containers, GPUs untouched",
+ "arms": {
+  "rocm714": {
+   "image": "rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0",
+   "image_id": "sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0",
+   "image_created": "2026-07-15T20:08:46Z",
+   "rocm": "7.14.0",
+   "python": "3.14.6",
+   "torch": "2.11.0+rocm7.14.0",
+   "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
+   "llvm": "23.0.0git",
+   "rccl_version_string": "RCCL version 2.30.4",
+   "note": "this is the image the Radeon pair actually serves from",
+   "md5": {
+    "site-packages/_rocm_sdk_libraries/lib/librccl.so.1": "48fda13868ea868140ca2cd6af54eb76",
+    "site-packages/torch/lib/libtorch_hip.so": "47973e862f417fac9f1457653e0846a3",
+    "site-packages/vllm/_rocm_C.abi3.so": "069f038d310f8b8057b128be55427f99",
+    "site-packages/_rocm_sdk_libraries/.kpack/rccl_lib_gfx1100.kpack": "6852b00b2c5897a6c84372e9efbf25b2",
+    "site-packages/torch/.kpack/torch_gfx1100.kpack": "8b79c358b3b33d6ada5a8cfae1d90ca9"
+   },
+   "bytes": {
+    "site-packages/_rocm_sdk_libraries/lib/librccl.so.1": 4248993,
+    "site-packages/vllm/_rocm_C.abi3.so": 514664296,
+    "site-packages/_rocm_sdk_libraries/.kpack/rccl_lib_gfx1100.kpack": 19588068
+   }
+  },
+  "rocm10": {
+   "image": "rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0",
+   "image_id": "sha256:b8a082f346d069376d35784250e38b23a043efe979408ae3a33d7c6b62ee3276",
+   "rocm": "10.0.0",
+   "python": "3.14.7",
+   "torch": "2.12.0+rocm10.0.0",
+   "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+   "llvm": "23.0.0git",
+   "rccl_version_string": "RCCL version 2.30.4",
+   "note": "same RCCL version string as the 7.14 arm, different binary and 33 more kernels; the version string is not an identifier",
+   "md5": {
+    "site-packages/_rocm_sdk_libraries/lib/librccl.so.1": "a3963038f2f0241257be5cff41f4888f",
+    "site-packages/torch/lib/libtorch_hip.so": "2306e7b813f2a7e94b203536b9ac0734",
+    "site-packages/vllm/_rocm_C.abi3.so": "8f625026ebdecaa88a07eff822d4893c",
+    "site-packages/_rocm_sdk_libraries/.kpack/rccl_lib_gfx1100.kpack": "51a872b64b96edea9cbf91ca8624908e",
+    "site-packages/torch/.kpack/torch_gfx1100.kpack": "5be4bbdbe0cab3de4a1740f524367bcc"
+   }
+  }
+ },
+ "tools": {
+  "llvm-readelf": "site-packages/_rocm_sdk_devel/lib/llvm/bin/llvm-readelf, LLVM 23.0.0git",
+  "llvm-objdump": "same prefix, --offloading",
+  "clang-offload-bundler": "same prefix, --list / --unbundle; required for CCOB (compressed) bundles",
+  "librocm_kpack.so.0": "site-packages/_rocm_sdk_core/lib/, AMD's own KPAK reader, driven from Python by ctypes"
+ },
+ "files": {
+  "rocm714-gfx1100.jsonl": "full scan, ROCm 7.14 arm, target gfx1100",
+  "rocm10-gfx1100.jsonl": "full scan, ROCm 10.0 arm, target gfx1100",
+  "crossarch-rccl-rocm714.jsonl": "RCCL kpack, every architecture it ships (20)",
+  "crossarch-rccl-rocm10.jsonl": "RCCL kpack, every architecture it ships (21)",
+  "crossarch-torch-rocm714.jsonl": "torch kpack, every architecture it ships (24)",
+  "crossarch-torch-rocm10.jsonl": "torch kpack, every architecture it ships (25)"
+ },
+ "gpu_touched": false,
+ "lease_held": false
+}

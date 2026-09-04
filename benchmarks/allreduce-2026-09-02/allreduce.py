@@ -142,6 +142,22 @@ def _loaded_rccl():
             out["hidden_hostcall_buffer"] = int(subprocess.run(
                 f"strings -a {real} | grep -c hidden_hostcall_buffer",
                 shell=True, capture_output=True, text=True).stdout.strip() or -1)
+            # ...but that count is only meaningful if the device code is IN the
+            # file. ROCm 7.14's wheel SDK moves it to a per-architecture KPAK
+            # archive named by a .rocm_kpack_ref section, leaving an empty
+            # NOBITS .hip_fatbin behind; `strings` then answers 0 for a library
+            # whose kernels declare thirteen. Measured 2026-09-04, see
+            # benchmarks/hostcall-abi-2026-09-04/. Record which shape this is so
+            # a 0 above can be told apart from an unread one.
+            out["device_code_external"] = bool(subprocess.run(
+                f"grep -c rocm_kpack_ref {real}",
+                shell=True, capture_output=True, text=True).stdout.strip()
+                not in ("", "0"))
+            if out["device_code_external"]:
+                out["hidden_hostcall_buffer_note"] = (
+                    "device code is in a .kpack; the strings count above does "
+                    "not read it. Use benchmarks/hostcall-abi-2026-09-04/"
+                    "scan_hostcall.py for the real count.")
     except Exception as e:                                 # noqa: BLE001
         out["error"] = str(e)
     return out
