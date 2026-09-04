@@ -1,0 +1,48 @@
+B1 provenance, asserted 2026-09-04 before the builds
+=====================================================
+source tree      /data/rccl-build/rccl-rocm-7.1.1  (RCCL 2.27.7, NCCL_MAJOR 2
+                 NCCL_MINOR 27; cloned --depth 1 from
+                 ROCm/rccl release/rocm-rel-7.1.1.1, so there is no .git and no
+                 commit hash to assert -- the tree is hashed instead)
+files            634, excluding build dirs
+
+tree md5 EXCLUDING CMakeLists.txt   318534aeaba1aac01516f70af34dbb08
+   this is the invariant: both arms must see the same value
+
+CMakeLists.txt.bak md5              51e72f46a456af4deaf577160a6594cc
+   both arms are generated from this same file
+
+arm=ndebug   CMakeLists.txt md5     0216f2f2dc56d43d045c9935abc3b7f7
+   diff against .bak, in full:
+       17a18
+       > add_compile_definitions(NDEBUG) # VFIO-hostcall-fix
+arm=nondebug CMakeLists.txt         byte-identical to .bak
+
+So the two arms differ by exactly one line of one file. That is what B1 asks
+for and it is why this is not the 2.27.7-vs-2.30.4 comparison the CAL outline
+warns against.
+
+configure, identical for both arms
+    -DCMAKE_BUILD_TYPE=Release -DGPU_TARGETS=gfx1100 -DAMDGPU_TARGETS=gfx1100
+    -DROCM_PATH=$ROCM_PATH -DCMAKE_PREFIX_PATH="$ROCM_PATH;/opt/rocm"
+  ROCM_PATH as a CMake variable defaults to /opt/rocm, which does not exist in
+  this wheel-SDK image, so CMakeLists.txt:191 died reading
+  /opt/rocm/.info/version. The environment names the real prefix
+  (/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel, .info/version =
+  7.14.0). CMAKE_PREFIX_PATH is the two-entry form the July build's
+  CMakeCache.txt records. The July build did not need -DROCM_PATH; why it
+  resolved then and not now is not established.
+
+container        rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0
+                 image sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+                 started with 0 devices and not privileged: no /dev/kfd, no
+                 /dev/dri. The build cannot touch a GPU, so no lease is held
+                 for this half.
+
+NOT reused: /data/rccl-build/librccl-final.so (md5 ab5b50f0d84806ed7fbe0f4f560151ff),
+  the library every existing measurement used, could have served as the ndebug
+  arm and was deliberately rebuilt instead. It was produced 2026-07-26 and the
+  configured build/ tree in place today emits a different md5
+  (fbf4688c48224514b08dbf6832bf7b6f), so the tree as it stands does not
+  reproduce it and its provenance cannot be asserted. Both arms are built now,
+  back to back, from the state above.

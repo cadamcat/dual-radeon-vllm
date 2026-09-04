@@ -1,0 +1,45 @@
+18:47:54 | ===== B1 round 2 start =====
+18:47:54 | precondition: no 'PCIE atomic ops is not supported' in dmesg
+18:47:54 | allreduce.py in use: 4503492023cb2dcb845c1843730fa0da
+18:47:54 | VRAM before: 27971584 27971584 
+18:47:54 | stopping ollama and llamacpp-hub
+18:47:59 | ollama=inactive llamacpp-hub=inactive
+18:48:04 | container vllm-tp2 started
+18:48:04 | arm=ndebug correctness (12 cases)
+18:48:12 | arm=ndebug correctness rc=0
+    12/12 cases pass
+18:48:12 | arm=nondebug correctness (12 cases)
+18:48:20 | arm=nondebug correctness rc=0
+    12/12 cases pass
+18:48:20 | arm=ndebug repeat=1 sweep
+18:48:56 | arm=ndebug repeat=1 rc=0
+18:48:56 | arm=ndebug repeat=1 cells=55 (want 55)
+    md5=76f1916fad88c97469f6359ebd731bc1 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=0 external=False
+18:48:56 | arm=nondebug repeat=1 sweep
+18:49:33 | arm=nondebug repeat=1 rc=0
+18:49:33 | arm=nondebug repeat=1 cells=55 (want 55)
+    md5=666c8aae61dac16c664e9e1ba3e021f9 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=6 external=False
+18:49:33 | arm=ndebug repeat=2 sweep
+18:50:10 | arm=ndebug repeat=2 rc=0
+18:50:10 | arm=ndebug repeat=2 cells=55 (want 55)
+    md5=76f1916fad88c97469f6359ebd731bc1 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=0 external=False
+18:50:10 | arm=nondebug repeat=2 sweep
+18:50:47 | arm=nondebug repeat=2 rc=0
+18:50:47 | arm=nondebug repeat=2 cells=55 (want 55)
+    md5=666c8aae61dac16c664e9e1ba3e021f9 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=6 external=False
+18:50:47 | arm=ndebug repeat=3 sweep
+18:51:25 | arm=ndebug repeat=3 rc=0
+18:51:25 | arm=ndebug repeat=3 cells=55 (want 55)
+    md5=76f1916fad88c97469f6359ebd731bc1 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=0 external=False
+18:51:25 | arm=nondebug repeat=3 sweep
+18:52:02 | arm=nondebug repeat=3 rc=0
+18:52:02 | arm=nondebug repeat=3 cells=55 (want 55)
+    md5=666c8aae61dac16c664e9e1ba3e021f9 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=6 external=False
+18:52:02 | three interleaved sweeps per arm complete
+18:52:02 | --- restore (exit=0) ---
+18:52:02 | restored librccl md5=ab5b50f0d84806ed7fbe0f4f560151ff (want ab5b50f0d84806ed7fbe0f4f560151ff)
+18:52:13 | stopped vllm-tp2
+18:52:13 | services restarted
+18:52:18 | ollama=active llamacpp-hub=active
+18:52:18 | VRAM now: 27971584 27971584  (baseline 27971584 per card)
+18:52:18 | ===== B1 round 2 ended (exit=0) =====

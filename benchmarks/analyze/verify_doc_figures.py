@@ -8270,9 +8270,131 @@ def main():
     ck("hostcall-abi README, says dispatch is not measured here", "1",
        1 if "is not measured here" in _hrm else 0)
     ck("hostcall-abi README, marks the allreduce harness shortcut", "1",
-       1 if "allreduce.py` records" in _hrm else 0)
+       1 if "allreduce.py` recorded" in _hrm else 0)
+    ck("hostcall-abi README, carries the CCOB correction", "1",
+       1 if "**Corrected 2026-09-04, later the same day.**" in _hrm else 0)
+    ck("hostcall-abi README, says the method could not have known", "1",
+       1 if "but the method could not have known it" in _hrm else 0)
     ck("hostcall-abi README, keeps the not-licensed section", "1",
        1 if "**Not licensed.**" in _hrm else 0)
+
+
+    # --- benchmarks/rccl-ndebug-ab-2026-09-04, CAL experiment B1 ------------
+    # The +-NDEBUG pair. Every figure the README quotes is recomputed here from
+    # the six sweeps, by the same aggregation analyze.py uses: three repeats
+    # averaged per cell, then the DIRECTION counted across cells, because the
+    # per-cell effect and the per-cell noise are the same size.
+    import importlib.util as _ilu
+    _BDIR = os.path.join(HERE, "..", "rccl-ndebug-ab-2026-09-04")
+    _bspec = _ilu.spec_from_file_location("_b1", os.path.join(_BDIR, "analyze.py"))
+    _b1 = _ilu.module_from_spec(_bspec); _bspec.loader.exec_module(_b1)
+    _brm = open(os.path.join(_BDIR, "README.md")).read()
+    _bruns, _bkeys = _b1.load()
+
+    ck("B1, cells shared by all six sweeps", "55", len(_bkeys))
+    ck("B1, sweeps", "6", len(_bruns))
+    for _a, _hc, _md5 in (("ndebug", "0", "76f1916fad88c97469f6359ebd731bc1"),
+                          ("nondebug", "6", "666c8aae61dac16c664e9e1ba3e021f9")):
+        for _r in (1, 2, 3):
+            _m = _b1.meta(os.path.join(_BDIR, f"ar2-{_a}-r{_r}.jsonl"))["rccl_loaded"]
+            ck(f"B1, arm={_a} sweep {_r} mapped the right library", "1",
+               1 if _m["md5"] == _md5 else 0)
+            ck(f"B1, arm={_a} sweep {_r} hostcall count", _hc,
+               _m["hidden_hostcall_buffer"])
+            ck(f"B1, arm={_a} sweep {_r} read it from the notes, not strings", "1",
+               1 if _m.get("hidden_hostcall_buffer_method") == "notes" else 0)
+            ck(f"B1, arm={_a} sweep {_r} cells", "55",
+               sum(1 for l in open(os.path.join(_BDIR, f"ar2-{_a}-r{_r}.jsonl"))
+                   if '"kind": "allreduce"' in l))
+
+    # the three metrics, against their own noise
+    for _metric, _noise, _p90, _ratio, _slower, _p in (
+            ("t_graph_us", "2.01", "4.28", "1.0191", "40", "0.0010"),
+            ("t_stream_us", "2.76", "8.10", "1.0031", "34", "0.1048"),
+            ("t_sync_us_median", "1.61", "3.63", "1.0061", "37", "0.0145")):
+        _n = _b1.noise(_bruns, _bkeys, _metric)
+        ck(f"B1 README, {_metric} noise median pct", _noise,
+           statistics.median(_n) * 100)
+        ck(f"B1 README, {_metric} noise p90 pct", _p90,
+           sorted(_n)[int(.9 * len(_n))] * 100)
+        _rs, _sl, _pv = _b1.block(_bruns, _bkeys, _metric)
+        ck(f"B1 README, {_metric} pooled ratio", _ratio, statistics.median(_rs))
+        ck(f"B1 README, {_metric} cells where nondebug is slower", _slower, _sl)
+        ck(f"B1 README, {_metric} sign p", _p, _pv)
+
+    # only t_graph_us reproduces in all three sweeps; that is the load-bearing
+    # claim and it is checked sweep by sweep
+    for _metric, _counts in (("t_graph_us", ("42", "37", "39")),
+                             ("t_stream_us", ("39", "35", "24")),
+                             ("t_sync_us_median", ("38", "42", "22"))):
+        for _r, _claim in zip((1, 2, 3), _counts):
+            ck(f"B1 README, {_metric} sweep {_r} slower count", _claim,
+               sum(1 for x in _bkeys
+                   if _bruns[("nondebug", _r)][x][_metric]
+                   > _bruns[("ndebug", _r)][x][_metric]))
+    ck("B1, t_graph_us is the only metric slower in every sweep", "1",
+       1 if all(sum(1 for x in _bkeys
+                    if _bruns[("nondebug", _r)][x]["t_graph_us"]
+                    > _bruns[("ndebug", _r)][x]["t_graph_us"]) > len(_bkeys) / 2
+                for _r in (1, 2, 3)) else 0)
+
+    # the shape: a band where it costs, a size where it does not, and the
+    # reversal at the decode shape that the README refuses to smooth away
+    for _nt, _ratio, _slower, _a, _b in (
+            ("1", "0.9873", "0", "19.29", "19.10"),
+            ("2", "1.0456", "4", "26.47", "27.53"),
+            ("8", "1.0457", "5", "33.10", "34.59"),
+            ("64", "1.0268", "5", "91.34", "93.49"),
+            ("256", "0.9993", "2", "310.60", "310.00"),
+            ("16384", "1.0043", "3", "18837.76", "18884.46")):
+        _ks = [k for k in _bkeys if k[1] == int(_nt)]
+        _pairs = [_b1.means(_bruns, k, "t_graph_us") for k in _ks]
+        ck(f"B1 README, ntok={_nt} median ratio", _ratio,
+           statistics.median([b / a for a, b in _pairs]))
+        ck(f"B1 README, ntok={_nt} slower cells", _slower,
+           sum(1 for a, b in _pairs if b > a))
+        ck(f"B1 README, ntok={_nt} ndebug us", _a,
+           statistics.fmean([a for a, _ in _pairs]))
+        ck(f"B1 README, ntok={_nt} nondebug us", _b,
+           statistics.fmean([b for _, b in _pairs]))
+    for _label, _sel, _ratio, _slower, _n, _p in (
+            ("ntok <= 16", lambda k: k[1] <= 16, "1.0390", "19", "25", "0.0146"),
+            ("ntok >= 256", lambda k: k[1] >= 256, "1.0001", "11", "20", "0.8238")):
+        _ks = [k for k in _bkeys if _sel(k)]
+        _rs, _sl, _pv = _b1.block(_bruns, _ks, "t_graph_us")
+        ck(f"B1 README, {_label} cells", _n, len(_ks))
+        ck(f"B1 README, {_label} median ratio", _ratio, statistics.median(_rs))
+        ck(f"B1 README, {_label} slower", _slower, _sl)
+        ck(f"B1 README, {_label} sign p", _p, _pv)
+
+    # correctness: twelve cases, both arms, both rounds
+    for _a in ("ndebug", "nondebug"):
+        for _tag, _f in (("round 2", f"correct2-{_a}.jsonl"),
+                         ("round 1", f"correct-{_a}.jsonl")):
+            _rows = [json.loads(l) for l in open(os.path.join(_BDIR, _f))]
+            _cases = [r for r in _rows if r.get("kind") == "correctness"]
+            ck(f"B1, {_tag} arm={_a} cases", "12", len(_cases))
+            ck(f"B1, {_tag} arm={_a} cases passing", "12",
+               sum(1 for r in _cases if r["ok"]))
+            ck(f"B1, {_tag} arm={_a} nothing passed on an unchanged buffer", "0",
+               sum(1 for r in _cases if r.get("unchanged")))
+
+    # and the prose says what the data licenses, including what it does not
+    for _what, _frag in (
+        ("the one-line diff", "> add_compile_definitions(NDEBUG)"),
+        ("the arms' hostcall counts", "| `hidden_hostcall_buffer` | 0 | **6** |"),
+        ("the identical kernel count", "| kernels | 126 | 126 |"),
+        ("both arms' version string", "| `RCCL version 2.27.7` | `RCCL version 2.27.7` |"),
+        ("that COLLTRACE stayed on", "**Both arms carry `COLLTRACE:BOOL=ON`**"),
+        ("the interleaving and why", "Six sweeps ran **A B A B A B**, not A A A B B B"),
+        ("that effect and noise are the same size", "The effect and the noise are the same size."),
+        ("that only the graph metric reproduces", "**Only `t_graph_us` reproduces in all three sweeps**"),
+        ("the absolute gap", "**1.1 to 2.2 µs**"),
+        ("that the ntok=1 reversal is unexplained", "**The ntok=1 reversal is not explained.**"),
+        ("that it measures the fix, not the declaration", "So this measures **the fix**"),
+        ("the strings correction", "so `strings` answers 0 whatever the kernels declare"),
+    ):
+        ck(f"B1 README, states {_what}", "1", 1 if _frag in _brm else 0)
 
     failed = [c for c in checks if not c[0]]
     for ok, where, claim, value, allowed in checks:

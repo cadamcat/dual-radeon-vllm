@@ -1,0 +1,51 @@
+{
+ "purpose": "CAL experiment B1: the +-NDEBUG RCCL A/B. Same source tree, one line apart, both measured on the atomics-enabled box.",
+ "date": "2026-09-04",
+ "host": "VM 101, the VFIO guest, RX 7900 XT pair, TP=2",
+ "source": {
+  "tree": "/data/rccl-build/rccl-rocm-7.1.1",
+  "upstream": "ROCm/rccl release/rocm-rel-7.1.1.1, --depth 1, so no .git and no commit to quote",
+  "version": "RCCL 2.27.7 (NCCL_MAJOR 2, NCCL_MINOR 27)",
+  "files_excluding_build_dirs": 634,
+  "tree_md5_excluding_CMakeLists": "318534aeaba1aac01516f70af34dbb08",
+  "CMakeLists_bak_md5": "51e72f46a456af4deaf577160a6594cc",
+  "diff_bak_to_ndebug": "17a18 > add_compile_definitions(NDEBUG) # VFIO-hostcall-fix",
+  "nondebug_CMakeLists_md5": "51e72f46a456af4deaf577160a6594cc, byte-identical to the .bak"
+ },
+ "configure": {
+  "identical_for_both_arms": "-DCMAKE_BUILD_TYPE=Release -DGPU_TARGETS=gfx1100 -DAMDGPU_TARGETS=gfx1100 -DROCM_PATH=$ROCM_PATH -DCMAKE_PREFIX_PATH=$ROCM_PATH;/opt/rocm",
+  "NDEBUG_in_build_ninja": {"ndebug": 251, "nondebug": 0},
+  "COLLTRACE": {"ndebug": "ON", "nondebug": "ON"},
+  "ENABLE_COLLTRACE_in_build_ninja": {"ndebug": 250, "nondebug": 250},
+  "note": "-DROCM_PATH was not needed by the 2026-07 build; the CMake variable defaults to /opt/rocm, which does not exist in this wheel-SDK image, so CMakeLists.txt:191 died reading /opt/rocm/.info/version. Why it resolved in July and not now is not established."
+ },
+ "arms": {
+  "ndebug": {
+   "raw_md5": "cfa3963ed99a50dda2ab3ab32c33b515", "raw_bytes": 19809352,
+   "deploy_md5": "76f1916fad88c97469f6359ebd731bc1", "deploy_bytes": 19875513,
+   "hidden_hostcall_buffer": 0, "kernels": 126,
+   "__assert_fail": 0, "__ockl_fprintf": 0, "ncclCommDump_exports": 1,
+   "build_wall": "91 min 46 s, 15:15:50 to 16:47:36 UTC"
+  },
+  "nondebug": {
+   "raw_md5": "6ad6dfdec384d70421d543b52253cc4c", "raw_bytes": 19761560,
+   "deploy_md5": "666c8aae61dac16c664e9e1ba3e021f9", "deploy_bytes": 19826401,
+   "hidden_hostcall_buffer": 6, "kernels": 126,
+   "__assert_fail": 4, "__ockl_fprintf": 3, "ncclCommDump_exports": 1,
+   "build_wall": "89 min 39 s, 16:47:45 to 18:17:24 UTC"
+  }
+ },
+ "post_build": "both arms took the identical patchelf treatment build-rccl-nohostcall.sh applies: --remove-needed librocm_smi64.so.1, --add-needed librsmi_stub.so.1. Their NEEDED lists are identical.",
+ "measurement": {
+  "container": "vllm-tp2, image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0, 2 devices",
+  "env": "NCCL_P2P_DISABLE=1 HSA_ENABLE_SDMA=0, dtype bfloat16, world_size 2",
+  "sweeps": "three per arm, INTERLEAVED A B A B A B; the library is reinstalled and md5-asserted before each",
+  "script": "b1/allreduce.py, md5 4503492023cb2dcb845c1843730fa0da -- benchmarks/allreduce-2026-09-02/allreduce.py with the hostcall detector fixed; the 09-02 campaign's own copy was left untouched",
+  "cells_per_sweep": 55,
+  "round1": "one sweep per arm, ar-*.jsonl, kept. Its ar_meta records hostcall 0 for BOTH arms: a false negative from the CCOB-compressed fatbin, which is what prompted the detector fix and round 2.",
+  "lease": "held; ollama and llamacpp-hub stopped 18:47:59, restarted 18:52:13, both cards verified back to 27971584"
+ },
+ "atomics_precondition": "asserted before stopping anything: no 'PCIE atomic ops is not supported' in dmesg. Both root ports above the GPUs report AtomicOpsCap: 32bit+ 64bit+.",
+ "gpu_touched": true,
+ "lease_held": true
+}

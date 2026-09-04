@@ -1,0 +1,24 @@
+15:15:41 | ===== B1 build start =====
+15:15:41 | source tree: /work/rccl-rocm-7.1.1
+15:15:42 | tree md5 (excluding build dirs): a74ac8340aa953cfb64f2a0d7ebc26c1
+15:15:42 | hipcc: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin/hipcc  llvm-readelf: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin/llvm-readelf
+15:15:42 | ----- arm=ndebug -----
+15:15:42 | arm=ndebug CMakeLists NDEBUG lines=1 md5=0216f2f2dc56d43d045c9935abc3b7f7
+15:15:42 | arm=ndebug configuring /work/rccl-rocm-7.1.1/build-ndebug
+15:15:50 | arm=ndebug configure rc=0
+15:15:50 | arm=ndebug NDEBUG occurrences in build.ninja=251
+15:15:50 | arm=ndebug ninja start (~85 min, device LTO)
+16:47:36 | arm=ndebug ninja rc=0
+16:47:36 | arm=ndebug lib md5=cfa3963ed99a50dda2ab3ab32c33b515 bytes=19809352
+16:47:36 | arm=ndebug hostcall=0 kernels=126 __assert_fail=0 __ockl_fprintf=0
+16:47:37 | ----- arm=nondebug -----
+16:47:37 | arm=nondebug CMakeLists NDEBUG lines=0 md5=51e72f46a456af4deaf577160a6594cc
+16:47:37 | arm=nondebug configuring /work/rccl-rocm-7.1.1/build-nondebug
+16:47:45 | arm=nondebug configure rc=0
+16:47:45 | arm=nondebug NDEBUG occurrences in build.ninja=0
+16:47:45 | arm=nondebug ninja start (~85 min, device LTO)
+18:17:24 | arm=nondebug ninja rc=0
+18:17:24 | arm=nondebug lib md5=6ad6dfdec384d70421d543b52253cc4c bytes=19761560
+18:17:24 | arm=nondebug hostcall=6 kernels=126 __assert_fail=4 __ockl_fprintf=3
+18:17:25 | tree restored to the NDEBUG state; tree md5=a74ac8340aa953cfb64f2a0d7ebc26c1
+18:17:25 | ===== B1 build done =====

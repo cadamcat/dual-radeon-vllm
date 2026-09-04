@@ -142,25 +142,104 @@ def _loaded_rccl():
             out["hidden_hostcall_buffer"] = int(subprocess.run(
                 f"strings -a {real} | grep -c hidden_hostcall_buffer",
                 shell=True, capture_output=True, text=True).stdout.strip() or -1)
-            # ...but that count is only meaningful if the device code is IN the
-            # file. ROCm 7.14's wheel SDK moves it to a per-architecture KPAK
-            # archive named by a .rocm_kpack_ref section, leaving an empty
-            # NOBITS .hip_fatbin behind; `strings` then answers 0 for a library
-            # whose kernels declare thirteen. Measured 2026-09-04, see
-            # benchmarks/hostcall-abi-2026-09-04/. Record which shape this is so
-            # a 0 above can be told apart from an unread one.
+            # ...and that count is a LIE whenever the device code is not
+            # plainly present in the file, which is now the common case. Two
+            # shapes defeat it, both measured 2026-09-04 (see
+            # benchmarks/hostcall-abi-2026-09-04/):
+            #   kpack -- ROCm 7.14's wheel SDK moves device code out of the .so
+            #     into a per-architecture KPAK archive, leaving an empty NOBITS
+            #     .hip_fatbin behind;
+            #   CCOB  -- the fatbin is present but zstd-compressed, and every
+            #     locally built RCCL on this box is this shape. The B1 pair's
+            #     two arms declare 0 and 6 hostcall buffers and `strings` reads
+            #     0 for both.
+            # So read the notes when the tools are there, and say which method
+            # answered. A 0 from `strings` alone means nothing.
             out["device_code_external"] = bool(subprocess.run(
                 f"grep -c rocm_kpack_ref {real}",
                 shell=True, capture_output=True, text=True).stdout.strip()
                 not in ("", "0"))
-            if out["device_code_external"]:
+            out["device_code_compressed"] = bool(subprocess.run(
+                f"grep -c CCOB {real}", shell=True,
+                capture_output=True, text=True).stdout.strip() not in ("", "0"))
+            out["hidden_hostcall_buffer_method"] = "strings"
+            hc, method = _hostcall_from_notes(real)
+            if hc is not None:
+                out["hidden_hostcall_buffer"] = hc
+                out["hidden_hostcall_buffer_method"] = method
+            elif out["device_code_external"] or out["device_code_compressed"]:
+                out["hidden_hostcall_buffer_method"] = "unreadable: %s" % method
+                out["hidden_hostcall_buffer"] = None
                 out["hidden_hostcall_buffer_note"] = (
-                    "device code is in a .kpack; the strings count above does "
-                    "not read it. Use benchmarks/hostcall-abi-2026-09-04/"
-                    "scan_hostcall.py for the real count.")
+                    "the strings count cannot read this library's device code "
+                    "and the note reader was unavailable; the value is unknown, "
+                    "not zero.")
     except Exception as e:                                 # noqa: BLE001
         out["error"] = str(e)
     return out
+
+
+def _llvm(name):
+    for base in ("/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin",
+                 "/opt/rocm/llvm/bin"):
+        p = os.path.join(base, name)
+        if os.path.exists(p):
+            return p
+    from shutil import which
+    return which(name)
+
+
+def _hostcall_from_notes(real):
+    """The authoritative count: split the fatbin, read the AMDGPU metadata note.
+
+    Returns (count, method), or (None, "<why>") when it could not answer --
+    never (None, None) silently. The first version of this helper used the
+    module's `subprocess`, which allreduce.py imports inside rccl_loaded()
+    rather than at the top, so every call raised NameError into a broad
+    `except` and reported None for all three libraries. Import what you use.
+    Handles both a plain offload bundle and a CCOB-compressed one; the latter
+    is what `llvm-objdump --offloading` silently extracts nothing from."""
+    import glob as _glob
+    import subprocess
+    import tempfile
+    readelf, objdump = _llvm("llvm-readelf"), _llvm("llvm-objdump")
+    bundler = _llvm("clang-offload-bundler")
+    if not readelf or not objdump:
+        return None, "llvm-readelf or llvm-objdump not found"
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            lib = os.path.join(td, "lib.so")
+            subprocess.run(["cp", real, lib], check=True, capture_output=True)
+            subprocess.run([objdump, "--offloading", "lib.so"], cwd=td,
+                           capture_output=True)
+            imgs = sorted(_glob.glob(os.path.join(td, "lib.so.*gfx*")))
+            method = "notes"
+            if not imgs and bundler:
+                r = subprocess.run([bundler, "--type=o", "--list",
+                                    f"--input={lib}"], capture_output=True,
+                                   text=True)
+                for i, t in enumerate(x for x in r.stdout.split() if "gfx" in x):
+                    dst = os.path.join(td, f"u{i}.{t}")
+                    if subprocess.run([bundler, "--type=o", "--unbundle",
+                                       f"--input={lib}", f"--targets={t}",
+                                       f"--output={dst}"],
+                                      capture_output=True).returncode == 0:
+                        imgs.append(dst)
+                method = "notes-ccob"
+            if not imgs:
+                return None, "no device image could be extracted"
+            total = 0
+            for img in imgs:
+                r = subprocess.run([readelf, "--notes", img],
+                                   capture_output=True, text=True,
+                                   errors="replace")
+                if r.returncode != 0:
+                    return None, f"llvm-readelf failed on {os.path.basename(img)}"
+                total += sum(1 for ln in r.stdout.splitlines()
+                             if "hidden_hostcall_buffer" in ln)
+            return total, method
+    except Exception as e:                                  # noqa: BLE001
+        return None, f"{type(e).__name__}: {e}"
 
 
 def iters_for(nbytes):

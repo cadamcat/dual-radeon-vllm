@@ -1,0 +1,40 @@
+18:36:37 | ===== B1 measure start =====
+18:36:37 | precondition: no 'PCIE atomic ops is not supported' in dmesg
+18:36:37 | VRAM before: 27971584 27971584 
+18:36:37 | stopping ollama and llamacpp-hub
+18:36:43 | ollama=inactive llamacpp-hub=inactive
+18:36:43 | VRAM after stop: 27971584 27971584 
+18:36:48 | container vllm-tp2 started; devices=2
+18:36:48 | ========== arm=ndebug ==========
+18:36:48 | arm=ndebug installed md5=76f1916fad88c97469f6359ebd731bc1 (want 76f1916fad88c97469f6359ebd731bc1)
+18:36:48 | arm=ndebug correctness (12 cases)
+18:36:57 | arm=ndebug correctness rc=0 (0 = all twelve pass)
+    /opt/python/lib/python3.14/site-packages/torch/distributed/c10d_logger.py:83: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+      return func(*args, **kwargs)
+    12/12 cases pass
+18:36:57 | arm=ndebug collective sweep (5 hidden x 11 ntok)
+18:37:33 | arm=ndebug sweep rc=0
+18:37:33 | arm=ndebug cells recorded: 55 (want 55)
+18:37:33 | arm=ndebug library the run actually mapped:
+    md5=76f1916fad88c97469f6359ebd731bc1 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=0 external=None
+18:37:33 | ========== arm=nondebug ==========
+18:37:33 | arm=nondebug installed md5=666c8aae61dac16c664e9e1ba3e021f9 (want 666c8aae61dac16c664e9e1ba3e021f9)
+18:37:33 | arm=nondebug correctness (12 cases)
+18:37:41 | arm=nondebug correctness rc=0 (0 = all twelve pass)
+    /opt/python/lib/python3.14/site-packages/torch/distributed/c10d_logger.py:83: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+      return func(*args, **kwargs)
+    12/12 cases pass
+18:37:41 | arm=nondebug collective sweep (5 hidden x 11 ntok)
+18:38:18 | arm=nondebug sweep rc=0
+18:38:18 | arm=nondebug cells recorded: 55 (want 55)
+18:38:18 | arm=nondebug library the run actually mapped:
+    md5=666c8aae61dac16c664e9e1ba3e021f9 version='NCCL version \nRCCL version \nRCCL version 2.27.7' hostcall=0 external=None
+18:38:18 | both arms measured
+18:38:18 | --- restore (exit=0) ---
+18:38:18 | restored librccl in vllm-tp2
+18:38:18 | restored librccl md5=ab5b50f0d84806ed7fbe0f4f560151ff (want ab5b50f0d84806ed7fbe0f4f560151ff)
+18:38:28 | stopped vllm-tp2
+18:38:28 | services restarted
+18:38:33 | ollama=active llamacpp-hub=active
+18:38:33 | VRAM now: 27971584 27971584  (baseline 27971584 per card)
+18:38:33 | ===== B1 measure ended (exit=0) =====

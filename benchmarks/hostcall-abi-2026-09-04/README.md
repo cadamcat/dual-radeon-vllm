@@ -69,13 +69,21 @@ container, 26 libraries declare 2 739 667 243 bytes of device code that is not
 in the files. `strings`, `grep`, and `llvm-objdump --offloading` all answer
 zero on them, without error.
 
-This repository's own harness has the shortcut:
-`benchmarks/allreduce-2026-09-02/allreduce.py` records
-`hidden_hostcall_buffer` with `strings -a … | grep -c`. That reading is
-**correct for the library it was pointed at** — the locally built no-hostcall
-RCCL 2.27.7, a classic build whose device code is in the file — and would
-silently read 0 for any kpack-backed library. Anything reusing it needs the
-`.rocm_kpack_ref` check.
+This repository's own harness had the shortcut:
+`benchmarks/allreduce-2026-09-02/allreduce.py` recorded
+`hidden_hostcall_buffer` with `strings -a … | grep -c`.
+
+> **Corrected 2026-09-04, later the same day.** This section first said that
+> reading was "correct for the library it was pointed at — a classic build
+> whose device code is in the file". The device code is in the file, and
+> `strings` still cannot see it: that library's `.hip_fatbin` is a **CCOB**,
+> a zstd-compressed bundle, so the count comes back 0 whatever the kernels
+> declare. The recorded 0 is right — `llvm-readelf --notes` on the extracted
+> image agrees — but the method could not have known it, and the failure is
+> not confined to kpack-backed libraries as first written. It was found when
+> [the ±NDEBUG A/B](../rccl-ndebug-ab-2026-09-04/README.md) recorded 0 for an
+> arm that declares six. `allreduce.py` now reads the notes, says which method
+> answered, and reports `None` rather than 0 when it cannot read.
 
 `CCOB` is the smaller version of the same trap: `llvm-objdump --offloading`
 extracts nothing from a compressed bundle and reports no error. Of this

@@ -1,0 +1,20 @@
+18:19:07 | ===== B1 prep =====
+18:19:07 | patchelf: /opt/python/bin/patchelf
+18:19:07 | --- arm=ndebug ---
+18:19:07 | arm=ndebug raw md5=cfa3963ed99a50dda2ab3ab32c33b515 bytes=19809352
+18:19:07 | arm=ndebug deploy md5=76f1916fad88c97469f6359ebd731bc1 bytes=19875513
+18:19:07 | arm=ndebug NEEDED: librsmi_stub.so.1 libroctx64.so.4 libamdhip64.so.7 librocprofiler-register.so.0 libstdc++.so.6 libm.so.6 libgcc_s.so.1 libc.so.6 ld-linux-x86-64.so.2 
+18:19:07 | arm=ndebug ncclCommDump exports=1 (want >= 1; torch refuses to load without it)
+18:19:08 | arm=ndebug hostcall=0 kernels=126
+18:19:08 | --- arm=nondebug ---
+18:19:08 | arm=nondebug raw md5=6ad6dfdec384d70421d543b52253cc4c bytes=19761560
+18:19:08 | arm=nondebug deploy md5=666c8aae61dac16c664e9e1ba3e021f9 bytes=19826401
+18:19:08 | arm=nondebug NEEDED: librsmi_stub.so.1 libroctx64.so.4 libamdhip64.so.7 librocprofiler-register.so.0 libstdc++.so.6 libm.so.6 libgcc_s.so.1 libc.so.6 ld-linux-x86-64.so.2 
+18:19:08 | arm=nondebug ncclCommDump exports=1 (want >= 1; torch refuses to load without it)
+18:19:09 | arm=nondebug hostcall=6 kernels=126
+18:19:09 | --- the pair ---
+18:19:09 | ndebug   deploy md5=76f1916fad88c97469f6359ebd731bc1
+18:19:09 | nondebug deploy md5=666c8aae61dac16c664e9e1ba3e021f9
+18:19:09 | ndebug version: RCCL version 2.27.7 
+18:19:09 | nondebug version: RCCL version 2.27.7 
+18:19:10 | ===== B1 prep OK =====

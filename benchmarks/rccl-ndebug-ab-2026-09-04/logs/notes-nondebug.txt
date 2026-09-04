@@ -1,0 +1,11 @@
+        .value_kind:     hidden_hostcall_buffer
+--
+        .value_kind:     hidden_hostcall_buffer
+--
+        .value_kind:     hidden_hostcall_buffer
+--
+        .value_kind:     hidden_hostcall_buffer
+--
+        .value_kind:     hidden_hostcall_buffer
+--
+        .value_kind:     hidden_hostcall_buffer
