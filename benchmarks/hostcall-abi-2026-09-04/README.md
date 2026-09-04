@@ -85,12 +85,23 @@ This repository's own harness had the shortcut:
 > arm that declares six. `allreduce.py` now reads the notes, says which method
 > answered, and reports `None` rather than 0 when it cannot read.
 
-`CCOB` is the smaller version of the same trap: `llvm-objdump --offloading`
-extracts nothing from a compressed bundle and reports no error. Of this
-container's 124 loose objects for gfx1100, the 67 `.co` files are `CCOB` and
-the 57 `.hsaco` are not. All 67 came back as "no device code" until
-`clang-offload-bundler` was added; with it the 124 are 8 603 kernels, none of
+`CCOB` is the smaller version of the same trap, and it is narrower than this
+section first said. Of this container's 124 loose objects for gfx1100, the 67
+`.co` files are `CCOB` and the 57 `.hsaco` are not; all 67 came back as "no
+device code" from `llvm-objdump --offloading`, with no error, until
+`clang-offload-bundler` was added. With it the 124 are 8 603 kernels, none of
 which declares a hostcall.
+
+> **Corrected 2026-09-04, later the same day.** This paragraph said flatly that
+> `llvm-objdump --offloading` "extracts nothing from a compressed bundle".
+> That holds for a **standalone** `CCOB` file, which is what those 67 are. It
+> does **not** hold for a `CCOB` inside an ELF's `.hip_fatbin`: LLVM 23's
+> objdump decompresses that case and extracts the device image normally.
+> Measured on three locally built RCCL libraries, whose `.hip_fatbin` begins
+> `CCOB\x03\x00\x01\x00` and which objdump reads without complaint — which
+> is why `deploy/deploy-tp2.sh` and `build/build-rccl-nohostcall.sh`, both of
+> which go through objdump and then `llvm-readelf --notes`, have always been
+> right. `strings` is blind to both shapes; objdump is blind to only one.
 
 ---
 

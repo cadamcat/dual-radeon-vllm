@@ -8298,8 +8298,8 @@ def _run_checks(_opened, _audit_state):
         ("the library denominator", "three shipped libraries out of 153"),
         ("librccl's declared NOBITS size", "525 569 016 bytes"),
         ("the NOBITS total", "26 libraries declare 2 739 667 243 bytes"),
-        ("the loose split", "the 67 `.co` files are `CCOB` and\nthe 57 `.hsaco` are not"),
-        ("the loose kernel count", "the 124 are 8 603 kernels"),
+        ("the loose split", "the 67\n`.co` files are `CCOB` and the 57 `.hsaco` are not"),
+        ("the loose kernel count", "With it the 124 are 8 603 kernels"),
         ("the two-version carrier row", "| 16 / 13 / 124 | 18 / 14 / 3 032 |"),
         ("the two-version library row", "| 153 · **3** | 3 064 · **4** |"),
         ("the rocshmem row", "| not shipped | **50 of 68** |"),
@@ -8325,10 +8325,16 @@ def _run_checks(_opened, _audit_state):
        1 if "is not measured here" in _hrm else 0)
     ck("hostcall-abi README, marks the allreduce harness shortcut", "1",
        1 if "allreduce.py` recorded" in _hrm else 0)
-    ck("hostcall-abi README, carries the CCOB correction", "1",
-       1 if "**Corrected 2026-09-04, later the same day.**" in _hrm else 0)
+    # two corrections were made to this page the day it was written, and both
+    # stay: counting them means editing either one fails the gate
+    ck("hostcall-abi README, carries both same-day corrections", "2",
+       _hrm.count("**Corrected 2026-09-04, later the same day.**"))
     ck("hostcall-abi README, says the method could not have known", "1",
        1 if "but the method could not have known it" in _hrm else 0)
+    ck("hostcall-abi README, bounds the objdump claim to standalone CCOB", "1",
+       1 if "> does **not** hold for a `CCOB` inside an ELF's `.hip_fatbin`" in _hrm else 0)
+    ck("hostcall-abi README, says why the deploy scripts were always right", "1",
+       1 if "have always been\n> right" in _hrm else 0)
     ck("hostcall-abi README, keeps the not-licensed section", "1",
        1 if "**Not licensed.**" in _hrm else 0)
 
