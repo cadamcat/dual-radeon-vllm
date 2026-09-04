@@ -1,11 +1,11 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · RCCL · ROCm · measured on 2× RX 7900 XT</div>
-  <h1>No PCIe atomics, no hostcall buffer,<br>and every collective fails at dispatch</h1>
-  <p class="sub">The RCCL crash was never about RCCL</p>
-  <p class="lede">Two Radeons, <code>--tensor-parallel-size 2</code>, and a message that sends everyone
-  to the wrong layer: <code>the operation cannot be performed in the present state</code>. Thirteen
-  hypotheses, twelve of them wrong, and a fix that for virtual machines turns out to be one line of
+  <h1>ROCr refuses any kernel that declares a hostcall buffer when the root port advertises no AtomicOps,<br>which is every RCCL collective, and one line of VM configuration puts it back</h1>
+  <p class="sub">Traced to hidden_hostcall_buffer on two Radeons; checked against twelve eliminated hypotheses, four shipped RCCL builds, and one line of VM configuration</p>
+  <p class="lede">Two Radeons run <code>--tensor-parallel-size 2</code> and fail with an error that sends everyone
+  to the wrong layer: <code>the operation cannot be performed in the present state</code>. Twelve of
+  thirteen hypotheses were eliminated along the way. For virtual machines, the eventual fix required one line of
   configuration rather than a rebuilt library.</p>
   <div class="meta">
 __CHIPS__
@@ -13,20 +13,19 @@ __CHIPS__
 </header>
 
 <div class="abstract"> <h3>Abstract</h3> <p>On a machine without PCIe AtomicOps, every RCCL
-collective fails at dispatch with <code>hipErrorIllegalState</code>. The cause is <strong>four
-layers below RCCL</strong>: since ROCm 7.2 the shipped device kernels declare a hostcall buffer,
-ROCr can only build one when the PCIe path provides AtomicOps, and without it the dispatch is
-refused before any collective runs.</p> <p>The chain reduces to <strong>thirty lines of HIP</strong>
-that use neither RCCL, PyTorch nor vLLM: two kernels with an identical launch path, one of which
-calls device <code>printf</code>. The plain one passes; the one needing hostcall fails with the
-production error.</p> <p>Twelve competing explanations were tested and eliminated, including two
-this project believed and published before disproving them: that it was an RCCL version regression,
-and that the ROCm runtime was gating kernel submission in guests.</p> <p>The remedy this repository
-first verified is a rebuild of RCCL with <code>NDEBUG</code> reaching the device compile. The fix
-that matters more was found later: on a passthrough guest the missing capability is usually
-<strong>self-inflicted by one line of VM configuration</strong>. QEMU advertises AtomicOp completer
-support automatically, and declines only when the card is handed over as a multifunction device —
-which is the Proxmox default.</p> </div>
+collective fails at dispatch with <code>hipErrorIllegalState</code>. The cause sits <strong>four
+layers below RCCL</strong>. Starting in ROCm 7.2, shipped device kernels declare a hostcall buffer.
+ROCr allocates this buffer only when the PCIe path provides AtomicOps, refusing dispatch before any
+collective can execute.</p> <p>The causal chain reduces to <strong>fifty-seven lines of HIP</strong>
+requiring neither RCCL, PyTorch nor vLLM: two kernels share an identical launch path, but the second
+calls device <code>printf</code>. The plain kernel passes; the one requesting a hostcall fails with the
+production error.</p> <p>Twelve competing explanations were tested and eliminated. Two were published
+by this project before being disproved: first, that RCCL had suffered a version regression; second,
+that the ROCm runtime was gating kernel submission in guests.</p> <p>This repository first verified
+a workaround: rebuilding RCCL with <code>NDEBUG</code> reaching the device compiler. The simpler fix
+came later. On a passthrough guest, the missing capability is usually <strong>self-inflicted by one
+line of VM configuration</strong>. QEMU advertises AtomicOp completer support automatically, declining
+only when the card is handed over as a multifunction device &mdash; the default in Proxmox.</p> </div>
 
 <h2><span class="n">1</span>The failure, and where it sends you</h2>
 
@@ -41,13 +40,13 @@ rocvirtual.cpp:4636  AQL dispatch failed!
 hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIllegalState</span>
 </pre></div>
 
-<p>The error surfaces inside RCCL's <code>enqueue.cc</code>, so people debug RCCL. Then ROCm. Then the
-kernel. The message that names the actual cause is one line above the failure and mentions neither the
-library nor the collective, and it only appears at log level 4.</p>
+<p>Because the error surfaces inside RCCL's <code>enqueue.cc</code>, investigators typically debug RCCL,
+then ROCm, and finally the kernel. Yet the line naming the actual cause sits immediately above the
+failure. It mentions neither the library nor the collective, and it appears only at log level 4.</p>
 
 <h2><span class="n">2</span>The causal chain</h2>
 
-<p>Five links. Each was established by evidence that does not depend on the link below it.</p>
+<p>Five links form the chain. Each was established by evidence independent of the link below it.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -65,11 +64,11 @@ library nor the collective, and it only appears at log level 4.</p>
   </figcaption>
 </figure>
 
-<h2><span class="n">3</span>Thirty lines that take RCCL out of the picture</h2>
+<h2><span class="n">3</span>Fifty-seven lines that take RCCL out of the picture</h2>
 
-<p>Link 4 is the one that carries the argument, because it can be tested without any of the software the
-failure appears to be about. Two kernels, identical launch shape; the only difference is that the second
-calls device <code>printf</code>, which requires a hostcall buffer.</p>
+<p>Link 4 carries the argument because it isolates the failure from all surrounding software.
+Two kernels share an identical launch configuration; the only distinction is that the second
+calls device <code>printf</code>, which demands a hostcall buffer.</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -79,16 +78,17 @@ calls device <code>printf</code>, which requires a hostcall buffer.</p>
 [hostcall ] launch:<span class="g">no error</span>   sync:<span class="r">the operation cannot be performed in the present state</span>
 </pre></div>
 
-<p>The same string, from thirty lines of HIP, on one GPU, in half a second. That is what turns a
-library-version story into a platform-capability story: <strong>the failure has nothing to do with
-collectives</strong>. It reproduces for any kernel that needs a hostcall, and RCCL's kernels need one
-because they carry device-side <code>assert()</code>.</p>
+<p>Fifty-seven lines of HIP on one GPU reproduce the identical failure string in half a second.
+That shifts the issue from a library version story into a platform capability constraint:
+<strong>the failure has nothing to do with collectives</strong>. It reproduces for any kernel
+requesting a hostcall, and RCCL device kernels require one because they contain device-side
+<code>assert()</code>.</p>
 
 <h2><span class="n">4</span>Why "downgrade the library" works, and what it actually shows</h2>
 
-<p>The community answer is to install the ROCm 7.1.1 build of <code>librccl</code>. That works, and it is
-evidence <em>for</em> this root cause rather than against it. Counting hostcall declarations in the shipped
-device images:</p>
+<p>The community workaround is to install the ROCm 7.1.1 build of <code>librccl</code>. That works, and it is
+evidence <em>for</em> this root cause rather than against it. Counting hostcall declarations across shipped
+device images explains why:</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -105,22 +105,22 @@ device images:</p>
   </figcaption>
 </figure>
 
-<p>So the newer RCCL is not broken in general. It requires a platform capability that these machines
-never had. The same reading unifies the virtualised reports with the bare-metal ones: if those
-bare-metal platforms did route AtomicOps, the hostcall requirement would be satisfiable and downgrading
-would not help. That downgrading helps is itself evidence that they lack atomics too.</p>
+<p>The newer RCCL build is not broken in general. It simply demands a platform capability these machines
+never possessed. This reading unifies virtualized reports with bare-metal incidents: if those bare-metal
+platforms routed AtomicOps, the hostcall requirement would be satisfied and downgrading would not help.
+The fact that downgrading succeeds is direct evidence that they lack atomics as well.</p>
 
 <div class="note warn">
   <span class="lbl">The version correlation is real and the causation is not</span>
   Building 2.27.7-b38 from source on the current toolchain fails identically, because that build does not
-  get <code>NDEBUG</code> to the device pass either. The variable is hostcall, not the version number.
-  This is the first of the two conclusions this project got wrong and published before disproving.
+  pass <code>NDEBUG</code> to the device stage either. The governing variable is hostcall, not the version
+  number. This is the first of two conclusions this project published before disproving.
 </div>
 
 <h2><span class="n">5</span>What was ruled out</h2>
 
-<p>Thirteen hypotheses were live at some point. Twelve are wrong. They are listed because the next person
-should not have to re-run them, and because two of them were ours.</p>
+<p>Thirteen hypotheses were investigated. Twelve proved wrong. We record them so others do not have to
+repeat the work, and because two of the mistaken hypotheses were our own.</p>
 
 <figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · hypotheses
 tested <span class="prov src">derived from root-cause.md</span></div> <div class="hint">click any
@@ -133,24 +133,24 @@ just as conclusive. Extracted from <code>docs/root-cause.md</code> §3. </figcap
 <div class="note warn">
   <span class="lbl">The second thing we got wrong</span>
   "ROCm ≥ 7.13's HIP runtime gates kernel submission in VFIO guests" was published here and is false.
-  <code>diagnose/hipgate.cpp</code> issues the exact <code>hipExtLaunchKernel</code> form with a
-  completion event, 4 KB kernargs, cross-stream waits and fine-grained host memory, and all of it passes
-  on 7.14. Submission is fine. Only hostcall-carrying kernels are refused.
+  In <code>diagnose/hipgate.cpp</code>, the exact <code>hipExtLaunchKernel</code> invocation &mdash; issued with a
+  completion event, 4 KB kernargs, cross-stream waits, and fine-grained host memory &mdash; passes on 7.14.
+  Kernel submission operates normally; only kernels carrying a hostcall buffer are refused.
 </div>
 
 <h2><span class="n">6</span>The fix that mattered was one line of VM configuration</h2>
 
-<p>The remedy verified first was a rebuild: compile RCCL with <code>NDEBUG</code> reaching the device
-pass, which removes the <code>assert()</code> that pulls hostcall in. That works on <strong>RCCL
-2.27.7</strong>, which is where it was verified end to end, and for a while it was the whole answer.
-It is not sufficient on 2.30.4, where the declaration survives a build with no hostcall-calling
-instructions left in it — §8.</p>
+<p>The remedy verified first was a rebuild: compiling RCCL with <code>NDEBUG</code> reaching the device
+pass removes the <code>assert()</code> statements that trigger hostcall dependencies. That works on
+<strong>RCCL 2.27.7</strong>, where it was verified end to end, and initially appeared complete.
+However, it is not sufficient on 2.30.4, where the declaration survives a build with no hostcall-calling
+instructions left in it &mdash; §8.</p>
 
-<p>A rebuild is the wrong first move for a virtual machine. QEMU already knows how to advertise
-AtomicOp completer support on an emulated root port — <code>vfio_pci_enable_rp_atomics()</code> has
-done it automatically since v8.1.0 — and it gives up under a short list of conditions, one of which
-is that the device is passed as multifunction. Proxmox's default <code>hostpciX</code> form hands
-the GPU over together with its audio function, which takes exactly that branch.</p>
+<p>For virtual machines, a rebuild is the wrong first move. QEMU has supported automatic AtomicOp
+completer advertising on an emulated root port via <code>vfio_pci_enable_rp_atomics()</code> since v8.1.0,
+declining under a short list of conditions. Primarily, it gives up when the device is passed as multifunction.
+Proxmox's default <code>hostpciX</code> configuration passes the GPU alongside its companion audio function,
+taking exactly that branch.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -170,45 +170,42 @@ the GPU over together with its audio function, which takes exactly that branch.<
 
 <h2><span class="n">7</span>Then who is the rebuild for</h2>
 
-<p>Everyone whose hardware genuinely cannot deliver AtomicOps, which is not a small group:</p>
+<p>Rebuilding RCCL remains necessary for systems whose hardware genuinely cannot deliver AtomicOps:</p>
 
 <ul>
-  <li>cards behind a consumer chipset switch, on bare metal — this is the case
+  <li>cards behind a consumer chipset switch on bare metal &mdash; this is the case
   <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a>'s independent bare-metal reproduction
-  hit, and no amount of VM configuration helps it</li>
+  hit, where no hypervisor setting helps</li>
   <li>hosts whose root ports do not advertise completer support at all</li>
-  <li>QEMU older than 8.1.0</li>
-  <li>any case where the card must keep its audio function inside the guest</li>
+  <li>virtualization hosts running QEMU older than 8.1.0</li>
+  <li>any deployment where the card must retain its audio function inside the guest</li>
 </ul>
 
-<p>The mechanism is unchanged for them, and the <code>NDEBUG</code> rebuild is what this repository
-verified. What changed is the <strong>ordering</strong>: in a VM, check the configuration before
-rebuilding anything.</p>
+<p>The underlying mechanism is unchanged across these cases, and the <code>NDEBUG</code> rebuild resolves
+it. What changes is diagnostic <strong>ordering</strong>: inside a VM, check hypervisor configuration before
+rebuilding software.</p>
 
 <div class="note"> <span class="lbl">One command decides which case you are in</span> <code>dmesg |
-grep "PCIE atomic"</code> — output means affected; silence is not the other way round, only
-inconclusive, so follow it with the lspci check below. Grep that exact phrase; a bare <code>grep -i
-atomic</code> also matches unrelated <code>DMA: preallocated ... pool for atomic allocations</code>
-lines from early boot. If you are affected and in a guest, look at <code>lspci -vv</code> on the
-root port above the card before you build anything. </div>
+grep "PCIE atomic"</code> &mdash; output indicates missing atomics; silence is inconclusive rather than
+reassuring, so verify with lspci. Grep that exact phrase; a bare <code>grep -i atomic</code> also matches
+unrelated <code>DMA: preallocated ... pool for atomic allocations</code> lines from early boot. If you are
+affected inside a guest, inspect <code>lspci -vv</code> on the root port above the card before building anything. </div>
 
 <h2><span class="n">8</span>What is not established</h2>
 
 <h3>Whether the audio function can be kept another way</h3>
-<p>Passing the GPU as a single function leaves its audio function behind. Whether the two can be split
-across separate emulated root ports so that the guest keeps both the audio device and atomics was never
-tested here.</p>
+<p>Passing the GPU as a single function leaves its companion audio function behind. Whether the two can
+be split across separate emulated root ports so the guest keeps audio alongside atomics was not tested here.</p>
 
 <h3>What AMD intends</h3>
-<p>Whether the hostcall dependency is kept or removed is an upstream decision, and
-<a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> is open. On RCCL 2.30.4 the declaration
-survives a build with zero hostcall-calling instructions — <code>NDEBUG</code> removes every
-<code>__ockl_*</code> symbol and the metadata entry is still emitted during the device link — so removing
-the device-side <code>assert()</code> would no longer be sufficient on current RCCL.</p>
+<p>Whether the hostcall dependency is retained upstream remains an open question in
+<a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a>. On RCCL 2.30.4 the metadata declaration
+persists even when <code>NDEBUG</code> removes all <code>__ockl_*</code> symbols, so stripping device-side
+<code>assert()</code> calls is no longer sufficient on current releases.</p>
 
 <h3>One machine for the VM half</h3>
-<p>The configuration A/B is one host, one QEMU version, one board. The QEMU condition is source, not
-inference, but its consequences on other boards are not measured here.</p>
+<p>The configuration A/B reflects one host, one QEMU version, and one motherboard. While the QEMU logic
+was verified in source, variations across other motherboards were not measured here.</p>
 
 <h2><span class="n">9</span>What has changed since</h2>
 
@@ -220,24 +217,30 @@ inference, but its consequences on other boards are not measured here.</p>
 </div>
 
 <div class="note ok"> <span class="lbl">2026-08-28 · the severity claim was narrowed</span> This
-report originally said every QEMU root port declines completer support regardless of what sits
-behind it, and concluded that any VFIO passthrough guest is affected, virtualised Instinct included.
-That is wrong for a single-function passthrough. The upstream issue body and the comment it cites
-were both corrected; the claim now reads that a passthrough Instinct is affected when passed as
-multifunction and not when passed as a single function. </div>
+report originally claimed every QEMU root port declines completer support regardless of what sits
+behind it, concluding that any VFIO passthrough guest is affected, virtualized Instinct included.
+That conclusion is incorrect for single-function passthrough. Both the upstream issue description and
+the comment it cites were corrected: a passthrough Instinct is affected when passed as multifunction,
+not when passed as a single function. </div>
 
-<div class="foot-note">
-  <p><strong>Reproduce it yourself.</strong> The thirty-line gate is
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/diagnose/hipgate3.cpp"><code>diagnose/hipgate3.cpp</code></a>
-  and needs neither RCCL nor PyTorch. The platform check is
+<div class="note ok">
+    <span class="lbl">2026-09-05 &middot; the line count was wrong</span>
+    This report described the reproducer as thirty lines. <code>diagnose/hipgate3.cpp</code> is 57 lines
+    (54 non-blank, 39 excluding comments); no reading of the file gives thirty. The text now says
+    fifty-seven, which is what <code>wc -l</code> returns.
+  </div>
+  <div class="foot-note">
+  <p><strong>Reproduce it yourself.</strong> The fifty-seven-line test is
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/diagnose/hipgate3.cpp"><code>diagnose/hipgate3.cpp</code></a>,
+  requiring neither RCCL nor PyTorch. The platform verification script is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/diagnose/check-platform.sh"><code>diagnose/check-platform.sh</code></a>.
-  The full evidence chain and the elimination matrix are
+  The full evidence chain and elimination matrix are in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/root-cause.md">docs/root-cause.md</a>;
-  the VM half is
+  the VM analysis is in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/vfio-atomics.md">docs/vfio-atomics.md</a>.</p>
   <p>Reported upstream as <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a>, where
-  @adderek independently reproduced it on bare metal with IOMMU disabled, and @bkvargyas contributed the
-  switch-versus-atomics trade-off from the other side of it. Related:
+  @adderek independently reproduced the failure on bare metal with IOMMU disabled, and @bkvargyas contributed the
+  switch-versus-atomics trade-off from the other side. Related:
   <a href="https://github.com/ROCm/legacy-rocm-build/issues/6074">ROCm#6074</a>,
   <a href="https://github.com/vllm-project/vllm/issues/38587">vllm#38587</a>.</p>
 </div>

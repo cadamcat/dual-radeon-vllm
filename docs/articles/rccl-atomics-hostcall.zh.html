@@ -985,14 +985,11 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-
 <header class="top">
   <div class="kicker">RDNA3 · RCCL · ROCm · 实测于 2× RX 7900 XT</div>
-  <h1>没有 PCIe atomics 就没有 hostcall buffer，<br>每一次集合通信都在 dispatch 处失败</h1>
-  <p class="sub">RCCL 崩溃从来不是 RCCL 的问题</p>
-  <p class="lede">两张 Radeon、<code>--tensor-parallel-size 2</code>，以及一句把所有人引向错误层次的报错：
-  <code>the operation cannot be performed in the present state</code>。十三个假设，其中十二个是错的；
-  而对虚拟机来说，真正的修复是一行配置，不是重新编译一个库。</p>
+  <h1>ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，<br>所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来</h1>
+  <p class="sub">在两张 Radeon 上溯源至 hidden_hostcall_buffer；经十二个排除的假设、四版 RCCL 发行构建与一行虚拟机配置对照验证</p>
+  <p class="lede">两张 Radeon 启用 <code>--tensor-parallel-size 2</code> 启动运行，随即遭遇了一句把所有人引向错误排查层次的报错：<code>the operation cannot be performed in the present state</code>。调查过程中逐一排除了十三个假设中的十二个。而对于虚拟机，最终的修复只需一行配置，根本无须重新编译库。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-stack" title="软件栈" style="--i:1">ROCm <b>7.14</b> · RCCL 2.30.4</span>
@@ -1004,19 +1001,10 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>在一台没有 PCIe AtomicOps 的机器上，所有 RCCL 集合通信都会在 dispatch 阶段以
-  <code>hipErrorIllegalState</code> 失败。根因在 <strong>RCCL 下面四层</strong>：自 ROCm 7.2 起，
-  发行版里的设备端 kernel 会声明一个 hostcall buffer；而 ROCr 只有在 PCIe 路径能提供 AtomicOps 时才建得出来；
-  建不出来，dispatch 就在任何集合通信运行之前被拒绝。</p>
-  <p>整条链可以缩成 <strong>三十行 HIP</strong>，不用 RCCL、不用 PyTorch、不用 vLLM：
-  两个 kernel 走完全相同的启动路径，其中一个调用设备端 <code>printf</code>。
-  普通的那个通过，需要 hostcall 的那个失败，报的正是生产环境里那句错误。</p>
-  <p>十二个竞争解释被测试并排除，其中两个是本项目自己相信过、发表过、之后才推翻的：
-  以为这是 RCCL 的版本回归，以及以为 ROCm 运行时在虚拟机里拦截了 kernel 提交。</p>
-  <p>本仓库最先验证的解法，是让 <code>NDEBUG</code> 进到设备端编译再重建 RCCL。
-  但后来发现了更要紧的那个：在直通虚拟机里，缺失的那个能力通常是
-  <strong>一行虚拟机配置自己造成的</strong>。QEMU 会自动广告 AtomicOp completer 支持，
-  只有当显卡以多功能设备的形式交进去时才放弃 —— 而那正是 Proxmox 的默认形式。</p>
+  <p>在缺失 PCIe AtomicOps 的机器上，所有 RCCL 集合通信都会在 dispatch 阶段报错 <code>hipErrorIllegalState</code>。故障根因位于 <strong>RCCL 下方第四层</strong>。自 ROCm 7.2 起，官方发布的设备端内核会声明一个 hostcall buffer。ROCr 仅在 PCIe 链路具备 AtomicOps 支持时才分配该缓冲区，否则便在任何集合通信执行前直接拒绝 dispatch。</p>
+  <p>整条因果链可精简为 <strong>五十七行 HIP 代码</strong>，完全无须依赖 RCCL、PyTorch 或 vLLM：两个内核共享完全相同的启动路径，区别仅在于第二个内核调用了设备端 <code>printf</code>。普通内核顺利执行，而请求 hostcall 的内核则失败，抛出的正是生产环境下的那句报错。</p>
+  <p>我们先后测试并排除了十二个竞争性解释。其中两个曾由本项目公开发布，随后才被推翻：其一是误认为 RCCL 出现了版本回退，其二是误认为 ROCm 运行时在客户机内拦截了内核提交。</p>
+  <p>本仓库最初验证了一种临时变通方案：在编译设备端代码时传入 <code>NDEBUG</code> 并重建 RCCL。更简单的修法是后来才找到的。在直通客户机中，这项缺失的能力通常是 <strong>一行虚拟机配置自身所致</strong>。QEMU 原本会自动通告 AtomicOp completer 支持，唯独在显卡以多功能设备直通时予以关闭，而这恰恰是 Proxmox 的默认配置。</p>
 </div>
 
 <h2><span class="n">1</span>故障现象，以及它把人引向哪里</h2>
@@ -1032,12 +1020,11 @@ rocvirtual.cpp:4636  AQL dispatch failed!
 hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIllegalState</span>
 </pre></div>
 
-<p>错误浮现在 RCCL 的 <code>enqueue.cc</code> 里，于是人们去调 RCCL，然后是 ROCm，然后是内核。
-真正点出原因的那一行就在失败的上一行，它既不提库也不提集合通信，而且只有把日志级别开到 4 才会出现。</p>
+<p>报错浮现在 RCCL 的 <code>enqueue.cc</code> 中，因此排查者通常会顺着调试 RCCL、继而调试 ROCm，最后再去翻操作系统内核。然而，直接道明真正诱因的输出恰好紧挨在失败行的上方。那一行对该通信库与集合通信只字未提，且只有把日志级别设为 4 时才会现身。</p>
 
 <h2><span class="n">2</span>因果链</h2>
 
-<p>五个环节。每一环所依据的证据，都不依赖它下面那一环。</p>
+<p>整条因果链由五个环节扣合而成。每一环所依据的证据，均独立于其下游环节。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1054,11 +1041,9 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
   </figcaption>
 </figure>
 
-<h2><span class="n">3</span>三十行代码，把 RCCL 从画面里拿掉</h2>
+<h2><span class="n">3</span>五十七行代码，把 RCCL 移出排查视线</h2>
 
-<p>第 4 环是撑起整个论证的那一环，因为它可以在不使用任何"看起来相关"的软件的情况下被验证。
-两个 kernel，启动形状完全相同；唯一的差别是第二个调用了设备端 <code>printf</code>，
-而它需要一个 hostcall buffer。</p>
+<p>第 4 环是整条论证的关键支柱，因为它彻底将该故障与周遭的所有软件隔离开来。两个内核共享完全相同的启动路径，唯一的差别在于第二个内核调用了设备端 <code>printf</code>，因而需要一个 hostcall 缓冲区。</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -1068,14 +1053,11 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
 [hostcall ] launch:<span class="g">no error</span>   sync:<span class="r">the operation cannot be performed in the present state</span>
 </pre></div>
 
-<p>同一句报错，来自三十行 HIP、一张 GPU、半秒钟。这就是把"库版本"的故事变成"平台能力"的故事的那一步：
-<strong>这个失败与集合通信毫无关系</strong>。任何需要 hostcall 的 kernel 都会复现它，
-而 RCCL 的 kernel 之所以需要 hostcall，是因为它们带着设备端的 <code>assert()</code>。</p>
+<p>仅凭单张 GPU 上的五十七行 HIP 代码，便可在半秒内完整复现完全相同的故障。这一步将问题从「通信库版本缺陷」的叙事彻底转向了「平台硬件能力限制」：<strong>该故障与集合通信毫无干系</strong>。任何请求 hostcall 的内核都会触发此错误；而 RCCL 的设备端内核之所以需要 hostcall，纯粹是因为代码中包含了设备端 <code>assert()</code>。</p>
 
 <h2><span class="n">4</span>"降级那个库"为什么有效，以及它真正说明了什么</h2>
 
-<p>社区给的答案是装 ROCm 7.1.1 那版 <code>librccl</code>。这确实有效，而且它是这个根因的<em>佐证</em>而不是反证。
-数一下各个发行版设备镜像里的 hostcall 声明：</p>
+<p>社区给出的临时解决方案是安装 ROCm 7.1.1 构建的 <code>librccl</code>。此方法确实凑效，而且它恰恰为此处论证的根本原因提供了<em>有力佐证</em>，而非反证。只需统计官方发布的设备镜像中包含多少 hostcall 声明，原因便一目了然：</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1091,20 +1073,16 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
   </figcaption>
 </figure>
 
-<p>所以新版 RCCL 并不是普遍地坏了。它要求一个这些机器从来就没有的平台能力。
-同一个读法也把虚拟化的报告和裸机的报告统一起来了：如果那些裸机平台确实能路由 AtomicOps，
-hostcall 的要求就能被满足，降级也就没有必要。降级有效这件事本身，就说明它们同样缺 atomics。</p>
+<p>由此可见，新版 RCCL 并不是普遍地坏了，它只是要求一项这批机器自始至终都不具备的平台能力。这一解释把虚拟化环境下的报告与裸机上的事故统一了起来：倘若那些裸机平台确实支持 AtomicOps 路由，hostcall 的先决条件本该得到满足，降级也就无从生效。降级库版本之所以奏效，恰恰直接证明了那些机器同样缺失 atomics 支持。</p>
 
 <div class="note warn">
-  <span class="lbl">版本相关性是真的，因果不是</span>
-  用当前工具链从源码构建 2.27.7-b38，一样失败 —— 因为那次构建同样没有把 <code>NDEBUG</code> 送到设备端。
-  变量是 hostcall，不是版本号。这是本项目发表过、之后才推翻的两个结论中的第一个。
+  <span class="lbl">版本存在表面相关性，但不存在因果联系</span>
+  使用当前工具链从源码编译 2.27.7-b38 同样会失败，原因在于该次构建同样未将 <code>NDEBUG</code> 传递至设备端编译阶段。起决定作用的控制变量始终是 hostcall，而非版本号本身。这是本项目此前公开发表、随后又自行推翻的两个结论中的第一个。
 </div>
 
 <h2><span class="n">5</span>被排除的假设</h2>
 
-<p>台面上曾经摆着十三个假设，十二个是错的。把它们列出来，是为了让下一个人不必重跑一遍，
-也因为其中两个是我们自己的。</p>
+<p>排查过程中我们先后调查了十三个假设，其中十二个被证实为错误推断。将它们悉数记录于此，既是为了避免后来者做无谓的重复劳动，也是因为其中两个错误论断正是我们自身早先做出的。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1122,24 +1100,15 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 </figure>
 
 <div class="note warn">
-  <span class="lbl">我们搞错的第二件事</span>
-  "ROCm ≥ 7.13 的 HIP 运行时在 VFIO guest 里拦截 kernel 提交"—— 这句话在这里发表过，是错的。
-  <code>diagnose/hipgate.cpp</code> 发出的正是那种带完成事件的 <code>hipExtLaunchKernel</code> 形式，
-  4 KB kernarg、跨流等待、细粒度主机内存，在 7.14 上全部通过。提交没有问题。
-  被拒的只有携带 hostcall 的 kernel。
+  <span class="lbl">我们搞错的第二个结论</span>
+  「ROCm ≥ 7.13 的 HIP 运行时会在 VFIO 客户机中阻断内核提交」这一结论曾由本站发表，但已被证明不实。在 <code>diagnose/hipgate.cpp</code> 中，原样调用附带完成事件、4 KB 内核参数（kernarg）、跨流等待及细粒度主机内存的 <code>hipExtLaunchKernel</code> 时，在 7.14 下能够完全顺利通过。内核提交运转一切正常，遭到拒绝的唯独是那些带有 hostcall 缓冲区的内核。
 </div>
 
 <h2><span class="n">6</span>真正要紧的修复是一行虚拟机配置</h2>
 
-<p>最先验证的解法是重建：让 <code>NDEBUG</code> 进到设备端编译，从而移除把 hostcall 拉进来的
-<code>assert()</code>。这在 <strong>RCCL 2.27.7</strong> 上有效——端到端验证就是在那个版本上做的——
-而且有一段时间它就是全部答案。但它对 2.30.4 不够：在那边，即使构建出来一条 hostcall 调用指令都
-不剩，那个声明依然还在——见第 8 节。</p>
+<p>最初得到验证的解决方案是重新编译：在编译 RCCL 设备端代码时传入 <code>NDEBUG</code>，以消除引入 hostcall 的 <code>assert()</code> 语句。这一方案在 <strong>RCCL 2.27.7</strong> 上切实有效（端到端验证即基于该版本完成），并且一度被视作全部答案。然而在 2.30.4 上，该方法已无法奏效：即便构建出的镜像中已不再包含任何调用 hostcall 的指令，该元数据声明依然会残留下来（详见第 8 节）。</p>
 
-<p>但对虚拟机来说这是错的第一步。QEMU 本来就知道怎么在模拟根端口上广告 AtomicOp completer 支持 ——
-<code>vfio_pci_enable_rp_atomics()</code> 自 v8.1.0 起就在自动做这件事 —— 它只在一小串条件下放弃，
-其中一条是设备以多功能形式直通。而 Proxmox 默认的 <code>hostpciX</code> 写法，
-正是把显卡连同它的音频功能一起交进去，走的就是那个分支。</p>
+<p>然而对于虚拟机而言，重新编译走错了第一步。自 v8.1.0 起，QEMU 便已支持通过 <code>vfio_pci_enable_rp_atomics()</code> 在模拟根端口上自动通告 AtomicOp completer 支持，仅在极少数受限条件下才会放弃。其中最关键的限制是：一旦设备以多功能（multifunction）模式直通，该特性便被关闭。Proxmox 默认的 <code>hostpciX</code> 配置正是将显卡与其配套音频功能捆绑直通，恰好触发了这一分支。</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -1157,74 +1126,64 @@ hostcall 的要求就能被满足，降级也就没有必要。降级有效这�
 
 <h2><span class="n">7</span>那么重建是给谁用的</h2>
 
-<p>给所有硬件确实无法提供 AtomicOps 的人，而这不是一小撮：</p>
+<p>对于硬件本身确实无法提供 AtomicOps 的系统而言，重新编译 RCCL 依旧不可或缺：</p>
 
 <ul>
-  <li>裸机上挂在消费级芯片组交换端口后面的显卡 —— 这正是
+  <li>裸机环境下接入消费级芯片组交换端口后面的显卡 —— 这正是
   <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 里那次独立裸机复现遇到的情况，
   再怎么改虚拟机配置也没用</li>
-  <li>根端口本身就不广告 completer 支持的主机</li>
+  <li>根端口本身完全不通告 completer 支持的主机</li>
   <li>早于 8.1.0 的 QEMU</li>
-  <li>任何必须把音频功能一起留在 guest 里的场景</li>
+  <li>客户机内部必须保留显卡配套音频功能的各类部署场景</li>
 </ul>
 
-<p>对他们来说机制没有变，<code>NDEBUG</code> 重建就是本仓库验证过的解法。
-变的是<strong>顺序</strong>：在虚拟机里，先查配置，再考虑重建。</p>
+<p>在上述情形中，底层机理并无二致，通过 <code>NDEBUG</code> 重建即可妥善解决。真正改变的是排查诊断的<strong>顺序</strong>：在虚拟机内部，应当在着手重编软件之前，先行检查虚拟机监视器的配置。</p>
 
 <div class="note">
-  <span class="lbl">一条命令判断你属于哪种情况</span>
-  <code>dmesg | grep "PCIE atomic"</code> —— 有输出就是中招；没有输出并不反过来说明没中，只是说明不了，接着跑下面那条 lspci。
-  要 grep 这个确切短语；单纯 <code>grep -i atomic</code> 还会匹配到开机早期那些无关的
-  <code>DMA: preallocated ... pool for atomic allocations</code>。
-  如果中招且你在虚拟机里，先看显卡上方根端口的 <code>lspci -vv</code>，再动手编译。
+  <span class="lbl">一条命令即可判定所处的状况</span>
+  <code>dmesg | grep "PCIE atomic"</code> —— 只要有输出即表明缺失 atomics；而无输出并不意味着支持完备，仅代表未明确报错，因而须进一步借助 lspci 进行核实。请务必精确 grep 该完整短语；若仅使用宽泛的 <code>grep -i atomic</code>，则会混入系统引导初期打印的无关信息 <code>DMA: preallocated ... pool for atomic allocations</code>。如果在客户机内受到此问题困扰，在编译任何软件之前，请先检查显卡上方根端口的 <code>lspci -vv</code>。
 </div>
 
 <h2><span class="n">8</span>没有被确立的部分</h2>
 
 <h3>音频功能能不能用别的方式保住</h3>
-<p>把显卡按单功能直通，会把它的音频功能留在外面。这两者能否分挂到不同的模拟根端口上，
-让 guest 既有音频设备又有 atomics —— 这里没有测过。</p>
+<p>将显卡以单功能形式直通，会使其配套的音频功能被阻隔在客户机之外。能否将二者分别挂载到各自独立的模拟根端口上、从而让客户机在享用 atomics 的同时保留音频设备，此方案在本实验中未做验证。</p>
 
 <h3>AMD 打算怎么办</h3>
-<p>hostcall 依赖是保留还是移除，是上游的决定，
-<a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 仍然开着。
-在 RCCL 2.30.4 上，即使构建出的设备镜像里一条会调用 hostcall 的指令都没有，
-那个声明依然存在 —— <code>NDEBUG</code> 清掉了所有 <code>__ockl_*</code> 符号，
-元数据条目仍然在设备链接阶段被写入 —— 所以在当前 RCCL 上，
-仅仅移除设备端的 <code>assert()</code> 已经不够了。</p>
+<p>上游未来是否仍保留对 hostcall 的依赖，在 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 中仍属悬而未决的问题。在 RCCL 2.30.4 上，即便 <code>NDEBUG</code> 清除了全部 <code>__ockl_*</code> 符号，该元数据声明依然顽固残留；因此在当前的新版本上，单纯剔除设备端的 <code>assert()</code> 已不足以解决问题。</p>
 
 <h3>虚拟机那一半只有一台机器</h3>
-<p>那个配置 A/B 是一台主机、一个 QEMU 版本、一块主板。QEMU 那个条件来自源码而不是推断，
-但它在别的主板上的后果，这里没有测量。</p>
+<p>本研究中的配置 A/B 对照仅基于单台宿主机、单一 QEMU 版本与单一主板。尽管 QEMU 的分支逻辑已在源码层面得到核实，但在其他主板上的具体表现，这台机器上并未做实测。</p>
 
 <h2><span class="n">9</span>此后发生的变化</h2>
 
 <div class="note ok">
   <span class="lbl">2026-08-23 · 这台机器现在有 atomics 了</span>
-  guest 已改为单功能直通，此后一直声明支持 completer。未打补丁的原版 RCCL 2.30.4 现在在这里
-  135 次冷启动通信初始化全部正确 —— 所以这台曾经在 atomics 这一项上充当反例的机器，不再是反例了。
+  客户机已调整为单功能直通模式，此后持续正常通告 completer 支持。未经修改的原版 RCCL 2.30.4 目前在各类测试中，135 次冷启动通信初始化全部顺利通过；因此这台曾因缺失 atomics 而充当反面典型的主机，已不再构成反例。
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-08-28 · 严重性主张已收窄</span>
-  这份报告原先写的是：任何 QEMU 根端口都不广告 completer 支持，与它后面接什么无关；
-  并由此得出任何 VFIO 直通 guest 都会中招、包括虚拟化的 Instinct。
-  对单功能直通而言这是错的。上游 issue 正文和它引用的那条评论都已更正；
-  现在的说法是：直通的 Instinct 在多功能形式下会中招，单功能形式下不会。
+  本报告最初曾断言：无论下游挂接何种设备，所有 QEMU 根端口均不会通告 completer 支持，并据此得出所有 VFIO 直通客户机（包括虚拟化运行的 Instinct）都会受累的推论。对于单功能直通而言，该结论并不成立。上游 issue 正文及其引用的相关评论均已就地更正；现已明确查实：直通环境下的 Instinct 仅在以多功能形式挂接时才会出现此故障，若以单功能形式直通则不受影响。
 </div>
 
-<div class="foot-note">
-  <p><strong>自己复现。</strong>那个三十行的判据是
+<div class="note ok">
+    <span class="lbl">2026-09-05 &middot; 行数报错了</span>
+    本报告此前把复现代码称作三十行。<code>diagnose/hipgate3.cpp</code> 实为 57 行（非空 54 行，除去注释 39 行），
+    没有任何一种数法得出三十。正文已改为五十七行，即 <code>wc -l</code> 的结果。
+  </div>
+  <div class="foot-note">
+  <p><strong>自行复现。</strong>用于判别的五十七行独立测试代码位于
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/diagnose/hipgate3.cpp"><code>diagnose/hipgate3.cpp</code></a>，
-  既不需要 RCCL 也不需要 PyTorch。平台检查是
+  完全无须依赖 RCCL 或 PyTorch。平台环境核对脚本见
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/diagnose/check-platform.sh"><code>diagnose/check-platform.sh</code></a>。
-  完整证据链与排除矩阵在
+  完整的排查证据链与假设排除矩阵参见
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/root-cause.md">docs/root-cause.md</a>；
-  虚拟机那一半在
+  虚拟机部分的专门分析参见
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/vfio-atomics.md">docs/vfio-atomics.md</a>。</p>
-  <p>已作为 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 上报，
-  @adderek 在关闭 IOMMU 的裸机上独立复现，@bkvargyas 从另一侧补上了"交换机与 atomics 不可兼得"的取舍。
-  相关：<a href="https://github.com/ROCm/legacy-rocm-build/issues/6074">ROCm#6074</a>、
+  <p>本问题已作为 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6520">ROCm#6520</a> 提交至上游，
+  @adderek 在禁用 IOMMU 的裸机环境下独立完成了复现，@bkvargyas 则从反向补充了「中间交换芯片与 atomics 无法兼得」的制约机制。
+  相关问题：<a href="https://github.com/ROCm/legacy-rocm-build/issues/6074">ROCm#6074</a>、
   <a href="https://github.com/vllm-project/vllm/issues/38587">vllm#38587</a>。</p>
 </div>
 </div>

@@ -501,11 +501,11 @@ ART = [
   "tags": ["PCIe atomics", "hostcall", "ROCm#6520"],
   "blurb": {
    "en": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers "
-         "below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual "
+         "below RCCL, fifty-seven lines of HIP reproduce it without RCCL at all, and for a virtual "
          "machine the fix is one line of configuration.",
    "zh": "两张 Radeon、张量并行，以及 "
          "hipErrorIllegalState。根因在 RCCL 下面四层，"
-         "三十行 HIP 不用 RCCL 就能复现，而"
+         "五十七行 HIP 不用 RCCL 就能复现，而"
          "对一台虚拟机来说修复是一行"
          "配置。"}},
  {"slug": "hybrid-ssm-collapse", "en": H_EN, "zh": H_ZH, "zhbody": "article-body-zh.html",

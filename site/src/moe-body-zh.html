@@ -1,11 +1,11 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · MoE · torch.compile · 实测于 2× RX 7900 XT</div>
-  <h1>eager 模式把 107.8 tok/s 记成 15，<br>顺手还造出两个结论</h1>
-  <p class="sub">全机最快的模型曾被 15 tok/s 判死刑</p>
-  <p class="lede">早先的一次探测给了 <code>torch.compile</code> 二十分钟，等不下去，加上
-  <code>--enforce-eager</code>，记下约 15 tok/s。"MoE 在 ROCm 上不实用"这句话就这样进了本仓库自己的文档。
-  引擎初始化需要二十六分钟。编译之后，同一个模型是这台机器上测过的五种架构里最快的。</p>
+  <h1>在 vLLM 的 --enforce-eager 下，全机最快的模型把 107.8 tok/s 记成 15，<br>顺手还造出两个结论</h1>
+  <p class="sub">在 <code>--enforce-eager</code> 下测得 15 tok/s；对照双卡上的 torch.compile，两卡功耗对称，解码速率随上下文变化</p>
+  <p class="lede">早先的一次基准测试中，<code>torch.compile</code> 等了二十分钟后超时。加上
+  <code>--enforce-eager</code> 后测得约 15 tok/s，本仓库据此得出"MoE 在 ROCm 上不实用"的结论。
+  实际上，该模型完成引擎初始化需要二十六分钟。而在编译后，它在这台机器实测的五种架构中位居首位。</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -13,53 +13,52 @@ __CHIPS__
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>编译之后，一个 128 专家的 MoE 在 500 token 上下文下解码 <strong>107.82 tok/s</strong>，
-  32000 上是 72.80，领先这里测过的每一个稠密模型，包括参数更多的。在
-  <code>--enforce-eager</code> 下，同一个模型被记作约 15，而那个数字就是写下判决的依据。</p>
-  <p>不用 eager 的代价是一次 <strong>1569 秒</strong>的引擎启动，其中 54 秒是加载权重。
-  它在一台八核宿主上是单线程的，因为 <code>vllm/env_override.py</code> 在 import 时
-  直接赋值 <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> —— 是赋值不是 setdefault，
-  所以你自己 export 这个变量没有任何作用。</p>
-  <p><strong>7.2× 不是真正的损失。</strong>eager 还产出了两个定性现象，两个都被当成了架构属性：
-  两卡 131 W / 65 W 的功耗劈叉，被读作专家负载不均；以及与上下文无关的解码速率，
-  被读作某种类混合架构的优势。编译之后，22 行实测数据两卡功耗最大只差
-  <strong>2.26 %</strong>，每一行的显存占用两卡完全相同，而速率在整条上下文阶梯上掉了三分之一。</p>
-  <p>两个错误结论都在本仓库发表过，之后才被撤回。这里的贡献是上游的两行 ——
+  <p>经编译后，一个 128 专家的 MoE 在 500 token 上下文下解码速率达到 <strong>107.82 tok/s</strong>，
+  在 32000 上为 72.80，领先这里测过的每一个稠密模型，包括参数量更大的 checkpoint。但在
+  <code>--enforce-eager</code> 下，同一模型测得约 15，而此前公开发表的判决正是以此为据。</p>
+  <p>避开 eager 模式需要付出代价：引擎启动耗时 <strong>1569 秒</strong>，其中加载权重占 54 秒。
+  在八核宿主机上，编译全程以单线程运行，因为 <code>vllm/env_override.py</code> 在 import 时
+  直接赋值 <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code>。由于这是硬编码赋值而非 <code>setdefault</code>，
+  在环境变量中 export 该变量完全不起作用。</p>
+  <p><strong>7.2× 的吞吐损失还不是核心问题。</strong>eager 执行还制造了两个定性假象，且均被误判为架构特性：
+  两张卡之间 131 W / 65 W 的功耗落差，被解读为专家负载不均；而随上下文保持平坦的解码速率，
+  则被当成类似混合架构的扩展特性。编译之后，实测的 22 行数据在两卡间对称度处于
+  <strong>2.26 %</strong> 以内，两卡显存完全一致，且吞吐量在整条上下文阶梯上衰减了三分之一。</p>
+  <p>这两项错误结论此前均已在本仓库发布，随后被更正。提交给上游的修复仅有两行（见
   <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> 与
-  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> ——
-  保留单线程这个默认值，只放行明确的覆盖。</p>
+  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>）：
+  既保留单线程默认值，又允许通过环境变量明确覆盖。</p>
 </div>
 
 <h2><span class="n">1</span>测的是什么</h2>
 
-<p>一次 campaign，2026-07-25，七个配置八次引擎启动，146 次计时生成，覆盖五个模型两种并行度。
-解码速率由服务端在数百 token 的一次生成上给出，先跑预热；每格取两轮的均值。
-每次生成期间采样板级功耗，按卡记录该窗口内的最大值，同时记录每卡显存。</p>
+<p>2026-07-25 的这轮 campaign 涵盖七组配置与八次引擎启动，在五个模型及两种并行度设置下累计完成 146 次计时生成。
+预热完成后，服务端在数百 token 的生成区间内统计解码吞吐量；矩阵中的每格数据均取两轮测试的均值。
+测试同时按卡采样板级功耗，记录该生成窗口内的峰值，并同步记录每张卡的显存占用。</p>
 
-<p><strong><code>init_engine_s</code> 是引擎初始化，不是编译时间。</strong>它包含加载权重、profiling、
-分配 KV cache、<code>torch.compile</code> 和图捕获。加载权重的部分单独记录，
-这正是图 2 能说明"两次慢启动的时间不在这里"的依据。这里没有任何东西把 Inductor
-在剩余部分中的占比单独分出来。</p>
+<p><strong><code>init_engine_s</code> 是引擎初始化，而非编译时间。</strong>它涵盖权重加载、profiling、
+KV cache 分配、<code>torch.compile</code> 以及计算图捕获。权重加载耗时单独统计，
+因此图 2 能够证明两次慢启动的耗时并非花在此处。本测试未能单独剥离出 Inductor
+在剩余时间中的具体占比。</p>
 
 <div class="note warn">
   <span class="lbl">eager 的原始输出不在这个仓库里</span>
-  下面每一个编译侧的数字都从 <code>benchmarks/results.jsonl</code> 重算。eager 侧不是：
-  它们来自一次更早的探测，原始输出从未入库，只以散文形式留在 <code>docs/benchmarks.md</code> 里。
-  本文从那份文档里<em>提取</em>它们而不是重新敲一遍，这样两者不会各自漂移；
-  但提取不等于重算，图上凡是适用之处都标了出来。决定了一个架构判决的那个数字，
-  正是本文里出处最弱的那个。
+  后文列出的各项编译侧数据均由 <code>benchmarks/results.jsonl</code> 重算得出。eager 相关的测量则缺少已入库的原始记录：
+  它们出自更早的一次试探性运行，原始数据从未提交入库，仅作为引述文字保存在 <code>docs/benchmarks.md</code> 中。
+  本文直接从该文档提取这些数据而非重新抄录，以防二者产生分歧；但直接提取并不等同于由仓库重算，
+  文中的各处图表均已明确标注出处。决定了整个架构最终判决的关键数字，反而是本文中来源依据最薄弱的一个。
 </div>
 
 <h2><span class="n">2</span>被发表出去的那个判决</h2>
 
-<p>那次探测把这个模型记作<em>"torch.compile 二十分钟没跑完 → 不实用 → 强制
-<code>--enforce-eager</code> → 约 15 tok/s"</em>，外加<em>"功耗严重左右不对称（131 W / 65 W），
-MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"名下，
-仓库的架构表里"🟡 一般，约 15 tok/s"这一行挂了好几个月。</p>
+<p>最初的探索性探测将该模型记录为<em>"torch.compile 二十分钟没跑完 → 不实用 → 强制
+<code>--enforce-eager</code> → 约 15 tok/s"</em>，并补充道<em>"功耗严重失衡（131 W / 65 W），
+MoE 无法均匀吃满两张卡"</em>。该模型随即被归入"受制于 ROCm 的架构"之列，
+仓库架构表中"🟡 一般，约 15 tok/s"这一行挂了好几个月。</p>
 
-<p>这个推理过程没有任何反常之处。一个二十分钟没跑完的编译看起来就是跑不完的编译，
-而 eager 是文档里写明的绕过办法。站不住的是下一步：把 eager 之后报出来的东西，
-当成对架构的测量。</p>
+<p>这套初始推理本身并无不合理之处。编译耗时二十分钟仍未结束，在工程直觉上确实等同于陷入停滞，
+而启用 eager 模式正是官方文档推荐的规避手段。真正站不住脚的是后续的推断：误将 eager 模式报出的运行表现，
+当作对该架构固有性能的衡量。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -78,9 +77,9 @@ MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"�
   </figcaption>
 </figure>
 
-<p>12B 稠密模型独立地重犯了同一个错。更早的一次上下文扫描同样用 <code>--enforce-eager</code>
-绕开那堵编译墙，得到"平坦的 15.8 tok/s，与上下文无关，功耗在两卡之间来回跳"。
-编译之后它是 59.91，而那份"平坦"没有了。</p>
+<p>12B 稠密模型也独立复现了同样的误判。早先的一次上下文测试同样借由 <code>--enforce-eager</code>
+绕开编译耗时障碍，测出"平坦的 15.8 tok/s，与上下文无关，功耗在两卡间剧烈晃动"。
+而经编译运行后，其速率达到 59.91，人为造成的异常平坦现象彻底消失。</p>
 
 <h2><span class="n">3</span>二十六分钟花在哪</h2>
 
@@ -99,7 +98,7 @@ MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"�
   </figcaption>
 </figure>
 
-<p>它之所以只用一个核，是一行代码，每次 <code>import vllm</code> 都会执行：</p>
+<p>编译之所以只占用单核，症结在于每次 <code>import vllm</code> 都会执行的一行代码：</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -107,24 +106,24 @@ MoE 无法均匀吃满两张卡"</em>。它被归到"被 ROCm 拖住的架构"�
 <pre>os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = <span class="k">"1"</span>
 </pre></div>
 
-<p>这是赋值而不是 <code>setdefault</code>，所以环境里 export 的值会在 Inductor 读到它之前被覆盖。
-无论调用方要求什么，import vLLM 之后 <code>torch._inductor.config.compile_threads</code> 都是 1。
-Inductor 自己的默认值是每核一个 worker。</p>
+<p>代码采用了直接赋值而非 <code>setdefault</code>，导致外部环境变量中 export 的设定在 Inductor 读取前即被强行覆写。
+无论调用方如何配置，只要 import vLLM，<code>torch._inductor.config.compile_threads</code> 都会被强制设为 1。
+而 Inductor 原生的默认行为本应为每个核心分配一个 worker。</p>
 
 <div class="note">
   <span class="lbl">默认值本身不是问题</span>
-  单线程编译在上游是有意为之，理由记录在
+  上游采用单线程编译是有意设计的，旨在规避
   <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> 与
-  <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>：
-  编译子进程与调试器、与某些启动路径配合不好。改这个默认值是另一个论证，不是这里要做的。
-  这里报告的范围更窄 —— 这个机制没有给运维任何退出的办法，而这几乎肯定不是故意的，
-  因为在还没有人需要覆盖之前，<code>setdefault</code> 看起来就正是一个普通赋值的样子。
+  <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>
+  中记录的边界问题：编译子进程容易与调试器及特定启动路径发生冲突。探讨是否修改该默认值是另一层面的问题，并不是这里要做的。
+  本文反馈的问题要聚焦得多：该机制未向运维人员提供任何主动退出的途径。这种缺失并非刻意设计，
+  在尚未产生覆盖需求前，普通直接赋值与 <code>setdefault</code> 的写法差异极易被忽略。
 </div>
 
 <h2><span class="n">4</span>eager 编造的两件事</h2>
 
-<p>7.2× 的吞吐损失是一次糟糕的测量，读者可以打个折扣。更难办的失败是：eager
-还产出了两个<em>定性</em>结果，每一个读起来都像是关于模型的事实，而不是关于那个开关的。</p>
+<p>7.2× 的吞吐损失属于明显的测量缺陷，读者很容易识别并予以扣除。更深层次的错误在于，eager
+模式制造了两个<em>定性</em>层面的伪结果，每一个都被误读为模型本身的架构属性，而非开关参数带来的副作用。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -142,14 +141,13 @@ Inductor 自己的默认值是每核一个 worker。</p>
   </figcaption>
 </figure>
 
-<p>那次功耗读数当时有一个现成的解释，而它是错的。在纯张量并行下，vLLM 把<em>所有</em>专家放在
-<em>每一张</em> GPU 上，并沿中间维度切分每个专家的权重，所以无论路由怎么走，计算都是对称的。
-路由不均是专家并行的性质，而当时跑的不是专家并行。编译之后这份不对称消失，正是对它的确认：
-专家那边什么也没变。</p>
+<p>当时测得的功耗读数看似很容易用直觉解释，但该解释从根本上就是错的。在纯张量并行模式下，vLLM 会在<em>每一张</em> GPU 上完整保留<em>所有</em>专家，并沿中间维度切分各专家的权重，因此无论路由逻辑如何分流，计算始终是对称的。
+路由不均是专家并行的性质，而当时跑的不是专家并行。编译运行后功耗不对称现象彻底消失，正是对它的确认：
+专家的实际执行方式并未发生任何改变。</p>
 
 <h2><span class="n">5</span>提给上游的是什么</h2>
 
-<p>两行，而且不动默认值：</p>
+<p>改动仅有两行，且完全不影响默认配置：</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -161,88 +159,87 @@ Inductor 自己的默认值是每核一个 worker。</p>
 <dl class="why">
   <dt>上报</dt>
   <dd><a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a>，2026-08-26，
-  标签 <code>rocm</code>：export 的 <code>TORCHINDUCTOR_COMPILE_THREADS</code> 被静默覆盖。</dd>
+  标签 <code>rocm</code>：export 的 <code>TORCHINDUCTOR_COMPILE_THREADS</code> 被静默覆写。</dd>
   <dt>提交</dt>
   <dd><a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>，同一天。
-  默认值 1 保留，只有明确 export 才能穿过去。</dd>
+  保留默认值 1，只有明确 export 才能穿过去。</dd>
   <dt>验证</dt>
   <dd>在 ROCm 7.14 / vLLM 0.23 镜像上，把变量 export 成 8 再 import
   <code>vllm.env_override</code>，得到 <code>compile_threads == 8</code>；不设时仍是 1。
-  不打补丁的话，第一种情况会被压回 <code>"1"</code>。</dd>
+  若未打补丁，自定义 export 会被强行重置为 <code>"1"</code>。</dd>
 </dl>
 
 <h2><span class="n">6</span>没有被确立的部分</h2>
 
 <h3>编译产物真的被有效缓存</h3>
-<p>和"26 分钟编译"一起端出来的那句建议是"一次，之后走缓存"，而这次 campaign 支撑不了它。
-唯一被重复的启动是 12B 在 TP=1 下，冷启动 59.67 s、热启动 33.36 s —— 在一个本来就不是问题的启动上省了 1.79×。
-那两个超过二十分钟的配置在这里都没有再启动第二次，所以贵的那一档热启动要多少，没测过。
-编译缓存在上游是真实存在且有文档的；缺的是它在这台宿主上的一次测量。</p>
+<p>常有建议称 26 分钟的编译耗时可通过缓存均摊，但这次 campaign 无法证实这一点。
+唯一被重复启动的仅有 TP=1 下的 12B 模型，冷启动 59.67 s、热启动 33.36 s，在一个本来就不是问题的启动上省了 1.79×。
+那两个超过二十分钟的配置在这里都没有再启动第二次，所以贵的那一档热启动要多少，缺一次实测。
+编译缓存在上游是真实存在的；缺的是它在这台宿主机上的一次测量。</p>
 
 <h3>1569 s 里有多少是 Inductor</h3>
-<p><code>init_engine_s</code> 覆盖加载、profiling、KV 分配、编译和图捕获。加载权重被单独分了出来，占比很小。
-剩下的没有再分解，所以"编译要 26 分钟"是"引擎初始化要 26 分钟，而且不是权重"的简写。</p>
+<p>指标 <code>init_engine_s</code> 综合了加载、profiling、KV 缓存分配、编译与计算图捕获。加载权重被单独分了出来，耗时极少。
+剩下的未做细分，因此"编译要 26 分钟"是"引擎初始化要 26 分钟，而且不是权重"的简写。</p>
 
 <h3>每一组对比里 eager 的那一侧</h3>
-<p>eager 的速率和 131 W / 65 W 那次读数都没有写进任何入库文件。它们是从承载它们的文档里引出来的；
-要把它们放到和这里其他一切相同的地位上，需要重新跑一次 <code>--enforce-eager</code>。
+<p>eager 的速率和 131 W / 65 W 那次读数都没有写进任何入库文件。它们直接引自早期文档记录；
+若要使其与其他实测数据具备同等置信度，需重新跑一次 <code>--enforce-eager</code>。
 方向没有疑问；确切的倍数最多只有一位有效数字。</p>
 
 <h3>一台宿主，而且是慢的那种</h3>
-<p>Zen 1 Threadripper，容器可用八个核。编译线程这个论点随核数放大，
-在一台核多而快的机器上同样的改动值更多。这里没有测过打了补丁之后的编译时间，因为那个补丁该由上游来收。</p>
+<p>基准测试宿主机为 Zen 1 Threadripper，为容器分配了八个核心。编译线程参数的收益随核心数量扩展，核心更多的系统可获得成比例的更大收益。由于补丁尚待上游采纳，打补丁后的编译耗时在此处未作直接测量。</p>
 
 <h2><span class="n">7</span>此后发生的变化</h2>
 
 <div class="note ok">
-  <span class="lbl">2026-07-25 · 判决被就地推翻</span>
-  把启动超时调大之后编译跑完了，架构表从"🟡 一般，约 15 tok/s"变成"🟢 这里测过最快的"。
-  这次修订在 <code>docs/architecture-notes.md</code> 里是标了日期的，而不是把原文盖掉，
-  因为更早那一行本身就是重点。
+  <span class="lbl">2026-07-25 · 判决被就地撤销</span>
+  调大启动超时后编译顺利完成，架构表中的评价从"🟡 一般，约 15 tok/s"修正为"🟢 这里测过最快的"。
+  该修订在 <code>docs/architecture-notes.md</code> 中按日期记录，而非直接覆写原始条目，
+  因为此前的记录本身即具对照价值。
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-26 · 已上报并提交上游</span>
-  <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> 与
+  <span class="lbl">2026-08-26 · 已向上游报告并提交修复</span>
+  见 <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> 与
   <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>。
-  截至 2026-08-29 两个都还开着；PR 可合并，等的是 review，而 <code>main</code>
-  上第 105 行仍然是那个普通赋值。
+  截至 2026-08-29 二者均处于开启状态；PR 具备合并条件且正等待 review，<code>main</code>
+  分支第 105 行依旧维持原有的直接赋值。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 本仓库里有三个数字和它自己的数据对不上</span>
-  写这篇文章时，编译相关的数字第一次被拿去和 <code>results.jsonl</code> 核对。
-  12B 的编译在一份文档里写作 23 分钟，在另一份里写作"TP=1 下 24 分钟"；
+  <span class="lbl">2026-08-29 · 本仓库曾有三个数字与自身数据不符</span>
+  在撰写本文过程中，各项编译数据首次与 <code>results.jsonl</code> 进行了严格核对。
+  12B 模型的编译耗时在某份文档中被记为 23 分钟，在另一份文档中记作"TP=1 下 24 分钟"；
   入库的值是 <strong>TP=2 下 1537.92 s</strong>，而 TP=1 只用了 59.67 s。
-  "1538 s 冷、33 s 热"那一对把一次 TP=2 的冷启动和一次 TP=1 的热启动放在了一起。
-  三处都已就地更正并标注日期，<code>verify_doc_figures.py</code>
+  此前所谓"1538 s 冷、33 s 热"的数据对，实则是将 TP=2 的冷启动与 TP=1 的热启动放在了一起。
+  三处误差均已就地更正并标注日期，<code>verify_doc_figures.py</code>
   现在把这次 campaign 的每一次引擎启动时间都钉住，让它们不会漂回去。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 这篇文章里有一个数目是错的</span>
-  上面那一段的英文版写的是七次引擎启动。这次 campaign 实际是<strong>八次</strong>，分布在七个配置上：
-  12B 在 TP=1 下启动了两次，热启动那个数字正是从这次重复里来的。中文版原本是对的。
-  已就地更正；<code>verify_doc_figures.py</code> 一直在拿这个数目和 <code>model_meta</code>
-  对照，散文是唯一一处把它重新抄了一遍的地方。
+  <span class="lbl">2026-08-29 · 本文曾记错一处统计数量</span>
+  上面那一段的英文版写的是七次引擎启动。这次 campaign 实际包含<strong>八次</strong>启动，涵盖七个配置：
+  其中 12B 模型在 TP=1 下启动了两次，热启动那个数字正是从这次重复里来的。中文版原本是对的。
+  此处已就地更正；<code>verify_doc_figures.py</code> 始终在对照 <code>model_meta</code> 校验该计数，
+  散文是唯一一处把它重新抄了一遍的地方。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 图 2 的图注把自己的柱子数错了</span>
-  原文说两次超过二十分钟，"另外六次都不到两分钟"。不到两分钟的是四次；另外两次是 31B 和 27B，
-  就是图上印着 227 s 和 504 s 的那两根，而否认它们的那句话就压在图的正下方。已就地更正，
-  <code>verify_doc_figures.py</code> 现在把这三个计数钉住，图注不会再和柱子对不上。
+  <span class="lbl">2026-08-29 · 图 2 图注对柱状图统计有误</span>
+  原图注曾称有两次启动超过二十分钟，"另外六次均不到两分钟"。不到两分钟的是四次；
+  另外两次是 31B 和 27B，就是图上印着 227 s 和 504 s 的那两根，而否认它们的那句话就压在图的正下方。
+  已就地更正，<code>verify_doc_figures.py</code> 现在把这三个计数钉住，图注不会再和柱子对不上。
 </div>
 
 <div class="foot-note">
-  <p><strong>数据。</strong>这次 campaign 是
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>
-  —— 每次计时生成一行，带解码速率、每卡功耗和每卡显存，另有每次引擎启动一行
+  <p><strong>数据来源。</strong>测试原始数据记录于
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>，
+  每次计时生成记录一行解码速率、每卡功耗与每卡显存，另有每次引擎启动一行
   <code>model_meta</code>。本页的图由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-  从它重算；eager 那一行从
+  从它重算；未入库的 eager 数据从
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">docs/benchmarks.md §1</a> 提取。</p>
-  <p>上游：<a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> 与
+  <p>上游议题：<a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> 与
   <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>。
   默认值取 1 的理由见 <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> 与
   <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>。</p>

@@ -25402,8 +25402,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "八个结论里只有三个是 RDNA3 的，而测另一个厂商拿掉了两个"
    },
    "sub": {
-    "en": "How much of this is RDNA3 being second-class",
-    "zh": "这里面有多少真的是 RDNA3 二等公民"
+    "en": "Eight findings on RDNA3 classified across five hardware axes; checked against another vendor, kernel sources, and host topology",
+    "zh": "RDNA3 上的八个结论按五条硬件轴分类；对照另一厂商、内核源码与宿主机拓扑逐一核验"
    },
    "blurb": {
     "en": "This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel ecosystem. Sorting eight findings by what the evidence supports, three of them are that, and the measurements that mattered most took findings off the list.",
@@ -25537,8 +25537,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠"
    },
    "sub": {
-    "en": "A gate that costs 2 to 7 times and buys nothing",
-    "zh": "一道 2 到 7 倍的门，什么也没换来"
+    "en": "Checked as use_rocm_custom_paged_attention; custom kernel against Triton fallback, with speedups of 2 to 7 times",
+    "zh": "以 use_rocm_custom_paged_attention 实测；定制内核对比 Triton 兜底，带来 2 到 7 倍加速"
    },
    "blurb": {
     "en": "The bound that keeps vLLM's ROCm custom paged attention off gfx11 below gqa_ratio 3 is a performance heuristic, and it is inverted here: sixty cells, two vLLM versions, and the excluded band overlaps the admitted one on both.",
@@ -25902,12 +25902,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败"
    },
    "sub": {
-    "en": "The RCCL crash was never about RCCL",
-    "zh": "RCCL 崩溃从来不是 RCCL 的问题"
+    "en": "Traced to hidden_hostcall_buffer on two Radeons; checked against twelve eliminated hypotheses, four shipped RCCL builds, and one line of VM configuration",
+    "zh": "在两张 Radeon 上溯源至 hidden_hostcall_buffer；经十二个排除的假设、四版 RCCL 发行构建与一行虚拟机配置对照验证"
    },
    "blurb": {
-    "en": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, thirty lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",
-    "zh": "两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层，三十行 HIP 不用 RCCL 就能复现，而对一台虚拟机来说修复是一行配置。"
+    "en": "Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL, fifty-seven lines of HIP reproduce it without RCCL at all, and for a virtual machine the fix is one line of configuration.",
+    "zh": "两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层，五十七行 HIP 不用 RCCL 就能复现，而对一台虚拟机来说修复是一行配置。"
    },
    "establishes": {
     "en": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
@@ -25979,8 +25979,8 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
    },
    "sub": {
-    "en": "The fastest model here was written off at 15 tok/s",
-    "zh": "全机最快的模型曾被 15 tok/s 判死刑"
+    "en": "Run under <code>--enforce-eager</code> at 15 tok/s; checked against torch.compile on two cards, with power symmetric and decode context-dependent",
+    "zh": "在 <code>--enforce-eager</code> 下测得 15 tok/s；对照双卡上的 torch.compile，两卡功耗对称，解码速率随上下文变化"
    },
    "blurb": {
     "en": "torch.compile was given twenty minutes and needed twenty-six, so the run was forced into eager mode and a 128-expert MoE was recorded at 15 tok/s. Compiled it is 107.8, and the flag had invented two qualitative findings on the way.",

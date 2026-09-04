@@ -1,10 +1,10 @@
 <header class="top"> <div class="kicker">RDNA3 · paged attention · vLLM · measured on 2× RX 7900
-XT</div> <h1>The excluded kernel wins all sixty cells,<br>and the two bands overlap</h1>
-<p class="sub">A gate that costs 2 to 7 times and buys nothing</p> <p class="lede">On gfx11, vLLM's
+XT</div> <h1>vLLM's custom ROCm paged-attention kernel wins all sixty cells,<br>and the two bands overlap</h1>
+<p class="sub">Checked as use_rocm_custom_paged_attention; custom kernel against Triton fallback, with speedups of 2 to 7 times</p> <p class="lede">On gfx11, vLLM's
 ROCm custom paged-attention kernel is enabled only when the query-to-KV head ratio is at least 3. In
-the excluded range the same kernel is <strong>1.70× to 7.28× faster</strong> than the Triton
-fallback it is passed over for, and numerically equivalent to it inside what bf16 gives for a sum
-this long. Sixty cells, two vLLM versions, no exception.</p> <div class="meta"> __CHIPS__ </div>
+the excluded range, the custom kernel is <strong>1.70× to 7.28× faster</strong> than the Triton
+fallback it is passed over for. Inside what bf16 gives for a sum this long, it is numerically
+equivalent. Sixty cells, two vLLM versions, no exception.</p> <div class="meta"> __CHIPS__ </div>
 </header>
 
 <div class="abstract">
@@ -12,21 +12,21 @@ this long. Sixty cells, two vLLM versions, no exception.</p> <div class="meta"> 
   <p>The bound came in with
   <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a>, whose own description says
   the kernel "supports gqa_ratio up to 16, and shows performance gains over the existing kernel when
-  gqa_ratio is 3 or higher". So it is <strong>a performance heuristic, not a capability limit</strong>,
-  and the CDNA branch of the same function runs the same kernel from ratio 1. Both are still true on
+  gqa_ratio is 3 or higher". The guard is therefore <strong>a performance heuristic, not a capability limit</strong>.
+  On CDNA, the same function runs this custom kernel starting from ratio 1. Both statements remain true on
   <code>main</code>.</p>
-  <p>Tested, the heuristic is inverted here. Across sixty measured cells — five shapes, six context
-  lengths, two vLLM generations — the custom kernel is faster in <strong>every one</strong>, and the
+  <p>When tested, the heuristic is inverted. Across sixty measured cells spanning five shapes, six context
+  lengths, and two vLLM generations, the custom kernel is faster in <strong>every one</strong>. The
   excluded band overlaps the admitted band on both versions. There is no region the bound separates.</p>
   <p>The report that prompted this,
   <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>, also blames the fallback
-  for losing accuracy at long context. That is not supported: across 90 cells on two architectures
+  for losing accuracy at long context. That hypothesis is not supported. Across 90 cells on two architectures,
   relative error stays between 2.12e-3 and 4.72e-3, and <strong>no two depths' pooled medians differ by
   more than 1.09×</strong>. <strong>A flat band only means something if the instrument can see a fault</strong>, so the
   same harness was given one: NaN in the unwritten tail of the final KV tile poisons both paths, at
   exactly the lengths that straddle it and no others.</p>
-  <p>End to end on a real model the one-line widening is worth 1.02× at 1K and <strong>1.17×</strong> at
-  32K, reproduced in both run orders on the newer image. That is
+  <p>End to end on a real model, widening the gate is worth 1.02× at 1K and <strong>1.17×</strong> at
+  32K, reproduced in both run orders on the newer image. That change is proposed in
   <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>, and this page is what it
   rests on.</p>
 </div>
@@ -34,16 +34,16 @@ this long. Sixty cells, two vLLM versions, no exception.</p> <div class="meta"> 
 <h2><span class="n">1</span>What is being measured</h2>
 
 <p>Both paths are driven through vLLM's own <code>chunked_prefill_paged_decode</code> dispatch with only
-<code>use_rocm_custom_paged_attention</code> forced, so nothing about argument marshalling differs
-between the arms. Pure decode: one query token per sequence over a fully cached context, which is the
-shape the report describes. The reference is fp32 and is computed from the pre-paging KV rather than
-from the cache, so <strong>a paging bug cannot cancel itself out</strong>. Scoring is relative L-infinity
-against the reference's own scale, which is what makes different lengths comparable.</p>
+<code>use_rocm_custom_paged_attention</code> forced. Argument marshalling is therefore identical between
+the arms. Pure decode is measured: one query token per sequence over a fully cached context, which
+matches the shape described in the report. The fp32 reference is computed from pre-paging KV tensors
+rather than the cache, so <strong>a paging bug cannot cancel itself out</strong>. Scoring uses relative
+L-infinity against the reference's own scale, making different context lengths comparable.</p>
 
-<p>The shape set covers ratios 1, 2, 3 and 4 at head size 128 and block size 16, plus 32/16, which is
-<code>gemma-3-27b-it</code>'s real shape and satisfies every condition of the gfx11 gate except the
-ratio. The CUDA control compiles the same Triton text: the kernel is lifted verbatim into a standalone
-module and the launch mirrors the dispatch's argument list.</p>
+<p>The shape set covers ratios 1, 2, 3 and 4 at head size 128 and block size 16, plus 32/16; that final
+shape belongs to <code>gemma-3-27b-it</code>, satisfying every condition of the gfx11 gate except the
+ratio. For the CUDA control, the kernel is lifted verbatim into a standalone module compiling the same
+Triton text, and the launch mirrors the dispatch's argument list.</p>
 
 <h2><span class="n">2</span>Sixty cells, and no exception</h2>
 
@@ -58,16 +58,16 @@ times behind it. The newer image is a little lower in twenty-eight of the thirty
 arms moved between the images and this comparison separates neither; the two 0.27 rounds are 2.3 %
 apart at the median and 5.8 % at worst. </figcaption> </figure>
 
-<p>The bands are the argument, not the maxima. On 0.23.1 the excluded ratios span 1.84× to 7.28× and the
-admitted ones 2.35× to 7.40×; on 0.27 it is 1.70× to 6.05× against 2.20× to 6.05×.
-<strong>The two overlap on both versions</strong>, which is what "the bound does not separate anything"
-means in one sentence.</p>
+<p>The bands are the argument, not the individual maxima. On 0.23.1, the excluded ratios span 1.84× to 7.28×,
+while the admitted ones span 2.35× to 7.40×. On 0.27, excluded ratios span 1.70× to 6.05× against 2.20× to 6.05×
+for admitted shapes. <strong>The two overlap on both versions</strong>, which is what "the bound does not separate
+anything" means in one sentence.</p>
 
 <h2><span class="n">3</span>The accuracy claim, and the control under it</h2>
 
-<p>The originating report describes two symptoms. The first, the fallback being taken at all, is exactly
-right and is what everything above is about. The second is that the fallback degrades with context. That
-one is testable here and does not hold.</p>
+<p>The originating report describes two symptoms. The first symptom—taking the fallback path at all—is
+confirmed and forms the subject of the findings above. The second claim is that the fallback degrades
+with context. That hypothesis is directly testable here, and it does not hold.</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -89,9 +89,9 @@ one is testable here and does not hold.</p>
 
 <div class="note">
   <span class="lbl">A clean sweep is worth nothing if the instrument is blind</span>
-  Two things the sweep above does not exercise: every length is a multiple of the block size, so the
-  final KV tile never straddles the sequence end, and the cache is zero-filled. Filling it with NaN and
-  using lengths that straddle produces the fault on demand — <strong>and only there</strong>.
+  Two conditions went unexercised in the sweep above: every tested length is a multiple of the block size,
+  so the final KV tile never straddles the sequence end, and the cache is zero-filled. Filling the cache
+  with NaN and selecting lengths that straddle produces the fault on demand — <strong>and only there</strong>.
   <div class="fault" id="control"></div>
   Only NaN propagates: finite garbage at 1e4 is handled correctly by the score mask alone, which is why
   this is subtle. Both paths poison identically on this version.
@@ -99,9 +99,10 @@ one is testable here and does not hold.</p>
 
 <h2><span class="n">4</span>What widening it is worth on a model</h2>
 
-<p>Kernel microbenchmarks are not what a pull request has to justify. <code>gemma-3-27b-it-w4a16</code>,
-TP=2, CUDA graphs on, decode by 64-against-8 differencing, one fresh container per cell so the source
-edit cannot leak between arms:</p>
+<p>Kernel microbenchmarks alone do not justify a pull request. An end-to-end model test was run using
+<code>gemma-3-27b-it-w4a16</code> at TP=2 with CUDA graphs on. Decode latency was isolated by
+64-against-8 differencing, launching one fresh container per cell so source edits could not leak
+between arms:</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -119,27 +120,27 @@ edit cannot leak between arms:</p>
   </figcaption>
 </figure>
 
-<p>Routing is recorded from inside the TP workers rather than inferred: every cell on 0.23.1, and
-on 0.27 at 1K in both arms, from a run of its own after the in-place recorder returned nothing. The
-full-attention layers arrive with head size 128, block size 16, the native KV layout and a power-of-two
-block, so <strong>the ratio is the only gate condition they fail</strong>; the sliding layers fail on
-<code>sliding_window == 0</code> in both arms and never move.</p>
+<p>Routing is recorded directly inside the TP workers rather than inferred from timing. Measurements
+covered every cell on 0.23.1, and on 0.27 at 1K in both arms from a dedicated run after the in-place
+recorder returned nothing. The full-attention layers arrive with head size 128, block size 16, native KV
+layout, and a power-of-two block, so <strong>the ratio is the only gate condition they fail</strong>;
+the sliding layers fail on <code>sliding_window == 0</code> in both arms and never move.</p>
 
 <div class="note warn">
   <span class="lbl">Two things this measurement is not</span>
-  Output equality between arms is not the correctness test. Greedy decoding on this box is not
-  reproducible across processes for this model, so comparing token ids would measure our own
-  nondeterminism instead. The numerical case is Figure 2's, against an fp32 reference. And the first
-  attempt's kernel counter was blind, because TP=2 runs attention in spawned workers where a
-  parent-process counter sees nothing.
+  Output equality between arms is not the correctness test. Because greedy decoding on this machine is not
+  reproducible across processes for this model, comparing token ids would measure local nondeterminism
+  instead. The numerical case is Figure 2's, against an fp32 reference. And the initial kernel counter
+  was blind, because TP=2 runs attention in spawned workers where a parent-process counter sees nothing.
 </div>
 
 <h2><span class="n">5</span>What widening it would also admit</h2>
 
-<p>Opening a gate lets in whatever is behind it. <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a>
-fixes a real fault in the same custom kernel: it masks logits past the sequence end but its vectorised
-V-cache load still consumes the whole final block, so an unwritten NaN in the tail poisons the output.
-Its test plan says gfx11 received compile validation only, because the author had no such device.</p>
+<p>Opening a gate lets in whatever lurks behind it. Upstream PR
+<a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> fixes a real fault in the same
+custom kernel: it masks logits past the sequence end, but its vectorised V-cache load still consumes
+the whole final block, allowing an unwritten NaN in the tail to poison output. Its test plan notes that
+gfx11 received compile validation only, because the author had no such device.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -160,33 +161,33 @@ Its test plan says gfx11 received compile validation only, because the author ha
   </figcaption>
 </figure>
 
-<p>The forced column is the one that bears on the proposal. Past the gate, the stock arm poisons eight
-cells rather than four: ratio 2 fails identically at the straddling length, both dtypes, V-only and K+V.
-All eight are clean on the patched arm. <strong>So widening the gate admits ratio 2 to this kernel, and
-this is the fault it would admit with it</strong> — which is why the two threads belong together, and
-why the gfx11 runtime evidence went to that PR's author on request.</p>
+<p>The forced column bears directly on the proposal. Forced past the gate, the stock arm poisons eight
+cells rather than four: ratio 2 fails identically at the straddling length across both dtypes, under
+both V-only and K+V corruption. All eight are clean on the patched arm. <strong>So widening the gate
+admits ratio 2 to this kernel, and this is the fault it would admit with it</strong> — which is why the
+two threads belong together, and why the gfx11 runtime evidence went to that PR's author on request.</p>
 
 <h2><span class="n">6</span>What is not established</h2>
 
 <h3>The report's second symptom</h3>
-<p>What is removed is one hypothesis — that the Triton 2D kernel loses accuracy as context grows.
-The reporter's model is a VLM this project does not have, on hardware it does not have, and this
-measures the kernel rather than their output. Their symptom still needs an explanation.</p>
+<p>These tests eliminate only one hypothesis: that the Triton 2D kernel loses accuracy as context grows.
+The reporter observed degradation on a VLM not available here, running on different hardware; this probe
+evaluates the kernel rather than model output. The reported symptom still needs an explanation.</p>
 
 <h3>Everything outside pure decode at these shapes</h3>
-<p>Sliding-window shapes, fp8 KV, prefill shapes and TP&gt;1 at the kernel level are all untested here.
-The end-to-end measurement is TP=2, but that is a model measurement, not a kernel one.</p>
+<p>Sliding-window shapes, fp8 KV, prefill shapes, and kernel-level TP&gt;1 were not tested. While the
+model benchmark uses TP=2, that is a model-level measurement rather than a kernel one.</p>
 
 <h3>Where the NaN comes from</h3>
-<p><code>allocate_kv_cache</code> zero-fills the backing allocation, so it is not fresh-allocation
-garbage; vllm#53856 attributes it to sleep mode and allocator behaviour. This probe injects it
-deliberately and only measures what the kernel then does.</p>
+<p>Because <code>allocate_kv_cache</code> zero-fills memory, the defect is not uninitialised allocation
+garbage; vllm#53856 attributes it to sleep mode and allocator behaviour. This harness injects NaN
+deliberately to observe how the kernel responds.</p>
 
-<h3>One machine, and the model runner question</h3> <p>Everything here is one gfx1100 box. A related
-question — whether Model Runner V2 reaches the same guard — was measured on this hardware: it does,
-on 36 of 37 rows identical to V1. Whether speculation makes decode carry more than one query row
-under MRv2 could not be measured, because no checkpoint here configures for it on that image. That
-half rests on a code read.</p>
+<h3>One machine, and the model runner question</h3> <p>All measurements ran on a single gfx1100 machine.
+A related question — whether Model Runner V2 reaches the same guard — was measured here: it does, on 36
+of 37 rows identical to V1. Whether speculation makes decode carry multiple query rows under MRv2 was
+not measured, because no available checkpoint configures for it on that image. That half rests on a
+code read.</p>
 
 <h2><span class="n">7</span>What has changed since</h2>
 
@@ -238,10 +239,10 @@ defensible but unreadable at the same time. </div>
 </div>
 
 <div class="foot-note">
-  <p><strong>Every cell.</strong> The probes, the JSONL they wrote and the container logs are in
+  <p><strong>Every cell.</strong> The probes, output JSONL, and container logs reside in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/vllm-50603/README.md"><code>benchmarks/vllm-50603/</code></a>,
-  including the CUDA control's lifted kernel and the hash assertion that keeps the two sides on the same
-  Triton text. Every figure here is recomputed from those files by
+  along with the CUDA control's lifted kernel and the hash check keeping both sides on the same Triton
+  source. Every figure here is recomputed from those files by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
   <p>Upstream: <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a> is the report,
   <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> introduced the bound,

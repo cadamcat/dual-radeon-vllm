@@ -1,39 +1,37 @@
 <header class="top">
   <div class="kicker">synthesis · RDNA3 · ROCm · vLLM</div>
-  <h1>Three of eight findings are RDNA3's,<br>and measuring another vendor removed two</h1>
-  <p class="sub">How much of this is RDNA3 being second-class</p>
-  <p class="lede">This repository's own summary says RDNA3 is a second-class citizen in ROCm's kernel
-  ecosystem, and eight write-ups sit under that heading. Sorting them by what the evidence actually
-  supports, <strong>three of the eight are that</strong>. The rest are AMD-wide, vendor-neutral, or not
-  about the GPU at all — and knowing which is which is the difference between a diagnosis and a
+  <h1>Eight ROCm kernel findings narrow to three on RDNA3,<br>and measuring another vendor removed two</h1>
+  <p class="sub">Eight findings on RDNA3 classified across five hardware axes; checked against another vendor, kernel sources, and host topology</p>
+  <p class="lede">This repository's own summary describes RDNA3 as a second-class citizen in ROCm's kernel
+  ecosystem, with eight write-ups grouped under that heading. Sorted by what the evidence actually
+  supports, <strong>three of the eight are that</strong>. The rest are AMD-wide, vendor-neutral, or
+  unrelated to the GPU — and separating them is the difference between a diagnosis and a
   grievance.</p>
   <div class="meta">
 __CHIPS__
   </div>
 </header>
 
-<div class="abstract"> <h3>Abstract</h3> <p>The claim is real and it is narrower than it looks. What
-survives as <strong>architecture-specific</strong> is a small, specific list: a fast attention path
+<div class="abstract"> <h3>Abstract</h3> <p>The claim is real, but narrower than it appears. What
+survives as <strong>architecture-specific</strong> is a short list: a fast attention path
 this hardware falls off, a native quantised-linear kernel whose type gate excludes a common
-checkpoint class, and a performance heuristic written into one architecture's branch of one function
-and not the other's.</p> <p>The purest instance is one line.
+checkpoint class, and a performance heuristic written into one architecture's branch of a function
+while omitted from the other.</p> <p>The purest instance is one line.
 <code>use_rocm_custom_paged_attention</code> requires <code>gqa_ratio &gt;= 3</code> on gfx11 and
 <code>&gt;= 1</code> on CDNA, for the same kernel. In the excluded range that kernel is
-<strong>1.84× to 7.28× faster</strong> than the fallback it is passed over for, and the excluded
-band overlaps the admitted one. The bound does not separate anything.</p> <p>Four of the eight are
-<em>not</em> RDNA3 problems, and saying so is what the measurements were for. Two are vendor-neutral
-on two different kinds of evidence: the same attention gate was measured on an A100, where it loses
-61 % at 50K, and the single-threaded compile setting was traced to a file that runs everywhere. One
+<strong>1.84× to 7.28× faster</strong> than the fallback it is passed over for, and the two bands overlap. The bound does not separate anything.</p> <p>Four of the eight are <em>not</em> RDNA3 problems, and saying so is what the measurements were for. Two are vendor-neutral
+on distinct evidence. The same attention gate was measured on an A100, where it loses
+61 % at 50K. In addition, the single-threaded compile setting was traced to a file that runs on every platform. One
 is AMD-wide, at a kernel line AMD named. One is a PCIe capability that hits bare metal too.</p>
 <p><strong>Half of the sixteen upstream threads belong to other people.</strong> The most useful
-thing this hardware turned out to be is a device the people fixing these things do not have.</p>
+role for this hardware was simply being the machine that upstream developers lacked.</p>
 </div>
 
 <h2><span class="n">1</span>Sorting eight findings by what they are actually about</h2>
 
-<p>Every row below is a separate article, and every number beside it is recomputed from the file
-that article draws on. The classification is the only thing here that is a judgement, so it comes
-with the evidence that puts each row where it is.</p>
+<p>Each row below represents a separate article. Every number beside it is recomputed directly from the underlying data file.
+Only the classification represents an interpretive judgement, and each row carries the evidence
+that places it on its axis.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -53,8 +51,8 @@ with the evidence that puts each row where it is.</p>
 
 <h2><span class="n">2</span>The purest instance is one line</h2>
 
-<p>If "second-class" means anything precise, it means the same software choosing differently for you
-than for someone else, for a reason that does not survive checking. One function in
+<p>If "second-class" has a precise meaning, it means identical software choosing differently for one architecture
+than another, for a reason that fails empirical checking. A single function in
 <code>vllm/platforms/rocm.py</code> does exactly that:</p>
 
 <figure class="rv" id="fig2">
@@ -75,10 +73,10 @@ than for someone else, for a reason that does not survive checking. One function
   </figcaption>
 </figure>
 
-<p>Two of those four are worth separating. <strong>AITER and FP8 are Instinct-only by design</strong>,
-and nobody has claimed otherwise; that is a product decision, not a defect. <strong>The absent tuned
-MoE configurations are for no AMD GPU at all</strong>, which makes them an AMD-wide gap rather than an
-RDNA3 one. Only Composable Kernel's forward-only fused attention on RDNA3 sits squarely on the
+<p>Two of those four gaps require distinction. <strong>AITER and FP8 are Instinct-only by design</strong>,
+reflecting an intentional product boundary rather than a software defect. <strong>The absent tuned
+MoE configurations exist for no AMD GPU at all</strong>, making them an AMD-wide omission rather than an
+RDNA3 limitation. Only Composable Kernel's forward-only fused attention on RDNA3 sits squarely on the
 architecture axis, alongside the gate above.</p>
 
 <h2><span class="n">3</span>The four that are not this</h2>
@@ -87,40 +85,40 @@ architecture axis, alongside the gate above.</p>
 
 <div class="note">
   <span class="lbl">Two were settled by measuring another vendor</span>
-  Speculative decoding collapsing at long context looked like an RDNA3 story until the same model on a
-  rented A100 lost 61 % at 50K through the same Triton kernel — and stopped losing it on a backend
-  without the guard. And a 128-expert MoE recorded at 15 tok/s looked like ROCm's missing tuned kernels
-  until the cause turned out to be a plain assignment in <code>env_override.py</code> that runs on every
-  platform. <a href="speculative-decoding-net-loss.html">One</a> and
+  Speculative decoding collapse at long context appeared to be an RDNA3 issue. When tested on a rented A100,
+  however, the same model lost 61 % at 50K through the identical Triton kernel, and recovered on a backend
+  without that guard. Similarly, a 128-expert MoE recorded at 15 tok/s initially suggested missing ROCm tuned kernels.
+  The actual cause was an assignment in <code>env_override.py</code> that executes on every platform.
+  See <a href="speculative-decoding-net-loss.html">one report</a> and
   <a href="moe-written-off-by-eager.html">the other</a>.
 </div>
 
 <div class="note">
   <span class="lbl">One is AMD-wide, at a line AMD named</span>
-  Weight loading slower than the disk is <code>kfd_svm.c</code> reading the access mode off the VMA, so
-  a read-only copy asks for write access and breaks copy-on-write on every resident page. That file is
-  not architecture-specific, AMD confirmed the mechanism, and a stranger reproduced it on a different
-  card. <a href="weight-loading-19x.html">The article</a>.
+  Weight loading ran slower than disk reads because <code>kfd_svm.c</code> inspected the access mode directly from the VMA.
+  A read-only copy requested write permissions, breaking copy-on-write across every resident page. That kernel file is
+  not architecture-specific. AMD confirmed the underlying mechanism, and an independent user reproduced the failure on a different
+  card. See <a href="weight-loading-19x.html">the full write-up</a>.
 </div>
 
 <div class="note">
   <span class="lbl">One is not about the GPU at all</span>
-  Every RCCL collective failing at dispatch is a PCIe AtomicOps capability on the root port above the
-  card. It reproduces on bare metal, it has nothing to do with which GPU is plugged in, and for a
-  virtual machine the fix is one line of configuration.
-  <a href="rccl-atomics-hostcall.html">The article</a>.
+  Every RCCL collective failed at dispatch because the PCIe root port above the card lacked the AtomicOps capability.
+  This failure reproduces on bare metal and has no dependence on the installed GPU. For a virtual machine,
+  the fix requires a single line of host configuration.
+  See <a href="rccl-atomics-hostcall.html">the RCCL write-up</a>.
 </div>
 
-<p>A fifth is worth naming separately because it is about the shape of the machine rather than the
-chip: the 2D attention path launches one workgroup per KV head, so splitting a model across two
-cards halves the KV heads, and the starved path starves twice as hard. That is a cost of tensor
-parallelism, and the single-card control measured here — an A100 running the same kernel — does not
-pay it. <a href="a100-vs-two-radeons.html">The article</a>.</p>
+<p>A fifth case warrants separate distinction because it reflects host topology rather than the silicon.
+The 2D attention path launches one workgroup per KV head. Splitting a model across two cards halves the available KV heads,
+causing compute starvation to double. That penalty is an inherent cost of tensor parallelism. The single-card control
+measured here — an A100 running the identical kernel — does not pay it.
+See <a href="a100-vs-two-radeons.html">the dual-card comparison</a>.</p>
 
 <h2><span class="n">4</span>What the hardware turned out to be for</h2>
 
-<p>Sixteen upstream threads came out of this, and the split is the point: eight are ours, and eight are
-other people's, where what this machine contributed was a measurement they could not take.</p>
+<p>Sixteen upstream threads originated from this work. The split tells the story: eight are ours, while eight belong
+to external contributors where this test bench provided measurements they could not gather themselves.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -138,76 +136,74 @@ other people's, where what this machine contributed was a measurement they could
   </figcaption>
 </figure>
 
-<p>That is the honest summary of what a pair of consumer cards is worth to this ecosystem. Not
-benchmarks — the absolute numbers here are a floor, on a VFIO guest with no peer-to-peer and a cross-die
-PCIe 3.0 path. What it is worth is being the device in the gap: the one a fix's author does not have, on
-which a compile-validation-only test plan can be turned into a runtime result.</p>
+<p>That is the realistic value of consumer cards to this software ecosystem. The goal was never raw benchmark
+throughput: running on a VFIO guest without peer-to-peer over a cross-die PCIe 3.0 link establishes only a lower bound.
+Their genuine utility lies in bridging an empirical gap: providing the physical hardware that developers lack,
+allowing compile-only validation plans to be verified against live execution.</p>
 
 <h2><span class="n">5</span>What is not established</h2>
 
 <h3>The classification is a judgement</h3>
-<p>Every magnitude beside it is recomputed, and every "why" line names the evidence, but the assignment
-of a finding to an axis is an argument rather than a measurement. Two of the eight could reasonably be
-argued into a different column: the W4A16 type gate is a plain bug that happens to sit in an
-architecture-specific kernel, and the missing tuned MoE configurations are AMD-wide inside an otherwise
-RDNA3 story.</p>
+<p>While each magnitude recomputes and each note cites evidence, assigning findings to axes remains an argument.
+Two of the eight could occupy different columns: the W4A16 type gate is a bug located in an architecture-specific kernel,
+while the absent tuned MoE configurations are AMD-wide within an RDNA3 evaluation.</p>
 
 <h3>One machine, one software generation</h3>
-<p>Everything here is gfx1100 on a VFIO guest, across two vLLM generations and two ROCm versions.
-Whether any of it holds on RDNA4 is not measured; the architecture notes say the ecosystem gap extends
-there, and that sentence is a reading of supported-hardware lists rather than a measurement.</p>
+<p>Measurements reflect gfx1100 on a VFIO guest across two vLLM generations and two ROCm versions.
+Whether these findings apply to RDNA4 was not measured. The repository notes expect the gap to extend there,
+but that statement reflects documentation audits rather than benchmark runs.</p>
 
-<h3>Whether the gaps are closing</h3> <p>One pull request merged during this work and closed half of
-one finding. That is one data point about direction, but it is not a trend. Nothing here measures
-how quickly gfx11 support has moved, only where it stood.</p>
+<h3>Whether the gaps are closing</h3>
+<p>A single upstream pull request merged during this study, resolving half of one finding.
+That resolution indicates progress, but does not prove an ongoing trend. The data records where gfx11
+support stood at the time of testing, not the velocity of upstream development.</p>
 
 <h2><span class="n">6</span>What has changed since</h2>
 
 <div class="note ok">
   <span class="lbl">2026-07-14 · one of the three narrowed by itself</span>
-  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged, adding a second
-  native kernel that accepts the checkpoint type the first one refuses. The finding survives — eight of
-  twelve asymmetric configurations still have no kernel on gfx1100 — but its headline example does not:
-  the model that decoded at 11.41 tok/s does 37.32 on current <code>main</code>.
+  Upstream pull request <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged,
+  adding a second native kernel that accepts the checkpoint type the first one refuses.
+  The finding survives — eight of twelve asymmetric configurations still have no kernel on gfx1100 — but its headline
+  example does not: the model that decoded at 11.41 tok/s reaches 37.32 on current <code>main</code>.
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-08-20 · one was fixed by a distro, not by a report</span>
   Canonical shipped the missing kernel commit in <code>7.0.0-30</code>. The Launchpad bug asking for
-  exactly that backport is still untriaged, so it came through the ordinary stable route. Reporting a
-  thing and a thing being fixed are different events, and this repository has one of each.
+  exactly that backport is still untriaged, so it arrived through the standard stable release track. Reporting an
+  issue and having it resolved remain separate events; this repository records one of each.
 </div>
 
 <div class="note warn">
   <span class="lbl">Statuses expire</span>
-  Figure 3 is a snapshot. Everything in it except one merge was open on 2026-08-29, and the useful thing
-  to do with the page is to check the links rather than trust the column.
+  Figure 3 represents a point-in-time snapshot. Everything in it except the single merge was open on 2026-08-29,
+  and the proper use of the page is to inspect the direct links rather than rely on the table status.
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · the Chinese axis label claimed exclusivity</span>
-  Figure 1's Chinese label for the architecture axis read <code>RDNA3 特有</code>, and
-  架构特有 stood in four more places. 特有 says "unique to"; the English says "specifically", and
-  this article's whole argument is that the findings are narrower than the claim, not that they are
-  exclusive to this part. Both now read 特定. The masthead's date chip said 状态核对于, which is not
-  idiomatic; it now reads 状态核查于.
+  Figure 1's Chinese label for the architecture axis previously read <code>RDNA3 特有</code>, and
+  架构特有 appeared in four additional places. While 特有 translates as "unique to", the English text specifies "specifically".
+  This article's argument is that findings are narrower than claimed, not that they are exclusive to this part.
+  Both now read 特定. The masthead date chip originally read 状态核对于, which is not idiomatic; it now reads 状态核查于.
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-08-29 · a campaign that sorted into three of these bins at once</span>
-  Twenty configurations across the two Radeons and a rented A100 produced one finding of each kind,
-  which is this taxonomy being used rather than restated. <b>Vendor-neutral:</b>
-  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> does nothing unless the
-  Triton kernel it patches is on the path, and <code>Qwen3.8-27B</code> is routed off that kernel on
-  <em>both</em> vendors — <code>ROCM_ATTN</code> here, <code>FLASH_ATTN</code> on CUDA — so the patch
-  is installed and idle on each. <b>AMD-wide:</b> ROCm's selector reaches for
-  <code>ROCM_ATTN</code> because <code>TURBOQUANT</code> is incompatible with the decoder, and leaves
-  15.0 % at 32K that <code>TRITON_ATTN</code> — in the same candidate list it printed — would have
-  kept. <b>And the middle case this article keeps finding:</b> gemma-4 cannot be served on the 0.27
-  ROCm image at all. The unsafe read is vLLM's own <code>getattr</code> default in
-  <code>model_arch_config_convertor.py</code>, which expects <code>AttributeError</code> and meets
-  transformers 5.x's own exception instead; it is reached only because AMD's Quark plugin patches the
-  config path. Not AMD's alone and not vLLM's alone.
+  Twenty configurations across the two Radeons and a rented A100 produced one finding in each category,
+  putting this taxonomy into practice. <b>Vendor-neutral:</b>
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> has effect only when the
+  patched Triton kernel is actively executing. Because <code>Qwen3.8-27B</code> bypasses that kernel on
+  <em>both</em> platforms — selecting <code>ROCM_ATTN</code> here and <code>FLASH_ATTN</code> on CUDA — the patch
+  remains installed but idle on each. <b>AMD-wide:</b> ROCm's selector opts for
+  <code>ROCM_ATTN</code> because <code>TURBOQUANT</code> cannot run with the decoder. That choice concedes
+  15.0 % at 32K context that <code>TRITON_ATTN</code> — listed in the candidate options it displayed — would have
+  preserved. <b>And the middle case this article keeps finding:</b> gemma-4 fails to serve on the 0.27
+  ROCm image entirely. An unsafe read occurs in vLLM's fallback <code>getattr</code> logic in
+  <code>model_arch_config_convertor.py</code>, which expects <code>AttributeError</code> but receives
+  transformers 5.x's custom exception instead; this branch is reached only because AMD's Quark plugin patches the
+  config path. It is neither AMD's fault alone nor vLLM's alone.
 </div>
 
 <div class="foot-note">
@@ -219,12 +215,12 @@ how quickly gfx11 support has moved, only where it stood.</p>
   <a href="moe-written-off-by-eager.html">the MoE and eager mode</a> ·
   <a href="speculative-decoding-net-loss.html">speculative decoding</a> ·
   <a href="a100-vs-two-radeons.html">two Radeons against an A100</a> ·
-  <a href="rccl-atomics-hostcall.html">the RCCL crash</a>. How any of it was measured is
-  <a href="measuring-decode.html">its own article</a>, and how a negative result was reported is
+  <a href="rccl-atomics-hostcall.html">the RCCL crash</a>. Methodology is detailed in
+  <a href="measuring-decode.html">its own article</a>, and the negative result protocol is in
   <a href="reporting-a-non-reproduction.html">another</a>.</p>
-  <p>The ecosystem list is
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>,
-  and every figure on this page is recomputed from the repository by
+  <p>The full ecosystem survey is in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>.
+  All figures on this page recompute directly from repository data via
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
 </div>
 </div>

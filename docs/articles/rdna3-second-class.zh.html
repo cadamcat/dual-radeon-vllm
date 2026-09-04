@@ -1001,15 +1001,11 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-
 <header class="top">
   <div class="kicker">综述 · RDNA3 · ROCm · vLLM</div>
-  <h1>八个结论里只有三个是 RDNA3 的，<br>而测另一个厂商拿掉了两个</h1>
-  <p class="sub">这里面有多少真的是 RDNA3 二等公民</p>
-  <p class="lede">这个仓库自己的总结说，RDNA3 在 ROCm 的 kernel 生态里是二等公民，
-  而八篇写作都挂在这个标题下面。按证据真正支持的范围重新分一遍，
-  <strong>八个里有三个是</strong>。其余的要么是 AMD 全线的、要么与厂商无关、
-  要么根本不关 GPU 的事 —— 而分清哪个是哪个，正是诊断和抱怨之间的差别。</p>
+  <h1>ROCm 内核的八个结论在 RDNA3 上收窄至三个，<br>而实测另一厂商排除了两个</h1>
+  <p class="sub">RDNA3 上的八个结论按五条硬件轴分类；对照另一厂商、内核源码与宿主机拓扑逐一核验</p>
+  <p class="lede">本仓库自身的总结将 RDNA3 称为 ROCm 内核生态里的二等公民，并将八篇文章归于该标题下。但若按证据实际支持的范围归类，<strong>八个结论中只有三个确实如此</strong>。其余结论要么覆盖 AMD 全线，要么与厂商无关，要么完全不关 GPU 的事。分清各自的归属，正是技术诊断与宣泄情绪的分水岭。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-scale" title="规模" style="--i:1"><b>8</b> 个结论 · <b>16</b> 条上游 issue 与 PR</span>
@@ -1019,25 +1015,18 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>这个论断是真的，而且比它看起来更窄。作为<strong>架构特定</strong>留下来的是一份很小很具体的清单：
-  一条这台硬件会掉下去的注意力快路径、一个类型门把常见 checkpoint 类别挡在外面的原生量化线性 kernel，
-  以及一条写在某个函数其中一个架构分支里、另一个分支没有的性能启发式。</p>
-  <p>最纯粹的那个实例是一行。<code>use_rocm_custom_paged_attention</code> 在 gfx11 上要求
-  <code>gqa_ratio &gt;= 3</code>，在 CDNA 上要求 <code>&gt;= 1</code>，用的是同一个 kernel。
-  而在被排除的区间里，那个 kernel 比它被越过去换来的兜底<strong>快 1.84 到 7.28 倍</strong>，
-  而且被排除区间与被放行区间重叠。这道界限没有分开任何东西。</p>
-  <p>八个里有四个<em>不是</em> RDNA3 的问题，而把这一点说出来正是那些测量的用途。
-  其中两个与厂商无关，但依据是两种不同的证据：同一道注意力门在另一个厂商上实测过，A100 上于 50K 掉 61 %；
-  而那个单线程编译设置在一个每个平台都会跑的文件里。一个是 AMD 全线的，在 AMD 自己指出的那一行上。
-  还有一个是 PCIe 能力位，裸机上一样会踩到。</p>
-  <p><strong>十六条上游 issue 与 PR 里有一半是别人的。</strong>
-  这台硬件最有用的地方，最后证明是：它是那些正在修这些问题的人手上没有的设备。</p>
+  <p>这一论断确有其事，但涵盖的范围比表面看来要窄。真正属于<strong>架构特定</strong>的问题只有一份简短清单：这套硬件无法走通的注意力快路径，用类型闸门将常见 checkpoint 类别拒之门外的原生量化线性内核，以及某函数中只写进单一架构分支、却在另一架构中缺失的性能启发式规则。</p>
+  <p>最纯粹的实例仅有一行代码。对于同一个内核，<code>use_rocm_custom_paged_attention</code> 在 gfx11 上要求
+  <code>gqa_ratio &gt;= 3</code>，在 CDNA 上则要求 <code>&gt;= 1</code>。在被排除的区间里，该内核比绕过它而换用的兜底实现<strong>快 1.84 到 7.28 倍</strong>，
+  且两个区间彼此重叠。这道界限没有任何区分意义。</p>
+  <p>八个结论中有四个<em>不是</em> RDNA3 的问题，实测的目的也正是为了厘清这一点。其中两个结论在不同证据下均表明与厂商无关：同一道注意力闸门在 A100 上实测显示，其在 50K 上下文时性能下降 61 %；此外，单线程编译设置经溯源位于一个所有平台均会执行的文件中。第三个问题覆盖 AMD 全线，根源在于 AMD 明确指出的某行内核代码。最后一个问题则是 PCIe 能力位限制，在裸机环境下同样会遇到。</p>
+  <p><strong>十六条上游 issue 与 PR 中有一半属于其他开发者。</strong>
+  这套硬件发挥的最大作用，无非是充当了上游开发者手头缺少的那台测试机。</p>
 </div>
 
-<h2><span class="n">1</span>把八个结论按它们真正关于什么分类</h2>
+<h2><span class="n">1</span>按实际成因对八个结论归类</h2>
 
-<p>下面每一行都是一篇独立文章，旁边每一个数字都从那篇文章所依据的文件里重算。
-这里唯一属于判断的东西就是这个分类，所以每一行都附上了把它放在那个位置上的证据。</p>
+<p>下表每一行均对应一篇独立文章，其旁标注的每个数字都直接基于底层数据文件由仓库重算。这里的分类归属是唯一带有主观判断的部分，因此每行都列出了将其归入对应硬件轴的事实证据。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1054,10 +1043,9 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<h2><span class="n">2</span>最纯粹的实例是一行</h2>
+<h2><span class="n">2</span>最纯粹的实例只有一行</h2>
 
-<p>如果"二等公民"要有一个精确的含义，那就是：同一套软件为你做的选择和为别人做的不同，
-而给出的理由经不起核对。<code>vllm/platforms/rocm.py</code> 里的一个函数正是这样：</p>
+<p>如果"二等公民"具有确切的定义，那便是同一套软件在面对不同架构时做出区别对待，而背后的依据却经不起实测核验。<code>vllm/platforms/rocm.py</code> 中的一个函数就正是如此：</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1076,49 +1064,32 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<p>这四个里有两个值得分开说。<strong>AITER 和 FP8 按设计就是 Instinct 独有</strong>，
-也没有人声称过别的；那是产品决定，不是缺陷。<strong>缺失的 MoE 调优配置对任何 AMD GPU 都缺</strong>，
-这让它成为 AMD 全线的缺口而不是 RDNA3 的。只有 Composable Kernel 在 RDNA3 上融合注意力只有前向这一条，
-和上面那道门一起，实打实落在架构这条轴上。</p>
+<p>上述四个缺口中有两个需要明确区分。<strong>AITER 与 FP8 在设计上就仅面向 Instinct</strong>，这体现的是刻意的产品边界而非软件缺陷。<strong>缺失的 MoE 调优配置在任何 AMD GPU 上均不存在</strong>，因此属于 AMD 全线的缺口而非 RDNA3 特有的局限。唯有 Composable Kernel 在 RDNA3 上仅支持前向融合注意力这一条，与上文的闸门并列，确凿无疑地落在架构特定这条轴上。</p>
 
-<h2><span class="n">3</span>不属于这一类的那四个</h2>
+<h2><span class="n">3</span>不属于此类的另外四个</h2>
 
-<p>最要紧的那些测量，恰恰是把一个结论从这张清单上<em>拿下来</em>的那些。</p>
+<p>分量最重的那些实测，恰恰是将结论从这份清单中<em>排除出去</em>的测试。</p>
 
 <div class="note">
-  <span class="lbl">两个是靠在另一个厂商上实测才定的</span>
-  投机解码在长上下文塌陷，看起来像一个 RDNA3 的故事 ——
-  直到同一个模型在一张租来的 A100 上经由同一个 Triton kernel 在 50K 掉了 61 %，
-  而换到一个没有这道门的后端就不掉了。而一个 128 专家的 MoE 被记作 15 tok/s，
-  看起来像 ROCm 缺调优 kernel —— 直到成因查明是 <code>env_override.py</code>
-  里一个每个平台都会执行的普通赋值。<a href="speculative-decoding-net-loss.zh.html">一篇</a>和
-  <a href="moe-written-off-by-eager.zh.html">另一篇</a>。
+  <span class="lbl">两个结论经由实测另一厂商而确立</span>
+  长上下文下投机解码性能塌陷，最初看似是 RDNA3 的问题。然而在租用的 A100 上测试同一模型时，走同一个 Triton 内核在 50K 下同样出现 61 % 的性能跌幅，且在没有该防护检查的后端上恢复了正常。同样，128 专家 MoE 跑出 15 tok/s 的极低吞吐，起初令人怀疑是 ROCm 缺少调优内核所致。实际原因却是 <code>env_override.py</code> 中一行在所有平台上均会执行的赋值语句。参见<a href="speculative-decoding-net-loss.zh.html">投机解码报告</a>与<a href="moe-written-off-by-eager.zh.html">另一篇 MoE 报告</a>。
 </div>
 
 <div class="note">
-  <span class="lbl">一个是 AMD 全线的，在 AMD 自己点名的那一行上</span>
-  加载权重比磁盘还慢，是 <code>kfd_svm.c</code> 从 VMA 上读访问模式，
-  于是一次只读的拷贝去要写权限，把每一个常驻页上的 copy-on-write 都打断。
-  那个文件不是架构特定的，AMD 确认了机理，而且有外人在另一块卡上复现了。
-  <a href="weight-loading-19x.zh.html">那篇文章</a>。
+  <span class="lbl">一个属于 AMD 全线，根源在 AMD 指明的一行代码中</span>
+  权重加载速度甚至低于磁盘读取，根源在于 <code>kfd_svm.c</code> 直接从 VMA 读取访问模式。只读拷贝请求了写权限，从而破坏了所有常驻内存页上的 copy-on-write 机制。该内核文件并不针对特定架构。AMD 确认了这一机理，第三方开发者也在另一款显卡上复现了该故障。详见<a href="weight-loading-19x.zh.html">完整分析文章</a>。
 </div>
 
 <div class="note">
-  <span class="lbl">一个根本不关 GPU 的事</span>
-  所有 RCCL 集合通信在 dispatch 阶段失败，是卡上方根端口的 PCIe AtomicOps 能力问题。
-  它在裸机上一样复现，和插的是哪块 GPU 无关，而对虚拟机来说修复是一行配置。
-  <a href="rccl-atomics-hostcall.zh.html">那篇文章</a>。
+  <span class="lbl">一个完全与 GPU 无关</span>
+  所有 RCCL 集合通信在 dispatch 阶段崩溃，是因为卡上方的 PCIe 根端口缺少 AtomicOps 能力。该故障在裸机环境下同样能够复现，与系统中安装了哪款 GPU 毫无关联。对于虚拟机环境，修复只需一行宿主机配置。参见<a href="rccl-atomics-hostcall.zh.html">关于 RCCL 的分析文章</a>。
 </div>
 
-<p>还有第五个值得单独点名，因为它关于机器的形状而不是芯片：2D 注意力路径每个 KV head
-启动一个 workgroup，所以把模型切到两张卡上会把它们减半，被饿着的那条路径被饿得加倍厉害。
-那是张量并行的代价，而这里实测的单卡对照——跑同一个 kernel 的那张 A100——不付这笔钱。
-<a href="a100-vs-two-radeons.zh.html">那篇文章</a>。</p>
+<p>第五个案例值得单独列出，因为它反映的是宿主机拓扑而非芯片本身。2D 注意力路径为每个 KV head 启动一个 workgroup；将模型拆分到两张卡上会使可用的 KV head 减半，导致计算饥饿程度加倍。这种性能惩罚属于张量并行的固有代价。此处作为实测单卡对照的 A100 运行着完全相同的内核，因此无需承担这笔开销。参见<a href="a100-vs-two-radeons.zh.html">双卡对比分析</a>。</p>
 
-<h2><span class="n">4</span>这套硬件最后证明是干什么用的</h2>
+<h2><span class="n">4</span>这套硬件最终证明的真正用途</h2>
 
-<p>这些工作产出了十六条上游 issue 与 PR，而其中的分法才是重点：八条是我们的，
-八条是别人的 —— 在别人那几条里，这台机器贡献的是一次他们做不到的测量。</p>
+<p>这项工作共衍生出十六条上游讨论。其中的分布很能说明问题：八条来自本仓库，另外八条则属于外部贡献者；在这后者之中，本测试平台提供的是对方无法自行采集的实测数据。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1135,93 +1106,63 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<p>这就是"一对消费级显卡对这个生态值多少"的诚实总结。不是跑分 ——
-这里的绝对数字是下界，跑在一台没有 P2P、走跨 die PCIe 3.0 的 VFIO guest 上。
-它的价值是充当那个缺口里的设备：修复的作者手上没有的那一台，
-让一份"只做过编译验证"的测试计划变成一个运行时结果。</p>
+<p>这便是消费级显卡对此软件生态真实价值的客观总结。本测试的目的从来不是追求极致跑分：在没有 P2P、依靠跨 die PCIe 3.0 链路的 VFIO 客户机上运行，测出的绝对吞吐仅仅是下限。它们真正的价值在于填补实测空缺：为缺乏对应硬件的开发者提供实体机器，让那些仅在编译层面做过验证的测试计划得以经受实际运行的检验。</p>
 
 <h2><span class="n">5</span>没有被确立的部分</h2>
 
 <h3>这个分类是一个判断</h3>
-<p>旁边每一个倍数都是重算的，每一条"理由"也点了证据，但把某个结论归到某条轴上，
-是一个论证而不是一次测量。八个里有两个可以合理地被争到另一列去：
-W4A16 那个类型门是一个恰好落在架构特定 kernel 里的普通 bug；
-而缺失的 MoE 调优配置是一个 AMD 全线的缺口，被包在一个原本属于 RDNA3 的故事里。</p>
+<p>尽管各项倍数均可重算且每条依据均给出了事实支持，将结论归入特定硬件轴依然属于逻辑推论而非直接实测。八个结论中有两个可合情合理地归入其他类别：W4A16 类型闸门本质上是恰好位于特定架构内核中的常规缺陷；而缺失的 MoE 调优配置虽放在 RDNA3 评测中讨论，本质上却涵盖 AMD 全线。</p>
 
 <h3>一台机器，一代软件</h3>
-<p>这里的一切都是一台 VFIO guest 上的 gfx1100，跨两代 vLLM 和两个 ROCm 版本。
-其中任何一条在 RDNA4 上是否成立，没有测过；架构笔记说这个生态缺口会延伸到那里，
-而那句话是对支持硬件清单的一种读法，不是一次测量。</p>
+<p>所有实测均基于 VFIO 客户机上的 gfx1100，跨越两代 vLLM 与两个 ROCm 版本。这些结论是否适用于 RDNA4 并未做过实测；仓库架构笔记虽预期该生态缺口会延伸至该架构，但该断言仅来自对支持硬件文档的核对，而非基准测试。</p>
 
 <h3>这些缺口是否在收窄</h3>
-<p>这段工作期间有一个 PR 合入，关掉了某个结论的一半。那是关于方向的一个数据点，不是一条趋势。
-这里没有任何东西测量 gfx11 的支持推进得有多快，只记录了它现在走到哪一步。</p>
+<p>测试期间仅有一项上游 PR 得到合并并解决了半个问题。这指明了改进方向，却不足以构成整体趋势。本文仅记录了测试当时 gfx11 支持的实际现状，并未衡量上游开发的推进速度。</p>
 
 <h2><span class="n">6</span>此后发生的变化</h2>
 
 <div class="note ok">
-  <span class="lbl">2026-07-14 · 三个里有一个自己变窄了</span>
-  <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 合入，
-  加了第二个原生 kernel，它接受第一个拒绝的那种 checkpoint 类型。这个结论还在 ——
-  十二个非对称配置里仍有八个在 gfx1100 上没有 kernel —— 但它的招牌例子没了：
-  那个曾经 11.41 tok/s 的模型，在当前 <code>main</code> 上是 37.32。
+  <span class="lbl">2026-07-14 · 三个结论中有一个范围自行收窄</span>
+  上游 PR <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 现已合并，新增的第二个原生内核支持了此前被拒的 checkpoint 类型。该结论的核心事实依然成立：十二个非对称配置中仍有八个在 gfx1100 上缺乏内核支持。但原先最具代表性的案例已不复存在，先前解码速率仅 11.41 tok/s 的模型在当前 <code>main</code> 分支上已提升至 37.32。
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-20 · 有一个是被发行版修的，不是被报告修的</span>
-  Canonical 在 <code>7.0.0-30</code> 里发出了缺失的那个内核 commit。
-  那个专门请求这次 backport 的 Launchpad bug 至今未经分诊，所以它是走普通 stable 流程进来的。
-  "报告了一件事"和"一件事被修了"是两个不同的事件，而这个仓库两样各有一个。
+  <span class="lbl">2026-08-20 · 一处修复出自发行版日常维护，而非针对报告的响应</span>
+  Canonical 在 <code>7.0.0-30</code> 中发布了缺失的内核 commit。专门请求该 backport 的 Launchpad bug 至今仍未经分诊，说明该改动只是随常规 stable 维护流程进入系统。提交问题报告与问题得到修复是两码事，本仓库对这两类情况各记录了一例。
 </div>
 
 <div class="note warn">
-  <span class="lbl">状态会过期</span>
-  图 3 是一张快照。除了一次合并之外，里面的一切在 2026-08-29 都还开着；
-  对这一页正确的用法是去点那些链接，而不是相信那一列。
+  <span class="lbl">状态信息具有时效性</span>
+  图 3 仅代表特定时间点的快照。除了一处合并，表中所有项目在 2026-08-29 时均处于开启状态。阅读本文时应当直接点击链接查看实时进展，而非单纯依赖表格中的状态列。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 中文的轴标签宣称了排他性</span>
-  图 1 里架构那一轴的中文标签原写作 <code>RDNA3 特有</code>，"架构特有"另有四处。
-  "特有"是"唯独有"，而英文写的是 specifically；本文的全部论证恰恰是这些结论比那句断言更窄，
-  不是说它们为这块芯片所独有。两处都已改为"特定"。masthead 的日期 chip 原写作"状态核对于"，
-  不成词，现改为"状态核查于"。
+  <span class="lbl">2026-08-29 · 中文轴标签曾暗示排他性</span>
+  图 1 中架构轴的原中文标签写作 <code>RDNA3 特有</code>，"架构特有"一词亦在文内另外四处出现。"特有"表达的是"独占"，而英文原文表述为 specifically。本文的完整论点在于这些结论比通常断言的范围更窄，而非为该芯片所独有。目前相关表述均已修订为"特定"。此外，页头日期 chip 原写作"状态核对于"并不通顺，现已统一修正为"状态核查于"。
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-29 · 一次 campaign 同时落进了其中三个类</span>
-  在两张 Radeon 和一台租来的 A100 上跑的二十个配置，各产出一个类别的结论 ——
-  这是上面这套分类被<em>用起来</em>，而不是被重述一遍。<b>与厂商无关：</b>
-  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
-  只有在它所修改的那个 Triton 内核真在执行路径上时才起作用，而 <code>Qwen3.8-27B</code>
-  在<em>两个</em>厂商上都被路由到别处 —— 这边是 <code>ROCM_ATTN</code>，CUDA 上是
-  <code>FLASH_ATTN</code> —— 于是补丁在两边都装着、都闲着。<b>AMD 范围：</b>ROCm 的选择器
-  会去取 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容；这在 32K 上
-  留下了 15.0 %，而 <code>TRITON_ATTN</code> —— 就在它自己打印出来的候选列表里 —— 本可以保住。
-  <b>以及本文反复遇到的那个中间态：</b>gemma-4 在 0.27 的 ROCm 镜像上根本起不来。
-  那个不安全的读取是 vLLM 自己的 <code>getattr</code> 默认值，在
-  <code>model_arch_config_convertor.py</code> 里 —— 它等的是 <code>AttributeError</code>，
-  遇到的却是 transformers 5.x 自己的异常；而这条路径只有在 AMD 的 Quark 插件改写了 config
-  流程之后才会被走到。既不单是 AMD 的，也不单是 vLLM 的。
+  <span class="lbl">2026-08-29 · 一场 campaign 同时落入其中三个类别</span>
+  在两张 Radeon 和一台租用的 A100 上测试二十个配置，每个类别各得出一个结论，将上述分类体系落到了实处。<b>与厂商无关：</b><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 仅在其修补的 Triton 内核实际处于执行路径上时方能生效。由于 <code>Qwen3.8-27B</code> 在<em>两家</em>平台上均绕开了该内核（本平台选走 <code>ROCM_ATTN</code>，CUDA 上则走 <code>FLASH_ATTN</code>），导致该补丁在两边虽已合入却均处于闲置状态。<b>AMD 全线：</b>由于 <code>TURBOQUANT</code> 无法与解码器兼容，ROCm 的选择器转向 <code>ROCM_ATTN</code>。在 32K 上下文下，这一抉择拱手让出了 15.0 % 的性能，而其所列出的候选列表中包含的 <code>TRITON_ATTN</code> 本可保全这部分性能。<b>以及本文反复遇到的中间案例：</b>gemma-4 在 0.27 ROCm 镜像上完全无法提供服务。不安全读取发生于 <code>model_arch_config_convertor.py</code> 中 vLLM 自带的 <code>getattr</code> 回退逻辑，该逻辑预期捕获 <code>AttributeError</code>，却收到了 transformers 5.x 抛出的自定义异常；且该分支之所以被执行，仅因 AMD 的 Quark 插件介入并修改了配置路径。这既非 AMD 单方面的过失，亦非 vLLM 独有的问题。
 </div>
 
 <div class="foot-note">
-  <p><strong>那八篇。</strong>
-  <a href="hybrid-ssm-collapse.zh.html">混合 SSM 的塌陷</a> ·
-  <a href="w4a16-two-problems.zh.html">一个模型里的两个问题</a> ·
-  <a href="gqa-gate-costs-nothing.zh.html">gqa 那道门</a> ·
-  <a href="weight-loading-19x.zh.html">加载权重</a> ·
+  <p><strong>八篇专题文章。</strong>
+  <a href="hybrid-ssm-collapse.zh.html">混合 SSM 的性能塌陷</a> ·
+  <a href="w4a16-two-problems.zh.html">单一模型中的两个问题</a> ·
+  <a href="gqa-gate-costs-nothing.zh.html">GQA 闸门</a> ·
+  <a href="weight-loading-19x.zh.html">权重加载瓶颈</a> ·
   <a href="moe-written-off-by-eager.zh.html">MoE 与 eager 模式</a> ·
-  <a href="speculative-decoding-net-loss.zh.html">投机解码</a> ·
-  <a href="a100-vs-two-radeons.zh.html">两张 Radeon 对一张 A100</a> ·
-  <a href="rccl-atomics-hostcall.zh.html">RCCL 崩溃</a>。这些是怎么测出来的，
-  <a href="measuring-decode.zh.html">有自己的一篇</a>；
-  一个否定结论是怎么报告的，<a href="reporting-a-non-reproduction.zh.html">又是一篇</a>。</p>
-  <p>生态清单在
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>，
-  而本页每一张图都由
+  <a href="speculative-decoding-net-loss.zh.html">投机解码收益翻转</a> ·
+  <a href="a100-vs-two-radeons.zh.html">双卡 Radeon 对比单卡 A100</a> ·
+  <a href="rccl-atomics-hostcall.zh.html">RCCL 崩溃机理</a>。测试方法论详见
+  <a href="measuring-decode.zh.html">解码速率测量专文</a>，
+  非复现实验的报告规范见<a href="reporting-a-non-reproduction.zh.html">否定结论报告一文</a>。</p>
+  <p>完整生态调研见
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/architecture-notes.md">docs/architecture-notes.md</a>。
+  本页所有图表均由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-  从仓库重算。</p>
+  基于仓库数据直接重算。</p>
 </div>
 </div>
 

@@ -972,66 +972,65 @@ addEventListener("DOMContentLoaded", function () {
 </script>
 <div class="wrap">
 <header class="top"> <div class="kicker">RDNA3 · MoE · torch.compile · measured on 2× RX 7900
-XT</div> <h1>Eager mode recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
-<p class="sub">The fastest model here was written off at 15 tok/s</p> <p class="lede">An earlier
-probe gave <code>torch.compile</code> twenty minutes, ran out of patience, added
-<code>--enforce-eager</code>, and recorded about 15 tok/s. "MoE is impractical on ROCm" went into
-this repository's own documents. Engine initialisation needs twenty-six minutes. Compiled, the same
+XT</div> <h1>Run under vLLM's --enforce-eager, the fastest model here recorded 107.8 tok/s as 15,<br>and invented two findings on the way</h1>
+<p class="sub">Run under <code>--enforce-eager</code> at 15 tok/s; checked against torch.compile on two cards, with power symmetric and decode context-dependent</p> <p class="lede">An earlier
+benchmark run gave <code>torch.compile</code> twenty minutes before timing out. Adding
+<code>--enforce-eager</code> recorded about 15 tok/s, leading this repository to conclude that MoE was impractical on ROCm. Engine initialisation actually requires twenty-six minutes. Compiled, the same
 model is the fastest of five architectures measured on this machine.</p> <div class="meta">
     <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-model" title="model" style="--i:1"><b>gemma-4-26B-A4B</b> · 128 experts</span>
     <span class="chip k-platform" title="platform" style="--i:2">Zen 1 host · <b>8 cores</b></span>
     <span class="chip k-date" title="date" style="--i:3">measured <b>2026-07-25</b></span> </div> </header>
 
-<div class="abstract"> <h3>Abstract</h3> <p>Compiled, a 128-expert MoE decodes at <strong>107.82
-tok/s</strong> at 500 tokens of context and 72.80 at 32000, ahead of every dense model measured here
-including ones with more parameters. Under <code>--enforce-eager</code> the same model was recorded
-at about 15, and that number is what the verdict was written from.</p> <p>The cost of not using
-eager is one engine start of <strong>1569 seconds</strong>, of which 54 is loading weights.
-Compilation is single-threaded on an eight-core host because <code>vllm/env_override.py</code>
-assigns <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> on import — a plain assignment, so
-exporting the variable yourself does nothing.</p> <p><strong>The 7.2× is not the damage.</strong>
-Eager also produced two qualitative phenomena that were read as properties of the architecture: a
-131 W / 65 W split between the cards, taken as expert imbalance, and a decode rate independent of
-context, taken as a hybrid-like advantage. Compiled, the 22 measured rows are symmetric to within
-<strong>2.26 %</strong> with identical VRAM on both cards, and the rate falls by a third across the
-context ladder.</p> <p>Both wrong conclusions were published in this repository before they were
-withdrawn. The contribution here is two lines upstream —
+<div class="abstract"> <h3>Abstract</h3> <p>When compiled, a 128-expert MoE decodes at <strong>107.82
+tok/s</strong> at 500 tokens of context and 72.80 at 32000, leading every dense model measured here,
+including checkpoints with higher parameter counts. Under <code>--enforce-eager</code> the same model was recorded
+at about 15, and that unoptimized figure formed the basis for the published verdict.</p> <p>Avoiding eager mode
+requires an engine startup of <strong>1569 seconds</strong>, of which 54 is loading weights.
+Compilation runs single-threaded on an eight-core host because <code>vllm/env_override.py</code>
+assigns <code>TORCHINDUCTOR_COMPILE_THREADS = "1"</code> on import. Because it is a hard assignment,
+exporting the variable in the environment has no effect.</p> <p><strong>The 7.2× throughput loss is not the main damage.</strong>
+Eager execution also produced two qualitative artifacts that were mistaken for architectural traits: a
+131 W / 65 W power split across cards, interpreted as expert imbalance, and a decode rate flat across
+context, interpreted as hybrid-like scaling. When compiled, the 22 measured rows are symmetric to within
+<strong>2.26 %</strong> with identical VRAM on both cards, and throughput falls by a third across the
+context ladder.</p> <p>Both erroneous conclusions were published in this repository before being corrected.
+The upstream fix is two lines —
 <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
-<a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> — which keep the default of
-one thread and let a deliberate override through.</p> </div>
+<a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a> — which preserve the single-thread default
+while allowing an explicit environment override.</p> </div>
 
 <h2><span class="n">1</span>What is being measured</h2>
 
-<p>One campaign, 2026-07-25, seven configurations and eight engine starts, 146 timed generations
-across five models and two parallelism settings. Decode rate is reported by the server over a
-generation of several hundred tokens after a warm-up; each cell is the mean of two rounds. Board
+<p>The campaign from 2026-07-25 covers seven configurations and eight engine starts, totaling 146 timed generations
+across five models and two parallelism settings. The server reports decode throughput over a
+generation of several hundred tokens after a warm-up; each cell represents the mean of two rounds. Board
 power is sampled during each generation and recorded per card as the maximum seen in that window,
 alongside per-card VRAM.</p>
 
-<p><strong><code>init_engine_s</code> is engine initialisation, not compile time.</strong> It covers
+<p><strong><code>init_engine_s</code> is engine initialisation, not compile time.</strong> It encompasses
 loading weights, profiling, allocating the KV cache, <code>torch.compile</code> and graph capture. The
-weight-loading share is recorded separately, which is what lets Figure 2 show that on the two slow
+weight-loading share is tracked separately, which is what lets Figure 2 show that on the two slow
 starts it is not where the time goes. Nothing here isolates Inductor's own share of the remainder.</p>
 
 <div class="note warn"> <span class="lbl">The eager raw output is not in this repository</span>
 Every compiled figure below is recomputed from <code>benchmarks/results.jsonl</code>. The eager
-measurements are not: they come from an earlier probe whose raw output was never committed, and they
-survive only as prose in <code>docs/benchmarks.md</code>. The article extracts them from that
+measurements lack committed raw records: they come from an earlier probe whose raw output was never committed, surviving
+only as quoted text in <code>docs/benchmarks.md</code>. This article extracts them from that
 document rather than restating them, so the two cannot drift apart, but extraction is not the same
 as recomputation and the figures say so where it applies. The number that decided an architecture
 verdict is the one with the weakest provenance in this article. </div>
 
 <h2><span class="n">2</span>The verdict that got published</h2>
 
-<p>The probe recorded the model as <em>"torch.compile did not finish in 20 minutes → impractical →
-forced <code>--enforce-eager</code> → ~15 tok/s"</em>, plus <em>"severely asymmetric power draw
-(131 W / 65 W), the MoE fails to load both cards evenly"</em>. It was filed under architectures held
+<p>The exploratory probe logged the model as <em>"torch.compile did not finish in 20 minutes → impractical →
+forced <code>--enforce-eager</code> → ~15 tok/s"</em>, adding <em>"severely asymmetric power draw
+(131 W / 65 W), the MoE fails to load both cards evenly"</em>. The model was filed under architectures held
 back by ROCm, and the repository's architecture table read "mediocre, ~15 tok/s" for months.</p>
 
-<p>Nothing about that reasoning is unusual. A compile that has not finished in twenty minutes looks
+<p>Nothing about that initial reasoning is unusual. A compile that has not finished in twenty minutes looks
 like a compile that is not going to finish, and eager is the documented way past it. The step that does
-not survive is the one after: treating what eager then reports as a measurement of the architecture.</p>
+not survive is the subsequent assumption: treating what eager then reports as a measurement of the architecture.</p>
 
 <figure class="rv" id="fig1"> <div class="figbox"> <div class="figtitle">Figure 1 · where each
 architecture ranks at 500 tokens of context <span class="prov yes">recomputable from repo</span>
@@ -1046,7 +1045,7 @@ place the ladder. </figcaption> </figure>
 
 <p>The 12B dense model repeated the mistake independently. An earlier context sweep used
 <code>--enforce-eager</code> to dodge the same compile wall and produced "a flat 15.8 tok/s, independent
-of context, with power bouncing between the cards". Compiled it is 59.91, and the flatness is gone.</p>
+of context, with power bouncing between the cards". Compiled it reaches 59.91, and the artificial flatness is gone.</p>
 
 <h2><span class="n">3</span>Where twenty-six minutes goes</h2>
 
@@ -1074,24 +1073,24 @@ of context, with power bouncing between the cards". Compiled it is 59.91, and th
 <pre>os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = <span class="k">"1"</span>
 </pre></div>
 
-<p>It is an assignment rather than a <code>setdefault</code>, so a value exported in the environment is
-overwritten before Inductor reads it. Importing vLLM leaves
+<p>Because the code uses direct assignment rather than a <code>setdefault</code>, any value exported in the environment is
+overwritten before Inductor reads it. Importing vLLM forces
 <code>torch._inductor.config.compile_threads == 1</code> whatever the caller asked for. Inductor's own
-default would be one worker per core.</p>
+default would allocate one worker per core.</p>
 
 <div class="note"> <span class="lbl">The default itself is not the problem</span> Single-threaded
-compilation is deliberate upstream, for reasons recorded in
+compilation is deliberate upstream, addressing edge cases recorded in
 <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
 <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>: compile subprocesses
-interact badly with debuggers and with some launch paths. Changing that default is a different
-argument from the one made here. What is being reported is narrower: the mechanism gives the
-operator no way to opt out. That is almost certainly not intended, since a plain assignment is what
-a <code>setdefault</code> looks like when nobody has needed the override yet. </div>
+interact badly with debuggers and specialized launch paths. Changing that default is a different
+argument from the one made here. What is reported is narrower: the mechanism provides the
+operator no way to opt out. That omission was not intended; a plain assignment is simply what
+a <code>setdefault</code> looks like before an override is needed. </div>
 
 <h2><span class="n">4</span>The two things eager invented</h2>
 
-<p>A 7.2× throughput loss is a bad measurement and a reader can discount it. The harder failure is that
-eager produced two <em>qualitative</em> results, each of which reads as a fact about the model rather
+<p>A 7.2× throughput loss is an obvious measurement flaw that a reader can discount. The deeper error is that
+eager produced two <em>qualitative</em> results, each reading as a fact about the model rather
 than about the flag.</p>
 
 <figure class="rv" id="fig3">
@@ -1112,11 +1111,11 @@ than about the flag.</p>
   </figcaption>
 </figure>
 
-<p>The power reading had an explanation ready, and it was wrong. Under pure tensor parallelism vLLM
-keeps <em>all</em> experts on <em>every</em> GPU and shards each expert's weights along the intermediate
-dimension, so compute is symmetric whatever the router does. Routing imbalance is a property of expert
-parallelism, which is not what was running. The asymmetry disappearing under compilation is what
-confirms it: nothing about the experts changed.</p>
+<p>The power reading had an intuitive explanation ready, but it was wrong. Under pure tensor parallelism vLLM
+maintains <em>all</em> experts on <em>every</em> GPU and shards each expert's weights along the intermediate
+dimension, so compute remains symmetric whatever the router does. Routing imbalance is a property of expert
+parallelism, which was not running here. The asymmetry disappearing under compilation confirms it:
+nothing about expert execution changed.</p>
 
 <h2><span class="n">5</span>What was sent upstream</h2>
 
@@ -1135,38 +1134,36 @@ confirms it: nothing about the experts changed.</p>
   <code>rocm</code>: an exported <code>TORCHINDUCTOR_COMPILE_THREADS</code> is silently overwritten.</dd>
   <dt>proposed</dt>
   <dd><a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>, same day. The default of
-  one is kept; only a deliberate export gets through.</dd>
+  one is preserved; explicit exports are respected.</dd>
   <dt>verified</dt>
   <dd>On the ROCm 7.14 / vLLM 0.23 image, importing <code>vllm.env_override</code> with the variable
-  exported to 8 leaves <code>compile_threads == 8</code>; unset, it is 1 as before. Unpatched, the first
-  case comes back clobbered.</dd>
+  exported to 8 leaves <code>compile_threads == 8</code>; unset, it resolves to 1 as before. Unpatched, the custom
+  export is clobbered.</dd>
 </dl>
 
 <h2><span class="n">6</span>What is not established</h2>
 
 <h3>That the compile output is usefully cached</h3>
-<p>The advice that goes with a 26-minute compile is "once, then cached", and this campaign does not
-support it. The only repeated start is the 12B at TP=1, where the cold side is 59.67 s and the warm side
-33.36 s — a 1.79× saving on a start that was never the problem. Neither of the two configurations that
-took more than twenty minutes was ever started a second time here, so the warm cost of the expensive
-case is unmeasured. Compile caching is real and documented upstream; what is missing is a measurement of
-it on this host.</p>
+<p>Guidance suggests a 26-minute compile is amortized by caching, but the campaign cannot verify this.
+The sole repeated start is the 12B at TP=1, dropping from 59.67 s cold to
+33.36 s warm — a 1.79× saving on a start that was never the problem. Neither configuration exceeding
+twenty minutes was restarted here, leaving warm-start costs unmeasured. Compile caching is real upstream, but unverified on this host.</p>
 
 <h3>How much of the 1569 s is Inductor</h3>
-<p><code>init_engine_s</code> covers loading, profiling, KV allocation, compilation and graph capture.
-Weight loading is separated out and is small. The rest is not decomposed, so "the compile takes 26
+<p><code>init_engine_s</code> aggregates loading, profiling, KV allocation, compilation, and graph capture.
+Weight loading is isolated and negligible. The remaining phases are not decomposed; "the compile takes 26
 minutes" is shorthand for "engine init takes 26 minutes and it is not the weights".</p>
 
 <h3>The eager side of every comparison</h3>
-<p>The eager rates and the 131 W / 65 W reading were not recorded to a committed file. They are quoted
-from the document that carries them, and a re-run under <code>--enforce-eager</code> would be needed to
-put them on the same footing as everything else here. The direction is not in doubt; the exact ratio is
-one significant figure at best.</p>
+<p>The eager rates and the 131 W / 65 W reading lack committed raw logs. Quoted
+from documentation notes, a re-run under <code>--enforce-eager</code> is needed to
+put them on equal footing with the rest of the campaign. The performance direction is certain; the exact ratio holds
+single-digit precision at best.</p>
 
 <h3>One host, and it is a slow one</h3>
-<p>A Zen 1 Threadripper with eight cores available to the container. The compile-thread argument scales
-with core count, and on a machine with many fast cores the same change is worth proportionally more.
-Nothing here measures the patched build's compile time, because the patch is upstream's to take.</p>
+<p>The benchmark host is a Zen 1 Threadripper with eight cores allocated to the container. The compile-thread argument scales
+with core count, giving high-core systems proportionally larger gains.
+The patched build's compile time was not measured directly, pending upstream adoption.</p>
 
 <h2><span class="n">7</span>What has changed since</h2>
 
@@ -1214,16 +1211,15 @@ Nothing here measures the patched build's compile time, because the patch is ups
 </div>
 
 <div class="foot-note">
-  <p><strong>The data.</strong> The campaign is
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>
-  — one line per timed generation, carrying decode rate, per-card power and per-card VRAM, plus a
-  <code>model_meta</code> line per engine start. The figures here are recomputed from it by
+  <p><strong>The data.</strong> Benchmark data resides in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>,
+  logging decode rate, power, and VRAM per generation, plus engine start metadata. The figures here are recomputed from it by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>;
-  the eager row is extracted from
+  the uncommitted eager row is extracted from
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/benchmarks.md">docs/benchmarks.md §1</a>.</p>
   <p>Upstream: <a href="https://github.com/vllm-project/vllm/issues/53891">vllm#53891</a> and
-  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>. The reasons the default is
-  one thread are in <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
+  <a href="https://github.com/vllm-project/vllm/pull/53892">vllm#53892</a>. Upstream context on the single-thread
+  default is documented in <a href="https://github.com/vllm-project/vllm/issues/10480">vllm#10480</a> and
   <a href="https://github.com/vllm-project/vllm/pull/10619">vllm#10619</a>.</p>
 </div>
 </div>

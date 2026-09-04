@@ -992,16 +992,11 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-
 <header class="top"> <div class="kicker">RDNA3 · paged attention · vLLM · 实测于 2× RX 7900 XT</div>
 
-<h1>被排除的 kernel 在六十个格子里全赢，<br>而两个区间还互相重叠</h1> <p class="sub">一道 2 到 7 倍的门，什么也没换来</p>
+<h1>vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，<br>且两个区间互相重叠</h1> <p class="sub">以 use_rocm_custom_paged_attention 实测；定制内核对比 Triton 兜底，带来 2 到 7 倍加速</p>
 
-<p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention kernel 只在 query head 与 KV head 的比值至少为 3
-
-时才启用。而在被排除的那个区间里，同一个 kernel 比它被越过去换来的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>，在这么长的求和上，数值也在 bf16
-
-给得起的范围内与之等价。 六十个格子、两个 vLLM 版本，无一例外。</p> <div class="meta">     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
+<p class="lede">在 gfx11 上，vLLM 的 ROCm 定制 paged-attention 内核只有在 query head 与 KV head 的比值达到 3 或更高时才会启用。而在被排除的区间内，定制内核比本该启用的 Triton 兜底<strong>快 1.70 到 7.28 倍</strong>。面对如此长序列的求和，两者的数值在 bf16 精度容限内完全等价。六十个格子、两个 vLLM 版本，无一例外。</p> <div class="meta">     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100</span>
     <span class="chip k-stack" title="软件栈" style="--i:1">vLLM <b>0.23.1</b> 与 <b>0.27.1</b></span>
     <span class="chip k-hardware" title="硬件" style="--i:2">外加一张跑同一份 Triton 源码的 <b>A100</b></span>
     <span class="chip k-upstream" title="上游" style="--i:3">已提为 <b>vllm#54210</b></span>
@@ -1009,37 +1004,21 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>这个界限随
-  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 进来，
-  它自己的说明写着这个 kernel "支持 gqa_ratio 到 16，并在 gqa_ratio 为 3 或更高时相对现有
-  kernel 有性能收益"。所以它是<strong>一个性能启发式，不是能力限制</strong>；
-  同一个函数的 CDNA 分支从 ratio 1 起就跑同一个 kernel。这两点在 <code>main</code> 上今天依然成立。</p>
-  <p>真去测，这个启发式在这里是反的。六十个实测格子 —— 五种形状、六个上下文长度、两代 vLLM ——
-  定制 kernel 在<strong>每一个</strong>格子里都更快，而且被排除的区间与被放行的区间在两个版本上都重叠。
-  这道界限没有分开任何东西。</p>
-  <p>引出这件事的报告 <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>
-  还把长上下文下的精度下降算在兜底路径头上。证据不支持这一条：两种架构上 90 个格子的相对误差都落在
-  2.12e-3 到 4.72e-3 之间，而且<strong>任意两个深度的汇总中位数相差不超过 1.09 倍</strong>。
-  <strong>而一条平坦的带子只有在仪器能看见故障时才有意义</strong>，所以给同一套测量喂了一个故障：
-  最后一个 KV tile 未写入尾部里的 NaN 会污染两条路径，而且只在跨过那个边界的长度上，别的长度都不会。</p>
-  <p>在真实模型上端到端，把那一行放宽在 1K 上值 1.02 倍，在 32K 上值 <strong>1.17 倍</strong>，
-  在较新镜像上以两种运行顺序各复现一次。这就是
-  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>，而本页是它的依据。</p>
+  <p>这道门限由
+  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 引入。
+  该 PR 自身的描述写明，该内核“支持 gqa_ratio 到 16，并在 gqa_ratio 为 3 或更高时相对现有内核有性能收益”。因此这道闸门<strong>是性能启发式，而非功能能力限制</strong>。在 CDNA 架构上，同一个函数从 ratio 1 起便直接调用该定制内核。这两点在 <code>main</code> 分支上依然成立。</p>
+  <p>但实测表明，这条启发式是反的。在涵盖五种形状、六种上下文长度、跨越两代 vLLM 的全部六十个实测格子里，定制内核在<strong>每一个格子</strong>中都更快。在两个版本上，被排除区间的性能带与放行区间的性能带完全重叠。这道门限没有区分出任何区间。</p>
+  <p>最初引发关注的报告 <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>
+  认为长上下文下的精度退化应归咎于兜底路径。但数据并不支持该假说。在两种架构的 90 个格子上，相对误差均稳定在 2.12e-3 到 4.72e-3 之间，且<strong>任意两个深度的汇总中位数差异均未超过 1.09 倍</strong>。<strong>然而，只有当测试体系具备捕获故障的能力时，平坦的误差带才有说服力</strong>。为此，同一套测试框架被注入了人工故障：在最后一个 KV tile 未写入数据的尾部注入 NaN，两条路径都被污染，且恰好只在跨越该边界的长度上出现，其余长度都没有。</p>
+  <p>在真实模型上进行端到端评估，放宽这道闸门在 1K 上带来 1.02 倍加速，在 32K 上则达到 <strong>1.17 倍</strong>；在较新镜像上调换运行顺序重复测试，结果均成功复现。这项修改已提交于
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>，本页面即为其支撑依据。</p>
 </div>
 
 <h2><span class="n">1</span>测的是什么</h2>
 
-<p>两条路径都通过 vLLM 自己的 <code>chunked_prefill_paged_decode</code> 分发驱动，
-只强制 <code>use_rocm_custom_paged_attention</code> 一个变量，所以两臂之间参数打包的方式完全一致。
-纯 decode：每个序列一个 query token，上下文完全在缓存里 —— 这正是报告描述的形状。
-参考实现是 fp32，而且是从分页<em>之前</em>的 KV 算的，不是从缓存里算的，
-所以<strong>分页错误不会自己抵消掉自己</strong>。打分用相对 L-infinity，
-以参考实现自身的尺度为基准，这才让不同长度之间可比。</p>
+<p>两条执行路径均经由 vLLM 原生的 <code>chunked_prefill_paged_decode</code> 分发逻辑驱动，仅强制切换 <code>use_rocm_custom_paged_attention</code> 配置。因此两臂之间的参数编排完全一致。测试针对纯解码负载展开：每个序列仅包含一个 query token，上下文已全量进入缓存，与原报告描述的场景一致。fp32 参考基准基于分页<em>之前</em>的 KV 张量计算，而非读取缓存，确保<strong>分页层面的缺陷不会相互抵消</strong>。评估指标采用以参考基准自身量纲归一化的相对 L-infinity 误差，从而保证了不同上下文长度之间的可比性。</p>
 
-<p>形状集合覆盖 head size 128、block size 16 下的 ratio 1、2、3、4，
-外加 32/16 —— 那是 <code>gemma-3-27b-it</code> 的真实形状，满足 gfx11 这道门除比值之外的每一个条件。
-CUDA 对照编译的是同一份 Triton 文本：kernel 被原样提取到一个独立模块里，
-启动参数照抄分发处的参数表。</p>
+<p>测试的形状集合覆盖 head size 128 与 block size 16 配置下的 ratio 1、2、3 和 4，外加 32/16。这最后一个形状源自 <code>gemma-3-27b-it</code>，满足 gfx11 这道闸门除比值外的所有准入条件。至于 CUDA 对照组，则是将内核原样提取至独立模块并编译同一份 Triton 文本，其算子调用参数完全镜像了分发处的实参列表。</p>
 
 <h2><span class="n">2</span>六十个格子，没有例外</h2>
 
@@ -1059,14 +1038,11 @@ CUDA 对照编译的是同一份 Triton 文本：kernel 被原样提取到一个
   </figcaption>
 </figure>
 
-<p>论据是那两条带子，不是最大值。0.23.1 上被排除的比值跨 1.84× 到 7.28×，被放行的跨 2.35× 到
-7.40×；0.27 上是 1.70×–6.05× 对 2.20×–6.05×。<strong>两个版本上两条带子都重叠</strong>——
-这就是"这道界限没有分开任何东西"这句话的一句话版本。</p>
+<p>核心论据在于两条分布带的整体重叠，而非个别单元格的最大加速比。在 0.23.1 上，被排除比值的加速范围在 1.84× 至 7.28× 之间，而放行比值的加速范围则是 2.35× 至 7.40×。在 0.27 上，被排除形状的加速比跨越 1.70× 到 6.05×，放行形状则是 2.20× 到 6.05×。<strong>两个版本中两者的分布带完全重叠</strong>，这正是“该界限未能区分任何实际差异”的实质所在。</p>
 
 <h2><span class="n">3</span>精度那条主张，以及它下面的对照</h2>
 
-<p>原始报告描述了两个症状。第一个 —— 兜底路径被走到 —— 完全正确，上面所有内容都是关于它的。
-第二个是兜底路径随上下文变差。这一条在这里可测，而且不成立。</p>
+<p>原始报告描述了两个症状。其一是系统走到了兜底路径，这一现象已获证实，前文所有论述均围绕它展开。其二是兜底路径的精度会随上下文长度增长而恶化。这一结论在此处完全可测，但数据并不支持该假说。</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1086,20 +1062,15 @@ CUDA 对照编译的是同一份 Triton 文本：kernel 被原样提取到一个
 </figure>
 
 <div class="note">
-  <span class="lbl">一次干净的扫描，如果仪器是瞎的，就一文不值</span>
-  上面那次扫描没有触及两件事：每个长度都是 block size 的整数倍，
-  所以最后一个 KV tile 从不跨过序列末端；而且缓存是零填充的。
-  把它填成 NaN、并使用会跨过边界的长度，就能按需造出这个故障 ——<strong>而且只在那里</strong>。
+  <span class="lbl">全盘通过的测试，若测量工具无法测出故障便毫无意义</span>
+  上述扫描未曾触及两项边界条件：所有实测长度均为 block size 的整数倍，故最后一个 KV tile 从未跨越序列末端；且缓存均经零值填充。若预先将缓存填充为 NaN 并选用跨越边界的序列长度，便能按需触发故障，<strong>且仅在跨界长度下复现</strong>。
   <div class="fault" id="control"></div>
-  只有 NaN 会传播：1e4 这种有限的垃圾值单靠分数掩码就正确处理了，这正是它微妙的地方。
-  在这个版本上两条路径被污染的方式完全一样。
+  此处仅有 NaN 会产生扩散：1e4 这类有限数值单凭注意力掩码即可被正确剔除，这正是该缺陷隐蔽之处。在此版本上，两条路径受到污染的特征完全一致。
 </div>
 
 <h2><span class="n">4</span>放宽它在一个模型上值多少</h2>
 
-<p>kernel 微基准不是一个 PR 需要拿出来的东西。<code>gemma-3-27b-it-w4a16</code>，
-TP=2，开 CUDA graph，解码用 64 减 8 差分，每格一个全新容器，
-这样源码改动不会在两臂之间泄漏：</p>
+<p>单纯的内核微基准测试不足以构成提交 PR 的充分理由。为此，我们在开启 CUDA graphs 的条件下，使用 <code>gemma-3-27b-it-w4a16</code> 在 TP=2 配置下开展了端到端模型实测。解码延迟通过 64 与 8 的差分测试进行剥离，每个单元格均启动一个全新容器，避免源码修改在两臂之间发生交叉污染：</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1116,26 +1087,18 @@ TP=2，开 CUDA graph，解码用 64 减 8 差分，每格一个全新容器，
   </figcaption>
 </figure>
 
-<p>路由是从 TP worker 内部记录的，不是推断的：0.23.1 上每一格都记；0.27 上是 1K 的两条臂，
-来自单独一次运行——原地记录器在那边什么也没记下来。那些全注意力层带着 head size 128、
-block size 16、原生 KV 布局和 2 的幂 block 抵达，所以<strong>比值是它们唯一没通过的那个条件</strong>；
-滑动层在两臂里都卡在 <code>sliding_window == 0</code> 上，从不移动。</p>
+<p>算子路由状态直接在 TP worker 内部记录，而非通过耗时反推。在 0.23.1 上测试覆盖了每一个格子；而在 0.27 上，由于原地记录器未捕获到任何数据，随后通过专门的一轮测试单独记录了 1K 长度下的两臂表现。全注意力层的输入参数满足 head size 128、block size 16、原生 KV 布局以及 2 的幂 block 大小，因此<strong>比值条件是其未能通过准入闸门的唯一原因</strong>；至于滑动窗口层，在两臂中均直接受阻于 <code>sliding_window == 0</code>，执行路径从未改变。</p>
 
 <div class="note warn">
-  <span class="lbl">这次测量不是什么</span>
-  两臂输出是否相同不是正确性测试。在这台机器上，这个模型的 greedy 解码跨进程不可复现，
-  所以比较 token id 测的会是我们自己的非确定性。数值论证在图 2，对着一个 fp32 参考实现。
-  另外第一次尝试用的 kernel 计数器是瞎的，因为 TP=2 在 spawn 出来的 worker 里跑注意力，
-  父进程里的计数器什么也看不到。
+  <span class="lbl">关于本项测量的两点澄清</span>
+  两臂之间输出是否完全一致并不构成正确性判据。由于该模型在这台机器上的 greedy 解码存在跨进程不可复现性，单纯比对 token id 反映的将是运行时的局部非确定性。数值精度的论证见图 2 对比 fp32 参考基准的结果。此外，最初尝试的内核计数器之所以未见任何调用，是因为 TP=2 将注意力算子派发到了衍生的 worker 子进程中，父进程中的计数器自然一无所获。
 </div>
 
 <h2><span class="n">5</span>放宽它同时会放进来什么</h2>
 
-<p>打开一道门，门后的东西都会进来。
+<p>放开一道闸门，潜藏其后的问题也会随之引入。上游 PR
 <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a>
-修的正是同一个定制 kernel 里的一个真实故障：它给序列末端之后的 logit 打了掩码，
-但它向量化的 V-cache 读取仍然吃掉整个最后一个 block，
-于是尾部一个未写入的 NaN 会污染输出。它的测试计划写着 gfx11 只做了编译验证，因为作者没有这种设备。</p>
+修复的正是该定制内核中的一处真实缺陷：虽然内核对序列末尾之外的 logit 施加了掩码，但其向量化的 V-cache 读取操作仍会加载整个末尾数据块，导致尾部未写入的 NaN 污染计算输出。该 PR 的测试计划特别提到，由于作者缺少相关硬件，gfx11 平台仅通过了编译验证。</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -1155,94 +1118,63 @@ block size 16、原生 KV 布局和 2 的幂 block 抵达，所以<strong>比值
   </figcaption>
 </figure>
 
-<p>强制那一列才是与这个提案直接相关的。绕过这道门之后，原样那一臂被污染的是八个格子而不是四个：
-比值 2 在跨边界长度上以完全相同的方式失败，两种 dtype、只投 V 和 K+V 都失败。
-八个在打了补丁的那一臂上全都干净。<strong>所以放宽这道门会把比值 2 放进这个 kernel，
-而这就是它会一起放进来的那个故障</strong>—— 这也是为什么这两条 issue 该放在一起说，
-以及为什么 gfx11 的运行时证据是应那个 PR 作者的请求送过去的。</p>
+<p>强制执行那一列与本项提议息息相关。一旦强行绕过闸门，原样对照臂受污染的单元格便从四个增加到八个：ratio 2 在跨越边界的长度上以相同方式出现故障，涵盖两种 dtype 以及仅投毒 V 和同时投毒 K+V 的场景。而在打上补丁的那一臂中，这八个格子全部恢复正常。<strong>因此，放宽这道准入闸门便会将 ratio 2 纳入该内核，连带放进来的正是这一处故障</strong>。这正是两项改动密不可分的原因，也是我们应作者请求向该 PR 提供 gfx11 运行时验证数据的初衷。</p>
 
 <h2><span class="n">6</span>没有被确立的部分</h2>
 
 <h3>报告里的第二个症状</h3>
-<p>这里排除掉的只是一个假设 —— Triton 2D kernel 随上下文增长而丢失精度。
-报告者的模型是本项目没有的一个 VLM，跑在本项目没有的硬件上，
-而这里测的是 kernel，不是他们的输出。他们那个症状仍然需要一个解释。</p>
+<p>当前测试仅排除了一个假说，即 Triton 2D 内核会随上下文增长而损失精度。报告者观察到的精度退化发生在不同的硬件与此地未配备的 VLM 模型上；本测试仅针对算子内核本身，未涉及模型端到端输出。原报告反映的症状仍有待进一步阐明。</p>
 
 <h3>纯 decode、这些形状之外的一切</h3>
-<p>滑动窗口形状、fp8 KV、prefill 形状，以及 kernel 层面的 TP&gt;1，这里都没有测。
-端到端那次测量是 TP=2，但那是模型层面的测量，不是 kernel 层面的。</p>
+<p>滑动窗口形状、fp8 KV、预填充形状以及内核层面的 TP&gt;1 均未涉足。模型基准测试虽使用了 TP=2，但属于系统级宏观测量，并不代表单内核的并行行为。</p>
 
 <h3>NaN 是怎么进去的</h3>
-<p><code>allocate_kv_cache</code> 会把后备分配零填充，所以不是新分配的垃圾值；
-vllm#53856 把它归因于 sleep 模式和分配器行为。这个探针是故意注入的，
-它只测量 kernel 之后会怎么做。</p>
+<p>鉴于 <code>allocate_kv_cache</code> 会对显存做零填充，该缺陷并非未初始化残留垃圾所致；vllm#53856 将其归因于休眠模式与分配器的特定行为。本测试套件系主动注入 NaN，旨在观察内核在面对脏数据时的处理反应。</p>
 
 <h3>一台机器，以及 model runner 那个问题</h3>
-<p>这里的一切都在一台 gfx1100 上。一个相关问题 —— Model Runner V2 是否会走到同一道 guard ——
-在这台硬件上测过，答案是会，37 行里有 36 行与 V1 完全相同；
-但投机是否会让 MRv2 下的 decode 带上多于一行 query，无法测量，
-因为这里没有任何 checkpoint 能在那个镜像上配置起来。那一半靠的是读代码。</p>
+<p>全部测量均在一台 gfx1100 设备上完成。针对关联问题，实测证实 Model Runner V2 确会触发相同的保护逻辑，37 行测试中有 36 行与 V1 完全一致。至于投机解码是否会导致 MRv2 下的解码携带多行 query，因当前镜像缺乏可用 checkpoint 而在这台机器上未做实测，该判断依托于静态代码研读。</p>
 
 <h2><span class="n">7</span>此后发生的变化</h2>
 
 <div class="note ok">
-  <span class="lbl">2026-08-28 · 已提给上游</span>
-  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a>，
-  <code>use_rocm_custom_paged_attention</code> 的 gfx11 分支里一行：一增一删。
-  截至 2026-08-29 开着，还没有人类 review。PR 正文里是本页这些表；仓库里是算出它们的那些行。
+  <span class="lbl">2026-08-28 · 已提交上游</span>
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a> 对 <code>use_rocm_custom_paged_attention</code> 的 gfx11 分支做了一行改动：一增一删。截至 2026-08-29 仍处于开启状态，暂无人工审查。PR 正文汇总了本页各表，仓库中完整保存了计算这些结果的数据行。
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-28 · 应请求补上了另一个 PR 的 gfx11 那一半</span>
-  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 的作者已在 MI350X
-  上验证过那个修复，并希望有人补上他们没有的 gfx11。图 4 就是那份验证，
-  跑在他们当前的 head 上，而且两臂都跑 —— 因为一个干净的打补丁臂，
-  在原样臂没能复现故障时什么也证明不了。
+  <span class="lbl">2026-08-28 · 应请求补充另一 PR 缺失的 gfx11 验证</span>
+  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 的作者已在 MI350X 上完成该修复的验证，并请求补充其所缺失的 gfx11 数据。图 4 即为该项验证结果，基于其分支最新 head 运行。测试涵盖了两条对比臂，因为若原样基准臂未能复现故障，单凭打了补丁的一臂正常运行毫无证明效力。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-27 · 加速下限曾被低估</span>
-  最初写的是 2.06×，那是只在比值 1 上取的最小值。真正的下限是 4K 上的 32/16 形状，
-  0.23.1 上 1.84×，0.27 上 1.70×。已就地更正并标注日期，
-  现在由 <code>verify_doc_figures.py</code> 重算，不再是抄写。
+  初稿中曾写作 2.06×，那是仅在比值 1 下统计到的最小值。实际下限出现在 4K 上下文下的 32/16 形状，在 0.23.1 上为 1.84×，在 0.27 上为 1.70×。现已就地更正并标注日期，全由 <code>verify_doc_figures.py</code> 重新计算生成，不再采用手工抄录。
 </div>
 
 <div class="note">
-  <span class="lbl">2026-08-29 · 有一个数字需要的是写清推导，不是更正</span>
-  源目录里写着"16 倍上下文增长把中位数动了 1.06 倍"，对着一条跨度 32 倍的阶梯看起来像是错的。
-  它不是：那个数字把最短的两个深度汇总起来对比最长的两个，两者的中心大约相差 16 倍。
-  按端到端读，这个变化是 1.03 倍。两种推导现在都写下来了，两个也都有检查 ——
-  因为那句话同时既站得住、又读不出来。
+  <span class="lbl">2026-08-29 · 有一个数字需要写清推导，而非直接更正</span>
+  源目录曾表述为“16 倍上下文增长使中位数变动 1.06 倍”，在跨越 32 倍的阶梯下看似有误。实则不然：该数值是将最短的两个深度合并后对比最长的两个深度，两者的中心大约相差 16 倍。若按端到端跨度计算，该变化幅度为 1.03 倍。现将两种推导方式全数记录并纳入检验，以解决原句推导虽能自洽却晦涩难解的问题。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 图 1 的说明把一处变化归给了数据并不支持的原因</span>
-  原文说较新的镜像"整体低一点，是因为 Triton 兜底变快了，不是定制 kernel 变慢了"。两半都不成立：
-  三十对格子里有两对在新镜像上反而<em>更高</em>，而这三十对里 Triton 的时间只在 21 对上变快，
-  定制 kernel 的时间却在 25 对上<em>变慢</em>。两条臂都动了。说明已改成这样，
-  <code>verify_doc_figures.py</code> 把这两个计数都钉住了。
+  <span class="lbl">2026-08-29 · 图 1 说明所归结的变化原因与数据不符</span>
+  原文曾断言较新镜像“整体较低是因为 Triton 兜底变快，而非定制内核变慢”。这两种论断均不能成立：三十对格子中有两对在新镜像上反而<em>更高</em>；在这三十对比较中，Triton 耗时仅在 21 对上变快，定制内核耗时却在 25 对上<em>变慢</em>。两条对比臂均发生了位移。图注已据实修正，且这两个计数值均已由 <code>verify_doc_figures.py</code> 锁定。
 </div>
 
 <div class="note warn">
-  <span class="lbl">2026-08-29 · 路由那句话只覆盖了两个软件栈里的一个</span>
-  第 3 节说路由是"每一格"都从 TP worker 内部记录的。这对 0.23.1 那次扫描成立。
-  0.27 上原地记录器什么也没记下来——worker 跑的是未修改的字节码，而磁盘上的文件是改过的，
-  这一点 <code>benchmarks/vllm-50603/README.md</code> 有记录——那边的路由来自
-  <code>route_027.py</code>，是 1K 两条臂各跑一次的单独运行。这句话现在照实说了。
-  另外，摘要里英文说 "not supported"（证据不支持），中文原写作"不成立"，语气更硬，已改齐。
+  <span class="lbl">2026-08-29 · 路由断言原先仅覆盖两个软件栈中的一个</span>
+  第 3 节曾声称路由是在“每一个格子”中均从 TP worker 内部记录的。该结论对 0.23.1 的测试成立。在 0.27 上，原地记录器未捕获到任何数据，因 worker 执行的是未修改的字节码，而磁盘上的文件虽已更新，具体见 <code>benchmarks/vllm-50603/README.md</code> 中的记录。那里的路由信息来自 <code>route_027.py</code> 在 1K 长度下对两臂的专项独立运行。正文现已准确体现该区别。此外，摘要中的英文原词为“not supported”，中文初稿曾译为语气更坚决的“不成立”，现已修正以保持一致。
 </div>
 
 <div class="foot-note">
-  <p><strong>每一个格子。</strong>探针、它们写出的 JSONL 以及容器日志都在
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/vllm-50603/README.md"><code>benchmarks/vllm-50603/</code></a>，
-  包括 CUDA 对照那份被提取出来的 kernel，以及那条让两侧保持在同一份 Triton 文本上的哈希断言。
-  本页每一张图都由
+  <p><strong>全部测试单元格。</strong>所有探针源码、输出 JSONL 以及容器日志均归档于
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/vllm-50603/README.md"><code>benchmarks/vllm-50603/</code></a>，包括独立提取出的 CUDA 对照内核以及校验两侧编译相同 Triton 文本的哈希断言。本页所有图表均由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-  从这些文件重算。</p>
-  <p>上游：<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a> 是报告，
-  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 引入了这道界限，
-  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a> 是那一行改动，
-  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 是图 4 说的那个故障。</p>
+  直接依据上述文件重新计算验证。</p>
+  <p>上游链接：<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a> 为原始报告，
+  <a href="https://github.com/vllm-project/vllm/pull/17004">vllm#17004</a> 引入了该准入界限，
+  <a href="https://github.com/vllm-project/vllm/pull/54210">vllm#54210</a> 为单行改动提议，
+  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 修复了图 4 中所示的缺陷。</p>
 </div>
 </div>
 
