@@ -8040,6 +8040,7 @@ def main():
     _h7_meta, _h7, _h7nb = _hc_units("rocm714-gfx1100.jsonl")
     _h0_meta, _h0, _h0nb = _hc_units("rocm10-gfx1100.jsonl")
     _hrm = open(os.path.join(HDIR, "README.md")).read()
+    _rcrm = open(os.path.join(ROOT, "docs", "root-cause.md")).read()
 
     for _tag, _u, _nb, _claims in (
         ("7.14", _h7, _h7nb, {
@@ -8140,6 +8141,90 @@ def main():
         ck(f"hostcall-abi README, {_name} covers gfx942 and gfx950", "2",
            sum(1 for r in _a if r["arch"] in ("gfx942", "gfx950")))
 
+    # root-cause.md §2 repeats the shipped RCCL count and names the kernels;
+    # derive both counts from the raw records' examples rather than the prose.
+    def _rccl_examples(name):
+        rows = [json.loads(l) for l in open(os.path.join(HDIR, name))]
+        return [e for r in rows
+                if r.get("binary", "").startswith("comm-libs/rccl/")
+                for e in r.get("examples", [])]
+
+    _rccl_ex = _rccl_examples("rocm714-gfx1100.jsonl")
+    _rccl_generic = [e for e in _rccl_ex if "ncclDevKernel_Generic_" in e]
+    _rccl_symk = [e for e in _rccl_ex
+                  if "ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD_" in e]
+    ck("root-cause §2 RCCL hostcall count", "13",
+       _one(_h7, "librccl.so.1.0")["hc"])
+    ck("root-cause §2 Generic kernel count", "3", len(_rccl_generic))
+    ck("root-cause §2 ReduceScatter Symk kernel count", "10", len(_rccl_symk))
+
+    _root_714, _ = _hc_cross("crossarch-rccl-rocm714.jsonl")
+    _root_10, _ = _hc_cross("crossarch-rccl-rocm10.jsonl")
+    ck("root-cause §2 ROCm 7.14 RCCL hostcall count on every target", "13",
+       _root_714[0]["hostcall_kernels"])
+    ck("root-cause §2 ROCm 10.0 RCCL hostcall count on every target", "13",
+       _root_10[0]["hostcall_kernels"])
+    ck("root-cause §2 ROCm 7.14 RCCL target count", "20", len(_root_714))
+    ck("root-cause §2 ROCm 10.0 RCCL target count", "21", len(_root_10))
+    ck("root-cause §2 prints the RCCL table row", "1",
+       1 if "| ROCm 7.13 / 7.14 (2.30.4) | **13** (3 Generic + 10 Symk) | fails |"
+       in _rcrm else 0)
+    ck("root-cause §2 prints the RCCL kernel families", "1",
+       1 if ("`ncclDevKernel_Generic_{1,2,4}`" in _rcrm
+             and "`ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD`" in _rcrm
+             and "`{sum,avg}_{bf16,f16,f32,f8e4m3,f8e5m2}`" in _rcrm)
+       else 0)
+    ck("root-cause §2 prints the cross-architecture counts", "1",
+       1 if ("The cross-architecture scan found the same **13** kernels — the same names,\n"
+             "not only the same count — on every target RCCL ships for: 20 targets in ROCm\n"
+             "7.14 and 21 in ROCm 10.0, gfx942 and gfx950 among them, and one identical name\n"
+             "list across both containers."
+             in _rcrm) else 0)
+    ck("root-cause §2 explains cross-architecture result", "1",
+       1 if ("That invariance makes the requirement a property\n"
+             "of RCCL's source and the ABI; only the platform's ability to satisfy it\n"
+             "differs; see the\n"
+             "[measurement campaign](../benchmarks/hostcall-abi-2026-09-04/README.md)."
+             in _rcrm) else 0)
+    ck("root-cause §4 warns about kpack inspection", "1",
+       1 if ("> **That reads a local build's device image, not a shipped library.** A\n"
+             "> classic build puts the device code in the `.so`, which is what the command\n"
+             "> above inspects. Point it at a shipped ROCm 7.14 or newer library and it is\n"
+             "> silently wrong: there the device code is in a `.kpack` and the `.so`'s\n"
+             "> `.hip_fatbin` is an empty `NOBITS` section, so the count comes back 0 for a\n"
+             "> library whose kernels declare thirteen."
+             in _rcrm) else 0)
+
+    # "the same names, not only the same count" is a claim about names, so it is
+    # checked against the names: scan_crossarch.py records each target's whole
+    # hostcall kernel list and its digest, and the claim is that there is one
+    # digest across every target of both containers.
+    _rccl_arch = {}
+    for _f in ("crossarch-rccl-rocm714.jsonl", "crossarch-rccl-rocm10.jsonl"):
+        _rccl_arch[_f] = [json.loads(l) for l in open(os.path.join(HDIR, _f))
+                          if '"kind": "arch"' in l]
+    _alldig = {r["hostcall_names_md5"] for rs in _rccl_arch.values() for r in rs}
+    ck("root-cause §2 one hostcall name list across every target and both images",
+       "1", len(_alldig))
+    ck("root-cause §2 the name lists are complete, not sampled", "0",
+       sum(1 for rs in _rccl_arch.values() for r in rs
+           if not r["hostcall_names_complete"]))
+    ck("root-cause §2 thirteen names on every target", "13",
+       max(len(r["hostcall_names"]) for rs in _rccl_arch.values() for r in rs))
+    ck("root-cause §2 and thirteen is also the minimum", "13",
+       min(len(r["hostcall_names"]) for rs in _rccl_arch.values() for r in rs))
+    ck("root-cause §2 the three Generic kernels are in that list", "3",
+       sum(1 for n in _rccl_arch["crossarch-rccl-rocm714.jsonl"][0]["hostcall_names"]
+           if "ncclDevKernel_Generic_" in n))
+    ck("hostcall-abi README, the digest it prints is the one in the data", "1",
+       1 if all(r["hostcall_names_md5"].startswith("096a1303985cef43")
+                for rs in _rccl_arch.values() for r in rs) else 0)
+    ck("hostcall-abi README, 41 target-and-version pairs", "41",
+       sum(len(rs) for rs in _rccl_arch.values()))
+    ck("root-cause §2 and the ten ReduceScatter Symk kernels", "10",
+       sum(1 for n in _rccl_arch["crossarch-rccl-rocm714.jsonl"][0]["hostcall_names"]
+           if "ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD_" in n))
+
     _t7, _ = _hc_cross("crossarch-torch-rocm714.jsonl")
     ck("hostcall-abi README, torch 7.14 targets at 42", "21",
        sum(1 for r in _t7 if r["hostcall_kernels"] == 42))
@@ -8170,6 +8255,7 @@ def main():
         ("and its 10.0 half",
          "138 kernels, 13 hostcall — identical on all 21 targets"),
         ("torch's CDNA variation", "42 on 21 RDNA/gfx908 targets · 30 on gfx90a, gfx942, gfx950"),
+        ("the name-level identity", "a single md5, `096a1303985cef43`, covers all 41 target-and-version"),
     ):
         ck(f"hostcall-abi README, prints {_what}", "1",
            1 if _frag in _hrm else 0)

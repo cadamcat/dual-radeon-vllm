@@ -48,7 +48,11 @@ We dissected the shipped libraries:
 | ROCm 7.0 (2.26.6) | 0 | works |
 | ROCm 7.1.1 (2.27.7-b38) | **0** | works |
 | ROCm 7.2+ (2.27.7-b43+) | N (every Generic kernel) | fails |
-| ROCm 7.13 / 7.14 (2.30.4) | N | fails |
+| ROCm 7.13 / 7.14 (2.30.4) | **13** (3 Generic + 10 Symk) | fails |
+
+The 3 Generic kernels are `ncclDevKernel_Generic_{1,2,4}`; the other 10
+are the `ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD` variants
+`{sum,avg}_{bf16,f16,f32,f8e4m3,f8e5m2}`.
 
 The platform is identical in all four cases. **What changes is whether the
 library's kernels demand a hostcall.** So "downgrade fixes it" does not mean the
@@ -59,6 +63,14 @@ This also unifies the bare-metal reports with the VFIO ones: if those bare-metal
 platforms *did* route AtomicOps, the newer RCCL's hostcall requirement would be
 satisfiable and downgrading would not be necessary. The fact that downgrading
 helps implies those platforms also lack atomics.
+
+The cross-architecture scan found the same **13** kernels — the same names,
+not only the same count — on every target RCCL ships for: 20 targets in ROCm
+7.14 and 21 in ROCm 10.0, gfx942 and gfx950 among them, and one identical name
+list across both containers. That invariance makes the requirement a property
+of RCCL's source and the ABI; only the platform's ability to satisfy it
+differs; see the
+[measurement campaign](../benchmarks/hostcall-abi-2026-09-04/README.md).
 
 ---
 
@@ -142,6 +154,14 @@ Acceptance test — this is the number that matters:
 llvm-readelf --notes librccl.so.1.0.*gfx1100 | grep -ic hidden_hostcall_buffer
 # MUST print 0
 ```
+
+> **That reads a local build's device image, not a shipped library.** A
+> classic build puts the device code in the `.so`, which is what the command
+> above inspects. Point it at a shipped ROCm 7.14 or newer library and it is
+> silently wrong: there the device code is in a `.kpack` and the `.so`'s
+> `.hip_fatbin` is an empty `NOBITS` section, so the count comes back 0 for a
+> library whose kernels declare thirteen. See the
+> [2026-09-04 scan](../benchmarks/hostcall-abi-2026-09-04/README.md).
 
 See [`build/build-rccl-nohostcall.sh`](../build/build-rccl-nohostcall.sh) and
 [`build/verify-nohostcall.sh`](../build/verify-nohostcall.sh).

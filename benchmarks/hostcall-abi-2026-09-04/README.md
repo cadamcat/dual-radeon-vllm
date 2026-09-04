@@ -165,6 +165,12 @@ requirement is a property of its source and of the ABI, not of the
 architecture**; what differs between an MI300X and this box is only whether the
 platform can satisfy it.
 
+Identical by name, not only by count. `scan_crossarch.py` records each target's
+whole hostcall kernel list — `hostcall_names_complete` is true on every row —
+and a single md5, `096a1303985cef43`, covers all 41 target-and-version
+pairs. The counts here were also produced twice, in independent runs of the
+same scan against the same two images, and every cell reproduced.
+
 torch is not invariant, and the shape of the variation is informative:
 
     ROCm 7.14   42 on 21 RDNA/gfx908 targets · 30 on gfx90a, gfx942, gfx950

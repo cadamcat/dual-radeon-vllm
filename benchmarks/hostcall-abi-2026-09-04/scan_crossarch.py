@@ -7,7 +7,7 @@ architecture and count kernels and hostcall declarations. If the counts are the
 same across every gfx target, the requirement lives in the library's source and
 the ABI, and only the platform's ability to satisfy it differs.
 """
-import argparse, json, os, sys, tempfile, time
+import argparse, hashlib, json, os, sys, tempfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scan_hostcall import Kpack, count_notes, images_from_blob, GFX
@@ -54,10 +54,22 @@ def main():
                         tot_hc += hc or 0
                         hc_names.extend(names)
             kp.lib.kpack_close(h)
+            # The complete name list, not a sample: "the same kernels on every
+            # target" is a claim about names, and six of thirteen sampled names
+            # only supports "the same count". `examples` in the full scan caps
+            # at five per image for size; here the lists are short enough to
+            # keep whole, and the digest makes cross-target identity one
+            # comparison. Note the names are complete only where each image's
+            # own cap did not bite -- assert len(hostcall_names) == hostcall.
+            names = sorted(hc_names)
             rec = {"kind": "arch", "kpack": name, "arch": arch,
                    "archs_in_archive": archs, "binaries": n_bin,
                    "kernels": tot_k, "hostcall_kernels": tot_hc,
-                   "example_names": sorted(set(hc_names))[:6],
+                   "hostcall_names": names,
+                   "hostcall_names_complete": len(names) == tot_hc,
+                   "hostcall_names_md5": hashlib.md5(
+                       "\n".join(names).encode()).hexdigest(),
+                   "example_names": names[:6],
                    "bytes": os.path.getsize(path)}
             out.write(json.dumps(rec, sort_keys=True) + "\n")
             out.flush()

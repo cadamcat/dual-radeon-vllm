@@ -55,11 +55,12 @@
  "files": {
   "rocm714-gfx1100.jsonl": "full scan, ROCm 7.14 arm, target gfx1100",
   "rocm10-gfx1100.jsonl": "full scan, ROCm 10.0 arm, target gfx1100",
-  "crossarch-rccl-rocm714.jsonl": "RCCL kpack, every architecture it ships (20)",
-  "crossarch-rccl-rocm10.jsonl": "RCCL kpack, every architecture it ships (21)",
-  "crossarch-torch-rocm714.jsonl": "torch kpack, every architecture it ships (24)",
+  "crossarch-rccl-rocm714.jsonl": "RCCL kpack, every architecture it ships (20); hostcall_names is the complete list per target, with its md5",
+  "crossarch-rccl-rocm10.jsonl": "RCCL kpack, every architecture it ships (21); same digest as the 7.14 arm on all 41 target-and-version pairs",
+  "crossarch-torch-rocm714.jsonl": "torch kpack, every architecture it ships (24); hostcall_names_complete is false where an image's own five-name cap bit",
   "crossarch-torch-rocm10.jsonl": "torch kpack, every architecture it ships (25)"
  },
  "gpu_touched": false,
- "lease_held": false
+ "lease_held": false,
+ "reruns": "the four cross-architecture scans were run twice, 2026-09-04, in independent container instances of the same two images; every kernels/hostcall_kernels/binaries cell reproduced. The committed files are the second run, which also records the whole name list."
 }
