@@ -8504,6 +8504,40 @@ def _run_checks(_opened, _audit_state):
     ck("B1 README, prefill cells where the unfixed arm is faster", "1",
        sum(1 for v in _ae.values() if v > 1))
 
+    # --- B2, the capability matrix ------------------------------------------
+    _cap = _b1.capability_cells()
+    ck("B2, cells", "6", len(_cap))
+    for _row, _lib, _disp, _pass in (
+            ("atomics_present", "stock2304", "1", "12"),
+            ("atomics_present", "nondebug", "1", "12"),
+            ("atomics_present", "ndebug", "1", "12"),
+            ("atomics_absent", "stock2304", "0", "0"),
+            ("atomics_absent", "nondebug", "0", "0"),
+            ("atomics_absent", "ndebug", "1", "12")):
+        _c = _cap[(_row, _lib)]
+        ck(f"B2, {_row} {_lib} dispatched", _disp, 1 if _c["dispatched"] else 0)
+        ck(f"B2, {_row} {_lib} correctness cases passed", _pass,
+           _c["correctness_passed"])
+    ck("B2, the load-bearing cell: same source, one line apart, one dispatches", "1",
+       1 if (_cap[("atomics_absent", "ndebug")]["dispatched"] and
+             not _cap[("atomics_absent", "nondebug")]["dispatched"]) else 0)
+    ck("B2, and stock 2.30.4 is correct where the platform can satisfy it", "1",
+       1 if (_cap[("atomics_present", "stock2304")]["dispatched"] and
+             _cap[("atomics_present", "stock2304")]["correctness_passed"] == 12)
+       else 0)
+    for _row, _caps, _dm in (("atomics_present", "2", "0"),
+                             ("atomics_absent", "0", "2")):
+        _c = _cap[(_row, "ndebug")]
+        ck(f"B2, {_row} root ports with completer support", _caps,
+           _c["root_ports_with_completer_support"])
+        ck(f"B2, {_row} amdgpu complaints in dmesg", _dm,
+           _c["dmesg_no_atomics_lines"])
+    ck("B2, both refusals give the same error string", "2",
+       sum(1 for (r, l), c in _cap.items()
+           if c["error"] == "the operation cannot be performed in the present state"))
+    ck("B2, nothing that was refused passed a single case", "0",
+       sum(c["correctness_passed"] for c in _cap.values() if not c["dispatched"]))
+
     # and the prose says what the data licenses, including what it does not
     for _what, _frag in (
         ("that decode shows no difference", "**No cell differs by more than 0.6 %, five of six are inside 0.5 %, and five"),
@@ -8512,6 +8546,10 @@ def _run_checks(_opened, _audit_state):
         ("that the order effect is itself unexplained", "The order effect itself is unexplained"),
         ("that the 500-token prefill cells are unusable", "**The 500-token prefill and TTFT cells are uninterpretable**"),
         ("that the library was verified in the serving process", "by md5 out of\n`/proc/<pid>/maps`"),
+        ("the capability matrix's bottom row", "| **atomics absent** | **REFUSED** | **REFUSED** | **12/12** |"),
+        ("why the matrix has three columns", "**The middle column is why this is three columns and not two.**"),
+        ("that stock 2.30.4 is not broken", "**stock RCCL 2.30.4 is correct when the\nplatform can satisfy it.**"),
+        ("that both cards were flipped", "**Both cards, not one**"),
         ("the one-line diff", "> add_compile_definitions(NDEBUG)"),
         ("the arms' hostcall counts", "| `hidden_hostcall_buffer` | 0 | **6** |"),
         ("the identical kernel count", "| kernels | 126 | 126 |"),

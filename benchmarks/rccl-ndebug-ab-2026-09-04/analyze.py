@@ -132,6 +132,39 @@ def arm_effect(metric, drop_depth=None):
             if not (drop_depth and dep in drop_depth)}
 
 
+# ----------------------------------------------------------- capability ------
+
+def capability_cells():
+    """{(row, library): record} for the six-cell capability matrix."""
+    rows = [json.loads(l) for l in
+            open(os.path.join(HERE, "capability-matrix.jsonl"))]
+    return {(r["row"], r["library"]): r for r in rows}
+
+
+HOSTCALL = {"stock2304": 13, "nondebug": 6, "ndebug": 0}
+
+
+def capability_report():
+    cells = capability_cells()
+    print("\n=== the capability matrix: 2 platform states x 3 libraries ===")
+    cols = ("stock2304", "nondebug", "ndebug")
+    print(f"    {'':17}" + "".join(f"{c + ' (' + str(HOSTCALL[c]) + ')':>22}" for c in cols))
+    for row in ("atomics_present", "atomics_absent"):
+        line = f"    {row:17}"
+        for c in cols:
+            k = cells[(row, c)]
+            line += f"{(str(k['correctness_passed']) + '/12' if k['dispatched'] else 'REFUSED'):>22}"
+        print(line)
+    for (row, lib), r in sorted(cells.items()):
+        if r["error"]:
+            print(f"    {row} / {lib}: {r['error']}")
+    for row in ("atomics_present", "atomics_absent"):
+        r = cells[(row, "ndebug")]
+        print(f"    {row:17} root ports with completer support "
+              f"{r['root_ports_with_completer_support']}, "
+              f"amdgpu complaints {r['dmesg_no_atomics_lines']}")
+
+
 def main():
     runs, keys = load()
     print(f"cells shared by all six sweeps: {len(keys)}")
@@ -180,6 +213,7 @@ def main():
         print(f"correctness arm={a}: {passed}/{len(cases)} pass")
     print(f"both arms correct: {ok == 2}")
     decode_report()
+    capability_report()
     print("\n=== prefill: does the difference follow the arm or the session order? ===")
     oe = order_effect("prefill_tps", drop_depth={500})
     ae = arm_effect("prefill_tps", drop_depth={500})

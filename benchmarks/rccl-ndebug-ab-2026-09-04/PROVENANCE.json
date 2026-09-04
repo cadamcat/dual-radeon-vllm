@@ -88,5 +88,39 @@
   "wall": "19:59:33 to 20:22:10 UTC, 60 runs, 0 errors",
   "client_md5": "fd072c47843aa6c8648e7aaa3adab951",
   "known_confound": "prefill differences follow SESSION ORDER, not arm: the second session of a pair is faster in three of four interpretable cells, and the one cell with a significant separation (Q8 32000, p=0.008) is the largest order effect. Resolving it needs a server restart per repeat and was not done."
+ },
+ "capability_matrix": {
+  "purpose": "CAL experiment B2 / Table I: two platform states x three libraries, one sitting",
+  "libraries": {
+   "stock2304": {
+    "md5": "48fda13868ea868140ca2cd6af54eb76",
+    "note": "extracted from the pristine image; its device code is in the kpack, so the .so is only 4.2 MB. hidden_hostcall_buffer 13 for gfx1100, from the C1 scan.",
+    "hostcall": 13
+   },
+   "nondebug": {
+    "md5": "666c8aae61dac16c664e9e1ba3e021f9",
+    "hostcall": 6
+   },
+   "ndebug": {
+    "md5": "76f1916fad88c97469f6359ebd731bc1",
+    "hostcall": 0
+   }
+  },
+  "toggle": "hostpci0 0000:0b:00.0 -> 0000:0b:00 AND hostpci1 0000:44:00.0 -> 0000:44:00, on the Proxmox host, VM stopped and restarted for each state. Both cards, because docs/vfio-atomics.md records both have been passed as .0 since 2026-08-23 and the pre-fix state logged the amdgpu complaint twice.",
+  "platform_state_recorded_by_the_script": {
+   "atomics_present": {
+    "root_ports_with_completer_support": 2,
+    "dmesg_no_atomics_lines": 0
+   },
+   "atomics_absent": {
+    "root_ports_with_completer_support": 0,
+    "dmesg_no_atomics_lines": 2
+   }
+  },
+  "config_backup": "/root/101.conf.bak-2026-09-04 on the Proxmox host, md5 d5d1620a17f9106d185cd9abe922f106",
+  "vm_config_before_and_after": "hostpci0: 0000:0b:00.0,pcie=1 / hostpci1: 0000:44:00.0,pcie=1",
+  "restore_verified": "after the revert: 2 root ports at 32bit+ 64bit+, 0 amdgpu complaints, one function per card, both cards at 27971584, both services active, no containers. The lspci output matches the atomics_present row line for line.",
+  "result": "atomics present: all three dispatch, 12/12 each. atomics absent: stock2304 and nondebug refused with 'the operation cannot be performed in the present state', ndebug 12/12.",
+  "wall": "20:46 to 20:58 UTC across two guest boots"
  }
 }

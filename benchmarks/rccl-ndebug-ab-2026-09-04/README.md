@@ -22,6 +22,10 @@ there was nothing to compare against. It has atomics now. Both libraries run.
     decode rate                    no difference: <= 0.6 % in every cell,
                                    inside a noise floor of up to 4.9 %
 
+    the capability matrix, 2 platform states x 3 libraries, one sitting
+    atomics present                all three dispatch, 12/12 each
+    atomics absent                 only the 0-hostcall build dispatches
+
 **The fix is free where it matters and cheap where it does not.** At the batch-1
 decode shape a served step actually reduces, the arm without the fix is not
 slower; in a band from 16 KB to 512 KB it is a few percent slower; past 2 MB the
@@ -210,6 +214,55 @@ within a few percent on timing, on a platform that can satisfy the requirement.
 That is the last link of [root-cause.md](../../docs/root-cause.md)'s chain
 closed from the other side: the declaration is only fatal where the platform
 cannot honour it.
+
+## The capability matrix
+
+CAL's Table I. Two platform states, three libraries, one sitting, and the
+platform state read out of `lspci` and `dmesg` by the script rather than
+asserted by the operator.
+
+| | stock 2.30.4<br>13 declarations | 2.27.7 `-NDEBUG`<br>6 declarations | 2.27.7 `+NDEBUG`<br>0 declarations |
+|---|---|---|---|
+| **atomics present** | 12/12 | 12/12 | 12/12 |
+| **atomics absent** | **REFUSED** | **REFUSED** | **12/12** |
+
+Both refusals are the same string, and it is the one the whole repository
+started from: `the operation cannot be performed in the present state`.
+
+**The middle column is why this is three columns and not two.** It and the
+right-hand column are the same source one line of CMake apart — the B1 pair —
+so in the bottom row the only difference between the cell that is refused and
+the cell that computes twelve correct collectives is the declaration itself. A
+two-column table invites "you compared 2.30.4 with 2.27.7 and the version
+changed"; this one does not.
+
+The left column carries the other half: **stock RCCL 2.30.4 is correct when the
+platform can satisfy it.** The library is not broken. "Downgrade and it works"
+becomes a prediction of the mechanism rather than folklore.
+
+### The toggle, and what it is
+
+One line of VM configuration per card:
+
+    hostpci0: 0000:0b:00.0  ->  0000:0b:00      (and the same for hostpci1)
+
+which passes the card's HDMI audio function alongside the GPU, makes QEMU write
+`multifunction=on`, and stops `vfio_pci_enable_rp_atomics()` from advertising
+completer support. **Both cards, not one** — `docs/vfio-atomics.md` records that
+both have been passed as `.0` since 2026-08-23, and flipping one would make the
+row mean "one card lacks atomics", which is a different claim.
+
+What each row measured about itself, from the same script that ran the cells:
+
+| | root ports with `32bit+ 64bit+` | `PCIE atomic ops is not supported` in dmesg |
+|---|---|---|
+| atomics present | 2 | 0 |
+| atomics absent | 0 | 2 |
+
+The guest was shut down, reconfigured and restarted between the rows; the
+`present` row was measured before the change and again by inspection after the
+revert, and the two agree line for line in `lspci`. Nothing else moved: same
+container, same three library files, same twelve cases.
 
 ## What this round also corrected
 

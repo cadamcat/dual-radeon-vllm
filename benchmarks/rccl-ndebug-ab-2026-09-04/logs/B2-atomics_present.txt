@@ -1,0 +1,23 @@
+20:46:06 | ===== B2 row=atomics_present start =====
+20:46:06 | root ports reporting 32bit+ 64bit+ : 2
+20:46:06 | dmesg 'PCIE atomic ops is not supported' lines: 0
+    			 AtomicOpsCap: Routing- 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+20:46:06 | stopping ollama and llamacpp-hub
+20:46:17 | ----- cell row=atomics_present library=stock2304 md5=48fda13868ea868140ca2cd6af54eb76 -----
+20:46:24 | cell rc=0 passed=12/12 error=none
+20:46:24 | ----- cell row=atomics_present library=nondebug md5=666c8aae61dac16c664e9e1ba3e021f9 -----
+20:46:32 | cell rc=0 passed=12/12 error=none
+20:46:32 | ----- cell row=atomics_present library=ndebug md5=76f1916fad88c97469f6359ebd731bc1 -----
+20:46:40 | cell rc=0 passed=12/12 error=none
+20:46:40 | row atomics_present complete
+20:46:40 | --- restore (exit=0) ---
+20:46:41 | restored librccl md5=ab5b50f0d84806ed7fbe0f4f560151ff (want ab5b50f0d84806ed7fbe0f4f560151ff)
+20:46:51 | stopped vllm-tp2
+20:46:56 | services: active active
+20:46:56 | VRAM: 27971584 27971584 
+20:46:56 | ===== B2 row atomics_present ended (exit=0) =====

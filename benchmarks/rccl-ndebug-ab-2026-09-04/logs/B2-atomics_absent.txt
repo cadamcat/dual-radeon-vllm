@@ -1,0 +1,25 @@
+20:57:16 | ===== B2 row=atomics_absent start =====
+20:57:16 | root ports reporting 32bit+ 64bit+ : 0
+20:57:16 | dmesg 'PCIE atomic ops is not supported' lines: 2
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+20:57:16 | stopping ollama and llamacpp-hub
+20:57:26 | ----- cell row=atomics_absent library=stock2304 md5=48fda13868ea868140ca2cd6af54eb76 -----
+20:57:34 | cell rc=1 passed=0/12 error=the operation cannot be performed in the present state
+20:57:34 | ----- cell row=atomics_absent library=nondebug md5=666c8aae61dac16c664e9e1ba3e021f9 -----
+20:57:41 | cell rc=1 passed=0/12 error=the operation cannot be performed in the present state
+20:57:41 | ----- cell row=atomics_absent library=ndebug md5=76f1916fad88c97469f6359ebd731bc1 -----
+20:57:50 | cell rc=0 passed=12/12 error=none
+20:57:50 | row atomics_absent complete
+20:57:50 | --- restore (exit=0) ---
+20:57:50 | restored librccl md5=ab5b50f0d84806ed7fbe0f4f560151ff (want ab5b50f0d84806ed7fbe0f4f560151ff)
+20:58:00 | stopped vllm-tp2
+20:58:05 | services: active active
+20:58:05 | VRAM: 27971584 27971584 
+20:58:05 | ===== B2 row atomics_absent ended (exit=0) =====

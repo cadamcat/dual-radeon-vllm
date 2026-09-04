@@ -1,0 +1,83 @@
+W0904 20:57:29.381000 23 torch/distributed/run.py:851] 
+W0904 20:57:29.381000 23 torch/distributed/run.py:851] *****************************************
+W0904 20:57:29.381000 23 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0904 20:57:29.381000 23 torch/distributed/run.py:851] *****************************************
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/rb/b1/collective_correctness.py", line 133, in <module>
+[rank0]:     main()
+[rank0]:     ~~~~^^
+[rank0]:   File "/rb/b1/collective_correctness.py", line 86, in main
+[rank0]:     dist.all_reduce(got, op=dist.ReduceOp.SUM)
+[rank0]:     ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/python/lib/python3.14/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/opt/python/lib/python3.14/site-packages/torch/distributed/distributed_c10d.py", line 3068, in all_reduce
+[rank0]:     work = group.allreduce([tensor], opts)
+[rank0]: torch.distributed.DistBackendError: NCCL error in: /__w/rockrel/rockrel/external-builds/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:3782, unhandled cuda error (run with NCCL_DEBUG=INFO for details), NCCL version 2.30.4
+[rank0]: ncclUnhandledCudaError: Call to CUDA function failed.
+[rank0]: Last error:
+[rank0]: HIP failure 'the operation cannot be performed in the present state' at /__w/rockrel/rockrel/build/comm-libs/rccl/build/hipify/src/enqueue.cc:2061
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/rb/b1/collective_correctness.py", line 133, in <module>
+[rank1]:     main()
+[rank1]:     ~~~~^^
+[rank1]:   File "/rb/b1/collective_correctness.py", line 86, in main
+[rank1]:     dist.all_reduce(got, op=dist.ReduceOp.SUM)
+[rank1]:     ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/python/lib/python3.14/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank1]:     return func(*args, **kwargs)
+[rank1]:   File "/opt/python/lib/python3.14/site-packages/torch/distributed/distributed_c10d.py", line 3068, in all_reduce
+[rank1]:     work = group.allreduce([tensor], opts)
+[rank1]: torch.distributed.DistBackendError: NCCL error in: /__w/rockrel/rockrel/external-builds/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:3782, unhandled cuda error (run with NCCL_DEBUG=INFO for details), NCCL version 2.30.4
+[rank1]: ncclUnhandledCudaError: Call to CUDA function failed.
+[rank1]: Last error:
+[rank1]: HIP failure 'the operation cannot be performed in the present state' at /__w/rockrel/rockrel/build/comm-libs/rccl/build/hipify/src/enqueue.cc:2061
+[rank0]:[W904 20:57:33.053310724 ProcessGroupNCCL.cpp:1576] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0904 20:57:34.088000 23 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 50 closing signal SIGTERM
+E0904 20:57:34.202000 23 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 0 (pid: 49) of binary: /opt/python/bin/python
+Traceback (most recent call last):
+  File "/opt/python/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/opt/python/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+  File "/opt/python/lib/python3.14/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+    ~~~^^^^^^
+  File "/opt/python/lib/python3.14/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+    ~~~~~~~~~~~~~~~
+        config=config,
+        ~~~~~~~~~~~~~~
+        entrypoint=cmd,
+        ~~~~~~~~~~~~~~~
+    )(*cmd_args)
+    ~^^^^^^^^^^^
+  File "/opt/python/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/opt/python/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+    ...<2 lines>...
+    )
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+collective_correctness.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-04_20:57:34
+  host      : 93d44e04eee6
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 50)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 50
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-04_20:57:34
+  host      : 93d44e04eee6
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 49)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
