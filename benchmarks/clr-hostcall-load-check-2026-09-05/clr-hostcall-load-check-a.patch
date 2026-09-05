@@ -1,0 +1,78 @@
+diff --git a/projects/clr/hipamd/src/hip_module.cpp b/projects/clr/hipamd/src/hip_module.cpp
+index 6668302a..770f4efe 100644
+--- a/projects/clr/hipamd/src/hip_module.cpp
++++ b/projects/clr/hipamd/src/hip_module.cpp
+@@ -348,6 +348,15 @@ hipError_t ihipLaunchKernel_validate(hipFunction_t f, const amd::LaunchParams& l
+     LogPrintfError("%s", "Kernel object is invalid or null, possibly due to architecture mismatch.");
+     return hipErrorInvalidValue;
+   }
++  {
++    // Decided at load (roc::Kernel::init); named here, before a command exists.
++    const device::Kernel* devKernel = kernel->getDeviceKernel(*device);
++    if (devKernel != nullptr && devKernel->hostcallUnsatisfiable()) {
++      LogPrintfError("launch of %s refused: it declares a hostcall buffer and device %d has no PCIe atomics",
++                     kernel->name().c_str(), deviceId);
++      return hipErrorNotSupported;
++    }
++  }
+   const amd::KernelSignature& signature = kernel->signature();
+   if ((signature.numParameters() > 0) && (kernelParams == nullptr) && (extra == nullptr)) {
+     LogPrintfError("%s", "At least one of kernelParams or extra Params should be provided");
+diff --git a/projects/clr/rocclr/device/devkernel.hpp b/projects/clr/rocclr/device/devkernel.hpp
+index 3a5ed8b0..b10c99f7 100644
+--- a/projects/clr/rocclr/device/devkernel.hpp
++++ b/projects/clr/rocclr/device/devkernel.hpp
+@@ -291,6 +291,11 @@ class Kernel {
+   //! set dynamic parallelism flag
+   void setDynamicParallelFlag(bool flag) { flags_.dynamicParallelism_ = flag; }
+ 
++  //! The kernel declares a hostcall buffer and this device cannot build one:
++  //! decided once, when the metadata is read, not at every dispatch
++  bool hostcallUnsatisfiable() const { return (flags_.hostcallUnsatisfiable_) ? true : false; }
++  void setHostcallUnsatisfiable(bool flag) { flags_.hostcallUnsatisfiable_ = flag; }
++
+   //! Returns TRUE if kernel is internal kernel
+   bool isInternalKernel() const { return (flags_.internalKernel_) ? true : false; }
+ 
+@@ -386,6 +391,7 @@ class Kernel {
+       uint imageEna_ : 1;            //!< Kernel uses images
+       uint imageWriteEna_ : 1;       //!< Kernel uses image writes
+       uint dynamicParallelism_ : 1;  //!< Dynamic parallelism enabled
++      uint hostcallUnsatisfiable_ : 1;  //!< Declares hidden_hostcall_buffer on a device without PCIe atomics
+       uint internalKernel_ : 1;      //!< True: internal kernel
+       uint hsa_ : 1;                 //!< HSA kernel
+     };
+diff --git a/projects/clr/rocclr/device/rocm/rockernel.cpp b/projects/clr/rocclr/device/rocm/rockernel.cpp
+index b2dad298..575acdbd 100644
+--- a/projects/clr/rocclr/device/rocm/rockernel.cpp
++++ b/projects/clr/rocclr/device/rocm/rockernel.cpp
+@@ -10,7 +10,28 @@
+ 
+ namespace amd::roc {
+ 
+-bool Kernel::init() { return GetAttrCodePropMetadata(); }
++bool Kernel::init() {
++  if (!GetAttrCodePropMetadata()) {
++    return false;
++  }
++  // Reconcile the requirement with the capability here, at load: the metadata
++  // note is already parsed and pcie_atomics_ was decided at device init. Until
++  // now the two met only in submitKernelInternal, per dispatch, and the refusal
++  // surfaced as hipErrorIllegalState.
++  const amd::KernelSignature& sig = signature();
++  for (uint32_t i = sig.numParameters(); i < sig.numParametersAll(); ++i) {
++    if (sig.at(i).info_.oclObject_ == amd::KernelParameterDescriptor::HiddenHostcallBuffer &&
++        !device().info().pcie_atomics_) {
++      setHostcallUnsatisfiable(true);
++      LogPrintfError("kernel %s declares hidden_hostcall_buffer (device printf/assert) but device %s "
++                     "has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); "
++                     "its launches will return hipErrorNotSupported",
++                     name().c_str(), device().info().name_);
++      break;
++    }
++  }
++  return true;
++}
+ 
+ bool Kernel::postLoad() {
+   // Set the kernel symbol name and size/alignment based on the kernel metadata

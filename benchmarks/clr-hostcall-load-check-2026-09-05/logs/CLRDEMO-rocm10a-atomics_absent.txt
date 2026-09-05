@@ -1,0 +1,22 @@
+18:42:47 | ===== CLR demo sdk=rocm10a row=atomics_absent start =====
+18:42:47 | host=ai kernel=7.0.0-31-generic caps=0/8 dmesg=2
+18:42:48 | patched libamdhip64 libamdhip64.so.7.15.0-0000000 md5=992c7ad81009cbe3086c7c14c48bfe23 (runtime commit 6b0e43f3 + patch)
+18:42:48 | stopping services
+18:42:58 | SDK runtime: core /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5 ; devel /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5
+18:42:58 | stock RCCL for the collective cells: /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1 md5=a3963038f2f0241257be5cff41f4888f (RCCL version 2.30.4 compiled with ROCm "10.0.0.0-9999-6b0e43f3")
+18:42:58 | ----- cell sdk=rocm10a row=atomics_absent runtime=stock what=probe -----
+18:42:59 | cell rc=0 named_error_lines=0 refusals=0 load_messages=0 passed=n/a first_error=the operation cannot be performed in the present state
+18:42:59 | ----- cell sdk=rocm10a row=atomics_absent runtime=stock what=collective -----
+18:43:10 | cell rc=1 named_error_lines=0 refusals=0 load_messages=0 passed=n/a first_error=the operation cannot be performed in the present state
+18:43:10 | ----- cell sdk=rocm10a row=atomics_absent runtime=patched what=probe -----
+18:43:11 | stock runtime restored (md5 verified)
+18:43:11 | cell rc=0 named_error_lines=0 refusals=2 load_messages=2 passed=n/a first_error=hipErrorNotSupported
+18:43:11 | ----- cell sdk=rocm10a row=atomics_absent runtime=patched what=collective -----
+18:43:21 | stock runtime restored (md5 verified)
+18:43:21 | cell rc=1 named_error_lines=0 refusals=2 load_messages=26 passed=n/a first_error=hipErrorNotSupported
+18:43:21 | four cells recorded; restoring
+18:43:21 | --- restore (exit=0) ---
+18:43:21 | image's librccl unchanged md5=a3963038f2f0241257be5cff41f4888f
+18:43:31 | stopped clr100
+18:43:36 | VRAM back to baseline: 27971584 27971584 
+18:43:36 | ROW-DONE clr-demo sdk=rocm10a row=atomics_absent (restore ok)

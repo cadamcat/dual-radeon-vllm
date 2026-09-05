@@ -5,7 +5,9 @@ Two platform states x two HIP runtimes (the SDK's, and the same commit plus
 clr-hostcall-load-check.patch) x two things (the 57-line probe, and the twelve
 collective cases under stock RCCL 2.30.4), once per SDK: ROCm 7.14 / vLLM 0.23
 (runtime commit 2b22ab01, logs/clr-demo.jsonl) and ROCm 10.0 / vLLM 0.27
-(runtime commit 6b0e43f3, logs/clr-demo-rocm10.jsonl). analyze.py keys by
+(runtime commit 6b0e43f3, logs/clr-demo-rocm10.jsonl), and once more at 10.0 with
+PR A alone — the load-time check returning the existing hipErrorNotSupported,
+clr-hostcall-load-check-a.patch (logs/clr-demo-rocm10a.jsonl). analyze.py keys by
 (state, runtime, what) within each file and reports the latest row; every row
 is kept. Exit is non-zero unless all eight cells are present in every file.
 
@@ -17,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STATES = ("atomics_present", "atomics_absent")
 RUNTIMES = ("stock", "patched")
 WHATS = ("probe", "collective")
-DEFAULT = ("clr-demo.jsonl", "clr-demo-rocm10.jsonl")
+DEFAULT = ("clr-demo.jsonl", "clr-demo-rocm10.jsonl", "clr-demo-rocm10a.jsonl")
 
 
 def load(path):
@@ -49,9 +51,9 @@ def table(path):
                     out = "ok" if r["rc"] == 0 and not r["error"] else (r["error"] or f"rc={r['rc']}")[:14]
                 else:
                     out = f"{r['correctness_passed']}/12" if r["correctness_passed"] is not None else (r["error"] or f"rc={r['rc']}")[:14]
-                line += f"{out + ' n' + str(r['named_error_lines']) + ' l' + str(r['load_messages']):>19s}"
+                line += f"{out + ' n' + str(r['named_error_lines']) + ' r' + str(r.get('refusals', '-')) + ' l' + str(r['load_messages']):>19s}"
         print(line)
-    print("  n = lines naming hipErrorHostcallUnsupported, l = load-time messages naming the kernel and the device")
+    print("  n = lines naming hipErrorHostcallUnsupported, r = launch refusals (occurrences; '-' where the row did not count them), l = load-time messages naming the kernel and the device")
     for st in STATES:
         for rt in RUNTIMES:
             for what in WHATS:

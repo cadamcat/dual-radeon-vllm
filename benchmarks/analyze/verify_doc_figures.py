@@ -8996,6 +8996,76 @@ def _run_checks(_opened, _audit_state):
     ):
         ck(f"CLR check 10.0 README, states {_what}", "1", 1 if _frag in _crm else 0)
 
+    # --- the same eight cells at ROCm 10.0 with PR A alone: the load-time check returning hipErrorNotSupported ---
+    _crowsA = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo-rocm10a.jsonl")) if l.strip()]
+    _ccA = {}
+    for _r in _crowsA:
+        _ccA[(_r["row"], _r["runtime"], _r["what"])] = _r
+    ck("CLR check A, distinct cells", "8", len(_ccA))
+    ck("CLR check A, rows", "8", len(_crowsA))
+    for _row in ("atomics_present", "atomics_absent"):
+        for _rt in ("stock", "patched"):
+            for _w in ("probe", "collective"):
+                _ccA.setdefault((_row, _rt, _w), dict(_MISSING, refusals=-1, row=_row, runtime=_rt, what=_w))
+    ck("CLR check A, every row says sdk rocm10a", "8", sum(1 for r in _crowsA if r.get("sdk") == "rocm10a"))
+    ck("CLR check A, every row says runtime commit 6b0e43f3", "8", sum(1 for r in _crowsA if r.get("runtime_commit") == "6b0e43f3"))
+    ck("CLR check A, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crowsA if r.get("stock_librccl_md5") == _c1md5))
+    for _rt in ("stock", "patched"):
+        ck(f"CLR check A, present {_rt} probe ok", "1",
+           1 if _ccA[("atomics_present", _rt, "probe")]["rc"] == 0 and not _ccA[("atomics_present", _rt, "probe")]["error"] else 0)
+        ck(f"CLR check A, present {_rt} collectives pass", "12", _ccA[("atomics_present", _rt, "collective")]["correctness_passed"])
+        ck(f"CLR check A, present {_rt} no load-time messages, no refusals", "0",
+           sum(_ccA[("atomics_present", _rt, w)]["load_messages"] + _ccA[("atomics_present", _rt, w)]["refusals"] for w in ("probe", "collective")))
+    for _w in ("probe", "collective"):
+        ck(f"CLR check A, absent stock {_w} refused with the generic string", "1",
+           1 if _ccA[("atomics_absent", "stock", _w)]["error"] == _OLD else 0)
+        ck(f"CLR check A, absent patched {_w} load line promises hipErrorNotSupported", "1",
+           1 if _ccA[("atomics_absent", "patched", _w)]["error"] == "hipErrorNotSupported" else 0)
+    ck("CLR check A, the new status appears nowhere (it does not exist in this build)", "0", sum(r["named_error_lines"] for r in _crowsA))
+    ck("CLR check A, absent patched probe: one refusal per device", "2", _ccA[("atomics_absent", "patched", "probe")]["refusals"])
+    ck("CLR check A, absent patched collectives: Generic_4 refused, both devices", "2", _ccA[("atomics_absent", "patched", "collective")]["refusals"])
+    ck("CLR check A, absent patched probe load-time messages (one per device)", "2", _ccA[("atomics_absent", "patched", "probe")]["load_messages"])
+    ck("CLR check A, absent patched collectives load-time messages (13 kernels x 2 ranks)", "26", _ccA[("atomics_absent", "patched", "collective")]["load_messages"])
+    _clogA = open(os.path.join(_CLOG, "clrdemo-rocm10a-atomics_absent-patched-collective.log"), encoding="utf-8", errors="replace").read()
+    _namedA = sorted({re.search(r"kernel (\S+) declares", l).group(1) for l in _clogA.splitlines() if "declares hidden_hostcall_buffer" in l})
+    ck("CLR check A, the thirteen are the 7.14 thirteen by name", "1", 1 if set(_namedA) == set(_named) else 0)
+    ck("CLR check A, Generic_4 is the kernel refused", "2", _clogA.count("launch of _Z23ncclDevKernel_Generic_4"))
+    ck("CLR check A, RCCL reports the existing status's string at enqueue.cc:2119", "2",
+       sum(1 for l in _clogA.splitlines() if "HIP failure 'operation not supported'" in l and "enqueue.cc:2119" in l))
+    _plogA = open(os.path.join(_CLOG, "clrdemo-rocm10a-atomics_absent-patched-probe.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check A, the probe sees the existing status's string at launch, both devices", "2",
+       sum(1 for l in _plogA.splitlines() if "hostcall  REFUSED   launch:operation not supported" in l))
+    ck("CLR check A, the probe names the kernel at load, both devices", "2",
+       sum(1 for l in _plogA.splitlines() if "kernel _Z10k_hostcallPf declares hidden_hostcall_buffer" in l))
+    ck("CLR check A, the marker still reaches the host with atomics, both devices", "2",
+       open(os.path.join(_CLOG, "clrdemo-rocm10a-atomics_present-patched-probe.log"), encoding="utf-8", errors="replace").read().count("HOSTCALL_MARKER reached the host"))
+    ck("CLR check A, one patched library across rows, and not the B one", "1",
+       len({r["patched_libamdhip64_md5"] for r in _crowsA} - {r["patched_libamdhip64_md5"] for r in _crows10}))
+    ck("CLR check A, patched cells mapped the patched library", "4",
+       sum(1 for r in _crowsA if r["runtime"] == "patched" and r["patched_libamdhip64_md5"] in (r.get("mapped_amdhip64") or "")))
+    ck("CLR check A, stock cells mapped the 10.0 SDK's library", "4",
+       sum(1 for r in _crowsA if r["runtime"] == "stock" and "7c440eb52803588cef83b955dd4494b5" in (r.get("mapped_amdhip64") or "")))
+    for _row, _caps, _dm in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
+        ck(f"CLR check A, {_row} root ports with completer support", _caps,
+           {r["root_ports_with_completer_support"] for r in _crowsA if r["row"] == _row}.pop())
+        ck(f"CLR check A, {_row} amdgpu complaints", _dm,
+           {r["dmesg_no_atomics_lines"] for r in _crowsA if r["row"] == _row}.pop())
+    _blogA = open(os.path.join(_CLOG, "clr-rocm10a-build.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check A, the build finished", "1", _blogA.count("BUILD-OK"))
+    _patchA = open(os.path.join(_CDIR, "clr-hostcall-load-check-a.patch"), "rb").read()
+    ck("CLR check A, the build applied the committed A patch (md5)", "1", 1 if f"(md5 {hashlib.md5(_patchA).hexdigest()})" in _blogA else 0)
+    _patchA_t = _patchA.decode("utf-8")
+    ck("CLR check A, the A patch touches three files", "3", sum(1 for l in _patchA_t.splitlines() if l.startswith("+++ b/")))
+    ck("CLR check A, the A patch adds no status", "0", sum(1 for l in _patchA_t.splitlines() if l.startswith("+") and "hipErrorHostcallUnsupported" in l))
+    ck("CLR check A, the A patch returns the existing status", "1", sum(1 for l in _patchA_t.splitlines() if l.startswith("+") and "return hipErrorNotSupported;" in l))
+    ck("CLR check A, the A patch is the full patch minus the status (added lines)", "37", sum(1 for l in _patchA_t.splitlines() if l.startswith("+") and not l.startswith("+++")))
+    for _what, _frag in (
+        ("the A variant's result", "PR A alone gives the same eight cells"),
+        ("what A returns", "returns the existing `hipErrorNotSupported`"),
+        ("the string an application sees under A", "\"operation not supported\""),
+    ):
+        ck(f"CLR check A README, states {_what}", "1", 1 if _frag in _crm else 0)
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

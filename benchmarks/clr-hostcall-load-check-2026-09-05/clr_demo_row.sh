@@ -18,6 +18,8 @@
 #   CLR_SDK=rocm10: container clr100 (ROCm 10.0 / vLLM 0.27, runtime 6b0e43f3,
 #       /rb/clr-rocm10-build). The image's own RCCL 2.30.4 is the stock library;
 #       its md5 is checked unchanged at exit. Outputs carry -rocm10.
+#   CLR_SDK=rocm10a: as rocm10, but the patched runtime is PR A alone
+#       (/rb/clr-rocm10a-build, clr-hostcall-load-check-a.patch). Outputs carry -rocm10a.
 set -u
 ROW="${1:?row label}"
 SDK=${CLR_SDK:-rocm714}
@@ -35,8 +37,14 @@ case "$SDK" in
            BUILD_HOST=/data/rccl-build/clr-rocm10-build; BUILD_IN_C=/rb/clr-rocm10-build
            SWAP_RCCL=0; STOCK=""; DEPLOYED_IN_C=""; DEPLOYED_MD5=""
            OUT=$D/clr-demo-rocm10.jsonl; P=$D/CLRDEMO-rocm10-$ROW.txt; LOGPFX=clrdemo-rocm10-$ROW; CCOUT=/rb/pa/clrdemo-rocm10-cc.jsonl; PROBE=hipgate3-rocm10 ;;
-  *) echo "FATAL: CLR_SDK must be rocm714 or rocm10"; exit 2 ;;
+  rocm10a) C=clr100; IMAGE=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0; COMMIT=6b0e43f3
+           BUILD_HOST=/data/rccl-build/clr-rocm10a-build; BUILD_IN_C=/rb/clr-rocm10a-build
+           SWAP_RCCL=0; STOCK=""; DEPLOYED_IN_C=""; DEPLOYED_MD5=""
+           OUT=$D/clr-demo-rocm10a.jsonl; P=$D/CLRDEMO-rocm10a-$ROW.txt; LOGPFX=clrdemo-rocm10a-$ROW; CCOUT=/rb/pa/clrdemo-rocm10a-cc.jsonl; PROBE=hipgate3-rocm10 ;;
+  *) echo "FATAL: CLR_SDK must be rocm714, rocm10 or rocm10a"; exit 2 ;;
 esac
+# rocm10a: the same 10.0 tree with PR A alone (clr-hostcall-load-check-a.patch: the load-time
+# check returning the existing hipErrorNotSupported; no new status), built into /rb/clr-rocm10a-build
 
 say() { echo "$(date -u +%H:%M:%S) | $*" | tee -a "$P"; }
 vram() { cat /sys/class/drm/card*/device/mem_info_vram_used 2>/dev/null | tr '\n' ' '; }
@@ -142,15 +150,16 @@ cell() {   # cell <runtime:stock|patched> <what:probe|collective> -> appends one
   fi
   if [ "$RT" = patched ]; then swap_out || { say "FATAL: stock runtime not restored after the cell"; exit 4; }; fi
   NAMED=$(grep -ac "hipErrorHostcallUnsupported" "$LOG"); LOADMSG=$(grep -ac "declares hidden_hostcall_buffer" "$LOG")
-  ERR=$(grep -aoE "hipErrorHostcallUnsupported|hipErrorIllegalState|the operation cannot be performed in the present state|launch of [^ ]+ refused[^\"]{0,80}" "$LOG" | head -1)
+  REFUSED=$(grep -ao "refused: it declares a hostcall buffer" "$LOG" | wc -l | tr -d ' ')   # occurrences, not lines: two ranks can interleave
+  ERR=$(grep -aoE "hipErrorHostcallUnsupported|hipErrorNotSupported|hipErrorIllegalState|the operation cannot be performed in the present state|operation not supported|launch of [^ ]+ refused[^\"]{0,80}" "$LOG" | head -1)
   PASSED=$(grep -ao '[0-9]*/12 cases pass' "$LOG" | tail -1 | cut -d/ -f1)
-  say "cell rc=$RC named_error_lines=$NAMED load_messages=$LOADMSG passed=${PASSED:-n/a} first_error=${ERR:-none}"
-  sudo python3 - "$OUT" "$ROW" "$RT" "$WHAT" "$RC" "$NAMED" "$LOADMSG" "${PASSED:-}" "${ERR:-}" "$LOG" "$PATCHED_MD5" "$CAPS" "$DMESG_HITS" "${MAPPED:-}" "$SDK" "$COMMIT" "$IMAGE" "$RCCL_MD5" "$RCCL_VER" <<'PY'
+  say "cell rc=$RC named_error_lines=$NAMED refusals=$REFUSED load_messages=$LOADMSG passed=${PASSED:-n/a} first_error=${ERR:-none}"
+  sudo python3 - "$OUT" "$ROW" "$RT" "$WHAT" "$RC" "$NAMED" "$LOADMSG" "${PASSED:-}" "${ERR:-}" "$LOG" "$PATCHED_MD5" "$CAPS" "$DMESG_HITS" "${MAPPED:-}" "$SDK" "$COMMIT" "$IMAGE" "$RCCL_MD5" "$RCCL_VER" "$REFUSED" <<'PY'
 import json, sys
-out, row, rt, what, rc, named, loadmsg, passed, err, log, pmd5, caps, dm, mapped, sdk, commit, image, rcclmd5, rcclver = sys.argv[1:20]
+out, row, rt, what, rc, named, loadmsg, passed, err, log, pmd5, caps, dm, mapped, sdk, commit, image, rcclmd5, rcclver, refused = sys.argv[1:21]
 tail = "".join(open(log, errors="replace").readlines()[-8:])
 rec = {"kind": "clr_demo_cell", "sdk": sdk, "runtime_commit": commit, "image": image, "row": row, "runtime": rt, "what": what, "rc": int(rc),
-       "named_error_lines": int(named), "load_messages": int(loadmsg),
+       "named_error_lines": int(named), "refusals": int(refused), "load_messages": int(loadmsg),
        "correctness_passed": int(passed) if passed else None, "error": err or None,
        "patched_libamdhip64_md5": pmd5, "root_ports_with_completer_support": int(caps),
        "dmesg_no_atomics_lines": int(dm), "mapped_amdhip64": mapped or None,

@@ -8,6 +8,8 @@
 #   CLR_TAG=rocm10   rocm-systems 6b0e43f3 (TheRock 10.0) in the vLLM 0.27 image:
 #                    /rb/clr-rocm10-src.tgz -> /rb/clr-rocm10-src, /rb/clr-rocm10-build,
 #                    /rb/clr-rocm10-build.log
+#   CLR_TAG=rocm10a  the same source (a hard link of the tarball) with PR A alone,
+#                    clr-hostcall-load-check-a.patch -> /rb/clr-rocm10a-build
 # ROCM_KPACK_ENABLED=ON is what the SDK's own build has and the default lacks:
 # torch's device code is kpack-split, and a runtime built without it cannot load
 # a single torch kernel (SIGSEGV on the first op, 2026-09-05).

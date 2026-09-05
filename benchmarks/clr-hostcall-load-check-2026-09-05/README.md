@@ -145,6 +145,23 @@ probe's device `printf` still reaches the host when the capability is present
 the stock ones `7c440eb5…`, that image's SDK runtime. Logs: `logs/*rocm10*` and
 `logs/clr-rocm10-build.log`; `python3 analyze.py` reads both files.
 
+## PR A alone, at ROCm 10.0
+
+For upstream the patch is split in two. **A** is the load-time check and the
+launch refusal, and returns the existing `hipErrorNotSupported` (three files,
+37 added lines, one of them blank: `clr-hostcall-load-check-a.patch`); **B** is the new status on
+top of it (four files, +10/−2). A+B is byte for byte this directory's patch.
+A was built and run on its own at the 10.0 commit (`CLR_TAG=rocm10a`,
+`CLR_SDK=rocm10a`; library md5 `992c7ad8…`, which contains no
+`hipErrorHostcallUnsupported` string). PR A alone gives the same eight cells:
+nothing changes with atomics; without them the same thirteen kernels are named
+at load, `ncclDevKernel_Generic_4` is refused on both devices, and the probe
+is refused once per device. What differs is only the string an application
+gets back without `AMD_LOG_LEVEL`: "operation not supported", the existing
+status's, at `enqueue.cc:2119` from RCCL and at launch from the probe, where
+B's names the buffer and the missing atomics. That difference is the case for
+B. Logs: `logs/*rocm10a*`.
+
 ## What this licenses, and what it does not
 
 **Licensed.** On this platform, at the 7.14 and the 10.0 runtime commits, moving the check to
@@ -205,7 +222,8 @@ is the part neither attempted, and it is the part that composes with both.
     docker run --rm --entrypoint bash -e CLR_TAG=rocm10 -v /data/rccl-build:/rb <10.0 image> /rb/clr_build.sh /rb/clr-hostcall-load-check.patch
     CLR_SDK=rocm10 bash clr_demo_row.sh atomics_present
     CLR_SDK=rocm10 bash clr_demo_row.sh atomics_absent
+    # PR A alone at 10.0: link the tarball as /rb/clr-rocm10a-src.tgz, then CLR_TAG=rocm10a with clr-hostcall-load-check-a.patch, CLR_SDK=rocm10a for the rows
 
 `logs/` holds every row, every per-cell log with the runtime's `:1:` lines,
-the build logs, the diagnostic, the two earlier attempts, and the ROCm 10.0
-rows (`*rocm10*`).
+the build logs, the diagnostic, the two earlier attempts, the ROCm 10.0
+rows (`*rocm10*`) and the PR-A-alone rows (`*rocm10a*`).
