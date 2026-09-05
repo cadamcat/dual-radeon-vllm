@@ -1,11 +1,8 @@
 <header class="top">
   <div class="kicker">methodology · decode throughput · 2× RX 7900 XT</div>
-  <h1>Two harnesses agree to 0.44 %,<br>and the first of four runs read 31 % low</h1>
-  <p class="sub">How to measure decode on a machine like this</p>
-  <p class="lede">Two harnesses in this repository produce decode figures, and charts that pool them
-  need the difference to be a number rather than an assumption. It is <strong>0.44 %</strong> — once the
-  machine is warm. Finding that out took four identical runs, the first of which read
-  <strong>31 % low</strong>.</p>
+  <h1>An offline probe matches the campaign harness to 0.44 %,<br>after the first of four runs reads 31 % low</h1>
+  <p class="sub">Decode throughput on a pair of Radeon cards; checked between an offline probe and the campaign harness, across cold starts, and across thirty days of drift</p>
+  <p class="lede">Two harnesses in this repository produce decode figures: an offline probe and the campaign harness. Charts that pool their results need the difference to be measured rather than assumed. On a warm machine, that difference is <strong>0.44 %</strong>. Finding that out required four identical runs, because the first read <strong>31 % low</strong>.</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -13,35 +10,20 @@ __CHIPS__
 
 <div class="abstract">
   <h3>Abstract</h3>
-  <p>The campaign harness drives an OpenAI server, streams, samples at temperature 0.8, and reports over
-  a 512-token generation. The probes drive <code>LLM.generate</code> offline, greedy, and difference a
-  64-token run against an 8-token one. On matched depths they agree to <strong>0.44 %, 0.01 % and
-  0.07 %</strong>, and matching the generation span too changes nothing that matters. They are the same
-  measurement.</p>
-  <p>Getting there required discovering that <strong>a single run is not a measurement on this
-  box</strong>. Four identical runs back to back read −30.7 %, −5.1 %, and then converge; the deficit is
-  largest exactly where the machine is fastest, which is why it first looked like a harness difference
-  rather than a warm-up effect.</p>
-  <p>Two rules fall out and are encoded in the ledger rather than left to whoever draws the chart. Every
-  point carries <code>runs</code> and <code>range_pct</code>; and <code>patches</code> is a list, not a
-  boolean, because a point that needs an unmerged pull request is not the same claim as one you get by
-  installing a release.</p>
-  <p><strong>The range is reported rather than a standard deviation</strong>, and one cell shows why.
-  Adding a third and fourth run to a bimodal 8K point moved its range from 15.79 % to
-  <strong>16.79 %</strong> — wider — while its standard deviation fell from 4.87 to 3.61. One statistic
-  said the cell had become less trustworthy and the other said it had become more.</p>
+  <p>The campaign harness queries an OpenAI-compatible server with streaming, sampling at temperature 0.8 over a 512-token generation. The probe harness runs <code>LLM.generate</code> offline with greedy decoding, differencing a 64-token run against an 8-token run. At matched context depths, the two agree to <strong>0.44 %, 0.01 % and 0.07 %</strong>. Matching the generation span changes nothing of consequence. They record the same measurement.</p>
+  <p>Reaching that conclusion required discovering that <strong>a single run is not a measurement on this box</strong>. Four identical runs back to back read −30.7 %, −5.1 %, and then converge. The penalty falls heaviest where the machine is fastest, which initially disguised a warm-up effect as a harness discrepancy.</p>
+  <p>Two rules follow and are recorded in the ledger rather than left to whoever plots the charts. Every point records <code>runs</code> and <code>range_pct</code>. <code>patches</code> is a list rather than a boolean, because a result requiring an unmerged pull request is not the same claim as one obtained from a release.</p>
+  <p><strong>The range is reported rather than a standard deviation</strong>, and one cell demonstrates why. Adding a third and fourth run to a bimodal 8K point widened its range from 15.79 % to <strong>16.79 %</strong>, even as its standard deviation fell from 4.87 to 3.61. One statistic warned that the measurement was less stable; the other suggested it had improved.</p>
 </div>
 
 <h2><span class="n">1</span>Do the two harnesses measure the same thing</h2>
 
-<p>The calibration model is chosen to be immune to every other variable in play, which is the whole
-reason it is that model:</p>
+<p>The calibration model is chosen specifically to isolate harness differences from every other variable in the stack:</p>
 
 <ul id="whymodel"></ul>
 
-<p>Engine knobs are the campaign's, and the depths are the campaign's own reported
-<code>prompt_tokens</code> rather than the nominal targets, so the two sides sit at the same context
-instead of merely near it.</p>
+<p>Engine knobs follow the campaign configuration. Context depths use the campaign's reported
+<code>prompt_tokens</code> rather than nominal targets, ensuring both harnesses measure at identical sequence lengths rather than merely near them.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -62,9 +44,9 @@ instead of merely near it.</p>
 
 <h2><span class="n">2</span>The three runs that cost, and what they bought</h2>
 
-<p>The first attempt at Figure 1 showed the probe 31 % below the campaign at the shortest depth and 9 %
-below at the longest — a difference with a plausible-sounding story attached, since the harnesses really
-do differ in span, sampling and transport. It was none of those.</p>
+<p>The initial comparison in Figure 1 showed the probe 31 % below the campaign at the shortest depth and 9 %
+below at the longest. Because the two harnesses differ in token span, sampling strategy, and transport, that gap invited
+plausible explanations. It was none of them.</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -84,18 +66,18 @@ do differ in span, sampling and transport. It was none of those.</p>
 
 <div class="note">
   <span class="lbl">Why this does not retroactively damage the campaigns</span>
-  Each campaign cell starts a fresh container whose engine initialisation — model load, compile, graph
-  capture — takes minutes before anything is timed, and this model's campaign cells already run two
-  rounds which agree to 0.2 %. The arm-order-reversed pair in a separate experiment agrees to 0.3 % at 1K and
-  0.2 % at 32K, which a first-cell penalty of this size would have broken. The rule that follows is for
-  <em>probe</em> runs starting from a cold machine: discard the first rather than average it in.
+  Each campaign cell launches a fresh container whose engine initialisation — loading the model, compiling kernels, capturing
+  graphs — runs for minutes before any timing begins. Campaign cells for this model already execute two
+  rounds that agree to 0.2 %. In a separate experiment, reversing the arm order yielded agreement of 0.3 % at 1K and
+  0.2 % at 32K, consistency that a first-cell penalty of this magnitude would have shattered. The resulting rule applies
+  specifically to <em>probe</em> runs launched on a cold machine: discard the first run rather than averaging it in.
 </div>
 
 <h2><span class="n">3</span>The control that spans thirty days</h2>
 
-<p>Two campaigns, thirty days apart, different kernel, different patches — and six configurations
-measured in both. Those six are the only thing that says whether a number from July and a number from
-August can be put on one chart.</p>
+<p>Two campaigns ran thirty days apart, under different kernels and different patches. Six configurations
+were measured in both. Those six controls are the sole evidence determining whether a number from July and a number from
+August can share a single chart.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -115,9 +97,9 @@ August can be put on one chart.</p>
 
 <h2><span class="n">4</span>What every point carries, and where the line is</h2>
 
-<p>The ledger is a projection of the raw files onto one row format, and it is regenerated and compared
-rather than edited. Two things travel with every point because leaving them to the chart is how a
-repository ends up promising more than it measured.</p>
+<p>The ledger projects raw measurement files into a single uniform row format, recomputed and verified
+rather than edited by hand. Two metadata fields accompany every point; delegating them to chart rendering is how a
+benchmark repository promises more certainty than it measured.</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -134,20 +116,20 @@ repository ends up promising more than it measured.</p>
   </figcaption>
 </figure>
 
-<p><strong>One afternoon is the clearest case of why the column has to travel.</strong> The
-2026-08-29 campaign measured eight ladders on one machine — the same eleven rungs, two rounds a
-cell, one session. The three arms without speculation put <b>zero</b> of their 33 rungs above the
-cut, their worst range <b>0.59 %</b>. The five with it put <b>28</b> of 55 above. That is not a
+<p><strong>One afternoon provides the clearest illustration of why this metadata must accompany the data.</strong> The
+2026-08-29 campaign evaluated eight ladders on a single machine across eleven shared rungs, running two rounds per
+cell in one continuous session. The three non-speculative arms placed <b>zero</b> of their 33 rungs above the
+cut, recording a worst range of <b>0.59 %</b>. By contrast, the five speculative arms placed <b>28</b> of 55 rungs above the threshold. That is not a
 statement about speculation as such: <code>gemma-4-31B</code>'s speculative arm is graded at every
-rung, worst range 2.68 %. All 28 belong to <code>Qwen3.8-27B</code> — on both attention backends,
-patched and unpatched alike. A mean would have reported those 28 cells as calmly as the other 60,
-and every chart drawn from them would have looked equally settled.</p>
+rung, worst range 2.68 %. Instead, all 28 outliers belong to <code>Qwen3.8-27B</code> — on both attention backends,
+patched and unpatched alike. Reporting a simple mean would have presented those 28 volatile cells as placidly as the other 60,
+concealing the instability in every downstream plot.</p>
 
 <h2><span class="n">5</span>Why a range and not a standard deviation</h2>
 
-<p>Almost every cell here has two runs. At two, the sample standard deviation is the range divided by
-the square root of two — the same number wearing a distribution it has not earned. At four it starts to
-mean something, and that is where the argument gets concrete, because one cell has four.</p>
+<p>Almost every cell in this benchmark contains two runs. With two samples, the sample standard deviation is merely the range divided by
+the square root of two — the same metric masquerading as an unearned distribution. At four samples, the statistic begins to
+carry independent meaning. That is where the choice becomes concrete, because one measured cell has four runs.</p>
 
 <figure class="rv" id="fig5">
   <div class="figbox">
@@ -167,8 +149,8 @@ mean something, and that is where the argument gets concrete, because one cell h
 
 <h2><span class="n">6</span>Why output comparison is not the correctness test here</h2>
 
-<p>The obvious way to check that a kernel change is harmless is to compare generated tokens before and
-after. On this machine that measures the machine rather than the change.</p>
+<p>The obvious way to verify that a kernel change is harmless is to compare generated tokens before and
+after the modification. On this hardware, however, that test measures platform nondeterminism rather than the change.</p>
 
 <figure class="rv" id="fig6"> <div class="figbox"> <div class="figtitle">Figure 6 · greedy decoding
 is not reproducible across processes on this box <span class="prov yes">recomputable from
@@ -180,31 +162,23 @@ the change under test is not the cause. The kernel itself is not the cause eithe
 run in separate processes agree bit for bit. Whatever varies is above the kernel, in the engine, and
 it is not identified. </figcaption> </figure>
 
-<p>So numerical claims in this repository are made against an fp32 reference on fixed inputs, and
-end-to-end changes are argued from rates and from routing recorded inside the workers. Comparing token
-ids is used only where the platform is known to be deterministic — which, measured, is the A100 and not
-this box.</p>
+<p>Numerical claims in this repository are evaluated against an fp32 reference on fixed inputs.
+End-to-end changes are argued from throughput rates and internal execution routing logged by the workers. Comparing token
+IDs is reserved exclusively for platforms known to be deterministic — a property confirmed by measurement on the A100, but absent on
+this machine.</p>
 
 <h2><span class="n">7</span>What is not established</h2>
 
 <h3>Why the first run is slow</h3>
-<p>The effect is measured and its shape is described; the mechanism is not. It survives a warm-up
-generation, it is not confined to the first depth, and it converges by the third run. Whether it is the
-host, the driver, the container or something else was not isolated.</p>
+<p>The slowdown is measured, but the mechanism is not. It outlasts a warm-up generation, is not confined to the first depth, and clears by the third run. Whether the cause is the host, the driver, the container or something else was not isolated.</p>
 
-<h3>Whether the harnesses agree on other models</h3> <p>The calibration is one model, chosen
-precisely because no other variable in this repository can touch it. That makes the comparison clean
-and makes it narrow: a model on a different kernel path could differ between the two harnesses for
-reasons this calibration says nothing about.</p>
+<h3>Whether the harnesses agree on other models</h3> <p>Calibration uses one model to isolate variables. Agreement is clean but narrow: models on other kernel paths could diverge between harnesses for reasons unaddressed here.</p>
 
 <h3>The two controls that missed</h3>
-<p>Two of six configurations moved by about 0.8 % between campaigns, and one of those is the subject of
-its own investigation that has ruled out several candidates without finding the cause. Cross-campaign
-pooling is therefore stated with a band, not asserted as equivalence.</p>
+<p>Two of six configurations shifted about 0.8 % between campaigns. One remains under investigation after ruling out several candidates without finding the cause. Cross-campaign pooling is therefore bounded by a band, not asserted as equivalence.</p>
 
 <h3>What varies in the greedy output</h3>
-<p>No claim is made that any of the varying outputs is <em>wrong</em>, only that they are not
-reproducible. TP=1 is untested, and the source is above the kernel but not further localised.</p>
+<p>Varying outputs are not claimed to be <em>wrong</em>, only non-reproducible. TP=1 is untested; variance originates above the kernel but is not further localised.</p>
 
 <h2><span class="n">8</span>What has changed since</h2>
 
@@ -256,22 +230,21 @@ reproducible. TP=1 is untested, and the source is above the kernel but not furth
   (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/gfx1100-greedy-attn-ab"><code>gfx1100-greedy-attn-ab/</code></a>).
 </div>
 
-<div class="foot-note"> <p><strong>Run it yourself.</strong> The calibration probe and its four
-rounds are in
+<div class="foot-note"> <p><strong>Run it yourself.</strong> All data and verification scripts live in the repository: probe runs in
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/harness-calibration/README.md"><code>benchmarks/harness-calibration/</code></a>;
-the ledger and the rule that builds it are
+the ledger pipeline in
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl"><code>ledger.jsonl</code></a>
 and
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/build_ledger.py"><code>build_ledger.py</code></a>,
-which fails if the committed projection no longer matches its sources; the nondeterminism record is
+which fails if the committed projection no longer matches its sources; and raw nondeterminism logs in
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/gfx1100-greedy-nondeterminism.json"><code>gfx1100-greedy-nondeterminism.json</code></a>.
-Every figure here is recomputed from those files by
+Every figure is recomputed from these sources by
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
-<p>The nondeterminism was posted to
-<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>, which reports the same
-symptom from the same Triton fallback but says a warm-up call fixes it. Every measurement here
-already had one and still varied, so either that remedy does not generalise or this is a second
-defect.</p> </div> </div>
+<p>The nondeterminism was posted upstream in
+<a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>, which reports identical
+Triton fallback behaviour but finds that a warm-up call fixes it. Because every measurement here
+already included a warm-up generation and still varied, either that remedy does not generalise or this
+platform encounters a distinct defect.</p> </div> </div>
 
 <div class="tip" id="tip"></div>
 <script type="application/json" id="figures">__FIGURES_JSON__</script>

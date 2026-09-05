@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论</title>
+<title>在 vLLM 的 --enforce-eager 下，全机最快的模型把 107.8 tok/s 记成 15，顺手还造出两个结论</title>
 <meta name="description" content="一个 128 专家的 MoE 在 --enforce-eager 下记作 15 tok/s，编译之后是 107.8。这个开关还伪造了功耗左右不对称和吞吐与上下文无关两个现象，都被当成了架构结论。">
 <style>
   /* ===================== theme =====================

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %</title>
+<title>离线探针与 campaign harness 吻合到 0.44 %，此前四次运行中的首轮读数低了 31 %</title>
 <meta name="description" content="两套 harness 吻合到 0.44%，但前提是机器已经热了：四次相同运行里的第一次低了 31%。为什么每个点都带 run 数和极差，以及为什么报极差而不是标准差。">
 <style>
   /* ===================== theme =====================
@@ -975,14 +975,11 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-
 <header class="top">
   <div class="kicker">方法学 · 解码吞吐 · 2× RX 7900 XT</div>
-  <h1>两套 harness 吻合到 0.44 %，<br>而四次运行里的第一次低了 31 %</h1>
-  <p class="sub">在这样一台机器上怎么测 decode</p>
-  <p class="lede">这个仓库里有两套 harness 都会产出解码数字，而任何把两者放在一张图上的做法，
-  都需要它们之间的差异是一个数，而不是一个假设。它是 <strong>0.44 %</strong> —— 前提是机器已经热了。
-  搞清楚这一点花了四次相同的运行，其中第一次低了 <strong>31 %</strong>。</p>
+  <h1>离线探针与 campaign harness 吻合到 0.44 %，<br>此前四次运行中的首轮读数低了 31 %</h1>
+  <p class="sub">这一对 Radeon 卡上的解码吞吐；在离线探针与 campaign harness 之间核对，跨越冷启动与三十天的漂移</p>
+  <p class="lede">本仓库中有两套 harness 会产出解码数据：一套离线探针，一套 campaign harness。图表若要汇总两者的结果，其间差异必须经由实测确立，而非凭空假定。在热机状态下，该差异仅为 <strong>0.44 %</strong>。查明这一点经历了四次完全相同的运行，因为首轮读数整整<strong>低了 31 %</strong>。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-model" title="模型" style="--i:1">用 <b>Qwen3-8B</b> · bf16 标定</span>
@@ -993,30 +990,20 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>campaign 那套 harness 驱动一个 OpenAI 服务、走流式、温度 0.8 采样，在 512 token
-  的一次生成上报数。探针那套离线驱动 <code>LLM.generate</code>、greedy，
-  用 64 token 的一次运行减 8 token 的一次。在对齐的深度上，两者相差
-  <strong>0.44 %、0.01 %、0.07 %</strong>，而把生成长度也对齐并不改变任何要紧的东西。
-  它们是同一次测量。</p>
-  <p>走到这一步需要先发现：<strong>在这台机器上，一次运行不构成一次测量</strong>。
-  四次相同的运行连着跑，读数是 −30.7 %、−5.1 %，然后收敛；而且亏得最多的正是机器最快的那些点，
-  这也是它一开始看起来像"两套 harness 不同"而不是"预热效应"的原因。</p>
-  <p>由此得出两条规则，写进 ledger 里，而不是留给画图的人。每个点都带
-  <code>runs</code> 和 <code>range_pct</code>；而 <code>patches</code> 是一个列表而不是布尔值，
-  因为一个需要未合并 PR 才能拿到的点，和一个装上发行版就能拿到的点，不是同一个断言。</p>
-  <p><strong>报的是极差而不是标准差</strong>，有一个格子说明了为什么。给一个 8K 上双峰的点加上第三、
-  第四次运行之后，它的极差从 15.79 % 变成 <strong>16.79 %</strong> —— 变宽了 ——
-  而它的标准差从 4.87 降到 3.61。一个统计量说这个格子变得更不可信，另一个说它变得更可信。</p>
+  <p>campaign harness 采用流式传输请求兼容 OpenAI 协议的服务端，在温度 0.8 下采样并生成 512 个 token。探针 harness 则离线调用 <code>LLM.generate</code> 走贪婪解码（greedy），以 64 个 token 的运行结果减去 8 个 token 的运行结果求差。在匹配的上下文深度上，两者的吻合度分别达到 <strong>0.44 %、0.01 % 与 0.07 %</strong>。将两者的生成长度统一也未带来实质性改变。它们记录的是同一次测量。</p>
+  <p>得出该结论的前提，是先认识到<strong>在这台机器上，一次运行不构成一次测量</strong>。连续四次完全相同的运行读数依次偏差 −30.7 %、−5.1 %，随后趋于收敛。性能惩罚在机器吞吐最高处最为严重，以至于起初将预热效应误判成了两套 harness 之间的实现差异。</p>
+  <p>由此引出两条规则，并直接固化在 ledger 中，而非留待绘图时任意裁量。每个数据点均记录 <code>runs</code> 与 <code>range_pct</code>。<code>patches</code> 字段采用列表而非布尔值，因为依赖未合并 PR 测出的结果，与直接基于公开发行版测出的结论，绝非同等性质的断言。</p>
+  <p><strong>指标选用极差而非标准差</strong>，其中一个格子清楚地证明了原因。为一个在 8K 上呈现双峰分布的数据点增加第三和第四次运行后，其极差从 15.79 % 扩大至 <strong>16.79 %</strong>，但标准差反而由 4.87 降至 3.61。前者警告测量稳定性出现下降，后者却给出了测量质量有所改善的假象。</p>
 </div>
 
 <h2><span class="n">1</span>两套 harness 测的是不是同一件事</h2>
 
-<p>标定用的模型是特意挑成对这里其他每一个变量都免疫的，这正是选它的全部理由：</p>
+<p>选用该基准模型进行标定，目的十分明确：将两套 harness 的差异与整个技术栈中的其余变量完全隔离开来：</p>
 
 <ul id="whymodel"></ul>
 
-<p>引擎参数用的是 campaign 的那一套，深度用的是 campaign 自己报出来的
-<code>prompt_tokens</code> 而不是标称目标，这样两边坐在同一个上下文上，而不只是相近。</p>
+<p>引擎各项运行参数严格沿用 campaign 的既有配置。上下文深度直接采用 campaign 所记录的
+<code>prompt_tokens</code> 实际数值，而非标称目标值，从而确保两套 harness 始终在完全相同的序列长度下测量，而非仅停留在相近深度。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1035,8 +1022,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">2</span>那三次多花的运行，以及它们换来了什么</h2>
 
-<p>第一次做图 1 时，探针在最短深度上比 campaign 低 31 %，在最长深度上低 9 % ——
-一个听起来很有道理的差异，因为两套 harness 在长度、采样和传输上确实不同。这三样都不是原因。</p>
+<p>图 1 的初次对比显示，探针在最短深度上比 campaign 落后 31 %，在最长深度上也落后 9 %。鉴于两套 harness 在 token 跨度、采样策略和传输机制上均存在差异，这一差距极易引申出看似合理的揣测。然而这些假设无一成立。</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1055,18 +1041,12 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="note">
   <span class="lbl">为什么这不会追溯性地损害那些 campaign 结果</span>
-  campaign 的每一个格子都起一个全新容器，而它的引擎初始化 —— 加载模型、编译、图捕获 ——
-  在任何计时开始之前就要花上几分钟；而且这个模型的 campaign 格子本来就每格跑两轮，
-  两轮一致到 0.2 %。
-  另一个实验里把两臂顺序对调的那一对在 1K 上一致到 0.3 %、32K 上 0.2 %，
-  而这么大的首格惩罚会把它打破。由此得出的规则是给<em>探针</em>运行的：
-  从冷机器开始时，第一次要丢掉，而不是平均进去。
+  campaign 的每个格子都会启动全新的独立容器，其引擎初始化过程（加载模型、编译内核、捕获计算图）在任何计时开始前便已耗时数分钟。该模型的 campaign 格子本身便执行两轮运行，两者吻合度达到 0.2 %。在另一项调换两臂执行顺序的对照实验中，所得读数在 1K 上吻合至 0.3 %，在 32K 上吻合至 0.2 %；若存在如此巨大的首轮惩罚，这种高度的一致性早已荡然无存。因此，由此制定的规则仅特异性适用于冷机状态下启动的<em>探针</em>运行：直接舍弃首轮运行，绝不将其计入均值。
 </div>
 
 <h2><span class="n">3</span>跨越三十天的那个对照</h2>
 
-<p>两次 campaign 相隔三十天，内核不同、补丁不同 —— 而有六个配置在两边都测过。
-这六个是唯一能说明"七月的数字和八月的数字能不能放在同一张图上"的东西。</p>
+<p>两轮 campaign 先后相隔三十天进行，期间运行的内核版本不同，所打补丁亦有差异。其中有六组配置在两轮中均接受了实测。这六组对照数据，是判定七月的数据与八月的数据能否合并在同一张图表中的唯一依据。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1085,8 +1065,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">4</span>每个点都带什么，以及线画在哪</h2>
 
-<p>ledger 是把原始文件投影到一种行格式上的产物，它是被重新生成并比对的，不是被编辑的。
-有两样东西跟着每一个点走，因为把它们留给图表，正是一个仓库开始承诺超出自己实测范围的方式。</p>
+<p>ledger 将原始测量文件投影为统一的行格式，所有数据均经由重新计算与严格校验生成，绝非人工直接编辑。每个数据点都附带两个元数据字段；若将这些信息的呈现推诿给下游绘图环节，基准测试仓库就会在无形中许诺超出其实测精度的虚假确定性。</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -1102,18 +1081,11 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<p><strong>为什么这一列必须跟着点走，一个下午就给出了最清楚的例子。</strong>2026-08-29 那次
-campaign 在同一台机器上测了八条阶梯 —— 同样的十一个档位、每格两轮、同一场会话。不带投机的三条臂，
-33 个档位里有 <b>0</b> 个越过那道线，最差的极差是 <b>0.59 %</b>。带投机的五条臂，55 个档位里越线的有
-<b>28</b> 个。这不是在说投机本身：<code>gemma-4-31B</code> 的投机臂每一档都够评级，最差极差 2.68 %。
-那 28 个全部属于 <code>Qwen3.8-27B</code> —— 两个注意力后端上都有，打没打补丁都有。
-如果只报均值，那 28 个格子会和另外 60 个一样平静，而由它们画出来的每一张图都会显得同样安稳。</p>
+<p><strong>一个下午的实测数据，为元数据为何必须与测量值同行提供了最清晰的实证。</strong>2026-08-29 的 campaign 在单台机器上评估了八组阶梯，在连续会话中覆盖相同的十一个共有档位，每格执行两轮。三条非投机臂的 33 个档位中，越过阈值线的数量为 <b>0</b>，测得的最差极差为 <b>0.59 %</b>。与之相对，五条投机臂的 55 个档位中有多达 <b>28</b> 个越过阈值。这并非投机解码本身的普遍缺陷：<code>gemma-4-31B</code> 的投机臂在每个档位上均满足评级要求，最差极差为 2.68 %。事实上，全部 28 个超标点均来自 <code>Qwen3.8-27B</code>，无论采用哪种注意力后端、无论是否应用补丁皆是如此。若仅汇报简单均值，这 28 个极不稳定的格子就会显得同其余 60 个一样风平浪静，进而在后续所有图表中彻底掩盖其固有的不稳定性。</p>
 
 <h2><span class="n">5</span>为什么报极差而不是标准差</h2>
 
-<p>这里几乎每个格子都只有两次 run。在 n=2 时，样本标准差就是极差除以根号二 ——
-同一个数字，披了一件它没挣到的分布外衣。到 n=4 才开始有点意义，
-而论证也正是在那里变得具体，因为恰好有一个格子有四次。</p>
+<p>本基准测试中几乎每个格子都仅包含两次运行。在仅有 2 个样本时，样本标准差本质上就是极差除以根号二，只是同一个数值披上了名不副实的分布外衣。唯有当样本达到 4 个时，该统计量才开始具备独立的统计学意义。正是在这一节点上，统计指标的选择变得具体可感，因为实测中恰好有一个格子记录了四次运行。</p>
 
 <figure class="rv" id="fig5">
   <div class="figbox">
@@ -1133,8 +1105,7 @@ campaign 在同一台机器上测了八条阶梯 —— 同样的十一个档位
 
 <h2><span class="n">6</span>为什么比对输出不是这里的正确性测试</h2>
 
-<p>检验一个 kernel 改动是否无害，最直觉的办法是比较改动前后生成的 token。
-在这台机器上，那测的是机器，不是改动。</p>
+<p>验证内核改动是否无害的最直观方法，通常是比对修改前后生成的 token 序列。但在当前硬件环境下，该测试度量出的实际上是平台本身的不确定性，而非代码改动带来的影响。</p>
 
 <figure class="rv" id="fig6">
   <div class="figbox">
@@ -1151,90 +1122,63 @@ campaign 在同一台机器上测了八条阶梯 —— 同样的十一个档位
   </figcaption>
 </figure>
 
-<p>所以这个仓库里的数值主张，是在定输入上对着 fp32 参考实现做的；
-端到端的改动则是从速率和从 worker 内部记录的路由来论证的。
-比对 token id 只用在已知具有确定性的平台上 —— 而实测下来，那是 A100，不是这台机器。</p>
+<p>本仓库中的数值结论，均在固定输入下对照 fp32 参考实现予以评估。端到端改动则基于吞吐速率以及各 worker 记录的内部执行路由进行论证。比对 token ID 的测试手段，被严格限定于已知具备确定性的计算平台；该特性在 A100 上已通过实测确立，但在当前这台机器上却并不具备。</p>
 
 <h2><span class="n">7</span>没有被确立的部分</h2>
 
 <h3>第一次运行为什么慢</h3>
-<p>效应被测到了，形状也描述了；机理没有。它挺过了一次预热生成，不局限于第一个深度，
-并在第三次运行时收敛。究竟是宿主、驱动、容器还是别的什么，没有被隔离出来。</p>
+<p>减速效应确有实测，但机理尚未查明。它在完成单次预热生成后依然存在，且不局限于首个上下文深度，直到第三轮运行才消除。成因究竟源于宿主机、驱动、容器还是其他组件，尚未完成归因隔离。</p>
 
 <h3>两套 harness 在其他模型上是否一致</h3>
-<p>标定只有一个模型，而选它正是因为这个仓库里没有其他变量能碰到它。
-这让对比干净，也让它变窄：一个走不同 kernel 路径的模型，可能因为这里什么也没说的原因而在两套
-harness 之间不同。</p>
+<p>标定仅采用单一模型以隔离变量。所得吻合度明确但适用范围狭窄：走其他内核路径的模型完全会因未及探讨的原因而在两套 harness 间产生分歧，其潜在成因未在此处涉及。</p>
 
 <h3>两个没落进带子里的对照</h3>
-<p>六个配置里有两个在两次 campaign 之间动了约 0.8 %，其中一个是另一项调查的主题，
-那项调查排除了若干候选而没找到原因。所以跨 campaign 合并是带着一个区间说的，
-而不是断言等价。</p>
+<p>六组配置中有两组在两次 campaign 间产生了约 0.8 % 的漂移。其中一组排除了多项候选原因后仍未查明症结，目前仍在调查中。因此，跨 campaign 的数据合并仅能在统计区间内进行约束，不能断言二者绝对等价。</p>
 
 <h3>greedy 输出里变的是什么</h3>
-<p>这里没有主张任何一个变化了的输出是<em>错的</em>，只主张它们不可复现。
-TP=1 没测，而源头在 kernel 之上，但没有进一步定位。</p>
+<p>本文并未断定任何变化的输出结果存在<em>错误</em>，仅说明其无法复现。TP=1 尚未测试；输出差异的源头在内核之上，但未做进一步定位。</p>
 
 <h2><span class="n">8</span>此后发生的变化</h2>
 
 <div class="note warn">
   <span class="lbl">2026-08-26 · 第一次标定尝试才是有意思的那次</span>
-  它拿一次探针运行去对比 campaign，得出了 31 % 的 harness 差异，而且现成就有一个像样的解释。
-  再跑三次把它变成了一个预热效应。这篇文章要讲的那条规则 ——
-  在这里一次运行不构成一次测量 —— 正是从差点发表相反结论里来的。
+  最初仅凭单次探针运行与 campaign 进行比对，测出了 31 % 的 harness 差异，且当即可给出看似合情合理的解释。随后补做的三次运行，将其转变为一种预热效应。本篇旨在阐明的核心规则，即在这里一次运行不构成一次测量；得出这一认识，正是源于当初险些发表截然相反的错误结论。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 那道线的理由被重新陈述</span>
-  <code>build_ledger.py</code> 论证它 6 % 的阈值时，描述的是规则写下来那一刻的散布分布。
-  那个分布动了：0.27 的行进来了，双峰那个格子多了两次 run，于是尾巴当时是
-  2.6、3.4、3.5、4.1、5.1，然后跳到 16.8，而这道线排除的是一个点而不是两个。
-  注释被改写成描述那个分布，而验证器把它的尾巴钉住了，所以它不会无声地过期。
+  <code>build_ledger.py</code> 最初在论证 6 % 的阈值时，描述的是制定该规则时的离散分布。随后该分布发生偏移：0.27 对应的数据行入库，且双峰格子补充了两次运行，使得分布尾部变为 2.6、3.4、3.5、4.1、5.1 并跃升至 16.8，该阈值线因而仅排除了一个数据点而非两个。源码注释随后重写以如实描述新分布，验证器亦锁定了其尾部分布，防止后续静默失效。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 那道线又移了一次</span>
-  阶梯 campaign 在同一天又送进来 88 个点，其中 55 个带投机。尾部正是它们聚集的地方：如今
-  超过这道线的 29 个点里有 28 个带投机。第 29 个不带——它是前一天那个双峰的 8 K 格，16.79 %，
-  比其中大多数还差。上面那道钉子抓住了这次移动，那正是它存在的理由。尾巴现在是
-  5.30、5.33、5.97、6.02、6.10，然后跳到 9.50，于是 6 % 不再落在空隙里：它把两个档位卡在了
-  自己和真正的断裂之间。这道线改成 8 %，正在那个断裂的中间。它只重新评级那两个档位，
-  两个都是同一天测的，所以在它之前发表的东西都不变。
+  阶梯 campaign 同日新增 88 个数据点入库，其中 55 个属于投机解码。这些点大量聚集在分布尾部：在目前超出阈值线的 29 个点中，有 28 个来自投机配置。第 29 个点则不然，它是前一天记录的双峰 8 K 格子，极差高达 16.79 %，比绝大多数投机点更为离散。前述校验门禁成功捕获了这次分布移动。当前尾部分布依次为 5.30、5.33、5.97、6.02、6.10，随后断崖式跃升至 9.50。原先的 6 % 阈值不再位于空隙中，反而在其自身与实际断裂点之间滞留了两个档位。阈值线因而调整为 8 %，恰好处于该断裂区间的中点。这一调整仅对同日测得的这两个档位重新评级，此前发表的所有结论均保持不变。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 两个间隔和一处适用范围</span>
-  第 2 节原写"campaign 本来就每格跑两轮，两轮一致到 0.2 %"。这对本次校准所用的模型成立——
-  Qwen3-8B 那些格子最差的散布是 0.216 %——但对全部 campaign 不成立：
-  <code>benchmarks/README.md</code> 记的是 142 个格子里有 30 个超过 1 %。这句话现在限定到它真正
-  说的那些格子。另外，两次 campaign 相隔 <strong>三十天</strong>，2026-07-25 到 2026-08-24，
-  不是五周；小节标题、正文和图 3 的标题原本都写作五周。还有一处：英文的 "stated with a band"
-  指的是统计区间，中文原译作"带宽陈述"，那是 bandwidth，现已改为"区间"。
+  第 2 节原先表述为"campaign 本身每格跑两轮，吻合度达到 0.2 %"。该结论仅对本次标定所用的模型成立。实测中 Qwen3-8B 对应格子的最差离散度为 0.216 %，但这无法推广至整个 campaign：在 <code>benchmarks/README.md</code> 中，142 个格子中有 30 个离散度超过 1 %。该句现已明确限定为其针对的特定格子。此外，两轮 campaign 实际相隔<strong>三十天</strong>（2026-07-25 至 2026-08-24），而非五周；此前小节标题、正文及图 3 标题均误记为五周。最后，英文中的 "stated with a band" 意指统计区间，中文此前误译为"带宽陈述"（混淆了 bandwidth），现统一更正为"区间"。
 </div>
 
 <div class="note">
   <span class="lbl">2026-09-02 · attention 后端被排除在非确定性的来源之外</span>
-  第 6 节说这台机器的 greedy 输出跨进程会变。把 W4A16 内核固定在 <code>RDNA3W4A16LinearKernel</code>、
-  给两个不稳定的模型强制 <code>TRITON_ATTN</code>，两个仍然不稳定，而早先那条判断称稳定的两个模型四个格子里
-  零个变化；后端不是那条轴，量化内核是剩下的那个有名字的候选，尚未确立
-  （<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/gfx1100-greedy-attn-ab"><code>gfx1100-greedy-attn-ab/</code></a>）。
+  第 6 节指出，当前机器生成的 greedy 输出存在跨进程变动。将 W4A16 内核固定为 <code>RDNA3W4A16LinearKernel</code>，并对两个不稳定模型强制启用 <code>TRITON_ATTN</code> 后，二者依旧不稳定；而在早先判定为稳定的两个模型中，其四个格子均无任何变动。这证明注意力后端并非导致不确定性的关键变量，量化内核成为目前剩余的唯一具名候选，尚待确立（<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/gfx1100-greedy-attn-ab"><code>gfx1100-greedy-attn-ab/</code></a>）。
 </div>
 
 <div class="foot-note">
-  <p><strong>自己跑一遍。</strong>标定探针和它的四轮在
+  <p><strong>自己跑一遍。</strong>全部实测数据与校验脚本均保存在仓库中：标定探针运行记录位于
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/harness-calibration/README.md"><code>benchmarks/harness-calibration/</code></a>；
-  ledger 和构建它的规则是
+  ledger 流水线位于
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl"><code>ledger.jsonl</code></a>
   与
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/build_ledger.py"><code>build_ledger.py</code></a>
-  —— 后者在入库投影与其来源不再一致时会失败；非确定性记录是
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/build_ledger.py"><code>build_ledger.py</code></a>，
+  若已入库的投影数据与源数据不再一致，构建脚本便会报错中止；原始不确定性日志位于
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/gfx1100-greedy-nondeterminism.json"><code>gfx1100-greedy-nondeterminism.json</code></a>。
-  本页每一张图都由
+  文中的每一张图表，均由
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-  从这些文件重算。</p>
-  <p>非确定性已贴到 <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>，
-  那份报告说的是同一个 Triton 兜底路径的同一个症状，但称一次预热调用能修好它 ——
-  而这里每一次测量都已经带了预热，仍然会变；所以要么那个办法不通用，要么这是第二个缺陷。</p>
+  基于上述源文件重新计算生成。</p>
+  <p>该不确定性问题已提交至上游议题
+  <a href="https://github.com/vllm-project/vllm/issues/50603">vllm#50603</a>。该反馈指出了完全相同的 Triton 回退行为，但指出增加一次预热调用即可解决。鉴于本仓库的每次测量在测试前均已包含一次预热生成且依然出现输出波动，要么该修复方案不具备通用性，要么当前平台遭遇了另一处完全独立的缺陷。</p>
 </div>
 </div>
 

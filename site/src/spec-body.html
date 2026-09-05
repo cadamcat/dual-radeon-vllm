@@ -1,11 +1,11 @@
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · speculative decoding · measured on 2× RX 7900 XT and one A100</div>
-  <h1>Speculation's second query row<br>costs 120 of 128 workgroups</h1>
-  <p class="sub">One boolean costs 71 % on a Radeon and 61 % on an A100</p>
+  <h1>Triton unified-attention's segment buffer guard<br>costs 120 of 128 workgroups</h1>
+  <p class="sub">Read as max_seqlen_q; measured against no-speculation at 71 % loss on a Radeon and 61 % on an A100</p>
   <p class="lede">Turning on vLLM's own documented MTP assistant makes <code>gemma-4-31B</code> decode
   36.9 % <em>faster</em> at 1K of context and 70.8 % <em>slower</em> at 32K. The cause is not the
-  drafter, not the hardware and not the acceptance rate: speculation sets <code>max_seqlen_q = 2</code>,
-  and one clause in an <code>or</code> chain reads that as "this is not decode" and drops the kernel from
+  drafter, not the hardware, and not the acceptance rate. Speculation sets <code>max_seqlen_q = 2</code>.
+  One clause in an <code>or</code> chain reads that length as prefill rather than decode, dropping the kernel from
   128 workgroups to 8.</p>
   <div class="meta">
 __CHIPS__
@@ -14,31 +14,31 @@ __CHIPS__
 
 <div class="abstract">
   <h3>Abstract</h3>
-  <p>vLLM documents this assistant as supported and gives a command line with no mention of context
-  length. Measured across four depths the effect is <strong>monotonic and changes sign</strong>: +36.9 %,
-  −14.0 %, −32.4 %, −70.8 %. By 8K it is already a net loss.</p>
+  <p>vLLM documents this assistant as supported and provides an example command line without mentioning context
+  length. Measured across four depths, the throughput change is <strong>monotonic and changes sign</strong>: +36.9 %,
+  −14.0 %, −32.4 %, −70.8 %. By 8K, speculative decoding is already a net loss.</p>
   <p>The gate is <code>max_seqlen_q &gt; 1</code> in the Triton unified-attention backend's
   <code>use_3d</code> condition. The 3D kernel splits a long KV sequence into segments and reduces them
-  in parallel; speculation's second query row disqualifies it, and the launch grid goes from
-  <strong>1 × 8 × 16 to 1 × 8</strong>. The comment on that clause says the batch includes a prefill
-  request, but the binding constraint is buffer shape: the segment buffer is allocated per sequence and
-  indexed per token, which coincide only at one query row.</p>
+  in parallel. Speculation's second query row disqualifies that path. The launch grid collapses from
+  <strong>1 × 8 × 16 to 1 × 8</strong>. The code comment attributes this clause to prefill requests in the
+  batch, but the binding constraint is buffer geometry: the segment buffer is allocated per sequence and
+  indexed per token, dimensions that coincide only at one query row.</p>
   <p><strong>Three explanations that look better were measured and dropped.</strong> Not KV-head
-  starvation: this model has 16 heads and is fine without speculation. Not the extra query row: calling
-  the kernel directly, going from one row to two costs <strong>0.08 %</strong> at 32K in one construction
-  and 0.16 % in a second. Not the tiling constants: porting upstream's Blackwell-tuned block made it
+  starvation: this model has 16 heads and decodes cleanly without speculation. Not query row overhead: calling
+  the kernel directly, moving from one row to two costs <strong>0.08 %</strong> at 32K in one construction
+  and 0.16 % in a second. Not tiling constants: porting upstream's Blackwell-tuned block made it
   8.7 % slower.</p>
-  <p>The claim is about a kernel, not about a vendor, so it predicts the same collapse on any CUDA
-  machine routed onto the same kernel and its absence on a backend without the guard. A rented A100
-  tested both: <strong>−28.2 % at 30K and −61.1 % at 50K</strong> on the forced default, and the
-  collapse gone on FlashInfer. Both predictions held.</p>
+  <p>The claim targets a kernel rather than specific hardware. It predicts that any CUDA system routed
+  to this kernel will reproduce the same collapse as context grows, whereas backends lacking the guard will not.
+  A rented A100 tested both: <strong>−28.2 % at 30K and −61.1 % at 50K</strong> on the forced
+  default, and the collapse gone on FlashInfer. Both predictions held.</p>
 </div>
 
 <h2><span class="n">1</span>What the ladder looks like</h2>
 
-<p><code>gemma-4-31B-it-qat-w4a16-ct</code>, TP=2, batch 1, greedy, the official
-<code>gemma-4-31B-it-assistant</code> at <code>num_speculative_tokens: 1</code>. Decode is isolated from
-prefill by differencing a 64-token generation against an 8-token one at the same depth.</p>
+<p>The benchmark evaluates <code>gemma-4-31B-it-qat-w4a16-ct</code> at TP=2, batch 1, and greedy decoding,
+paired with the official <code>gemma-4-31B-it-assistant</code> at <code>num_speculative_tokens: 1</code>. Differencing
+a 64-token generation against an 8-token one at the same depth isolates decode from prefill.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -59,10 +59,10 @@ prefill by differencing a 64-token generation against an 8-token one at the same
   </figcaption>
 </figure>
 
-<p>vLLM's own counter at 32K reads <code>Mean acceptance length: 1.12</code>, 9 accepted of 78 drafted.
-Back-solving the 1K speedup implies roughly 0.46 acceptance there, so acceptance degrades with depth
-too. That is a real cost — a rejected draft has still paid for the assistant's forward pass and the
-target's verification — but it cannot account for −70.8 % when the assistant is four layers wide.
+<p>vLLM's internal counter at 32K records <code>Mean acceptance length: 1.12</code>, representing 9 accepted
+tokens out of 78 drafted. Back-solving from the 1K speedup implies roughly 0.46 acceptance there, showing that
+acceptance degrades with depth as well. Rejected drafts carry a real cost: each pays for the assistant's forward
+pass and target verification. Yet lower acceptance cannot account for −70.8 % when the assistant spans only four layers.
 Section 5 shows what can.</p>
 
 <h2><span class="n">2</span>The clause</h2>
@@ -83,18 +83,18 @@ Section 5 shows what can.</p>
 
 <div class="grids" id="grids"></div>
 
-<p>The comment on the clause says the batch includes at least one prefill request. The binding
-constraint is different, and it matters because it says what a real fix looks like. The segment buffer
-is allocated as <code>[seq_threshold_3D, num_heads_q, segments, headdim]</code> — per <em>sequence</em> —
-and indexed as <code>segm_output[token, head, segm_idx, :]</code> — per <em>token</em>. At one query row
-those coincide. At two the buffer would overflow, so the guard excludes it, and
-<code>max_seqlen_q &gt; 1</code> catches speculation along with prefill because it cannot tell them
+<p>The comment on the clause attributes the guard to prefill requests in the batch. The binding
+constraint is buffer geometry, which indicates what a real fix requires. The segment buffer
+is allocated as <code>[seq_threshold_3D, num_heads_q, segments, headdim]</code>—per <em>sequence</em>—and
+indexed as <code>segm_output[token, head, segm_idx, :]</code>—per <em>token</em>. With one query row
+those coincide. At two the buffer would overflow, so the guard excludes multi-row queries, and
+<code>max_seqlen_q &gt; 1</code> catches speculation alongside prefill because it cannot tell them
 apart.</p>
 
 <h2><span class="n">3</span>The control that leaves one explanation</h2>
 
-<p>The obvious reading is that two query rows are simply more work. Calling
-<code>unified_attention</code> directly with this model's shapes, no model and no speculation, and
+<p>The intuitive explanation is that two query rows simply demand more work. To test this, direct benchmarks
+called <code>unified_attention</code> using the model's exact tensor shapes without model weights or speculation,
 sweeping the number of query rows:</p>
 
 <figure class="rv" id="fig2"> <div class="figbox"> <div class="figtitle">Figure 2 · query rows
@@ -111,33 +111,32 @@ between constructions to 2.2 % there. At 32K, the depth the finding is about, ev
 agree to 0.2 %. Absolute levels differ between constructions by up to 9 % at 8K, which is why every
 point here is a within-sweep ratio. Hover for all four query lengths. </figcaption> </figure>
 
-<p>Two more explanations were tested and dropped. <strong>KV-head starvation</strong>: the collapse in
+<p>Two more explanations were tested and eliminated. <strong>KV-head starvation</strong>: the collapse in
 <a href="hybrid-ssm-collapse.html">the hybrid-SSM article</a> comes from having 4 KV heads, but this
-model has 16 and is fine without speculation. <strong>Tiling</strong>: upstream carries a
+model has 16 and decodes cleanly without speculation. <strong>Tiling</strong>: upstream carries a
 <code>tuned_large_head</code> block for <code>head_size == 256 and max_seqlen_q &gt; 1</code>, gated to
-Blackwell, with every other condition matching this hardware; porting its <code>BLOCK_M = 32</code> made
+Blackwell, with every other condition matching this hardware. Porting its <code>BLOCK_M = 32</code> made
 32K 8.7 % slower.</p>
 
 <div class="note">
   <span class="lbl">The mean would have hidden this
   <span class="prov no">raw traces not committed</span></span>
-  Per-call time of <code>kernel_unified_attention</code> at 32K, from torch-profiler traces that stay on
-  the test machine; what is committed is the summary and the trace filenames, so this is the one block on
+  Per-call time of <code>kernel_unified_attention</code> at 32K, from torch-profiler traces stored on
+  the test machine. Because only the summary and trace filenames are committed, this is the one block on
   the page that cannot be recomputed:
   <div class="dist" id="dist"></div>
-  Most calls barely move and a minority explode. That is this model's alternating attention: the
-  sliding-window layers see a short KV and do not care, the global layers scan the full 32K and lose the
+  Most calls barely move and a minority explode. That divergence reflects this model's alternating attention: the
+  sliding-window layers see a short KV and are unaffected, whereas global layers scan the full 32K and forfeit
   segmentation entirely. Quoting the 9.2× mean would describe neither population.
-  <code>hipGraphLaunch</code> goes 63 to 324, so graph replay is intact — checked because it is the
-  obvious suspect.
+  <code>hipGraphLaunch</code> goes 63 to 324, confirming graph replay is intact.
 </div>
 
 <h2><span class="n">4</span>The other vendor</h2>
 
-<p>A claim about a kernel makes a prediction about hardware it was not measured on. If the collapse is
-the 3D-to-2D drop, then any CUDA machine routed onto the same kernel should show it, deepening with
-context, and a backend without the guard should not. <code>gemma-4</code> has heterogeneous head
-dimensions, so vLLM forces <code>TRITON_ATTN</code> whenever FA4 is unavailable — and an A100 has no
+<p>A claim about a kernel generates testable predictions for hardware it was not measured on. If the collapse
+stems from dropping from 3D to 2D execution, any CUDA system routed onto the same kernel should replicate it,
+deepening with context, while backends without the guard should not. Because <code>gemma-4</code> has heterogeneous head
+dimensions, vLLM forces <code>TRITON_ATTN</code> whenever FA4 is unavailable—and an A100 has no
 FA4. That makes the prediction testable for the price of an hour of rented time.</p>
 
 <figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · the same model
@@ -154,14 +153,14 @@ other ratio here is computed within one session, and the 50K quartet is entirely
 
 <h2><span class="n">5</span>What the path is worth once speculation is let back in</h2>
 
-<p>Widening the buffers by hand and raising the cutoff recovers 32.42 tok/s at 32K against 8.85 — and
-speculation finally beats no speculation. That was not a fix: it cannot express "speculation's two query
-rows but not prefill's four thousand", and greedy output at a 30K prompt diverged from stock at token
+<p>Widening the buffers by hand and raising the cutoff recovers 32.42 tok/s at 32K against 8.85, so
+speculation finally outperforms baseline decode. That was not a permanent fix: it cannot express "speculation's two query
+rows but not prefill's four thousand", and greedy output on a 30K prompt diverged from stock at token
 35, with three possible causes unseparated.</p>
 
 <p><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>, open since June and
-stalled with merge conflicts, is the shape that paragraph asked for: the gate becomes
-<code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded, and the segment buffers
+stalled with merge conflicts, provides the structural fix that paragraph asked for. The gate becomes
+<code>max_seqlen_q &gt; decode_query_len</code>, so prefill stays excluded while segment buffers
 are sized per token.</p>
 
 <figure class="rv" id="fig4"> <div class="figbox"> <div class="figtitle">Figure 4 · the same ladder
@@ -173,16 +172,16 @@ depth tried, against the no-speculation baseline in Figure 1; the stock path is 
 three long depths. The hand-widened experiment lands 0.5 % from the PR's own number at 32K, which is
 evidence that the two are doing the same thing. </figcaption> </figure>
 
-<p>The divergence question is settled too. A fixed-input comparison at the kernel level, 18 cases,
-shows each path bit-deterministic across the 18 fixed-input cases and the two differing by at most
-one bf16 ULP — at one query row, which is today's shipped behaviour, exactly as at two and four. The
-token-35 divergence was the pre-existing 2D/3D reduction-order reassociation that batch size already
-toggles in production, not a defect of the admission.</p>
+<p>The divergence question is settled too. A fixed-input comparison at the kernel level across 18 cases
+shows each path bit-deterministic across the 18 fixed-input cases, with the two differing by at most
+one bf16 ULP at one query row—today's shipped behaviour—exactly as at two and four. The
+token-35 divergence reflects pre-existing 2D/3D reduction-order reassociation already toggled by batch size
+in production, not a defect of the admission.</p>
 
 <h3>What the patch needs before it can do anything</h3>
 
-<p>Everything above is measured where the Triton unified-attention kernel serves the model. vLLM
-does not always route it there, and where it does not, this patch is installed and idle. The
+<p>The results above apply when the Triton unified-attention kernel serves the model. vLLM
+does not always route execution there, and when it routes elsewhere, this patch sits idle. The
 <em>same A/B, five times</em> control on Figure 4 draws the five runs that separate the two cases,
 each eleven rungs and two rounds a cell at k=3:</p>
 
@@ -200,62 +199,60 @@ each eleven rungs and two rounds a cell at k=3:</p>
       silent — <b>−0.08 %</b>. At 32K, 20.51 against 20.52.</li>
 </ul>
 
-<p><strong>The probe says which case you are in before the ladder does.</strong>
+<p><strong>The probe identifies which case applies before running the ladder.</strong>
 <code>inject_45450.py</code> prints <code>PROBE_3D_SPEC_ACTIVE</code> once per worker process when
-the 3D path serves a step wider than one token, which needs three things at once: the patch
-installed, this kernel on the path, and speculation on. In all five runs the probe and the outcome
-agree — where it printed the patched arm pulled away, where it stayed silent no rung moved by more
-than 8.8 %, which is inside the spread those speculative arms repeat at anyway. So a reader who
-applies this patch and sees a silent log has not mis-applied it. They are on a model the engine
-sends somewhere else, and the fix for them is the backend, not the patch.</p>
+the 3D path serves a step wider than one token, requiring three concurrent conditions: the patch
+installed, this kernel active, and speculation enabled. In all five runs the probe and outcome
+agree: where it printed, the patched arm pulled away; where it stayed silent, no rung moved by more
+than 8.8 %, within normal run-to-run variation. A reader who applies this patch and observes a silent log
+has not mis-applied it. The engine simply routes that model elsewhere, making the backend the proper fix rather
+than the patch.</p>
 
 <h2><span class="n">6</span>Who reported what</h2>
 
-<p>The same 3D-to-2D drop was reported first, in
+<p>The same 3D-to-2D drop was documented first in
 <a href="https://github.com/vllm-project/vllm/issues/48076">vllm#48076</a> on 2026-07-09, on a
 single B200 running the same architecture in a different quantisation. The trigger in that report is
-a different clause in the same <code>or</code> chain — <code>num_seqs &gt; seq_threshold_3D</code>,
-a batch-size threshold — and its proposed fix derives that threshold from SM count. <strong>That fix
-does not reach this trigger</strong>: <code>max_seqlen_q &gt; 1</code> is independent of the
-threshold, so speculation keeps falling to 2D however the threshold is computed. What is new here is
-the second trigger, its different cause, and measurements on RDNA3.</p>
+a different clause in the same <code>or</code> chain: <code>num_seqs &gt; seq_threshold_3D</code>,
+a batch-size threshold whose proposed fix derives the threshold from SM count. <strong>That fix
+does not reach this trigger.</strong> Because <code>max_seqlen_q &gt; 1</code> operates independently of the
+threshold, speculation falls to 2D regardless of how the threshold is computed. What is new here is
+the second trigger, its underlying cause, and measurements on RDNA3.</p>
 
 <p>The finding was posted to that thread on 2026-08-01, and on 2026-08-26 to
 <a href="https://github.com/vllm-project/vllm/issues/52049">vllm#52049</a>, a CUDA-side report of
 the same symptom on the same model. That reporter confirmed that explicitly selecting FlashInfer
-sidesteps it, which fits: the collapse <em>this article traced</em> is specific to this Triton
-kernel, and an explicit backend choice bypasses the forcing. ROCm has no FlashInfer, so on this
-hardware the remedy is still to gate speculation by depth.</p>
+sidesteps it, matching our analysis: the collapse traced here is specific to this Triton
+kernel, so choosing an explicit backend bypasses the forcing. ROCm lacks FlashInfer, so on this
+hardware the practical remedy remains gating speculation by depth.</p>
 
 <p><strong>What is not specific to this kernel is speculation losing at depth.</strong> Measured on
-2026-08-29, <code>Qwen3.8-27B</code> loses too — on ROCm's <code>ROCM_ATTN</code>, whose backend file
+2026-08-29, <code>Qwen3.8-27B</code> loses too on ROCm's <code>ROCM_ATTN</code>, whose backend file
 imports <code>chunked_prefill_paged_decode</code> and none of the files this patch edits, and on
-CUDA's <code>FLASH_ATTN</code>. Neither is this kernel, and on neither does this patch change
-anything. Same sign, different mechanism, and this article does not identify that one. It would be a
-mistake to read those two as more evidence for the argument above; they are evidence that the
+CUDA's <code>FLASH_ATTN</code>. Neither backend uses this kernel, and on neither does this patch change
+anything. They share the same sign through a different mechanism that this article does not identify. It would be a
+mistake to read those two as evidence for the argument above; they demonstrate that the
 argument above does not cover them.</p>
 
 <h2><span class="n">7</span>What is not established</h2>
 
 <h3>The crossover</h3>
-<p>Somewhere between 1K and 8K, not measured. The same gap exists on the A100 side, where 30K and 50K
-were measured and where MTP stops paying on FlashInfer was bracketed rather than located.</p>
+<p>Between 1K and 8K, unmeasured. On the A100, 30K and 50K were measured, bracketing where FlashInfer
+MTP ceases to pay rather than locating the exact crossover.</p>
 
 <h3>Replication</h3>
-<p>The ROCm ladder is one process per cell. The MTP arm turns out to have a second, independent run
-twenty-five days later, and the three long depths agree to 0.45 % — but the no-speculation arm has
-none, and
-acceptance rate was not captured per cell. The A100 matrix is also one run per cell, across two VMs
-whose cross-session variance is unquantified.</p>
+<p>The ROCm ladder uses one process per cell. The MTP arm has a replicate twenty-five days later
+agreeing to 0.45 % at the three long depths, but the no-speculation arm lacks replicates and per-cell
+acceptance rate was not captured. The A100 matrix is likewise single-run per cell across two VMs
+with unquantified cross-session variance.</p>
 
 <h3>Sampling</h3>
-<p>Everything here is <code>temperature=0</code>, where draft and target agree most often. Sampling
-should lower acceptance and make speculation worse, but that was not measured on either vendor.</p>
+<p>All measurements use <code>temperature=0</code>, where draft and target agree most often. Sampling
+should lower acceptance and degrade speculation, but was not measured on either vendor.</p>
 
 <h3>One model on each side</h3>
-<p>gfx1100, TP=2, a VFIO guest without peer-to-peer, one checkpoint; and one A100, one card, one
-checkpoint. The mechanism is a source-level claim about a shared kernel, and the two machines agreeing
-is what supports it, not either measurement alone.</p>
+<p>Tested on gfx1100 at TP=2 (a VFIO guest lacking peer-to-peer, one checkpoint) and on one A100, one card, one checkpoint.
+The source-level kernel claim is supported by both machines agreeing, not by either measurement alone.</p>
 
 <h2><span class="n">8</span>What has changed since</h2>
 
@@ -303,21 +300,16 @@ is what supports it, not either measurement alone.</p>
 </div>
 
 <div class="foot-note">
-  <p><strong>The data.</strong> The ROCm ladders, the direct kernel sweeps and the correctness cases are
-  in
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
-  the A100 matrix, its logs and the exact recipe — including the multimodal-limits condition an explicit
-  FlashInfer override needs on vLLM 0.28 — are in
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/README.md"><code>benchmarks/cuda-a100/</code></a>.
+  <p><strong>The data.</strong> The ROCm ladders, direct kernel sweeps, and correctness cases are
+  in <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
+  the A100 matrix, logs, and vLLM 0.28 FlashInfer override recipe are
+  in <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/README.md"><code>benchmarks/cuda-a100/</code></a>.
   The full write-up is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/speculative-decoding-on-rdna.md">speculative-decoding-on-rdna.md</a>.
-  The per-call distribution above is derived from torch-profiler traces that stay on the test machine at
-  about 2 MB each;
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/trace-unified-attention.json"><code>trace-unified-attention.json</code></a>
-  carries what was derived from them and the trace filenames, and that figure is marked accordingly.</p>
+  Profiler traces of 2 MB per call stay on the test machine, with derived distributions and filenames
+  in <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/trace-unified-attention.json"><code>trace-unified-attention.json</code></a>.</p>
   <p>The assistant is <code>google/gemma-4-31B-it-assistant</code>, 0.90 GiB and not gated. Its
-  <code>head_dim</code> and <code>global_head_dim</code> match the target, which is what lets the two
-  share a KV cache.</p>
+  <code>head_dim</code> and <code>global_head_dim</code> match the target, enabling shared KV cache allocation.</p>
 </div>
 </div>
 

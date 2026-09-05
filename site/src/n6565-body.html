@@ -1,49 +1,44 @@
 <header class="top">
   <div class="kicker">RCCL · ROCm · a negative result · measured on 2× RX 7900 XT</div>
-  <h1>The reporter's own script counts rank 0,<br>shown by injecting a one-sided fault</h1>
-  <p class="sub">How to report a bug you cannot reproduce</p>
-  <p class="lede">Someone reports deterministic silent corruption in a collective on two gfx1100 cards.
-  You have two gfx1100 cards. It does not happen. That is worth almost nothing on its own — and it can
-  be made worth something, by three things that have nothing to do with running the test more times.</p>
+  <h1>The reporter's own reproducer tallies failures only on rank 0,<br>shown on two cards by injecting a one-sided fault</h1>
+  <p class="sub">Swept with rccl_allgather_truth.py across channels and transports on two Radeons; verified against a cross-rank variant and an injected fault</p>
+  <p class="lede">An upstream issue reports deterministic silent corruption during a collective on two gfx1100 cards.
+  On this pair of gfx1100 cards, the corruption does not appear. That clean run proves almost nothing on its own.
+  It gains value only through three concrete checks that do not depend on running the test more times.</p>
   <div class="meta">
 __CHIPS__
   </div>
 </header>
 
 <div class="abstract"> <h3>Abstract</h3>
-<p><a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> reports
-<code>all_gather</code> silently returning wrong data on two W7800s, root-caused to an init-time
-8-byte copy whose payload is not in device memory when the synchronise returns. It reproduces
-deterministically for them on RCCL 2.27.7 and 2.28.3. On this box at 2.30.4 it does not, across
-<strong>135 cold communicator initialisations in eight configurations</strong>.</p> <p>Three things
-make that mean something. <strong>A sweep across the dimensions their mechanism names</strong>:
-their mechanism is
-specific to the first of several concurrent init copies, this box builds two channels by default,
-and the sweep drives that from one to sixteen and the transport from shared memory to sockets.
-<strong>A stated contrast</strong>: the two machines differ on platform, kernel and RCCL version,
-but agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left for the
-reader to guess at. And <strong>an honest bound</strong> on what a clean run from someone else's
-script can say.</p> <p>The third turned out to be the interesting one. Their reproducer computes the
-corruption check on every rank but counts failures only on rank 0, so <strong>corruption visible
-only on rank 1 would print <code>ALL CORRECT</code></strong>. The negative result was therefore
-narrower than it had been reported as. That was disclosed the same night, a cross-rank variant was
-written, all eight arms were re-run through it, and the blind spot was <em>demonstrated on this
-hardware</em> by injecting a one-sided fault rather than argued from the source.</p> </div>
+<p>Issue <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> reports that
+<code>all_gather</code> silently returns corrupted data on two W7800s. The upstream report traces the fault to an init-time
+8-byte copy whose payload is missing from device memory when synchronisation returns. It reproduces deterministically for them on RCCL 2.27.7 and 2.28.3. On this box running 2.30.4, no corruption appears across
+<strong>135 cold communicator initialisations in eight configurations</strong>.</p> <p>Three things make that negative result informative. First, <strong>a sweep across the dimensions their mechanism names</strong>.
+The reported fault affects only the first of several concurrent init copies. Because this host initialises two channels by default,
+the sweep scales channel count from one to sixteen and switches the transport from shared memory to sockets.
+Second, <strong>a stated contrast</strong> between the two testbeds. The machines differ in platform, kernel, and RCCL version,
+but agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left for the reader to guess at.
+Third, <strong>an honest bound</strong> on what a clean run from someone else's script can say.</p> <p>That third one turned out to be the interesting one.
+The upstream reproducer computes corruption checks across all ranks but tallies failures only on rank 0;
+consequently, <strong>corruption visible only on rank 1 would print <code>ALL CORRECT</code></strong>.
+The negative result was therefore narrower than originally reported.
+That limitation was disclosed the same night. A cross-rank variant was then written, and all eight arms were re-run through it.
+Finally, rather than merely debating the script logic, the blind spot was <em>demonstrated on this
+hardware</em> by injecting a one-sided fault.</p> </div>
 
 <h2><span class="n">1</span>Why a clean run usually says nothing</h2>
 
-<p>"It works here" is the least useful sentence on a bug tracker. It is compatible with the reporter
-being wrong, with the reporter being right about a configuration you did not run, and with your test
-being unable to see the fault at all. Turning it into something a maintainer can act on means answering
-three questions before pressing send: could this configuration have shown it, what exactly differs
-between the two machines, and what is the instrument blind to.</p>
+<p>"It works here" is the least useful sentence on a bug tracker. It can mean the reporter is mistaken,
+the reporter ran a configuration omitted here, or the test harness cannot observe the failure mode.
+Turning a negative result into actionable evidence requires answering three questions before posting:
+could this configuration trigger the bug, what differs between the two machines, and what blind spots exist in the test tool.</p>
 
-<p>The first is why the sweep is the load-bearing part. Their mechanism is not "collectives are
-broken": the <em>first-issued</em> copy, on channel 0, is the one lost, on both ranks, while channel
-1's lands. They report that a naive single-device version of the same allocate → memset → 8-byte
-async copy → synchronise → read sequence does not reproduce in 200 tries. So the concurrent
-multi-device init pattern is a necessary ingredient, and a run that never has several concurrent
-init copies is not a test of anything.</p>
+<p>This first question makes the parameter sweep essential.
+The failure mechanism is specific rather than generic: the <em>first-issued</em> copy on channel 0 fails on both ranks, whereas the copy on channel 1 lands. The reporter found that a single-device allocate → memset → 8-byte
+async copy → synchronise → read loop never reproduced the fault in 200 tries.
+Concurrent multi-device initialisation is therefore a necessary ingredient.
+A benchmark that never issues concurrent initialisation copies tests nothing relevant.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -64,16 +59,17 @@ init copies is not a test of anything.</p>
   </figcaption>
 </figure>
 
-<p>The channel sweep is what makes the negative admissible. This box builds two channels by default,
-which is exactly the shape their first-loses-second-lands observation needs; forcing one, four, eight
-and sixteen changes the number of concurrent init copies, and disabling shared memory moves the
-transport onto sockets. All of it stays correct.</p>
+<p>The channel sweep gives the negative result its evidentiary weight.
+By default, this host initialises two channels, matching the exact topology where the first copy fails while the second lands.
+Forcing one, four, eight, and sixteen channels alters the number of concurrent initialisation copies, while disabling shared memory forces transport across sockets.
+Across all configurations, execution remains completely clean.</p>
 
 <h2><span class="n">2</span>What differs, stated rather than left to the reader</h2>
 
-<p>A negative result is a claim about a cell in a space, and it is only useful if you say which cell.
-The rows that <em>agree</em> matter as much as the ones that differ: if this box were atomics-starved,
-or had no IOMMU where they had one, a maintainer could discount the whole thing in one line.</p>
+<p>A negative result isolates one specific cell within a larger parameter space.
+Its utility depends entirely on identifying that cell with precision.
+Attributes that <em>agree</em> between systems matter as much as those that differ: if this host lacked PCIe atomics
+or ran without an IOMMU, maintainers could dismiss the observation immediately.</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -95,9 +91,9 @@ or had no IOMMU where they had one, a maintainer could discount the whole thing 
 
 <h2><span class="n">3</span>The bound, and then the demonstration</h2>
 
-<p>The first sweep used the reporter's script exactly as published — extracted from the issue body, not
-retyped, with its md5 quoted so anyone can confirm it. That is the property that makes a negative from
-it worth anything to them, and it is also what carried the defect in.</p>
+<p>The initial sweep executed the reporter's script verbatim from the issue tracker, without retyping,
+citing its md5 checksum for independent verification.
+Running the unmodified upstream script made the negative result credible, but it also imported the script's hidden defect.</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -109,14 +105,14 @@ bad_into = [...]        <span class="c"># computed on every rank</span>
         fail += 1
 </pre></div>
 
-<p>Corruption visible solely on rank 1 is computed, then discarded, and the run still prints
-<code>ALL CORRECT</code>. Since every one of the 135 passes was that script's verdict, the negative
-result was really <em>"no corruption observed on rank 0"</em>. That gap was written into the repository
-ten hours after the comment went out, before anyone asked.</p>
+<p>When corruption occurs exclusively on rank 1, the script detects the bad data but discards the result, reporting
+<code>ALL CORRECT</code> regardless. Since every pass among the 135 runs relied on that tally, the negative
+result established only that there was <em>"no corruption observed on rank 0"</em>. That limitation was documented in the repository
+ten hours after the upstream comment was posted, prior to any public inquiry.</p>
 
-<p>The fix is not to edit their script. Editing it, even to add a reduction, costs the one property that
-makes the result credible to them. So the original stays untouched and hashed, a variant was written
-alongside it, and both were run.</p>
+<p>Modifying the reporter's script directly was not an acceptable fix.
+Altering the script, even to insert a cross-rank reduction, destroys its status as an impartial test.
+The original file was therefore preserved alongside its cryptographic hash, an independent variant was implemented, and both were evaluated in parallel.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -135,95 +131,87 @@ alongside it, and both were run.</p>
   </figcaption>
 </figure>
 
-<p>Then the same eight arms at the same counts, through the variant: 135 of 135 again, correct on both
-ranks. The caveat is not restated more carefully — it is replaced by a result. And the two sweeps are
-checked to cover the same arms at the same counts, because a re-run over a different set would not
-replace anything.</p>
+<p>The variant was then evaluated across the identical eight arms and sample sizes, recording 135 of 135 clean executions verified across both
+ranks. Rather than refining a caveat, the new benchmark replaces uncertainty with verified data. Both sweeps are
+validated to ensure they cover the same configurations at matching sample counts, preventing any silent divergence.</p>
 
 <div class="note warn">
   <span class="lbl">The check that miscounted, and why it is here</span>
-  The first version of the arm runner counted reporting ranks with <code>grep -c</code>, which counts
-  <em>lines</em>. The two ranks frequently print on one line, so it reported 6 of 20 runs as one-sided
-  when both ranks had in fact reported. No measurement was affected, because the verdict is all-reduced
-  inside the script itself — but this is the same class of mistake as the one the whole stage exists to
-  fix, and <strong>a check that miscounts is worse than no check</strong>. Counting occurrences instead
-  fixed it.
+  The initial harness counted reporting ranks using <code>grep -c</code>, which tallies
+  <em>lines</em> rather than occurrences. Because both ranks frequently write output on a single line, the harness misreported 6 of 20 runs as one-sided
+  when both ranks had in fact reported. No measurement was compromised—since the script performs an internal all-reduce—but this mirrors the exact failure mode under
+  investigation. <strong>A check that miscounts is worse than no check</strong>. Counting token occurrences resolved the error.
 </div>
 
 <h2><span class="n">4</span>The witness that did not come up</h2>
 
-<p>The plan had a second witness that does not go through PyTorch, using the reporter's other
-reproducer. <code>rccl-tests</code> builds cleanly against this container's toolchain, with gfx1100 code
-objects confirmed in both the benchmark and the verification object, and then both of the logged
-<code>all_gather</code> runs abort on rank 1 at the data-initialisation kernel with
-<code>HIP failure: 'invalid device function'</code>. It fails identically with and without the
-verification pass, so it is not the verification kernels; the script's later arms never ran; and the
-clone is on the deprecated branch against RCCL 2.30.4.</p>
+<p>The verification plan included a second witness that bypassed PyTorch by employing the reporter's alternative
+reproducer. The <code>rccl-tests</code> suite compiled cleanly against the container toolchain, producing confirmed gfx1100 code
+objects for both benchmark and verification binaries. However, both logged
+<code>all_gather</code> runs aborted on rank 1 inside the data-initialisation kernel with
+<code>HIP failure: 'invalid device function'</code>. The abort occurs identically whether the
+verification pass is enabled or disabled, clearing the verification kernels of blame. Subsequent arms in the test script never executed, and the test tree remained on a deprecated branch against RCCL 2.30.4.</p>
 
-<p>That is recorded as a limitation rather than dropped, and the unfiltered log is what is committed. An
-earlier attempt ran through a wrapper that parsed the output; the filter matched nothing and printed
-<code>FAILED</code> for every collective including one the PyTorch test passes 135 times over. That log
-is deliberately not kept — <strong>a wrong verdict line is worse to leave lying around than no
-log</strong> — and the raw re-run replaced it.</p>
+<p>Rather than discarding this abort, the raw unfiltered log was committed to record the constraint. An
+earlier run used a wrapper to parse console output, but its regex matched nothing, producing spurious
+<code>FAILED</code> verdicts for every collective—including workloads that the PyTorch harness passed 135 times over. That corrupted log
+was deliberately discarded—because <strong>a wrong verdict line is worse to leave lying around than no
+log</strong>—and the raw execution trace replaced it.</p>
 
 <h2><span class="n">5</span>What is not established</h2>
 
-<h3>Version against platform</h3> <p>This box differs from theirs on RCCL version <em>and</em> on
-platform, so a clean run here does not say which axis matters. Two runs would separate them and
-neither is ours to do cheaply. The reporter running 2.30.4 on their box is minutes for them, since
-they already build from source; this box running 2.28.3 needs a 73 GB image against 40 GB free and
-would destroy container state in use for other work. Both are named in the source so the next person
-does not have to rediscover them.</p>
+<h3>Version against platform</h3> <p>This host differs on RCCL version <em>and</em> platform,
+so a clean run isolates neither factor. Two tests would separate them, but neither is cheap here.
+The reporter can test 2.30.4 in minutes from source.
+Deploying 2.28.3 here requires a 73 GB image against 40 GB free, destroying active container state.
+Both missing runs are documented in source so successors need not rediscover them.</p>
 
 <h3>What 135 cold inits bounds</h3>
-<p>It bounds the defect as not universal to gfx1100 plus RCCL, and as not appearing at 2.30.4 on this
-hardware under any transport or channel count tried. It does not bound the reporter's own configuration
-at all, and it cannot: their failure is deterministic on their machine.</p>
+<p>The clean run bounds the defect as not universal to gfx1100 under RCCL, and absent at 2.30.4 on this host across all tested channels and transports.
+It sets no bound on the reporter's own configuration at all, and it cannot: their failure is deterministic on their machine.</p>
 
 <h3>The second witness</h3>
-<p>Only one reproducer ran. It is the reporter's own primary one, which is the right one to have, but a
-second independent path would have been better and did not build usefully here.</p>
+<p>Only one reproducer ran. It is the reporter's own primary one, which is the right one to have; an independent second path would have been better, and the <code>rccl-tests</code> attempt did not produce one here.</p>
 
 <h2><span class="n">6</span>What has changed since</h2>
 
 <div class="note warn">
   <span class="lbl">2026-08-27 · the bound was disclosed the same night</span>
-  The first comment reported 135 of 135 without the rank-0 qualifier. The gap was found and written into
-  the repository about ten hours later, before anyone raised it.
+  The initial upstream comment reported 135 of 135 passes without the rank-0 qualifier. That gap was identified and committed to
+  the repository roughly ten hours later, before any external question was raised.
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-08-28 · the bound was replaced rather than restated</span>
-  The cross-rank variant was written, all eight arms were re-run at the same counts, and the result is
-  now correct on both ranks. The upstream comment was edited to carry the cross-rank column and the
-  injection check rather than leaving the original standing.
+  After implementing the cross-rank variant, all eight arms were re-evaluated at matching sample counts, confirming clean execution
+  now correct on both ranks. The upstream comment was updated with the cross-rank column and the
+  injection check rather than leaving the unqualified claim standing.
 </div>
 
 <div class="note">
   <span class="lbl">Still open</span>
-  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> is open and nothing above
-  2.28.3 has been reported either way by anyone else. This is one contrast cell, offered as one.
+  Issue <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a> remains open, with nothing above
+  2.28.3 reported either way by anyone else. This evaluation provides a single contrast cell, offered strictly as one.
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · "every collective" is one collective in the committed log</span>
-  Section 4 said <code>rccl-tests</code> builds and "then every collective aborts on rank 1".
-  <code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> holds two invocations, both
+  Section 4 originally stated that <code>rccl-tests</code> builds and "then every collective aborts on rank 1".
+  In fact, <code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> holds two invocations, both running
   <code>all_gather_perf</code>; nothing under that directory carries
   <code>reduce_scatter_perf</code> or <code>all_reduce_perf</code> output.
-  <code>scripts/stage2b_rccltests.sh</code> intends six arms and the run stopped after the second.
+  While <code>scripts/stage2b_rccltests.sh</code> planned six arms, the run stopped after the second.
   Script intent is not committed evidence, which is the distinction this article is about.
   Separately, the sweep was billed as one "that could have exposed it"; what it covers is the
   dimensions their mechanism names, and the injection demonstrates the checker rather than the fault.
 </div>
 
 <div class="foot-note">
-  <p><strong>Everything here.</strong> The reporter's script as published, the cross-rank variant, the
-  arm runners, the stage logs, the injection log and the machine fingerprint are in
+  <p><strong>Everything here.</strong> All scripts, variants, execution logs, injection traces, and hardware fingerprints are committed in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/rccl-6565/README.md"><code>benchmarks/rccl-6565/</code></a>.
-  The tallies on this page are parsed back out of those logs by
+  Document figures are verified directly from those raw logs by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
-  which also checks that the second sweep covers the same arms at the same counts as the first.</p>
+  which confirms identical arm coverage and sample counts between sweeps.</p>
   <p>Reported to <a href="https://github.com/ROCm/legacy-rocm-build/issues/6565">ROCm#6565</a>, whose
   reporter is @BoJl4apa. Why this machine is not atomics-starved is
   <a href="rccl-atomics-hostcall.html">a different article</a>.</p>

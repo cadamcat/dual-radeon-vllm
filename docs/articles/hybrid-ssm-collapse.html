@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>One kernel accounts for the whole 12.1 to 4.2 tok/s fall</title>
+<title>The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall</title>
 <meta name="description" content="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream fix, measured.">
 <style>
   /* ===================== theme =====================
@@ -929,8 +929,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>One kernel accounts for the whole<br>12.1 to 4.2 tok/s fall</h1>
-  <p class="sub">A hybrid-SSM model that decodes slower the longer you talk to it</p>
+  <h1>The Triton paged-attention fallback accounts for the entire<br>12.1 to 4.2 tok/s decode fall</h1>
+  <p class="sub">Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel</p>
   <p class="lede">Linear attention is supposed to make long context cheap. On this machine
   <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
   dense 8B on the same afternoon keeps 77 % of its short-context rate. The 48 linear-attention
@@ -947,11 +947,11 @@ addEventListener("DOMContentLoaded", function () {
 <strong>65 % of its decode rate</strong> between 500 and 32 000 tokens of context under vLLM on
 RDNA3, a curve fourteen to forty times steeper than any dense model measured on the same machine in
 the same campaign.</p> <p>A kernel-level profile puts essentially all of the growth in one place:
-<code>kernel_paged_attention_2d</code>, the Triton fallback serving the model's 16 full-attention
-layers, whose per-call cost grows 28.3× while every other kernel in the step is flat or slightly
-cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The fallback is
-taken because the ROCm custom paged-attention kernel is unreachable for this model three conditions
-over, and it is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
+<code>kernel_paged_attention_2d</code>. That Triton fallback serves the model's 16 full-attention
+layers, and its per-call cost grows 28.3× while every other kernel in the step remains flat or slightly
+cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The ROCm custom
+paged-attention kernel declines this model on three separate conditions, forcing execution onto the Triton
+fallback. The fallback is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
 kernel almost nothing to parallelise over. Two independent signals agree: per-card power
 <em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than
 narrower.</p> <p>The same checkpoint under llama.cpp on the same machine and the same day holds a
@@ -962,13 +962,13 @@ One cell of that A/B is bimodal and is reported as such.</p> </div>
 <h2><span class="n">1</span>What was measured, and how</h2>
 
 <p>Everything in §2 comes from one campaign: one software stack, one afternoon, every model pinned to it.
-292 decode and prefill measurements across five architectures and eleven context lengths. Each cell is
-served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
+That run produced 292 decode and prefill measurements across five architectures and eleven context lengths. Each cell
+is served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
 512-token outputs, and is the mean of two rounds.</p>
 
 <p>Rates are reported with the spread of their own rounds rather than a standard deviation. At two to four
-rounds per cell a standard deviation is a number with more precision than the sample supports; the range
-as a fraction of the mean says the same thing without implying a distribution. Every point in Figure 1
+rounds per cell a standard deviation provides more precision than the sample supports. The range
+as a fraction of the mean expresses variance cleanly without implying a distribution. Every point in Figure 1
 carries its round count and that range, visible on hover.</p>
 
 <div class="note">
@@ -1003,9 +1003,9 @@ a KV cache makes inevitable. The fifth does something else.</p>
   </figcaption>
 </figure>
 
-<p>The hybrid model is the slowest in absolute terms at every depth, which by parameter count it should not
-be, and it is also the only one whose curve bends downward instead of flattening. Retention is the cleaner
-statistic: every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
+<p>The hybrid model is the slowest in absolute terms at every depth. By parameter count it should not
+be. It is also the only model whose curve bends downward instead of flattening. Retention makes the contrast plain:
+every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
 This one keeps <strong>35.1 %</strong>.</p>
 
 <p>Expressed as a slope — decode microseconds added per token of context — the campaign gives
@@ -1014,8 +1014,8 @@ factor of 41, and it is the number the rest of this article is about.</p>
 
 <h2><span class="n">3</span>Attribution: one kernel, not the architecture</h2>
 
-<p>A torch profile at two depths, with CUDA graphs left on and kernel calls attributed to the engine step
-whose window they fall in, so that chunked-prefill calls are not mixed into the decode figures.</p>
+<p>A torch profile across two depths kept CUDA graphs on and attributed kernel calls strictly to the engine step
+whose window they fell into, so that chunked-prefill calls are not mixed into the decode figures.</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1075,14 +1075,14 @@ is why making the fallback fast is the only path that helps this class of model.
 
 <p><strong>Some of the slope is the kernel, not the architecture.</strong> The successor
 checkpoint, <code>Qwen3.8-27B</code> on vLLM 0.27, was measured on 2026-08-29 against both of the
-kernels the engine will serve those 16 layers with — no speculation on either arm, same checkpoint,
+kernels the engine will serve those 16 layers with. There was no speculation on either arm: same checkpoint,
 same session, both repeating to better than <b>0.12 %</b>. Left to itself the ROCm selector takes
 <code>ROCM_ATTN</code>, because <code>TURBOQUANT</code> is incompatible with the decoder and that is
 the first fallback it reaches for. Pinned to <code>TRITON_ATTN</code> instead — one flag, no patch —
 the same ladder is <b>15.0 %</b> faster at 32K, and retention across the whole span goes from
 <b>73.4 %</b> to <b>84.3 %</b>. Eleven points of the collapse this article is about belong to which
 kernel serves those layers. The rest does not: even pinned, the model still gives up 15.7 % of its
-short-context rate by 32K, which is the argument below.</p>
+short-context rate by 32K, which leads into the next section.</p>
 
 <h2><span class="n">5</span>Why the fallback is slow <em>on this model</em></h2>
 
@@ -1102,15 +1102,15 @@ is how much parallelism the kernel has to work with at decode, where the batch i
 Two independent signals agree that this is occupancy rather than work:</p>
 
 <h3>Power falls as context grows</h3>
-<p>265 W + 265 W at 518 tokens, 232 W + 227 W at 24 K. No other model in the sweep loses power with depth;
-the others climb toward 265 W and stay there, and this is the only one that comes back down. The starting
-values differ — at 518 tokens the 8B is at 245 W, the 12B at 206 W, the 26B MoE at 193 W — so the contrast
+<p>Total power draws 265 W + 265 W at 518 tokens, then drops to 232 W + 227 W at 24 K. No other model in the sweep loses power with depth.
+Every other model climbs toward 265 W and stays there; this is the only one that comes back down. Baseline
+levels differ — at 518 tokens the 8B sits at 245 W, the 12B at 206 W, and the 26B MoE at 193 W — so the contrast
 that matters is the direction, not the level. Idle silicon, not saturated silicon.</p>
 
 <h3>Normalising by KV traffic widens the gap</h3>
-<p>Only 16 of the 64 layers carry a KV cache at all, and the GQA ratio is aggressive, so this model reads
-the <em>least</em> KV of the three: 64 KiB per token against 144 KiB for Qwen3-8B and 160 KiB for
-gemma-4-31B. Per KiB read it is <strong>92×</strong> the cost of Qwen3-8B and <strong>36×</strong> that of
+<p>Only 16 of the 64 layers carry a KV cache, and their GQA ratio is aggressive. As a result, this model reads
+the <em>least</em> KV data of the three: 64 KiB per token against 144 KiB for Qwen3-8B and 160 KiB for
+gemma-4-31B. Per KiB read it reaches <strong>92×</strong> the cost of Qwen3-8B and <strong>36×</strong> that of
 gemma-4-31B. It cannot be that this model is simply heavier.</p>
 
 <h2><span class="n">6</span>Control: the same model under a different engine</h2>
@@ -1169,9 +1169,9 @@ July and 21.9 % in August. Of the seventeen stock hybrid-SSM ladders now in
 <code>benchmarks/prefill.jsonl</code> — one checkpoint family across seven machine configurations —
 <strong>seven rise by more than 1 %, one is flat, and nine fall</strong>. The same
 <code>Qwen3.8-27B</code> checkpoint runs from <strong>−38.7 %</strong> on two Radeons — the 2026-09-03
-ladder to 96 000, on <code>ROCM_ATTN</code> — to <strong>+103.0 %</strong> on two H100s. One architecture, one
-checkpoint, both signs and a range of 142 points — which is the point: what a rising prefill curve indicates is that a short
-prompt's fixed cost outweighs the quadratic term on that arm — not that the model carries a
+ladder to 96 000, on <code>ROCM_ATTN</code> — to <strong>+103.0 %</strong> on two H100s. One architecture and one
+checkpoint produce both signs across a range of 142 points. That is the core finding: what a rising prefill curve indicates is that a short
+prompt's fixed cost outweighs the quadratic term on that arm, not that the model carries a
 recurrent state. The decode collapse this article is about is unaffected either way:
 it is measured, not inferred from the same reasoning.</p>
 
@@ -1182,7 +1182,7 @@ split-KV decode kernel to the Triton fallback: instead of one workgroup per (seq
 whole context, the KV range is split across more workgroups and reduced afterwards. That is exactly the
 parallelism this model was short of.</p>
 
-<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K, single differencing runs at
+<p>It was verified here first on vLLM 0.23.1 in July — 2.52× at 32 K in single differencing runs at
 slightly different depths. Then properly, as a controlled A/B on the 0.27 image: both arms on one
 stack and one harness, one fresh container per cell, only the kernel file swapped, run twice with
 the arm order reversed.</p>
@@ -1209,38 +1209,22 @@ context</strong>, and retention from 1 K to 32 K from 10.2 % to 70.0 %. The coll
 
 <h2><span class="n">8</span>What is not established</h2>
 
-<p>Four things, because a result that only lists its successes is not a measurement.</p>
+<p>Four limits, because an honest result states what it leaves unproven.</p>
 
-<h3>One cell of the A/B is bimodal</h3> <p>At 8 192 tokens the patched arm gave 47.02, 40.14, 47.58
-and 42.41 tok/s over four passes. Sorted, the largest gap between neighbours is bigger than half the
-total range and falls in the middle: these are <strong>two modes about 15 % apart</strong>, not one
-noisy number. Adding the third and fourth passes made the range <em>wider</em>, 15.8 % to 16.8 %,
-not narrower. The cause is not the split-count heuristic, which is a pure function of inputs the
-configuration fixes. No mechanism is established. The 3.52× quoted above is the mean of all four and
-describes neither cluster.</p>
+<h3>One cell of the A/B is bimodal</h3>
+<p>At 8 192 tokens the patched arm ran 47.02, 40.14, 47.58, and 42.41 tok/s over four passes. Sorted, the middle gap spans over half the range: these are <strong>two modes about 15 % apart</strong>, not noise. Passes three and four widened the span from 15.8 % to 16.8 %. The deterministic split heuristic cannot cause this; no mechanism is established. The quoted 3.52× mean fits neither cluster.</p>
 
 <h3>Figure 4 is a different model on a different stack</h3>
-<p>Figure 1 is <code>Qwen3.6-27B</code> on 0.23.1; Figure 4 is <code>Qwen3.8-27B</code> on 0.27. On the
-newer stack this checkpoint also picks a different W4A16 linear kernel, worth roughly 3× on its own and
-nothing to do with attention. <strong>The absolute levels in the two figures are not comparable</strong>;
-the ratios and the shape are.</p>
+<p>Figure 1 tests <code>Qwen3.6-27B</code> on 0.23.1; Figure 4 tests <code>Qwen3.8-27B</code> on 0.27. The newer stack picks another W4A16 linear kernel, giving roughly 3× on its own without attention. <strong>Absolute levels in the two figures are not comparable</strong>; ratios and shape are.</p>
 
 <h3>One machine for the causal A/B</h3>
-<p>The kernel A/B that carries this article ran on a single box, single vendor, batch 1 throughout. The
-same architecture now has decode ladders to 128&nbsp;000 tokens on four rented NVIDIA cards
-(<code>Qwen3.8-27B</code> falls 21.8&nbsp;% on an H100, as far as the dense 31B), which says the
-attention layers set the depth cost on every vendor measured &mdash; but each card chose its own attention
-backend, so none of those is the same-kernel comparison this page rests on. The occupancy argument predicts
-that the collapse should soften as batch size rises, and that is untested anywhere here.</p>
+<p>The causal A/B ran on one box, one vendor, at batch 1 throughout. Decode ladders to 128&nbsp;000 tokens on four rented NVIDIA cards show <code>Qwen3.8-27B</code> falling 21.8&nbsp;% on an H100 (matching dense 31B). Attention sets depth cost across vendors, but backends varied, precluding clean same-kernel control. The occupancy argument predicts the collapse should soften as batch size rises, and that is untested anywhere here.</p>
 
 <h3>What the fix does not fix</h3>
-<p>Paged attention falls from about 68 % of the decode step to 11 %. The remainder is dominated by the
-quantised GEMM, roughly 77 % of a decode step at short context. The <em>slope</em> is resolved; the
-baseline is a different question with a different answer.</p>
-
+<p>Paged attention drops from about 68 % to 11 % of decode time. Quantised GEMM dominates the rest, taking roughly 77 % at short context. The <em>slope</em> is resolved; baseline throughput is a separate question.</p>
 <h2><span class="n">9</span>What has changed since</h2>
 
-<p>This article is a dated record, not standing advice. Two things have moved since the measurements above.</p>
+<p>This article is a dated record, not standing advice. Three items have moved since the measurements above.</p>
 
 <div class="note ok">
   <span class="lbl">2026-08-10 · the gate no longer needs widening</span>
@@ -1268,11 +1252,10 @@ baseline is a different question with a different answer.</p>
 </div>
 
 <div class="foot-note">
-  <p><strong>Data and reproduction.</strong> Every figure marked <span class="prov yes">recomputable from repo</span>
-  is checked against its source file by
+  <p><strong>Data and reproduction.</strong> Figures marked <span class="prov yes">recomputable from repo</span>
+  are verified against source data by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
-  which fails non-zero if the prose and the data disagree. The full chapter behind this article, including the
-  parts that were wrong first, is
+  which fails non-zero if prose and data disagree. Background context is in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/hybrid-decode-on-rdna.md">docs/hybrid-decode-on-rdna.md</a>.
   Raw rows: <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/ledger.jsonl">ledger.jsonl</a> ·
   <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/hybrid-splitkv-027">hybrid-splitkv-027</a> ·

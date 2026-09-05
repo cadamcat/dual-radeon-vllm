@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败</title>
+<title>ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来</title>
 <meta name="description" content="两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层：没有 PCIe atomics，就没有 hostcall buffer，dispatch 被拒。">
 <style>
   /* ===================== theme =====================

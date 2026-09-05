@@ -61,6 +61,25 @@ def home_nav(lang, label):
             '  <span class="sep" aria-hidden="true"></span>')
 
 
+def h1_title(b):
+    """The page's <h1> as one line: tags dropped, and the <br> that splits the
+    title joined with a space in English and with nothing in Chinese."""
+    m = re.search(r"<h1[^>]*>(.*?)</h1>", b, re.S)
+    if not m:
+        return None
+    s = re.sub(r"<br\s*/?>", "\x00", m.group(1))
+    s = re.sub(r"<[^>]+>", " ", s)
+    s = re.sub(r"\s*\x00\s*", "\x00", s)
+    s = re.sub(r"\s+", " ", s).strip()
+
+    def join(mm):
+        x, y = mm.group(1), mm.group(2)
+        wide = lambda c: c > "\u2e00"
+        return x + ("" if wide(x) and wide(y) else " ") + y
+
+    return re.sub(r"(.)\x00(.)", join, s)
+
+
 def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figures=None,
          script_from=None, subs=None, home=True):
     h = head
@@ -75,7 +94,7 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
         h = h.replace('__LANG_NAV__\n  <span class="sep" aria-hidden="true"></span>\n', "")
     else:
         h = h.replace("__LANG_NAV__", nav)
-    h = (h.replace("__LANG__", lang).replace("__TITLE__", title).replace("__DESC__", desc)
+    h = (h.replace("__LANG__", lang).replace("__DESC__", desc)
           .replace("__NAVLABEL__", labels[0]).replace("__T_AUTO__", labels[1])
           .replace("__T_LIGHT__", labels[2]).replace("__T_DARK__", labels[3])
           .replace("__TOCLABEL__", labels[5]))
@@ -99,6 +118,11 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
     left = re.findall(r"__[A-Z][A-Z_]*__", b)
     assert not left, f"{body} left {left} unfilled"
     p = OUT / out
+    # the tab title and the index card are the page's own <h1>, read back rather
+    # than retyped. Retyping let the rewritten articles ship with the index and
+    # the browser tab still carrying the title the article no longer has.
+    title = h1_title(b) or title
+    h = h.replace("__TITLE__", title)
     TITLES[out] = title
     # the subtitle is the sentence the page itself prints, read back rather
     # than retyped, so the index cannot introduce a third version of it

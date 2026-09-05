@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>dual-radeon-vllm · 实测长文</title>
+<title>两张消费级 Radeon，逐项实测</title>
 <meta name="description" content="一个在 2× RX 7900 XT 上做 ROCm 与 vLLM 实测的仓库，其中的长文。每张图都对照它所出自的已入库数据被检查过。">
 <style>
   /* ===================== theme =====================
@@ -25189,8 +25189,8 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/mem-busy-orders-five-settings.zh.html"
    },
    "title": {
-    "en": "One counter orders five settings it was never fitted to, and sizes none of them",
-    "zh": "一个计数器给五种它从未拟合过的场景排了序，却一个都没算准大小"
+    "en": "A memory controller's busy fraction, read on one card, ranks five settings it never saw, and under-predicts the one magnitude it was asked for by half",
+    "zh": "在一张卡上读出的内存控制器忙碌比例，给五种它从未拟合过的场景排对了序，唯一一次被要求预测幅度，少算了一半"
    },
    "sub": {
     "en": "Read as <code>mem_busy</code> on one card; checked against an H200, a B300, a PRO 6000 and a second H100, and against a prediction committed before the run",
@@ -25359,8 +25359,8 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/rdna3-second-class.zh.html"
    },
    "title": {
-    "en": "Three of eight findings are RDNA3's, and measuring another vendor removed two",
-    "zh": "八个结论里只有三个是 RDNA3 的，而测另一个厂商拿掉了两个"
+    "en": "Eight ROCm kernel findings narrow to three on RDNA3, and measuring another vendor removed two",
+    "zh": "ROCm 内核的八个结论在 RDNA3 上收窄至三个，而实测另一厂商排除了两个"
    },
    "sub": {
     "en": "Eight findings on RDNA3 classified across five hardware axes; checked against another vendor, kernel sources, and host topology",
@@ -25422,12 +25422,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/reporting-a-non-reproduction.zh.html"
    },
    "title": {
-    "en": "The reporter's own script counts rank 0, shown by injecting a one-sided fault",
-    "zh": "上报者自己的脚本只数 rank 0，用一个单边故障演示出来"
+    "en": "The reporter's own reproducer tallies failures only on rank 0, shown on two cards by injecting a one-sided fault",
+    "zh": "上报者自己的复现脚本只在 rank 0 上统计失败，在两张卡上通过注入单边故障演示出来"
    },
    "sub": {
-    "en": "How to report a bug you cannot reproduce",
-    "zh": "怎么报告一个你复现不出来的 bug"
+    "en": "Swept with rccl_allgather_truth.py across channels and transports on two Radeons; verified against a cross-rank variant and an injected fault",
+    "zh": "用 rccl_allgather_truth.py 在两张 Radeon 上扫描通道与传输；对照跨 rank 变体与注入故障完成验证"
    },
    "blurb": {
     "en": "A clean run is the least useful sentence on a bug tracker. Three things make it worth something, and the third found that the reporter's own script counts failures on rank 0 only — demonstrated by injecting a one-sided fault rather than argued.",
@@ -25494,8 +25494,8 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/gqa-gate-costs-nothing.zh.html"
    },
    "title": {
-    "en": "The excluded kernel wins all sixty cells, and the two bands overlap",
-    "zh": "被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠"
+    "en": "vLLM's custom ROCm paged-attention kernel wins all sixty cells, and the two bands overlap",
+    "zh": "vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，且两个区间互相重叠"
    },
    "sub": {
     "en": "Checked as use_rocm_custom_paged_attention; custom kernel against Triton fallback, with speedups of 2 to 7 times",
@@ -25643,12 +25643,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/measuring-decode.zh.html"
    },
    "title": {
-    "en": "Two harnesses agree to 0.44 %, and the first of four runs read 31 % low",
-    "zh": "两套 harness 吻合到 0.44 %，而四次运行里的第一次低了 31 %"
+    "en": "An offline probe matches the campaign harness to 0.44 %, after the first of four runs reads 31 % low",
+    "zh": "离线探针与 campaign harness 吻合到 0.44 %，此前四次运行中的首轮读数低了 31 %"
    },
    "sub": {
-    "en": "How to measure decode on a machine like this",
-    "zh": "在这样一台机器上怎么测 decode"
+    "en": "Decode throughput on a pair of Radeon cards; checked between an offline probe and the campaign harness, across cold starts, and across thirty days of drift",
+    "zh": "这一对 Radeon 卡上的解码吞吐；在离线探针与 campaign harness 之间核对，跨越冷启动与三十天的漂移"
    },
    "blurb": {
     "en": "The two harnesses agree to 0.44%, and finding that out took four identical runs the first of which read 31% low. What every point carries, where the chart-grade line sits, and one cell where the range and the standard deviation disagree about the direction.",
@@ -25714,12 +25714,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/speculative-decoding-net-loss.zh.html"
    },
    "title": {
-    "en": "Speculation's second query row costs 120 of 128 workgroups",
-    "zh": "投机的第二行 query，要付掉 128 个 workgroup 里的 120 个"
+    "en": "Triton unified-attention's segment buffer guard costs 120 of 128 workgroups",
+    "zh": "Triton unified-attention 中为段缓冲设的那道闸门耗掉 128 个 workgroup 里的 120 个"
    },
    "sub": {
-    "en": "One boolean costs 71 % on a Radeon and 61 % on an A100",
-    "zh": "一个布尔值，在 Radeon 上是 71 %，在 A100 上是 61 %"
+    "en": "Read as max_seqlen_q; measured against no-speculation at 71 % loss on a Radeon and 61 % on an A100",
+    "zh": "代码中读作 max_seqlen_q；对照不投机基线实测，在 Radeon 上损失 71 %，在 A100 上损失 61 %"
    },
    "blurb": {
     "en": "vLLM's own documented MTP assistant makes gemma-4-31B 36.9% faster at 1K of context and 70.8% slower at 32K. One clause in an or chain reads speculation's second query row as \"not decode\" and gives up 120 of 128 workgroups.",
@@ -25859,8 +25859,8 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/rccl-atomics-hostcall.zh.html"
    },
    "title": {
-    "en": "No PCIe atomics, no hostcall buffer, and every collective fails at dispatch",
-    "zh": "没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败"
+    "en": "ROCr refuses any kernel that declares a hostcall buffer when the root port advertises no AtomicOps, which is every RCCL collective, and one line of VM configuration puts it back",
+    "zh": "ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来"
    },
    "sub": {
     "en": "Traced to hidden_hostcall_buffer on two Radeons; checked against twelve eliminated hypotheses, four shipped RCCL builds, and one line of VM configuration",
@@ -25936,8 +25936,8 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/moe-written-off-by-eager.zh.html"
    },
    "title": {
-    "en": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
-    "zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论"
+    "en": "Run under vLLM's --enforce-eager, the fastest model here recorded 107.8 tok/s as 15, and invented two findings on the way",
+    "zh": "在 vLLM 的 --enforce-eager 下，全机最快的模型把 107.8 tok/s 记成 15，顺手还造出两个结论"
    },
    "sub": {
     "en": "Run under <code>--enforce-eager</code> at 15 tok/s; checked against torch.compile on two cards, with power symmetric and decode context-dependent",
@@ -26007,12 +26007,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/hybrid-ssm-collapse.zh.html"
    },
    "title": {
-    "en": "One kernel accounts for the whole 12.1 to 4.2 tok/s fall",
-    "zh": "一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑"
+    "en": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
+    "zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑"
    },
    "sub": {
-    "en": "A hybrid-SSM model that decodes slower the longer you talk to it",
-    "zh": "一个上下文越长解码越慢的混合 SSM 模型"
+    "en": "Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel",
+    "zh": "vLLM 下双卡 Radeon 上的混合 SSM 解码速率；以稠密模型、llama.cpp 与上游 split-KV 内核作对照检验"
    },
    "blurb": {
     "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",

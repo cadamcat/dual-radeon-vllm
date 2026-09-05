@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>八个结论里只有三个是 RDNA3 的，而测另一个厂商拿掉了两个</title>
+<title>ROCm 内核的八个结论在 RDNA3 上收窄至三个，而实测另一厂商排除了两个</title>
 <meta name="description" content="八个结论按证据支持的范围分类。三个是架构特有的，一个是 AMD 全线的，两个通过在另一个厂商上实测被证明与厂商无关，还有一个根本不是 GPU 的事。">
 <style>
   /* ===================== theme =====================
@@ -1173,7 +1173,7 @@ addEventListener("DOMContentLoaded", function () {
   "findings": [
    {
     "slug": "hybrid-ssm-collapse",
-    "title": "One kernel accounts for the whole 12.1 to 4.2 tok/s fall",
+    "title": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
     "axis": "rdna3",
     "mechanism": "the few full-attention layers fall off the ROCm paged-attention fast path",
     "magnitude": 2.851764705882353,
@@ -1183,7 +1183,7 @@ addEventListener("DOMContentLoaded", function () {
      "vllm#45916",
      "vllm#50264"
     ],
-    "title_zh": "一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑",
+    "title_zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑",
     "mechanism_zh": "少数几层全注意力掉出了 ROCm paged-attention 的快路径",
     "unit_zh": "×，从 500 到 32K token 损失的倍数",
     "why_zh": "修好它的 split-KV 兜底是专门为 gfx11 加的；这条路径在别处早就有"
@@ -1206,7 +1206,7 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "gqa-gate-costs-nothing",
-    "title": "The excluded kernel wins all sixty cells, and the two bands overlap",
+    "title": "vLLM's custom ROCm paged-attention kernel wins all sixty cells, and the two bands overlap",
     "axis": "rdna3",
     "mechanism": "the gfx11 branch requires gqa_ratio >= 3; the CDNA branch of the same function requires >= 1",
     "magnitude": 7.397910508596247,
@@ -1216,7 +1216,7 @@ addEventListener("DOMContentLoaded", function () {
      "vllm#54210",
      "vllm#50603"
     ],
-    "title_zh": "被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠",
+    "title_zh": "vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，且两个区间互相重叠",
     "mechanism_zh": "gfx11 分支要求 gqa_ratio >= 3，同一函数的 CDNA 分支只要求 >= 1",
     "unit_zh": "×，被排除区间在 kernel 层面的最好情况",
     "why_zh": "一行代码、一种架构，而给出的理由在这里不成立"
@@ -1240,7 +1240,7 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "moe-written-off-by-eager",
-    "title": "Eager mode recorded 107.8 tok/s as 15, and invented two findings on the way",
+    "title": "Run under vLLM's --enforce-eager, the fastest model here recorded 107.8 tok/s as 15, and invented two findings on the way",
     "axis": "neutral",
     "mechanism": "vLLM assigns TORCHINDUCTOR_COMPILE_THREADS=1 on import, so an export cannot override it",
     "magnitude": 7.188,
@@ -1250,14 +1250,14 @@ addEventListener("DOMContentLoaded", function () {
      "vllm#53891",
      "vllm#53892"
     ],
-    "title_zh": "eager 模式把 107.8 tok/s 记成 15，顺手还造出两个结论",
+    "title_zh": "在 vLLM 的 --enforce-eager 下，全机最快的模型把 107.8 tok/s 记成 15，顺手还造出两个结论",
     "mechanism_zh": "vLLM 在 import 时就赋值 TORCHINDUCTOR_COMPILE_THREADS=1，export 覆盖不掉",
     "unit_zh": "×，本机上 eager 与编译之比",
     "why_zh": "这条赋值在 env_override.py 里，每个平台都会执行"
    },
    {
     "slug": "speculative-decoding-net-loss",
-    "title": "Speculation's second query row costs 120 of 128 workgroups",
+    "title": "Triton unified-attention's segment buffer guard costs 120 of 128 workgroups",
     "axis": "neutral",
     "mechanism": "max_seqlen_q > 1 drops the Triton attention kernel from 128 workgroups to 8",
     "magnitude": 3.4248587570621467,
@@ -1267,7 +1267,7 @@ addEventListener("DOMContentLoaded", function () {
      "vllm#45450",
      "vllm#48076"
     ],
-    "title_zh": "投机的第二行 query，要付掉 128 个 workgroup 里的 120 个",
+    "title_zh": "Triton unified-attention 中为段缓冲设的那道闸门耗掉 128 个 workgroup 里的 120 个",
     "mechanism_zh": "max_seqlen_q > 1 把 Triton 注意力 kernel 从 128 个 workgroup 降到 8 个",
     "unit_zh": "×，32K 上开投机比不开慢",
     "why_zh": "在 A100 上也测了，同一个 kernel 在 50K 上损失 61%"
@@ -1288,7 +1288,7 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "rccl-atomics-hostcall",
-    "title": "No PCIe atomics, no hostcall buffer, and every collective fails at dispatch",
+    "title": "ROCr refuses any kernel that declares a hostcall buffer when the root port advertises no AtomicOps, which is every RCCL collective, and one line of VM configuration puts it back",
     "axis": "platform",
     "mechanism": "no PCIe AtomicOps means no hostcall buffer, and the dispatch is refused",
     "magnitude": null,
@@ -1297,7 +1297,7 @@ addEventListener("DOMContentLoaded", function () {
     "upstream": [
      "ROCm#6520"
     ],
-    "title_zh": "没有 PCIe atomics 就没有 hostcall buffer，每一次集合通信都在 dispatch 处失败",
+    "title_zh": "ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来",
     "mechanism_zh": "没有 PCIe AtomicOps 就没有 hostcall buffer，dispatch 被拒",
     "unit_zh": "每一次集合通信都在 dispatch 处失败",
     "why_zh": "别人在裸机上复现了；触发条件是 root port，不是 GPU"
@@ -1490,7 +1490,8 @@ addEventListener("DOMContentLoaded", function () {
   "others": 8,
   "merged": 1
  }
-}</script>
+}
+</script>
 <script type="application/json" id="strings">{
  "axisNames": {
   "rdna3": "RDNA3 特定",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>被排除的 kernel 在六十个格子里全赢，而两个区间还互相重叠</title>
+<title>vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，且两个区间互相重叠</title>
 <meta name="description" content="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 gqa_ratio 3 这道门挡在外面。而在被排除的区间里，它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。">
 <style>
   /* ===================== theme =====================

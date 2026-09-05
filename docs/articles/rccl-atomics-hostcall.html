@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>No PCIe atomics, no hostcall buffer, and every collective fails at dispatch</title>
+<title>ROCr refuses any kernel that declares a hostcall buffer when the root port advertises no AtomicOps, which is every RCCL collective, and one line of VM configuration puts it back</title>
 <meta name="description" content="Two Radeons, tensor parallelism, and hipErrorIllegalState. The cause is four layers below RCCL: no PCIe atomics, no hostcall buffer, refused dispatch. Thirteen hypotheses, and a one-line VM fix.">
 <style>
   /* ===================== theme =====================
