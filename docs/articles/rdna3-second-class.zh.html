@@ -1190,7 +1190,7 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "w4a16-two-problems",
-    "title": "A flat 60 ms per step, under a cost that grows with context",
+    "title": "One line of SUPPORTED_QUANT_TYPES adds a flat 60 ms per step, under an attention cost that grows with context",
     "axis": "rdna3",
     "mechanism": "an asymmetric int4 checkpoint misses the native gfx1100 W4A16 kernel on a type gate",
     "magnitude": 3.240640785380657,
@@ -1199,7 +1199,7 @@ addEventListener("DOMContentLoaded", function () {
     "upstream": [
      "vllm#40977"
     ],
-    "title_zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面",
+    "title_zh": "SUPPORTED_QUANT_TYPES 中的一行代码每步增加固定 60 ms，压在随上下文增长的注意力开销下面",
     "mechanism_zh": "非对称 int4 checkpoint 在类型判断上错过了 gfx1100 的原生 W4A16 kernel",
     "unit_zh": "×，1K 上对称与非对称打包之比",
     "why_zh": "十二种非对称配置里有八种在 gfx1100 上至今没有任何 kernel"
@@ -1223,7 +1223,7 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "weight-loading-19x",
-    "title": "A read-only copy asks for write access, and one kernel charged a second for it",
+    "title": "KFD asks for write access on a read-only copy, and an Ubuntu kernel backport charged a second for it",
     "axis": "amd",
     "mechanism": "KFD reads the access mode off the VMA, so a read-only copy asks for write and breaks copy-on-write",
     "magnitude": 7.533617021276595,
@@ -1233,7 +1233,7 @@ addEventListener("DOMContentLoaded", function () {
      "ROCm#6523",
      "vllm#49991"
     ],
-    "title_zh": "只读的拷贝去申请写权限，而某个内核为此每次多收一秒",
+    "title_zh": "KFD 对只读拷贝申请写权限，而 Ubuntu 内核的一处 backport 为此每次多收一秒",
     "mechanism_zh": "KFD 从 VMA 读访问模式，于是只读的拷贝也要写权限，破坏了 copy-on-write",
     "unit_zh": "×，在一个装不进内存的 checkpoint 上",
     "why_zh": "kfd_svm.c 不是架构特定的，AMD 也这么确认了"
@@ -1274,14 +1274,14 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "a100-vs-two-radeons",
-    "title": "The second card buys 1.1× at decode and 1.9× at prefill",
+    "title": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
     "axis": "tp",
     "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
     "magnitude": 2.1265703912797864,
     "unit": "x worse retention on two cards than on one",
     "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
     "upstream": [],
-    "title_zh": "第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×",
+    "title_zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×",
     "mechanism_zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半",
     "unit_zh": "×，两卡的保持率比单卡差",
     "why_zh": "这是拆分工作的性质，不是硅片的；单张 A100 跑的是同一个 kernel"

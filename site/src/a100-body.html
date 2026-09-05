@@ -1,87 +1,87 @@
 <header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · one card, two cards,
-one A100 and one L4</div> <h1>The second card buys 1.1× at decode<br>and 1.9× at prefill</h1>
-<p class="sub">One 7900 XT, two of them, one A100 and one L4, on the same ladder</p>
-<p class="lede">Adding a second consumer card to a batch-1 decode is worth
-<strong>1.11× to 1.23×</strong> and no more. On prefill the same second card cuts a 32 K prompt from
-40.1 s to 21.5 s — <strong>1.87×</strong>. These are the same two cards on the same day; what
-changed is which of the two things you asked them to do.</p>
+one A100 and one L4</div> <h1>A second RX 7900 XT buys 1.1× at decode<br>and 1.9× at prefill</h1>
+<p class="sub">Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4</p>
+<p class="lede">Adding a second consumer card to a batch-1 decode buys
+<strong>1.11× to 1.23×</strong> and no more. At prefill the same card cuts a 32 K prompt from
+40.1 s to 21.5 s — <strong>1.87×</strong>. Both measurements ran on the same two cards on the same day. What
+changed is the job they were asked to do.</p>
 <div class="meta"> __CHIPS__ </div> </header>
 
-<div class="abstract"> <h3>Abstract</h3> <p>This article used to ask one question — two consumer
-cards against one A100 — and that question bundles three. This round measured each card on its own,
-so they come apart: what one consumer card is worth against one datacentre card, what a second
-consumer card then buys, and only then what the pair is worth.</p>
+<div class="abstract"> <h3>Abstract</h3> <p>This article used to ask a single question — two consumer
+cards against one A100 — and that question bundles three separate issues. Measuring each card on its own
+pulls them apart: what one consumer card is worth against one datacentre card, what a second
+consumer card adds, and only then what the pair delivers.</p>
 <p><strong>The second card is nearly free of effect at decode.</strong> Across eleven depths and two
-models it buys <strong>1.11× to 1.23×</strong>. The all-reduce it pays on every step has since been
-timed and is <em>not</em> the reason: it is about a ninth of a step, and the same box gives
-<code>Qwen3-8B</code> 1.70× from its second card while paying the same collective. What holds these
-two models back is not the wire, and section 9 says so rather than guessing.
-<strong>At prefill the same card buys 1.56× to 1.87×</strong> of wall time, because attention
-parallelises with no communication at all.</p>
+models it buys <strong>1.11× to 1.23×</strong>. The per-step all-reduce has since been
+timed, and it is <em>not</em> the bottleneck: it takes roughly a ninth of a step. On the same machine,
+<code>Qwen3-8B</code> reaches 1.70× from its second card while paying the same collective. What holds these
+two models back is not the interconnect; section 9 says so rather than guessing.
+<strong>At prefill the same card buys 1.56× to 1.87×</strong> in wall time, because attention parallelises with no communication at all.</p>
 <p><strong>Prefill is two terms and they do not move together.</strong> Fitting T(S) = a + bS + cS²,
-against one 7900 XT the A100 is <strong>3.3× on b and 6.7× on c</strong> for the dense 12B: the gap
-in attention scaling is twice the gap in compute. On the mixture-of-experts, whose 4B active
-parameters shrink the compute term, the two gaps are the same — <strong>5.75× and 5.71×</strong>.
-And the L4, a datacentre card, is <em>slower</em> than a consumer 7900 XT on b (0.90×) and 3.0×
-better on c. "Datacentre against consumer" is not one axis.</p>
-<p>The pair against one A100 is then the third step, and it is where this article started. Without
-speculation the A100 leads by <strong>1.30× to 1.46×</strong> at every depth of an eleven-rung
-ladder — flat, and nothing like the U four single-run points suggested.</p> </div>
+against one 7900 XT the A100 leads by <strong>3.3× on b and 6.7× on c</strong> for the dense 12B. The gap
+in attention scaling is twice the gap in compute. On the mixture-of-experts, where 4B active
+parameters shrink the compute term, the two gaps match at <strong>5.75× and 5.71×</strong>.
+Datacentre silicon is not uniformly faster either: the L4 is <em>slower</em> than a consumer 7900 XT on b (0.90×) and 3.0×
+better on c. Datacentre versus consumer is not a single axis.</p>
+<p>Evaluating the pair against one A100 is the third step, returning to where this article began. Without
+speculation, the A100 leads by <strong>1.30× to 1.46×</strong> across all eleven depths of the
+ladder. That margin is flat throughout, and nothing like the U that four single-run points suggested.</p> </div>
 
 <h2><span class="n">1</span>What is being compared</h2>
 
-<p>Four machines: <strong>one RX 7900 XT</strong>, <strong>two of them at TP=2</strong>, <strong>one
-A100-SXM4-80GB</strong> and <strong>one L4</strong>. Three models, and not every model on every
-machine, because two of the gaps are arithmetic rather than omissions. <code>gemma-4-26B-A4B</code>
-stops at 12 000 tokens on one 7900 XT: 16.96 GiB of weights resident on a 19.98 GiB card leaves
-0.93 GiB of KV even at utilisation 0.95, and 32 K would need about 0.97. And
-<code>gemma-4-31B-it</code> has no single-card row at all — 22 GB of weights do not go into a 20 GB
-card, so the pair is the only way this box runs it. The 31B is therefore the model of the third step
-and of nothing before it.</p>
+<p>Four machines enter the comparison: <strong>one RX 7900 XT</strong>, <strong>two of them at TP=2</strong>, <strong>one
+A100-SXM4-80GB</strong> and <strong>one L4</strong>. Not every model runs on every
+machine across the three architectures; two gaps stem from arithmetic rather than omissions. <code>gemma-4-26B-A4B</code>
+stops at 12 000 tokens on one 7900 XT: holding 16.96 GiB of weights on a 19.98 GiB card leaves
+only 0.93 GiB for KV cache even at 0.95 utilisation, whereas 32 K would need about 0.97. And
+<code>gemma-4-31B-it</code> has no single-card row at all — 22 GB of weights do not fit into a 20 GB
+card, so the pair is the only way this machine runs it. The 31B enters only at the third step
+and appears nowhere before it.</p>
 
 <div class="note">
   <span class="lbl">Where decode and prefill come from</span>
-  The first three steps take both numbers from the same run wherever one exists, because the claim
-  they make is that the second card is worth something different at the two jobs and reading those
-  off different sessions would put a session boundary inside the comparison. That is what fixes the
-  A100 on <strong>2026-08-30</strong> rather than 2026-08-29 there: the earlier session has decode,
-  but its prefill is 0 of 11 rungs chart-grade — prefix caching was on and every rung of this ladder
-  is a strict prefix of the next, so a repeat was charged for nothing.
+  Wherever possible, the first three steps take decode and prefill numbers from the same session.
+  The comparison claims that the second card behaves differently across the two jobs; mixing
+  sessions would inject cross-run variance into that claim. That requirement anchors the
+  A100 on <strong>2026-08-30</strong> rather than 2026-08-29: the earlier session has decode,
+  but 0 of 11 rungs reached chart grade at prefill because prefix caching was active. Since every
+  rung is a strict prefix of the next, caching billed repeated tokens for nothing.
   <br><br>
-  It is a preference and not a rule. Figure 3 is the 2026-08-29 campaign on both sides because that
-  is the one that measured two speculative arms against each other, and Figure 4's A100 prefill is
-  a later re-measurement by construction — the first pass produced none that survives. Each side of
-  each comparison is one run; where the two sides are different days, the figure says so. The two
-  A100 sessions agree to 0.4 % on this model past 2 K, and to 5.5 % at the two shallowest rungs.
+  This consistency is a preference rather than an absolute rule. Figure 3 draws the 2026-08-29
+  campaign for both platforms because only that sitting measured two speculative arms against
+  one another. Figure 4's A100 prefill data reflects a later re-measurement by construction, as
+  the first pass produced none that survives. Each side of each comparison is one run; when two
+  sides date from different days, the figure marks the difference. The two A100 sessions agree to
+  0.4 % on this model past 2 K, and to 5.5 % at the two shallowest rungs.
 </div>
 
-<p>The 31B step keeps the configuration it always had: the same checkpoint,
-<code>gemma-4-31B-it-qat-w4a16-ct</code>, batch 1, greedy, and on both platforms the attention
-backend is <code>TRITON_ATTN</code> — this model's heterogeneous head dimensions force it whenever
-FA4 is unavailable, which is true of gfx1100 and of an A100 alike.</p>
+<p>The 31B step retains its original configuration: checkpoint
+<code>gemma-4-31B-it-qat-w4a16-ct</code>, batch 1, and greedy sampling. Both platforms run on the
+<code>TRITON_ATTN</code> attention backend. Heterogeneous head dimensions in this model force
+Triton whenever FA4 is unavailable, which holds true for gfx1100 and for an A100 alike.</p>
 
 <div class="note warn">
   <span class="lbl">Each side is on its healthy path, and that took a patch</span>
-  Both columns run speculation through the 3D flash-decoding path, which stock vLLM refuses under
-  speculation on <em>either</em> platform — the subject of
-  <a href="speculative-decoding-net-loss.html">a separate article</a>. Comparing the stock configurations
-  instead would be comparing two instances of the same bug. The mechanism is
-  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s, ported identically to both
+  Both columns route speculation through the 3D flash-decoding path. Stock vLLM disables that
+  path under speculation on <em>either</em> platform, as documented in
+  <a href="speculative-decoding-net-loss.html">a separate article</a>. Comparing stock configurations
+  directly would merely compare two instances of the same defect. The fix ports
+  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s mechanism identically to both
   stacks.
 </div>
 
-<p><strong>Prefill is fitted, not quoted.</strong> A single prefill tok/s number states nothing: the
-time to first token over a prompt of S tokens goes as T(S) = a + bS + cS², and the two machines this
-article compares differ by three times on one term and nearly seven on the other. The fits below are
-`build_prefill.fits()`'s, the same ones <code>prefill.jsonl --fits</code> reports, over chart-grade
-rungs only. The constant <code>a</code> is fitted but never quoted: it moved from 9.8 ms to 99.8 ms
-across two campaigns of the same arm, so this ladder does not measure it.</p>
+<p><strong>Prefill is fitted, not quoted.</strong> A single prefill tok/s number states nothing
+because prompt scaling is non-linear: time to first token over S tokens follows T(S) = a + bS + cS².
+The two primary machines differ by three times on one term and nearly seven on the other. Below,
+fits come from `build_prefill.fits()`—the same ones <code>prefill.jsonl --fits</code> reports—over
+chart-grade rungs only. The constant <code>a</code> is fitted but never quoted: it drifted from 9.8 ms
+to 99.8 ms across two campaigns on the same arm, so this ladder does not measure it.</p>
 
 <h2><span class="n">2</span>One card against one card</h2>
 
-<p>Start with no tensor parallelism anywhere: one 7900 XT, one A100, one L4, the same ladder, the
-same two models. The A100 leads, by a factor that depends on the model and shrinks with depth. The
-L4 does not lead at all.</p>
+<p>Begin without tensor parallelism: one 7900 XT, one A100, and one L4, evaluated across the
+same ladder on two models. The A100 leads throughout, by a margin that varies by model and contracts
+with depth. The L4 does not lead at all.</p>
 
 <figure class="rv" id="figs"> <div class="figbox">
   <div class="figtitle">Figure 1 · decode rate against one RX 7900 XT, by context length
@@ -95,39 +95,39 @@ throughout. The second card is drawn here too, because "buy another one" is one 
 compared and it turns out to be the weakest of them. The mixture-of-experts lines stop at 12 000:
 that is where one card runs out of KV, and there is no ratio to draw past it. </figcaption> </figure>
 
-<p><strong>The L4 is a datacentre card that loses to a consumer card at this job.</strong> It runs
-at 0.54× to 0.68× of one 7900 XT across both models and every depth. What it has instead is
-flatness — it retains 89 % of its 500-token rate at 32 K where the A100 retains 62 % — and that is a
-property of a small card with slow memory, not an advantage. The line worth taking from this figure
-is that "datacentre" is not a tier, and the next figure is where the L4 earns its place.</p>
+<p><strong>The L4 is a datacentre card that loses to a consumer card at this job.</strong> Across
+both models and every context depth, it reaches only 0.54× to 0.68× of one 7900 XT. What it exhibits
+instead is flatness: it retains 89 % of its 500-token decode rate at 32 K, whereas the A100 keeps 62 %.
+That stability is a property of a small card with slow memory, not an advantage. The takeaway from
+this comparison is that datacentre is not a tier, and the next figure is where the L4 earns its place.</p>
 
 <h2><span class="n">3</span>What the second card buys</h2>
 
-<p>The second 7900 XT is the flattest line in Figure 1. Across eleven depths on the dense model it
+<p>The second 7900 XT forms the flattest line in Figure 1. Across eleven depths on the dense model it
 buys <strong>1.13× to 1.23×</strong>, and across seven on the mixture-of-experts
-<strong>1.11× to 1.12×</strong>. It is not even monotone: on the 12B it rises to 1.23× at 6 000
-tokens before falling to 1.13× at 32 K.</p>
+<strong>1.11× to 1.12×</strong>. Scaling is not even monotone: on the 12B the ratio peaks at 1.23× at 6 000
+tokens before dropping to 1.13× at 32 K.</p>
 
-<p>A batch-1 decode step is both bandwidth-bound and short: splitting the weights halves the bytes
-each card reads, which is the whole gain, and every step then ends in an all-reduce whose cost does
+<p>A batch-1 decode step is bandwidth-bound and brief. Splitting model weights halves the bytes
+read per GPU, which is the whole gain. Every step then concludes with an all-reduce whose latency does
 not shrink with the split. This page used to conclude that what the second card contributes in
 bandwidth it largely spends on the wire. <strong>Timed, the wire is about a ninth of the step</strong>
 — 1.85&nbsp;ms of 16.70 on the 12B — and a model on this same box gets 1.70× from its second card
-while paying the same collective. So the collective is real and it is not the limit; see section 9.</p>
+while paying the same collective. The collective latency is measurable, but it is not the limit; see section 9.</p>
 
 <p><strong>Prefill is the opposite case, and it is the same two cards.</strong> Attention over a
-prompt parallelises across heads with no communication at all, and the prompt is long enough that
-the per-step floor is a rounding error. Fitting both arms and putting the two terms back together at
+prompt parallelises across heads without communication, and prompts are long enough that
+per-step overhead becomes a rounding error. Fitting both arms and recombining terms at
 the deepest rung each pair reached: <strong>40.1 s to 21.5 s at 32 K</strong> on the dense model,
 <strong>1.87×</strong>; and <strong>6.21 s to 3.99 s at 12 K</strong> on the mixture-of-experts,
 <strong>1.56×</strong>. Same hardware, same day, four to seven times the gain.</p>
 
 <h2><span class="n">4</span>Prefill is two terms, and they do not move together</h2>
 
-<p>The linear term <code>b</code> is GEMM throughput — how fast the machine multiplies. The
-quadratic term <code>c</code> is how badly attention scales with prompt length. A prefill tok/s
-number is a weighted average of the two at one prompt length, and the weighting changes with every
-prompt. Fitted separately, the two terms say different things about the same pair of machines:</p>
+<p>The linear term <code>b</code> represents GEMM throughput—how fast the machine multiplies. The
+quadratic term <code>c</code> measures how severely attention scales with prompt length. A prefill tok/s
+metric is simply a weighted average of the two at a single prompt length, shifting with every
+prompt depth. Fitted separately, the two terms reveal contrasting behaviour across the same machines:</p>
 
 <figure class="rv" id="figp"> <div class="figbox">
   <div class="figtitle">Figure 2 · prefill's two terms, against one RX 7900 XT
@@ -141,21 +141,21 @@ token of prompt and <code>c</code> is ns per token squared; both come from
 constant term is fitted and not shown, because this ladder does not measure it. </figcaption>
 </figure>
 
-<p>Three readings, and none of them survives being averaged into one number:</p>
+<p>Three readings emerge, and none survives being averaged into one number:</p>
 
 <p><strong>On the dense model the A100's attention advantage is twice its compute advantage</strong>
-— 6.67× against 3.29×. Whatever is limiting the 7900 XT at prefill, it is not mainly the
+— 6.67× against 3.29×. Whatever limits the 7900 XT at prefill, it is not primarily the
 multiplier.</p>
 
 <p><strong>On the mixture-of-experts the two collapse together</strong>, 5.71× against 5.75×. The
-model activates 4B of its 26B parameters per token, so the GEMM term is small on both machines and
-the ratio between them stops being about the GEMMs at all.</p>
+model activates 4B of its 26B parameters per token, so the GEMM term stays small on both machines and
+the ratio between them ceases to reflect matrix multiplication.</p>
 
 <p><strong>The L4 is slower than a consumer card on b and three times better on c.</strong> 0.90× and
-3.01×. That is why it is 1.58× faster than a 7900 XT on a 32 K prompt and would lose on a short one:
-the two curves cross, and which card is "faster at prefill" is a question about prompt length. The
-second card, for comparison, buys 1.44–1.48× on b and 1.91–2.22× on c — more of the quadratic term
-than the linear one, which is the same fact the wall-clock numbers above state.</p>
+3.01×. That explains why it is 1.58× faster than a 7900 XT on a 32 K prompt yet loses on a short one:
+the two curves cross, making prefill advantage entirely a question of prompt length. The
+second card, for comparison, buys 1.44–1.48× on b and 1.91–2.22× on c — improving the quadratic term
+more than the linear term, mirroring the wall-clock findings above.</p>
 
 <h2><span class="n">5</span>Two cards against one A100</h2>
 
@@ -176,37 +176,37 @@ was the longest leg that side had. Its U is the shape of four points, and neithe
 has one. </figcaption>
 </figure>
 
-<p><strong>The gap is flat at about 1.4×.</strong> Stock on both sides, with no patch on either,
-the A100 leads 1.36× at 500 tokens and 1.44× at 32K — narrowest at the shallowest rung, widest at
-the deepest, across a sixty-four-fold range of context. That is the whole answer to the question
-this article's title used to ask, and it is the same comparison the repository README publishes.</p>
+<p><strong>The gap is flat at about 1.4×.</strong> Running stock software without patches on either side,
+the A100 leads 1.36× at 500 tokens and 1.44× at 32K — narrowest at the shallowest depth, widest at
+the deepest, across a sixty-four-fold range of context. That answers the question
+this article's title used to ask, matching the comparison published in the repository README.</p>
 
-<p><strong>The lead is what speculation costs the A100.</strong> Speculation has to be read off the
+<p><strong>The lead is what speculation costs the A100.</strong> Speculation must be evaluated from the
 2026-08-29 pair, because it is the only session that ran both arms on both machines — and its
 Radeon side runs three patches the A100 side does not, so its <em>level</em> matters less than its
 <em>difference</em>. Without speculation that session puts the A100 ahead 1.30× to 1.46×, close to
-the stock ladder above it. Switch MTP on and the lead is gone:
+the stock ladder above it. Switch MTP on and the lead vanishes:
 0.88× at 500 tokens, level from 2K through 8K, and only 1.08× at 32K. The Radeons do not get faster.
 The A100 gives up more by speculating — and not because it drafts badly. Its acceptance is the
 <em>better</em> of the two, 1.92–2.07 tokens a step against 1.46–1.53. It loses because a
-speculative step costs it 2.40–2.57× a plain decode step, where the same step costs the Radeons
-1.35–1.39×. At batch 1 the pair has compute to spare inside a step; the single card does not, so the
-fixed price of drafting and verifying four tokens is a much larger fraction of what it was already
-doing. Both figures are in <code>benchmarks/campaign-2026-08-29/</code> and
+speculative step costs it 2.40–2.57× a plain decode step, whereas the same step costs the Radeons
+1.35–1.39×. At batch 1 the pair has spare compute inside each step; the single card lacks headroom, making the
+fixed price of drafting and verifying four tokens a much larger tax on its work.
+Both figures reside in <code>benchmarks/campaign-2026-08-29/</code> and
 <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>.</p>
 
-<p><strong>The U was four points.</strong> Turn the probe on and it is there — 1.48× at 1K, down to
-1.14× at 16K, back to 1.87× at 32K — and this article was named for it. Eleven matched rungs of the
-same two machines, two rounds a cell, produce a flat 1.36× to 1.44× instead. The 16K point that
-looked like a minimum is one cell of one run, and its deepest neighbour compares two different
-depths. The shape did not survive being measured again; the numbers behind it are still on the page
-because retracting a figure quietly is worse than showing what it said.</p>
+<p><strong>The U was four points.</strong> Enable the probe and the curve appears — 1.48× at 1K, down to
+1.14× at 16K, back to 1.87× at 32K — an anomaly this article was originally named for. Eleven matched rungs on the
+same two machines, averaged over two rounds a cell, produce a flat 1.36× to 1.44× instead. The 16K point that
+looked like a minimum was a single cell of one run, whose deepest neighbor compared two different
+depths. The shape did not survive replication; the raw points remain visible on the page
+because retracting data quietly is worse than acknowledging it openly.</p>
 
-<p><strong>And now at prefill too.</strong> The A100 side of this comparison had no usable prefill
-until 2026-08-30: the session that measured its decode ran with prefix caching on, over a ladder
-whose every rung is a prefix of the next, so a repeat was charged for nothing and none of it survived
-the repeatability cut. Re-taken with the cache off, for the five models the pair also runs, it says
-something the decode half does not:</p>
+<p><strong>And now at prefill too.</strong> The A100 side of this comparison lacked usable prefill
+until 2026-08-30: the session that measured its decode ran with prefix caching on, across a ladder
+whose every rung prefixes the next, charging repeated tokens for nothing and failing
+repeatability criteria. Re-taken with caching off across the five models running on both systems, prefill reveals
+dynamics invisible in decode:</p>
 
 <figure class="rv" id="figk"> <div class="figbox">
   <div class="figtitle">Figure 4 · two Radeons against one A100 at prefill, by the kernel the A100 used
@@ -229,30 +229,27 @@ but <strong>1.92&times;</strong>. Those are the sittings drawn. The 12B and 26B 
 2026-08-24, on x16. </figcaption> </figure>
 
 <p><strong>The compute term does not care which kernel is on the path, and the attention term is
-almost nothing else.</strong> Across all five models the A100 is 1.92× to 4.00× ahead on
-<code>b</code>, and the two kernel groups' ranges overlap. On <code>c</code> they do not come near
-each other: 2.99× to 3.10× on the three models the A100 serves through the same Triton
-unified-attention family the Radeons are on, and 11.94× and 19.01× on the two it serves through
+almost nothing else.</strong> Across all five models the A100 leads by 1.92× to 4.00× on
+<code>b</code>, with overlapping ranges between kernel implementations. On <code>c</code> they diverge completely:
+2.99× to 3.10× on the three models the A100 serves through the same Triton
+unified-attention family the Radeons use, and 11.94× and 19.01× on the two it serves through
 FlashAttention.</p>
 
-<p>Five models differ in more than their kernel, so that is a correlation. Here is the same thing
+<p>Five models differ in more than their kernel, so that is a correlation. Here is the same effect
 inside one machine, one day and one model. Qwen3.8-27B on these cards is routed to
 <code>ROCM_ATTN</code> by default and can be pinned to <code>TRITON_ATTN</code> with a flag. Pinned,
 its <code>c</code> is 17.27 ns/token² and the A100 is 11.94× ahead. Left alone, its <code>c</code>
 is 4.46 and the A100 is 3.08× ahead. One flag, no patch, and the answer to "how far ahead is the
-A100 on long prompts" moves by <strong>3.87×</strong>. That flag is the one this repository called
-free until 2026-08-30; it buys 1.15× of decode at 32 K and sells this.</p>
+A100 on long prompts" moves by <strong>3.87×</strong>. That flag was termed free by this repository
+until 2026-08-30; it buys 1.15× of decode at 32 K and sells this.</p>
 
-<p>None of which makes the A100 slower than it is. It is ahead on every model and both terms. What
-it does mean is that a single number for "how much faster is the datacentre card" is not a property
-of the two cards: on the quadratic term it is mostly a property of which attention kernel each side
-ended up on, and on this hardware that is decided by a routing table and one command-line flag.</p>
+<p>None of which diminishes the A100: it remains ahead on every model and both terms. What it does mean is that a single number for &ldquo;how much faster is the datacentre card&rdquo; is not a property of the two cards: on the quadratic term it is mostly a property of which attention kernel each side ended up on, and on this hardware that is decided by a routing table and one command-line flag.</p>
 
 <h2><span class="n">6</span>The split is what costs, not the silicon</h2>
 
-<p>The 2D attention path — the one speculation falls into on stock vLLM — launches one workgroup per KV
+<p>The 2D attention path—which speculation falls into under stock vLLM—launches one workgroup per KV
 head. This model has 16. On one card a rank sees all of them; split across two, each rank sees eight.
-The starved path is therefore starved twice as hard by the parallelism, and it shows up as retention:</p>
+The starved path is starved twice as hard by parallelism, visible directly in retention:</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -271,11 +268,10 @@ The starved path is therefore starved twice as hard by the parallelism, and it s
 
 <h2><span class="n">7</span>And it erodes speculation too</h2>
 
-<p>The MTP drafter is four layers deep, so the extra forward pass is cheap. What is not cheap is
-that every draft step is still a step, and a step under TP=2 pays the all-reduce floor whatever the
-model attached to it costs — <strong>2.30&nbsp;ms on the 31B</strong>, measured, and it does not
-shrink with the drafter. So the arithmetic that makes speculation worth having is worse on two cards
-than on one.</p>
+<p>The MTP drafter is four layers deep, making the extra forward pass cheap. What is not cheap is
+that every draft step remains a step. Under TP=2, each step incurs the baseline all-reduce floor regardless of the
+model evaluated — measured at <strong>2.30&nbsp;ms on the 31B</strong>, invariant to drafter
+depth. Speculative decoding is therefore less advantageous on two cards than on one.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -293,7 +289,7 @@ than on one.</p>
 
 <h2><span class="n">8</span>What the cards actually realize</h2>
 
-<p>The nominal ratio assumes both sides reach their ceiling, but neither does. Recomputing realized
+<p>The nominal ratio assumes both sides reach theoretical peak bandwidth, which neither does. Recomputing realized
 bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
 against 800 GB/s — puts this comparison's model at 63 %:</p>
 
@@ -322,118 +318,98 @@ against 800 GB/s — puts this comparison's model at 63 %:</p>
 <h2><span class="n">9</span>What is not established</h2>
 
 <h3>Batched throughput, and prefill's constant term</h3>
-<p>Everything here is batch 1. Batched throughput is a different regime and is not measured at all;
-where decode stops being bandwidth-bound the second card's 1.1× has no reason to hold, and neither
-does anything else on this page. Prefill <em>is</em> measured now, but only its two shape terms: the
-constant <code>a</code> is fitted and never quoted, because on one arm it moved from 9.8 ms to
-99.8 ms between two campaigns a month apart and on another it came out negative. A short enough
-prompt is therefore outside what these fits describe.</p>
+<p>Benchmarks run at batch 1. Batched throughput is a different regime and is not measured at all; where decode stops being bandwidth-bound,
+the second card's 1.1× has no reason to hold, and neither does anything else on this page. Prefill <em>is</em> measured now, but only its two shape terms: the constant <code>a</code> is fitted and never quoted, because on one arm it moved from 9.8 ms to 99.8 ms between two campaigns a month apart and on another it came out negative. A short enough prompt is therefore outside what these fits describe.</p>
 
 <h3>gemma-4-31B on one card</h3>
-<p>The 31B has no single-card row and cannot have one on this box — 22 GB of weights, 20 GB of card.
-So the first two steps are carried by the other two models, and the 31B appears only from the third
-step on, where the pair is the only way this machine runs it at all.</p>
+<p>The 31B has no single-card row and cannot have one on this box: 22 GB of weights, 20 GB of card. The first two steps
+rely on the other models; the 31B enters only at the third step where dual-card execution is required.</p>
 
 <h3>The A100's own derived bandwidth</h3>
-<p>Figure 7 exists for the Radeons and has no counterpart. The 1.27× reference in Figure 3 is a ratio of
-datasheet numbers, so a reader should treat it as an upper bound on what the bandwidth difference alone
-can explain, not as a prediction either side was measured against.</p>
+<p>Figure 7 exists for Radeons with no counterpart on the other platform. The 1.27× marker in Figure 3
+is a ratio of datasheet figures, an upper bound on what the bandwidth difference alone can explain, not a prediction either side was measured against.</p>
 
-<h3>One stack per side, and one card of each kind</h3> <p>Two different vLLM versions, because each
-side runs the stack it actually uses; two different operating environments, two of them rented Colab
-VMs whose cross-session variance is unquantified. And there is one A100 and one L4, each measured
-once: nothing here separates a card from its instance.</p>
+<h3>One stack per side, and one card of each kind</h3> <p>Two vLLM versions run native stacks across
+environments, including rented Colab VMs with unquantified variance. Only one A100 and one L4 were
+measured once: nothing separates card architecture from instance effects.</p>
 
-<h3>The speculative pair is not patch-matched</h3> <p>Figure 3's solid line is stock on both sides
-with no patch on either, which is why it carries the comparison. The 2026-08-29 pair drawn under it
-is not: its Radeon arms run <code>vllm#45916</code>, the window block-skip and
-<code>vllm#45450</code>, and the A100 arms run none of those without speculation and only
-<code>vllm#45450</code> with it. No unpatched session ran both speculation arms, so what MTP costs
-each machine has to be read off that pair or not at all — the difference between its two arms is
-what is claimed, not the level either arm sits at. The speculation itself does match: both serve
-logs record <code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code> against the same
-assistant checkpoint, and <code>verify_doc_figures.py</code> asserts it from the logs.</p>
+<h3>The speculative pair is not patch-matched</h3> <p>Figure 3's solid line carries the comparison
+using stock code on both sides. The 2026-08-29 pair is not patch-matched: its Radeon arms run
+<code>vllm#45916</code>, the window block-skip and <code>vllm#45450</code>, while unspeculative A100
+arms omit all three and speculative arms run only <code>vllm#45450</code>. With no unpatched run
+covering both arms, MTP cost must be read off relative differences rather than absolute levels. Speculative
+configuration matches: serve logs record <code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code> against
+the identical assistant checkpoint, asserted by <code>verify_doc_figures.py</code>.</p>
 
-<h3>Why the second card behaves as it does</h3> <p>This page used to say that a batch-1 decode step
-is short enough for a fixed all-reduce to eat most of a second card's bandwidth, and that no
-all-reduce had been timed to check it. One has been now, and it does not support the reading. Under
-HIP-graph replay — the mode a decode step actually runs in, which the serve logs record as
-<code>cudagraph_mode FULL_AND_PIECEWISE</code> and <code>Capturing CUDA graphs (decode, FULL)</code>
-— one all-reduce at the batch-1 shape costs <strong>16.6 to 21.5&#8239;µs</strong> on this pair. Over
-<code>2&nbsp;×&nbsp;layers&nbsp;+&nbsp;1</code> collectives (counted on 2026-09-03: two per layer and the embedding's one) that is <strong>1.85&nbsp;ms of the 12B's 16.70&nbsp;ms
-step</strong>, about a ninth of it.</p>
+<h3>Why the second card behaves as it does</h3> <p>This page used to say that fixed all-reduce
+latency ate most of the second card's bandwidth during batch-1 decode, and that no all-reduce had been timed to check it. One has been now, and it does not support that reading. Timed under HIP-graph replay—logged as <code>cudagraph_mode FULL_AND_PIECEWISE</code> and <code>Capturing CUDA graphs (decode, FULL)</code>—an
+all-reduce at the batch-1 shape costs <strong>16.6 to 21.5&#8239;µs</strong>. Across <code>2&nbsp;×&nbsp;layers&nbsp;+&nbsp;1</code> collectives
+(tallied on 2026-09-03: two per layer plus embedding), communication takes <strong>1.85&nbsp;ms of the 12B's 16.70&nbsp;ms
+step</strong>, about a ninth.</p>
 
 <p>And the same box gives <code>Qwen3-8B</code> <strong>1.70×</strong> from its second card at decode
-while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0.6&nbsp;ms of each
-other per step. If a fixed all-reduce were eating most of what the second card contributes, the 8B
-could not be getting 1.70×. <strong>What holds the 12B back is not the wire.</strong> Subtracting
-perfect halving and the measured collectives leaves
-4.96&nbsp;ms of its step unexplained; the same subtraction on the 8B
-leaves 0.66&nbsp;ms. <em>(Answered 2026-09-02, and the premise was the problem.)</em> The subtraction assumed a step that was waiting on bytes; on one card the 8B keeps
-the memory controller <strong>90&nbsp;%</strong> busy and the 12B <strong>56&nbsp;%</strong>, and
-across five cells the second card's gain follows that counter and nothing else in the row
-(<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
-The 12B's 4.96&nbsp;ms is not a cost gone missing; it is the null model being wrong for a model whose
-memory controller is half idle. The same counter has since ordered the worth of faster memory, a
-second card and a slower card on four rented NVIDIA configurations, which is
+while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0.6&nbsp;ms of each other
+per step. Were the wire
+eating bandwidth, the 8B could not reach 1.70×. <strong>What holds the 12B back is not the wire.</strong>
+Subtracting perfect halving and the measured collectives
+leaves 4.96&nbsp;ms of its step unexplained; the same subtraction on the 8B
+leaves 0.66&nbsp;ms. <em>(Answered 2026-09-02: the premise was flawed.)</em> The model assumed memory
+bottlenecking; yet on one card the 8B keeps the memory controller <strong>90&nbsp;%</strong> busy versus <strong>56&nbsp;%</strong> on
+the 12B. Across five cells, scaling mirrors that counter alone (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
+The 12B's 4.96&nbsp;ms is not missing time; it is the null model being wrong for a controller half idle.
+That counter has since ordered the worth of faster memory, a second card and a slower card across four rented NVIDIA configurations, which is
 <a href="mem-busy-orders-five-settings.html">its own article</a>.</p>
 
-<p>The half of the old sentence about attention still stands: attention parallelises with no
-communication at all, and that is what the prefill numbers above show. The three claims that tried
-to price the collective from a fitted intercept remain withdrawn — they were withdrawn for being
-unmeasurable from this ladder, and the number that replaces them is 49 to 63 times smaller.
+<p>The half of the old sentence about attention still stands: attention parallelises with no communication at all, and the prefill numbers above are what show it. The three
+claims pricing collectives from fitted intercepts remain withdrawn: they were unmeasurable on this ladder,
+replaced by direct timings 49 to 63 times smaller.
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/allreduce-2026-09-02">The
-measurement is in the repository</a>, with the library it ran through identified from
-<code>/proc/self/maps</code> rather than from a version constant.</p>
+measurement is in the repository</a>, with the runtime library identified from <code>/proc/self/maps</code> rather than a version constant.</p>
 
 <h2><span class="n">10</span>What has changed since</h2>
 
 <div class="note ok">
   <span class="lbl">2026-08-26 · the comparison became possible</span>
   Before <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>'s mechanism was ported
-  to both stacks, both platforms were stuck on the 2D path under speculation and the comparison would
-  have measured a shared bug. Figure 5 is what that comparison looks like, kept because it is the finding
-  about tensor parallelism rather than an artefact to discard.
+  to both stacks, both platforms were stuck on the 2D path under speculation, measuring a shared defect
+  rather than hardware. Figure 5 preserves that comparison as a finding about tensor parallelism
+  rather than an artifact to discard.
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-30 · the U was four points, and the article was rebuilt around what replaced it</span>
-  This article's thesis was "two consumer cards against one A100", and its lead figure was four
-  single-run cells whose deepest one compared 32 K against 30 K. Eleven matched rungs of the same two
-  machines, measured 2026-08-29, are flat where those four made a U. On 2026-08-30 the single-card
-  round measured one 7900 XT, one A100 and one L4 on the same ladder for both decode and prefill,
-  which splits the original question into three. The article now asks them in order; Figure 3 is the
-  old one, redrawn on the ladder, with the probe behind a switch.
+  This article originally tested "two consumer cards against one A100" via four single-run cells,
+  with the deepest comparing the Radeons at 32 K against the A100 at 30 K, its longest leg. Eleven matched ladder depths measured
+  on 2026-08-29 proved flat where those four made a U. On 2026-08-30, single-card profiling of one
+  7900 XT, one A100 and one L4 across decode and prefill divided the question into three structured steps.
+  Figure 3 redraws the revised ladder, placing the original probe data behind a switch.
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-31 · the headline was measured on a pair that was not patch-matched</span>
-  Until today the flat ladder on this page was the 2026-08-29 pair, quoted as 1.30× to 1.46×. Its
-  Radeon side runs three patches its A100 side does not, which flatters the pair on precisely the
-  number the title asks about, and the page did not say so. The headline is now the stock ladder —
-  eleven rungs, both arms stock, no patch on either side, <strong>1.36× to 1.44×</strong> — which is
-  the comparison <code>README.md</code> publishes. The 2026-08-29 pair stays, because it is the only
-  session that ran both speculation arms, and now says what it carries.
+  Previously, the headline cited the 2026-08-29 pair as 1.30× to 1.46× without noting that three patches
+  on the Radeon side flattered the dual-card configuration. The headline now cites the stock ladder —
+  eleven rungs with unmodified code on both platforms, yielding <strong>1.36× to 1.44×</strong> as
+  published in <code>README.md</code>. The 2026-08-29 pair remains to evaluate speculative decoding
+  arms, now explicitly identifying its patches.
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · the utilisation figure quoted here was the wrong model's</span>
-  This comparison's paragraph in <code>README.md</code> cited 38 % realized bandwidth. That is the 12B's
-  number; the model in this comparison is the 31B, which reaches <strong>62.8 %</strong>. Corrected and
-  dated in place, and all three utilisation figures are now recomputed by
-  <code>verify_doc_figures.py</code> from the campaign rates rather than quoted.
+  Earlier text cited 38 % realized bandwidth in <code>README.md</code>, conflating the 12B metric with
+  the 31B, which reaches <strong>62.8 %</strong>. Corrected and dated in place, all three bandwidth
+  utilisation figures are now recomputed by <code>verify_doc_figures.py</code> directly from campaign logs.
 </div>
 
 <div class="foot-note">
-  <p><strong>The data.</strong> The Radeon ladders are in
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>;
-  the A100 legs, their logs and the port that made both sides comparable are in
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>;
-  the July campaign behind Figure 7 is
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>.
-  Every figure here is recomputed from those files by
+  <p><strong>The data.</strong> Benchmark traces reside in
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a> for Radeons,
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a> for
+  A100 runs and port logs, and
+  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a> for Figure 7 records.
+  Every figure is recomputed from those files by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>.</p>
-  <p>Why both sides needed a patch to be worth comparing is
+  <p>Why both stacks required a patch to be worth comparing is
   <a href="speculative-decoding-net-loss.html">the previous article</a>.</p>
 </div>
 </div>

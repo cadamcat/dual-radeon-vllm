@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Two consumer Radeons, measured</title>
+<title>Two consumer Radeon GPUs, measured under ROCm and vLLM</title>
 <meta name="description" content="Long-form write-ups from a repository of measurements on 2x RX 7900 XT under ROCm and vLLM. Every figure is checked against the committed data it is drawn from.">
 <style>
   /* ===================== theme =====================
@@ -1152,7 +1152,7 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">dual-radeon-vllm · write-ups</div>
-  <h1>Two consumer Radeons,<br>measured</h1>
+  <h1>Two consumer Radeon GPUs,<br>measured under ROCm and vLLM</h1>
   <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
   (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
   the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
@@ -1165,11 +1165,11 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">1</span>What this machine does today</h2>
 
-<p>One line per model per machine, each of them that model's fastest measured configuration rather
-than a common one. Four of the six Radeon lines come from a single campaign on one stack and are
-directly comparable; the other two are drawn from a later stack, because on those two models the
-campaign is no longer the best this machine can do. The A100 carries five of the same models, its
-own whole campaign on one afternoon. Every line says which it is.</p>
+<p>The charts plot one line per model per machine. Each line reflects that model's fastest measured
+configuration rather than a common baseline. Four of the six Radeon lines come from a single campaign
+on one stack and are directly comparable; the other two are drawn from a later stack, because on those
+two models the campaign is no longer the best this machine can do. The A100 carries five of the same
+models from its own single-afternoon campaign. Every line marks which stack it runs.</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
@@ -1291,11 +1291,11 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   </figcaption>
 </figure>
 
-<p>Every ladder on this machine stopped at 32&nbsp;000 tokens until 2026-09-03, and that read as the
-machine's limit. It was the campaign's: each arm set <code>max_model_len</code> to 33&nbsp;000 while
-its KV pool held several times that. The two figures below are the same two questions asked to
-128&nbsp;000 &mdash; the pair as the subject, on one ladder cut for it that day, and the machines rented
-the same day one click away as the background.</p>
+<p>Until 2026-09-03, every ladder on this machine stopped at 32&nbsp;000 tokens. That appeared to be a
+hardware boundary, but the limit belonged to the campaign: each arm set <code>max_model_len</code> to
+33&nbsp;000 while its KV pool held several times that. The two figures below ask those same questions
+out to 128&nbsp;000 &mdash; the pair serves as the subject on a ladder cut that day, with the machines
+rented the same day one click away as the background.</p>
 
 <figure class="rv" id="figlong">
   <div class="figbox">
@@ -1359,21 +1359,20 @@ the same day one click away as the background.</p>
 
 <h2><span class="n">2</span>Articles</h2>
 
-<p>Twelve write-ups, newest first by the date on the card — the last day evidence for that article
-was taken here, reported upstream or re-read. Under each title is the line that article used to lead
-with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
-two cannot describe a finding differently.</p>
+<p>Twelve write-ups, newest first by the date on the card &mdash; the last day evidence for that
+article was taken here, reported upstream or re-read. Under each title
+is the line that article used to lead with. Beneath it is what the piece establishes, in the words the
+synthesis article uses to classify it, so the two cannot describe a finding differently.</p>
 
 <div class="cards" id="cards"></div>
 
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
-<p>The date on an article is the date its evidence was taken, not the date it was written. Three of
-the twelve are dated to the last week of July, eight to the last week of August and one to the first week of September. The machine
-itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks — the second
-cluster is largely re-measurement of the first under conditions the first got wrong. A bar spanning
-two dates is an article whose evidence comes from two separate sittings, not one that ran
-throughout.</p>
+<p>The date on an article marks when its evidence was taken, not when it was written. Three of
+the twelve are dated to the last week of July, eight to the last week of August and one to the first
+week of September. The machine itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks &mdash;
+the second cluster is largely re-measurement of the first under conditions the first got wrong. A bar
+spanning two dates is an article whose evidence comes from two separate sittings, not one that ran throughout.</p>
 
 <figure class="rv" id="figtl">
   <div class="figbox">
@@ -1394,9 +1393,9 @@ throughout.</p>
 <h2><span class="n">4</span>How to read these</h2>
 
 <p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
-this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
-<code>7.0.0-30</code>, and a loader speed-up of 3.9× to 5.6× was withdrawn when page cache was properly
-controlled. Every article therefore closes with a section listing what has changed since, which is
+this repository have already moved since they were measured. An Ubuntu kernel regression was fixed in
+<code>7.0.0-30</code>, and an initial loader speed-up of 3.9× to 5.6× was withdrawn when page cache was
+properly controlled. Every article therefore closes with a section listing what has changed since,
 appended to rather than rewritten.</p>
 
 <p>Figures carry a provenance marker. <span class="prov yes">recomputable from repo</span> means
@@ -1405,9 +1404,9 @@ checks that value against its source file and fails non-zero if the two disagree
 guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
 number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
 
-<p>The absolute rates are a floor rather than a benchmark of the hardware: this is a VFIO guest with no
-peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as the least favourable
-topology. The shapes transfer; the levels are the worst case.</p>
+<p>The absolute rates are a floor rather than a benchmark of the hardware. The test environment is a
+VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as
+the least favourable topology. The shapes transfer; the levels are the worst case.</p>
 
 <div class="foot-note">
   <p>Source, raw data and the runners that produced the data:
@@ -25319,12 +25318,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "The second card buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×"
+    "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
+    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
    },
    "sub": {
-    "en": "One 7900 XT, two of them, one A100 and one L4, on the same ladder",
-    "zh": "一张 7900 XT、两张、一张 A100、一张 L4，同一套阶梯"
+    "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",
+    "zh": "两张 Radeon 上的解码速率与预填充扩展；对照单卡、A100 和 L4 实测"
    },
    "blurb": {
     "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, and the L4 is slower than a consumer card on prefill's linear term.",
@@ -25610,12 +25609,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "articles/w4a16-two-problems.zh.html"
    },
    "title": {
-    "en": "A flat 60 ms per step, under a cost that grows with context",
-    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
+    "en": "One line of SUPPORTED_QUANT_TYPES adds a flat 60 ms per step, under an attention cost that grows with context",
+    "zh": "SUPPORTED_QUANT_TYPES 中的一行代码每步增加固定 60 ms，压在随上下文增长的注意力开销下面"
    },
    "sub": {
-    "en": "Twelve tokens a second was two problems",
-    "zh": "12 tok/s 是两个问题"
+    "en": "Asymmetric and symmetric decode rate on dual Radeon cards under vLLM; checked across context lengths, against native kernels, and against upstream fixes",
+    "zh": "vLLM 下双 Radeon 卡的非对称与对称解码速率；跨上下文长度实测，并对照原生 kernel 与上游修复"
    },
    "blurb": {
     "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
@@ -25825,12 +25824,12 @@ topology. The shapes transfer; the levels are the worst case.</p>
     "zh": "articles/weight-loading-19x.zh.html"
    },
    "title": {
-    "en": "A read-only copy asks for write access, and one kernel charged a second for it",
-    "zh": "只读的拷贝去申请写权限，而某个内核为此每次多收一秒"
+    "en": "KFD asks for write access on a read-only copy, and an Ubuntu kernel backport charged a second for it",
+    "zh": "KFD 对只读拷贝申请写权限，而 Ubuntu 内核的一处 backport 为此每次多收一秒"
    },
    "sub": {
-    "en": "Loading weights was slower than the disk, twice over",
-    "zh": "加载权重比磁盘还慢，而且慢了两次"
+    "en": "Weight loading measured on Radeon hardware; traced through KFD and HMM against an unpatched kernel retry loop and Canonical's update",
+    "zh": "在 Radeon 硬件上实测权重加载；沿 KFD 与 HMM 追踪，对照未打补丁的内核重试循环与 Canonical 的更新"
    },
    "blurb": {
     "en": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",

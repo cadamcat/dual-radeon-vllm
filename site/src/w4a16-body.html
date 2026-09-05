@@ -1,10 +1,10 @@
 <header class="top">
   <div class="kicker">RDNA3 · W4A16 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>A flat 60 ms per step, under a cost<br>that grows with context</h1>
-  <p class="sub">Twelve tokens a second was two problems</p>
-  <p class="lede">A 27B model decoded at 12 tok/s on this machine and every document here treated that
+  <h1>One line of <code>SUPPORTED_QUANT_TYPES</code> adds a flat 60 ms per step,<br>under an attention cost that grows with context</h1>
+  <p class="sub">Asymmetric and symmetric decode rate on dual Radeon cards under vLLM; checked across context lengths, against native kernels, and against upstream fixes</p>
+  <p class="lede">A 27B model decoded at 12 tok/s on this machine. Every document here treated that
   as one fault with one cause. It is two costs stacked on each other: one flat, one growing with
-  context. Separating them takes a single A/B, and once separated each turns out to have its own
+  context. Separating them takes a single A/B. Once separated, each turns out to have its own
   upstream fix, written by someone else.</p>
   <div class="meta">
 __CHIPS__
@@ -14,21 +14,21 @@ __CHIPS__
 <div class="abstract">
   <h3>Abstract</h3>
   <p>The same model family, packaged asymmetrically and symmetrically, differs by <strong>3.241× at
-  1K of context, 1.786× at 8K and 1.266× at 32K</strong>. Read as a ratio that looks like one effect
-  fading. Read as decode time per step it is the opposite: the difference stays between
+  1K of context, 1.786× at 8K and 1.266× at 32K</strong>. Read as a ratio, that looks like an effect
+  fading. Read as decode time per step, it is the opposite: the difference stays between
   <strong>58.03 and 62.79 ms</strong>, a spread of 8.2 %, while the ratio falls by 60.9 %. A flat cost
-  sitting under a growing one.</p>
-  <p>The flat cost is the W4A16 linear kernel. An asymmetric checkpoint arrives as
-  <code>uint4</code>; one line of <code>SUPPORTED_QUANT_TYPES</code> admits only
-  <code>uint4b8</code>; the layer silently falls to Triton. Nothing warns, and the model name does not
-  tell you which kind you have.</p>
+  sits under a growing one.</p>
+  <p>The flat cost comes from the W4A16 linear path. An asymmetric checkpoint arrives as
+  <code>uint4</code>. One line of <code>SUPPORTED_QUANT_TYPES</code> admits only
+  <code>uint4b8</code>, so the layer silently falls to Triton. Nothing warns, and the model name does not
+  indicate which format is present.</p>
   <p>The growing cost is paged attention, which
-  <a href="hybrid-ssm-collapse.html">has its own article</a>. Both halves have a fix upstream and
+  <a href="hybrid-ssm-collapse.html">has its own article</a>. Both halves have an upstream fix, and
   <strong>neither fix is ours</strong>: <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>
-  merged, adding a second native kernel that does accept <code>uint4</code>;
+  merged, adding a second native kernel that accepts <code>uint4</code>;
   <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> widens the split-KV
   attention gate and is still unmerged.</p>
-  <p>What this article contributes is the separation, and one thing found on the way: sweeping the
+  <p>What this article contributes is the separation, and one finding uncovered on the way: sweeping the
   asymmetric configuration space on gfx1100, three of twelve configurations are served by two kernels,
   one by Triton, and <strong>eight by nothing at all</strong>. Every asymmetric checkpoint with
   act-order is in the last group.</p>
@@ -37,14 +37,14 @@ __CHIPS__
 <h2><span class="n">1</span>What is being measured</h2>
 
 <p>Decode rate here is a differenced measurement, not a server-reported one: generate 8 tokens, generate
-64, and divide the extra 56 by the extra time. That removes prefill and the first-token cost from a
-number that is supposed to be about steady-state decoding. Every cell runs in a fresh container off a
-stock image, after a warm-up generation that is discarded.</p>
+64, and divide the extra 56 by the extra time. That removes prefill and the first-token latency from a
+number meant to reflect steady-state decoding. Every cell runs in a fresh container off a
+stock image, following a discarded warm-up generation.</p>
 
-<p>The warm-up earns its place rather than being a ritual. Every cell JIT-compiles exactly four Triton
-kernels, and on both arms all four land inside the warm-up, so neither timed call carries a compile.
-That is checked from the container logs rather than assumed, and it is checked on both arms so a compile
-cannot be inflating one side only.</p>
+<p>The warm-up is necessary rather than ceremonial. Every cell JIT-compiles exactly four Triton
+kernels. On both arms all four compilations land inside the warm-up, so neither timed call carries a compile.
+That is checked directly from container logs rather than assumed, and it is checked on both arms so a compile
+cannot inflate one side only.</p>
 
 <p><strong>Which kernel actually served the layers is recorded from inside the workers.</strong> Under
 <code>--tensor-parallel-size 2</code> the linear layers are built in spawned processes, where a
@@ -63,23 +63,23 @@ record and exit zero.</p>
 
 <h2><span class="n">2</span>The claim this replaces</h2>
 
-<p>On 2026-08-24 this box measured two 27B models on the same day: a dense one at 44.8 tok/s and this
-hybrid-SSM one at 12.3, a factor of <strong>3.64× with parameter count held constant</strong>. That was
-read as an architecture result, and it is the reading the repository's own documents carried.</p>
+<p>On 2026-08-24 this box measured two 27B models on the same day: a dense baseline at 44.8 tok/s and this
+hybrid-SSM model at 12.3, a factor of <strong>3.64× with parameter count held constant</strong>. That was
+read as an architecture result, and it is the reading earlier repository documents carried.</p>
 
-<p>It was confounded. Every quantized checkpoint in that campaign is symmetric except the two Qwen3.x
+<p>The comparison was confounded. Every quantized checkpoint in that campaign is symmetric except the two Qwen3.x
 AWQ ones, and those are exactly the two the documents single out as slow. The architecture comparison
 and the packaging difference coincide precisely where the conclusion was drawn. The A/B below is what
 separates them, and it is worth up to 3.24× on its own.</p>
 
 <h2><span class="n">3</span>One family, two packagings</h2>
 
-<p>Two checkpoints of the same model — <code>Qwen3_5ForConditionalGeneration</code>,
+<p>Two checkpoints evaluate the same model architecture — <code>Qwen3_5ForConditionalGeneration</code>,
 compressed-tensors pack-quantized on both sides, same two cards, same image, one fresh container per
 cell. One is <code>symmetric: false</code>, the other <code>symmetric: true</code>.</p>
 
-<p>Decode time per token is additive. If the cause is a per-step GEMM then it has to appear as a
-<strong>context-independent number of milliseconds</strong>, with the ratio falling only because the
+<p>Decode time per token is additive. If the cause is a per-step GEMM, it must appear as a
+<strong>context-independent number of milliseconds</strong>. In that case the ratio falls only because the
 attention term grows underneath both arms. That is a prediction the ratio on its own cannot make, and
 it is the reason this figure defaults to milliseconds rather than to the larger-looking multiple.</p>
 
@@ -106,8 +106,8 @@ it is the reason this figure defaults to milliseconds rather than to the larger-
 
 <p>vLLM has had a native gfx1100 W4A16 kernel since
 <a href="https://github.com/vllm-project/vllm/pull/41394">vllm#41394</a>, registered for the same
-mixed-precision path compressed-tensors uses, and its own docstring says it is registered ahead of the
-Triton kernel for the ROCm-RDNA3 path. One line decides who reaches it:</p>
+mixed-precision path compressed-tensors uses. Its own docstring places it ahead of the
+Triton kernel on the ROCm-RDNA3 path. One line decides who reaches it:</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -116,8 +116,8 @@ Triton kernel for the ROCm-RDNA3 path. One line decides who reaches it:</p>
 </pre></div>
 
 <p><code>uint4b8</code> is symmetric int4. <code>compressed_tensors_wNa16.py</code> picks the weight type
-from the checkpoint's own <code>symmetric</code> flag and sets <code>zero_points = not symmetric</code>,
-so an asymmetric checkpoint arrives as <code>uint4</code> and fails the type check. Asked directly, the
+from the checkpoint's own <code>symmetric</code> flag and sets <code>zero_points = not symmetric</code>.
+An asymmetric checkpoint therefore arrives as <code>uint4</code> and fails the type check. Asked directly, the
 registry says exactly that:</p>
 
 <div class="codewin">
@@ -150,8 +150,8 @@ SELECTED  TritonW4A16LinearKernel
 </figure>
 
 <p>Two other differences between the arms had to be retired rather than argued away. <strong>Group
-size</strong>, 32 against 128: no checkpoint exists that separates it from symmetry, so this A/B cannot,
-but <code>can_implement</code> has no group-size-128 condition in its source, the four corners above
+size</strong>, 32 against 128: no checkpoint exists that separates it from symmetry, so this A/B cannot.
+However, <code>can_implement</code> has no group-size-128 condition in its source, the four corners above
 ignore it, and the fastest model on this box is group 32. <strong>Which layers are quantized</strong>:
 the two <code>ignore</code> lists differ, so the quantized linears were counted from each
 <code>model.safetensors.index.json</code> rather than assumed. 399 against 400, differing by exactly one
@@ -162,12 +162,12 @@ W4A16 GEMM, so it cannot be what makes that arm faster.</p>
 
 <p>The flat block is the whole of the difference between the arms, but it is nowhere near the whole
 of the decode step. At 32K both arms spend most of a step inside
-<code>kernel_paged_attention_2d</code>, whose per-call cost grows by a factor of 28 between 1K and
-32K while every other kernel in the profile stays flat. That is the second problem, it is not about
+<code>kernel_paged_attention_2d</code>. Its per-call cost grows by a factor of 28 between 1K and
+32K while every other kernel in the profile stays flat. That is the second problem: it is not about
 quantization at all, and it has <a href="hybrid-ssm-collapse.html">its own article and its own
 fix</a>.</p>
 
-<p>The two terms are why neither headline number was ever a good summary. At 1K the packaging penalty is
+<p>These two terms explain why neither headline number was ever a good summary. At 1K the packaging penalty is
 essentially the entire gap; at 32K it is a rounding error next to attention. A single ratio quoted
 without its context length hides which of the two it is mostly measuring.</p>
 
@@ -175,12 +175,12 @@ without its context length hides which of the two it is mostly measuring.</p>
 
 <p><a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> merged on 2026-07-14 and
 added <code>RDNAHybridW4A16LinearKernel</code>, which accepts <code>uint4</code>, group size 32, and all
-of gfx11. So on current <code>main</code> an asymmetric checkpoint does get a native kernel — a
+of gfx11. On current <code>main</code> an asymmetric checkpoint does get a native kernel — a
 different one from the kernel this investigation was about, reached by widening the registry rather than
 the type gate. The same checkpoint that decoded at 11.41 tok/s against Triton decodes at 37.32 there.</p>
 
-<p><a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> is the attention half, and
-this repository's contribution to it is the gfx1100 end-to-end verification rather than the code.</p>
+<p><a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> provides the attention half.
+This repository's contribution to it is the gfx1100 end-to-end verification rather than the code.</p>
 
 <figure class="rv" id="fig3"> <div class="figbox"> <div class="figtitle">Figure 3 · the two fixes
 have opposite context profiles <span class="prov yes">recomputable from repo</span></div>
@@ -256,25 +256,17 @@ Hybrid instead is probably what upstream wants, and that is not our code to chan
 <h2><span class="n">8</span>What is not established</h2>
 
 <h3>That the flat term is only the GEMM</h3>
-<p>The additive decomposition is consistent with a per-step cost that does not depend on context, and the
-kernel record says which GEMM ran. It does not by itself exclude some other flat term riding along with
-it. What is measured is that the difference between the two arms is flat to 8.2 % over a 32× change in
-context, and that the arms differ in which linear kernel serves them.</p>
+<p>The additive decomposition is consistent with a per-step cost that does not depend on context, and the kernel record says which GEMM ran. It does not by itself exclude some other flat term riding along with it. What is measured is that the inter-arm gap remains flat to 8.2 % over a 32× context span, and that distinct linear kernels serve the two arms.</p>
 
 <h3>Accuracy</h3>
-<p>These are two independent quantizations by two publishers at different group sizes, and this measures
-speed only. "Prefer a symmetric checkpoint on RDNA3" is a throughput statement. Whether the two are
-equally good models is a separate question nothing here answers.</p>
+<p>These are independent quantizations by two publishers at different group sizes; this measures speed only. "Prefer a symmetric checkpoint on RDNA3" is a throughput statement. Whether the two models match in quality is not established here.</p>
 
 <h3>How far the result carries</h3>
 <p>One machine, one model family, gfx1100 only, TP=2, bf16 activations only. The
-<code>partition_scales</code> and channel-wise parameter paths are untouched, and the permute assumes the
-group-quantized layout. The coverage sweep is a registry verdict on synthetic parameters; which of those
-nine configurations anyone actually ships is not measured.</p>
+<code>partition_scales</code> and channel-wise paths are untouched, and the permute assumes a group-quantized layout. The coverage sweep is a registry check on synthetic parameters; which of those nine configurations anyone actually ships is not measured.</p>
 
 <h3>One run per cell in the A/B</h3>
-<p>Six cells, one container start each. The repeat that exists covers the symmetric arm only and moves it
-by at most 1.31 %. The 0.27 arms in Figure 3 carry two runs each and their own ranges.</p>
+<p>Six cells, one container start each. The existing repeat covers the symmetric arm only, moving it by at most 1.31 %. The 0.27 arms in Figure 3 carry two runs each with their own ranges.</p>
 
 <h2><span class="n">9</span>What has changed since</h2>
 
@@ -319,13 +311,13 @@ RDNA3 while passing the run that was supposed to validate it. </div>
 </div>
 
 <div class="foot-note">
-  <p><strong>The data behind every figure.</strong> The A/B, the forced-kernel run, the three-line fix
-  and its control, the coverage sweep and the upstream test cases are in
+  <p><strong>The data behind every figure.</strong> The A/B run, forced-kernel data, three-line fix
+  and its control, coverage sweep, and upstream tests are in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/w4a16-symmetry/README.md"><code>benchmarks/w4a16-symmetry/</code></a>,
-  together with the per-cell worker-side kernel records. Every figure on this page is recomputed from
+  together with per-cell worker kernel records. Every figure on this page is recomputed from
   those files by
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>,
-  which exits non-zero if any of them disagrees.</p>
+  which exits non-zero if any figure disagrees.</p>
   <p>Upstream: <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> is the fix for the
   flat half and <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> for the growing
   one; <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a> is where the second was

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>只读的拷贝去申请写权限，而某个内核为此每次多收一秒</title>
+<title>KFD 对只读拷贝申请写权限，而 Ubuntu 内核的一处 backport 为此每次多收一秒</title>
 <meta name="description" content="从 VMA 取权限让每次 host→device 拷贝都破坏 copy-on-write；而一个被拆开的内核 backport 把每一次触发都变成一秒的超时。两个效应，一个复现器，三种内核状态。">
 <style>
   /* ===================== theme =====================
@@ -963,12 +963,9 @@ addEventListener("DOMContentLoaded", function () {
 
 <header class="top">
   <div class="kicker">RDNA3 · KFD · HMM · 实测于 2× RX 7900 XT</div>
-  <h1>只读的拷贝去申请写权限，<br>而某个内核为此每次多收一秒</h1>
-  <p class="sub">加载权重比磁盘还慢，而且慢了两次</p>
-  <p class="lede">一个 9.56 GiB 的 checkpoint，磁盘大约六秒就能交出来，实际用了
-  <strong>328 秒</strong>。两个彼此独立的原因：一个权限 bug，让 GPU 去要它并不需要的写权限 ——
-  AMD 已确认并定位到内核某一行，今天依然存在；另一个是发行版的 backport，
-  把这个 bug 的每一次触发都变成整整一秒 —— 把缺的那个 commit 单独加回去证明，Canonical 在 <code>-30</code> 里修好。</p>
+  <h1>KFD 对只读拷贝申请写权限，<br>而 Ubuntu 内核的一处 backport 为此每次多收一秒</h1>
+  <p class="sub">在 Radeon 硬件上实测权重加载；沿 KFD 与 HMM 追踪，对照未打补丁的内核重试循环与 Canonical 的更新</p>
+  <p class="lede">一个 9.56 GiB 的 checkpoint，磁盘大约六秒就能读完，实际却花了 <strong>328</strong> 秒。造成延迟的是两个彼此独立的缺陷。第一个是权限缺陷，导致 GPU 去申请本不需要的写权限；AMD 已确认该问题并指出具体代码行，它至今依然存在。第二个是发行版的一处 backport，把该缺陷的每一次触发都拖长为整整一秒；仅补入缺失 commit 重新编译便证实了这一点，Canonical 已在 <code>-30</code> 中修复。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · VFIO 直通</span>
     <span class="chip k-stack" title="软件栈" style="--i:1">Ubuntu <b>7.0.0-28</b> → <b>-30</b></span>
@@ -979,50 +976,22 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>第一个效应是<strong>权限取错了地方</strong>。host→device 拷贝只会读源，
-  但 KFD 是从 VMA 的 flags 推出它要申请的访问权限；于是带 <code>VM_WRITE</code> 的映射
-  会让 <code>hmm_range_fault()</code> 去要写权限，从而在每一个常驻页上破坏 copy-on-write。
-  PyTorch 把 safetensors checkpoint 映射成可写的，因为 storage 必须可变 ——
-  所以这是 PyTorch 在这里走的那条路。AMD 确认了它并给出了行号。在今天在跑的内核上，它值
-  <strong>4.8×</strong>。</p>
-  <p>第二个是一次 backport。Ubuntu 的 <code>7.0.0-28</code> 取了
-  <code>c08972f55594</code> 却没取它的后续 <code>342981fff328</code>，
-  留下一个会空转满 <code>HMM_RANGE_DEFAULT_TIMEOUT</code> 的重试循环。
-  于是每一个计时的单位都成了整块的 1000 ms 窗口，而不是带宽：一次 32 MiB 拷贝要
-  <strong>16 019.6 ms</strong>，也就是十六个窗口加 19.6 ms 的真实工作。
-  只把缺的那个 commit 加回去重编 <code>amdgpu.ko</code>，结果是 <strong>17.0 ms</strong>。
-  Canonical 在 2026-08-20 随 <code>-30</code> 发出来，同一个复现器现在是 15.3。</p>
-  <p>这一对自己解释自己：破坏 copy-on-write 正是推进 notifier 序列的动作，
-  所以权限 bug 是触发条件，而缺失的那个 commit 把每次触发变成整整一秒。
-  只读映射永远不会失效，也就永远不会进那个重试。</p>
-  <p><strong>本仓库自己的一个数字没有活下来。</strong>随
-  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 发出的 3.9×–5.6×
-  来自一次没有控制 page cache 的运行。逐格控制缓存重测之后：checkpoint 装得进内存时是
-  1.5×–2.0×，装不进时是 7.5×，而在一个 128 专家的 MoE 上<strong>略微为负</strong>。</p>
+  <p>第一个效应是<strong>权限取错了地方</strong>。host-to-device 拷贝只需读取源数据。然而 KFD 是根据 VMA 标志推导所需权限的，因此带有 <code>VM_WRITE</code> 的映射会迫使 <code>hmm_range_fault()</code> 索取写权限，并在每一个常驻页上破坏 copy-on-write。PyTorch 在映射 safetensors checkpoint 时将其设为可写，因为 storage 必须支持修改，这正是 PyTorch 在此处走过的路径。AMD 确认了该问题并指出了代码行。在当前发行的内核上，该缺陷的开销为 <strong>4.8×</strong>。</p>
+  <p>第二个效应源于一次 backport。Ubuntu 的 <code>7.0.0-28</code> 合入了 <code>c08972f55594</code>，却漏掉了后续的 <code>342981fff328</code>，留下一个会跑满整个 <code>HMM_RANGE_DEFAULT_TIMEOUT</code> 的重试循环。所有耗时均体现为整块的 1000 ms 窗口，而非带宽受限：一次 32 MiB 拷贝耗时 <strong>16 019.6 ms</strong>，即十六个窗口加上 19.6 ms 的实际操作。仅补入缺失 commit 重新编译 <code>amdgpu.ko</code> 后，耗时降至 <strong>17.0 ms</strong>。Canonical 于 2026-08-20 在 <code>-30</code> 中发布了修复，同一个复现脚本如今测得 15.3。</p>
+  <p>这两个缺陷的相互作用非常明确：破坏 copy-on-write 会推进 notifier 序列，因此权限缺陷是诱因，而缺失的 commit 则把每次触发都拖长为整整一秒。只读映射从不引发失效，自然绝不会进入重试循环。</p>
+  <p><strong>本仓库此前公布的一个数据未能立足。</strong>随 <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 发布的 3.9× 至 5.6× 收益，来自未对 page cache 做控制的测试。在逐格严格控制缓存重新测量后：checkpoint 能放入内存时提升为 1.5× 至 2.0×，放不下时达到 7.5×，而在 128 专家的 MoE 模型上甚至<strong>略微为负</strong>。</p>
 </div>
 
 <h2><span class="n">1</span>这个问题，以及它是从什么上面问出来的</h2>
 
-<p>开头那次测量是全文最弱的一个，而它又是后面一切的起点，所以先把它连同出处一起放在最前面。
-2026-07-24，用 <code>dd iflag=direct</code> 在同一个文件上测得磁盘 1.5 GB/s，
-一个 15.6 GiB 的 BF16 checkpoint 以 77 MB/s 加载，一个 9.56 GiB 的 w4a16 是 29。
-比它自己躺着的那块介质慢十九倍和五十二倍。</p>
+<p>本文开篇的这次测量虽然最为粗糙，却引发了后续的所有工作，因此我们将其连同出处放在最前面。2026-07-24，在同一文件上通过 <code>dd iflag=direct</code> 测得磁盘速度为 1.5 GB/s；然而加载 15.6 GiB 的 BF16 checkpoint 速率仅有 77 MB/s，9.56 GiB 的 w4a16 更是只有 29。这比底层存储介质的速度慢了十九倍和五十二倍。</p>
 
 <div class="note warn">
   <span class="lbl">这两个数字是从哪来的</span>
-  这两行来自 <code>docs/open-questions.md</code> §8 的历史记录部分，没有对应的入库数据文件。
-  它们提出问题，不确立任何东西。从<a href="#fig1">图 1</a> 起的每一个数字都对着入库文件测过，
-  都可以重算。那份文档的小节标题写的是 19–48× 而不是 19–52×，
-  因为它除的是十进制 MB 速率而表格里写的是 MiB/s —— 那边已标注，
-  而且与答案无关：答案是直接测出来的，不是从一个比值推出来的。
+  这两行记录来自 <code>docs/open-questions.md</code> §8 的历史部分，并未入库对应的数据文件。它们引出了问题，但未确立任何结论。从<a href="#fig1">图 1</a> 开始的所有数据均对照入库文件实测，均可重算。原文档中的小节标题写的是 19–48× 而非 19–52×，原因在于它除以的是十进制 MB 速率，而表格给出的是 MiB/s；原文对此已有说明，且这与最终答案无关，因为结论是直接测量得出的，并非来自比值推导。
 </div>
 
-<p>第一次给出的原因是错的，值得说，因为它塑造了之后的方法。本仓库曾发表过
-<em>"源是一个 file-backed 的 mmap 页，而 ROCm 对这种页不走 pinned-staging 路径"</em>。
-一个不依赖任何东西的复现器推翻了它：普通 <code>mmap</code> 一个热文件全速拷贝，
-而八个能想到的变量 —— 匿名对 file-backed、已 fault 对未 fault、每次拷贝换新 range、
-overlayfs 对 ext4、每次拷贝换新设备分配、1–256 MiB 尺寸扫描、页不对齐的起点、dtype ——
-一个都触发不了。此后对第二个原因的门槛就变成了：换个人也能跑出同样的结果。</p>
+<p>最初的假说是错的，但记录下来有助于解释后续的方法。本仓库曾提出<em>“数据源为基于文件的 mmap 页面，而 ROCm 对此类页面不会走 pinned-staging 路径”</em>。一个无外部依赖的复现脚本推翻了这一假说。对热缓存文件进行普通的 <code>mmap</code> 映射后，拷贝速度完全正常。排查了八个变量：匿名内存与文件映射对照、缺页中断是否触发、每次拷贝更换全新地址范围、overlayfs 与 ext4 对照、每次拷贝重新申请设备端显存、1–256 MiB 尺寸遍历、非页面对齐的起始偏移、数据类型，无一能够复现异常。此后，任何新解释必须达到的门槛都是：换个陌生人也能直接跑通。</p>
 
 <h2><span class="n">2</span>真正会触发它的那个变量</h2>
 
@@ -1035,11 +1004,7 @@ overlayfs 对 ext4、每次拷贝换新设备分配、1–256 MiB 尺寸扫描�
 75d468a00000-75d556d20000 <span class="g">r--p</span> ... model-00001-of-00005.safetensors   <span class="c">&lt;- 我们的</span>
 </pre></div>
 
-<p>一个只读的 checkpoint 被 <code>MAP_PRIVATE</code> 且<strong>可写</strong>地映射。
-把这一个变量单独拿出来 —— 同一个文件、同样的字节、普通 <code>mmap</code> 加
-<code>torch.frombuffer</code>，不用 safetensors 也不用 vLLM —— 三十行就能复现全部现象。
-再加一个维度：CPU 在拷贝之前有没有碰过这块映射 —— 会得到三种状态而不是两种，
-而真实的加载落在第三种里。</p>
+<p>触发根源在于：本应只读的 checkpoint 被设置了 <code>MAP_PRIVATE</code> 且<strong>可写</strong>映射。单独隔离该变量后（同一文件、相同字节，仅用普通 <code>mmap</code> 搭配 <code>torch.frombuffer</code>，完全脱离 safetensors 与 vLLM），用六十行代码即可完整复现所有现象。若再引入第二维度，即在拷贝前 CPU 是否访问过该映射，现象会分化为三种状态而非两种。真实的模型加载恰好落入第三种状态。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1059,66 +1024,37 @@ overlayfs 对 ext4、每次拷贝换新设备分配、1–256 MiB 尺寸扫描�
   </figcaption>
 </figure>
 
-<p>16 019.6 ms 不是带宽数字，也不是噪声。它是十六个 1000 ms 的
-<code>HMM_RANGE_DEFAULT_TIMEOUT</code> 窗口加 19.6 ms 的真实工作；
-那份看起来像固定每页开销的亚毫秒级可重复性，其实是一个 <code>jiffies</code> 超时。
-一旦能这样读这个数字，其余的就都顺下来了：两种文件系统之间那个平坦的一秒差距是多了一次重试，
-而每个张量 1005、1042、1522 ms 分别是一个、一个、一个半窗口。</p>
+<p>16 019.6 ms 不是带宽受限的表征，也不是测量噪声。它由整整十六个 1000 ms 的 <code>HMM_RANGE_DEFAULT_TIMEOUT</code> 窗口，加上 19.6 ms 的实际工作组成。此前看似固定每页开销的亚毫秒级可复现性，本质上就是 <code>jiffies</code> 定时器超时。只要按这一视角去理解该数据，其余疑团便迎刃而解：两个文件系统之间刚好相差的一秒就是额外多出了一次重试，而单张量测得的 1005、1042 和 1522 ms 耗时，恰好对应一个、一个以及一个半窗口。</p>
 
 <h2><span class="n">3</span>为什么一次读会去要写</h2>
 
-<p>AMD 在 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>
-上确认了机理并指出了位置。这条链在上游代码里是三跳：</p>
+<p>AMD 在 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 上确认了机理并指出了具体位置。在上游源码树中，这一调用链经过了三跳：</p>
 
 <div class="hops" id="hops"></div>
 
-<p><strong>权限是从 VMA 取的，而不是从 GPU 接下来要对这段内存做什么取的。</strong>
-host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD 就向
-<code>hmm_range_fault()</code> 要写权限，于是每一个常驻页上的 copy-on-write 都被打断。
-这就是永久的那一半，它在这里测过的每一个内核上都在，而那一行比它们都老。</p>
+<p><strong>权限取决于 VMA 本身，而非 GPU 对该地址范围的实际操作。</strong>host-to-device 拷贝仅需读取源数据。然而，正因 VMA 带有 <code>VM_WRITE</code> 标志，KFD 便向 <code>hmm_range_fault()</code> 申请了写权限，进而导致每个常驻页上的 copy-on-write 均被破坏。这属于永久性缺陷。在我们测过的每一个内核版本上该问题均存在，且相关代码行的历史比这些内核都要早。</p>
 
-<p>它也不需要任何额外假设就解释了那三种状态：CPU 没碰过的页还没有进入 copy-on-write 共享，
-所以"未常驻"那一档从来不用为这次打断掏钱。它还把两半接了起来：破坏 copy-on-write
-正是推进 notifier 序列的动作，所以只读映射永远不会失效、永远不会拿到 <code>-EBUSY</code>、
-也就永远不会进 <code>c08972f55594</code> 留下的那个空转重试。</p>
+<p>无需引入额外假设，该机制就能合理解释前述三种状态。未经 CPU 访问的页面尚未进入 copy-on-write 共享状态，因此“未常驻”情形无需承担写时复制被破坏的代价。这也将前后两部分缺陷衔接了起来：破坏 copy-on-write 会推进 notifier 序列；反之，只读映射从不会发生失效，绝不会收到 <code>-EBUSY</code>，更不会陷入 <code>c08972f55594</code> 遗留的无效重试循环。</p>
 
 <div class="note">
   <span class="lbl">可写映射不是 safetensors 干的</span>
-  safetensors 是只读映射 —— <code>map_copy_read_only</code>，用
-  <code>framework="np"</code> 能看到 <code>r--p</code>。它的 PyTorch 路径根本不用那个映射：
-  它调的是 <code>torch.UntypedStorage.from_file(filename, shared=False, nbytes=size)</code>，
-  而 PyTorch 把文件映射成可写的，因为 torch storage 必须可变。所以任何框架从 safetensors
-  checkpoint 经 PyTorch 路径加载的每一个张量，背后都是 <code>rw-p</code>。
+  safetensors 内部采用只读映射（<code>map_copy_read_only</code>，设置 <code>framework="np"</code> 可看到 <code>r--p</code>）。但在走 PyTorch 路径时，它并不使用该映射，而是调用 <code>torch.UntypedStorage.from_file(filename, shared=False, nbytes=size)</code>；PyTorch 则因 torch storage 必须支持修改而将文件映射为可写。因此，任何框架只要经由 PyTorch 路径从 safetensors checkpoint 加载张量，其底层均为 <code>rw-p</code> 映射。
 </div>
 
 <h2><span class="n">4</span>被拆开的那个 commit 值多少，以及是谁修的</h2>
 
-<p><code>342981fff328</code> 既没有 <code>Fixes:</code> 标签也没有
-<code>Cc: stable@vger.kernel.org</code>，所以从未进入 stable 队列；而
-<code>c08972f55594</code> 进了 <code>-28</code>。一个没打标签的修复，不会跟着它修的那个 commit 走。
-所以这不是发行版打包的疏漏，而是上游打标签的缺口，任何跟着 7.0.y 走并取了第一个 commit
-的分支都处在同样的状态。</p>
+<p><code>342981fff328</code> 既未标注 <code>Fixes:</code> 标签，也未抄送 <code>Cc: stable@vger.kernel.org</code>，因而从未进入 stable 分支排队；然而 <code>c08972f55594</code> 却进入了 <code>-28</code>。未打标签的修复补丁不会自动跟进被其修复的 commit。这属于上游打标签时的疏漏，而非发行版打包失误；任何跟进 7.0.y 且合入了首个 commit 的内核分支，都会陷入相同的困境。</p>
 
-<p>四种配置、一个复现器，只有一个是慢的：同一台 guest 在 <code>7.0.0-28</code> 上十六秒，
-同一台 guest 在 <code>7.0.0-14</code> 上 18.6 到 20.2 ms，<code>6.8.0-136</code> 上 22.1 到 26.0，
-以及裸机上一个 Proxmox <code>7.0.14</code> 构建的 24.1 到 28.6。
-<strong>关键是前两行</strong>：同一台 guest、同一套 ROCm 用户态、同一个容器镜像、同一个复现器，
-只换了内核 ABI。直通不是必要成分，而那本来是这边和 AMD 那边共同的首要怀疑对象。</p>
+<p>在四种配置下运行同一套复现脚本，慢的只有一种：在同一台虚拟机（guest）中，<code>7.0.0-28</code> 耗时十六秒；而在 <code>7.0.0-14</code> 下仅需 18.6 至 20.2 ms；<code>6.8.0-136</code> 为 22.1 至 26.0 ms；Proxmox <code>7.0.14</code> 裸机构建则为 24.1 至 28.6 ms。<strong>最关键的是前两行对照</strong>：相同的客户机环境、相同的 ROCm 用户态、相同的容器镜像、相同的复现脚本，仅仅替换了内核 ABI。尽管此前我们与 AMD 均优先怀疑 PCI 直通问题，但实测表明直通并非决定性变量。</p>
 
 <div class="note ok">
   <span class="lbl">这份报告不是修复的原因</span>
-  <code>linux-hwe-7.0</code> 于 2026-08-20 在 noble-updates 和 noble-security 里升到
-  <code>7.0.0-30.30~24.04.1</code>，带上了 <code>drm/amdgpu: drop retry loop in
-  amdgpu_hmm_range_get_pages</code>。而那个专门请求这次 backport 的 Launchpad bug 至今仍是
-  <code>New</code>、未经分诊，所以这个 commit 是走普通 stable 流程进来的。
-  在 24.04 上现在的解决办法就是升级，图 1 里那个重编的模块是证据，不是建议。
+  <code>linux-hwe-7.0</code> 于 2026-08-20 在 noble-updates 与 noble-security 源中升级至 <code>7.0.0-30.30~24.04.1</code>，并合入了 <code>drm/amdgpu: drop retry loop in amdgpu_hmm_range_get_pages</code>。此前专门要求合入该 backport 的 Launchpad bug 状态仍为 <code>New</code> 且尚未分诊，表明该 commit 是经由常规 stable 渠道合并的。在 24.04 上的解决方式如今只需执行系统升级；图 1 中自行重新编译的模块仅用作溯源论证，而非推荐方案。
 </div>
 
 <h2><span class="n">5</span>永久的那一半值多少</h2>
 
-<p>第二个效应消失之后，第一个才第一次能端到端量出来。四个 checkpoint、四条加载路径、
-逐格控制 page cache —— 每一格要么先 <code>drop_caches</code>，要么
-<code>drop_caches</code> 之后再把整个 checkpoint 完整读一遍 —— 每格一个新进程。</p>
+<p>排除了第二个效应后，首个缺陷的影响才首次得以在端到端层面被精确测量。四个 checkpoint、四条加载路径，且逐格控制 page cache：每一格开始前，要么执行 <code>drop_caches</code>，要么在 <code>drop_caches</code> 之后完整通读一遍 checkpoint；并且每一格都在一个全新进程中运行。</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -1138,24 +1074,13 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
   </figcaption>
 </figure>
 
-<p><strong>孤立的测量脚本是偏乐观的那一个，高出 10 到 14 %。</strong>在 12B 上做一次真实的
-<code>vllm serve</code> 启动，读加载器自己那行 <code>Loading weights took</code>，
-热缓存是 <strong>1.79×</strong>、冷缓存 <strong>1.52×</strong>，而上面的脚本给的是 1.98 和 1.73。
-绝对秒数是贴合的，这正是那个脚本还能用的原因；但比值不贴合，因为一次服务端启动还带着脚本没有的工作。
-把图 2 里的倍数当成这个开关值多少的上界来读。</p>
+<p><strong>单项测试脚本的测量结果偏向乐观，高出了 10 至 14 %。</strong>在 12B 模型上执行真实的 <code>vllm serve</code> 启动，读取加载器自身打印的 <code>Loading weights took</code> 耗时：热缓存下提速为 <strong>1.79×</strong>，冷缓存下为 <strong>1.52×</strong>；而上述测试脚本给出的数据则是 1.98 与 1.73。两者的绝对秒数咬合得很紧，这证明该测试脚本具备实用价值；但加速比未能吻合，因为一次真实的 server start 包含了测试脚本未涉及的额外开销。请将图 2 中的比值视作该开关能够带来的收益上限。</p>
 
-<p>这张图里有三件事值得明说。<strong>31B 冷缓存</strong>那一格是 7.5×，因为 21.67 GiB
-的 checkpoint 对上 23.4 GiB 内存，丢掉的不只是 copy-on-write，而是把加载器逼进了 swap。
-<strong>MoE</strong> 那一格是反例：一个由 35 743 个多数很小的张量组成的 checkpoint 里，
-几乎没有什么大到需要付 copy-on-write 的代价，于是多出来的那次主机拷贝纯属开销，
-这个开关比什么都不做还略差。而 <code>pread</code> 从 safetensors 0.8.0 起就有了，
-只在 release notes 里提过一句，它在这里除了 MoE 之外都比 clone 慢，而在 MoE 上最快。</p>
+<p>该图中有三个现象尤为突出。<strong>31B 冷缓存</strong>格子的加速比达到了 7.5×，这是因为在 23.4 GiB 内存中加载 21.67 GiB 的 checkpoint 不仅失去了 copy-on-write 的益取，更将加载器直接逼入了 swap。<strong>MoE</strong> 格子则是一个反例：该 checkpoint 包含 35 743 个以小尺寸为主的张量，几乎没有哪个张量大到需要承担 copy-on-write 的破坏代价，这就使得多出的一次主机端内存拷贝成为单纯的开销，导致开启该开关的表现反而略逊于不做任何改动。而在 safetensors 0.8.0 中引入且仅在更新说明中提过的 <code>pread</code>，除了在 MoE 上胜出之外，在其余场景均慢于 clone。</p>
 
 <h2><span class="n">6</span>机理，就在常驻集里</h2>
 
-<p>为什么这个惩罚不是一个固定比例 —— 只要在加载<em>过程中</em>采样常驻集，就能直接看到，
-而不必去推。safetensors 在迭代器离开一个 shard 的瞬间就把它 unmap 掉，
-所以循环结束时再采样只会看到一个空进程；第一次这么做什么也没测到，那次数据被丢弃了。</p>
+<p>只要在加载<em>进行过程中</em>对常驻内存集（resident set）进行采样，就能直观看出该惩罚为何并非固定比例，而无需依赖间接推导。safetensors 会在迭代器遍历完一个 shard 的瞬间将其取消映射（unmap），因此若在循环结束后才去采样，看到的只能是一个空进程。我们最初的测量尝试一无所获，相关数据已被舍弃。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1176,102 +1101,56 @@ host→device 拷贝只读源。但因为 VMA 带着 <code>VM_WRITE</code>，KFD
 <h2><span class="n">7</span>没有被确立的部分</h2>
 
 <h3>为什么七月的基线复现不出来</h3>
-<p>在 <code>-30</code> 上不做缓存控制、按 2026-07-28 的顺序重放一遍，8B 的 baseline 是 13.87 s，
-而当时报的是 36.4 s；31B 是 126.61 s，而当时是超过 900 s 的超时。
-所以 page cache 不是全部解释。两次之间变了两件事：内核状态，以及这台 guest 的 PCIe atomics ——
-七月是关的，现在是开的。32 MiB 的复现器在同一次变化里只从 17.0 动到 15.3 ms，
-所以差别不在每次拷贝这条路径上，但这里没有任何东西说它在哪。七月那张表是被取代，不是被调和。</p>
+<p>在 <code>-30</code> 上不控制缓存重测 2026-07-28 的流程，8B 耗时 13.87 s（当时为 36.4 s），31B 为 126.61 s（当时超过 900 s 超时）。缓存无法完全解释此差距。两次测试间内核状态改变，且虚拟机的 PCIe atomics 已启用。但 32 MiB 复现脚本耗时仅从 17.0 降至 15.3 ms，单次拷贝路径无法解释此差异，成因目前未知。七月的基线数据已被废弃，未能归因和解。</p>
 
 <h3>一台机器，而且是虚拟机</h3>
-<p>这里的一切都是一台 VFIO guest、gfx1100、ext4。裸机上的 Ubuntu <code>-28</code>
-是别人替我们关掉的 —— @shineday999 报了一台 RX 7900 XTX、ROCm 7.2.1、没有虚拟化，
-同样的病理和同样的整数窗口数 —— 但 <em>Canonical 原样发的</em>模块在裸机上如何，仍未测过，
-因为我们两边跑的要么是自建模块、要么是用户态绕过。CDNA 没测，
-而且这里没有任何数据说得出在一台内存远大于 checkpoint 的宿主上这些还值多少。</p>
+<p>所有测试均在单台 VFIO 虚拟机（gfx1100、ext4）上完成。裸机 Ubuntu <code>-28</code> 的情况已由他人补全：@shineday999 在非虚拟化环境中使用 RX 7900 XTX 与 ROCm 7.2.1 复现了相同的病理与整数窗口计数。然而 <em>Canonical 原生分发</em>的模块在裸机上仍未测过；两次测试均使用了自编模块或用户态补丁。CDNA 架构未测，宿主机内存远大于 checkpoint 的场景亦未做测量。</p>
 
 <h3>每个张量的常驻程度</h3>
-<p>窗口数是 <code>resident_bytes / 2 MiB</code>，由复现器在 32 和 256 MiB 上确立，
-并在另一块板子上被独立确认。"一个 8 MiB 的张量和一个 96 MiB 的张量都只出一个窗口"
-这一步是从中推出来的 —— 拷贝开始时它们几乎都不常驻，因为在此之前没有任何东西读过它们 ——
-但每个张量的常驻程度从来没有被直接采样验证过。</p>
+<p>窗口数量计算公式为 <code>resident_bytes / 2 MiB</code>，该结论由 32 和 256 MiB 的复现脚本确立并在另一块硬件上独立验证。8 MiB 与 96 MiB 张量各自仅耗费一个窗口即由此得出：拷贝开始前未被预先读取，常驻比例极低。但每个张量的实际常驻情况从未被直接采样验证。</p>
 
 <h3>两个 rank 之间 17 倍的不对称</h3>
-<p>某一次加载里，一个 rank 每次 ioctl 约 190 ms，另一个约 11 ms。
-用并发进程、内存压力、torchrun 加 RCCL 都没能复现，至今没有解释。</p>
+<p>在某次测试中，一个 rank 的单次 ioctl 耗时约 190 ms，而另一个仅为 11 ms。并发进程、内存压力以及 torchrun 配合 RCCL 均未能复现该现象，这一不对称性至今未获解释。</p>
 
 <h2><span class="n">8</span>此后发生的变化</h2>
 
 <div class="note warn">
   <span class="lbl">2026-08-23 · 那个开关的头条数字被撤回</span>
-  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 发表的是一个平坦的
-  3.9×–5.6×，并称这个量级是永久的。它来自一次没有控制 page cache 的运行，
-  那次连续加载了三个模型，于是每一格都继承了前一格的缓存。逐格控制缓存重测之后：
-  checkpoint 装得进内存时是 1.5×–2.0×，装不进时是 7.5×。那个 PR 还说
-  "在测过的每一种配置下 clone 都更快，默认打开看起来是合理的"；
-  图 2 里的 MoE checkpoint 就是反例，那句话必须去掉。
+  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 此前发布了固定的 3.9× 至 5.6× 并称其具有普遍性。该数据源于未对 page cache 做控制的测试，当时因连续加载三个模型而导致每格均继承了前序缓存。在逐格控制缓存重新测量后：checkpoint 能载入内存时收益为 1.5× 至 2.0×，超出内存容量时为 7.5×。PR 中原称“在所测全部配置中 clone 均更快，默认开启合情合理”；图 2 中的 MoE 模型已构成反例，该论断必须删除。
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-08-20 · Canonical 发出了缺失的那个 commit</span>
-  <code>7.0.0-30.30~24.04.1</code>，在 noble-updates 和 noble-security 里。
-  那些一秒的窗口没有了：同一天、同一台机器、同一个复现器二进制，
-  升级前 16 019.3 ms，升级后 15.3。
-  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 上有这次测量。
+  <code>7.0.0-30.30~24.04.1</code> 进入了 noble-updates 与 noble-security。一秒级延迟窗口已消除：同一天在同一机器上运行同一复现脚本，升级前耗时 16 019.3 ms，升级后仅 15.3 ms。<a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 记录了该测量结果。
 </div>
 
 <div class="note ok">
   <span class="lbl">2026-07-30 · 裸机那个缺口被一个陌生人补上了</span>
-  这份报告没法测非虚拟化的机器。@shineday999 跑了一台 —— RX 7900 XTX、ROCm 7.2.1、
-  <code>7.0.0-28</code>、没有虚拟化 —— 报出了同样的病理和同样的整数窗口数，
-  随后又补了一份逐张量的分解，四次独立运行落在四个整数窗口上。
-  两个 ROCm 版本一致，也说明用户态版本不是变量。
+  本报告此前无法测试非虚拟化机器。@shineday999 在非虚拟化环境（RX 7900 XTX、ROCm 7.2.1、<code>7.0.0-28</code>）下复现了完全相同的病理与整数窗口计数，并补充了逐张量分解数据，四次独立测试均落在四个整数窗口上。两个 ROCm 版本的吻合也表明用户态版本并非致病变量。
 </div>
 
 <div class="note">
   <span class="lbl">仍然开着</span>
-  可写映射这个惩罚本身没有被上面任何一件事碰到，在 <code>-30</code> 上值 4.8×。
-  <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 开着；
-  <a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 开着，
-  它的头条数字需要换成上面那个实测区间。<code>ROC_FORCE_STAGED_D2H</code>
-  本可以完全绕开这次拷贝，但 @ashetaia-amd 说 ROCm/rocm-systems#6676
-  里采取的长期修复对这条拷贝路径没有帮助，所以那不是可以等的解药。
+  可写映射所造成的性能惩罚未受上述任何更新影响，在 <code>-30</code> 上仍会带来 4.8× 的开销。<a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a> 保持开放；<a href="https://github.com/vllm-project/vllm/pull/49991">vllm#49991</a> 亦保持开放且需将其摘要数据修正为上述实测区间。<code>ROC_FORCE_STAGED_D2H</code> 原本可彻底绕开该拷贝，但 @ashetaia-amd 指出 ROCm/rocm-systems#6676 中的长期修复无法改善该拷贝路径，因此不能寄望于此。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 摘要里有三句话和它自己的证据不符</span>
-  "每一个计时都落在 1000 ms 的整数倍上"被紧跟其后的例子否掉了：<strong>16 019.6 ms</strong>
-  是十六个窗口再加上真实工作，而按张量的那几个计时里还有一个半窗口。"用 revert 证明"说反了——
-  实际做的是把缺的那个 commit 加回去，不是拿掉。而"五周后"和本页上的日期对不上：修复是
-  <strong>2026-08-20</strong> 随 <code>-30</code> 发出的。三处都已就地更正。另外
-  "所有框架都会走的那条路"收窄成了实际测到的那个加载器。
+  “所有计时均落在 1000 ms 的整数倍”与紧随其后的示例相悖：<strong>16 019.6 ms</strong> 包含十六个窗口外加实际工作，且按张量计时中还包含一个半窗口。“通过 revert 证实”与实际操作相反，实测是补回了缺失 commit 而非将其移除。“五周后”亦与页面日期矛盾：修复于 <strong>2026-08-20</strong> 随 <code>-30</code> 发布。三处均已就地更正。此外，“所有框架都会走的路径”已修正为实际测量的特定加载器。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 图 2 的图注数进了这张图没画的格子</span>
-  原文写的是"<code>7.0.0-30</code> 上的 89 格"。文件里确实有 89 格，但
-  <code>genfig-loader.py</code> 只画做了缓存控制的那些——73 格，冷和暖——另外 16 格是
-  <code>asis</code> 排序对照，按设计就不控制缓存，这一点 <code>benchmarks/README.md</code> 写着。
-  它和上一句"逐格控制 page cache —— 每一格"挨在一起，合起来就等于宣称 89 格全部做了缓存控制。
-  计数现在改成这张图真正画的 73 格；它上面那句话对这 73 格本来就是成立的。
+  图注此前称“<code>7.0.0-30</code> 上的 89 格”。数据文件虽包含 89 格，但 <code>genfig-loader.py</code> 仅绘制了受缓存控制的 73 格（冷缓存与热缓存）；其余 16 格为 <code>asis</code> 顺序对照组，按 <code>benchmarks/README.md</code> 所述特意未做缓存控制。与“逐格控制 page cache”并置时，容易被误读为全部 89 格均受控。图注计数现已改为该图实际绘制的 73 格；前文论断对这部分格子本来就成立。
 </div>
 
-<div class="foot-note">
-  <p><strong>自己跑一遍。</strong>复现器是
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.py"><code>benchmarks/repro-mmap-prot.py</code></a>，
-  没有 PyTorch 的机器可以用
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.hip.cpp"><code>repro-mmap-prot.hip.cpp</code></a>。
-  图 1 是
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/hmm-kernel-three-states.json"><code>hmm-kernel-three-states.json</code></a>；
-  图 2 和图 3 是
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/loader-flag-kernel-30.json"><code>loader-flag-kernel-30.json</code></a>，
-  89 格，每格都带自己的 page cache 状态。完整的调查过程，包括本仓库第一次搞错的那个成因，在
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>。</p>
-  <p>已上报为 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>，
-  @ashetaia-amd 在那里确认了 copy-on-write 触发条件并指出了 <code>kfd_svm.c</code>，
-  @shineday999 贡献了裸机复现；以及向 Ubuntu 上报为
-  <a href="https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985">LP#2161985</a>。
-  <code>342981fff328</code> 是 Honglei Huang 的补丁，Christian König review，Alex Deucher 提交；
-  <code>c08972f55594</code> 是 Christian König 的，Alex Deucher 签署。</p>
+<div class="note ok">
+    <span class="lbl">2026-09-05 &middot; 行数报错了</span>
+    本报告此前将 <code>benchmarks/repro-mmap-prot.py</code> 描述为三十行。该文件实际为 60 行（50 行非空，49 行非注释），且在本仓库历史中从未少于 55 行。正文现已更正为六十行，与 <code>wc -l</code> 统计一致。
+  </div>
+  <div class="foot-note">
+  <p><strong>自行复现。</strong>复现脚本见 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.py"><code>benchmarks/repro-mmap-prot.py</code></a>；若环境中未安装 PyTorch，可使用 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.hip.cpp"><code>repro-mmap-prot.hip.cpp</code></a>。图 1 绘自 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/hmm-kernel-three-states.json"><code>hmm-kernel-three-states.json</code></a>；图 2 与图 3 绘自 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/loader-flag-kernel-30.json"><code>loader-flag-kernel-30.json</code></a>（记录了 89 格独立控制的 page cache 状态）。完整的排查记录及早期被推翻的假说，详见 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>。</p>
+  <p>缺陷已提交至 <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>（@ashetaia-amd 确认了 copy-on-write 诱因并指认了 <code>kfd_svm.c</code>，@shineday999 提供了裸机复现数据）；并向 Ubuntu 报告为 <a href="https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985">LP#2161985</a>。<code>342981fff328</code> 为 Honglei Huang 编写的补丁，经 Christian König 审查、Alex Deucher 提交；<code>c08972f55594</code> 由 Christian König 编写、Alex Deucher 签署。</p>
 </div>
 </div>
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A read-only copy asks for write access, and one kernel charged a second for it</title>
+<title>KFD asks for write access on a read-only copy, and an Ubuntu kernel backport charged a second for it</title>
 <meta name="description" content="A permission read off the VMA makes every host-to-device copy break copy-on-write, and a split kernel backport turned each occurrence into a one-second timeout. Two effects, one reproducer, three kernel states.">
 <style>
   /* ===================== theme =====================
@@ -960,12 +960,12 @@ addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <div class="wrap">
-<header class="top"> <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div> <h1>A
-read-only copy asks for write access,<br>and one kernel charged a second for it</h1>
-<p class="sub">Loading weights was slower than the disk, twice over</p> <p class="lede">A 9.56 GiB
+<header class="top"> <div class="kicker">RDNA3 · KFD · HMM · measured on 2× RX 7900 XT</div> <h1>KFD
+asks for write access on a read-only copy,<br>and an Ubuntu kernel backport charged a second for it</h1>
+<p class="sub">Weight loading measured on Radeon hardware; traced through KFD and HMM against an unpatched kernel retry loop and Canonical's update</p> <p class="lede">A 9.56 GiB
 checkpoint that the disk hands over in about six seconds took <strong>328</strong>. Two independent
-things were responsible: a permission bug that makes the GPU ask for write access it does not need,
-confirmed by AMD down to a kernel line and still present today; and a distro backport that turned
+defects caused the delay. The first is a permission bug that makes the GPU ask for write access it does not need,
+confirmed by AMD down to a kernel line and still present today. The second was a distro backport that turned
 every occurrence of it into a whole second, proven by rebuilding with the missing commit as the only
 change, and fixed by Canonical in <code>-30</code>.</p> <div class="meta">     <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · VFIO guest</span>
     <span class="chip k-stack" title="stack" style="--i:1">Ubuntu <b>7.0.0-28</b> → <b>-30</b></span>
@@ -974,9 +974,9 @@ change, and fixed by Canonical in <code>-30</code>.</p> <div class="meta">     <
 </header>
 
 <div class="abstract"> <h3>Abstract</h3> <p>The first effect is a <strong>permission taken from the
-wrong place</strong>. A host-to-device copy only reads its source, but KFD derives the access it
-requests from the VMA's flags, so a mapping that carries <code>VM_WRITE</code> makes
-<code>hmm_range_fault()</code> ask for write and break copy-on-write on every resident page. PyTorch
+wrong place</strong>. A host-to-device copy only reads its source. KFD derives the access it
+requests from the VMA flags, so a mapping that carries <code>VM_WRITE</code> forces
+<code>hmm_range_fault()</code> to ask for write access and break copy-on-write on every resident page. PyTorch
 maps safetensors checkpoints writable because a storage must be mutable, so this is the path PyTorch
 takes here. AMD confirmed it and named the line. It is worth <strong>4.8×</strong> on the kernel
 shipping today.</p> <p>The second was a backport. Ubuntu's <code>7.0.0-28</code> took
@@ -996,10 +996,10 @@ on a 128-expert MoE.</p> </div>
 
 <h2><span class="n">1</span>The question, and what it was worth asking from</h2>
 
-<p>The opening measurement is the weakest one in this article and it is the reason for all the rest, so
-it goes first with its provenance attached. On 2026-07-24, with the disk measured at 1.5 GB/s by
+<p>The opening measurement is the weakest in this article, but it prompted all the work that followed.
+It goes first, with its provenance attached. On 2026-07-24, with the disk measured at 1.5 GB/s by
 <code>dd iflag=direct</code> on the same file, a 15.6 GiB BF16 checkpoint loaded at 77 MB/s and a
-9.56 GiB w4a16 one at 29. Nineteen and fifty-two times slower than the medium it came off.</p>
+9.56 GiB w4a16 one at 29. That was nineteen and fifty-two times slower than the medium it came off.</p>
 
 <div class="note warn">
   <span class="lbl">Where that pair of numbers comes from</span>
@@ -1011,13 +1011,13 @@ it goes first with its provenance attached. On 2026-07-24, with the disk measure
   is measured directly rather than inferred from a ratio.
 </div>
 
-<p>The first attempt at a cause was wrong and is worth stating because it shaped the method that
-followed. This repository published <em>"the source is a file-backed mmap page, and ROCm does not take
-the pinned-staging path for those"</em>. A dependency-free reproducer disproved it: a plain
-<code>mmap</code> of a warm file copies at full speed, and eight variables — anonymous against
-file-backed, faulted against not, fresh range per copy, overlayfs against ext4, fresh device allocation
-per copy, a 1–256 MiB size sweep, page-unaligned starts, dtype — all failed to trigger anything. After
-that the bar for a second cause was that a stranger could run it.</p>
+<p>The first hypothesis was wrong, but stating it explains the method that followed. This repository
+published <em>"the source is a file-backed mmap page, and ROCm does not take the pinned-staging path
+for those"</em>. A dependency-free reproducer disproved it. A plain <code>mmap</code> of a warm file
+copies at full speed. Eight variables — anonymous against file-backed, faulted against not, fresh range
+per copy, overlayfs against ext4, fresh device allocation per copy, a 1–256 MiB size sweep,
+page-unaligned starts, dtype — all failed to trigger anything. After that, the bar for any second
+explanation was that a stranger could run it.</p>
 
 <h2><span class="n">2</span>The variable that does trigger it</h2>
 
@@ -1030,10 +1030,10 @@ that the bar for a second cause was that a stranger could run it.</p>
 75d468a00000-75d556d20000 <span class="g">r--p</span> ... model-00001-of-00005.safetensors   <span class="c">&lt;- ours</span>
 </pre></div>
 
-<p>A read-only checkpoint mapped <code>MAP_PRIVATE</code> and <strong>writable</strong>. Isolating that
-one variable — same file, same bytes, plain <code>mmap</code> and <code>torch.frombuffer</code>, no
-safetensors and no vLLM — reproduces the whole thing in thirty lines. Adding a second dimension, whether
-the CPU has touched the mapping before the copy, produces three regimes rather than two, and real loads
+<p>The trigger is a read-only checkpoint mapped <code>MAP_PRIVATE</code> and <strong>writable</strong>.
+Isolating that one variable — same file, same bytes, plain <code>mmap</code> and <code>torch.frombuffer</code>,
+without safetensors or vLLM — reproduces the whole thing in sixty lines. Adding a second dimension, whether
+the CPU has touched the mapping before the copy, produces three regimes rather than two. Real loads
 sit in the third.</p>
 
 <figure class="rv" id="fig1">
@@ -1055,9 +1055,9 @@ sit in the third.</p>
 </figure>
 
 <p>16 019.6 ms is not a bandwidth figure and it is not noise. It is sixteen 1000 ms
-<code>HMM_RANGE_DEFAULT_TIMEOUT</code> windows plus 19.6 ms of real work, and the sub-millisecond
-reproducibility that looked like a fixed per-page cost is a <code>jiffies</code> timeout. Once you can
-read the number that way the rest follows: the flat one-second gap between two filesystems is one extra
+<code>HMM_RANGE_DEFAULT_TIMEOUT</code> windows plus 19.6 ms of real work. The sub-millisecond
+reproducibility that looked like a fixed per-page cost is a <code>jiffies</code> timeout. Once you read
+the number that way, the rest follows: the flat one-second gap between two filesystems is one extra
 retry, and per-tensor timings of 1005, 1042 and 1522 ms are one, one and one-and-a-half windows.</p>
 
 <h2><span class="n">3</span>Why a read asks for write</h2>
@@ -1071,12 +1071,12 @@ hops in the upstream tree:</p>
 <p><strong>The permission is taken from the VMA rather than from what the GPU is about to do with the
 range.</strong> A host-to-device copy only reads its source. Because the VMA carries
 <code>VM_WRITE</code>, KFD asks <code>hmm_range_fault()</code> for write access, which breaks
-copy-on-write on every resident page. That is the permanent half, it is on every kernel measured here,
-and the line predates all of them.</p>
+copy-on-write on every resident page. That is the permanent defect. It appears on every kernel measured
+here, and the line predates all of them.</p>
 
-<p>It also explains the three regimes without any extra assumption. Pages the CPU has not touched are
-not copy-on-write shared yet, so the not-resident case never pays for the break. And it joins the two
-halves: breaking copy-on-write is what advances the notifier sequence, so a read-only mapping never
+<p>This mechanism also explains the three regimes without extra assumptions. Pages untouched by the CPU
+are not yet copy-on-write shared, so the not-resident case never pays for the break. This joins the two
+halves: breaking copy-on-write is what advances the notifier sequence, whereas a read-only mapping never
 invalidates, never gets <code>-EBUSY</code>, and never enters the futile retry that
 <code>c08972f55594</code> left behind.</p>
 
@@ -1093,16 +1093,16 @@ invalidates, never gets <code>-EBUSY</code>, and never enters the futile retry t
 
 <p><code>342981fff328</code> carries neither a <code>Fixes:</code> tag nor
 <code>Cc: stable@vger.kernel.org</code>, so it was never queued for the stable trees, while
-<code>c08972f55594</code> reached <code>-28</code>. A fix that is not tagged does not follow the commit
+<code>c08972f55594</code> reached <code>-28</code>. An untagged fix does not follow the commit
 it repairs. That makes this an upstream tagging gap rather than a distro packaging slip, and any series
 tracking 7.0.y that took the first commit was in the same state.</p>
 
-<p>Four configurations, one reproducer, and only one of them was slow: the same guest on
+<p>Four configurations, one reproducer, and only one was slow: the same guest on
 <code>7.0.0-28</code> at sixteen seconds, the same guest on <code>7.0.0-14</code> at 18.6 to 20.2 ms,
 <code>6.8.0-136</code> at 22.1 to 26.0, and bare metal on a Proxmox <code>7.0.14</code> build at 24.1 to
 28.6. <strong>The first two rows are the ones that matter</strong>: same guest, same ROCm userspace, same
-container image, same reproducer, only the kernel ABI swapped. Passthrough is not the ingredient, which
-was the leading suspicion here and at AMD.</p>
+container image, same reproducer, only the kernel ABI swapped. Passthrough is not the decisive factor,
+though it was the leading suspicion here and at AMD.</p>
 
 <div class="note ok">
   <span class="lbl">This report did not cause the fix</span>
@@ -1142,23 +1142,23 @@ cell a fresh process.</p>
 <p><strong>The isolated harness is the optimistic one, by 10 to 14 %.</strong> A real
 <code>vllm serve</code> start on the 12B, reading the loader's own <code>Loading weights took</code>
 line, gives <strong>1.79×</strong> warm and <strong>1.52×</strong> cold where the harness above says
-1.98 and 1.73. The absolute seconds track closely, which is what makes the harness usable at all; the
+1.98 and 1.73. The absolute seconds track closely, which makes the harness usable; the
 ratio does not, because a server start carries work the harness does not. Take the ratios in Figure 2 as
 the upper end of what the flag is worth.</p>
 
-<p>Three things in that figure are worth saying out loud. The <strong>31B cold</strong> cell is 7.5×
-because a 21.67 GiB checkpoint against 23.4 GiB of RAM does not merely lose copy-on-write, it drives the
+<p>Three findings in that figure stand out. The <strong>31B cold</strong> cell reaches 7.5×
+because a 21.67 GiB checkpoint against 23.4 GiB of RAM does not merely lose copy-on-write; it pushes the
 loader into swap. The <strong>MoE</strong> cell is the counterexample: almost nothing in a checkpoint of
-35 743 mostly small tensors is large enough to pay the copy-on-write cost, so the extra host copy is
-pure overhead and the flag is slightly worse than doing nothing. And <code>pread</code>, which shipped
+35 743 mostly small tensors is large enough to pay the copy-on-write cost, making the extra host copy
+pure overhead and leaving the flag slightly worse than doing nothing. And <code>pread</code>, which shipped
 in safetensors 0.8.0 and is named only in the release notes, is slower than the clone everywhere except
 the MoE, where it wins.</p>
 
 <h2><span class="n">6</span>The mechanism, in the resident set</h2>
 
-<p>Why the penalty is not a constant ratio is visible directly rather than by inference, once the
+<p>Why the penalty is not a constant ratio becomes visible directly rather than by inference once the
 resident set is sampled <em>during</em> the load. safetensors unmaps a shard the moment the iterator
-leaves it, so an end-of-loop sample sees an empty process; the first attempt at this measured nothing
+leaves it, so an end-of-loop sample sees an empty process. The first measurement attempt caught nothing
 and was discarded.</p>
 
 <figure class="rv" id="fig3">
@@ -1180,29 +1180,22 @@ and was discarded.</p>
 <h2><span class="n">7</span>What is not established</h2>
 
 <h3>Why the July baselines do not reproduce</h3>
-<p>Replaying the 2026-07-28 ordering on <code>-30</code> with no cache control gives an 8B baseline of
-13.87 s against the 36.4 s reported then, and 126.61 s for the 31B against a timeout past 900 s. Page
-cache is therefore not the whole explanation. Two things changed between the sessions: the kernel state,
-and this guest's PCIe atomics, off in July and on now. The 32 MiB reproducer moved only 17.0 to 15.3 ms
-across the same change, so the per-copy path is not where the difference lives, and nothing here says
-where it does. The July table is superseded rather than reconciled.</p>
+<p>Replaying the 2026-07-28 run on <code>-30</code> without cache control yields 13.87 s on 8B against
+36.4 s then, and 126.61 s on 31B against a timeout past 900 s. Cache does not explain this alone.
+Between sessions, kernel state changed and guest PCIe atomics were enabled. But the 32 MiB reproducer
+shifted only from 17.0 to 15.3 ms; the per-copy path does not account for the gap, and nothing here explains
+it. The July table is superseded, not reconciled.</p>
 
 <h3>One machine, and it is a guest</h3>
-<p>Everything here is one VFIO guest, gfx1100, ext4. A bare-metal Ubuntu <code>-28</code> was closed by
-someone else — @shineday999 reported an RX 7900 XTX on ROCm 7.2.1 with no virtualisation, same pathology
-and the same integer window counts — but a module as <em>Canonical</em> ships it on bare metal is still
-untested, since both of us ran either a self-built module or a userspace workaround. CDNA is untested,
-and nothing here says what any of this is worth on a host whose RAM dwarfs the checkpoint.</p>
+<p>All runs used one VFIO guest, gfx1100, on ext4. A bare-metal Ubuntu <code>-28</code> was closed by someone else: @shineday999 reported an RX 7900 XTX on ROCm 7.2.1 with no virtualisation, same pathology and the same integer window counts. But a stock module as shipped by <em>Canonical</em> on bare metal remains untested; both runs
+used custom modules or userspace fixes. CDNA is untested, and hosts where RAM dwarfs the checkpoint are
+unmeasured.</p>
 
 <h3>Residency per tensor</h3>
-<p>The window count is <code>resident_bytes / 2 MiB</code>, established from the reproducer at 32 and
-256 MiB and confirmed independently on another board. That an 8 MiB and a 96 MiB tensor both come out at
-one window follows from it — they are barely resident when the copy starts, since nothing reads them
-first — but residency per tensor was never sampled to check that step directly.</p>
+<p>The window count is <code>resident_bytes / 2 MiB</code>, established from the reproducer at 32 and 256 MiB and confirmed independently on another board. That an 8 MiB and a 96 MiB tensor each take one window follows from it: they are barely resident when the copy starts, since nothing reads them first. Still, per-tensor residency was never sampled directly to verify that step.</p>
 
 <h3>A 17× asymmetry between the two ranks</h3>
-<p>A single load showed roughly 190 ms per ioctl on one rank against 11 ms on the other. It could not be
-reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, and it is unexplained.</p>
+<p>One run showed roughly 190 ms per ioctl on one rank against 11 ms on the other. Concurrent processes, memory pressure, and torchrun plus RCCL failed to reproduce it; the asymmetry remains unexplained.</p>
 
 <h2><span class="n">8</span>What has changed since</h2>
 
@@ -1262,17 +1255,23 @@ reproduced with concurrent processes, memory pressure, or torchrun plus RCCL, an
   sentence above it was already true of them.
 </div>
 
-<div class="foot-note">
+<div class="note ok">
+    <span class="lbl">2026-09-05 &middot; the line count was wrong</span>
+    This report described <code>benchmarks/repro-mmap-prot.py</code> as thirty lines. It is 60
+    (50 non-blank, 49 excluding comments) and has never been shorter than 55 in this repository's
+    history. The text now says sixty, which is what <code>wc -l</code> returns.
+  </div>
+  <div class="foot-note">
   <p><strong>Run it yourself.</strong> The reproducer is
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.py"><code>benchmarks/repro-mmap-prot.py</code></a>,
-  and for machines with no PyTorch,
+  or for machines without PyTorch,
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/repro-mmap-prot.hip.cpp"><code>repro-mmap-prot.hip.cpp</code></a>.
-  Figure 1 is
+  Figure 1 draws from
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/hmm-kernel-three-states.json"><code>hmm-kernel-three-states.json</code></a>;
-  Figures 2 and 3 are
+  Figures 2 and 3 draw from
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/loader-flag-kernel-30.json"><code>loader-flag-kernel-30.json</code></a>,
-  89 cells with their per-cell page-cache state. The full investigation, including the cause this
-  repository got wrong first, is
+  which records 89 cells with per-cell page-cache state. The full investigation, including the initial
+  incorrect hypothesis, is documented in
   <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/docs/open-questions.md">open-questions.md §8</a>.</p>
   <p>Reported as <a href="https://github.com/ROCm/legacy-rocm-build/issues/6523">ROCm#6523</a>, where @ashetaia-amd
   confirmed the copy-on-write trigger and named <code>kfd_svm.c</code>, and @shineday999 contributed the

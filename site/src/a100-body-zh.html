@@ -1,79 +1,42 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · CUDA · 张量并行 · 一张卡、两张卡、一张 A100、一张 L4</div>
-  <h1>第二张卡在解码上只买到 1.1×，<br>在 prefill 上买到 1.9×</h1>
-  <p class="sub">一张 7900 XT、两张、一张 A100、一张 L4，同一套阶梯</p>
-  <p class="lede">给 batch-1 解码再加一张消费级卡，只值 <strong>1.11× 到 1.23×</strong>，
-  再没有更多。而在 prefill 上，同一张卡把 32 K 提示从 40.1 秒压到 21.5 秒 —— <strong>1.87×</strong>。
-  同样两张卡、同一天，变的只是你让它们做哪件事。</p>
+  <h1>第二张 RX 7900 XT 在解码上买到 1.1×，<br>在 prefill 上买到 1.9×</h1>
+  <p class="sub">两张 Radeon 上的解码速率与预填充扩展；对照单卡、A100 和 L4 实测</p>
+  <p class="lede">给 batch-1 解码再加上第二张消费级卡，只能买到 <strong>1.11× 到 1.23×</strong>。在 prefill 上，同一张卡把 32 K 提示的处理时间从 40.1 秒降到 21.5 秒，收益达到 <strong>1.87×</strong>。两项实测在同一天跑在同样两张卡上，变化的只是交给它们的任务。</p>
   <div class="meta">
 __CHIPS__
   </div>
 </header>
 
-<div class="abstract"> <h3>摘要</h3> <p>这篇文章原来问的是一个问题 —— 两张消费级卡对一张 A100 ——
-而这个问题里其实捆着三个。这一轮把每张卡单独测了一遍，于是三个问题分得开：一张消费级卡对一张数据中心卡值多少，
-第二张消费级卡再买到什么，然后才是这一对值多少。</p>
-<p><strong>第二张卡在解码上几乎不起作用。</strong>横跨十一个深度、两个模型，它买到
-<strong>1.11× 到 1.23×</strong>。它每一步都要付的那次 all-reduce 此后被计了时，而它<em>不是</em>原因：
-那大约是一步的九分之一，而同一台机器上 <code>Qwen3-8B</code> 付着同样的集合通信、第二张卡却值 1.70×。
-拖住这两个模型的不是那根线，第 9 节直说这一点，而不是去猜。<strong>而在 prefill 上同一张卡买到
-1.56× 到 1.87×</strong>的墙钟时间，因为 attention 的并行完全不需要通信。</p>
-<p><strong>prefill 是两项，而且两项不同向。</strong>拟合 T(S) = a + bS + cS²，对一张 7900 XT，
-A100 在稠密的 12B 上是 <strong>b 3.3×、c 6.7×</strong>：attention 尺度上的差距是算力差距的两倍。
-而在 MoE 上——它每个 token 只激活 26B 里的 4B，算力项本来就小——两个差距一样大，
-<strong>5.75× 与 5.71×</strong>。至于 L4，一张数据中心卡，在 b 上<em>比</em>消费级的 7900 XT
-还慢（0.90×），在 c 上好 3.0×。「数据中心对消费级」根本不是一条轴。</p>
-<p>这一对对一张 A100 是第三步，也是这篇文章最初站的地方。不带投机时，A100 在一套十一档的阶梯上
-每一档都领先 <strong>1.30× 到 1.46×</strong> —— 平的，完全不是四个单次点暗示的那个 U。</p> </div>
+<div class="abstract"> <h3>摘要</h3> <p>这篇文章原先只问了一个问题：两张消费级卡对一张 A100 表现如何。这个问题实际上捆绑了三个独立议题。把每张卡单独拿出来测，才能将它们拆开：单张消费级卡对比数据中心卡值多少，第二张消费级卡能补上什么，最后才是这一对卡合起来能跑出多少。</p>
+<p><strong>第二张卡在解码上几乎没有作用。</strong>在十一个深度和两个模型上，它只带来 <strong>1.11× 到 1.23×</strong>。此后测得的每步 all-reduce 表明通信<em>并非</em>瓶颈，它只占单步时间的大约九分之一。在同一台机器上，付着同样集合通信开销的 <code>Qwen3-8B</code> 却能从第二张卡获得 1.70×。拖住这两个模型的并不是互连带宽，第 9 节对此给出了实测依据而非猜测。<strong>而在 prefill 上，同一张卡在墙钟时间上买到 1.56× 到 1.87×</strong>，因为注意力计算的并行完全不需要通信。</p>
+<p><strong>prefill 包含两个行为不同的项。</strong>按 T(S) = a + bS + cS² 拟合，在稠密的 12B 模型上，A100 对比单张 7900 XT 在 <strong>b 项上领先 3.3×，在 c 项上领先 6.7×</strong>。注意力的扩展差距是算力差距的两倍。而在 4B 激活参数缩减了算力项的混合专家模型上，两个差距重合在 <strong>5.75× 与 5.71×</strong>。数据中心芯片也并非在所有维度上都更快：L4 在 b 项上甚至<em>慢于</em>消费级 7900 XT（0.90×），仅在 c 项上领先 3.0×。数据中心与消费级从来不是单一维度的比较。</p>
+<p>将双卡组合对照单张 A100 评估是第三步，这回到了本文最初的起点。在不开启投机解码时，A100 在阶梯全部十一个深度上均保持 <strong>1.30× 到 1.46×</strong> 的领先。这一差距全程保持平稳，与最初四个单次实测点所暗示的 U 形走势完全不同。</p> </div>
 
 <h2><span class="n">1</span>比的是什么</h2>
 
-<p>四台机器：<strong>一张 RX 7900 XT</strong>、<strong>两张、TP=2</strong>、<strong>一张
-A100-SXM4-80GB</strong> 和<strong>一张 L4</strong>。三个模型，而且不是每个模型都在每台机器上都有，
-因为其中两处缺口是算术，不是遗漏。<code>gemma-4-26B-A4B</code> 在一张 7900 XT 上到 12 000 token
-为止：16.96 GiB 权重驻留在一张 19.98 GiB 的卡上，即使 util 开到 0.95 也只剩 0.93 GiB 的 KV，
-要到 32 K 得开到约 0.97。而 <code>gemma-4-31B-it</code> 根本没有单卡这一行 ——
-22 GB 的权重塞不进一张 20 GB 的卡，所以这台机器上只能用一对卡跑它。31B 因此是第三步的模型，
-在那之前的任何一步里都不出现。</p>
+<p>共有四种机器配置参与比较：<strong>单张 RX 7900 XT</strong>、<strong>两张卡配置在 TP=2</strong>、<strong>单张 A100-SXM4-80GB</strong> 以及<strong>单张 L4</strong>。受限于三种硬件架构，并非每个模型都能在所有机器上运行；其中两处缺失源于算术容量而非疏漏。<code>gemma-4-26B-A4B</code> 在单张 7900 XT 上只测到 12 000 token：在 19.98 GiB 的显卡上驻留 16.96 GiB 权重后，即便显存利用率设为 0.95，也仅剩下 0.93 GiB 用于 KV 缓存，而扩展到 32 K 则需要大约 0.97。此外，<code>gemma-4-31B-it</code> 完全没有单卡数据行，因为 22 GB 的权重无法装入 20 GB 的显卡，双卡是这台机器运行该模型的唯一方式。31B 仅在第三步引入，此前未在任何位置出现。</p>
 
 <div class="note">
-  <span class="lbl">解码和 prefill 各自取自哪里</span>
-  前三步只要同一次运行里两个数都有，就都取自同一次运行 ——
-  因为它们要说的正是「第二张卡在两件事上值的钱不一样」，而把这两个数读自不同会话，
-  就等于把一条会话边界放进了比较本身。这也是那里的 A100 取 <strong>2026-08-30</strong>
-  而不是 08-29 的原因：早一场有解码，但它的 prefill 十一个档位里 0 个过闸 ——
-  当时开着 prefix caching，而这套阶梯每一档都是下一档的严格前缀，于是重复的那一轮什么都没算。
+  <span class="lbl">解码与 prefill 的来源</span>
+  只要条件允许，前三步的解码与 prefill 数据均取自同一轮会话。本比较的主张在于第二张卡在两种任务下的行为截然不同，混用不同会话的数据会引入跨次运行的方差。基于这一要求，A100 数据采用了 <strong>2026-08-30</strong> 的会话，而非 2026-08-29：早先那一轮虽包含解码数据，但在开启 prefix caching 的情况下，prefill 阶梯的 11 个档位中有 0 个达到图表入库标准。由于阶梯中的每一档都是下一档的严格前缀，启用缓存导致重复 token 的开销被完全抹平。
   <br><br>
-  这是偏好，不是死规则。图 3 两边都用 2026-08-29 那场，因为只有那一场把两条投机臂互相测了；
-  而图 4 的 A100 prefill 按其性质就是一次补测 —— 第一遍根本没有产出能用的。
-  每个比较的每一侧都是一次运行；两侧不同天的地方，图上会写出来。
-  在这个模型上，两场 A100 在 2 K 以上吻合到 0.4 %，最浅的两档差 5.5 %。
+  这种一致性属于优先策略而非绝对规则。图 3 对两个平台均采用 2026-08-29 的数据，因为只有该轮测试直接比对了两种投机臂。图 4 中 A100 的 prefill 数据在结构上属于后续补测，首次测试未能产生可用的有效数据。每一项比较的两侧各代表一次单轮运行；当两侧数据采自不同日期时，图表会明确标注差异。在 2 K 以上的深度，两轮 A100 测试在该模型上的吻合度达到 0.4 %，最浅的两档差异为 5.5 %。
 </div>
 
-<p>31B 那一步的配置和以前一样：同一个 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>，batch 1，
-greedy，两个平台上注意力后端都是 <code>TRITON_ATTN</code> ——
-这个模型 head 维度不齐，只要 FA4 不可用就会被强制走它，gfx1100 和 A100 都是这种情况。</p>
+<p>31B 这一步保持了原始配置：使用 checkpoint <code>gemma-4-31B-it-qat-w4a16-ct</code>、batch 1 以及 greedy 采样。两个平台均在 <code>TRITON_ATTN</code> 注意力后端上运行。该模型不规则的 head 维度导致在 FA4 不可用时只能强制退回 Triton，无论对 gfx1100 还是 A100 均是如此。</p>
 
 <div class="note warn">
-  <span class="lbl">两边都在自己的健康路径上，而这需要一个补丁</span>
-  两列都让投机走 3D flash-decoding 路径，而原版 vLLM 在<em>任一</em>平台上都拒绝这么做 ——
-  那是<a href="speculative-decoding-net-loss.zh.html">另一篇文章</a>的主题。
-  拿两边的原版配置去比，比的会是同一个 bug 的两个实例。这里用的机制是
-  <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 的，
-  以相同方式移植到两套栈上。
+  <span class="lbl">两边均处于正常路径上，而这依赖一个补丁</span>
+  两列配置均将投机解码路由至 3D flash-decoding 路径。原版 vLLM 在<em>两个</em>平台上均会在投机时禁用该路径，具体分析见<a href="speculative-decoding-net-loss.zh.html">另一篇文章</a>。直接对比原版配置无非是比对同一个缺陷的两个实例。该修复将 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 的机制以完全相同的方式移植到了两套软件栈上。
 </div>
 
-<p><strong>prefill 是拟合出来的，不是抄一个数。</strong>单独一个 prefill tok/s 什么都没说：
-S 个 token 的提示，首 token 时间走 T(S) = a + bS + cS²，而这篇文章比的两台机器在一项上差三倍、
-在另一项上差近七倍。下面的拟合就是 `build_prefill.fits()` 的，和 <code>prefill.jsonl --fits</code>
-报的是同一套，只在 chart-grade 档位上做。常数项 <code>a</code> 拟合了但从不引用：
-同一条臂在两场 campaign 之间它从 9.8 ms 变成 99.8 ms，这套阶梯测不了它。</p>
+<p><strong>prefill 取自曲线拟合，而非照搬单点数字。</strong>孤立的 prefill tok/s 无法说明问题，因为提示扩展呈现非线性特征：针对 S 个 token 的提示，首 token 生成时间遵循 T(S) = a + bS + cS²。两台主要对比机器在一项上相差三倍，在另一项上则相差近七倍。下文的拟合结果由 `build_prefill.fits()` 生成，与 <code>prefill.jsonl --fits</code> 所汇报的完全一致，且仅在达到图表标准的档位上进行。常数项 <code>a</code> 虽然参与了拟合，但从未被引用：同一配置在两场相隔的 campaign 之间从 9.8 ms 漂移到 99.8 ms，当前这套阶梯无法对其进行定量。</p>
 
 <h2><span class="n">2</span>一张卡对一张卡</h2>
 
-<p>先把张量并行完全拿掉：一张 7900 XT、一张 A100、一张 L4，同一套阶梯、同样两个模型。
-A100 领先，幅度取决于模型，并且随深度收窄。L4 则根本没有领先。</p>
+<p>先剥离张量并行：在单张 7900 XT、单张 A100 与单张 L4 上，使用相同的阶梯测试两个模型。A100 全程保持领先，领先幅度因模型而异，并随上下文深度增加而收窄。L4 则全程落后。</p>
 
 <figure class="rv" id="figs"> <div class="figbox">
   <div class="figtitle">图 1 · 相对一张 RX 7900 XT 的解码速率，按上下文长度
@@ -86,34 +49,19 @@ A100 领先，幅度取决于模型，并且随深度收窄。L4 则根本没有
 因为「再买一张」正是被比较的选项之一，而它恰好是其中最弱的一个。MoE 那两条线到 12 000 为止：
 那是一张卡的 KV 用尽的地方，再往后没有比值可画。</figcaption> </figure>
 
-<p><strong>L4 是一张在这件事上输给消费级卡的数据中心卡。</strong>两个模型、每一个深度上，
-它都只有一张 7900 XT 的 0.54× 到 0.68×。它换来的是平坦 —— 32 K 上它保住 500-token 速率的 89 %，
-而 A100 只保住 62 % —— 但那是一张显存慢的小卡的属性，不是优势。这张图该带走的一句是：
-「数据中心」不是一个档次。而下一张图才是 L4 挣回位置的地方。</p>
+<p><strong>L4 是一张在当前任务下输给消费级卡的数据中心卡。</strong>在两个模型和所有上下文深度下，它的表现仅相当于单张 7900 XT 的 0.54× 到 0.68×。它展现出的特性是平缓：在 32 K 深度下它保留了 500-token 解码速率的 89 %，而 A100 仅保留 62 %。这种稳定性源于显存带宽较低的小型芯片架构，并不构成优势。该比较表明「数据中心」并非性能档位的代名词，而下一张图才是 L4 发挥价值的场景。</p>
 
 <h2><span class="n">3</span>第二张卡买到了什么</h2>
 
-<p>第二张 7900 XT 是图 1 里最平的那条线。稠密模型上跨十一个深度，它买到
-<strong>1.13× 到 1.23×</strong>；MoE 上跨七个深度，<strong>1.11× 到 1.12×</strong>。
-它甚至不是单调的：12B 上它先升到 6 000 token 处的 1.23×，再落到 32 K 的 1.13×。</p>
+<p>第二张 7900 XT 构成了图 1 中最为平缓的曲线。在稠密模型的十一个深度上，它仅带来 <strong>1.13× 到 1.23×</strong> 的收益；而在混合专家模型的七个深度上，收益仅为 <strong>1.11× 到 1.12×</strong>。这种扩展甚至不是单调的：在 12B 模型上，加速比在 6 000 token 处达到 1.23× 的峰值，随后在 32 K 下滑落至 1.13×。</p>
 
-<p>batch 1 下一步解码既带宽受限又很短：把权重切开让每张卡少读一半字节，收益全在这里，
-而此后每一步都以一次 all-reduce 收尾，这笔开销不随切分变小。这一页原先由此断定：
-第二张卡在带宽上贡献的，大半花在了线上。<strong>量过之后，线上的那部分约是一步的九分之一</strong>
-——12B 上是 16.70 里的 1.85&nbsp;ms——而同一台机器上另一个模型付着同样的集合通信、
-第二张卡却值 1.70×。所以这笔开销是真的，但它不是上限；见第 9 节。</p>
+<p>batch 1 解码单步耗时极短且受显存带宽限制。切分模型权重使每张 GPU 读取的字节数减半，这就是全部的性能来源。随后每一步都以一次 all-reduce 结束，其延迟并不随切分而降低。本页面原先由此断定：第二张卡在带宽上的增益大半被通信线路消耗。<strong>实测表明线路通信仅占单步耗时的大约九分之一</strong>，在 12B 上为 16.70 里的 1.85&nbsp;ms，并且同一台机器上的另一模型在承担相同集合通信开销的同时，第二张卡能够获得 1.70×。集合通信延迟可被准确测量，但并非主要瓶颈，详见第 9 节。</p>
 
-<p><strong>prefill 是相反的情形，而且是同样两张卡。</strong>对提示做 attention
-是按 head 并行的，完全不需要通信，而提示又长到让每步的固定开销变成舍入误差。
-把两条臂都拟合出来、再在各自能到的最深档位上把两项加回去：稠密模型 <strong>32 K 上 40.1 秒变
-21.5 秒</strong>，<strong>1.87×</strong>；MoE <strong>12 K 上 6.21 秒变 3.99 秒</strong>，
-<strong>1.56×</strong>。同样的硬件、同一天，收益是解码的四到七倍。</p>
+<p><strong>prefill 则相反，而测试对象依然是同样两张卡。</strong>提示阶段的注意力计算跨 head 并行且完全无须通信，同时足够长的提示使单步开销被稀释至舍入误差的程度。对两条测试臂进行拟合，并在各自达到的最深档位上合并各项：在稠密模型上，<strong>32 K 时用时由 40.1 秒缩减至 21.5 秒</strong>，收益为 <strong>1.87×</strong>；在混合专家模型上，<strong>12 K 时用时由 6.21 秒缩减至 3.99 秒</strong>，收益为 <strong>1.56×</strong>。同样的硬件与同一天的测试，增益却达到了解码阶段的四到七倍。</p>
 
 <h2><span class="n">4</span>prefill 是两项，而且两项不同向</h2>
 
-<p>线性项 <code>b</code> 是 GEMM 吞吐 —— 机器乘得多快。二次项 <code>c</code> 是
-attention 随提示长度恶化得多快。一个 prefill tok/s 数字是这两项在某一个提示长度上的加权平均，
-而权重随每一个提示长度改变。分开拟合之后，两项对同一对机器说的是不同的话：</p>
+<p>线性项 <code>b</code> 代表 GEMM 吞吐，即机器执行矩阵乘法的速率。二次项 <code>c</code> 衡量注意力计算随提示长度增加而恶化的程度。单一的 prefill tok/s 指标仅代表特定提示长度下两者的加权均值，该权重随提示深度不断改变。将两项分开拟合后，相同的机器展现出了相反的动态特性：</p>
 
 <figure class="rv" id="figp"> <div class="figbox">
   <div class="figtitle">图 2 · prefill 的两项，相对一张 RX 7900 XT
@@ -126,18 +74,13 @@ attention 随提示长度恶化得多快。一个 prefill tok/s 数字是这两�
 只在 chart-grade 档位上拟合，画出来的每一条臂 r² ≥ 0.9999。常数项拟合了但不画，
 因为这套阶梯测不了它。</figcaption> </figure>
 
-<p>三条读法，没有一条经得起被平均成一个数字：</p>
+<p>由此可以得出三个结论，任何一条都无法被笼统地归结为一个均值：</p>
 
-<p><strong>稠密模型上，A100 在 attention 上的优势是它在算力上优势的两倍</strong> ——
-6.67× 对 3.29×。不管是什么在 prefill 上限制着 7900 XT，主要都不是乘法器。</p>
+<p><strong>在稠密模型上，A100 的注意力优势相当于其算力优势的两倍</strong>：6.67× 对比 3.29×。无论 7900 XT 在 prefill 阶段的主要瓶颈是什么，乘法器本身都不是核心原因。</p>
 
-<p><strong>MoE 上两者合并成一个数</strong>，5.71× 对 5.75×。这个模型每 token 只激活 26B
-里的 4B，所以 GEMM 项在两台机器上都很小，两者之比也就不再是关于 GEMM 的了。</p>
+<p><strong>在混合专家模型上，两个差距重合在一起</strong>，分别为 5.71× 与 5.75×。该模型每个 token 仅激活其 26B 参数中的 4B，导致 GEMM 项在两台机器上均维持在极低水平，两者之间的比值已无法反映矩阵乘法的吞吐差异。</p>
 
-<p><strong>L4 在 b 上比消费级卡还慢，在 c 上好三倍。</strong>0.90× 与 3.01×。
-这就是为什么它在 32 K 提示上比 7900 XT 快 1.58×，而在够短的提示上会输：两条曲线会相交，
-「哪张卡 prefill 更快」是一个关于提示长度的问题。作为对照，第二张卡在 b 上买到 1.44–1.48×、
-在 c 上买到 1.91–2.22× —— 二次项比线性项买得多，这和上面那两个墙钟数字说的是同一件事。</p>
+<p><strong>L4 在 b 项上慢于消费级卡，在 c 项上则领先三倍。</strong>实测表现为 0.90× 与 3.01×。这解释了为何它在 32 K 提示上比 7900 XT 快 1.58× 却在短提示下落后：两条性能曲线发生交叉，使得 prefill 的优劣完全取决于提示长度。相比之下，第二张卡在 b 项上带来 1.44–1.48× 的提升，在 c 项上带来 1.91–2.22× 的提升，对二次项的改善幅度高于线性项，与前文测得的墙钟耗时一致。</p>
 
 <h2><span class="n">5</span>两张卡对一张 A100</h2>
 
@@ -165,32 +108,13 @@ attention 随提示长度恶化得多快。一个 prefill tok/s 数字是这两�
   </figcaption>
 </figure>
 
-<p><strong>差距是平的，大约 1.4×。</strong>两边都是原版、两侧都不带补丁时，A100 在 500 档领先
-1.36×，到 32K 是 1.44× —— 最窄在最浅的一档，最宽在最深的一档，跨越六十四倍的上下文范围。
-这就是这篇文章原来那个标题所问问题的全部答案，也是仓库 README 发布的同一个比较。</p>
+<p><strong>性能差距平稳保持在约 1.4×。</strong>两端均运行未经修改的原版代码且不带补丁时，A100 在 500 档领先 1.36×，到 32K 是 1.44×。在十一个对齐的深度档位上，这一差距全程保持平缓。早先测得的 U 形曲线是缺乏对照的四个离散点造成的假象；当前数据每格均取两轮均值，证实差距全程平稳。</p>
 
-<p><strong>那个领先，正是投机在 A100 身上的代价。</strong>投机只能从 2026-08-29 那一对上读，
-因为只有那一场会话在两台机器上都跑了两条臂 —— 而它的 Radeon 一侧带着三个 A100 一侧没有的补丁，
-所以它的<em>绝对水平</em>不如它的<em>差值</em>可信。不投机时那场会话给出的是 A100 领先 1.30× 到
-1.46×，与上面那条原版阶梯接近。开了 MTP，这个领先就没了 ——
-500 档 0.88×，2K 到 8K 持平，到 32K 也只有 1.08×。Radeon 并没有变快，是 A100 在投机上付出得更多。
-而且不是因为它草稿猜得差：它的接受长度是两者中<em>更好</em>的那个，每步 1.92–2.07 对 1.46–1.53。
-它亏在成本上 —— 一个投机步在它身上要花掉 2.40–2.57 个普通解码步，而同样一步在 Radeon 上只要
-1.35–1.39 个。batch 1 下那对卡在一步之内有闲置算力，单卡没有，于是「多算三个 token 加跑一遍草稿模型」
-这份固定开销，占它本来就在做的事情的比例大得多。两组数据在
-<code>benchmarks/campaign-2026-08-29/</code> 和
-<code>benchmarks/cuda-a100/campaign-2026-08-29/</code>。</p>
+<p><strong>这一领先幅度反映了投机解码给 A100 带来的代价。</strong>投机解码必须基于 2026-08-29 的测试组进行评估，因为只有该会话同时在两台机器上运行了两种测试臂。同时其 Radeon 一端应用了三个 A100 一侧没有的补丁，因此其<em>相对差值</em>比<em>基准水平</em>更具参考价值。在未启用投机时，该会话显示 A100 领先 1.30× 到 1.46×，接近上文的原版阶梯。开启 MTP 后领先优势消失：500 档仅为 0.88×，2K 至 8K 区间持平，到 32K 也仅有 1.08×。这并非因为 Radeon 变快，而是 A100 在投机解码上付出了更高代价。原因也不在于草稿质量：它的接受长度实际上是两者中<em>更好</em>的一方，单步达到 1.92–2.07 个 token，而 Radeon 为 1.46–1.53。它亏在成本上：在它上面单次投机步耗时相当于普通解码步的 2.40–2.57×，而同样一步在 Radeon 上仅需 1.35–1.39×。在 batch 1 下，双卡组合在单步内存在充裕的闲置算力，而单卡缺乏这种算力余量，使得生成并验证四个 token 的固定开销在既有负载中所占比例高得多。两项数据分别位于 <code>benchmarks/campaign-2026-08-29/</code> 与 <code>benchmarks/cuda-a100/campaign-2026-08-29/</code>。</p>
 
-<p><strong>那个 U 是四个点。</strong>把探针打开，它确实在那儿 —— 1K 上 1.48×，到 16K 降到
-1.14×，再回到 32K 的 1.87× —— 这篇文章就是为它取的名。而同一对机器、十一个对齐档位、每格两轮，
-给出的是平的 1.36× 到 1.44×。那个看起来像谷底的 16K 点是一次运行的一个格子，
-而它最深的邻居比的是两个不同的深度。这个形状没有在重测里活下来；它背后的数字仍留在页面上，
-因为悄悄撤掉一张图比把它说过的话摆出来更糟。</p>
+<p><strong>所谓的 U 形曲线仅由四个数据点构成。</strong>开启探针后该曲线确实呈现：1 K 时为 1.48×，在 16 K 时降至 1.14×，随后在 32 K 回升至 1.87×，正是这些数值构成了本文的原标题。然而同样的测试在两台机器上按每格两轮取均值后，呈现出的却是一条 1.36× 到 1.44× 的平直走势。早先看似极小值的 16 K 点不过是单次运行中的孤立数据格，且其最深的数据邻居对比的是两个完全不同的深度。该形态未能在复现测试中维持；原始数据点仍保留在页面上，因为悄悄抹去数据远比公开承认其局限更不可取。</p>
 
-<p><strong>现在 prefill 那一半也有了。</strong>直到 2026-08-30 之前，这个对比的 A100 一侧没有可用的
-prefill：测它解码的那场开着 prefix caching，而这套阶梯每一档都是下一档的前缀，
-于是重复的那一轮什么都没算，没有一档过得了重复性这一关。关掉缓存重测，覆盖这一对也跑的五个模型，
-它说出了解码那一半没说的事：</p>
+<p><strong>prefill 维度的实测数据现已补齐。</strong>在 2026-08-30 之前，该对比中 A100 一侧始终缺乏有效的 prefill 数据：早先测量解码的会话开启了 prefix caching，而测试阶梯的每个档位均为下一档的前缀，导致重复 token 被错误计为零开销从而未能满足可重复性标准。在关闭缓存并在两个系统上针对五个模型重新测量后，prefill 揭示了解码过程中无法观察到的运行动态：</p>
 
 <figure class="rv" id="figk"> <div class="figbox">
   <div class="figtitle">图 4 · 两张 Radeon 对一张 A100 的 prefill，按 A100 用的 kernel 分组
@@ -208,28 +132,15 @@ PCIe 3.0 x8 而非 x16（宿主机开机日志有记录；客户机的 sysfs 看
 画出来的就是这两次。12B 和 26B 两对来自 2026-08-24，在 x16 上。 </figcaption>
 </figure>
 
-<p><strong>算力项不在乎路径上是哪个 kernel，而 attention 项几乎就只是这件事。</strong>
-五个模型上，A100 在 <code>b</code> 上领先 1.92× 到 4.00×，两个 kernel 分组的区间互相重叠。
-到了 <code>c</code> 上两组根本挨不着：A100 与 Radeon 同在 Triton unified-attention 那一族的三个模型
-是 2.99× 到 3.10×，而 A100 走 FlashAttention 的那两个是 11.94× 和 19.01×。</p>
+<p><strong>算力项并不关心执行路径上使用的是哪种 kernel，而注意力项几乎完全取决于此。</strong>在全部五个模型上，A100 在 <code>b</code> 项上领先 1.92× 到 4.00×，不同 kernel 实现之间的分布区间彼此重叠。但在 <code>c</code> 项上，两者完全分化：在 A100 与 Radeon 同样采用 Triton unified-attention 家族的三个模型上，领先优势为 2.99× 到 3.10×；而在它通过 FlashAttention 提供服务的两个模型上，优势跃升至 11.94× 和 19.01×。</p>
 
-<p>五个模型之间不同的不止是 kernel，所以那还只是相关。下面是同一台机器、同一天、同一个模型里的同一件事。
-Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以用一个 flag 钉到
-<code>TRITON_ATTN</code>。钉住之后它的 <code>c</code> 是 17.27 ns/token²，A100 领先 11.94×；
-不动它，<code>c</code> 是 4.46，A100 领先 3.08×。一个 flag、没有补丁，
-「A100 在长提示上领先多少」这个问题的答案挪了 <strong>3.87×</strong>。
-这个 flag 正是这个仓库直到 2026-08-30 都称为「免费」的那一个；它在 32 K 上买到 1.15× 的解码，
-卖掉的就是这个。</p>
+<p>五个模型之间的差异不仅限于 kernel，因此前述表现仅属于相关性。而在同一台机器、同一天及同一个模型内部，这一效应得到了直接验证。在这组显卡上，Qwen3.8-27B 默认被路由至 <code>ROCM_ATTN</code>，但可以通过指定 flag 固定为 <code>TRITON_ATTN</code>。在固定后端后，其 <code>c</code> 项耗时为 17.27 ns/token²，A100 领先 11.94×；保持默认时，其 <code>c</code> 项为 4.46，A100 领先 3.08×。仅需一个 flag 且无须任何补丁，「A100 在长提示词上领先多少」的答案便发生了 <strong>3.87×</strong> 的转移。该 flag 直到 2026-08-30 之前一直被本仓库视作「零代价」；它在 32 K 深度换取了 1.15× 的解码增益，却付出了如此代价。</p>
 
-<p>这些都不会让 A100 变慢。它在每个模型、两项上都领先。它们的意思是：
-「数据中心卡快多少」这个单一数字并不是两张卡的属性 —— 在二次项上它大部分是
-「两边各自落到了哪个 attention kernel」的属性，而在这套硬件上，那由一张路由表和一个命令行 flag 决定。</p>
+<p>这丝毫没有削弱 A100 的地位：它在每个模型及两项指标上均保持领先。但这表明，关于「数据中心卡到底快多少」的单一数字并不是这两张卡本身的属性：在二次项上，它主要取决于两端各自最终采用了哪种注意力 kernel，而在当前硬件配置下，这由一张路由表和一个命令行 flag 决定。</p>
 
 <h2><span class="n">6</span>付代价的是切分，不是硅片</h2>
 
-<p>2D 注意力路径 —— 也就是原版 vLLM 下投机会掉进去的那条 —— 每个 KV head 启动一个 workgroup。
-这个模型有 16 个。单卡上一个 rank 看到全部；切到两张卡上，每个 rank 看到八个。
-于是被饿着的那条路径被并行度饿得加倍厉害，表现出来就是保留率：</p>
+<p>原版 vLLM 在投机解码时陷入的 2D 注意力路径，会为每个 KV head 启动一个 workgroup。当前模型包含 16 个 head。单卡上单个 rank 可以处理全部 head；而在双卡切分下，每个 rank 仅分到八个。本就饥饿的执行路径因并行切分而遭受加倍的饥饿，这直接体现在保留率数据中：</p>
 
 <figure class="rv" id="fig2">
   <div class="figbox">
@@ -248,10 +159,7 @@ Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以
 
 <h2><span class="n">7</span>它同样侵蚀投机</h2>
 
-<p>MTP 草稿模型只有四层深，所以多出来的那次前向很便宜。不便宜的是：每一次草稿步仍然是一步，
-而 TP=2 下的一步无论挂着多大的模型，都要付那个 all-reduce 下限——<strong>31B 上是
-2.30&nbsp;ms</strong>，量出来的，而且它不随草稿模型变小。
-所以让投机划算的那笔账，在两张卡上比在一张卡上更难算平。</p>
+<p>MTP 草稿模型仅有四层，因此额外的单次前向传播开销很小。真正昂贵之处在于，每个草稿步依然是一个完整的执行步。在 TP=2 配置下，无论评估的模型规模如何，每一步都需要承受基准 all-reduce 延迟下限，实测在 <strong>31B 上达到 2.30&nbsp;ms</strong>，且不随草稿模型深度改变。因此，投机解码在双卡上不如在单卡上划算。</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -269,9 +177,7 @@ Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以
 
 <h2><span class="n">8</span>两张卡实际跑到了多少</h2>
 
-<p>标称之比假定两边都跑满上限，而两边都没有。从七月那次 campaign 重算实到带宽 ——
-解码速率乘以每张 GPU 每 token 搬的权重字节，除以 800 GB/s ——
-这个对比里的模型落在 63 %：</p>
+<p>标称带宽比值假定两端均能达到理论峰值带宽，但实际上双方均未能做到。根据七月份 campaign 重新计算实测带宽，即解码速率乘以每张 GPU 每 token 搬运的权重字节数并除以 800 GB/s，本对比涉及的模型仅达到标称值的 63 %：</p>
 
 <figure class="rv" id="fig4">
   <div class="figbox">
@@ -296,111 +202,54 @@ Qwen3.8-27B 在这两张卡上默认被路由到 <code>ROCM_ATTN</code>，可以
 <h2><span class="n">9</span>没有被确立的部分</h2>
 
 <h3>批量吞吐，以及 prefill 的常数项</h3>
-<p>这里的一切都是 batch 1。批量吞吐是另一个 regime，完全没有测；一旦解码不再是带宽受限的，
-第二张卡那个 1.1× 就没有理由继续成立，这一页上别的东西也一样。prefill <em>确实</em>测了，
-但只测了它的两个形状项：常数 <code>a</code> 拟合了却从不引用，因为同一条臂在相隔一个月的两场
-campaign 之间它从 9.8 ms 变成 99.8 ms，另一条臂上它还出来过负值。所以够短的提示落在这些拟合
-描述的范围之外。</p>
+<p>基准测试全部在 batch 1 下运行。未进行实测的批量吞吐属于另一个工作区间；一旦解码脱离显存带宽受限状态，第二张卡的 1.1× 提升及本页其他结论均不再适用。prefill 虽然经过实测，但仅覆盖两个形状项：常数项 <code>a</code> 虽经拟合但从不引用，因其在相隔一个月的两场 campaign 中于同一配置下从 9.8 ms 漂移至 99.8 ms，在另一配置下甚至出现负值。因此足够短的提示超出了当前拟合所能描述的范围。</p>
 
 <h3>单卡上的 gemma-4-31B</h3>
-<p>31B 没有单卡这一行，在这台机器上也不可能有 —— 22 GB 的权重，20 GB 的卡。
-所以前两步由另外两个模型承担，31B 从第三步起才出现 ——
-在那里，这一对卡本来就是这台机器跑得动它的唯一方式。</p>
+<p>31B 在当前机器上缺失且无法获得单卡数据：模型权重为 22 GB，而显存仅有 20 GB。分析的前两步依赖其余模型完成，31B 仅在必须双卡运行的第三步介入。</p>
 
 <h3>A100 自己的推得带宽</h3>
-<p>图 7 只有 Radeon 这边，没有对应的一半。图 3 里那个 1.27× 是两个规格书数字的比值，
-读者应当把它当成"单靠带宽差能解释的上界"，而不是任何一侧被拿去对照过的预测。</p>
+<p>图 7 仅展示 Radeon 平台，对应另一平台的数据未做实测。图 3 标注的 1.27× 仅为官方标称规格的比值，代表纯带宽差异所能解释的性能上限，而非任何一方经过实测对照的理论预测。</p>
 
 <h3>每边一套栈，每种卡各一张</h3>
-<p>两个不同的 vLLM 版本，因为每一侧跑的都是它今天真正在跑的那套；
-不同的运行环境，其中两个是租来的 Colab VM，会话之间的方差没有量化。
-而且 A100 和 L4 各只有一张、各只测过一次：这里没有任何东西能把一款卡和这一张卡分开。</p>
+<p>两端各自运行原生软件栈的不同 vLLM 版本，且测试跨越了会话方差未量化的租赁 Colab 虚拟机。测试中 A100 与 L4 均仅使用单张显卡完成单次测量，无法将芯片架构特性与特定硬件实例的影响剥离开来。</p>
 
 <h3>投机那一对没有做到补丁对齐</h3>
-<p>图 3 的实线两侧都是原版、都不带补丁，所以由它承担这个比较。画在它下面的 2026-08-29 那一对
-不是：它的 Radeon 臂跑着 <code>vllm#45916</code>、window block-skip 和
-<code>vllm#45450</code>，而 A100 臂在不投机时一个都没有、投机时也只有
-<code>vllm#45450</code>。没有任何一场不带补丁的会话同时跑过两条投机臂，
-所以「投机对每台机器要价多少」要么从那一对上读，要么读不到 —— 被主张的是它两条臂之间的<em>差值</em>，
-不是任一条臂所处的<em>水平</em>。投机本身倒是对齐的：两份 serve 日志都记录了
-<code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code>，指向同一个 assistant checkpoint，
-这一点由 <code>verify_doc_figures.py</code> 从日志里断言。</p>
+<p>图 3 的实线基于两端未经修改的原版代码展开对比。2026-08-29 的测试组未做补丁对齐：Radeon 端运行了 <code>vllm#45916</code>、window block-skip 与 <code>vllm#45450</code>；而 A100 非投机端省略了全部三个补丁，投机端仅运行 <code>vllm#45450</code>。在缺乏同时覆盖两条臂的原版测试情况下，MTP 开销必须从相对差值而非绝对水平中解读。投机配置本身完全对齐：由 <code>verify_doc_figures.py</code> 断言，两端 serve 日志均记录了指向相同 assistant checkpoint 的 <code>SpeculativeConfig(method='mtp', …, num_spec_tokens=3)</code>。</p>
 
 <h3>第二张卡为什么是这个表现</h3>
-<p>这一页原先说：batch 1 下一步解码短到让一次固定的 all-reduce 吃掉第二张卡大半带宽，
-而且这里没有给任何一次 all-reduce 计过时。现在计过了，结果不支持那个说法。在 HIP graph
-回放下——也就是一步解码真正运行的模式，serve 日志里记的是
-<code>cudagraph_mode FULL_AND_PIECEWISE</code> 和
-<code>Capturing CUDA graphs (decode, FULL)</code>——这对卡上 batch 1 形状的一次 all-reduce 是
-<strong>16.6 到 21.5&#8239;µs</strong>。乘上 <code>2&nbsp;×&nbsp;层数</code>，对 12B 就是
-<strong>一步 16.70&nbsp;ms 里的 1.85&nbsp;ms</strong>，约九分之一。</p>
+<p>本页原先说：batch 1 单步解码时间极短，固定的 all-reduce 延迟吞噬了第二张卡贡献的大半带宽，而且这里没有给任何一次 all-reduce 计过时。现在完成实测后，数据并不支持这一判断。在 HIP graph 回放模式下（serve 日志记录为 <code>cudagraph_mode FULL_AND_PIECEWISE</code> 与 <code>Capturing CUDA graphs (decode, FULL)</code>，即解码真正运行的机制），batch 1 形状下一次 all-reduce 是
+<strong>16.6 到 21.5&#8239;µs</strong>。按 <code>2&nbsp;×&nbsp;层数&nbsp;+&nbsp;1</code> 次集合通信计算（于 2026-09-03 清点：每层两次加一次 embedding），通信耗时仅占 12B <strong>一步 16.70&nbsp;ms 里的 1.85&nbsp;ms</strong>，约九分之一。</p>
 
 <p>而且同一台机器上，<code>Qwen3-8B</code> 的第二张卡在解码上值 <strong>1.70×</strong>，
-12B 只值 <strong>1.185×</strong>，两者每步的集合通信开销相差不到 0.6&nbsp;ms。
-如果一次固定的 all-reduce 真吃掉了第二张卡贡献的大半，8B 不可能拿到 1.70×。
-<strong>拖住 12B 的不是那根线。</strong>
-减去「完美对半」和量到的集合通信，12B 还剩 4.96&nbsp;ms 无法解释，8B 只剩 0.66&nbsp;ms。
-<em>（2026-09-02 有了答案，而且问题出在前提上。）</em>那道减法假定每一步都在等字节；单卡上 8B 让内存控制器
-<strong>90&nbsp;%</strong> 的时间在忙，12B 只有 <strong>56&nbsp;%</strong>，五个格子里第二张卡的收益跟着这个计数器走、
-不跟着行里的任何别的东西走
-（<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>）。
-12B 的 4.96&nbsp;ms 不是一笔丢失的开销，而是零模型对一个内存控制器半闲着的模型算错了。
-同一个计数器此后又给四种租用 NVIDIA 配置上更快的显存、第二张卡和更慢的卡排了序，那是
-<a href="mem-busy-orders-five-settings.zh.html">另一篇文章</a>。</p>
+12B 只值 <strong>1.185×</strong>，两者单步集合通信开销相差在 0.6&nbsp;ms 以内。若通信线路吞噬了带宽，8B 便无法达到 1.70×。<strong>拖住它的并不是通信线路。</strong>减去理想减半耗时与实测集合通信开销，12B 还剩 4.96&nbsp;ms 无法解释，8B 只剩 0.66&nbsp;ms。<em>（2026-09-02 得出解答：此前的假设存在缺陷。）</em>原先的分析假设显存带宽构成瓶颈；然而在单卡上 8B 让内存控制器达到 <strong>90&nbsp;%</strong> 忙碌，而 12B 仅有 <strong>56&nbsp;%</strong>。在全部五个数据格中，扩展收益完全与该计数器相吻合（<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>）。12B 的 4.96&nbsp;ms 并非不知所踪的时间损耗，而是零假设模型对一个半闲置的内存控制器做出了错误估计。该计数器此后在四种租赁 NVIDIA 配置下成功对高带宽显存、双卡扩展以及降级显卡的价值做出了排序，相关分析见<a href="mem-busy-orders-five-settings.zh.html">独立专文</a>。</p>
 
-<p>老句子里关于 attention 的那一半仍然成立：attention 的并行完全不需要通信，
-上面的预填充数字说的就是这件事。三条曾试图从拟合截距给这个下限定价的结论仍然撤回——
-它们被撤回是因为那套阶梯量不了它，而替代它们的数字比它们小 49 到 63 倍。
-<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/allreduce-2026-09-02">测量在仓库里</a>，
-其中跑过的那个库是从 <code>/proc/self/maps</code> 认出来的，不是从版本常量读的。</p>
+<p>原论断中关于注意力机制的半句依然成立：注意力计算在无须通信的前提下实现并行，上述 prefill 数据充分证实了这一点。而此前依据拟合截距对集合通信进行定量评估的三项结论依然处于撤回状态：相关量在当前阶梯上无法定量，且被小 49 到 63 倍的直接实测数据所推翻。<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/allreduce-2026-09-02">实测数据已在仓库中归档</a>，运行时库由 <code>/proc/self/maps</code> 直接读取确定而非依据版本常量。</p>
 
 <h2><span class="n">10</span>此后发生的变化</h2>
 
 <div class="note ok">
   <span class="lbl">2026-08-26 · 这个对比才变得可能</span>
-  在 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a>
-  的机制被移植到两套栈之前，两个平台在投机下都卡在 2D 路径上，
-  那样的对比测的会是一个共同的 bug。图 5 就是那个对比的样子 ——
-  留着它，是因为它本身就是关于张量并行的发现，而不是一个该丢掉的假象。
+  在 <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 的机制移植到两套软件栈之前，两端在投机解码下均受困于 2D 路径，测试反映的是共有缺陷而非硬件特性。图 5 保留了该项对比，它构成了关于张量并行的实质发现，而非应当废弃的假象。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-30 · 那个 U 是四个点，文章按取代它的东西重写了</span>
-  这篇文章原来的论点是「两张消费级卡对一张 A100」，而它的头图是四个单次格子，
-  最深那格比的是 32 K 对 30 K。同样两台机器、2026-08-29 测的十一个对齐档位，
-  在那四个点做出 U 的地方是平的。2026-08-30 的单卡一轮在同一套阶梯上测了一张 7900 XT、
-  一张 A100 和一张 L4 的解码与 prefill，把原来那个问题拆成了三个。
-  文章现在按顺序问这三个；图 3 就是原来那张，改画在阶梯上，探针收进了一个开关。
+  本文最初通过四个单次实测数据格对比「两张消费级卡对单张 A100」，其中最深一格对比的是 Radeon 的 32 K 与 A100 最长测距 30 K。2026-08-29 测得的十一个对齐深度证明，在此前呈现 U 形走势的区间内实际表现平缓。2026-08-30 在相同阶梯上对单张 7900 XT、单张 A100 与单张 L4 开展的解码和 prefill 单卡剖析，将核心议题拆解为三个步骤。图 3 重绘了修正后的阶梯，并将原始探针数据收纳至切换开关之后。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-31 · 头条数字所依据的那一对并没有做到补丁对齐</span>
-  在今天之前，这一页上那条平坦阶梯用的是 2026-08-29 那一对，引用为 1.30× 到 1.46×。
-  它的 Radeon 一侧跑着三个 A100 一侧没有的补丁 —— 恰好抬高的就是标题所问的那个数字 ——
-  而这一页当时没有说明这件事。现在的头条换成了原版阶梯：十一个档位、两臂都是原版、两侧都不带补丁、
-  <strong>1.36× 到 1.44×</strong>，也就是 <code>README.md</code> 发布的那个比较。
-  2026-08-29 那一对保留下来，因为它是唯一同时跑了两条投机臂的会话，并且现在会说明自己带了什么。
+  此前，头条数据引用了 2026-08-29 测试组的 1.30× 到 1.46×，但未指出 Radeon 端的三个补丁拔高了双卡表现。当前头条已更正为原版阶梯数据：两端均运行未经修改的代码，在十一个深度档位上得出 <strong>1.36× 到 1.44×</strong>，正如 <code>README.md</code> 所公布的结果。2026-08-29 测试组因作为评估投机解码测试臂的唯一依据而予以保留，并已明确标明其包含的补丁。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 这里引用的实到带宽是另一个模型的</span>
-  <code>README.md</code> 里这一段引用的实到带宽是 38 %。那是 12B 的数字；
-  这个对比里的模型是 31B，它跑到 <strong>62.8 %</strong>。已就地更正并标注日期，
-  三个实到带宽数字现在都由 <code>verify_doc_figures.py</code> 从 campaign 速率重算，
-  而不是照抄。
+  早先文本在 <code>README.md</code> 中引用了 38 % 的实测带宽，将 12B 的指标与达到 <strong>62.8 %</strong> 的 31B 混淆。相关数据已就地更正并标注日期，全部三个显存带宽利用率数据现均由 <code>verify_doc_figures.py</code> 直接从 campaign 日志中重新计算得出。
 </div>
 
 <div class="foot-note">
-  <p><strong>数据。</strong>Radeon 这边的阶梯在
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>；
-  A100 的分腿、日志以及让两边可比的那次移植在
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>；
-  图 7 背后的七月 campaign 是
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>。
-  本页每一张图都由
-  <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-  从这些文件重算。</p>
-  <p>为什么两边都需要一个补丁才值得比，见<a href="speculative-decoding-net-loss.zh.html">上一篇</a>。</p>
+  <p><strong>数据。</strong>基准测试记录保存在：Radeon 数据见 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/speculative-decoding/"><code>benchmarks/speculative-decoding/</code></a>，A100 运行记录与移植日志见 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/cuda-a100/45450-validation/README.md"><code>benchmarks/cuda-a100/45450-validation/</code></a>，图 7 对应记录见 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/results.jsonl"><code>benchmarks/results.jsonl</code></a>。本页所有图表均由 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a> 直接重算得出。</p>
+  <p>两套软件栈为何均需补丁才具备可比性，详见<a href="speculative-decoding-net-loss.zh.html">上一篇文章</a>。</p>
 </div>
 </div>
 

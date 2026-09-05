@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>两张消费级 Radeon，逐项实测</title>
+<title>两张消费级 Radeon GPU，在 ROCm 与 vLLM 下实测</title>
 <meta name="description" content="一个在 2× RX 7900 XT 上做 ROCm 与 vLLM 实测的仓库，其中的长文。每张图都对照它所出自的已入库数据被检查过。">
 <style>
   /* ===================== theme =====================
@@ -1152,9 +1152,9 @@ addEventListener("DOMContentLoaded", function () {
 <div class="wrap">
 <header class="top">
   <div class="kicker">dual-radeon-vllm · 实测长文</div>
-  <h1>两张消费级 Radeon，<br>逐项实测</h1>
-  <p class="lede">这些长文出自一个在 2× RX 7900 XT（gfx1100，RDNA3）上做 ROCm 与 vLLM 实测的仓库。
-  每篇文章的图都取自仓库自己会去校验的那份已入库数据，并在页面上标明哪些数字可以重算、哪些不能。</p>
+  <h1>两张消费级 Radeon GPU，<br>在 ROCm 与 vLLM 下实测</h1>
+  <p class="lede">这里的长篇记录出自一个实测仓库，所有测量均在 ROCm 与 vLLM 下的 2× RX 7900 XT（gfx1100，RDNA3）上完成。
+  每篇文章所用的图表，均取自仓库负责校验的同一份已入库数据，并在页面上直接注明哪些数字可以重算、哪些不能。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-platform" title="平台" style="--i:1">VFIO 直通 · <b>无 P2P</b> · 跨 die PCIe 3.0</span>
@@ -1164,10 +1164,8 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">1</span>这台机器今天能跑多快</h2>
 
-<p>每个模型、每台机器一条线，画的都是它自己实测到的最快配置，而不是一个统一口径。Radeon 这边六条里
-有四条出自同一场 campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈，因为在这两个模型上，
-那场 campaign 已经不是这台机器的上限了。A100 那边有同样五个模型，是它自己一个下午跑完的一整场。
-每条线都写明自己是哪一种。</p>
+<p>图表为每台机器上的每个模型各画一条线。每条线反映的都是该模型实测中最快的配置，而非统一的基线。Radeon 这边六条里
+有四条出自同一场 campaign、同一套栈，彼此可以直接比；另外两条来自更晚的栈，因为在这两个模型上，那场 campaign 已经不再是这台机器能达到的最佳表现。A100 包含同样的五个模型，出自它自己单一下午跑完的单场 campaign。每条线都标明了自己运行的软件栈。</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
@@ -1270,9 +1268,9 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<p>直到 2026-09-03，这台机器上每一条阶梯都停在 32&nbsp;000 token，看上去像是机器的极限。其实是
-campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，而它的 KV 池装得下好几倍。下面两张图
-是同样两个问题问到 128&nbsp;000 —— 主角是这一对卡，跑当天为它裁的一条阶梯；同一天租用的那几台机器作为背景，
+<p>直到 2026-09-03，这台机器上的每条阶梯都停在 32&nbsp;000 token。这看似是硬件极限，其实限制来自
+campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，而它的 KV 池容量足有好几倍。下面两张图
+把同样的两个问题延伸到了 128&nbsp;000。主角是这一对卡，跑着当天专门为它裁出的一条阶梯；同一天租用的机器作为背景，
 点一下就能叠上来。</p>
 
 <figure class="rv" id="figlong">
@@ -1330,17 +1328,17 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
 
 <h2><span class="n">2</span>文章</h2>
 
-<p>十二篇，按卡片上的日期从新到旧 —— 那是这篇文章的证据最后一次在这台机器上实测、
-向上游上报、或者被重新核对的日子。标题下面一行是这篇文章原来的引子；
-再下面一行是它确立了什么，用的是综述篇给它分类时的原话，所以两处不会把同一个结论说成两回事。</p>
+<p>十二篇，按卡片上的日期从新到旧。这一日期是该文证据最后一次在本机实测、
+向上游上报或重新核对的日子。每个标题下方是该文最初的导语。
+其下则是它所确立的内容，措辞与综述篇给它分类时的原话一致，两处不会对同一发现有不同表述。</p>
 
 <div class="cards" id="cards"></div>
 
 <h2><span class="n">3</span>它们各自记的是哪一天</h2>
 
-<p>文章上的日期是证据取得的日期，不是撰写的日期。十二篇里有三篇记在七月最后一周，八篇记在八月最后一周，一篇记在九月第一周。
-机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，之后三周没有再跑——第二批基本上是在第一批搞错了的
-条件下重测一遍。跨两个日期的条形，说明这篇文章的证据来自两次分开的测量，而不是中间一直在跑。</p>
+<p>文章标注的日期是取得证据的日期，而非撰写的日期。十二篇中有三篇落在七月最后一周，八篇落在八月最后一周，一篇落在九月第一周。
+机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，此后三周未再运行。第二批测量大多是在第一批条件有误的情况下重新实测。
+横跨两个日期的条形，表示该文证据来自两轮分开的测量，而非期间一直在跑。</p>
 
 <figure class="rv" id="figtl">
   <div class="figbox">
@@ -1357,23 +1355,23 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
 
 <h2><span class="n">4</span>怎么读这些文章</h2>
 
-<p>每一篇都是<strong>一份有日期的记录，不是长期有效的建议</strong>。这个仓库里最大的两个结论，
-在测完之后就已经变了：一个 Ubuntu 内核回归在 <code>7.0.0-30</code> 里修掉了；
-而一个 3.9× 到 5.6× 的加载提速，在把 page cache 真正控制住之后被撤回了。
-所以每篇文章都以「此后发生的变化」一节收尾，那一节只往后追加，不回头改写。</p>
+<p>每篇文章都是<strong>一份有日期的记录，而非长期有效的建议</strong>。本仓库中最大的两项结论，
+在测完之后便已发生了变化。某个 Ubuntu 内核回归已在 <code>7.0.0-30</code> 中修复；
+而最初测出的 3.9× 到 5.6× 加载提速，也在严格控制 page cache 后被撤回。
+因此，每篇文章均以「此后发生的变化」一节收尾，该节只往后追加，不回头改写。</p>
 
-<p>每张图都带一个来源标记。<span class="prov yes">可由仓库重算</span> 表示
+<p>每张图表都带有来源标记。<span class="prov yes">可由仓库重算</span> 表示
 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a>
-会把这个值对照它的源文件检查一遍，两者不一致就非零退出——和守着仓库自身文档的是同一套检查。 <span class="prov no">原始输出未入库</span>
-表示这个数字抄自一次原始输出没有入库的运行， 无法重算。</p>
+会将该数值对照源文件核对，两者若不一致便以非零状态退出；守着仓库自身文档的也是这同一套检查。<span class="prov no">原始输出未入库</span>
+则表示该数字抄自一次原始输出未入库的运行，无法重算。</p>
 
-<p>这里的绝对速率是下限，不是这套硬件的跑分：这是一台 VFIO 虚拟机，两张卡之间没有 P2P，
-走的是跨 die 的 PCIe 3.0，是刻意挑的最不利拓扑。形状搬得到别的机器上，绝对值是最坏情况。</p>
+<p>这里的绝对速率是下限，而非这套硬件的跑分。测试环境为一台 VFIO 客户机，两张卡之间没有 P2P，
+走的是跨 die 的 PCIe 3.0 路径，这是刻意挑选的最不利拓扑。曲线形态可以迁移，绝对数值则是最坏情况。</p>
 
 <div class="foot-note">
   <p>源码、原始数据，以及产生它们的运行脚本：
   <a href="https://github.com/cadamcat/dual-radeon-vllm">github.com/cadamcat/dual-radeon-vllm</a>。
-  上游的报告与补丁在每篇文章里给出链接。</p>
+  各篇文章均给出了上游报告与补丁的链接。</p>
 </div>
 </div>
 
@@ -25280,12 +25278,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "The second card buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×"
+    "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
+    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
    },
    "sub": {
-    "en": "One 7900 XT, two of them, one A100 and one L4, on the same ladder",
-    "zh": "一张 7900 XT、两张、一张 A100、一张 L4，同一套阶梯"
+    "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",
+    "zh": "两张 Radeon 上的解码速率与预填充扩展；对照单卡、A100 和 L4 实测"
    },
    "blurb": {
     "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, and the L4 is slower than a consumer card on prefill's linear term.",
@@ -25571,12 +25569,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/w4a16-two-problems.zh.html"
    },
    "title": {
-    "en": "A flat 60 ms per step, under a cost that grows with context",
-    "zh": "每步固定 60 ms，压在一笔随上下文增长的开销下面"
+    "en": "One line of SUPPORTED_QUANT_TYPES adds a flat 60 ms per step, under an attention cost that grows with context",
+    "zh": "SUPPORTED_QUANT_TYPES 中的一行代码每步增加固定 60 ms，压在随上下文增长的注意力开销下面"
    },
    "sub": {
-    "en": "Twelve tokens a second was two problems",
-    "zh": "12 tok/s 是两个问题"
+    "en": "Asymmetric and symmetric decode rate on dual Radeon cards under vLLM; checked across context lengths, against native kernels, and against upstream fixes",
+    "zh": "vLLM 下双 Radeon 卡的非对称与对称解码速率；跨上下文长度实测，并对照原生 kernel 与上游修复"
    },
    "blurb": {
     "en": "The same model family packaged two ways differs by 3.24x at 1K of context and 1.27x at 32K. Read as milliseconds rather than as a ratio, that is one flat cost under one growing cost, and each has its own upstream fix.",
@@ -25786,12 +25784,12 @@ campaign 的：每条臂都把 <code>max_model_len</code> 设成 33&nbsp;000，�
     "zh": "articles/weight-loading-19x.zh.html"
    },
    "title": {
-    "en": "A read-only copy asks for write access, and one kernel charged a second for it",
-    "zh": "只读的拷贝去申请写权限，而某个内核为此每次多收一秒"
+    "en": "KFD asks for write access on a read-only copy, and an Ubuntu kernel backport charged a second for it",
+    "zh": "KFD 对只读拷贝申请写权限，而 Ubuntu 内核的一处 backport 为此每次多收一秒"
    },
    "sub": {
-    "en": "Loading weights was slower than the disk, twice over",
-    "zh": "加载权重比磁盘还慢，而且慢了两次"
+    "en": "Weight loading measured on Radeon hardware; traced through KFD and HMM against an unpatched kernel retry loop and Canonical's update",
+    "zh": "在 Radeon 硬件上实测权重加载；沿 KFD 与 HMM 追踪，对照未打补丁的内核重试循环与 Canonical 的更新"
    },
    "blurb": {
     "en": "A host-to-device copy only reads its source, but KFD asks for write access because the mapping is writable, and that breaks copy-on-write on every resident page. On one distro kernel each occurrence also cost a full second.",

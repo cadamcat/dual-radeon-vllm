@@ -1,6 +1,6 @@
 <header class="top">
   <div class="kicker">dual-radeon-vllm · write-ups</div>
-  <h1>Two consumer Radeons,<br>measured</h1>
+  <h1>Two consumer Radeon GPUs,<br>measured under ROCm and vLLM</h1>
   <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
   (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
   the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
@@ -11,11 +11,11 @@ __CHIPS__
 
 <h2><span class="n">1</span>What this machine does today</h2>
 
-<p>One line per model per machine, each of them that model's fastest measured configuration rather
-than a common one. Four of the six Radeon lines come from a single campaign on one stack and are
-directly comparable; the other two are drawn from a later stack, because on those two models the
-campaign is no longer the best this machine can do. The A100 carries five of the same models, its
-own whole campaign on one afternoon. Every line says which it is.</p>
+<p>The charts plot one line per model per machine. Each line reflects that model's fastest measured
+configuration rather than a common baseline. Four of the six Radeon lines come from a single campaign
+on one stack and are directly comparable; the other two are drawn from a later stack, because on those
+two models the campaign is no longer the best this machine can do. The A100 carries five of the same
+models from its own single-afternoon campaign. Every line marks which stack it runs.</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
@@ -137,11 +137,11 @@ own whole campaign on one afternoon. Every line says which it is.</p>
   </figcaption>
 </figure>
 
-<p>Every ladder on this machine stopped at 32&nbsp;000 tokens until 2026-09-03, and that read as the
-machine's limit. It was the campaign's: each arm set <code>max_model_len</code> to 33&nbsp;000 while
-its KV pool held several times that. The two figures below are the same two questions asked to
-128&nbsp;000 &mdash; the pair as the subject, on one ladder cut for it that day, and the machines rented
-the same day one click away as the background.</p>
+<p>Until 2026-09-03, every ladder on this machine stopped at 32&nbsp;000 tokens. That appeared to be a
+hardware boundary, but the limit belonged to the campaign: each arm set <code>max_model_len</code> to
+33&nbsp;000 while its KV pool held several times that. The two figures below ask those same questions
+out to 128&nbsp;000 &mdash; the pair serves as the subject on a ladder cut that day, with the machines
+rented the same day one click away as the background.</p>
 
 <figure class="rv" id="figlong">
   <div class="figbox">
@@ -205,21 +205,20 @@ the same day one click away as the background.</p>
 
 <h2><span class="n">2</span>Articles</h2>
 
-<p>Twelve write-ups, newest first by the date on the card — the last day evidence for that article
-was taken here, reported upstream or re-read. Under each title is the line that article used to lead
-with; under that, what it establishes, in the words the synthesis piece uses to classify it, so the
-two cannot describe a finding differently.</p>
+<p>Twelve write-ups, newest first by the date on the card &mdash; the last day evidence for that
+article was taken here, reported upstream or re-read. Under each title
+is the line that article used to lead with. Beneath it is what the piece establishes, in the words the
+synthesis article uses to classify it, so the two cannot describe a finding differently.</p>
 
 <div class="cards" id="cards"></div>
 
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
-<p>The date on an article is the date its evidence was taken, not the date it was written. Three of
-the twelve are dated to the last week of July, eight to the last week of August and one to the first week of September. The machine
-itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks — the second
-cluster is largely re-measurement of the first under conditions the first got wrong. A bar spanning
-two dates is an article whose evidence comes from two separate sittings, not one that ran
-throughout.</p>
+<p>The date on an article marks when its evidence was taken, not when it was written. Three of
+the twelve are dated to the last week of July, eight to the last week of August and one to the first
+week of September. The machine itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks &mdash;
+the second cluster is largely re-measurement of the first under conditions the first got wrong. A bar
+spanning two dates is an article whose evidence comes from two separate sittings, not one that ran throughout.</p>
 
 <figure class="rv" id="figtl">
   <div class="figbox">
@@ -240,9 +239,9 @@ throughout.</p>
 <h2><span class="n">4</span>How to read these</h2>
 
 <p>Each article is a <strong>dated record, not standing advice</strong>. Two of the largest findings in
-this repository have already moved since they were measured: an Ubuntu kernel regression was fixed in
-<code>7.0.0-30</code>, and a loader speed-up of 3.9× to 5.6× was withdrawn when page cache was properly
-controlled. Every article therefore closes with a section listing what has changed since, which is
+this repository have already moved since they were measured. An Ubuntu kernel regression was fixed in
+<code>7.0.0-30</code>, and an initial loader speed-up of 3.9× to 5.6× was withdrawn when page cache was
+properly controlled. Every article therefore closes with a section listing what has changed since,
 appended to rather than rewritten.</p>
 
 <p>Figures carry a provenance marker. <span class="prov yes">recomputable from repo</span> means
@@ -251,9 +250,9 @@ checks that value against its source file and fails non-zero if the two disagree
 guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
 number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
 
-<p>The absolute rates are a floor rather than a benchmark of the hardware: this is a VFIO guest with no
-peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as the least favourable
-topology. The shapes transfer; the levels are the worst case.</p>
+<p>The absolute rates are a floor rather than a benchmark of the hardware. The test environment is a
+VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as
+the least favourable topology. The shapes transfer; the levels are the worst case.</p>
 
 <div class="foot-note">
   <p>Source, raw data and the runners that produced the data:
