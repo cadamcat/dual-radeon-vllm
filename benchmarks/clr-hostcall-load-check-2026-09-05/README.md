@@ -45,6 +45,10 @@ the first launch refused:
 July crash log names, and `enqueue.cc:2061` is the line it names. The failure
 is the same; the sentence is different.
 
+The same eight cells, run again with the ROCm 10.0 image's runtime commit and
+its own RCCL 2.30.4, give the same table cell for cell —
+[below](#the-same-eight-cells-at-rocm-100).
+
 ---
 
 ## The patch
@@ -106,14 +110,50 @@ other accommodations the wheel layout needs (GL and zstd headers, the
 SDK ships the targets file but no config); none of them touches the runtime's
 behaviour.
 
+## The same eight cells at ROCm 10.0
+
+The 7.14 image is the one this box serves from; ROCm 10.0 is the current
+release. The patch applies unchanged to the commit its runtime was built from
+(`6b0e43f3`, TheRock's `therock-10.0` tag — the image's RCCL says so itself:
+`RCCL version 2.30.4 compiled with ROCm "10.0.0.0-9999-6b0e43f3"`), builds in
+that image against its wheel SDK with the same `clr_build.sh` (`CLR_TAG=rocm10`;
+the 10.0 SDK ships its own `rocm-kpack-config.cmake`, so the stand-in is not
+written), and `clr_demo_row.sh` with `CLR_SDK=rocm10` runs the same four cells
+per state in a container of that image (`clr100`), with the image's own
+`librccl.so.1` as the stock library — md5 `a3963038…`, the file
+[C1](../hostcall-abi-2026-09-04/README.md)'s cross-architecture scan read,
+checked unchanged at the end of each row.
+
+    gfx1100 pair, VM 101, the vLLM 0.27 container; runtime = rocm-systems 6b0e43f3 (TheRock 10.0)
+
+                          stock runtime                              patched runtime
+                          probe        12 collectives, stock RCCL    probe                       12 collectives, stock RCCL
+    AtomicOps present     ok           12/12                         ok                          12/12
+    AtomicOps absent      refused,     refused, "the operation       refused, hipErrorHostcall-  refused, hipErrorHostcall-
+                          generic      cannot be performed in the    Unsupported; named at load  Unsupported; 13 kernels per
+                                       present state"                on both devices             rank named at load
+
+Cell for cell the 7.14 table. The thirteen kernels named at load are the same
+thirteen by name; `ncclDevKernel_Generic_4` is refused on both devices (the two
+ranks' refusal lines land in the same microsecond and interleave in
+`logs/clrdemo-rocm10-atomics_absent-patched-collective.log`; the gate counts
+the sentence, not the line); RCCL's own error path carries it through at
+`enqueue.cc:2119` — 10.0's RCCL is a different binary under the same version
+string, and the line number moves with it. Under the patched runtime the
+probe's device `printf` still reaches the host when the capability is present
+(the marker prints on both devices), and the patched cells mapped `423fdad5…`,
+the stock ones `7c440eb5…`, that image's SDK runtime. Logs: `logs/*rocm10*` and
+`logs/clr-rocm10-build.log`; `python3 analyze.py` reads both files.
+
 ## What this licenses, and what it does not
 
-**Licensed.** On this platform, with this runtime commit, moving the check to
+**Licensed.** On this platform, at the 7.14 and the 10.0 runtime commits, moving the check to
 kernel init and naming the error is forty-five lines and changes nothing when the
 capability is present; when it is absent the refusal names the kernel, the
 device, the attribute and the reason, at load and at launch, and the
 collective library's own error path carries the sentence through
-(`enqueue.cc:2061`) with no change to RCCL or torch. The thirteen kernels the
+(`enqueue.cc:2061` in the 7.14 image's RCCL, `enqueue.cc:2119` in 10.0's) with no
+change to RCCL or torch. The thirteen kernels the
 runtime names are the thirteen the static scan counted.
 
 **Not licensed.** That a real submission would use error code 1055, or log
@@ -121,7 +161,7 @@ at `LOG_ERROR`, or refuse in `ihipLaunchKernel_validate` rather than at
 `hipModuleGetFunction`; those are choices for the runtime's maintainers. The
 fallback (item 3) and the toolchain change (item 4) remain proposals. The cost
 of the check was not measured; it is one pass over a kernel's hidden
-arguments at init. One host, one architecture, one runtime commit.
+arguments at init. One host, one architecture, two runtime commits.
 
 ## The upstream record, read 2026-09-05
 
@@ -161,6 +201,11 @@ is the part neither attempted, and it is the part that composes with both.
     bash clr_demo_row.sh atomics_present
     bash clr_demo_row.sh atomics_absent
     python3 analyze.py                     # the table from logs/clr-demo.jsonl, non-zero if a cell is missing
+    # the same at ROCm 10.0: the source tarball is /rb/clr-rocm10-src.tgz (rocm-systems 6b0e43f3, projects/clr + projects/hip)
+    docker run --rm --entrypoint bash -e CLR_TAG=rocm10 -v /data/rccl-build:/rb <10.0 image> /rb/clr_build.sh /rb/clr-hostcall-load-check.patch
+    CLR_SDK=rocm10 bash clr_demo_row.sh atomics_present
+    CLR_SDK=rocm10 bash clr_demo_row.sh atomics_absent
 
 `logs/` holds every row, every per-cell log with the runtime's `:1:` lines,
-the build log, the diagnostic, and the two earlier attempts.
+the build logs, the diagnostic, the two earlier attempts, and the ROCm 10.0
+rows (`*rocm10*`).

@@ -8918,6 +8918,84 @@ def _run_checks(_opened, _audit_state):
     ):
         ck(f"CLR check README, states {_what}", "1", 1 if _frag in _crm else 0)
 
+    # --- the same eight cells at ROCm 10.0: runtime 6b0e43f3 (therock-10.0), the image's own RCCL 2.30.4 ---
+    _crows10 = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo-rocm10.jsonl")) if l.strip()]
+    _cc10 = {}
+    for _r in _crows10:
+        _cc10[(_r["row"], _r["runtime"], _r["what"])] = _r
+    ck("CLR check 10.0, distinct cells", "8", len(_cc10))
+    ck("CLR check 10.0, rows", "8", len(_crows10))
+    for _row in ("atomics_present", "atomics_absent"):
+        for _rt in ("stock", "patched"):
+            for _w in ("probe", "collective"):
+                _cc10.setdefault((_row, _rt, _w), dict(_MISSING, row=_row, runtime=_rt, what=_w))
+    ck("CLR check 10.0, every row says sdk rocm10", "8", sum(1 for r in _crows10 if r.get("sdk") == "rocm10"))
+    ck("CLR check 10.0, every row says runtime commit 6b0e43f3", "8", sum(1 for r in _crows10 if r.get("runtime_commit") == "6b0e43f3"))
+    ck("CLR check 10.0, every row names the vLLM 0.27 image", "8",
+       sum(1 for r in _crows10 if r.get("image") == "rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0"))
+    ck("CLR check 10.0, the image's RCCL names the same commit", "8",
+       sum(1 for r in _crows10 if "10.0.0.0-9999-6b0e43f3" in (r.get("rccl_version_string") or "")))
+    _c1prov = json.load(open(os.path.join(HERE, "..", "hostcall-abi-2026-09-04", "PROVENANCE.json"), encoding="utf-8"))
+    _c1md5 = next(v for k, v in _c1prov["arms"]["rocm10"]["md5"].items() if k.endswith("librccl.so.1"))
+    ck("CLR check 10.0, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crows10 if r.get("stock_librccl_md5") == _c1md5))
+    for _rt in ("stock", "patched"):
+        ck(f"CLR check 10.0, present {_rt} probe ok", "1",
+           1 if _cc10[("atomics_present", _rt, "probe")]["rc"] == 0 and not _cc10[("atomics_present", _rt, "probe")]["error"] else 0)
+        ck(f"CLR check 10.0, present {_rt} collectives pass", "12", _cc10[("atomics_present", _rt, "collective")]["correctness_passed"])
+        ck(f"CLR check 10.0, present {_rt} no load-time messages", "0",
+           sum(_cc10[("atomics_present", _rt, w)]["load_messages"] for w in ("probe", "collective")))
+    for _w in ("probe", "collective"):
+        ck(f"CLR check 10.0, absent stock {_w} refused with the generic string", "1",
+           1 if _cc10[("atomics_absent", "stock", _w)]["error"] == _OLD else 0)
+        ck(f"CLR check 10.0, absent patched {_w} refused by name", "1",
+           1 if _cc10[("atomics_absent", "patched", _w)]["error"] == "hipErrorHostcallUnsupported" else 0)
+    ck("CLR check 10.0, absent patched probe load-time messages (one per device)", "2",
+       _cc10[("atomics_absent", "patched", "probe")]["load_messages"])
+    ck("CLR check 10.0, absent patched collectives load-time messages (13 kernels x 2 ranks)", "26",
+       _cc10[("atomics_absent", "patched", "collective")]["load_messages"])
+    _clog10 = open(os.path.join(_CLOG, "clrdemo-rocm10-atomics_absent-patched-collective.log"), encoding="utf-8", errors="replace").read()
+    _named10 = sorted({re.search(r"kernel (\S+) declares", l).group(1) for l in _clog10.splitlines() if "declares hidden_hostcall_buffer" in l})
+    ck("CLR check 10.0, distinct kernels named at load", "13", len(_named10))
+    ck("CLR check 10.0, the thirteen are the 7.14 thirteen by name", "1", 1 if set(_named10) == set(_named) else 0)
+    # the two ranks' refusal lines interleave in this log (same microsecond); count the sentence, not the line
+    ck("CLR check 10.0, Generic_4 refused, both devices", "2", _clog10.count("launch of _Z23ncclDevKernel_Generic_4"))
+    ck("CLR check 10.0, refused on device 0 and on device 1", "2",
+       _clog10.count("device 0 has no PCIe atomics") + _clog10.count("device 1 has no PCIe atomics"))
+    ck("CLR check 10.0, RCCL carries the sentence through enqueue.cc:2119", "2",
+       sum(1 for l in _clog10.splitlines() if "HIP failure 'kernel declares a hostcall buffer" in l and "enqueue.cc:2119" in l))
+    ck("CLR check 10.0, stock RCCL fails at the same line", "2",
+       open(os.path.join(_CLOG, "clrdemo-rocm10-atomics_absent-stock-collective.log"), encoding="utf-8", errors="replace").read().count("enqueue.cc:2119"))
+    _plog10 = open(os.path.join(_CLOG, "clrdemo-rocm10-atomics_absent-patched-probe.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check 10.0, the probe prints the description at launch, both devices", "2",
+       sum(1 for l in _plog10.splitlines() if "hostcall  REFUSED   launch:kernel declares a hostcall buffer" in l))
+    ck("CLR check 10.0, the probe names the kernel at load, both devices", "2",
+       sum(1 for l in _plog10.splitlines() if "kernel _Z10k_hostcallPf declares hidden_hostcall_buffer" in l))
+    ck("CLR check 10.0, the marker still reaches the host with atomics, both devices", "2",
+       open(os.path.join(_CLOG, "clrdemo-rocm10-atomics_present-patched-probe.log"), encoding="utf-8", errors="replace").read().count("HOSTCALL_MARKER reached the host"))
+    ck("CLR check 10.0, one patched library across rows", "1", len({r["patched_libamdhip64_md5"] for r in _crows10}))
+    ck("CLR check 10.0, patched cells mapped the patched library", "4",
+       sum(1 for r in _crows10 if r["runtime"] == "patched" and r["patched_libamdhip64_md5"] in (r.get("mapped_amdhip64") or "")))
+    ck("CLR check 10.0, stock cells mapped the 10.0 SDK's library", "4",
+       sum(1 for r in _crows10 if r["runtime"] == "stock" and "7c440eb52803588cef83b955dd4494b5" in (r.get("mapped_amdhip64") or "")))
+    for _row, _caps, _dm in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
+        ck(f"CLR check 10.0, {_row} root ports with completer support", _caps,
+           {r["root_ports_with_completer_support"] for r in _crows10 if r["row"] == _row}.pop())
+        ck(f"CLR check 10.0, {_row} amdgpu complaints", _dm,
+           {r["dmesg_no_atomics_lines"] for r in _crows10 if r["row"] == _row}.pop())
+    _blog10 = open(os.path.join(_CLOG, "clr-rocm10-build.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check 10.0, the build finished", "1", _blog10.count("BUILD-OK"))
+    _pmd5 = hashlib.md5(open(os.path.join(_CDIR, "clr-hostcall-load-check.patch"), "rb").read()).hexdigest()
+    ck("CLR check 10.0, the build applied the committed patch (md5)", "1", 1 if f"(md5 {_pmd5})" in _blog10 else 0)
+    ck("CLR check 10.0, the SDK's own rocm-kpack config was used", "1", _blog10.count("rocm-kpack config: the SDK's own"))
+    for _what, _frag in (
+        ("cell for cell", "Cell for cell the 7.14 table."),
+        ("the 10.0 runtime commit", "(`6b0e43f3`, TheRock's `therock-10.0` tag"),
+        ("the moved enqueue line", "carries it through at\n`enqueue.cc:2119`"),
+        ("the interleaving", "the gate counts\nthe sentence, not the line"),
+        ("two runtime commits", "One host, one architecture, two runtime commits."),
+    ):
+        ck(f"CLR check 10.0 README, states {_what}", "1", 1 if _frag in _crm else 0)
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

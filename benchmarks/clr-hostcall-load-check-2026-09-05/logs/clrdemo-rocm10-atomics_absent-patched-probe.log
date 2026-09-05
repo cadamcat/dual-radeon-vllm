@@ -1,0 +1,18 @@
+:1:rockernel.cpp            :29  : 0089196626 us:  kernel _Z10k_hostcallPf declares hidden_hostcall_buffer (device printf/assert) but device gfx1100 has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); its launches will return hipErrorHostcallUnsupported
+:1:hip_module.cpp           :356 : 0089197709 us:  launch of _Z10k_hostcallPf refused: it declares a hostcall buffer and device 0 has no PCIe atomics
+devices=2
+affected = the hostcall kernel is REFUSED, or its marker never prints,
+           while the plain kernel is ok on the same device
+
+--- device 0 (gfx1100) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+  hostcall  REFUSED   launch:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host | sync:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host | lastError:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host
+:1:rockernel.cpp            :29  : 0089221496 us:  kernel _Z10k_hostcallPf declares hidden_hostcall_buffer (device printf/assert) but device gfx1100 has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); its launches will return hipErrorHostcallUnsupported
+:1:hip_module.cpp           :356 : 0089222036 us:  launch of _Z10k_hostcallPf refused: it declares a hostcall buffer and device 1 has no PCIe atomics
+
+--- device 1 (gfx1100) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+  hostcall  REFUSED   launch:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host | sync:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host | lastError:kernel declares a hostcall buffer (device printf/assert) that this device cannot provide: no PCIe AtomicOps to the host
+
+If no '[device] HOSTCALL_MARKER' line appeared for a device, hostcall is
+unavailable there, whatever the return codes said.

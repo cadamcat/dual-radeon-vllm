@@ -1,0 +1,22 @@
+18:12:20 | ===== CLR demo sdk=rocm10 row=atomics_absent start =====
+18:12:20 | host=ai kernel=7.0.0-31-generic caps=0/8 dmesg=2
+18:12:20 | patched libamdhip64 libamdhip64.so.7.15.0-0000000 md5=423fdad57bb02e59144a3f1e6be06811 (runtime commit 6b0e43f3 + patch)
+18:12:20 | stopping services
+18:12:31 | SDK runtime: core /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5 ; devel /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5
+18:12:31 | stock RCCL for the collective cells: /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1 md5=a3963038f2f0241257be5cff41f4888f (RCCL version 2.30.4 compiled with ROCm "10.0.0.0-9999-6b0e43f3")
+18:12:31 | ----- cell sdk=rocm10 row=atomics_absent runtime=stock what=probe -----
+18:12:31 | cell rc=0 named_error_lines=0 load_messages=0 passed=n/a first_error=the operation cannot be performed in the present state
+18:12:31 | ----- cell sdk=rocm10 row=atomics_absent runtime=stock what=collective -----
+18:12:42 | cell rc=1 named_error_lines=0 load_messages=0 passed=n/a first_error=the operation cannot be performed in the present state
+18:12:42 | ----- cell sdk=rocm10 row=atomics_absent runtime=patched what=probe -----
+18:12:43 | stock runtime restored (md5 verified)
+18:12:43 | cell rc=0 named_error_lines=2 load_messages=2 passed=n/a first_error=hipErrorHostcallUnsupported
+18:12:43 | ----- cell sdk=rocm10 row=atomics_absent runtime=patched what=collective -----
+18:12:52 | stock runtime restored (md5 verified)
+18:12:52 | cell rc=1 named_error_lines=26 load_messages=26 passed=n/a first_error=hipErrorHostcallUnsupported
+18:12:52 | four cells recorded; restoring
+18:12:52 | --- restore (exit=0) ---
+18:12:52 | image's librccl unchanged md5=a3963038f2f0241257be5cff41f4888f
+18:13:02 | stopped clr100
+18:13:07 | VRAM back to baseline: 27971584 27971584 
+18:13:07 | ROW-DONE clr-demo sdk=rocm10 row=atomics_absent (restore ok)
