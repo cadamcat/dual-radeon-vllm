@@ -99,8 +99,8 @@ else touched, because the runners in campaign directories are **records** — ea
 has exactly one commit, on its own campaign's date, and editing one would
 falsify what actually ran.
 
-    runner_radeon.py   campaign-2026-08-30b/runner.py, 77 lines changed
-    runner_cuda.py     cuda-l4/campaign-2026-08-30c/run.py, 38 lines changed
+    runner_radeon.py   generalised from campaign-2026-08-30b/runner.py
+    runner_cuda.py     generalised from cuda-l4/campaign-2026-08-30c/run.py
 
 The Radeon template also fixes something the old one did that no schema could
 have caught: it started the sampler **only for decode**, so every prefill row in

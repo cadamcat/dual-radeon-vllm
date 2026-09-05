@@ -716,6 +716,13 @@ UTC. Both restored all services afterwards and returned VRAM to baseline. The 19
 like this impractical has a working workaround. Part of it is explained now: AMD
 named the kernel line, and copy-on-write is broken on every resident page because
 the permission comes from the VMA rather than from what the copy actually does.
+
+> **Corrected 2026-09-05.** The band above is quoted as 19–48×, which is the
+> heading of [open-questions.md §8](open-questions.md). That section carries a
+> unit note of its own: its rates are MiB/s labelled MB/s, and against the same
+> disk figure its two rows give **19× and 52×**. The heading there is left as
+> written because two documents cite the band; this is one of them, and it had
+> not said so.
 The other part, the collapse to whole seconds per copy on guest kernel
 `7.0.0-28-generic`, is a backport that took `c08972f55594` without its follow-up
 `342981fff328`, and rebuilding that kernel with the follow-up applied takes the

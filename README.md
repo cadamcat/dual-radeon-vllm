@@ -37,7 +37,7 @@ Three things, each usable on its own:
 
 | | |
 |---|---|
-| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 30-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
+| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 57-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
@@ -181,7 +181,7 @@ amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
 If any of those look familiar, and you are running **two or more AMD GPUs** under
 **vLLM, PyTorch DDP/FSDP, or anything else that calls RCCL**, on a consumer chipset
 or inside a **VFIO/QEMU passthrough VM**, then this repository has the root cause, a
-30-line reproducer and a working fix.
+57-line reproducer and a working fix.
 
 It applies to **RX 7900 XTX / XT / GRE, RX 7800 XT, RX 7600, RX 6800 / 6900 XT,
 RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe path to
@@ -705,7 +705,7 @@ ceiling rather than expecting to hit it.
 
 ```
 diagnose/     Start here. Dependency-free probes
-  hipgate3.cpp     ★ plain kernel vs hostcall kernel — decisive, ~30 lines
+  hipgate3.cpp     ★ plain kernel vs hostcall kernel — decisive, 57 lines
   check-platform.sh  one-shot triage: dmesg + bridge chain + hostcall count
   ar.py            30-second torchrun all_reduce reproducer
   sweep.sh         11 env-var combinations that do NOT help
@@ -839,6 +839,14 @@ reached, not the request number
 ([`campaign-2026-09-02b/`](benchmarks/campaign-2026-09-02b/)). A 500-token
 cell here carries roughly 15 % of noise however many rounds you give it, and
 the three sittings that have measured it split 2:1 for the pair being ahead.
+
+**Under *A fix*, *Am I hit by the RCCL bug* and the repository map.**
+
+*(Corrected 2026-09-05: all three called `diagnose/hipgate3.cpp` a "30-line
+reproducer". It is 57 lines by `wc -l` — 54 non-blank, 39 excluding comments —
+and its first commit was 35 lines before it reached 57 on 2026-07-26, so thirty
+was never the count. [docs/root-cause.md](docs/root-cause.md) and the published
+article carry the same correction.)*
 
 ---
 

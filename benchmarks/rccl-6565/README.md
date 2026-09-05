@@ -112,13 +112,21 @@ Two things would, and neither is ours to do cheaply:
 The intent was a second witness that does not go through PyTorch, using the
 reporter's Reproducer 1. `rccl-tests` builds cleanly against this container's
 toolchain (`scripts/build_rccltests.sh`) with gfx1100 code objects confirmed in
-both `all_gather_perf` and `verifiable.o`, but every collective aborts at the
-data-init kernel on rank 1:
+both `all_gather_perf` and `verifiable.o`, but the run aborts at the data-init
+kernel on rank 1:
 
 ```
 [1] [FATAL ERROR]: HIP failure: 'invalid device function'
 Test NCCL failure .../common.cu.cpp:650
 ```
+
+> **Corrected 2026-09-05.** This paragraph said "every collective aborts". Only
+> one did. `logs/stage2b-raw.log` holds two invocations and both are
+> `all_gather_perf`; `scripts/stage2b_rccltests.sh` intends six arms and the run
+> stopped after the second, so nothing here ran `reduce_scatter_perf` or
+> `all_reduce_perf` at all. `verify_doc_figures.py` has asserted both counts
+> since 2026-08-29, and the published article was corrected the same day; this
+> file was not.
 
 It fails identically with and without `-c 1` (exit 3 either way), so it is not
 the verification kernels, and `logs/stage2b-raw.log` records in one capture that

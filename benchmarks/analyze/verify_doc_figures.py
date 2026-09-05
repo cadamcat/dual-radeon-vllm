@@ -975,6 +975,32 @@ def _run_checks(_opened, _audit_state):
         ck(f"rccl article, {f} exists", "1",
            1 if os.path.exists(os.path.join(HERE, "..", "..", f)) else 0)
 
+    # The reproducer's length is quoted in six places and was wrong in all six
+    # until 2026-09-05: the article and its Chinese version said thirty, and so
+    # did three lines of README.md and one of docs/root-cause.md. hipgate3.cpp
+    # has been 57 lines since 2026-07-26 and 35 before that, so thirty was never
+    # a count of anything. Every place that states it is checked against the file.
+    _hg = os.path.join(HERE, "..", "..", "diagnose", "hipgate3.cpp")
+    _hgn = len(open(_hg, encoding="utf-8").read().split("\n")) - 1
+    ck("hipgate3.cpp, lines", "57", _hgn)
+    for _f, _pats in (
+            ("README.md", (r"(\d+)-line reproducer", r"decisive, (\d+) lines")),
+            ("docs/root-cause.md", (r"\*\*(\d+) lines of HIP\*\*",)),
+            ("site/src/rccl-body.html", (r"<strong>fifty-seven lines of HIP</strong>",)),
+            ("site/src/rccl-body-zh.html", (r"<strong>五十七行 HIP 代码</strong>",))):
+        _txt = open(os.path.join(HERE, "..", "..", _f), encoding="utf-8").read()
+        # the dated corrections quote the wrong number on purpose; they are
+        # blockquote or italic lines and are dropped before the claims are read
+        _live = "\n".join(_l for _l in _txt.split("\n")
+                          if not _l.lstrip().startswith(">")
+                          and not _l.lstrip().startswith("*(Corrected"))
+        for _p in _pats:
+            _hits = re.findall(_p, _live)
+            ck("%s, states the reproducer's length" % _f, "1", 1 if _hits else 0)
+            for _h in _hits:
+                if _h.isdigit():
+                    ck("%s, and the length it states" % _f, _h, _hgn)
+
     # every host an article may link to. Assets are separate and must be
     # local; the per-page check below keeps the two apart.
     LINK_HOSTS = {"github.com", "bugs.launchpad.net"}

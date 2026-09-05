@@ -16,7 +16,13 @@ sections at the end list what was **ruled out** and how.
 | 5 | → RCCL ≥ 2.27.7-b43 device kernels need hostcall | `llvm-readelf --notes` on the device image: every `ncclDevKernel_Generic*` carries `hidden_hostcall_buffer`. Source: device-side `assert()` throughout `src/device/` links `__assert_fail`; `ENABLE_COLLTRACE` adds device `printf` → `__ockl_fprintf` |
 
 Step 4 is the one that matters. It removes RCCL, PyTorch and vLLM from the
-picture entirely and reduces the whole failure to **~30 lines of HIP**.
+picture entirely and reduces the whole failure to **57 lines of HIP**.
+
+> **Corrected 2026-09-05.** This line, and three in the top-level README, said
+> "~30 lines". `diagnose/hipgate3.cpp` is 57 lines by `wc -l` — 54 non-blank, 39
+> excluding comments — and its first commit was 35 lines before it reached 57 on
+> 2026-07-26, so thirty was never the count. The published article carries the
+> same correction.
 
 ```
 --- dev0 ---
