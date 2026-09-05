@@ -27,6 +27,7 @@ finding, a preflight, or a sweep that writes its own files.
 | [`campaign-2026-09-03/`](campaign-2026-09-03/README.md) | The pair to 128 000 tokens — 2026-09-03 | 352 | yes |
 | [`hostcall-abi-2026-09-04/`](hostcall-abi-2026-09-04/README.md) | Who else asks for a hostcall — 2026-09-04 | — |  |
 | [`rccl-ndebug-ab-2026-09-04/`](rccl-ndebug-ab-2026-09-04/README.md) | What removing the hostcall requirement costs — 2026-09-04 | — |  |
+| [`clr-hostcall-load-check-2026-09-05/`](clr-hostcall-load-check-2026-09-05/README.md) | Check at load, refuse by name: forty-five lines in the HIP runtime turn the opaque refusal into a named one — 2026-09-05 | — |  |
 | [`hostcall-dispatch-2026-09-05/`](hostcall-dispatch-2026-09-05/README.md) | The inference engine's own attention kernel is not refused without PCIe AtomicOps — because the kernels that declare the requirement are never dispatched here — 2026-09-05 | — |  |
 
 ## Rented and granted NVIDIA cards
@@ -68,4 +69,4 @@ finding, a preflight, or a sweep that writes its own files.
 | [`allreduce-2026-09-02/`](allreduce-2026-09-02/README.md) | The TP=2 all-reduce, timed — 2026-09-02 | 55 |  |
 | [`allreduce-2026-09-03/`](allreduce-2026-09-03/README.md) | The collective, on seven rented configurations — 2026-09-03 | — |  |
 
-47 directories; 26 feed the projections.
+48 directories; 26 feed the projections.

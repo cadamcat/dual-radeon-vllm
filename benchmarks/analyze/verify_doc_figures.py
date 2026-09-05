@@ -8807,6 +8807,88 @@ def _run_checks(_opened, _audit_state):
     ):
         ck(f"PA dispatch README, states {_what}", "1", 1 if _frag in _prm else 0)
 
+    # --- benchmarks/clr-hostcall-load-check-2026-09-05: items 1 and 2 of the proposal, run ---
+    _CDIR = os.path.join(HERE, "..", "clr-hostcall-load-check-2026-09-05")
+    _CLOG = os.path.join(_CDIR, "logs")
+    _crm = open(os.path.join(_CDIR, "README.md"), encoding="utf-8").read()
+    _crows = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo.jsonl")) if l.strip()]
+    _cc = {}
+    for _r in _crows:
+        _cc[(_r["row"], _r["runtime"], _r["what"])] = _r
+    ck("CLR check, distinct cells", "8", len(_cc))
+    # a missing cell must fail its checks by name, not crash them
+    _MISSING = {"rc": -1, "error": "MISSING", "correctness_passed": -1, "load_messages": -1,
+                "named_error_lines": -1, "patched_libamdhip64_md5": "", "mapped_amdhip64": ""}
+    for _row in ("atomics_present", "atomics_absent"):
+        for _rt in ("stock", "patched"):
+            for _w in ("probe", "collective"):
+                _cc.setdefault((_row, _rt, _w), dict(_MISSING, row=_row, runtime=_rt, what=_w))
+    ck("CLR check, rows", "8", len(_crows))
+    _OLD = "the operation cannot be performed in the present state"
+    for _rt in ("stock", "patched"):
+        ck(f"CLR check, present {_rt} probe ok", "1",
+           1 if _cc[("atomics_present", _rt, "probe")]["rc"] == 0 and not _cc[("atomics_present", _rt, "probe")]["error"] else 0)
+        ck(f"CLR check, present {_rt} collectives pass", "12", _cc[("atomics_present", _rt, "collective")]["correctness_passed"])
+        ck(f"CLR check, present {_rt} no load-time messages", "0",
+           sum(_cc[("atomics_present", _rt, w)]["load_messages"] for w in ("probe", "collective")))
+    for _w in ("probe", "collective"):
+        ck(f"CLR check, absent stock {_w} refused with the generic string", "1",
+           1 if _cc[("atomics_absent", "stock", _w)]["error"] == _OLD else 0)
+        ck(f"CLR check, absent patched {_w} refused by name", "1",
+           1 if _cc[("atomics_absent", "patched", _w)]["error"] == "hipErrorHostcallUnsupported" else 0)
+    ck("CLR check, absent patched probe load-time messages (one per device)", "2",
+       _cc[("atomics_absent", "patched", "probe")]["load_messages"])
+    ck("CLR check, absent patched collectives load-time messages (13 kernels x 2 ranks)", "26",
+       _cc[("atomics_absent", "patched", "collective")]["load_messages"])
+    _clog = open(os.path.join(_CLOG, "clrdemo-atomics_absent-patched-collective.log"), encoding="utf-8", errors="replace").read()
+    _named = sorted({re.search(r"kernel (\S+) declares", l).group(1) for l in _clog.splitlines() if "declares hidden_hostcall_buffer" in l})
+    ck("CLR check, distinct kernels named at load", "13", len(_named))
+    ck("CLR check, of which Generic", "3", sum(1 for n in _named if "ncclDevKernel_Generic_" in n))
+    ck("CLR check, of which ReduceScatter Symk", "10",
+       sum(1 for n in _named if "ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD_" in n))
+    ck("CLR check, the first launch refused is Generic_4 on both devices", "2",
+       sum(1 for l in _clog.splitlines() if "launch of _Z23ncclDevKernel_Generic_4" in l and "refused" in l))
+    ck("CLR check, RCCL carries the sentence through enqueue.cc:2061", "2",
+       sum(1 for l in _clog.splitlines() if "HIP failure 'kernel declares a hostcall buffer" in l and "enqueue.cc:2061" in l))
+    _plog = open(os.path.join(_CLOG, "clrdemo-atomics_absent-patched-probe.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check, the probe prints the description at launch, both devices", "2",
+       sum(1 for l in _plog.splitlines() if "hostcall  REFUSED   launch:kernel declares a hostcall buffer" in l))
+    ck("CLR check, the probe names the kernel at load, both devices", "2",
+       sum(1 for l in _plog.splitlines() if "kernel _Z10k_hostcallPf declares hidden_hostcall_buffer" in l))
+    ck("CLR check, one patched library across rows", "1", len({r["patched_libamdhip64_md5"] for r in _crows}))
+    ck("CLR check, patched cells mapped the patched library", "4",
+       sum(1 for r in _crows if r["runtime"] == "patched" and r["patched_libamdhip64_md5"] in (r.get("mapped_amdhip64") or "")))
+    ck("CLR check, stock cells mapped the stock library", "4",
+       sum(1 for r in _crows if r["runtime"] == "stock" and "701fd9c689679b16806817d932461ec1" in (r.get("mapped_amdhip64") or "")))
+    for _row, _caps, _dm in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
+        ck(f"CLR check, {_row} root ports with completer support", _caps,
+           {r["root_ports_with_completer_support"] for r in _crows if r["row"] == _row}.pop())
+        ck(f"CLR check, {_row} amdgpu complaints", _dm,
+           {r["dmesg_no_atomics_lines"] for r in _crows if r["row"] == _row}.pop())
+    _patch = open(os.path.join(_CDIR, "clr-hostcall-load-check.patch"), encoding="utf-8").read()
+    ck("CLR check, patch files", "5", sum(1 for l in _patch.splitlines() if l.startswith("+++ b/")))
+    ck("CLR check, patch added lines", "45", sum(1 for l in _patch.splitlines() if l.startswith("+") and not l.startswith("+++")))
+    ck("CLR check, the patch defines the code", "1", 1 if "hipErrorHostcallUnsupported = 1055" in _patch else 0)
+    # the two earlier attempts, kept: attempt 1 ran the stock runtime in its "patched" collective cells, attempt 2 crashed torch
+    _a1 = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo.attempt1.jsonl")) if l.strip()]
+    _a2 = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo.attempt2.jsonl")) if l.strip()]
+    ck("CLR check, attempt 1 patched collectives did not name the error (LD_LIBRARY_PATH never reached torch)", "0",
+       sum(r["named_error_lines"] for r in _a1 if r["runtime"] == "patched" and r["what"] == "collective"))
+    ck("CLR check, attempt 2 patched collectives crashed (no kpack)", "2",
+       sum(1 for r in _a2 if r["runtime"] == "patched" and r["what"] == "collective" and r["rc"] != 0 and r["correctness_passed"] is None))
+    for _what, _frag in (
+        ("the table's present row", "    AtomicOps present     ok           12/12                         ok                          12/12"),
+        ("thirteen per rank", "**thirteen kernels per rank**"),
+        ("the same kernel as July", "`ncclDevKernel_Generic_4` is the kernel [root-cause.md](../../docs/root-cause.md)'s\nJuly crash log names"),
+        ("forty-five lines, five files", "`clr-hostcall-load-check.patch`: five files, forty-five added lines including\ncomments"),
+        ("the commit", "against `rocm-systems` at `2b22ab01`"),
+        ("what is not implemented", "Item 3 (a null-buffer fallback) and\nitem 4 (the toolchain) are not implemented here."),
+        ("the preload finding", "`rocm_sdk.preload_libraries()`\n`dlopen`s the SDK's `libamdhip64.so.7` by absolute path at import"),
+        ("the kpack finding", "**The build needs `ROCM_KPACK_ENABLED=ON`.**"),
+        ("what is not licensed", "That a real submission would use error code 1055"),
+    ):
+        ck(f"CLR check README, states {_what}", "1", 1 if _frag in _crm else 0)
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

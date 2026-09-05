@@ -1,0 +1,13 @@
+15:02:47 | patched runtime in place: c5fcde6af0fdcc578a9a32a4a483c0d2
+15:02:47 | --- 1: basic GPU op ---
+15:02:49 | rc=139 es: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, torch._C, torch._C._dynamo.autograd_compiler, torch._C._dynamo.eval_frame, torch._C._dynamo.guards, torch._C._dynamo.utils, torch._C._fft
+15:02:49 | --- 2: torchrun 2 ranks, init only, no collective ---
+15:02:53 | rc=1     raise ChildFailedError( torch.distributed.elastic.multiprocessing.errors.ChildFailedError:    traceback : Signal 11 (SIGSEGV) received by PID 78   traceback : Signal 11 (SIGSEGV) received by PID 7
+15:02:53 | --- 3: the collectives, AMD_LOG_LEVEL=3 (last lines before a crash) ---
+15:02:57 | rc=1
+  traceback : Signal 11 (SIGSEGV) received by PID 113
+  traceback : Signal 11 (SIGSEGV) received by PID 112
+15:02:57 | cases: 
+701fd9c689679b16806817d932461ec1  /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7
+701fd9c689679b16806817d932461ec1  /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so.7
+15:03:15 | services active active  VRAM 27971584 27971584  DIAG-END rc=0

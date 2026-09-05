@@ -1,0 +1,21 @@
+15:14:58 | ===== CLR demo row=atomics_present start =====
+15:14:58 | host=ai kernel=7.0.0-31-generic caps=2/6 dmesg=0
+15:14:58 | patched libamdhip64 md5=c6c7a3df59cd6453cc3adc382cd695c2
+15:14:58 | stopping services
+15:15:08 | SDK runtime: core /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7 md5=701fd9c689679b16806817d932461ec1 ; devel /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so.7 md5=701fd9c689679b16806817d932461ec1
+15:15:08 | ----- cell row=atomics_present runtime=stock what=probe -----
+15:15:09 | cell rc=0 named_error_lines=0 load_messages=0 passed=n/a first_error=none
+15:15:09 | ----- cell row=atomics_present runtime=stock what=collective -----
+15:15:18 | cell rc=0 named_error_lines=0 load_messages=0 passed=12 first_error=none
+15:15:18 | ----- cell row=atomics_present runtime=patched what=probe -----
+15:15:19 | stock runtime restored (md5 verified)
+15:15:19 | cell rc=0 named_error_lines=0 load_messages=0 passed=n/a first_error=none
+15:15:19 | ----- cell row=atomics_present runtime=patched what=collective -----
+15:15:28 | stock runtime restored (md5 verified)
+15:15:28 | cell rc=0 named_error_lines=0 load_messages=0 passed=12 first_error=none
+15:15:28 | four cells recorded; restoring
+15:15:28 | --- restore (exit=0) ---
+15:15:28 | restored librccl md5=ab5b50f0d84806ed7fbe0f4f560151ff
+15:15:39 | stopped vllm-tp2
+15:15:44 | VRAM back to baseline: 27971584 27971584 
+15:15:44 | ROW-DONE clr-demo row=atomics_present (restore ok)

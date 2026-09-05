@@ -1,0 +1,1780 @@
+15:05:49 | source tree kept (patched: 6ec16b560d7af9f4b1663ca0c26b92bf); incremental build
+15:05:49 | SDK amd_comgr major version: 3
+15:05:49 | GL and zstd headers via apt (mirrors.aliyun.com), if missing
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libsensors-config.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 46834 files and directories currently installed.)
+Preparing to unpack .../00-libsensors-config_1%3a3.6.0-9build1_all.deb ...
+Unpacking libsensors-config (1:3.6.0-9build1) ...
+Selecting previously unselected package libsensors5:amd64.
+Preparing to unpack .../01-libsensors5_1%3a3.6.0-9build1_amd64.deb ...
+Unpacking libsensors5:amd64 (1:3.6.0-9build1) ...
+Selecting previously unselected package libglvnd0:amd64.
+Preparing to unpack .../02-libglvnd0_1.7.0-1build1_amd64.deb ...
+Unpacking libglvnd0:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libllvm20:amd64.
+Preparing to unpack .../03-libllvm20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+Unpacking libllvm20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+Selecting previously unselected package libxcb-dri3-0:amd64.
+Preparing to unpack .../04-libxcb-dri3-0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-dri3-0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxcb-present0:amd64.
+Preparing to unpack .../05-libxcb-present0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-present0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxcb-randr0:amd64.
+Preparing to unpack .../06-libxcb-randr0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-randr0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxcb-sync1:amd64.
+Preparing to unpack .../07-libxcb-sync1_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-sync1:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxcb-xfixes0:amd64.
+Preparing to unpack .../08-libxcb-xfixes0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-xfixes0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxshmfence1:amd64.
+Preparing to unpack .../09-libxshmfence1_1.3-1build5_amd64.deb ...
+Unpacking libxshmfence1:amd64 (1.3-1build5) ...
+Selecting previously unselected package mesa-libgallium:amd64.
+Preparing to unpack .../10-mesa-libgallium_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking mesa-libgallium:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libgbm1:amd64.
+Preparing to unpack .../11-libgbm1_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libgbm1:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libwayland-client0:amd64.
+Preparing to unpack .../12-libwayland-client0_1.22.0-2.1build1_amd64.deb ...
+Unpacking libwayland-client0:amd64 (1.22.0-2.1build1) ...
+Selecting previously unselected package libxcb-shm0:amd64.
+Preparing to unpack .../13-libxcb-shm0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-shm0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libegl-mesa0:amd64.
+Preparing to unpack .../14-libegl-mesa0_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libegl-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libegl1:amd64.
+Preparing to unpack .../15-libegl1_1.7.0-1build1_amd64.deb ...
+Unpacking libegl1:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libxcb-glx0:amd64.
+Preparing to unpack .../16-libxcb-glx0_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb-glx0:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libxxf86vm1:amd64.
+Preparing to unpack .../17-libxxf86vm1_1%3a1.1.4-1build4_amd64.deb ...
+Unpacking libxxf86vm1:amd64 (1:1.1.4-1build4) ...
+Selecting previously unselected package libvulkan1:amd64.
+Preparing to unpack .../18-libvulkan1_1.3.275.0-1build1_amd64.deb ...
+Unpacking libvulkan1:amd64 (1.3.275.0-1build1) ...
+Selecting previously unselected package libgl1-mesa-dri:amd64.
+Preparing to unpack .../19-libgl1-mesa-dri_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libgl1-mesa-dri:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libglx-mesa0:amd64.
+Preparing to unpack .../20-libglx-mesa0_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking libglx-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Selecting previously unselected package libglx0:amd64.
+Preparing to unpack .../21-libglx0_1.7.0-1build1_amd64.deb ...
+Unpacking libglx0:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libgl1:amd64.
+Preparing to unpack .../22-libgl1_1.7.0-1build1_amd64.deb ...
+Unpacking libgl1:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package xorg-sgml-doctools.
+Preparing to unpack .../23-xorg-sgml-doctools_1%3a1.11-1.1_all.deb ...
+Unpacking xorg-sgml-doctools (1:1.11-1.1) ...
+Selecting previously unselected package x11proto-dev.
+Preparing to unpack .../24-x11proto-dev_2023.2-1_all.deb ...
+Unpacking x11proto-dev (2023.2-1) ...
+Selecting previously unselected package libxau-dev:amd64.
+Preparing to unpack .../25-libxau-dev_1%3a1.0.9-1build6_amd64.deb ...
+Unpacking libxau-dev:amd64 (1:1.0.9-1build6) ...
+Selecting previously unselected package libxdmcp-dev:amd64.
+Preparing to unpack .../26-libxdmcp-dev_1%3a1.1.3-0ubuntu6_amd64.deb ...
+Unpacking libxdmcp-dev:amd64 (1:1.1.3-0ubuntu6) ...
+Selecting previously unselected package xtrans-dev.
+Preparing to unpack .../27-xtrans-dev_1.4.0-1_all.deb ...
+Unpacking xtrans-dev (1.4.0-1) ...
+Selecting previously unselected package libpthread-stubs0-dev:amd64.
+Preparing to unpack .../28-libpthread-stubs0-dev_0.4-1build3_amd64.deb ...
+Unpacking libpthread-stubs0-dev:amd64 (0.4-1build3) ...
+Selecting previously unselected package libxcb1-dev:amd64.
+Preparing to unpack .../29-libxcb1-dev_1.15-1ubuntu2_amd64.deb ...
+Unpacking libxcb1-dev:amd64 (1.15-1ubuntu2) ...
+Selecting previously unselected package libx11-dev:amd64.
+Preparing to unpack .../30-libx11-dev_2%3a1.8.7-1build1_amd64.deb ...
+Unpacking libx11-dev:amd64 (2:1.8.7-1build1) ...
+Selecting previously unselected package libglx-dev:amd64.
+Preparing to unpack .../31-libglx-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libglx-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libgl-dev:amd64.
+Preparing to unpack .../32-libgl-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libgl-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libegl-dev:amd64.
+Preparing to unpack .../33-libegl-dev_1.7.0-1build1_amd64.deb ...
+Unpacking libegl-dev:amd64 (1.7.0-1build1) ...
+Selecting previously unselected package libzstd-dev:amd64.
+Preparing to unpack .../34-libzstd-dev_1.5.5+dfsg2-2build1.1_amd64.deb ...
+Unpacking libzstd-dev:amd64 (1.5.5+dfsg2-2build1.1) ...
+Selecting previously unselected package mesa-vulkan-drivers:amd64.
+Preparing to unpack .../35-mesa-vulkan-drivers_25.2.8-0ubuntu0.24.04.2_amd64.deb ...
+Unpacking mesa-vulkan-drivers:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libxcb-dri3-0:amd64 (1.15-1ubuntu2) ...
+Setting up libxcb-xfixes0:amd64 (1.15-1ubuntu2) ...
+Setting up libzstd-dev:amd64 (1.5.5+dfsg2-2build1.1) ...
+Setting up libglvnd0:amd64 (1.7.0-1build1) ...
+Setting up libxcb-glx0:amd64 (1.15-1ubuntu2) ...
+Setting up libsensors-config (1:3.6.0-9build1) ...
+Setting up libxcb-shm0:amd64 (1.15-1ubuntu2) ...
+Setting up libpthread-stubs0-dev:amd64 (0.4-1build3) ...
+Setting up libxxf86vm1:amd64 (1:1.1.4-1build4) ...
+Setting up libxcb-present0:amd64 (1.15-1ubuntu2) ...
+Setting up xtrans-dev (1.4.0-1) ...
+Setting up libxcb-sync1:amd64 (1.15-1ubuntu2) ...
+Setting up libllvm20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+Setting up libsensors5:amd64 (1:3.6.0-9build1) ...
+Setting up libvulkan1:amd64 (1.3.275.0-1build1) ...
+Setting up libxshmfence1:amd64 (1.3-1build5) ...
+Setting up libxcb-randr0:amd64 (1.15-1ubuntu2) ...
+Setting up xorg-sgml-doctools (1:1.11-1.1) ...
+Setting up libwayland-client0:amd64 (1.22.0-2.1build1) ...
+Setting up mesa-vulkan-drivers:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up mesa-libgallium:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libgbm1:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libgl1-mesa-dri:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libegl-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libegl1:amd64 (1.7.0-1build1) ...
+Setting up libglx-mesa0:amd64 (25.2.8-0ubuntu0.24.04.2) ...
+Setting up libglx0:amd64 (1.7.0-1build1) ...
+Setting up libgl1:amd64 (1.7.0-1build1) ...
+Processing triggers for sgml-base (1.31) ...
+Setting up x11proto-dev (2023.2-1) ...
+Setting up libxau-dev:amd64 (1:1.0.9-1build6) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+Setting up libxdmcp-dev:amd64 (1:1.1.3-0ubuntu6) ...
+Setting up libxcb1-dev:amd64 (1.15-1ubuntu2) ...
+Setting up libx11-dev:amd64 (2:1.8.7-1build1) ...
+Setting up libglx-dev:amd64 (1.7.0-1build1) ...
+Setting up libgl-dev:amd64 (1.7.0-1build1) ...
+Setting up libegl-dev:amd64 (1.7.0-1build1) ...
+/usr/include/GL/gl.h
+/usr/include/zstd.h
+15:13:19 | CppHeaderParser (hipamd generates hip_prof_str.h with it)
+15:13:34 | configure
+-- ROCM_PATH: /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel
+-- HIP Common Directory: /rb/clr-src/projects/hip
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+CMake Warning at rocclr/cmake/ROCclrLC.cmake:5 (find_package):
+  Could not find a configuration file for package "amd_comgr" that is
+  compatible with requested version "2.9".
+
+  The following configuration files were considered but not accepted:
+
+    /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/amd_comgr/amd_comgr-config.cmake, version: 3.3.0
+
+Call Stack (most recent call first):
+  rocclr/cmake/ROCclr.cmake:128 (include)
+  rocclr/CMakeLists.txt:12 (include)
+
+
+-- HIPCC_BIN_DIR found at /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/bin
+-- HIP_COMMON_DIR found at /rb/clr-src/projects/hip
+-- HIPNV_DIR found at 
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+-- Using HIP version from VERSION file: 7.14.60850
+-- Using CPACK_DEBIAN_PACKAGE_RELEASE local
+-- CPACK_RPM_PACKAGE_RELEASE: local
+-- HIP Platform: amd
+-- HIP Runtime: rocclr
+-- HIP Compiler: clang
+-- ROCM Installation path(ROCM_PATH): /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel
+-- HIP will be installed in: /rb/clr-install
+'sh' '-c' '/rb/clr-src/projects/clr/hipamd/src/hip_embed_pch.sh /rb/clr-src/projects/hip/include /rb/clr-build/hipamd/include /rb/clr-src/projects/clr/hipamd/include /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm'
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm/bin/clang -O3 --hip-path=/rb/clr-build/hipamd/include/.. -std=c++17 -nogpulib -isystem /rb/clr-build/hipamd/include -isystem /rb/clr-src/projects/hip/include -isystem /rb/clr-src/projects/clr/hipamd/include --cuda-device-only --cuda-gpu-arch=gfx1030 -x hip /tmp/hip_pch.646/hip_pch.h -E
++ cat /tmp/hip_pch.646/hip_macros.h
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm/bin/clang -cc1 -O3 -emit-pch -triple amdgcn-amd-amdhsa -aux-triple x86_64 -fcuda-is-device -std=c++17 -fgnuc-version=4.2.1 -o /tmp/hip_pch.646/hip_wave32.pch -x hip-cpp-output -
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm/bin/clang -O3 --hip-path=/rb/clr-build/hipamd/include/.. -std=c++17 -nogpulib -isystem /rb/clr-build/hipamd/include -isystem /rb/clr-src/projects/hip/include -isystem /rb/clr-src/projects/clr/hipamd/include --cuda-device-only -x hip /tmp/hip_pch.646/hip_pch.h -E
++ cat /tmp/hip_pch.646/hip_macros.h
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm/bin/clang -cc1 -O3 -emit-pch -triple amdgcn-amd-amdhsa -aux-triple x86_64 -fcuda-is-device -std=c++17 -fgnuc-version=4.2.1 -o /tmp/hip_pch.646/hip_wave64.pch -x hip-cpp-output -
++ /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/cmake/llvm/../../llvm/bin/llvm-mc -o hip_pch.o /tmp/hip_pch.646/hip_pch.mcin --filetype=obj
++ rm -rf /tmp/hip_pch.646
+CMake Warning at hipamd/src/CMakeLists.txt:302 (message):
+  Profiling API header not found.  Disabling roctracer integration.  Use
+  -DPROF_API_HEADER_PATH=<path to prof_protocol.h header>
+
+
+CMake Warning (dev) at hipamd/packaging/CMakeLists.txt:43 (install):
+  Target amdhip64 has PUBLIC_HEADER files but no PUBLIC_HEADER DESTINATION.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (2.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /rb/clr-build
+15:13:37 | configure rc=0
+15:13:37 | CONFIGURE-OK; build (ninja -j8 amdhip64)
+ninja: Entering directory `/rb/clr-build'
+[1/44] Generating new header from hip_runtime_api.h
+[2/44] Generating profiling primitives: /rb/clr-build/hipamd/include/hip/amd_detail/hip_prof_str.h
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:58: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  record = re.sub("\s__dparm\([^\)]*\)", r'', record);
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:59: SyntaxWarning: "\(" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\("? A raw string is also an option.
+  record = re.sub("\(void\*\)", r'', record);
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:86: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  m = re.match("^(.*)\s(\S+)$", arg_pair);
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:130: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  beg_pattern = re.compile("^(hipError_t|const char\s*\*)\s+([^\(]+)\(");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:131: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  api_pattern = re.compile("^(hipError_t|const char\s*\*)\s+([^\(]+)\(([^\)]*)\)");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:164: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  record = re.sub("\s__dparm\([^\)]*\)", '', record);
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:203: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  beg_pattern = re.compile("^(hipError_t|const char\s*\*)\s+[^\(]+\(");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:205: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  decl_pattern = re.compile("^(hipError_t|const char\s*\*)\s+([^\(]+)\(([^\)]*)\)\s*;");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:207: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  api_pattern = re.compile("^(hipError_t|const char\s*\*)\s+([^\(]+)\(([^\)]*)\)\s*{");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:209: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  init_pattern = re.compile("(^\s*HIP_INIT_API[^\s]*\s*)\((([^,]+)(,.*|)|)(\);|,)\s*$");
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py:638: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  src_pat = "\.cpp$"
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py Warning: implementation not found: hipStreamSetAttribute
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py Warning: implementation not found: hipStreamGetAttribute
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py Warning: implementation not found: hipGraphKernelNodeSetAttribute
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py Warning: implementation not found: hipGraphKernelNodeGetAttribute
+/rb/clr-src/projects/clr/hipamd/src/hip_prof_gen.py Warning: 4 API calls missing in interception layer
+api: hipInit
+api: hipDriverGetVersion
+api: hipRuntimeGetVersion
+api: hipDeviceGet
+api: hipDeviceComputeCapability
+api: hipDeviceGetName
+api: hipDeviceGetUuid
+api: hipDeviceGetP2PAttribute
+api: hipDeviceGetPCIBusId
+api: hipDeviceGetByPCIBusId
+api: hipDeviceTotalMem
+api: hipDeviceSynchronize
+api: hipDeviceReset
+api: hipSetDevice
+api: hipSetValidDevices
+api: hipGetDevice
+api: hipGetDeviceCount
+api: hipDeviceGetAttribute
+api: hipDeviceGetDefaultMemPool
+api: hipDeviceSetMemPool
+api: hipDeviceGetMemPool
+api: hipGetDevicePropertiesR0600
+api: hipDeviceGetTexture1DLinearMaxWidth
+api: hipDeviceSetCacheConfig
+api: hipDeviceGetCacheConfig
+api: hipDeviceGetLimit
+api: hipDeviceSetLimit
+api: hipDeviceGetSharedMemConfig
+api: hipGetDeviceFlags
+api: hipDeviceSetSharedMemConfig
+api: hipSetDeviceFlags
+api: hipChooseDeviceR0600
+api: hipExtGetLinkTypeAndHopCount
+api: hipIpcGetMemHandle
+api: hipIpcOpenMemHandle
+api: hipIpcCloseMemHandle
+api: hipIpcGetEventHandle
+api: hipIpcOpenEventHandle
+api: hipFuncSetAttribute
+api: hipKernelSetAttribute
+api: hipKernelGetFunction
+api: hipFuncSetCacheConfig
+api: hipFuncSetSharedMemConfig
+api: hipGetLastError
+api: hipExtGetLastError
+api: hipPeekAtLastError
+api: hipGetErrorName
+api: hipGetErrorString
+api: hipDrvGetErrorName
+api: hipDrvGetErrorString
+api: hipStreamCreate
+api: hipStreamCreateWithFlags
+api: hipStreamCreateWithPriority
+api: hipDeviceGetStreamPriorityRange
+api: hipStreamDestroy
+api: hipStreamQuery
+api: hipStreamSynchronize
+api: hipStreamWaitEvent
+api: hipStreamGetFlags
+api: hipStreamGetId
+api: hipStreamGetPriority
+api: hipStreamGetDevice
+api: hipExtStreamCreateWithCUMask
+api: hipExtStreamGetCUMask
+api: hipStreamAddCallback
+api: hipStreamSetAttribute
+api: hipStreamGetAttribute
+api: hipStreamCopyAttributes
+api: hipStreamWaitValue32
+api: hipStreamWaitValue64
+api: hipStreamWriteValue32
+api: hipStreamWriteValue64
+api: hipStreamBatchMemOp
+api: hipGraphAddBatchMemOpNode
+api: hipGraphBatchMemOpNodeGetParams
+api: hipGraphBatchMemOpNodeSetParams
+api: hipGraphExecBatchMemOpNodeSetParams
+api: hipEventCreateWithFlags
+api: hipEventCreate
+api: hipEventRecordWithFlags
+api: hipEventRecord
+api: hipEventDestroy
+api: hipEventSynchronize
+api: hipEventElapsedTime
+api: hipEventQuery
+api: hipPointerSetAttribute
+api: hipPointerGetAttributes
+api: hipPointerGetAttribute
+api: hipDrvPointerGetAttributes
+api: hipImportExternalSemaphore
+api: hipSignalExternalSemaphoresAsync
+api: hipWaitExternalSemaphoresAsync
+api: hipDestroyExternalSemaphore
+api: hipImportExternalMemory
+api: hipExternalMemoryGetMappedBuffer
+api: hipDestroyExternalMemory
+api: hipExternalMemoryGetMappedMipmappedArray
+api: hipMalloc
+api: hipExtMallocWithFlags
+api: hipMallocHost
+api: hipMemAllocHost
+api: hipHostMalloc
+api: hipMallocManaged
+api: hipMemPrefetchAsync
+api: hipMemPrefetchAsync_v2
+api: hipMemPrefetchBatchAsync
+api: hipMemDiscardBatchAsync
+api: hipDrvMemDiscardBatchAsync
+api: hipMemDiscardAndPrefetchBatchAsync
+api: hipDrvMemDiscardAndPrefetchBatchAsync
+api: hipMemAdvise
+api: hipMemAdvise_v2
+api: hipMemRangeGetAttribute
+api: hipMemRangeGetAttributes
+api: hipStreamAttachMemAsync
+api: hipMallocAsync
+api: hipFreeAsync
+api: hipMemPoolTrimTo
+api: hipMemPoolSetAttribute
+api: hipMemPoolGetAttribute
+api: hipMemPoolSetAccess
+api: hipMemPoolGetAccess
+api: hipMemPoolCreate
+api: hipMemPoolDestroy
+api: hipMallocFromPoolAsync
+api: hipMemPoolExportToShareableHandle
+api: hipMemPoolImportFromShareableHandle
+api: hipMemPoolExportPointer
+api: hipMemPoolImportPointer
+api: hipMemSetMemPool
+api: hipMemGetMemPool
+api: hipHostAlloc
+api: hipHostGetDevicePointer
+api: hipHostGetFlags
+api: hipHostRegister
+api: hipHostUnregister
+api: hipMallocPitch
+api: hipMemAllocPitch
+api: hipFree
+api: hipFreeHost
+api: hipHostFree
+api: hipMemcpy
+api: hipMemcpyWithStream
+api: hipMemcpyHtoD
+api: hipMemcpyDtoH
+api: hipMemcpyDtoD
+api: hipMemcpyAtoD
+api: hipMemcpyDtoA
+api: hipMemcpyAtoA
+api: hipMemcpyHtoDAsync
+api: hipMemcpyDtoHAsync
+api: hipMemcpyDtoDAsync
+api: hipMemcpyAtoHAsync
+api: hipMemcpyHtoAAsync
+api: hipModuleGetGlobal
+api: hipGetSymbolAddress
+api: hipGetSymbolSize
+api: hipGetProcAddress
+api: hipMemcpyToSymbol
+api: hipMemcpyToSymbolAsync
+api: hipMemcpyFromSymbol
+api: hipMemcpyFromSymbolAsync
+api: hipMemcpyAsync
+api: hipMemset
+api: hipMemsetD8
+api: hipMemsetD8Async
+api: hipMemsetD16
+api: hipMemsetD16Async
+api: hipMemsetD32
+api: hipMemsetAsync
+api: hipMemsetD32Async
+api: hipMemset2D
+api: hipMemset2DAsync
+api: hipMemset3D
+api: hipMemset3DAsync
+api: hipMemsetD2D8
+api: hipMemsetD2D8Async
+api: hipMemsetD2D16
+api: hipMemsetD2D16Async
+api: hipMemsetD2D32
+api: hipMemsetD2D32Async
+api: hipMemGetInfo
+api: hipMemPtrGetInfo
+api: hipMallocArray
+api: hipArrayCreate
+api: hipArrayDestroy
+api: hipArray3DCreate
+api: hipMalloc3D
+api: hipFreeArray
+api: hipMalloc3DArray
+api: hipArrayGetInfo
+api: hipArrayGetDescriptor
+api: hipArray3DGetDescriptor
+api: hipMemcpy2D
+api: hipMemcpyParam2D
+api: hipMemcpyParam2DAsync
+api: hipMemcpy2DAsync
+api: hipMemcpy2DToArray
+api: hipMemcpy2DToArrayAsync
+api: hipMemcpy2DArrayToArray
+api: hipMemcpyToArray
+api: hipMemcpyFromArray
+api: hipMemcpy2DFromArray
+api: hipMemcpy2DFromArrayAsync
+api: hipMemcpyAtoH
+api: hipMemcpyHtoA
+api: hipMemcpy3D
+api: hipMemcpy3DAsync
+api: hipDrvMemcpy3D
+api: hipDrvMemcpy3DAsync
+api: hipMemGetAddressRange
+api: hipMemcpyBatchAsync
+api: hipMemcpy3DBatchAsync
+api: hipMemcpy3DPeer
+api: hipMemcpy3DPeerAsync
+api: hipMipmappedArrayGetMemoryRequirements
+api: hipDeviceCanAccessPeer
+api: hipDeviceEnablePeerAccess
+api: hipDeviceDisablePeerAccess
+api: hipMemcpyPeer
+api: hipMemcpyPeerAsync
+api: hipDeviceGetDevResource
+api: hipDevSmResourceSplitByCount
+api: hipDevSmResourceSplit
+api: hipDevResourceGenerateDesc
+api: hipGreenCtxCreate
+api: hipExecutionCtxDestroy
+api: hipDeviceGetExecutionCtx
+api: hipExecutionCtxStreamCreate
+api: hipExecutionCtxGetDevResource
+api: hipExecutionCtxGetDevice
+api: hipExecutionCtxGetId
+api: hipStreamGetDevResource
+api: hipExecutionCtxRecordEvent
+api: hipExecutionCtxSynchronize
+api: hipExecutionCtxWaitEvent
+api: hipCtxCreate
+api: hipCtxDestroy
+api: hipCtxPopCurrent
+api: hipCtxPushCurrent
+api: hipCtxSetCurrent
+api: hipCtxGetCurrent
+api: hipCtxGetDevice
+api: hipCtxGetApiVersion
+api: hipCtxGetCacheConfig
+api: hipCtxSetCacheConfig
+api: hipCtxSetSharedMemConfig
+api: hipCtxGetSharedMemConfig
+api: hipCtxSynchronize
+api: hipCtxGetFlags
+api: hipCtxEnablePeerAccess
+api: hipCtxDisablePeerAccess
+api: hipDevicePrimaryCtxGetState
+api: hipDevicePrimaryCtxRelease
+api: hipDevicePrimaryCtxRetain
+api: hipDevicePrimaryCtxReset
+api: hipDevicePrimaryCtxSetFlags
+api: hipModuleLoadFatBinary
+api: hipModuleLoad
+api: hipModuleUnload
+api: hipModuleGetFunction
+api: hipModuleGetFunctionCount
+api: hipKernelGetAttribute
+api: hipLibraryLoadData
+api: hipLibraryLoadFromFile
+api: hipLibraryUnload
+api: hipLibraryGetKernel
+api: hipLibraryGetKernelCount
+api: hipLibraryGetGlobal
+api: hipLibraryGetManaged
+api: hipLibraryEnumerateKernels
+api: hipKernelGetLibrary
+api: hipKernelGetName
+api: hipKernelGetParamInfo
+api: hipFuncGetAttributes
+api: hipFuncGetAttribute
+api: hipGetFuncBySymbol
+api: hipGetDriverEntryPoint
+api: hipModuleGetTexRef
+api: hipModuleLoadData
+api: hipModuleLoadDataEx
+api: hipLinkAddData
+api: hipLinkAddFile
+api: hipLinkComplete
+api: hipLinkCreate
+api: hipLinkDestroy
+api: hipModuleLaunchKernel
+api: hipModuleLaunchCooperativeKernel
+api: hipModuleLaunchCooperativeKernelMultiDevice
+api: hipLaunchCooperativeKernel
+api: hipLaunchCooperativeKernelMultiDevice
+api: hipExtLaunchMultiKernelMultiDevice
+api: hipLaunchKernelExC
+api: hipDrvLaunchKernelEx
+api: hipMemGetHandleForAddressRange
+api: hipModuleOccupancyMaxPotentialBlockSize
+api: hipModuleOccupancyMaxPotentialBlockSizeWithFlags
+api: hipModuleOccupancyMaxActiveBlocksPerMultiprocessor
+api: hipModuleOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
+api: hipOccupancyMaxActiveBlocksPerMultiprocessor
+api: hipOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
+api: hipOccupancyMaxPotentialBlockSize
+api: hipOccupancyAvailableDynamicSMemPerBlock
+api: hipOccupancyMaxActiveClusters
+api: hipOccupancyMaxPotentialClusterSize
+api: hipProfilerStart
+api: hipProfilerStop
+api: hipConfigureCall
+api: hipSetupArgument
+api: hipLaunchByPtr
+api: __hipPushCallConfiguration
+api: __hipPopCallConfiguration
+api: hipLaunchKernel
+api: hipLaunchHostFunc
+api: hipDrvMemcpy2DUnaligned
+api: hipExtLaunchKernel
+api: hipCreateTextureObject
+api: hipDestroyTextureObject
+api: hipGetChannelDesc
+api: hipGetTextureObjectResourceDesc
+api: hipGetTextureObjectResourceViewDesc
+api: hipGetTextureObjectTextureDesc
+api: hipTexObjectCreate
+api: hipTexObjectDestroy
+api: hipTexObjectGetResourceDesc
+api: hipTexObjectGetResourceViewDesc
+api: hipTexObjectGetTextureDesc
+api: hipMallocMipmappedArray
+api: hipFreeMipmappedArray
+api: hipGetMipmappedArrayLevel
+api: hipMipmappedArrayCreate
+api: hipMipmappedArrayDestroy
+api: hipMipmappedArrayGetLevel
+api: hipBindTextureToMipmappedArray
+api: hipGetTextureReference
+api: hipTexRefGetBorderColor
+api: hipTexRefGetArray
+api: hipTexRefSetAddressMode
+api: hipTexRefSetArray
+api: hipTexRefSetFilterMode
+api: hipTexRefSetFlags
+api: hipTexRefSetFormat
+api: hipBindTexture
+api: hipBindTexture2D
+api: hipBindTextureToArray
+api: hipGetTextureAlignmentOffset
+api: hipUnbindTexture
+api: hipTexRefGetAddress
+api: hipTexRefGetAddressMode
+api: hipTexRefGetFilterMode
+api: hipTexRefGetFlags
+api: hipTexRefGetFormat
+api: hipTexRefGetMaxAnisotropy
+api: hipTexRefGetMipmapFilterMode
+api: hipTexRefGetMipmapLevelBias
+api: hipTexRefGetMipmapLevelClamp
+api: hipTexRefGetMipMappedArray
+api: hipTexRefSetAddress
+api: hipTexRefSetAddress2D
+api: hipTexRefSetMaxAnisotropy
+api: hipTexRefSetBorderColor
+api: hipTexRefSetMipmapFilterMode
+api: hipTexRefSetMipmapLevelBias
+api: hipTexRefSetMipmapLevelClamp
+api: hipTexRefSetMipmappedArray
+api: hipApiName
+api: hipKernelNameRef
+api: hipKernelNameRefByPtr
+api: hipStreamBeginCapture
+api: hipStreamBeginCaptureToGraph
+api: hipStreamEndCapture
+api: hipStreamGetCaptureInfo
+api: hipStreamGetCaptureInfo_v2
+api: hipStreamIsCapturing
+api: hipStreamUpdateCaptureDependencies
+api: hipThreadExchangeStreamCaptureMode
+api: hipGraphCreate
+api: hipGraphDestroy
+api: hipGraphAddDependencies
+api: hipGraphRemoveDependencies
+api: hipGraphGetEdges
+api: hipGraphGetNodes
+api: hipGraphGetRootNodes
+api: hipGraphNodeGetDependencies
+api: hipGraphNodeGetDependentNodes
+api: hipGraphNodeGetType
+api: hipGraphDestroyNode
+api: hipGraphClone
+api: hipGraphNodeFindInClone
+api: hipGraphInstantiate
+api: hipGraphInstantiateWithFlags
+api: hipGraphInstantiateWithParams
+api: hipGraphLaunch
+api: hipGraphUpload
+api: hipGraphAddNode
+api: hipGraphExecGetFlags
+api: hipGraphNodeSetParams
+api: hipGraphExecNodeSetParams
+api: hipGraphExecDestroy
+api: hipGraphExecUpdate
+api: hipGraphAddKernelNode
+api: hipGraphKernelNodeGetParams
+api: hipGraphKernelNodeSetParams
+api: hipGraphExecKernelNodeSetParams
+api: hipDrvGraphAddMemcpyNode
+api: hipGraphAddMemcpyNode
+api: hipGraphMemcpyNodeGetParams
+api: hipGraphMemcpyNodeSetParams
+api: hipGraphKernelNodeSetAttribute
+api: hipGraphKernelNodeGetAttribute
+api: hipGraphExecMemcpyNodeSetParams
+api: hipGraphAddMemcpyNode1D
+api: hipGraphMemcpyNodeSetParams1D
+api: hipGraphExecMemcpyNodeSetParams1D
+api: hipGraphAddMemcpyNodeFromSymbol
+api: hipGraphMemcpyNodeSetParamsFromSymbol
+api: hipGraphExecMemcpyNodeSetParamsFromSymbol
+api: hipGraphAddMemcpyNodeToSymbol
+api: hipGraphMemcpyNodeSetParamsToSymbol
+api: hipGraphExecMemcpyNodeSetParamsToSymbol
+api: hipGraphAddMemsetNode
+api: hipGraphMemsetNodeGetParams
+api: hipGraphMemsetNodeSetParams
+api: hipGraphExecMemsetNodeSetParams
+api: hipGraphAddHostNode
+api: hipGraphHostNodeGetParams
+api: hipGraphHostNodeSetParams
+api: hipGraphExecHostNodeSetParams
+api: hipGraphAddChildGraphNode
+api: hipGraphChildGraphNodeGetGraph
+api: hipGraphExecChildGraphNodeSetParams
+api: hipGraphAddEmptyNode
+api: hipGraphAddEventRecordNode
+api: hipGraphEventRecordNodeGetEvent
+api: hipGraphEventRecordNodeSetEvent
+api: hipGraphExecEventRecordNodeSetEvent
+api: hipGraphAddEventWaitNode
+api: hipGraphEventWaitNodeGetEvent
+api: hipGraphEventWaitNodeSetEvent
+api: hipGraphExecEventWaitNodeSetEvent
+api: hipGraphAddMemAllocNode
+api: hipGraphMemAllocNodeGetParams
+api: hipGraphAddMemFreeNode
+api: hipGraphMemFreeNodeGetParams
+api: hipDeviceGetGraphMemAttribute
+api: hipDeviceSetGraphMemAttribute
+api: hipDeviceGraphMemTrim
+api: hipUserObjectCreate
+api: hipUserObjectRelease
+api: hipUserObjectRetain
+api: hipGraphRetainUserObject
+api: hipGraphReleaseUserObject
+api: hipGraphDebugDotPrint
+api: hipGraphKernelNodeCopyAttributes
+api: hipGraphNodeSetEnabled
+api: hipGraphNodeGetEnabled
+api: hipGraphAddExternalSemaphoresWaitNode
+api: hipGraphAddExternalSemaphoresSignalNode
+api: hipGraphExternalSemaphoresSignalNodeSetParams
+api: hipGraphExternalSemaphoresWaitNodeSetParams
+api: hipGraphExternalSemaphoresSignalNodeGetParams
+api: hipGraphExternalSemaphoresWaitNodeGetParams
+api: hipGraphExecExternalSemaphoresSignalNodeSetParams
+api: hipGraphExecExternalSemaphoresWaitNodeSetParams
+api: hipDrvGraphMemcpyNodeGetParams
+api: hipDrvGraphMemcpyNodeSetParams
+api: hipDrvGraphAddMemsetNode
+api: hipDrvGraphAddMemFreeNode
+api: hipDrvGraphExecMemcpyNodeSetParams
+api: hipDrvGraphExecMemsetNodeSetParams
+api: hipDrvLaunchKernelEx
+api: hipMemAddressFree
+api: hipMemAddressReserve
+api: hipMemCreate
+api: hipMemExportToShareableHandle
+api: hipMemGetAccess
+api: hipMemGetAllocationGranularity
+api: hipMemGetAllocationPropertiesFromHandle
+api: hipMemImportFromShareableHandle
+api: hipMemMap
+api: hipMemMapArrayAsync
+api: hipMemRelease
+api: hipMemRetainAllocationHandle
+api: hipMemSetAccess
+api: hipMemUnmap
+api: hipGraphicsMapResources
+api: hipGraphicsSubResourceGetMappedArray
+api: hipGraphicsResourceGetMappedPointer
+api: hipGraphicsUnmapResources
+api: hipGraphicsUnregisterResource
+api: hipCreateSurfaceObject
+api: hipDestroySurfaceObject
+api: hipExtEnableLogging
+api: hipExtDisableLogging
+api: hipExtSetLoggingParams
+api: hipLaunchKernelExC
+api: hipDrvLaunchKernelEx
+api: hipGetDevicePropertiesR0000
+api: hipChooseDeviceR0000
+api: hipGLGetDevices
+api: hipGraphicsGLRegisterBuffer
+api: hipGraphicsGLRegisterImage
+Parsing /rb/clr-src/projects/clr/hipamd/src for '\.cpp$'
+/rb/clr-src/projects/clr/hipamd/src/hip_table_interface.cpp
+SKIP FILE:hip_table_interface.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_storage.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_graph_internal.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_global.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_module.cpp
+	hipModuleUnload
+	hipModuleLoadFatBinary
+	hipModuleLoad
+	hipModuleLoadData
+	hipModuleLoadDataEx
+	hipModuleGetFunction
+	hipModuleGetFunctionCount
+	hipModuleGetGlobal
+	hipFuncGetAttribute
+	hipFuncGetAttributes
+	hipFuncSetAttribute
+	hipFuncSetCacheConfig
+	hipFuncSetSharedMemConfig
+	hipModuleLaunchKernel
+	hipExtModuleLaunchKernel
+	hipHccModuleLaunchKernel
+	hipModuleLaunchCooperativeKernel
+	hipModuleLaunchCooperativeKernelMultiDevice
+	hipGetFuncBySymbol
+	hipLaunchKernel
+	hipExtLaunchKernel
+	hipLaunchCooperativeKernel
+	hipLaunchCooperativeKernelMultiDevice
+	hipExtLaunchMultiKernelMultiDevice
+	hipModuleGetTexRef
+	hipLinkAddData
+	hipLinkAddFile
+	hipLinkCreate
+	hipLinkComplete
+	hipLinkDestroy
+	hipLaunchKernelExC
+	hipDrvLaunchKernelEx
+/rb/clr-src/projects/clr/hipamd/src/hip_code_object.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_error.cpp
+	hipExtGetLastError
+	hipGetLastError
+	hipPeekAtLastError
+/rb/clr-src/projects/clr/hipamd/src/hip_profile.cpp
+	hipProfilerStart
+	hipProfilerStop
+/rb/clr-src/projects/clr/hipamd/src/hip_graph.cpp
+	hipStreamIsCapturing
+	hipThreadExchangeStreamCaptureMode
+	hipStreamBeginCapture
+	hipStreamBeginCaptureToGraph
+	hipStreamEndCapture
+	hipGraphCreate
+	hipGraphDestroy
+	hipGraphAddKernelNode
+	hipGraphAddMemcpyNode
+	hipDrvGraphAddMemcpyNode
+	hipGraphAddMemcpyNode1D
+	hipGraphMemcpyNodeSetParams1D
+	hipGraphExecMemcpyNodeSetParams1D
+	hipGraphAddMemsetNode
+	hipDrvGraphAddMemsetNode
+	hipGraphAddEmptyNode
+	hipGraphAddChildGraphNode
+	hipGraphInstantiate
+	hipGraphInstantiateWithFlags
+	hipGraphInstantiateWithParams
+	hipGraphExecDestroy
+	hipGraphLaunch
+	hipGraphGetNodes
+	hipGraphGetRootNodes
+	hipGraphKernelNodeGetParams
+	hipGraphKernelNodeSetParams
+	hipGraphMemcpyNodeGetParams
+	hipGraphKernelNodeSetAttribute args mismatch:
+		/rb/clr-src/projects/clr/hipamd/src/hip_graph.cpp line(1833)
+		api: hipGraphNode_t, hipKernelNodeAttrID, const hipKernelNodeAttrValue*, 
+		eta: hipGraphNode_t, hipLaunchAttributeID, const hipLaunchAttributeValue*, 
+
+	hipGraphKernelNodeGetAttribute args mismatch:
+		/rb/clr-src/projects/clr/hipamd/src/hip_graph.cpp line(1852)
+		api: hipGraphNode_t, hipKernelNodeAttrID, hipKernelNodeAttrValue*, 
+		eta: hipGraphNode_t, hipLaunchAttributeID, hipLaunchAttributeValue*, 
+
+	hipGraphMemcpyNodeSetParams
+	hipGraphExecMemcpyNodeSetParams
+	hipGraphMemsetNodeGetParams
+	hipGraphMemsetNodeSetParams
+	hipGraphExecMemsetNodeSetParams
+	hipGraphAddDependencies
+	hipGraphExecKernelNodeSetParams
+	hipGraphChildGraphNodeGetGraph
+	hipGraphExecChildGraphNodeSetParams
+	hipStreamGetCaptureInfo
+	hipStreamGetCaptureInfo_v2
+	hipStreamUpdateCaptureDependencies
+	hipGraphRemoveDependencies
+	hipGraphGetEdges
+	hipGraphNodeGetDependencies
+	hipGraphNodeGetDependentNodes
+	hipGraphNodeGetType
+	hipGraphDestroyNode
+	hipGraphClone
+	hipGraphNodeFindInClone
+	hipGraphAddMemcpyNodeFromSymbol
+	hipGraphMemcpyNodeSetParamsFromSymbol
+	hipGraphExecMemcpyNodeSetParamsFromSymbol
+	hipGraphAddMemcpyNodeToSymbol
+	hipGraphMemcpyNodeSetParamsToSymbol
+	hipGraphExecMemcpyNodeSetParamsToSymbol
+	hipGraphAddEventRecordNode
+	hipGraphEventRecordNodeGetEvent
+	hipGraphEventRecordNodeSetEvent
+	hipGraphExecEventRecordNodeSetEvent
+	hipGraphAddEventWaitNode
+	hipGraphEventWaitNodeGetEvent
+	hipGraphEventWaitNodeSetEvent
+	hipGraphExecEventWaitNodeSetEvent
+	hipGraphAddHostNode
+	hipGraphHostNodeGetParams
+	hipGraphHostNodeSetParams
+	hipGraphExecHostNodeSetParams
+	hipGraphExecUpdate
+	hipGraphAddMemAllocNode
+	hipGraphMemAllocNodeGetParams
+	hipGraphAddMemFreeNode
+	hipGraphMemFreeNodeGetParams
+	hipDeviceGetGraphMemAttribute
+	hipDeviceSetGraphMemAttribute
+	hipDeviceGraphMemTrim
+	hipUserObjectCreate
+	hipUserObjectRelease
+	hipUserObjectRetain
+	hipGraphRetainUserObject
+	hipGraphReleaseUserObject
+	hipGraphKernelNodeCopyAttributes
+	hipGraphDebugDotPrint
+	hipGraphNodeSetEnabled
+	hipGraphNodeGetEnabled
+	hipGraphUpload
+	hipGraphAddNode
+	hipGraphAddExternalSemaphoresSignalNode
+	hipGraphAddExternalSemaphoresWaitNode
+	hipGraphExternalSemaphoresSignalNodeSetParams
+	hipGraphExternalSemaphoresWaitNodeSetParams
+	hipGraphExternalSemaphoresSignalNodeGetParams
+	hipGraphExternalSemaphoresWaitNodeGetParams
+	hipGraphExecExternalSemaphoresSignalNodeSetParams
+	hipGraphExecExternalSemaphoresWaitNodeSetParams
+	hipDrvGraphAddMemFreeNode
+	hipDrvGraphExecMemcpyNodeSetParams
+	hipDrvGraphExecMemsetNodeSetParams
+	hipGraphExecGetFlags
+	hipGraphNodeSetParams
+	hipGraphExecNodeSetParams
+	hipDrvGraphMemcpyNodeGetParams
+	hipDrvGraphMemcpyNodeSetParams
+	hipGraphAddBatchMemOpNode
+	hipGraphBatchMemOpNodeGetParams
+	hipGraphBatchMemOpNodeSetParams
+	hipGraphExecBatchMemOpNodeSetParams
+/rb/clr-src/projects/clr/hipamd/src/hip_library.cpp
+	hipLibraryLoadData
+	hipLibraryLoadFromFile
+	hipLibraryUnload
+	hipLibraryGetKernelCount
+	hipLibraryGetKernel
+	hipLibraryGetGlobal
+	hipLibraryGetManaged
+	hipLibraryEnumerateKernels
+	hipKernelGetLibrary
+	hipKernelGetName
+	hipKernelGetParamInfo
+	hipKernelGetAttribute
+	hipKernelSetAttribute
+	hipKernelGetFunction
+/rb/clr-src/projects/clr/hipamd/src/hip_mempool.cpp
+	hipDeviceGetDefaultMemPool
+	hipDeviceSetMemPool
+	hipDeviceGetMemPool
+	hipMallocAsync
+	hipFreeAsync
+	hipMemPoolTrimTo
+	hipMemPoolSetAttribute
+	hipMemPoolGetAttribute
+	hipMemPoolSetAccess
+	hipMemPoolGetAccess
+	hipMemPoolCreate
+	hipMemPoolDestroy
+	hipMallocFromPoolAsync
+	hipMemPoolExportToShareableHandle
+	hipMemPoolImportFromShareableHandle
+	hipMemPoolExportPointer
+	hipMemPoolImportPointer
+	hipMemSetMemPool
+	hipMemGetMemPool
+/rb/clr-src/projects/clr/hipamd/src/hip_platform.cpp
+	hipConfigureCall
+	__hipPushCallConfiguration
+	__hipPopCallConfiguration
+	hipSetupArgument
+	hipLaunchByPtr
+	hipGetSymbolAddress
+	hipGetSymbolSize
+	hipOccupancyAvailableDynamicSMemPerBlock
+	hipModuleOccupancyMaxActiveBlocksPerMultiprocessor
+	hipModuleOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
+	hipOccupancyMaxPotentialBlockSize
+	hipModuleOccupancyMaxPotentialBlockSize
+	hipModuleOccupancyMaxPotentialBlockSizeWithFlags
+	hipOccupancyMaxPotentialClusterSize
+	hipOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
+	hipOccupancyMaxActiveBlocksPerMultiprocessor
+	hipOccupancyMaxActiveClusters
+/rb/clr-src/projects/clr/hipamd/src/hip_runtime.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_activity.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_executionctx.cpp
+	hipDeviceGetDevResource
+	hipDevSmResourceSplitByCount
+	hipDevSmResourceSplit
+	hipDevResourceGenerateDesc
+	hipGreenCtxCreate
+	hipExecutionCtxDestroy
+	hipDeviceGetExecutionCtx
+	hipExecutionCtxStreamCreate
+	hipExecutionCtxGetDevResource
+	hipExecutionCtxGetDevice
+	hipExecutionCtxGetId
+	hipStreamGetDevResource
+	hipExecutionCtxRecordEvent
+	hipExecutionCtxSynchronize
+	hipExecutionCtxWaitEvent
+/rb/clr-src/projects/clr/hipamd/src/hip_vm.cpp
+	hipMemAddressFree
+	hipMemAddressReserve
+	hipMemCreate
+	hipMemExportToShareableHandle
+	hipMemGetAccess
+	hipMemGetAllocationGranularity
+	hipMemGetAllocationPropertiesFromHandle
+	hipMemImportFromShareableHandle
+	hipMemMap
+	hipMemMapArrayAsync
+	hipMemRelease
+	hipMemRetainAllocationHandle
+	hipMemSetAccess
+	hipMemUnmap
+/rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_event.cpp
+	hipEventCreateWithFlags
+	hipEventCreate
+	hipEventDestroy
+	hipEventElapsedTime
+	hipEventRecord
+	hipEventRecordWithFlags
+	hipEventSynchronize
+	hipEventQuery
+/rb/clr-src/projects/clr/hipamd/src/hip_hmm.cpp
+	hipMallocManaged
+	hipMemPrefetchAsync
+	hipMemPrefetchAsync_v2
+	hipMemPrefetchBatchAsync
+	hipMemDiscardBatchAsync
+	hipDrvMemDiscardBatchAsync
+	hipMemDiscardAndPrefetchBatchAsync
+	hipDrvMemDiscardAndPrefetchBatchAsync
+	hipMemAdvise
+	hipMemAdvise_v2
+	hipMemRangeGetAttribute
+	hipMemRangeGetAttributes
+	hipStreamAttachMemAsync
+/rb/clr-src/projects/clr/hipamd/src/hip_peer.cpp
+	hipExtGetLinkTypeAndHopCount
+	hipDeviceGetP2PAttribute
+	hipDeviceCanAccessPeer
+	hipDeviceDisablePeerAccess
+	hipDeviceEnablePeerAccess
+	hipMemcpyPeer
+	hipMemcpyPeerAsync
+	hipMemcpy3DPeer
+	hipMemcpy3DPeerAsync
+	hipCtxEnablePeerAccess
+	hipCtxDisablePeerAccess
+/rb/clr-src/projects/clr/hipamd/src/hip_surface.cpp
+	hipCreateSurfaceObject
+	hipDestroySurfaceObject
+/rb/clr-src/projects/clr/hipamd/src/hip_log.cpp
+	hipExtEnableLogging
+	hipExtDisableLogging
+	hipExtSetLoggingParams
+/rb/clr-src/projects/clr/hipamd/src/hip_device_runtime.cpp
+	hipChooseDeviceR0600
+	hipChooseDeviceR0000
+	hipDeviceGetAttribute
+	hipDeviceGetByPCIBusId
+	hipDeviceGetCacheConfig
+	hipDeviceGetLimit
+	hipDeviceGetPCIBusId
+	hipDeviceGetSharedMemConfig
+	hipDeviceReset
+	hipDeviceSetCacheConfig
+	hipDeviceSetLimit
+	hipDeviceSetSharedMemConfig
+	hipDeviceSynchronize
+	hipGetDevice
+	hipGetDeviceCount
+	hipGetDeviceFlags
+	hipGetDriverEntryPoint
+	hipSetDevice
+	hipSetDeviceFlags
+	hipSetValidDevices
+/rb/clr-src/projects/clr/hipamd/src/hip_table_interface_c.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_comgr_helper.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_stream.cpp
+	hipStreamCreateWithFlags
+	hipStreamCreate
+	hipStreamCreateWithPriority
+	hipDeviceGetStreamPriorityRange
+	hipStreamGetFlags
+	hipStreamGetId
+	hipStreamSynchronize
+	hipStreamDestroy
+	hipStreamWaitEvent
+	hipStreamQuery
+	hipStreamAddCallback
+	hipLaunchHostFunc
+	hipExtStreamCreateWithCUMask
+	hipStreamGetPriority
+	hipExtStreamGetCUMask
+	hipStreamGetDevice
+	hipStreamSetAttribute args mismatch:
+		/rb/clr-src/projects/clr/hipamd/src/hip_stream.cpp line(828)
+		api: hipStream_t, hipStreamAttrID, const hipStreamAttrValue*, 
+		eta: hipStream_t, hipLaunchAttributeID, const hipLaunchAttributeValue*, 
+
+	hipStreamGetAttribute args mismatch:
+		/rb/clr-src/projects/clr/hipamd/src/hip_stream.cpp line(868)
+		api: hipStream_t, hipStreamAttrID, hipStreamAttrValue*, 
+		eta: hipStream_t, hipLaunchAttributeID, hipLaunchAttributeValue*, 
+
+	hipStreamCopyAttributes
+/rb/clr-src/projects/clr/hipamd/src/hip_device.cpp
+	hipDeviceGet
+	hipDeviceTotalMem
+	hipDeviceComputeCapability
+	hipDeviceGetName
+	hipDeviceGetUuid
+	hipGetDevicePropertiesR0600
+	hipGetDevicePropertiesR0000
+	hipGetProcAddress
+/rb/clr-src/projects/clr/hipamd/src/hip_stream_ops.cpp
+	hipStreamWaitValue32
+	hipStreamWaitValue64
+	hipStreamWriteValue32
+	hipStreamWriteValue64
+	hipStreamBatchMemOp
+/rb/clr-src/projects/clr/hipamd/src/hip_mempool_impl.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_intercept.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_event_ipc.cpp
+	hipIpcGetEventHandle
+	hipIpcOpenEventHandle
+/rb/clr-src/projects/clr/hipamd/src/hip_gl.cpp
+	hipGLGetDevices
+	hipGraphicsSubResourceGetMappedArray
+	hipGraphicsGLRegisterImage
+	hipGraphicsGLRegisterBuffer
+	hipGraphicsMapResources
+	hipGraphicsResourceGetMappedPointer
+	hipGraphicsUnmapResources
+	hipGraphicsUnregisterResource
+/rb/clr-src/projects/clr/hipamd/src/hip_context.cpp
+	hipInit
+	hipCtxCreate
+	hipCtxSetCurrent
+	hipCtxGetCurrent
+	hipCtxGetSharedMemConfig
+	hipRuntimeGetVersion
+	hipCtxDestroy
+	hipCtxPopCurrent
+	hipCtxPushCurrent
+	hipDriverGetVersion
+	hipCtxGetDevice
+	hipCtxGetApiVersion
+	hipCtxGetCacheConfig
+	hipCtxSetCacheConfig
+	hipCtxSetSharedMemConfig
+	hipCtxSynchronize
+	hipCtxGetFlags
+	hipDevicePrimaryCtxGetState
+	hipDevicePrimaryCtxRelease
+	hipDevicePrimaryCtxRetain
+	hipDevicePrimaryCtxReset
+	hipDevicePrimaryCtxSetFlags
+/rb/clr-src/projects/clr/hipamd/src/hip_memory.cpp
+	hipImportExternalMemory
+	hipExternalMemoryGetMappedBuffer
+	hipDestroyExternalMemory
+	hipImportExternalSemaphore
+	hipSignalExternalSemaphoresAsync
+	hipWaitExternalSemaphoresAsync
+	hipDestroyExternalSemaphore
+	hipExtMallocWithFlags
+	hipMalloc
+	hipHostMalloc
+	hipFree
+	hipMemcpy
+	hipMemcpyWithStream
+	hipMemPtrGetInfo
+	hipHostFree
+	hipFreeArray
+	hipMemGetAddressRange
+	hipMemGetInfo
+	hipMallocPitch
+	hipMalloc3D
+	hipArrayCreate
+	hipMallocArray
+	hipArray3DCreate
+	hipMalloc3DArray
+	hipHostGetFlags
+	hipHostRegister
+	hipHostUnregister
+	hipHostAlloc
+	hipMemcpyToSymbol
+	hipMemcpyFromSymbol
+	hipMemcpyToSymbolAsync
+	hipMemcpyFromSymbolAsync
+	hipMemcpyHtoD
+	hipMemcpyDtoH
+	hipMemcpyDtoD
+	hipMemcpyAsync
+	hipMemcpyHtoDAsync
+	hipMemcpyDtoDAsync
+	hipMemcpyDtoHAsync
+	hipMemcpyParam2D
+	hipMemcpy2D
+	hipMemcpy2DAsync
+	hipMemcpy2DToArray
+	hipMemcpyToArray
+	hipMemcpyFromArray
+	hipMemcpy3D
+	hipMemcpy3DAsync
+	hipDrvMemcpy3D
+	hipDrvMemcpy3DAsync
+	hipMemcpyBatchAsync
+	hipMemcpy3DBatchAsync
+	hipMemset
+	hipMemsetAsync
+	hipMemsetD8
+	hipMemsetD8Async
+	hipMemsetD16
+	hipMemsetD16Async
+	hipMemsetD32
+	hipMemsetD32Async
+	hipMemset2D
+	hipMemset2DAsync
+	hipMemsetD2D8
+	hipMemsetD2D8Async
+	hipMemsetD2D16
+	hipMemsetD2D16Async
+	hipMemsetD2D32
+	hipMemsetD2D32Async
+	hipMemset3D
+	hipMemset3DAsync
+	hipMemAllocPitch
+	hipMemAllocHost
+	hipIpcGetMemHandle
+	hipIpcOpenMemHandle
+	hipIpcCloseMemHandle
+	hipHostGetDevicePointer
+	hipPointerGetAttributes
+	hipPointerSetAttribute
+	hipPointerGetAttribute
+	hipDrvPointerGetAttributes
+	hipArrayDestroy
+	hipArrayGetInfo
+	hipArrayGetDescriptor
+	hipArray3DGetDescriptor
+	hipMemcpyParam2DAsync
+	hipMemcpy2DArrayToArray
+	hipMemcpy2DFromArray
+	hipMemcpy2DFromArrayAsync
+	hipMemcpy2DToArrayAsync
+	hipMemcpyAtoA
+	hipMemcpyAtoD
+	hipMemcpyAtoHAsync
+	hipMemcpyDtoA
+	hipMemcpyHtoAAsync
+	hipMemcpyHtoA
+	hipMemcpyAtoH
+	hipMallocHost
+	hipFreeHost
+	hipDrvMemcpy2DUnaligned
+	hipMipmappedArrayCreate
+	hipMipmappedArrayDestroy
+	hipMipmappedArrayGetLevel
+	hipMipmappedArrayGetMemoryRequirements
+	hipMallocMipmappedArray
+	hipFreeMipmappedArray
+	hipGetMipmappedArrayLevel
+	hipExternalMemoryGetMappedMipmappedArray
+	hipMemGetHandleForAddressRange
+/rb/clr-src/projects/clr/hipamd/src/hip_fatbin.cpp
+/rb/clr-src/projects/clr/hipamd/src/hip_texture.cpp
+	hipGetChannelDesc
+	hipTexRefSetFormat
+	hipTexRefSetFlags
+	hipTexRefGetArray
+	hipTexRefSetArray
+	hipTexRefGetAddress
+	hipTexRefSetAddress
+	hipTexRefSetAddress2D
+	hipTexRefGetBorderColor
+	hipTexRefGetFlags
+	hipTexRefGetFormat
+	hipTexRefGetMaxAnisotropy
+	hipTexRefGetMipmapLevelBias
+	hipTexRefGetMipmapLevelClamp
+	hipTexRefGetMipMappedArray
+	hipTexRefSetBorderColor
+	hipTexRefSetMaxAnisotropy
+	hipTexRefSetMipmapLevelBias
+	hipTexRefSetMipmapLevelClamp
+	hipTexRefSetMipmappedArray
+Init missing: hipGetErrorName
+Init missing: hipGetErrorString
+Init missing: hipDrvGetErrorName
+Init missing: hipDrvGetErrorString
+Init missing: hipKernelNameRef
+Init missing: hipKernelNameRefByPtr
+Init missing: hipApiName
+ Warning: implementation not found: hipStreamSetAttribute
+ Warning: implementation not found: hipStreamGetAttribute
+ Warning: implementation not found: hipGraphKernelNodeSetAttribute
+ Warning: implementation not found: hipGraphKernelNodeGetAttribute
+ Warning: 4 API calls missing in interception layer
+Private: hipBindTexture
+Private: hipBindTexture2D
+Private: hipBindTextureToArray
+Private: hipBindTextureToMipmappedArray
+Private: hipCreateTextureObject
+Private: hipDestroyTextureObject
+Private: hipDeviceGetCount
+Private: hipDeviceGetTexture1DLinearMaxWidth
+Private: hipGetTextureAlignmentOffset
+Private: hipGetTextureObjectResourceDesc
+Private: hipGetTextureObjectResourceViewDesc
+Private: hipGetTextureObjectTextureDesc
+Private: hipGetTextureReference
+Private: hipTexObjectCreate
+Private: hipTexObjectDestroy
+Private: hipTexObjectGetResourceDesc
+Private: hipTexObjectGetResourceViewDesc
+Private: hipTexObjectGetTextureDesc
+Private: hipTexRefGetAddressMode
+Private: hipTexRefGetFilterMode
+Private: hipTexRefGetMipmapFilterMode
+Private: hipTexRefSetAddressMode
+Private: hipTexRefSetFilterMode
+Private: hipTexRefSetMipmapFilterMode
+Private: hipUnbindTexture
+Private: hipBindTexture
+Private: hipBindTexture2D
+Private: hipBindTextureToArray
+Private: hipBindTextureToMipmappedArray
+Private: hipCreateTextureObject
+Private: hipDestroyTextureObject
+Private: hipDeviceGetCount
+Private: hipDeviceGetTexture1DLinearMaxWidth
+Private: hipGetTextureAlignmentOffset
+Private: hipGetTextureObjectResourceDesc
+Private: hipGetTextureObjectResourceViewDesc
+Private: hipGetTextureObjectTextureDesc
+Private: hipGetTextureReference
+Private: hipTexObjectCreate
+Private: hipTexObjectDestroy
+Private: hipTexObjectGetResourceDesc
+Private: hipTexObjectGetResourceViewDesc
+Private: hipTexObjectGetTextureDesc
+Private: hipTexRefGetAddressMode
+Private: hipTexRefGetFilterMode
+Private: hipTexRefGetMipmapFilterMode
+Private: hipTexRefSetAddressMode
+Private: hipTexRefSetFilterMode
+Private: hipTexRefSetMipmapFilterMode
+Private: hipUnbindTexture
+Skipping update to original template file (content unchanged): /rb/clr-src/projects/clr/hipamd/include/hip/amd_detail/hip_prof_str.h
+[3/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_activity.cpp.o
+[4/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_error.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_error.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[5/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_event_ipc.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event_ipc.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[6/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_context.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_context.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[7/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_code_object.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_code_object.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_code_object.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_global.hpp:15:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[8/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_device.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_device.cpp:11:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[9/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_fatbin.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_fatbin.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_fatbin.hpp:12:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[10/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_device_runtime.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_device_runtime.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[11/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_event.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[12/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_global.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_global.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_global.hpp:15:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[13/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_executionctx.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_executionctx.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_executionctx.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[14/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_log.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_log.cpp:2:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[15/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_intercept.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_intercept.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[16/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_hmm.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_hmm.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[17/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_mempool.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_mempool.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_mempool_impl.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[18/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_mempool_impl.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_mempool_impl.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_mempool_impl.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_event.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[19/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_peer.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_peer.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[20/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_graph_internal.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_graph_internal.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_graph_internal.hpp:19:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[21/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_profile.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_profile.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[22/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_storage.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_storage.cpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[23/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_platform.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_platform.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_platform.hpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[24/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_stream_ops.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_stream_ops.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[25/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_module.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_module.cpp:11:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[26/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_surface.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_surface.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[27/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_api_trace.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+/rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp:1584:1: warning: unknown attribute 'optimize' ignored [-Wunknown-attributes]
+ 1584 | NO_VECTORIZE const HipDispatchTable* GetHipDispatchTable() {
+      | ^~~~~~~~~~~~
+/rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp:1580:37: note: expanded from macro 'NO_VECTORIZE'
+ 1580 | #define NO_VECTORIZE __attribute__((optimize("no-tree-vectorize")))
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp:1588:1: warning: unknown attribute 'optimize' ignored [-Wunknown-attributes]
+ 1588 | NO_VECTORIZE const HipCompilerDispatchTable* GetHipCompilerDispatchTable() {
+      | ^~~~~~~~~~~~
+/rb/clr-src/projects/clr/hipamd/src/hip_api_trace.cpp:1580:37: note: expanded from macro 'NO_VECTORIZE'
+ 1580 | #define NO_VECTORIZE __attribute__((optimize("no-tree-vectorize")))
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3 warnings generated.
+[28/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_gl.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_gl.cpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[29/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_vm.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_vm.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[30/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_stream.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_stream.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[31/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_table_interface_c.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_table_interface_c.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[32/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_texture.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_texture.cpp:9:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[33/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_comgr_helper.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_comgr_helper.cpp:7:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_comgr_helper.hpp:14:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[34/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hrr/hip_capture_writer.cpp.o
+[35/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_memory.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_memory.cpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+/rb/clr-src/projects/clr/hipamd/src/hip_memory.cpp:634:11: warning: enumeration values 'hipWriteBuffer' and 'hipReadBuffer' not handled in switch [-Wswitch]
+  634 |   switch (type) {
+      |           ^~~~
+2 warnings generated.
+[36/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/profiler/hip_clr_dispatch_wrappers.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/profiler/hip_clr_dispatch_wrappers.cpp:16:
+In file included from /rb/clr-src/projects/clr/hipamd/src/profiler/../hip_global.hpp:15:
+In file included from /rb/clr-src/projects/clr/hipamd/src/profiler/../hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[37/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hrr/hip_capture_generated.cpp.o
+[38/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_library.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_library.cpp:13:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_library.hpp:18:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_code_object.hpp:10:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_global.hpp:15:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[39/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hrr/hip_capture.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hrr/hip_capture.cpp:38:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hrr/../hip_global.hpp:15:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hrr/../hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[40/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_graph.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_graph.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_graph_internal.hpp:19:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[41/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/profiler/hip_clr_profiler.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/profiler/hip_clr_profiler.cpp:32:
+In file included from /rb/clr-src/projects/clr/hipamd/src/profiler/../hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[42/44] Building CXX object hipamd/src/CMakeFiles/amdhip64.dir/hip_table_interface.cpp.o
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_table_interface.cpp:8:
+In file included from /rb/clr-src/projects/clr/hipamd/src/hip_internal.hpp:10:
+In file included from /rb/clr-src/projects/clr/rocclr/include/vdi_common.hpp:12:
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:1535:16: warning: 'submit' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+ 1535 |   virtual void submit(device::VirtualDevice& device) { device.submitMarker(*this); }
+      |                ^
+/rb/clr-src/projects/clr/rocclr/platform/command.hpp:444:16: note: overridden virtual function is here
+  444 |   virtual void submit(device::VirtualDevice& device) = 0;
+      |                ^
+1 warning generated.
+[43/44] Linking CXX shared library hipamd/lib/libamdhip64.so.7.14.60850-0000000
+[44/44] Creating library symlink hipamd/lib/libamdhip64.so.7 hipamd/lib/libamdhip64.so
+15:14:05 | build rc=0
+lrwxrwxrwx 1 root root       16 Sep  5 15:14 /rb/clr-build/hipamd/lib/libamdhip64.so -> libamdhip64.so.7
+lrwxrwxrwx 1 root root       33 Sep  5 15:14 /rb/clr-build/hipamd/lib/libamdhip64.so.7 -> libamdhip64.so.7.14.60850-0000000
+-rwxr-xr-x 1 root root 29106136 Sep  5 15:14 /rb/clr-build/hipamd/lib/libamdhip64.so.7.14.60850-0000000
+15:14:05 | BUILD-OK
