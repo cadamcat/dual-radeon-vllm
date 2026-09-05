@@ -1,0 +1,20 @@
+08:39:50 | ===== SERVE row=atomics_present backend=triton start =====
+08:39:51 | host=ai product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca root ports 32bit+ 64bit+ : 2 (of 6) ; dmesg no-atomics lines: 0
+08:39:51 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:39:51 | stopping ollama and llamacpp-hub
+08:40:06 | serve started (TP=1, flag='--attention-backend TRITON_ATTN'), log /rb/pa/serve-atomics_present-triton.log
+    row=atomics_present backend_requested=triton chosen=TRITON_ATTN matches=True fallback=False healthy=True died_before_health=False answered=True alive_after=True load_s=45.0 tokens=64 error=None ok=True
+    ONE_REQUEST_DONE
+08:40:53 | client rc=0
+08:40:53 | backend line: Using TRITON_ATTN backend (selected via --atte
+08:40:53 | fallback warning lines: 0
+08:40:53 | first error line: 
+08:40:56 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:40:56 | serve cell recorded (ok=True); restoring
+08:40:56 | --- restore (exit=0) ---
+08:40:56 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:41:06 | stopped vllm-tp2
+08:41:06 | services start requested
+08:41:11 | VRAM back to baseline: 27971584 27971584 
+08:41:11 | ROW-DONE serve row=atomics_present backend=triton in /data/rccl-build/pa/serve-cells.jsonl (restore ok)
+08:41:11 | ===== SERVE row atomics_present backend triton ended (exit=0) =====

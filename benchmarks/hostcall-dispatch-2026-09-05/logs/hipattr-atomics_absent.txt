@@ -1,0 +1,3 @@
+device=0 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100
+device=1 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100
+HIPATTR_DONE devices=2

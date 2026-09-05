@@ -8648,6 +8648,134 @@ def _run_checks(_opened, _audit_state):
                                     "median 1.0001, 11 of 20, p = 0.82",
                                     "≤ 0.6 % in every cell")) else 0)
 
+    # --- benchmarks/hostcall-dispatch-2026-09-05: does the engine's own kernel dispatch without atomics? ---
+    # Every figure in that README recomputes here from logs/pa-cells.jsonl,
+    # logs/serve-cells.jsonl and logs/rocm_C-gfx1100-kernels.tsv; the prose is
+    # held to the sentences the data licenses. analyze.py keys by (state, arm)
+    # and reports the latest run; every run is kept and counted.
+    import tarfile as _tarfile
+    _PDIR = os.path.join(HERE, "..", "hostcall-dispatch-2026-09-05")
+    _PLOG = os.path.join(_PDIR, "logs")
+    _prm = open(os.path.join(_PDIR, "README.md"), encoding="utf-8").read()
+    _pa_all = [json.loads(l) for l in open(os.path.join(_PLOG, "pa-cells.jsonl")) if l.strip()]
+    _sv_all = [json.loads(l) for l in open(os.path.join(_PLOG, "serve-cells.jsonl")) if l.strip()]
+    _pa = {}
+    for _r in _pa_all:
+        _pa[(_r["row"], _r["arm"])] = _r          # later rows win, as in analyze.py
+    _sv = {}
+    for _r in _sv_all:
+        _sv[(_r["row"], _r["backend_requested"])] = _r
+    ck("PA dispatch, distinct probe cells", "6", len(_pa))
+    ck("PA dispatch, distinct serve cells", "4", len(_sv))
+    ck("PA dispatch, probe runs in the present state", "3",
+       sum(1 for r in _pa_all if r["row"] == "atomics_present" and r["arm"] == "as_shipped"))
+    ck("PA dispatch, probe runs in the absent state", "5",
+       sum(1 for r in _pa_all if r["row"] == "atomics_absent" and r["arm"] == "as_shipped"))
+    ck("PA dispatch, serve runs in the present state", "2",
+       sum(1 for r in _sv_all if r["row"] == "atomics_present" and r["backend_requested"] == "default"))
+    ck("PA dispatch, serve runs in the absent state", "1",
+       sum(1 for r in _sv_all if r["row"] == "atomics_absent" and r["backend_requested"] == "default"))
+    ck("PA dispatch, every probe run of every cell dispatched", "0",
+       sum(1 for r in _pa_all if r["outcome"] != "dispatched_ok"))
+    ck("PA dispatch, every served request answered on its backend", "0",
+       sum(1 for r in _sv_all if not (r.get("ok") and r.get("backend_matches_request"))))
+    for _row, _caps, _dm, _attr in (("atomics_present", "2", "0", [1, 1]),
+                                    ("atomics_absent", "0", "2", [0, 0])):
+        for _arm in ("as_shipped", "ck_forced", "triton_forced"):
+            _r = _pa[(_row, _arm)]
+            ck(f"PA dispatch, {_row} {_arm} outcome dispatched_ok", "1", 1 if _r["outcome"] == "dispatched_ok" else 0)
+            ck(f"PA dispatch, {_row} {_arm} root ports with completer support", _caps, _r["root_ports_with_completer_support"])
+            ck(f"PA dispatch, {_row} {_arm} amdgpu complaints", _dm, _r["dmesg_no_atomics_lines"])
+            ck(f"PA dispatch, {_row} {_arm} HostNativeAtomicSupported on both cards", "1",
+               1 if _r["host_native_atomic_supported"] == _attr and _r.get("host_native_atomic_props") == _attr else 0)
+            ck(f"PA dispatch, {_row} {_arm} attribute agrees with the platform", "1", 1 if _r["attr_matches_platform"] else 0)
+            ck(f"PA dispatch, {_row} {_arm} gate as shipped admits the shape", "1", 1 if _r["gate_as_shipped"] else 0)
+            _ck = _arm != "triton_forced"
+            ck(f"PA dispatch, {_row} {_arm} entered the CK op", "1" if _ck else "0", 1 if _r["ck_op_calls"] > 0 else 0)
+            ck(f"PA dispatch, {_row} {_arm} Triton fallback warning", "0" if _ck else "1", 1 if _r["fallback_warning_seen"] else 0)
+            ck(f"PA dispatch, {_row} {_arm} max rel error", "0.003013" if _ck else "0.002944", _r["max_rel_err"])
+        for _be, _chosen in (("default", "ROCM_ATTN"), ("triton", "TRITON_ATTN")):
+            _s = _sv[(_row, _be)]
+            ck(f"PA dispatch, {_row} serve {_be} backend chosen", "1", 1 if _s["backend_chosen"] == _chosen else 0)
+            ck(f"PA dispatch, {_row} serve {_be} healthy and answered", "1", 1 if _s["healthy"] and _s["answered"] and _s["ok"] else 0)
+            ck(f"PA dispatch, {_row} serve {_be} completion tokens", "64", _s["completion_tokens"])
+    _loads = [r["load_s"] for r in _sv_all]
+    ck("PA dispatch, fastest server start s", "45", min(_loads))
+    ck("PA dispatch, slowest server start s", "87", max(_loads))
+    ck("PA dispatch, one image, one vllm, one _rocm_C, one guest across every probe row", "1",
+       len({(r.get("image"), r.get("vllm"), r.get("rocm_C_md5"), r.get("guest_host")) for r in _pa_all}))
+    ck("PA dispatch, the image is the vLLM 0.23 container", "1",
+       1 if all("vllm_0.23.0" in (r.get("image") or "") for r in _pa_all) else 0)
+    # the kernel that was actually dispatched, from the LD_PRELOAD trace, in both states
+    _tsv = {}
+    with open(os.path.join(_PLOG, "rocm_C-gfx1100-kernels.tsv"), encoding="utf-8") as _fh:
+        next(_fh)
+        for _line in _fh:
+            _hc, _mangled, _dem = _line.rstrip("\n").split("\t", 2)
+            _tsv[_mangled] = (int(_hc), _dem)
+    ck("PA dispatch, kernels in the gfx1100 image", "2350", len(_tsv))
+    ck("PA dispatch, kernels declaring a hostcall", "348", sum(h for h, _ in _tsv.values()))
+    def _fam(dem):
+        return dem.replace("void ", "").split("<")[0].split("(")[0]
+    _fams = {}
+    for _hc, _dem in _tsv.values():
+        _f = _fams.setdefault(_fam(_dem), [0, 0]); _f[0] += 1; _f[1] += _hc
+    for _name, _n, _h in (("paged_attention_ll4mi_QKV_mfma4_kernel", "256", "256"),
+                          ("paged_attention_ll4mi_QKV_mfma16_kernel", "1536", "0"),
+                          ("paged_attention_ll4mi_reduce_kernel", "128", "0"),
+                          ("wvSplitKQ_hf_", "32", "32"), ("wvSplitKQ_hf_sml_", "32", "32"),
+                          ("wvSplitKrc_", "28", "28"),
+                          ("wvSplitK_hf_", "100", "0"), ("wvSplitK_hf_sml_", "100", "0"), ("wvSplitK_hf_big_", "100", "0")):
+        ck(f"PA dispatch, {_name} instantiations", _n, _fams.get(_name, [0, 0])[0])
+        ck(f"PA dispatch, {_name} declaring", _h, _fams.get(_name, [0, 0])[1])
+    ck("PA dispatch, declaring kernels outside the four families", "0",
+       sum(h for h, d in _tsv.values() if not any(k in d for k in ("mfma4_kernel", "wvSplitKQ_hf", "wvSplitKrc"))))
+    for _row in ("atomics_present", "atomics_absent"):
+        for _arm in ("as_shipped", "ck_forced"):
+            _names = [k["name"] for k in _pa[(_row, _arm)].get("launched_kernels") or []]
+            _pa_names = [n for n in _names if "paged_attention" in n]
+            ck(f"PA dispatch, {_row} {_arm} launched the mfma16 QKV kernel", "1",
+               1 if any("paged_attention_ll4mi_QKV_mfma16_kernel" in n for n in _pa_names) else 0)
+            ck(f"PA dispatch, {_row} {_arm} launched the reduce kernel", "1",
+               1 if any("paged_attention_ll4mi_reduce_kernel" in n for n in _pa_names) else 0)
+            ck(f"PA dispatch, {_row} {_arm} launched no mfma4 kernel", "0",
+               sum(1 for n in _names if "mfma4" in n))
+            # the trace keeps 220 characters of each mangled name; match the TSV by prefix,
+            # and an ambiguous or missing prefix counts as a declaring kernel, not as none
+            def _hostcall_of(n):
+                hits = [m for m in _tsv if m.startswith(n) or n.startswith(m)]
+                return _tsv[hits[0]][0] if len(hits) == 1 else 1
+            ck(f"PA dispatch, {_row} {_arm} every launched paged-attention kernel declares no hostcall", "0",
+               sum(_hostcall_of(n) for n in _pa_names))
+        _tn = [k["name"] for k in _pa[(_row, "triton_forced")].get("launched_kernels") or []]
+        ck(f"PA dispatch, {_row} triton_forced launched no paged-attention kernel", "0",
+           sum(1 for n in _tn if "paged_attention" in n))
+    # the kernel version note: the first present row ran on 7.0.0-30, the rest on -31
+    with _tarfile.open(os.path.join(_PLOG, "pa-results-row1.tgz")) as _tf:
+        _first = _tf.extractfile("pa/PA-atomics_present.txt").read().decode("utf-8", "replace")
+    ck("PA dispatch, the first present row ran on kernel 7.0.0-30", "1", 1 if "kernel=7.0.0-30-generic" in _first else 0)
+    ck("PA dispatch, the accepted present row ran on kernel 7.0.0-31", "1",
+       1 if "kernel=7.0.0-31-generic" in open(os.path.join(_PLOG, "PA-atomics_present.txt")).read() else 0)
+    ck("PA dispatch, the absent row ran on kernel 7.0.0-31", "1",
+       1 if "kernel=7.0.0-31-generic" in open(os.path.join(_PLOG, "PA-atomics_absent.txt")).read() else 0)
+    # and the README says what the rows say
+    for _what, _frag in (
+        ("the headline table's present row", "AtomicOps present     dispatched_ok       dispatched_ok   dispatched_ok    healthy, answered, ok        healthy, answered, ok"),
+        ("the headline table's absent row", "AtomicOps absent      dispatched_ok       dispatched_ok   dispatched_ok    healthy, answered, ok        healthy, answered, ok"),
+        ("the attribute line", "hipDeviceAttributeHostNativeAtomicSupported, both cards:  present 1 / absent 0"),
+        ("the kernel count", "holds **2 350** kernels,\nof which **348** declare"),
+        ("the mfma4 row", "| `paged_attention_ll4mi_QKV_mfma4_kernel` | 256 | **256** | never:"),
+        ("the mfma16 row", "| `paged_attention_ll4mi_QKV_mfma16_kernel` | 1 536 | 0 | **this is what runs** |"),
+        ("the launched kernel", "paged_attention_ll4mi_QKV_mfma16_kernel<__hip_bfloat16, __hip_bfloat16, Fp8KVCacheDataType(0),\n                                            __hip_bfloat16, 16, 128, 256, false, 4, MFMAType(0)>"),
+        ("the error table", "| as_shipped (CK) | 3.013e-3 | 3.013e-3 |"),
+        ("the triton error", "| triton_forced | 2.944e-3 | 2.944e-3 |"),
+        ("the server start range", "the server was up in 45–87 s"),
+        ("the run counts", "| present | 3 | 2 | 7.0.0-30 (first), 7.0.0-31 |\n| absent | 5 | 1 | 7.0.0-31 |"),
+        ("that the prediction was wrong", "**It is not refused. The prediction was wrong, and the reason is exact.**"),
+        ("what is not licensed", "That the same holds on CDNA"),
+    ):
+        ck(f"PA dispatch README, states {_what}", "1", 1 if _frag in _prm else 0)
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

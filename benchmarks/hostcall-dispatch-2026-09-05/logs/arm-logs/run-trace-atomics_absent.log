@@ -1,0 +1,40 @@
+08:51:46 | ===== PA row=atomics_absent start =====
+08:51:46 | host=ai kernel=7.0.0-31-generic product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca
+08:51:46 | root ports reporting 32bit+ 64bit+ : 0 (of 8 AtomicOpsCap lines)
+08:51:46 | dmesg 'PCIE atomic ops is not supported' lines: 2
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+08:51:46 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:51:46 | stopping ollama and llamacpp-hub
+08:51:56 | stale probe processes killed before start: 0
+08:51:57 | hipattr: device=0 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100;device=1 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100;
+08:51:57 | ----- cell row=atomics_absent arm=as_shipped -----
+08:52:05 | launched: 1026 LAUNCH api=hipLaunchKernel name=_ZN2at6native32elementwise_kernel_manual_unrollILi128ELi8EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERN;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native29vectorized_elementwise_kernelILi4ENS0_13AUnaryFunctorIfffNS0_15binary_internal10MulFunctorIfEEEESt5arrayIPcLm2;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native12_GLOBAL__N_123cunn_SoftMaxForwardGmemILi4EfffNS1_29SoftMaxForwardWithMulEpilogueElEEvPT2_PKT0_T4_;
+    row=atomics_absent arm=as_shipped outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.0030131319835387843
+08:52:05 | cell rc=0
+08:52:05 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 2 False
+08:52:05 | ----- cell row=atomics_absent arm=ck_forced -----
+08:52:11 | launched: 1026 LAUNCH api=hipLaunchKernel name=_ZN2at6native32elementwise_kernel_manual_unrollILi128ELi8EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERN;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native29vectorized_elementwise_kernelILi4ENS0_13AUnaryFunctorIfffNS0_15binary_internal10MulFunctorIfEEEESt5arrayIPcLm2;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native12_GLOBAL__N_123cunn_SoftMaxForwardGmemILi4EfffNS1_29SoftMaxForwardWithMulEpilogueElEEvPT2_PKT0_T4_;
+    row=atomics_absent arm=ck_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.003013132198782146
+08:52:11 | cell rc=0
+08:52:12 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 2 False
+08:52:12 | ----- cell row=atomics_absent arm=triton_forced -----
+08:52:18 | launched: 1026 LAUNCH api=hipLaunchKernel name=_ZN2at6native32elementwise_kernel_manual_unrollILi128ELi8EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERN;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native29vectorized_elementwise_kernelILi4ENS0_13AUnaryFunctorIfffNS0_15binary_internal10MulFunctorIfEEEESt5arrayIPcLm2;32 LAUNCH api=hipLaunchKernel name=_ZN2at6native12_GLOBAL__N_123cunn_SoftMaxForwardGmemILi4EfffNS1_29SoftMaxForwardWithMulEpilogueElEEvPT2_PKT0_T4_;
+    row=atomics_absent arm=triton_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=0 fallback_warning=True host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.002943697288938233
+08:52:18 | cell rc=0
+08:52:18 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 0 True
+08:52:18 | NOTE: /data/rccl-build/pa/pa-cells.jsonl already held 12 row(s) for atomics_absent from an earlier run; analyze.py keys by (row, arm), later rows win
+08:52:18 | all three arms recorded; restoring
+08:52:18 | --- restore (exit=0) ---
+08:52:19 | leftover probe processes killed: 0 (container state: running)
+08:52:29 | stopped vllm-tp2
+08:52:29 | services start requested
+08:52:34 | VRAM back to baseline: 27971584 27971584 
+08:52:34 | ROW-DONE row=atomics_absent cells=3 in /data/rccl-build/pa/pa-cells.jsonl (restore ok)
+08:52:34 | ===== PA row atomics_absent ended (exit=0) =====

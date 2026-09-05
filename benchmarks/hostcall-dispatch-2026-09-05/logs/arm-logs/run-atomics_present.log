@@ -1,0 +1,82 @@
+=== 08:37:40 START pa_row.sh atomics_present ===
+08:37:40 | ===== PA row=atomics_present start =====
+08:37:40 | host=ai kernel=7.0.0-31-generic product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca
+08:37:40 | root ports reporting 32bit+ 64bit+ : 2 (of 6 AtomicOpsCap lines)
+08:37:40 | dmesg 'PCIE atomic ops is not supported' lines: 0
+    			 AtomicOpsCap: Routing- 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+08:37:40 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:37:40 | stopping ollama and llamacpp-hub
+08:37:50 | stale probe processes killed before start: 0
+08:37:51 | hipattr: device=0 attr_rc=0 attr=1 props_rc=0 props=1 name=AMD Radeon RX 7900 XT arch=gfx1100;device=1 attr_rc=0 attr=1 props_rc=0 props=1 name=AMD Radeon RX 7900 XT arch=gfx1100;
+08:37:51 | ----- cell row=atomics_present arm=as_shipped -----
+    row=atomics_present arm=as_shipped outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[1, 1] hip_last_error=no error exc= rel_err=0.003013132198782146
+08:37:58 | cell rc=0
+08:37:58 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [1, 1] True True True 2 False
+08:37:58 | ----- cell row=atomics_present arm=ck_forced -----
+    row=atomics_present arm=ck_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[1, 1] hip_last_error=no error exc= rel_err=0.0030131319835387843
+08:38:04 | cell rc=0
+08:38:04 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [1, 1] True True True 2 False
+08:38:04 | ----- cell row=atomics_present arm=triton_forced -----
+    row=atomics_present arm=triton_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=0 fallback_warning=True host_native_atomic=[1, 1] hip_last_error=no error exc= rel_err=0.002943697288938233
+08:38:11 | cell rc=0
+08:38:11 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [1, 1] True True True 0 True
+08:38:11 | NOTE: /data/rccl-build/pa/pa-cells.jsonl already held 3 row(s) for atomics_present from an earlier run; analyze.py keys by (row, arm), later rows win
+08:38:11 | all three arms recorded; restoring
+08:38:11 | --- restore (exit=0) ---
+08:38:11 | leftover probe processes killed: 0 (container state: running)
+08:38:21 | stopped vllm-tp2
+08:38:21 | services start requested
+08:38:26 | VRAM back to baseline: 27971584 27971584 
+08:38:26 | ROW-DONE row=atomics_present cells=3 in /data/rccl-build/pa/pa-cells.jsonl (restore ok)
+08:38:26 | ===== PA row atomics_present ended (exit=0) =====
+=== 08:38:26 END pa_row.sh atomics_present rc=0 ===
+=== 08:38:26 START serve_row.sh atomics_present default ===
+08:38:26 | ===== SERVE row=atomics_present backend=default start =====
+08:38:27 | host=ai product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca root ports 32bit+ 64bit+ : 2 (of 6) ; dmesg no-atomics lines: 0
+08:38:27 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:38:27 | stopping ollama and llamacpp-hub
+08:38:42 | serve started (TP=1, flag=''), log /rb/pa/serve-atomics_present-default.log
+    row=atomics_present backend_requested=default chosen=ROCM_ATTN matches=True fallback=False healthy=True died_before_health=False answered=True alive_after=True load_s=48.0 tokens=64 error=None ok=True
+    ONE_REQUEST_DONE
+08:39:32 | client rc=0
+08:39:32 | backend line: Overriding with ROCM_ATTN
+08:39:32 | fallback warning lines: 0
+08:39:32 | first error line: 
+08:39:35 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:39:35 | serve cell recorded (ok=True); restoring
+08:39:35 | --- restore (exit=0) ---
+08:39:35 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:39:45 | stopped vllm-tp2
+08:39:45 | services start requested
+08:39:50 | VRAM back to baseline: 27971584 27971584 
+08:39:50 | ROW-DONE serve row=atomics_present backend=default in /data/rccl-build/pa/serve-cells.jsonl (restore ok)
+08:39:50 | ===== SERVE row atomics_present backend default ended (exit=0) =====
+=== 08:39:50 END serve_row.sh atomics_present default rc=0 ===
+=== 08:39:50 START serve_row.sh atomics_present triton ===
+08:39:50 | ===== SERVE row=atomics_present backend=triton start =====
+08:39:51 | host=ai product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca root ports 32bit+ 64bit+ : 2 (of 6) ; dmesg no-atomics lines: 0
+08:39:51 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:39:51 | stopping ollama and llamacpp-hub
+08:40:06 | serve started (TP=1, flag='--attention-backend TRITON_ATTN'), log /rb/pa/serve-atomics_present-triton.log
+    row=atomics_present backend_requested=triton chosen=TRITON_ATTN matches=True fallback=False healthy=True died_before_health=False answered=True alive_after=True load_s=45.0 tokens=64 error=None ok=True
+    ONE_REQUEST_DONE
+08:40:53 | client rc=0
+08:40:53 | backend line: Using TRITON_ATTN backend (selected via --atte
+08:40:53 | fallback warning lines: 0
+08:40:53 | first error line: 
+08:40:56 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:40:56 | serve cell recorded (ok=True); restoring
+08:40:56 | --- restore (exit=0) ---
+08:40:56 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:41:06 | stopped vllm-tp2
+08:41:06 | services start requested
+08:41:11 | VRAM back to baseline: 27971584 27971584 
+08:41:11 | ROW-DONE serve row=atomics_present backend=triton in /data/rccl-build/pa/serve-cells.jsonl (restore ok)
+08:41:11 | ===== SERVE row atomics_present backend triton ended (exit=0) =====
+=== 08:41:11 END serve_row.sh atomics_present triton rc=0 ===
+ROW1-DONE row=atomics_present

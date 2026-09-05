@@ -158,9 +158,14 @@ wait_signal}_kernel` (3), and `at::native::tinygemm_m16n8k16_chunk_kernel`
 one; those are counted separately throughout and are not in the "three
 libraries" figure.
 
-vLLM's 348 are all one family — `paged_attention_ll4mi_QKV_mfma4_kernel`, the
-custom ROCm paged attention, built for gfx1100 and present in the gfx1100
-image.
+vLLM's 348 are four template families, not one: **256** instantiations of
+`paged_attention_ll4mi_QKV_mfma4_kernel`, the custom ROCm paged attention's
+CDNA variant, and 92 skinny-GEMM kernels (`wvSplitKQ_hf_` 32, `wvSplitKQ_hf_sml_`
+32, `wvSplitKrc_` 28). The `mfma16` variant of the same paged attention, 1 536
+instantiations, declares none, and it is the one the RDNA launcher dispatches;
+[the 2026-09-05 dispatch experiment](../hostcall-dispatch-2026-09-05/README.md)
+measured that on this box, with the capability flipped both ways, and found why:
+on gfx11 the `mfma4` kernel's body is `assert(false)`.
 
 **Whether any of these is ever dispatched on this box is not measured here.**
 The scan counts declarations. It is worth flagging that

@@ -1,0 +1,20 @@
+08:38:26 | ===== SERVE row=atomics_present backend=default start =====
+08:38:27 | host=ai product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca root ports 32bit+ 64bit+ : 2 (of 6) ; dmesg no-atomics lines: 0
+08:38:27 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:38:27 | stopping ollama and llamacpp-hub
+08:38:42 | serve started (TP=1, flag=''), log /rb/pa/serve-atomics_present-default.log
+    row=atomics_present backend_requested=default chosen=ROCM_ATTN matches=True fallback=False healthy=True died_before_health=False answered=True alive_after=True load_s=48.0 tokens=64 error=None ok=True
+    ONE_REQUEST_DONE
+08:39:32 | client rc=0
+08:39:32 | backend line: Overriding with ROCM_ATTN
+08:39:32 | fallback warning lines: 0
+08:39:32 | first error line: 
+08:39:35 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:39:35 | serve cell recorded (ok=True); restoring
+08:39:35 | --- restore (exit=0) ---
+08:39:35 | serve stopped; VRAM back to baseline: 27971584 27971584 
+08:39:45 | stopped vllm-tp2
+08:39:45 | services start requested
+08:39:50 | VRAM back to baseline: 27971584 27971584 
+08:39:50 | ROW-DONE serve row=atomics_present backend=default in /data/rccl-build/pa/serve-cells.jsonl (restore ok)
+08:39:50 | ===== SERVE row atomics_present backend default ended (exit=0) =====

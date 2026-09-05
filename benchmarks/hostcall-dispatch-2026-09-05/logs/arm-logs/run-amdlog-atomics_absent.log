@@ -1,0 +1,43 @@
+08:30:57 | ===== PA row=atomics_absent start =====
+08:30:57 | host=ai kernel=7.0.0-31-generic product_uuid=3c4ef5ba-f5fd-4baa-b538-3c1e7bd7bfca
+08:30:57 | root ports reporting 32bit+ 64bit+ : 0 (of 8 AtomicOpsCap lines)
+08:30:57 | dmesg 'PCIE atomic ops is not supported' lines: 2
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: Routing- 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+    			 AtomicOpsCap: 32bit+ 64bit+ 128bitCAS-
+    			 AtomicOpsCap: 32bit- 64bit- 128bitCAS-
+08:30:57 | container vllm-tp2 image rocm/vllm:rocm7.14.0_rdna_ubuntu24.04_py3.14_pytorch_2.11.0_vllm_0.23.0@sha256:d01f3bca94fb717d950d39ff2b2e6ba7994fe47fd70937ed6942682a32a4caa0
+08:30:57 | stopping ollama and llamacpp-hub
+08:31:08 | stale probe processes killed before start: 0
+08:31:08 | hipattr: device=0 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100;device=1 attr_rc=0 attr=0 props_rc=0 props=0 name=AMD Radeon RX 7900 XT arch=gfx1100;
+08:31:08 | ----- cell row=atomics_absent arm=as_shipped -----
+    row=atomics_absent arm=as_shipped outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.0030131319835387843
+08:31:14 | cell rc=0
+08:31:15 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 2 False
+08:31:15 | arm as_shipped: dispatched_ok -- capturing an AMD_LOG_LEVEL=4 excerpt from a second run, separate file
+08:31:21 | excerpt: 1 lines; full log 4.0K, gzipped
+08:31:21 | ----- cell row=atomics_absent arm=ck_forced -----
+    row=atomics_absent arm=ck_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=2 fallback_warning=False host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.0030131319835387843
+08:31:27 | cell rc=0
+08:31:27 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 2 False
+08:31:27 | arm ck_forced: dispatched_ok -- capturing an AMD_LOG_LEVEL=4 excerpt from a second run, separate file
+08:31:34 | excerpt: 1 lines; full log 4.0K, gzipped
+08:31:34 | ----- cell row=atomics_absent arm=triton_forced -----
+    row=atomics_absent arm=triton_forced outcome=dispatched_ok gate_as_shipped=True ck_op_calls=0 fallback_warning=True host_native_atomic=[0, 0] hip_last_error=no error exc= rel_err=0.00294369707865496
+08:31:40 | cell rc=0
+08:31:40 | outcome=dispatched_ok attr/match/hipattr_ok/op_wrapped/op_calls/fallback: [0, 0] True True True 0 True
+08:31:40 | arm triton_forced: dispatched_ok -- capturing an AMD_LOG_LEVEL=4 excerpt from a second run, separate file
+08:31:47 | excerpt: 1 lines; full log 4.0K, gzipped
+08:31:47 | NOTE: /data/rccl-build/pa/pa-cells.jsonl already held 6 row(s) for atomics_absent from an earlier run; analyze.py keys by (row, arm), later rows win
+08:31:47 | all three arms recorded; restoring
+08:31:47 | --- restore (exit=0) ---
+08:31:47 | leftover probe processes killed: 0 (container state: running)
+08:31:57 | stopped vllm-tp2
+08:31:57 | services start requested
+08:32:02 | VRAM back to baseline: 27971584 27971584 
+08:32:02 | ROW-DONE row=atomics_absent cells=3 in /data/rccl-build/pa/pa-cells.jsonl (restore ok)
+08:32:02 | ===== PA row atomics_absent ended (exit=0) =====
