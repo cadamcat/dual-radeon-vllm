@@ -1,0 +1,9 @@
+:1:rockernel.cpp            :32  : 0082960215 us:  kernel _Z10k_hostcallPf declares hidden_hostcall_buffer (device printf/assert) but device gfx1100 has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); HIP_HOSTCALL_ALLOW_MISSING=1: its launches proceed with a null hostcall buffer, and a hostcall from it will fault
+devices=2
+affected = the hostcall kernel is REFUSED, or its marker never prints,
+           while the plain kernel is ok on the same device
+
+--- device 0 (gfx1100) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+:1:rocdevice.cpp            :3885: 0083012399 us:  Memory Fault Error
+Memory access fault by GPU node-1 (Agent handle: 0x59756518be90) on address (nil). Reason: Page not present or supervisor privilege.

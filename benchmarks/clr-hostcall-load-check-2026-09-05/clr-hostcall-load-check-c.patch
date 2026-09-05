@@ -1,0 +1,63 @@
+diff --git a/projects/clr/hipamd/src/hip_module.cpp b/projects/clr/hipamd/src/hip_module.cpp
+index 770f4efe..80cc1eda 100644
+--- a/projects/clr/hipamd/src/hip_module.cpp
++++ b/projects/clr/hipamd/src/hip_module.cpp
+@@ -351,7 +351,7 @@ hipError_t ihipLaunchKernel_validate(hipFunction_t f, const amd::LaunchParams& l
+   {
+     // Decided at load (roc::Kernel::init); named here, before a command exists.
+     const device::Kernel* devKernel = kernel->getDeviceKernel(*device);
+-    if (devKernel != nullptr && devKernel->hostcallUnsatisfiable()) {
++    if (devKernel != nullptr && devKernel->hostcallUnsatisfiable() && !HIP_HOSTCALL_ALLOW_MISSING) {
+       LogPrintfError("launch of %s refused: it declares a hostcall buffer and device %d has no PCIe atomics",
+                      kernel->name().c_str(), deviceId);
+       return hipErrorNotSupported;
+diff --git a/projects/clr/rocclr/device/rocm/rockernel.cpp b/projects/clr/rocclr/device/rocm/rockernel.cpp
+index 575acdbd..d413ae4b 100644
+--- a/projects/clr/rocclr/device/rocm/rockernel.cpp
++++ b/projects/clr/rocclr/device/rocm/rockernel.cpp
+@@ -24,9 +24,12 @@ bool Kernel::init() {
+         !device().info().pcie_atomics_) {
+       setHostcallUnsatisfiable(true);
+       LogPrintfError("kernel %s declares hidden_hostcall_buffer (device printf/assert) but device %s "
+-                     "has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); "
+-                     "its launches will return hipErrorNotSupported",
+-                     name().c_str(), device().info().name_);
++                     "has no PCIe AtomicOps to the host (hipDeviceAttributeHostNativeAtomicSupported=0); %s",
++                     name().c_str(), device().info().name_,
++                     HIP_HOSTCALL_ALLOW_MISSING
++                         ? "HIP_HOSTCALL_ALLOW_MISSING=1: its launches proceed with a null hostcall "
++                           "buffer, and a hostcall from it will fault"
++                         : "its launches will return hipErrorNotSupported");
+       break;
+     }
+   }
+diff --git a/projects/clr/rocclr/device/rocm/rocvirtual.cpp b/projects/clr/rocclr/device/rocm/rocvirtual.cpp
+index 12e2d22b..6d4dcc39 100644
+--- a/projects/clr/rocclr/device/rocm/rocvirtual.cpp
++++ b/projects/clr/rocclr/device/rocm/rocvirtual.cpp
+@@ -4792,6 +4792,12 @@ bool VirtualGPU::submitKernelInternal(const amd::NDRangeContainer& sizes, const
+               return false;
+             }
+             WriteAqlArgAt(hidden_arguments, buffer, it.size_, it.offset_);
++          } else if (HIP_HOSTCALL_ALLOW_MISSING) {
++            // Opted in: the kernel declares the buffer (printf/assert linked) but this
++            // device cannot provide one. Pass a null buffer instead of refusing: a kernel
++            // that never executes a hostcall runs; one that does will fault on the device.
++            const uintptr_t null_buffer = 0;
++            WriteAqlArgAt(hidden_arguments, null_buffer, it.size_, it.offset_);
+           } else {
+             LogError("Pcie atomics not enabled, hostcall not supported");
+             return false;
+diff --git a/projects/clr/rocclr/utils/flags.hpp b/projects/clr/rocclr/utils/flags.hpp
+index 5caf9d7a..2f9af0d7 100644
+--- a/projects/clr/rocclr/utils/flags.hpp
++++ b/projects/clr/rocclr/utils/flags.hpp
+@@ -188,6 +188,8 @@ release(bool, ROC_SYSTEM_SCOPE_SIGNAL, true,                                  \
+         "Enable system scope for signals (uses interrupts).")                 \
+ release(bool, GPU_FORCE_QUEUE_PROFILING, false,                               \
+         "Force command queue profiling by default")                           \
++release(bool, HIP_HOSTCALL_ALLOW_MISSING, false,                              \
++        "Dispatch a kernel that declares a hostcall buffer on a device without PCIe atomics anyway, with a null buffer; a hostcall from it will fault") \
+ release(bool, HIP_MEM_POOL_SUPPORT, true,                                     \
+         "Enables memory pool support in HIP")                                 \
+ release(bool, HIP_MEM_POOL_USE_VM, true,                                      \

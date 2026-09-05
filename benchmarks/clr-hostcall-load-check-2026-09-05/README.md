@@ -49,6 +49,9 @@ The same eight cells, run again with the ROCm 10.0 image's runtime commit and
 its own RCCL 2.30.4, give the same table cell for cell —
 [below](#the-same-eight-cells-at-rocm-100).
 
+And with a fifteen-line opt-in on top of the check, **stock RCCL 2.30.4 completes
+all twelve collectives without atomics** — [item 3, measured](#item-3-measured-an-opt-in-null-buffer-and-stock-2304-runs-without-atomics).
+
 ---
 
 ## The patch
@@ -73,8 +76,8 @@ the capability was already in `pcie_atomics_` from `checkAtomicSupport()` at
 device init, and the check already existed in `submitKernelInternal` — per
 dispatch, on the worker, returning `false` into a path that surfaces as
 `hipErrorIllegalState`. The patch moves the decision to the one place both
-inputs first meet and gives it a name. Item 3 (a null-buffer fallback) and
-item 4 (the toolchain) are not implemented here.
+inputs first meet and gives it a name. Item 3's runtime half is implemented as an opt-in (below); its device-library
+half and item 4 (the toolchain) are not implemented here.
 
 ## What was run
 
@@ -162,6 +165,53 @@ status's, at `enqueue.cc:2119` from RCCL and at launch from the probe, where
 B's names the buffer and the missing atomics. That difference is the case for
 B. Logs: `logs/*rocm10a*`.
 
+## Item 3, measured: an opt-in null buffer, and stock 2.30.4 runs without atomics
+
+The letter's third item is a fallback: a kernel that declares the buffer but
+never executes a hostcall should be able to run without one. Fifteen lines on
+top of A (`clr-hostcall-load-check-ac.patch`: five files, 48 added lines in
+all) add a runtime flag, `HIP_HOSTCALL_ALLOW_MISSING`, off by default. When it
+is set, the load-time line records the choice, the launch validator lets the
+launch through, and `submitKernelInternal` writes a null buffer into the hidden
+argument instead of refusing. Built at the 10.0 commit (`CLR_TAG=rocm10c`,
+library md5 `f739295c…`) and run through the toggle with the flag set in the
+patched cells (`CLR_SDK=rocm10c`), collectives before the probe:
+
+    gfx1100 pair, VM 101, the vLLM 0.27 container; runtime = 6b0e43f3 + A + the opt-in
+    HIP_HOSTCALL_ALLOW_MISSING=1 in the patched cells
+
+                          stock runtime                              patched runtime, opt-in
+                          probe        12 collectives, stock RCCL    probe                       12 collectives, stock RCCL
+    AtomicOps present     ok           12/12                         ok, marker prints           12/12
+    AtomicOps absent      refused,     refused, "the operation       plain kernel ok; the        12/12 -- stock RCCL 2.30.4,
+                          generic      cannot be performed in the    printf kernel faults on     no atomics, no rebuild;
+                                       present state"                the device; SIGABRT         13 kernels per rank marked at load
+
+**Stock RCCL 2.30.4 completes all twelve collective cases without PCIe atomics**
+under the opt-in: 26 load-time lines say `HIP_HOSTCALL_ALLOW_MISSING=1: its
+launches proceed with a null hostcall buffer`, no launch is refused, no `HIP
+failure` is reported, and the thirteen kernels so marked are the same thirteen
+by name. This is the first time a declaring kernel has been shown to run with
+no buffer at all: 2.27.7's working build had removed the declaration, not
+survived it. The cost is the documented one. The probe's `printf` kernel, which
+does execute a hostcall, dereferences the null buffer — `Memory access fault by
+GPU node-1 … on address (nil)` in the probe's output, and in the kernel log
+`[gfxhub] page fault … in page starting at address 0x0000000000000000` for
+process `hipgate3-rocm10` (`logs/clrdemo-rocm10c-atomics_absent-patched-probe.dmesg.txt`,
+recovered from the previous boot's journal after the revert flip) — and the
+process aborts; the plain kernel on the same device had run first and was
+fine. With atomics present the flag changes nothing: 12/12, and the marker
+prints under both runtimes.
+
+What this means for 2.30.4: the declaration is a linker artifact and the
+buffer is never used on the working path, so the runtime can serve a null one
+and the library needs no rebuild. What it does not mean: a kernel that does
+call hostcall — a real device `printf`, a failing `assert` — faults instead of
+being refused, which is why the flag is off by default and the choice is the
+user's. The device-library half of item 3, OCKL checking for a null buffer and
+returning, would turn that fault into a no-op; it is not implemented here.
+Logs: `logs/*rocm10c*`.
+
 ## What this licenses, and what it does not
 
 **Licensed.** On this platform, at the 7.14 and the 10.0 runtime commits, moving the check to
@@ -170,13 +220,17 @@ capability is present; when it is absent the refusal names the kernel, the
 device, the attribute and the reason, at load and at launch, and the
 collective library's own error path carries the sentence through
 (`enqueue.cc:2061` in the 7.14 image's RCCL, `enqueue.cc:2119` in 10.0's) with no
-change to RCCL or torch. The thirteen kernels the
+change to RCCL or torch. Under an explicit opt-in, a declaring kernel that
+never executes a hostcall runs with a null buffer: stock 2.30.4, 12/12, no
+atomics, no rebuild. The thirteen kernels the
 runtime names are the thirteen the static scan counted.
 
 **Not licensed.** That a real submission would use error code 1055, or log
 at `LOG_ERROR`, or refuse in `ihipLaunchKernel_validate` rather than at
-`hipModuleGetFunction`; those are choices for the runtime's maintainers. The
-fallback (item 3) and the toolchain change (item 4) remain proposals. The cost
+`hipModuleGetFunction`; those are choices for the runtime's maintainers. That
+the opt-in is safe: a kernel that does execute a hostcall faults on the device,
+and the device-library half of item 3 that would make it a no-op is not
+implemented. Item 4 (the toolchain) remains a proposal. The cost
 of the check was not measured; it is one pass over a kernel's hidden
 arguments at init. One host, one architecture, two runtime commits.
 
@@ -223,7 +277,9 @@ is the part neither attempted, and it is the part that composes with both.
     CLR_SDK=rocm10 bash clr_demo_row.sh atomics_present
     CLR_SDK=rocm10 bash clr_demo_row.sh atomics_absent
     # PR A alone at 10.0: link the tarball as /rb/clr-rocm10a-src.tgz, then CLR_TAG=rocm10a with clr-hostcall-load-check-a.patch, CLR_SDK=rocm10a for the rows
+    # the opt-in (item 3) at 10.0: /rb/clr-rocm10c-src.tgz, CLR_TAG=rocm10c with clr-hostcall-load-check-ac.patch, CLR_SDK=rocm10c for the rows
 
 `logs/` holds every row, every per-cell log with the runtime's `:1:` lines,
 the build logs, the diagnostic, the two earlier attempts, the ROCm 10.0
-rows (`*rocm10*`) and the PR-A-alone rows (`*rocm10a*`).
+rows (`*rocm10*`), the PR-A-alone rows (`*rocm10a*`) and the opt-in rows (`*rocm10c*`,
+with the kernel-log excerpt of the fault).

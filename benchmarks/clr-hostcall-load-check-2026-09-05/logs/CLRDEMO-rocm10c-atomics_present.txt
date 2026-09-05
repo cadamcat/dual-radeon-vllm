@@ -1,0 +1,22 @@
+23:00:29 | ===== CLR demo sdk=rocm10c row=atomics_present start =====
+23:00:29 | host=ai kernel=7.0.0-31-generic caps=2/6 dmesg=0
+23:00:29 | patched libamdhip64 libamdhip64.so.7.15.0-0000000 md5=f739295c272967f5ad0db778c2817228 (runtime commit 6b0e43f3 + patch)
+23:00:29 | stopping services
+23:00:40 | SDK runtime: core /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5 ; devel /opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/libamdhip64.so.7 md5=7c440eb52803588cef83b955dd4494b5
+23:00:40 | stock RCCL for the collective cells: /opt/python/lib/python3.14/site-packages/_rocm_sdk_libraries/lib/librccl.so.1 md5=a3963038f2f0241257be5cff41f4888f (RCCL version 2.30.4 compiled with ROCm "10.0.0.0-9999-6b0e43f3")
+23:00:40 | ----- cell sdk=rocm10c row=atomics_present runtime=stock what=collective -----
+23:00:51 | cell rc=0 named_error_lines=0 refusals=0 load_messages=0 markers=0 passed=12 first_error=none
+23:00:51 | ----- cell sdk=rocm10c row=atomics_present runtime=stock what=probe -----
+23:00:52 | cell rc=0 named_error_lines=0 refusals=0 load_messages=0 markers=2 passed=n/a first_error=none
+23:00:52 | ----- cell sdk=rocm10c row=atomics_present runtime=patched what=collective -----
+23:01:02 | stock runtime restored (md5 verified)
+23:01:02 | cell rc=0 named_error_lines=0 refusals=0 load_messages=0 markers=0 passed=12 first_error=none
+23:01:02 | ----- cell sdk=rocm10c row=atomics_present runtime=patched what=probe -----
+23:01:03 | stock runtime restored (md5 verified)
+23:01:03 | cell rc=0 named_error_lines=0 refusals=0 load_messages=0 markers=2 passed=n/a first_error=none
+23:01:03 | four cells recorded; restoring
+23:01:03 | --- restore (exit=0) ---
+23:01:03 | image's librccl unchanged md5=a3963038f2f0241257be5cff41f4888f
+23:01:13 | stopped clr100
+23:01:18 | VRAM back to baseline: 27971584 27971584 
+23:01:18 | ROW-DONE clr-demo sdk=rocm10c row=atomics_present (restore ok)

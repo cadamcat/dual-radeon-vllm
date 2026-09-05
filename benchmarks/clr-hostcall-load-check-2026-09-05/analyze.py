@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STATES = ("atomics_present", "atomics_absent")
 RUNTIMES = ("stock", "patched")
 WHATS = ("probe", "collective")
-DEFAULT = ("clr-demo.jsonl", "clr-demo-rocm10.jsonl", "clr-demo-rocm10a.jsonl")
+DEFAULT = ("clr-demo.jsonl", "clr-demo-rocm10.jsonl", "clr-demo-rocm10a.jsonl", "clr-demo-rocm10c.jsonl")
 
 
 def load(path):

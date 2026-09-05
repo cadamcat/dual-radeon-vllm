@@ -41,6 +41,9 @@ def _tracked_input_violations(opened, root):
     repo = os.path.realpath(root)
     source = os.path.realpath(__file__)
     harness = os.path.join(repo, "break_0905_tracked_inputs.py")
+    # CLAUDE.md at the root is a local agent adapter (excluded from git via
+    # .git/info/exclude), not a published document; the link scan opens it.
+    adapter = os.path.join(repo, "CLAUDE.md")
     candidates = []
     seen = set()
     for raw in opened:
@@ -54,7 +57,7 @@ def _tracked_input_violations(opened, root):
         parts = path.split(os.sep)
         # The existing repository-wide link scan opens this local break harness
         # too. It is test machinery, not a published verifier input.
-        if (path in (source, harness) or "__pycache__" in parts
+        if (path in (source, harness, adapter) or "__pycache__" in parts
                 or path.lower().endswith(".pyc")):
             continue
         if path not in seen:
@@ -8908,7 +8911,7 @@ def _run_checks(_opened, _audit_state):
         ("the same kernel as July", "`ncclDevKernel_Generic_4` is the kernel [root-cause.md](../../docs/root-cause.md)'s\nJuly crash log names"),
         ("forty-five lines, five files", "`clr-hostcall-load-check.patch`: five files, forty-five added lines including\ncomments"),
         ("the commit", "against `rocm-systems` at `2b22ab01`"),
-        ("what is not implemented", "Item 3 (a null-buffer fallback) and\nitem 4 (the toolchain) are not implemented here."),
+        ("what is not implemented", "Item 3's runtime half is implemented as an opt-in (below); its device-library\nhalf and item 4 (the toolchain) are not implemented here."),
         ("the preload finding", "`rocm_sdk.preload_libraries()`\n`dlopen`s the SDK's `libamdhip64.so.7` by absolute path at import"),
         ("the kpack finding", "**The build needs `ROCM_KPACK_ENABLED=ON`.**"),
         ("what is not licensed", "That a real submission would use error code 1055"),
@@ -9065,6 +9068,92 @@ def _run_checks(_opened, _audit_state):
         ("the string an application sees under A", "\"operation not supported\""),
     ):
         ck(f"CLR check A README, states {_what}", "1", 1 if _frag in _crm else 0)
+
+    # --- item 3, measured: the opt-in (A + HIP_HOSTCALL_ALLOW_MISSING) at ROCm 10.0 ---
+    _crowsC = [json.loads(l) for l in open(os.path.join(_CLOG, "clr-demo-rocm10c.jsonl")) if l.strip()]
+    _ccC = {}
+    for _r in _crowsC:
+        _ccC[(_r["row"], _r["runtime"], _r["what"])] = _r
+    ck("CLR check C, distinct cells", "8", len(_ccC))
+    ck("CLR check C, rows", "8", len(_crowsC))
+    for _row in ("atomics_present", "atomics_absent"):
+        for _rt in ("stock", "patched"):
+            for _w in ("probe", "collective"):
+                _ccC.setdefault((_row, _rt, _w), dict(_MISSING, refusals=-1, markers=-1, row=_row, runtime=_rt, what=_w))
+    ck("CLR check C, every row says sdk rocm10c", "8", sum(1 for r in _crowsC if r.get("sdk") == "rocm10c"))
+    ck("CLR check C, every row says runtime commit 6b0e43f3", "8", sum(1 for r in _crowsC if r.get("runtime_commit") == "6b0e43f3"))
+    ck("CLR check C, every row records the opt-in as the variant's setting", "8", sum(1 for r in _crowsC if r.get("patched_env") == "HIP_HOSTCALL_ALLOW_MISSING=1"))
+    ck("CLR check C, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crowsC if r.get("stock_librccl_md5") == _c1md5))
+    for _rt in ("stock", "patched"):
+        ck(f"CLR check C, present {_rt} probe ok", "1",
+           1 if _ccC[("atomics_present", _rt, "probe")]["rc"] == 0 and not _ccC[("atomics_present", _rt, "probe")]["error"] else 0)
+        ck(f"CLR check C, present {_rt} marker prints on both devices", "2", _ccC[("atomics_present", _rt, "probe")]["markers"])
+        ck(f"CLR check C, present {_rt} collectives pass", "12", _ccC[("atomics_present", _rt, "collective")]["correctness_passed"])
+        ck(f"CLR check C, present {_rt} no load-time messages, no refusals", "0",
+           sum(_ccC[("atomics_present", _rt, w)]["load_messages"] + _ccC[("atomics_present", _rt, w)]["refusals"] for w in ("probe", "collective")))
+    for _w in ("probe", "collective"):
+        ck(f"CLR check C, absent stock {_w} refused with the generic string", "1",
+           1 if _ccC[("atomics_absent", "stock", _w)]["error"] == _OLD else 0)
+    _pc = _ccC[("atomics_absent", "patched", "collective")]
+    ck("CLR check C, absent patched collectives pass under the opt-in", "12", _pc["correctness_passed"])
+    ck("CLR check C, absent patched collectives exit 0", "0", _pc["rc"])
+    ck("CLR check C, absent patched collectives marked at load (13 x 2 ranks)", "26", _pc["load_messages"])
+    ck("CLR check C, absent patched collectives refuse nothing", "0", _pc["refusals"] + _pc["named_error_lines"])
+    _clogC = open(os.path.join(_CLOG, "clrdemo-rocm10c-atomics_absent-patched-collective.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check C, the log says 12/12", "1", 1 if "12/12 cases pass" in _clogC else 0)
+    ck("CLR check C, 26 lines record the null-buffer choice", "26", _clogC.count("proceed with a null hostcall buffer"))
+    ck("CLR check C, no HIP failure reported by RCCL", "0", _clogC.count("HIP failure"))
+    _namedC = sorted({re.search(r"kernel (\S+) declares", l).group(1) for l in _clogC.splitlines() if "declares hidden_hostcall_buffer" in l})
+    ck("CLR check C, the thirteen marked are the 7.14 thirteen by name", "1", 1 if set(_namedC) == set(_named) else 0)
+    _pp = _ccC[("atomics_absent", "patched", "probe")]
+    ck("CLR check C, the probe's hostcall kernel faults: the process aborted (SIGABRT, rc 134)", "134", _pp["rc"])
+    ck("CLR check C, the probe's marker never printed", "0", _pp["markers"])
+    ck("CLR check C, the probe was marked at load before it died (device 0 only)", "1", _pp["load_messages"])
+    _plogC = open(os.path.join(_CLOG, "clrdemo-rocm10c-atomics_absent-patched-probe.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check C, the probe's hostcall kernel faults: memory access fault at (nil)", "1",
+       1 if "Memory access fault by GPU node" in _plogC and "on address (nil)" in _plogC else 0)
+    ck("CLR check C, the plain kernel on the same device ran first and was fine", "1",
+       sum(1 for l in _plogC.splitlines() if l.strip().startswith("plain") and " ok " in l))
+    _dm = open(os.path.join(_CLOG, "clrdemo-rocm10c-atomics_absent-patched-probe.dmesg.txt"), encoding="utf-8", errors="replace").read()
+    ck("CLR check C, the kernel log names the fault, the process and address 0", "3",
+       _dm.count("[gfxhub] page fault") + _dm.count("Process hipgate3-rocm10") + _dm.count("address 0x0000000000000000"))
+    ck("CLR check C, one patched library across rows, and neither A's nor B's", "1",
+       len({r["patched_libamdhip64_md5"] for r in _crowsC} - {r["patched_libamdhip64_md5"] for r in _crows10} - {r["patched_libamdhip64_md5"] for r in _crowsA}))
+    ck("CLR check C, patched cells mapped the patched library", "4",
+       sum(1 for r in _crowsC if r["runtime"] == "patched" and r["patched_libamdhip64_md5"] in (r.get("mapped_amdhip64") or "")))
+    ck("CLR check C, stock cells mapped the 10.0 SDK's library", "4",
+       sum(1 for r in _crowsC if r["runtime"] == "stock" and "7c440eb52803588cef83b955dd4494b5" in (r.get("mapped_amdhip64") or "")))
+    for _row, _caps, _dmc in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
+        ck(f"CLR check C, {_row} root ports with completer support", _caps,
+           {r["root_ports_with_completer_support"] for r in _crowsC if r["row"] == _row}.pop())
+        ck(f"CLR check C, {_row} amdgpu complaints", _dmc,
+           {r["dmesg_no_atomics_lines"] for r in _crowsC if r["row"] == _row}.pop())
+    _blogC = open(os.path.join(_CLOG, "clr-rocm10c-build.log"), encoding="utf-8", errors="replace").read()
+    ck("CLR check C, the build finished", "1", _blogC.count("BUILD-OK"))
+    _patchAC = open(os.path.join(_CDIR, "clr-hostcall-load-check-ac.patch"), "rb").read()
+    ck("CLR check C, the build applied the committed A+C patch (md5)", "1", 1 if f"(md5 {hashlib.md5(_patchAC).hexdigest()})" in _blogC else 0)
+    _patchAC_t = _patchAC.decode("utf-8")
+    ck("CLR check C, the A+C patch touches five files", "5", sum(1 for l in _patchAC_t.splitlines() if l.startswith("+++ b/")))
+    ck("CLR check C, the A+C patch adds 48 lines", "48", sum(1 for l in _patchAC_t.splitlines() if l.startswith("+") and not l.startswith("+++")))
+    ck("CLR check C, the flag is declared off by default", "1", _patchAC_t.count("release(bool, HIP_HOSTCALL_ALLOW_MISSING, false,"))
+    ck("CLR check C, the patch writes the null buffer", "1", _patchAC_t.count("WriteAqlArgAt(hidden_arguments, null_buffer"))
+    ck("CLR check C, the patch adds no status", "0", sum(1 for l in _patchAC_t.splitlines() if l.startswith("+") and "hipErrorHostcallUnsupported" in l))
+    _patchC_t = open(os.path.join(_CDIR, "clr-hostcall-load-check-c.patch"), encoding="utf-8").read()
+    ck("CLR check C, the opt-in alone is fifteen added lines on top of A", "15", sum(1 for l in _patchC_t.splitlines() if l.startswith("+") and not l.startswith("+++")))
+    ck("CLR check C README, states fifteen lines", "1", 1 if "Fifteen lines on\ntop of A" in _crm else 0)
+    for _what, _frag in (
+        ("the headline", "**Stock RCCL 2.30.4 completes all twelve collective cases without PCIe atomics**"),
+        ("the cost", "and the\nprocess aborts"),
+        ("the default", "which is why the flag is off by default"),
+        ("what is and is not implemented", "Item 3's runtime half is implemented as an opt-in"),
+    ):
+        ck(f"CLR check C README, states {_what}", "1", 1 if _frag in _crm else 0)
+    _oq0 = open(os.path.join(ROOT, "docs", "open-questions.md"), encoding="utf-8").read()
+    ck("open-questions 0, the 2026-09-06 addendum: stock 2.30.4 ran without atomics under the opt-in", "1",
+       1 if "**Addendum 2026-09-06.**" in _oq0 and "completed all twelve collective cases on this pair with AtomicOps absent" in _oq0 else 0)
+    ck("open-questions 0, and keeps 2.27.7 as the rebuild route until it ships", "1", 1 if "2.27.7 remains the route that needs nothing\n> but a rebuild" in _oq0 else 0)
+    ck("root-cause version scope, points at the addendum", "1",
+       1 if "Addendum 2026-09-06: a runtime-side opt-in lets stock 2.30.4 run without" in open(os.path.join(ROOT, "docs", "root-cause.md"), encoding="utf-8").read() else 0)
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

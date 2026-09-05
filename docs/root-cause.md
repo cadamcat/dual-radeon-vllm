@@ -140,6 +140,8 @@ configuration AMD has already shipped and supported.
 > the linked image ends up with zero `__ockl_*` symbols, yet the device linker
 > still declares `hidden_hostcall_buffer` and ROCr still refuses the dispatch.
 > Tested on hardware — see [open-questions.md §0](open-questions.md).
+> Addendum 2026-09-06: a runtime-side opt-in lets stock 2.30.4 run without
+> atomics, no rebuild; see there.
 
 The important subtlety, and the reason a naive `-DCMAKE_BUILD_TYPE=Release` is
 not enough:

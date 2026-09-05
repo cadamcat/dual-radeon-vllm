@@ -41,8 +41,17 @@ case "$SDK" in
            BUILD_HOST=/data/rccl-build/clr-rocm10a-build; BUILD_IN_C=/rb/clr-rocm10a-build
            SWAP_RCCL=0; STOCK=""; DEPLOYED_IN_C=""; DEPLOYED_MD5=""
            OUT=$D/clr-demo-rocm10a.jsonl; P=$D/CLRDEMO-rocm10a-$ROW.txt; LOGPFX=clrdemo-rocm10a-$ROW; CCOUT=/rb/pa/clrdemo-rocm10a-cc.jsonl; PROBE=hipgate3-rocm10 ;;
-  *) echo "FATAL: CLR_SDK must be rocm714, rocm10 or rocm10a"; exit 2 ;;
+  rocm10c) C=clr100; IMAGE=rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0; COMMIT=6b0e43f3
+           BUILD_HOST=/data/rccl-build/clr-rocm10c-build; BUILD_IN_C=/rb/clr-rocm10c-build
+           SWAP_RCCL=0; STOCK=""; DEPLOYED_IN_C=""; DEPLOYED_MD5=""
+           OUT=$D/clr-demo-rocm10c.jsonl; P=$D/CLRDEMO-rocm10c-$ROW.txt; LOGPFX=clrdemo-rocm10c-$ROW; CCOUT=/rb/pa/clrdemo-rocm10c-cc.jsonl; PROBE=hipgate3-rocm10
+           PATCHED_ENV="HIP_HOSTCALL_ALLOW_MISSING=1"; ORDER="collective probe" ;;
+  *) echo "FATAL: CLR_SDK must be rocm714, rocm10, rocm10a or rocm10c"; exit 2 ;;
 esac
+# rocm10c: the 10.0 tree with PR A plus the opt-in (clr-hostcall-load-check-ac.patch); the
+# patched cells run with HIP_HOSTCALL_ALLOW_MISSING=1, collectives before the probe because the
+# probe's printf kernel is expected to fault under the opt-in.
+PATCHED_ENV="${PATCHED_ENV:-}"; ORDER="${ORDER:-probe collective}"
 # rocm10a: the same 10.0 tree with PR A alone (clr-hostcall-load-check-a.patch: the load-time
 # check returning the existing hipErrorNotSupported; no new status), built into /rb/clr-rocm10a-build
 
@@ -132,7 +141,7 @@ cell() {   # cell <runtime:stock|patched> <what:probe|collective> -> appends one
   local WHAT=$2
   local ENV="" RC ERR NAMED LOADMSG MAPPED PASSED
   local LOG="$D/$LOGPFX-$RT-$WHAT.log"
-  [ "$RT" = patched ] && ENV="AMD_LOG_LEVEL=1"
+  [ "$RT" = patched ] && ENV="AMD_LOG_LEVEL=1 $PATCHED_ENV"
   say "----- cell sdk=$SDK row=$ROW runtime=$RT what=$WHAT -----"
   if [ "$RT" = patched ]; then swap_in || { say "FATAL: could not put the patched runtime in place"; exit 4; }; fi
   if [ "$WHAT" = probe ]; then
@@ -151,15 +160,17 @@ cell() {   # cell <runtime:stock|patched> <what:probe|collective> -> appends one
   if [ "$RT" = patched ]; then swap_out || { say "FATAL: stock runtime not restored after the cell"; exit 4; }; fi
   NAMED=$(grep -ac "hipErrorHostcallUnsupported" "$LOG"); LOADMSG=$(grep -ac "declares hidden_hostcall_buffer" "$LOG")
   REFUSED=$(grep -ao "refused: it declares a hostcall buffer" "$LOG" | wc -l | tr -d ' ')   # occurrences, not lines: two ranks can interleave
-  ERR=$(grep -aoE "hipErrorHostcallUnsupported|hipErrorNotSupported|hipErrorIllegalState|the operation cannot be performed in the present state|operation not supported|launch of [^ ]+ refused[^\"]{0,80}" "$LOG" | head -1)
+  ERR=$(grep -aoE "hipErrorHostcallUnsupported|hipErrorNotSupported|hipErrorIllegalState|the operation cannot be performed in the present state|operation not supported|launch of [^ ]+ refused[^\"]{0,80}|Memory access fault[^\n]{0,60}|hipErrorLaunchFailure|illegal memory access|HIP_HOSTCALL_ALLOW_MISSING=1[^\"]{0,60}" "$LOG" | head -1)
+  MARKERS=$(grep -ac "HOSTCALL_MARKER reached" "$LOG")
   PASSED=$(grep -ao '[0-9]*/12 cases pass' "$LOG" | tail -1 | cut -d/ -f1)
-  say "cell rc=$RC named_error_lines=$NAMED refusals=$REFUSED load_messages=$LOADMSG passed=${PASSED:-n/a} first_error=${ERR:-none}"
-  sudo python3 - "$OUT" "$ROW" "$RT" "$WHAT" "$RC" "$NAMED" "$LOADMSG" "${PASSED:-}" "${ERR:-}" "$LOG" "$PATCHED_MD5" "$CAPS" "$DMESG_HITS" "${MAPPED:-}" "$SDK" "$COMMIT" "$IMAGE" "$RCCL_MD5" "$RCCL_VER" "$REFUSED" <<'PY'
+  say "cell rc=$RC named_error_lines=$NAMED refusals=$REFUSED load_messages=$LOADMSG markers=$MARKERS passed=${PASSED:-n/a} first_error=${ERR:-none}"
+  sudo python3 - "$OUT" "$ROW" "$RT" "$WHAT" "$RC" "$NAMED" "$LOADMSG" "${PASSED:-}" "${ERR:-}" "$LOG" "$PATCHED_MD5" "$CAPS" "$DMESG_HITS" "${MAPPED:-}" "$SDK" "$COMMIT" "$IMAGE" "$RCCL_MD5" "$RCCL_VER" "$REFUSED" "$MARKERS" "$PATCHED_ENV" <<'PY'
 import json, sys
-out, row, rt, what, rc, named, loadmsg, passed, err, log, pmd5, caps, dm, mapped, sdk, commit, image, rcclmd5, rcclver, refused = sys.argv[1:21]
+out, row, rt, what, rc, named, loadmsg, passed, err, log, pmd5, caps, dm, mapped, sdk, commit, image, rcclmd5, rcclver, refused, markers, penv = sys.argv[1:23]
 tail = "".join(open(log, errors="replace").readlines()[-8:])
 rec = {"kind": "clr_demo_cell", "sdk": sdk, "runtime_commit": commit, "image": image, "row": row, "runtime": rt, "what": what, "rc": int(rc),
        "named_error_lines": int(named), "refusals": int(refused), "load_messages": int(loadmsg),
+       "markers": int(markers), "patched_env": penv or None,
        "correctness_passed": int(passed) if passed else None, "error": err or None,
        "patched_libamdhip64_md5": pmd5, "root_ports_with_completer_support": int(caps),
        "dmesg_no_atomics_lines": int(dm), "mapped_amdhip64": mapped or None,
@@ -167,6 +178,6 @@ rec = {"kind": "clr_demo_cell", "sdk": sdk, "runtime_commit": commit, "image": i
 open(out, "a").write(json.dumps(rec) + "\n")
 PY
 }
-for RT in stock patched; do cell $RT probe; cell $RT collective; done
+for RT in stock patched; do for WHAT in $ORDER; do cell $RT $WHAT; done; done
 ROW_OK=1
 say "four cells recorded; restoring"

@@ -1,0 +1,17 @@
+[   72.378982] ai kernel: evm: overlay not supported
+[   83.190385] ai kernel: amdgpu 0000:01:00.0: sq_intr: error, detail 0x00000000, type 2, sh 0, priv 1, wave_id 0, simd_id 0, wgp_id 0
+[   83.190387] ai kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:8 pasid:117)
+[   83.190419] ai kernel: amdgpu 0000:01:00.0:  Process hipgate3-rocm10 pid 4227 thread hipgate3-rocm10 pid 4227
+[   83.190438] ai kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000000000 from client 10
+[   83.190452] ai kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00801030
+[   83.190465] ai kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+[   83.190478] ai kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+[   83.190488] ai kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+[   83.190498] ai kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+[   83.190508] ai kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+[   83.190518] ai kernel: amdgpu 0000:01:00.0:          RW: 0x0
+[   94.092785] ai kernel: docker0: port 1(veth1c1f211) entered disabled state
+[   94.092851] ai kernel: veth0b6a7a2: renamed from eth0
+[   94.119472] ai kernel: docker0: port 1(veth1c1f211) entered disabled state
+[   94.119779] ai kernel: veth1c1f211 (unregistering): left allmulticast mode
+[   94.119794] ai kernel: veth1c1f211 (unregistering): left promiscuous mode
