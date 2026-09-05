@@ -6634,6 +6634,37 @@ def _run_checks(_opened, _audit_state):
         ck("index captions, longest one in %s stays under 500 words" % _lang, "1",
            1 if _worst < 500 else 0)
 
+    # --- Figure 3's Qwen3.8 line against Figure 1's --------------------------
+    # The same model on the same pair reads a quarter of Figure 1's line, because
+    # Figure 1 takes each model's fastest configuration and for this one that is a
+    # 0.27.1 run while the long ladder is all 0.23.1. The caption prints the gap
+    # as time per step at two depths and calls the ratio a quarter; both are
+    # recomputed here from the two series the figures draw, so the sentence cannot
+    # drift from the lines above it.
+    def _xq(block):
+        for _s in block["series"]:
+            if (_s["model"] == "Qwen3.8-27B" and _s["machine"] == "rdna3"
+                    and not _s.get("spec") and not _s.get("alt")):
+                return {_p["ctx"]: _p["tok_s"] for _p in _s["points"]}
+        return {}
+    _q1, _q3 = _xq(XFIG["best"]), _xq(XFIG["long"]["decode"])
+    _qsh = sorted(set(_q1) & set(_q3))
+    ck("index figure 3, the two Qwen3.8 ladders overlap", "11", len(_qsh))
+    # a quarter is a claim about every shared rung, not only the two printed
+    ck("index figure 3, and the ratio is a quarter at each of them", str(len(_qsh)),
+       sum(1 for _c in _qsh if 0.2 <= _q3[_c] / _q1[_c] < 0.3))
+    for _lang, _fn, _dt in (("en", "index.html", r"<dt>Qwen3\.8-27B is a quarter"),
+                            ("zh", "index.zh.html", r"<dt>Qwen3\.8-27B 只有它图 1")):
+        _blk = re.search(_dt + r"[\s\S]*?</dd>", XI[_fn])
+        ck("index figure 3 %s, the caption carries that block" % _lang, "1", 1 if _blk else 0)
+        _ms = re.findall(r"<b>([\d.]+)&nbsp;ms</b>", _blk.group(0)) if _blk else []
+        ck("index figure 3 %s, and prints the gap at two depths" % _lang, "2", len(_ms))
+        if len(_ms) == 2:
+            ck("index figure 3 %s, per-step gap at the shallowest shared rung" % _lang,
+               _ms[0], 1000.0 / _q3[_qsh[0]] - 1000.0 / _q1[_qsh[0]])
+            ck("index figure 3 %s, and at the deepest" % _lang,
+               _ms[1], 1000.0 / _q3[_qsh[-1]] - 1000.0 / _q1[_qsh[-1]])
+
     ck("index, the two versions share one data block", "1",
        1 if xblock(XI[XIP[0]], "articles") == xblock(XI[XIP[1]], "articles") else 0)
     ck("index, the data block is the file on disk", "1",
