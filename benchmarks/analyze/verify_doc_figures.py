@@ -8886,6 +8886,9 @@ def _run_checks(_opened, _audit_state):
         ("the preload finding", "`rocm_sdk.preload_libraries()`\n`dlopen`s the SDK's `libamdhip64.so.7` by absolute path at import"),
         ("the kpack finding", "**The build needs `ROCM_KPACK_ENABLED=ON`.**"),
         ("what is not licensed", "That a real submission would use error code 1055"),
+        ("AMD's runtime attempt and how it ended", "closed unmerged for inactivity on 2026-06-16"),
+        ("AMD's RCCL attempt and how it ended", "closed unmerged for inactivity on 2026-06-26"),
+        ("the 2025 request for a named check", "the user asked for exactly item 2"),
     ):
         ck(f"CLR check README, states {_what}", "1", 1 if _frag in _crm else 0)
 

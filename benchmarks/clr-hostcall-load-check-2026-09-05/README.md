@@ -123,6 +123,36 @@ fallback (item 3) and the toolchain change (item 4) remain proposals. The cost
 of the check was not measured; it is one pass over a kernel's hidden
 arguments at init. One host, one architecture, one runtime commit.
 
+## The upstream record, read 2026-09-05
+
+Neither half of this has been absent from AMD's own tracker. In January 2025
+a user hit the same refusal by compiling with `-O0`
+([clr#126](https://github.com/ROCm/clr/issues/126)); AMD's reply named the
+mechanism — a lingering `__assert_fail` that needs hostcall, which needs
+PCIe atomics — and in April 2025 the user asked for exactly item 2: *"HIPAMD
+should check for it as 'HIP error: the operation cannot be performed in the
+present state' is not a very useful error message"*. The answer was a BIOS
+setting. In February 2026 an AMD engineer opened
+[rocm-systems#3612](https://github.com/ROCm/rocm-systems/pull/3612),
+*"Downgrade hostcall error to warning on missing PCIe atomics"*: `LogError`
+to `LogWarning` and the `return false` removed, so the dispatch proceeds. Its
+only review, automated, made item 3's point: with no buffer the hidden kernarg
+slot is left uninitialised, so a kernel that does use hostcall reads garbage.
+Marked WIP in May, closed unmerged for inactivity on 2026-06-16. In May 2026
+[rocm-systems#6402](https://github.com/ROCm/rocm-systems/pull/6402) took the
+RCCL side — `if constexpr (COLLTRACE)` so that `COLLTRACE=false`
+instantiations stop declaring the buffer — citing two more reports,
+[#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074) (2× RX 7900
+XTX, 42 comments, open) and
+[#6148](https://github.com/ROCm/legacy-rocm-build/issues/6148) (2× gfx1201,
+Radeon AI PRO 9700); closed unmerged for inactivity on 2026-06-26.
+
+So the record has the refusal removed (unsafe without the device-library
+half) and the declaration removed for one of its sources (the trace, not the
+asserts that [B1](../rccl-ndebug-ab-2026-09-04/README.md) found load-bearing),
+each stalled. What is here — keep the refusal, decide it at load, name it —
+is the part neither attempted, and it is the part that composes with both.
+
 ## Reproducing
 
     # CPU only, ~15 min in a throwaway container of the vLLM 0.23 image; writes /rb/clr-build
