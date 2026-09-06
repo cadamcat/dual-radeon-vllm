@@ -167,6 +167,25 @@ economising on a check cheaper than opening the file they were changing.
 - A campaign earns a front-page mention only if it answers a question about
   the pair; otherwise it lives in its directory and in `CAMPAIGNS.md`.
 
+## Commit messages
+
+**Subject fits in 72 characters.** Not taste: git and GitHub truncate there.
+Measured 2026-09-06 — 52 % of this repository's 298 earlier subjects overflow
+it, and 13 of the 15 written that day did, so this is a correction, not a
+description.
+
+**The body is two lines by default**: what moved, and why — the why only when
+it is not readable from the diff. For a gated change that is
+
+    4 760 -> 4 765. Break test tools/break_0906e_unit_denominator.py 4/4 by name.
+
+Anything longer has to carry something the next person would otherwise miss.
+The reasoning is not that thing. Its home is the gate's comment, the document
+or the campaign README: committed, searchable, and where someone is actually
+looking. A commit body is not a findable place — `6dc064d`'s story sits in a
+commit body *and* in `verify_doc_figures.py`'s comment, and only the comment
+earns its keep.
+
 ## Definition of done
 
 A change is done when all of these hold:
