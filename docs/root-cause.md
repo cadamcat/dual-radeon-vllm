@@ -50,7 +50,7 @@ That is true, and it is *consistent with* — in fact evidence *for* — this ro
 We dissected the shipped libraries. The 7.2.4 row is the one exception: it is a
 third party's count of a distribution package, @adderek's in
 [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520), quoted with
-its two rebuilt arms in [open-questions §3](open-questions.md); the other three
+its two rebuilt arms in [open-questions §3](open-questions.md); the other four
 were read here.
 
 | Shipped RCCL | `hidden_hostcall_buffer` count | Behaviour on a no-atomics platform |
@@ -59,6 +59,7 @@ were read here.
 | ROCm 7.1.1 (2.27.7-b38) | **0** | works |
 | ROCm 7.2.4 (2.27.7) | 6 (reported) | fails |
 | ROCm 7.13 / 7.14 (2.30.4) | **13** (3 Generic + 10 Symk) | fails |
+| ROCm 10.0 (2.30.4) | **13** | fails |
 
 The 3 Generic kernels are `ncclDevKernel_Generic_{1,2,4}`; the other 10
 are the `ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD` variants

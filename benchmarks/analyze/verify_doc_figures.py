@@ -8315,6 +8315,17 @@ def _run_checks(_opened, _audit_state):
        1 if ("We dissected the shipped libraries. The 7.2.4 row is the one exception: it is a\n"
              "third party's count of a distribution package, @adderek's in\n"
              in _rcrm) else 0)
+    # the 10.0 row: the count comes from that container's own cross-target scan,
+    # not from a literal, and the prose above the table has to keep counting the
+    # rows this project read for itself as the table grows.
+    ck("root-cause §2 prints the ROCm 10.0 row", "1",
+       1 if f"| ROCm 10.0 (2.30.4) | **{_root_10[0]['hostcall_kernels']}** | fails |"
+       in _rcrm else 0)
+    _read_here = sum(1 for _l in _rcrm.splitlines()
+                     if _l.startswith("| ROCm ") and "(reported)" not in _l)
+    ck("root-cause §2 says how many rows it read itself", "1",
+       1 if f"the other {('one','two','three','four','five')[_read_here - 1]}\nwere read here"
+       in _rcrm else 0)
     ck("root-cause §2 prints the RCCL kernel families", "1",
        1 if ("`ncclDevKernel_Generic_{1,2,4}`" in _rcrm
              and "`ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD`" in _rcrm
