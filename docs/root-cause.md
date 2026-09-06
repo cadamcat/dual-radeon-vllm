@@ -108,10 +108,10 @@ the next person from re-running them.
 
 ---
 
-## 4. Why removing the hostcall requirement is safe
+## 4. Why removing the hostcall requirement is safe on this build
 
-Both sources of the requirement are **pure debug facilities that never execute on
-the working path**:
+Both sources of the requirement are debug facilities, and on the working path
+measured here neither runs:
 
 - **Device-side `assert()`** — scattered through `src/device/` (`all_gather.h`,
   `reduce_scatter.h`, `common_kernel.h`, `primitives.h`, `prims_simple.h`, …).
@@ -119,13 +119,24 @@ the working path**:
 - **`ENABLE_COLLTRACE`** — a collective-trace device `printf`, controlled by
   `option(COLLTRACE ... ON)` in RCCL's `CMakeLists.txt`.
 
-Neither participates in collective correctness. Removing them changes no data
-path — it only removes the ability to print a message from device code at the
-moment a debug assertion would have fired.
+Neither participates in collective correctness here: twelve correctness cases
+pass under both libraries. Removing them changes no data path — it only removes
+the ability to print a message from device code at the moment a debug assertion
+would have fired.
 
-The strongest argument that this is safe: **AMD's own shipped ROCm 7.1.1 RCCL has
-hostcall count 0**, from the same source tree. A no-hostcall RCCL is a
-configuration AMD has already shipped and supported.
+**AMD shipped this configuration and then deliberately stopped.** ROCm 7.1.1's
+RCCL has hostcall count 0, from the same source tree, which is why "downgrade"
+works. But in January 2026 AMD removed `NDEBUG` from its own release build on
+purpose, to fix a hang in `AllReduce.OutOfPlace` on gfx1101 and a failure in
+`AllToAll.Channels` on gfx942 — [open-questions §1](open-questions.md) names
+the commit. So the shipped-configuration argument cuts both ways.
+
+What is established is narrower, and it is measured: **on gfx1100, on this
+build, compiling the asserts away is safe** — twelve correctness cases, no
+faults. It is not established that they are inert everywhere. The upstream
+report does not say why they mattered there, and it is consistent with a
+codegen or timing interaction that `NDEBUG` perturbs; nothing here has
+measured that.
 
 ---
 

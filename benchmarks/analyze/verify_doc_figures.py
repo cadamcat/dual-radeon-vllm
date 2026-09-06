@@ -8374,6 +8374,18 @@ def _run_checks(_opened, _audit_state):
              "differs; see the\n"
              "[measurement campaign](../benchmarks/hostcall-abi-2026-09-04/README.md)."
              in _rcrm) else 0)
+    # §4 used to argue safety categorically and rest it on AMD having shipped a
+    # no-hostcall RCCL. §1's answer (2026-09-06) shows AMD then removed NDEBUG
+    # deliberately, so that argument cuts both ways; the claim is scoped to what
+    # was measured and the categorical wording must not come back.
+    ck("root-cause §4 scopes the safety claim to the measured build", "1",
+       1 if "## 4. Why removing the hostcall requirement is safe on this build"
+       in _rcrm else 0)
+    ck("root-cause §4 records that AMD then stopped shipping it", "1",
+       1 if "**AMD shipped this configuration and then deliberately stopped.**"
+       in _rcrm else 0)
+    ck("root-cause §4 no longer says the facilities never execute", "0",
+       _rcrm.count("never execute on\nthe working path"))
     ck("root-cause §4 warns about kpack inspection", "1",
        1 if ("> **That reads a local build's device image, not a shipped library.** A\n"
              "> classic build puts the device code in the `.so`, which is what the command\n"
