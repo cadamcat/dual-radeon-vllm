@@ -136,48 +136,70 @@ the missing piece of a good upstream bug report.
 
 ---
 
-## 1. Which upstream change flipped shipped binaries from 0 → N hostcall? ⭐
+## 1. Which upstream change flipped shipped binaries from 0 → N hostcall? — **ANSWERED: a deliberate flag removal in RCCL's own toolchain file**
 
-**What we know for certain:** AMD's shipped RCCL from ROCm 7.1.1 has
-`hidden_hostcall_buffer` count **0**; from ROCm 7.2 onwards every `Generic`
-kernel has it. Same source project, same architecture.
+> **Closed 2026-09-06.** The change is `0af77e5` in `ROCm/rccl`, and it is in the
+> repository — just not in the file this section kept looking at. Two claims
+> made here before are corrected below; they were wrong, not merely incomplete.
 
-**What we do not know:** *why*. Two hypotheses have now been **eliminated** by
-comparing the public release branches
-`release/rocm-rel-7.1.1.1` (ships hostcall 0) and `release/rocm-rel-7.2`
-(ships hostcall N):
+**The mechanism.** AMD's packaging passes the macro on the command line, and
+RCCL's own toolchain file then removes it:
 
-- ❌ **Not a CMake change.** Both branches' `CMakeLists.txt` are equivalent in
-  every relevant respect: neither sets `CMAKE_CXX_FLAGS_RELEASE`, neither
-  mentions `NDEBUG`, and both carry the same `option(COLLTRACE ... ON)` with the
-  same `if(COLLTRACE) target_compile_definitions(rccl PRIVATE ENABLE_COLLTRACE)`.
-  (The `set(CMAKE_CXX_FLAGS_RELEASE "-O3" ... FORCE)` line does exist — but only
-  on `develop`, i.e. it was added *after* 7.2, so it cannot explain this
-  regression. Do not cite it as the cause.)
-- ❌ **Not obviously new device asserts.** Sampling the device headers
-  (`all_gather.h`, `reduce_scatter.h`, `common_kernel.h`, `primitives.h`,
-  `prims_simple.h`, `all_reduce.h`, `broadcast.h`, `reduce.h`) gives the **same
-  `assert(` count in both branches**, and `common.h` has the same number of
-  `ENABLE_COLLTRACE` sites. This is a sample, not an exhaustive diff, so treat it
-  as strong evidence rather than proof.
+- `tools/rocm-build/compute_utils.sh` (`ROCm/legacy-rocm-build`) builds RCCL
+  with `-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="… -O3 -g -DNDEBUG"`. That is a
+  **cache** entry.
+- `CMakeLists.txt` selects `toolchain-linux.cmake` **before** `project(rccl CXX)`,
+  and since `0af77e5` that file contains
+  `set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")` — no `-DNDEBUG`, inside
+  `if (NOT DEFINED ENV{CXXFLAGS})`. A plain `set()` creates a **normal**
+  variable, which shadows the cache entry for the rest of the configure.
+- So `NDEBUG` never reaches the compile. Device `assert()` survives, links
+  `__assert_fail`, which routes through `__ockl_fprintf`, which is a hostcall —
+  and every `Generic` kernel ends up declaring `hidden_hostcall_buffer`.
 
-**Therefore the leading hypothesis is now:** the RCCL *source* did not
-meaningfully change between 7.1.1 and 7.2 — **AMD's release build invocation
-did**. Something that used to deliver `NDEBUG` to the device compilation pass
-stopped doing so. That is not visible from the repository, because it lives in
-AMD's packaging/CI, not in `CMakeLists.txt`.
+**It was deliberate, and upstream stated why.** `0af77e5` (2026-01-22) is the
+release cherry-pick of `e905d52`, PR #2124: one file, two lines. Its own
+description says that building with `-DNDEBUG` — "which ROCm uses to build
+RCCL" — hangs `AllReduce.OutOfPlace` on gfx1101 and fails `AllToAll.Channels`
+on gfx942, after the NCCL 2.27.3 merge brought in large device-code changes.
+Removing `NDEBUG` from `RelWithDebInfo` matched what RCCL's toolchain had
+always done for `Release`. **The fix for a hang on one RDNA3 card is what made
+dispatch fail on another.**
 
-**Why this matters for the upstream report:** the ask is not "please support
-platforms without atomics" and not "please change your CMake". It is
-**"your source is unchanged; your shipped 7.1.1 binary has hostcall 0 and your
-7.2 binary does not — please check what your build pipeline stopped passing."**
-That is a one-line fix in AMD's own build configuration.
+**The boundary is 7.2.0 → 7.2.1, not 7.1.1 → 7.2.** The line is absent from
+`rocm-7.2.0` (`0d2c4fd`) and present from `rocm-7.2.1` (`96a25b5`). Two
+independent confirmations, neither ours: a bisect in
+[ROCm#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074) reports
+7.2.0 passing the dual-GPU smoke test and 7.2.1 failing, naming those same two
+RCCL commits; and an AMD maintainer in the same issue attributes the PCIe
+atomics dependency to **ROCm 7.2.1**, adding that they are deciding whether to
+keep it as an explicit dependency or remove it.
 
-**How to close it definitively:** build `release/rocm-rel-7.1.1.1` and
-`release/rocm-rel-7.2` in an identical environment with identical flags and count
-hostcall in each device image. If both come out the same, the difference is
-conclusively in AMD's pipeline, not the source. The counting one-liner is in
+**What this section got wrong.**
+
+- ❌ *"Not a CMake change in RCCL itself."* True of `CMakeLists.txt`, which is
+  what was compared — and false of the toolchain file that `CMakeLists.txt`
+  selects. Comparing the two top-level files was the wrong comparison.
+- ❌ *"That is not visible from the repository, because it lives in AMD's
+  packaging/CI, not in `CMakeLists.txt`."* It is visible in the repository. The
+  packaging half is public too, in `ROCm/legacy-rocm-build`.
+- The device-assert sampling stands: the source did not meaningfully change.
+  What changed is whether the asserts survive compilation.
+
+**What is still not established.** Nobody has built both branches and counted.
+The step from "`NDEBUG` stopped arriving" to the measured counts — 0 at 7.1.1,
+6 in a 7.2.4 package, 13 at 2.30.4 — is an inference, consistent with every
+measurement we have but not itself measured. Building
+`release/rocm-rel-7.1.1.1` and `release/rocm-rel-7.2` in one environment and
+counting each device image would close it; the counting one-liner is in
 [`build/verify-nohostcall.sh`](../build/verify-nohostcall.sh).
+
+**What the upstream ask becomes.** Not "check what your pipeline stopped
+passing" — AMD knows, did it on purpose, and is already weighing the
+consequence. The useful contribution is the one this repository made instead:
+a platform that cannot satisfy the requirement should be told so at load, by
+name, rather than failing at dispatch with "the operation cannot be performed
+in the present state".
 
 ---
 

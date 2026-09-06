@@ -23,8 +23,8 @@
   },
   {
    "n": 5,
-   "link": "→ RCCL ≥ 2.27.7-b43 device kernels need hostcall",
-   "evidence": "llvm-readelf --notes on the device image: every ncclDevKernel_Generic carries hidden_hostcall_buffer. Source: device-side assert() throughout src/device/ links __assert_fail; ENABLE_COLLTRACE adds device printf → __ockl_fprintf"
+   "link": "→ RCCL from ROCm 7.2.1 device kernels need hostcall",
+   "evidence": "llvm-readelf --notes on the device image: every ncclDevKernel_Generic carries hidden_hostcall_buffer. Source: device-side assert() throughout src/device/ links __assert_fail; ENABLE_COLLTRACE adds device printf → __ockl_fprintf. Why 7.2.1 and not earlier: open-questions §1"
   }
  ],
  "shipped": [

@@ -8318,6 +8318,37 @@ def _run_checks(_opened, _audit_state):
     # the 10.0 row: the count comes from that container's own cross-target scan,
     # not from a literal, and the prose above the table has to keep counting the
     # rows this project read for itself as the table grows.
+    # open-questions §1, answered 2026-09-06: the boundary moved a version and
+    # two of that section's own claims were retracted. The commit and the two
+    # RCCL refs are the identifiers a rewrite could quietly lose, and the
+    # retracted "2.27.7-b43" boundary must be gone from every page, not just
+    # the one that was edited.
+    ck("open-questions §1 is answered and names the commit", "1",
+       1 if ("ANSWERED: a deliberate flag removal in RCCL's own toolchain file"
+             in _oq3
+             # the sentence that does the identifying, not merely the SHA
+             # somewhere on the page: it appears three times, so a partial
+             # edit left the old gate passing (break_0906c case 1)
+             and "The change is `0af77e5` in `ROCm/rccl`" in _oq3) else 0)
+    ck("open-questions §1 names the shadowing mechanism", "1",
+       1 if ("selects `toolchain-linux.cmake` **before** `project(rccl CXX)`" in _oq3
+             and "shadows the cache entry" in _oq3) else 0)
+    ck("open-questions §1 states the 7.2.0/7.2.1 boundary by commit", "1",
+       1 if "absent from\n`rocm-7.2.0` (`0d2c4fd`) and present from `rocm-7.2.1` (`96a25b5`)"
+       in _oq3 else 0)
+    ck("open-questions §1 keeps what is still unmeasured", "1",
+       1 if "Nobody has built both branches and counted." in _oq3 else 0)
+    _pages = ([os.path.join(ROOT, f) for f in ("README.md", "README.zh.md")]
+              + [os.path.join(ROOT, "docs", f)
+                 for f in sorted(os.listdir(os.path.join(ROOT, "docs")))
+                 if f.endswith(".md")])
+    ck("the retracted 2.27.7-b43 boundary is gone from every page", "0",
+       sum(open(f, encoding="utf-8").read().count("2.27.7-b43") for f in _pages))
+    ck("root-cause §1 chain row states the 7.2.1 boundary", "1",
+       1 if "| 5 | → RCCL from ROCm 7.2.1 device kernels need hostcall |" in _rcrm else 0)
+    ck("README.zh states the same boundary", "1",
+       1 if "而 RCCL 从 ROCm 7.2.1 起的设备内核恰好全都声明了它"
+       in open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read() else 0)
     ck("root-cause §2 prints the ROCm 10.0 row", "1",
        1 if f"| ROCm 10.0 (2.30.4) | **{_root_10[0]['hostcall_kernels']}** | fails |"
        in _rcrm else 0)

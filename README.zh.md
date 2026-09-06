@@ -54,7 +54,7 @@ amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
 hipcc --offload-arch=gfx1100 -O2 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因一句话说完:PCIe AtomicOps 到不了 GPU,ROCr 就建不起 hostcall 缓冲区,凡是声明了 hostcall 的内核都会被拒绝派发,而 RCCL 从 2.27.7-b43 起的设备内核恰好全都声明了它。完整证据链、以及被逐一排除的 12 个假设,见 [docs/root-cause.md](docs/root-cause.md)。
+plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因一句话说完:PCIe AtomicOps 到不了 GPU,ROCr 就建不起 hostcall 缓冲区,凡是声明了 hostcall 的内核都会被拒绝派发,而 RCCL 从 ROCm 7.2.1 起的设备内核恰好全都声明了它。完整证据链、以及被逐一排除的 12 个假设,见 [docs/root-cause.md](docs/root-cause.md)。
 
 ## 怎么修:两条路
 

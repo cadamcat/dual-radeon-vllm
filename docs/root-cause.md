@@ -13,7 +13,7 @@ sections at the end list what was **ruled out** and how.
 | 2 | → amdgpu therefore disables PCIe atomics | guest `dmesg`: `amdgpu 0000:01:00.0: PCIE atomic ops is not supported` (every GPU). `pci_enable_atomic_ops_to_root()` requires `COMP32`+`COMP64` at the root port and AtomicOp routing on each switch port below it; the emulated root port carries neither completer bit |
 | 3 | → ROCr cannot build a hostcall buffer | `AMD_LOG_LEVEL=4` at the exact failure: `rocvirtual.cpp:4208 Pcie atomics not enabled, hostcall not supported` → `4636 AQL dispatch failed!` → `hipErrorIllegalState`. Hostcall's ring signalling depends on atomics |
 | 4 | → any kernel *needing* hostcall is refused | `diagnose/hipgate3.cpp`: identical launch path, two kernels. Plain kernel **passes**; kernel with device `printf` (which requires hostcall) **fails with the exact production error** |
-| 5 | → RCCL ≥ 2.27.7-b43 device kernels need hostcall | `llvm-readelf --notes` on the device image: every `ncclDevKernel_Generic*` carries `hidden_hostcall_buffer`. Source: device-side `assert()` throughout `src/device/` links `__assert_fail`; `ENABLE_COLLTRACE` adds device `printf` → `__ockl_fprintf` |
+| 5 | → RCCL from ROCm 7.2.1 device kernels need hostcall | `llvm-readelf --notes` on the device image: every `ncclDevKernel_Generic*` carries `hidden_hostcall_buffer`. Source: device-side `assert()` throughout `src/device/` links `__assert_fail`; `ENABLE_COLLTRACE` adds device `printf` → `__ockl_fprintf`. Why 7.2.1 and not earlier: [open-questions §1](open-questions.md) |
 
 Step 4 is the one that matters. It removes RCCL, PyTorch and vLLM from the
 picture entirely and reduces the whole failure to **57 lines of HIP**.
