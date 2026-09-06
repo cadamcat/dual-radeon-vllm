@@ -297,6 +297,10 @@ asserts that [B1](../rccl-ndebug-ab-2026-09-04/README.md) found load-bearing),
 each stalled. What is here — keep the refusal, decide it at load, name it —
 is the part neither attempted, and it is the part that composes with both.
 
+**Proposed upstream 2026-09-06** as [rocm-systems#11277](https://github.com/ROCm/rocm-systems/pull/11277)
+(the check and the opt-in, two commits; the dedicated status follows once it
+lands), with a comment on #377 pointing at it. Links and times: [UPSTREAM.md](UPSTREAM.md).
+
 ## Reproducing
 
     # CPU only, ~15 min in a throwaway container of the vLLM 0.23 image; writes /rb/clr-build

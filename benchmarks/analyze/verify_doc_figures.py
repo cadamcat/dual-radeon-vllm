@@ -9153,6 +9153,11 @@ def _run_checks(_opened, _audit_state):
        1 if "**Addendum 2026-09-06.**" in _oq0 and "completed all twelve collective cases on this pair with AtomicOps absent" in _oq0 else 0)
     ck("open-questions 0, and keeps 2.27.7 as the rebuild route until it ships", "1", 1 if "2.27.7 remains the route that needs nothing\n> but a rebuild" in _oq0 else 0)
     ck("open-questions 0, the addendum says vLLM served at TP=2 on it", "1", 1 if "and vLLM 0.27 served Qwen3-8B at TP=2 on it" in _oq0 else 0)
+    _up = open(os.path.join(_CDIR, "UPSTREAM.md"), encoding="utf-8").read()
+    _prn = re.search(r"github\.com/ROCm/rocm-systems/pull/(\d+)", _up).group(1)
+    ck("CLR upstream, the PR number the README cites is the one UPSTREAM.md records", "1", 1 if f"rocm-systems#{_prn}](https://github.com/ROCm/rocm-systems/pull/{_prn})" in _crm else 0)
+    ck("CLR upstream, open-questions cites the same PR", "1", 1 if f"rocm-systems#{_prn}](https://github.com/ROCm/rocm-systems/pull/{_prn})" in _oq0 else 0)
+    ck("CLR upstream, the #377 comment is recorded", "1", 1 if "issues/377#issuecomment-" in _up else 0)
     # --- end to end: vLLM 0.27, Qwen3-8B, TP=2, stock RCCL 2.30.4, under the opt-in ---
     _srows = [json.loads(l) for l in open(os.path.join(_CLOG, "serve-rocm10c-cells.jsonl")) if l.strip()]
     _sc = {(r["row"], r["runtime"]): r for r in _srows}

@@ -117,7 +117,8 @@ a good trade for production.
 
 > **Addendum 2026-09-06.** The runtime can serve the declaration the linker
 > adds. With a fifteen-line opt-in in the HIP runtime (`HIP_HOSTCALL_ALLOW_MISSING=1`,
-> on top of a load-time check; both proposed upstream), stock RCCL 2.30.4
+> on top of a load-time check; both proposed upstream as
+> [rocm-systems#11277](https://github.com/ROCm/rocm-systems/pull/11277)), stock RCCL 2.30.4
 > completed all twelve collective cases on this pair with AtomicOps absent and
 > no rebuild, and vLLM 0.27 served Qwen3-8B at TP=2 on it — and a kernel that
 > does execute a hostcall faults on the device
