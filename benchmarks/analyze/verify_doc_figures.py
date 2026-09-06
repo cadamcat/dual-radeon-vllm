@@ -960,6 +960,16 @@ def _run_checks(_opened, _audit_state):
        len(RF["chain"]))
     ck("rccl article, shipped-library rows match",
        str(len(md_table("## 2. Why downgrading appears to work"))), len(RF["shipped"]))
+    # 6dc064d moved root-cause.md's newest row from "N" to the measured 13 and
+    # left the article's figure source saying "N": the row count matched, so
+    # nothing failed. The cells themselves are tied to the document's now, so a
+    # number can only move in both places or in neither. The document's own row
+    # is checked against the raw records above, which is what grounds these.
+    for _i, (_doc, _fig) in enumerate(zip(md_table("## 2. Why downgrading appears to work"),
+                                          RF["shipped"])):
+        for _col, _key in ((0, "rccl"), (1, "hostcall"), (2, "behaviour")):
+            ck(f"rccl article, shipped row {_i} {_key} is the document's",
+               "1", 1 if _fig[_key] == _doc[_col].replace("**", "") else 0)
     ruled = md_table("## 3. What was ruled out")
     ck("rccl article, hypotheses match the document", str(len(ruled)), len(RF["ruled_out"]))
     ck("rccl article, hypotheses tested", "13", RF["counts"]["hypotheses_total"])
@@ -8288,6 +8298,23 @@ def _run_checks(_opened, _audit_state):
     ck("root-cause §2 prints the RCCL table row", "1",
        1 if "| ROCm 7.13 / 7.14 (2.30.4) | **13** (3 Generic + 10 Symk) | fails |"
        in _rcrm else 0)
+    # §2's 7.2.4 row is the one row in that table not read here: it is
+    # @adderek's count of a distribution package, quoted in open-questions §3
+    # with its two rebuilt arms. The cell is checked against that quotation
+    # instead of being typed a second time, and the paragraph above the table
+    # has to keep saying whose count it is.
+    _oq3 = open(os.path.join(ROOT, "docs", "open-questions.md"),
+                encoding="utf-8").read()
+    _adderek = re.search(
+        r"^\| distro package as shipped \(a Release build\) \| \d+ \| \d+ \| (\d+) \| fail \|$",
+        _oq3, re.M)
+    ck("root-cause §2 the 7.2.4 row is the count open-questions §3 quotes", "1",
+       1 if (_adderek and f"| ROCm 7.2.4 (2.27.7) | {_adderek.group(1)} (reported) | fails |"
+             in _rcrm) else 0)
+    ck("root-cause §2 says whose count the 7.2.4 row is", "1",
+       1 if ("We dissected the shipped libraries. The 7.2.4 row is the one exception: it is a\n"
+             "third party's count of a distribution package, @adderek's in\n"
+             in _rcrm) else 0)
     ck("root-cause §2 prints the RCCL kernel families", "1",
        1 if ("`ncclDevKernel_Generic_{1,2,4}`" in _rcrm
              and "`ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD`" in _rcrm

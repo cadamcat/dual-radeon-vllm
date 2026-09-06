@@ -1279,13 +1279,13 @@ not when passed as a single function. </div>
    "behaviour": "works"
   },
   {
-   "rccl": "ROCm 7.2+ (2.27.7-b43+)",
-   "hostcall": "N (every Generic kernel)",
+   "rccl": "ROCm 7.2.4 (2.27.7)",
+   "hostcall": "6 (reported)",
    "behaviour": "fails"
   },
   {
    "rccl": "ROCm 7.13 / 7.14 (2.30.4)",
-   "hostcall": "N",
+   "hostcall": "13 (3 Generic + 10 Symk)",
    "behaviour": "fails"
   }
  ],
@@ -1367,7 +1367,7 @@ not when passed as a single function. </div>
  "expand": "evidence",
  "shipUnit": "hidden_hostcall_buffer declarations · same platform in all four rows",
  "shipBehaviour": {"works": "works", "fails": "fails"},
- "shipNotes": {"every Generic kernel": "every Generic kernel"},
+ "shipNotes": {"reported": "reported", "3 Generic + 10 Symk": "3 Generic + 10 Symk"},
  "hypNote": "{e} eliminated, {c} confirmed, of {t} tested",
  "eliminated": "eliminated",
  "confirmed": "root cause",

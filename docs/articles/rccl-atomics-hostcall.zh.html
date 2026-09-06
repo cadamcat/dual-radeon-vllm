@@ -1230,13 +1230,13 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
    "behaviour": "works"
   },
   {
-   "rccl": "ROCm 7.2+ (2.27.7-b43+)",
-   "hostcall": "N (every Generic kernel)",
+   "rccl": "ROCm 7.2.4 (2.27.7)",
+   "hostcall": "6 (reported)",
    "behaviour": "fails"
   },
   {
    "rccl": "ROCm 7.13 / 7.14 (2.30.4)",
-   "hostcall": "N",
+   "hostcall": "13 (3 Generic + 10 Symk)",
    "behaviour": "fails"
   }
  ],
@@ -1318,7 +1318,7 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned <span class="r">hipErrorIll
  "expand": "证据",
  "shipUnit": "hidden_hostcall_buffer 的声明 · 四行都是同一个平台",
  "shipBehaviour": {"works": "能跑", "fails": "失败"},
- "shipNotes": {"every Generic kernel": "每一个 Generic kernel"},
+ "shipNotes": {"reported": "他人报告", "3 Generic + 10 Symk": "3 个 Generic + 10 个 Symk"},
  "hypNote": "测了 {t} 条，排除 {e} 条，确认 {c} 条",
  "eliminated": "已排除",
  "confirmed": "根因",
