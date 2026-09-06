@@ -8203,7 +8203,7 @@ def _run_checks(_opened, _audit_state):
            sum(1 for v in _tests.values() if v["hc"] > 0))
         ck(f"hostcall-abi README, ROCm {_tag} test binaries", "8", len(_tests))
 
-    ck("hostcall-abi README, 7.14 libraries scanned", "153",
+    ck("hostcall-abi README, 7.14 device-code units scanned", "153",
        len({k: v for k, v in _h7.items() if not _is_test(k)}))
     ck("hostcall-abi README, 7.14 libraries declaring a hostcall", "3",
        sum(1 for k, v in _h7.items() if not _is_test(k) and v["hc"] > 0))
@@ -8213,12 +8213,25 @@ def _run_checks(_opened, _audit_state):
        sum(v["kern"] for k, v in _h7.items() if _is_test(k) and v["hc"] > 0))
     ck("hostcall-abi README, 7.14 test-binary hostcall kernels", "21",
        sum(v["hc"] for k, v in _h7.items() if _is_test(k)))
-    ck("hostcall-abi README, 10.0 libraries scanned", "3064",
+    ck("hostcall-abi README, 10.0 device-code units scanned", "3064",
        len({k: v for k, v in _h0.items() if not _is_test(k)}))
     ck("hostcall-abi README, 10.0 libraries declaring a hostcall", "4",
        sum(1 for k, v in _h0.items() if not _is_test(k) and v["hc"] > 0))
+    # The README said "three shipped libraries out of 153" while 124 of those 153
+    # are loose .hsaco/.co code objects, not libraries: the numerator counted
+    # shared libraries and the denominator did not. The like-for-like figure is
+    # the one gated here, and the declaring units must all be shared libraries
+    # for that comparison to hold.
+    def _is_so(k):
+        return k.endswith(".so") or ".so." in k
+    for _tag, _u, _so, _d in (("7.14", _h7, "22", "3"), ("10.0", _h0, "25", "4")):
+        _non = {k: v for k, v in _u.items() if not _is_test(k)}
+        ck(f"hostcall-abi README, {_tag} shared libraries among those units", _so,
+           sum(1 for k in _non if _is_so(k)))
+        ck(f"hostcall-abi README, {_tag} declaring units are all shared libraries", _d,
+           sum(1 for k, v in _non.items() if v["hc"] > 0 and _is_so(k)))
     ck("hostcall-abi README, the licensed sentence uses the scanned denominator", "1",
-       1 if "**Licensed.** Three of 153 shipped device libraries for gfx1100" in _hrm
+       1 if "**Licensed.** Three of the 22 shared libraries for gfx1100" in _hrm
        else 0)
     ck("hostcall-abi README, and no second denominator survives", "0",
        _hrm.count("of 192 shipped"))
@@ -8452,13 +8465,14 @@ def _run_checks(_opened, _audit_state):
         ("the headline test-binary row", "five of torch's 8 test binaries    21 of     42 kernels"),
         ("the headline remainder row", "everything else                     0 of 63 181 kernels"),
         ("the headline total", "403 of 107 085 kernels"),
-        ("the library denominator", "three shipped libraries out of 153"),
+        ("the like-for-like denominator", "three of the 22 shared libraries among 153 device-code units"),
         ("librccl's declared NOBITS size", "525 569 016 bytes"),
         ("the NOBITS total", "26 libraries declare 2 739 667 243 bytes"),
         ("the loose split", "the 67\n`.co` files are `CCOB` and the 57 `.hsaco` are not"),
         ("the loose kernel count", "With it the 124 are 8 603 kernels"),
         ("the two-version carrier row", "| 16 / 13 / 124 | 18 / 14 / 3 032 |"),
-        ("the two-version library row", "| 153 · **3** | 3 064 · **4** |"),
+        ("the two-version unit row", "| 153 · 22 | 3 064 · 25 |"),
+        ("the two-version declaring row", "| **3** | **4** |"),
         ("the rocshmem row", "| not shipped | **50 of 68** |"),
         ("RCCL's two kernel counts", "| 13 of 105 | 13 of 138 |"),
         ("the cross-architecture invariance",

@@ -20,7 +20,8 @@ It is not everywhere, and it is not only RCCL.
     ----------------------------------------------------------
                                       403 of 107 085 kernels
 
-    three shipped libraries out of 153, plus five of eight test binaries
+    three of the 22 shared libraries among 153 device-code units,
+    plus five of eight test binaries
 
 `librocblas`, `libhipblaslt`, `librocfft`, `librocrand`, `librocsparse`,
 `libMIOpen*`, `libtorchvision`, and all 124 loose code objects on disk for
@@ -110,7 +111,8 @@ which declares a hostcall.
 | | ROCm 7.14 · vLLM 0.23 | ROCm 10.0 · vLLM 0.27 |
 |---|---|---|
 | device-code units scanned (kpack / elf / loose) | 16 / 13 / 124 | 18 / 14 / 3 032 |
-| of which libraries, and libraries declaring a hostcall | 153 · **3** | 3 064 · **4** |
+| device-code units, of which shared libraries | 153 · 22 | 3 064 · 25 |
+| declaring a hostcall, all of them shared libraries | **3** | **4** |
 | kernels | 107 085 | 113 146 |
 | kernels declaring a hostcall | 403 | 447 |
 | `librccl.so.1.0` | 13 of 105 | 13 of 138 |
@@ -210,8 +212,10 @@ scanning direction.
 
 ## What this licenses, and what it does not
 
-**Licensed.** Three of 153 shipped device libraries for gfx1100 in the
-container this box serves from carry an unnegotiated platform requirement, and
+**Licensed.** Three of the 22 shared libraries for gfx1100 in the
+container this box serves from — 153 device-code units in all, 124 of them
+loose `.hsaco`/`.co` objects rather than libraries — carry an unnegotiated
+platform requirement, and
 they are the collective library, the framework, and the inference engine — one
 from each layer of the stack, rather than one vendor library in isolation. The
 requirement is architecture-invariant for RCCL across 21 targets. Nothing in
