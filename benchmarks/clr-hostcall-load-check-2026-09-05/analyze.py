@@ -69,9 +69,22 @@ def table(path):
     return ok
 
 
+def serve(path):
+    rows = load(path)
+    print(f"=== {os.path.basename(path)}: vLLM TP=2 under the opt-in (one request per cell)")
+    for r in rows:
+        print(f"  {r['row']:16s} {r['runtime']:8s} healthy={r['healthy']!s:5s} tokens={r.get('completion_tokens')!s:4s} load_s={r['load_s']:6.1f} "
+              f"null-buffer lines={r['null_buffer_lines']:3d} refusals={r['refusal_lines']} faults={r['memory_fault_lines']} ok={r['ok']} error={(r['error'] or '-')[:50]}")
+    print()
+    return len(rows) == 4
+
+
 def main(*paths):
     paths = list(paths) or [os.path.join(HERE, "logs", n) for n in DEFAULT if os.path.exists(os.path.join(HERE, "logs", n))]
     oks = [table(p) for p in paths]
+    sp = os.path.join(HERE, "logs", "serve-rocm10c-cells.jsonl")
+    if not paths or os.path.exists(sp):
+        oks.append(serve(sp))
     print(f"{len(paths)} file(s); {'COMPLETE' if all(oks) and paths else 'INCOMPLETE'}")
     return 0 if all(oks) and paths else 1
 

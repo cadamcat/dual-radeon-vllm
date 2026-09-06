@@ -1,0 +1,19 @@
+06:06:17 | ===== SERVE-C row=atomics_absent runtime=stock start =====
+06:06:17 | host=ai kernel=7.0.0-31-generic caps=0/8 dmesg=2
+06:06:18 | container clr100 image rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0@sha256:b8a082f346d069376d35784250e38b23a043efe979408ae3a33d7c6b62ee3276 ; patched runtime libamdhip64.so.7.15.0-0000000 md5=f739295c272967f5ad0db778c2817228
+06:06:18 | stopping services
+06:06:28 | SDK runtime md5 core=7c440eb52803588cef83b955dd4494b5 devel=7c440eb52803588cef83b955dd4494b5
+06:06:28 | stock RCCL md5=a3963038f2f0241257be5cff41f4888f
+06:06:33 | serve started (TP=2, env=''), log /rb/pa/serve-rocm10c-atomics_absent-stock.log
+    row=atomics_absent runtime=stock tp=2 healthy=False died_before_health=False answered=False alive_after=True load_s=600.3 tokens=None null_buffer_lines=0 refusals=0 generic=0 faults=0 backend=None error=RuntimeError: NCCL error: unhandled cuda error (run with NCCL_DEBUG=INFO for details) ok=False
+    ONE_REQUEST_DONE
+06:16:34 | client rc=0
+06:16:34 | mapped runtime in the engine: 
+06:16:34 | null-buffer lines: 0 ; refusals: 0 ; generic errors: 0 ; memory faults: 0
+06:16:34 | serve stopped; VRAM back to baseline: 27971584 27971584 
+06:16:34 | serve cell recorded (ok=False); restoring
+06:16:34 | --- restore (exit=0) ---
+06:16:34 | serve stopped; VRAM back to baseline: 27971584 27971584 
+06:16:44 | stopped clr100
+06:16:49 | VRAM back to baseline: 27971584 27971584 
+06:16:49 | ROW-DONE serve-c row=atomics_absent runtime=stock (restore ok)

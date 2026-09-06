@@ -1,0 +1,418 @@
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345] 
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1.dev5+gf46a9dfe2.d20260827
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345]   █▄█▀ █     █     █     █  model   /models/Qwen3-8B
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:345] 
+(APIServer pid=46) INFO 09-06 06:06:42 [api_utils.py:273] non-default args: {'model_tag': '/models/Qwen3-8B', 'model': '/models/Qwen3-8B', 'max_model_len': 8192, 'tensor_parallel_size': 2, 'gpu_memory_utilization': 0.9}
+(APIServer pid=46) INFO 09-06 06:06:42 [model.py:645] Resolved architecture: Qwen3ForCausalLM
+(APIServer pid=46) INFO 09-06 06:06:42 [model.py:1883] Using max model len 8192
+(APIServer pid=46) INFO 09-06 06:06:42 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=88) INFO 09-06 06:06:53 [core.py:121] Initializing a V1 LLM engine (v0.27.1.dev5+gf46a9dfe2.d20260827) with config: model='/models/Qwen3-8B', speculative_config=None, tokenizer='/models/Qwen3-8B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=8192, download_dir=None, load_format=auto, tensor_parallel_size=2, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=True, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/models/Qwen3-8B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['+sparse_attn_indexer', 'none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=88) WARNING 09-06 06:06:53 [multiproc_executor.py:1081] Reducing Torch parallelism from 8 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=88) INFO 09-06 06:06:53 [multiproc_executor.py:140] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=172.17.0.2 (local), world_size=2, local_world_size=2
+(Worker pid=121) INFO 09-06 06:07:02 [parallel_state.py:1640] world_size=2 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:33949 backend=nccl
+(Worker pid=120) INFO 09-06 06:07:03 [parallel_state.py:1640] world_size=2 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:33949 backend=nccl
+(Worker pid=120) INFO 09-06 06:07:04 [pynccl.py:113] vLLM is using nccl==2.30.4
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912] WorkerProc failed to start.
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912] Traceback (most recent call last):
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 879, in worker_main
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     worker = WorkerProc(*args, **kwargs)
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return func(*args, **kwargs)
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 640, in __init__
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.worker.init_device()
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/worker_base.py", line 331, in init_device
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.worker.init_device()  # type: ignore
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return func(*args, **kwargs)
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/gpu_worker.py", line 376, in init_device
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     init_worker_distributed_environment(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         self.vllm_config,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         current_platform.dist_backend,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/gpu_worker.py", line 1380, in init_worker_distributed_environment
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ensure_model_parallel_initialized(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         parallel_config.tensor_parallel_size,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<2 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         parallel_config.decode_context_parallel_size,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 2009, in ensure_model_parallel_initialized
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     initialize_model_parallel(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         tensor_model_parallel_size,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         backend,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 1838, in initialize_model_parallel
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     _TP = init_model_parallel_group(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_ranks,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_name="tp",
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 1328, in init_model_parallel_group
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return GroupCoordinator(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_ranks=group_ranks,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<5 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         use_all2all=use_all2all,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 507, in __init__
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.device_communicator = device_comm_cls(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]                                ~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         cpu_group=self.cpu_group,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         use_all2all=use_all2all,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/cuda_communicator.py", line 86, in __init__
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.pynccl_comm = PyNcclCommunicator(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]                        ~~~~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group=self.cpu_group if tcp_store_group is None else tcp_store_group,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         device=self.device,
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl.py", line 144, in __init__
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.all_reduce(data)
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl.py", line 188, in all_reduce
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.nccl.ncclAllReduce(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         buffer_type(in_tensor.data_ptr()),
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<5 lines>...
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         cudaStream_t(stream.cuda_stream),
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 473, in ncclAllReduce
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.NCCL_CHECK(
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         self._funcs["ncclAllReduce"](
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]             sendbuff, recvbuff, count, datatype, op, comm, stream
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 417, in NCCL_CHECK
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     raise RuntimeError(f"NCCL error: {error_str}")
+(Worker pid=121) ERROR 09-06 06:07:06 [multiproc_executor.py:912] RuntimeError: NCCL error: unhandled cuda error (run with NCCL_DEBUG=INFO for details)
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912] WorkerProc failed to start.
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912] Traceback (most recent call last):
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 879, in worker_main
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     worker = WorkerProc(*args, **kwargs)
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return func(*args, **kwargs)
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 640, in __init__
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.worker.init_device()
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/worker_base.py", line 331, in init_device
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.worker.init_device()  # type: ignore
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return func(*args, **kwargs)
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/gpu_worker.py", line 376, in init_device
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     init_worker_distributed_environment(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         self.vllm_config,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         current_platform.dist_backend,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/worker/gpu_worker.py", line 1380, in init_worker_distributed_environment
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ensure_model_parallel_initialized(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         parallel_config.tensor_parallel_size,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<2 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         parallel_config.decode_context_parallel_size,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 2009, in ensure_model_parallel_initialized
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     initialize_model_parallel(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         tensor_model_parallel_size,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         backend,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 1838, in initialize_model_parallel
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     _TP = init_model_parallel_group(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_ranks,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_name="tp",
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 1328, in init_model_parallel_group
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     return GroupCoordinator(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group_ranks=group_ranks,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<5 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         use_all2all=use_all2all,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/parallel_state.py", line 507, in __init__
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.device_communicator = device_comm_cls(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]                                ~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         cpu_group=self.cpu_group,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<3 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         use_all2all=use_all2all,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/cuda_communicator.py", line 86, in __init__
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.pynccl_comm = PyNcclCommunicator(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]                        ~~~~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         group=self.cpu_group if tcp_store_group is None else tcp_store_group,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         device=self.device,
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl.py", line 144, in __init__
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.all_reduce(data)
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl.py", line 188, in all_reduce
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.nccl.ncclAllReduce(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         buffer_type(in_tensor.data_ptr()),
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ...<5 lines>...
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         cudaStream_t(stream.cuda_stream),
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 473, in ncclAllReduce
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     self.NCCL_CHECK(
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ~~~~~~~~~~~~~~~^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         self._funcs["ncclAllReduce"](
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]             sendbuff, recvbuff, count, datatype, op, comm, stream
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]         ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     )
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     ^
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]   File "/opt/python/lib/python3.14/site-packages/vllm/distributed/device_communicators/pynccl_wrapper.py", line 417, in NCCL_CHECK
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912]     raise RuntimeError(f"NCCL error: {error_str}")
+(Worker pid=120) ERROR 09-06 06:07:06 [multiproc_executor.py:912] RuntimeError: NCCL error: unhandled cuda error (run with NCCL_DEBUG=INFO for details)
+(EngineCore pid=88) INFO 09-06 06:07:06 [multiproc_executor.py:440] [shutdown] Executor: waiting for worker exit count=2
+[rank0]:[W906 06:07:07.234990382 ProcessGroupNCCL.cpp:1647] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+(EngineCore pid=88) INFO 09-06 06:07:09 [multiproc_executor.py:447] [shutdown] Executor: all workers exited gracefully
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349] EngineCore failed to start.
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349] Traceback (most recent call last):
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1318, in run_engine_core
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     return func(*args, **kwargs)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1074, in __init__
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     super().__init__(
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]         vllm_config,
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]         ^^^^^^^^^^^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     ...<3 lines>...
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]         internal_dp_balancing,
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     )
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     ^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 132, in __init__
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]                           ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 108, in __init__
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     super().__init__(vllm_config)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     return func(*args, **kwargs)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     self._init_executor()
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     ~~~~~~~~~~~~~~~~~~~^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 201, in _init_executor
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]                    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 776, in wait_for_ready
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349]     raise e from None
+(EngineCore pid=88) ERROR 09-06 06:07:09 [core.py:1349] Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(EngineCore pid=88) Process EngineCore:
+(EngineCore pid=88) Traceback (most recent call last):
+(EngineCore pid=88)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/multiprocessing/process.py", line 320, in _bootstrap
+(EngineCore pid=88)     self.run()
+(EngineCore pid=88)     ~~~~~~~~^^
+(EngineCore pid=88)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/multiprocessing/process.py", line 108, in run
+(EngineCore pid=88)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=88)     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1353, in run_engine_core
+(EngineCore pid=88)     raise e
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1318, in run_engine_core
+(EngineCore pid=88)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=88)     return func(*args, **kwargs)
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 1074, in __init__
+(EngineCore pid=88)     super().__init__(
+(EngineCore pid=88)     ~~~~~~~~~~~~~~~~^
+(EngineCore pid=88)         vllm_config,
+(EngineCore pid=88)         ^^^^^^^^^^^^
+(EngineCore pid=88)     ...<3 lines>...
+(EngineCore pid=88)         internal_dp_balancing,
+(EngineCore pid=88)         ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=88)     )
+(EngineCore pid=88)     ^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core.py", line 132, in __init__
+(EngineCore pid=88)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=88)                           ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 108, in __init__
+(EngineCore pid=88)     super().__init__(vllm_config)
+(EngineCore pid=88)     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=88)     return func(*args, **kwargs)
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=88)     self._init_executor()
+(EngineCore pid=88)     ~~~~~~~~~~~~~~~~~~~^^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 201, in _init_executor
+(EngineCore pid=88)     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=88)                    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+(EngineCore pid=88)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/executor/multiproc_executor.py", line 776, in wait_for_ready
+(EngineCore pid=88)     raise e from None
+(EngineCore pid=88) Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(APIServer pid=46) Traceback (most recent call last):
+(APIServer pid=46)   File "/opt/python/bin/vllm", line 10, in <module>
+(APIServer pid=46)     sys.exit(main())
+(APIServer pid=46)              ~~~~^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/main.py", line 97, in main
+(APIServer pid=46)     args.dispatch_function(args)
+(APIServer pid=46)     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/cli/serve.py", line 152, in cmd
+(APIServer pid=46)     uvloop.run(run_server(args))
+(APIServer pid=46)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=46)     return __asyncio.run(
+(APIServer pid=46)            ~~~~~~~~~~~~~^
+(APIServer pid=46)         wrapper(),
+(APIServer pid=46)         ^^^^^^^^^^
+(APIServer pid=46)     ...<2 lines>...
+(APIServer pid=46)         **run_kwargs
+(APIServer pid=46)         ^^^^^^^^^^^^
+(APIServer pid=46)     )
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 205, in run
+(APIServer pid=46)     return runner.run(main)
+(APIServer pid=46)            ~~~~~~~~~~^^^^^^
+(APIServer pid=46)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/asyncio/runners.py", line 128, in run
+(APIServer pid=46)     return self._loop.run_until_complete(task)
+(APIServer pid=46)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=46)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=46)     return await main
+(APIServer pid=46)            ^^^^^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 764, in run_server
+(APIServer pid=46)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 778, in run_server_worker
+(APIServer pid=46)     async with build_async_engine_client(
+(APIServer pid=46)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         args,
+(APIServer pid=46)         ^^^^^
+(APIServer pid=46)         client_config=client_config,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ) as engine_client:
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=46)     return await anext(self.gen)
+(APIServer pid=46)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 132, in build_async_engine_client
+(APIServer pid=46)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=46)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         engine_args,
+(APIServer pid=46)         ^^^^^^^^^^^^
+(APIServer pid=46)         usage_context=usage_context,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)         client_config=client_config,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ) as engine:
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=46)     return await anext(self.gen)
+(APIServer pid=46)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 168, in build_async_engine_client_from_engine_args
+(APIServer pid=46)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=46)         vllm_config=vllm_config,
+(APIServer pid=46)     ...<6 lines>...
+(APIServer pid=46)         client_index=client_index,
+(APIServer pid=46)     )
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 220, in from_vllm_config
+(APIServer pid=46)     return cls(
+(APIServer pid=46)         vllm_config=vllm_config,
+(APIServer pid=46)     ...<9 lines>...
+(APIServer pid=46)         client_index=client_index,
+(APIServer pid=46)     )
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 149, in __init__
+(APIServer pid=46)     self.engine_core = EngineCoreClient.make_async_mp_client(
+(APIServer pid=46)                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         vllm_config=vllm_config,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ...<4 lines>...
+(APIServer pid=46)         client_index=client_index,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     )
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=46)     return func(*args, **kwargs)
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 139, in make_async_mp_client
+(APIServer pid=46)     return AsyncMPClient(*client_args)
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=46)     return func(*args, **kwargs)
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 987, in __init__
+(APIServer pid=46)     super().__init__(
+(APIServer pid=46)     ~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         asyncio_mode=True,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ...<3 lines>...
+(APIServer pid=46)         client_addresses=client_addresses,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     )
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/core_client.py", line 609, in __init__
+(APIServer pid=46)     with launch_core_engines(
+(APIServer pid=46)          ~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         vllm_config, executor_class, log_stats, addresses
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ) as (engine_manager, coordinator, addresses, tensor_queue):
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/contextlib.py", line 148, in __exit__
+(APIServer pid=46)     next(self.gen)
+(APIServer pid=46)     ~~~~^^^^^^^^^^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/utils.py", line 1194, in launch_core_engines
+(APIServer pid=46)     wait_for_engine_startup(
+(APIServer pid=46)     ~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=46)         handshake_socket,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     ...<6 lines>...
+(APIServer pid=46)         coordinator.proc if coordinator else None,
+(APIServer pid=46)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=46)     )
+(APIServer pid=46)     ^
+(APIServer pid=46)   File "/opt/python/lib/python3.14/site-packages/vllm/v1/engine/utils.py", line 1253, in wait_for_engine_startup
+(APIServer pid=46)     raise RuntimeError(
+(APIServer pid=46)     ...<3 lines>...
+(APIServer pid=46)     )
+(APIServer pid=46) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

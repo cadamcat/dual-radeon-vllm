@@ -1,0 +1,20 @@
+06:01:21 | ===== SERVE-C row=atomics_present runtime=patched start =====
+06:01:21 | host=ai kernel=7.0.0-31-generic caps=2/6 dmesg=0
+06:01:21 | container clr100 image rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0@sha256:b8a082f346d069376d35784250e38b23a043efe979408ae3a33d7c6b62ee3276 ; patched runtime libamdhip64.so.7.15.0-0000000 md5=f739295c272967f5ad0db778c2817228
+06:01:21 | stopping services
+06:01:32 | SDK runtime md5 core=7c440eb52803588cef83b955dd4494b5 devel=7c440eb52803588cef83b955dd4494b5
+06:01:32 | stock RCCL md5=a3963038f2f0241257be5cff41f4888f
+06:01:37 | serve started (TP=2, env='HIP_HOSTCALL_ALLOW_MISSING=1 AMD_LOG_LEVEL=1'), log /rb/pa/serve-rocm10c-atomics_present-patched.log
+    row=atomics_present runtime=patched tp=2 healthy=True died_before_health=False answered=True alive_after=True load_s=138.2 tokens=64 null_buffer_lines=0 refusals=0 generic=0 faults=0 backend=ROCM_ATTN error=None ok=True
+    ONE_REQUEST_DONE
+06:03:57 | client rc=0
+06:03:57 | mapped runtime in the engine: /opt/python/lib/python3.14/site-packages/_rocm_sdk_core/lib/libamdhip64.so.7
+06:03:57 | null-buffer lines: 0 ; refusals: 0 ; generic errors: 0 ; memory faults: 0
+06:04:00 | serve stopped; VRAM back to baseline: 27971584 27971584 
+06:04:00 | serve cell recorded (ok=True); restoring
+06:04:00 | --- restore (exit=0) ---
+06:04:00 | serve stopped; VRAM back to baseline: 27971584 27971584 
+06:04:00 | stock runtime restored (md5 verified)
+06:04:10 | stopped clr100
+06:04:15 | VRAM back to baseline: 27971584 27971584 
+06:04:15 | ROW-DONE serve-c row=atomics_present runtime=patched (restore ok)

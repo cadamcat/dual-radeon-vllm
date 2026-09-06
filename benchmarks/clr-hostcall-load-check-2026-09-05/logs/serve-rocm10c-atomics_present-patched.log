@@ -1,0 +1,400 @@
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345] 
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1.dev5+gf46a9dfe2.d20260827
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345]   █▄█▀ █     █     █     █  model   /models/Qwen3-8B
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:345] 
+(APIServer pid=63) INFO 09-06 06:01:44 [api_utils.py:273] non-default args: {'model_tag': '/models/Qwen3-8B', 'model': '/models/Qwen3-8B', 'max_model_len': 8192, 'tensor_parallel_size': 2, 'gpu_memory_utilization': 0.9}
+(APIServer pid=63) INFO 09-06 06:01:44 [model.py:645] Resolved architecture: Qwen3ForCausalLM
+(APIServer pid=63) INFO 09-06 06:01:44 [model.py:1883] Using max model len 8192
+(APIServer pid=63) INFO 09-06 06:01:44 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=105) INFO 09-06 06:01:56 [core.py:121] Initializing a V1 LLM engine (v0.27.1.dev5+gf46a9dfe2.d20260827) with config: model='/models/Qwen3-8B', speculative_config=None, tokenizer='/models/Qwen3-8B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=8192, download_dir=None, load_format=auto, tensor_parallel_size=2, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=True, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/models/Qwen3-8B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['+sparse_attn_indexer', 'none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=105) WARNING 09-06 06:01:56 [multiproc_executor.py:1081] Reducing Torch parallelism from 8 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=105) INFO 09-06 06:01:56 [multiproc_executor.py:140] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=172.17.0.2 (local), world_size=2, local_world_size=2
+(Worker pid=138) INFO 09-06 06:02:05 [parallel_state.py:1640] world_size=2 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:40227 backend=nccl
+(Worker pid=137) INFO 09-06 06:02:06 [parallel_state.py:1640] world_size=2 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:40227 backend=nccl
+(Worker pid=137) INFO 09-06 06:02:07 [pynccl.py:113] vLLM is using nccl==2.30.4
+(Worker pid=137) INFO 09-06 06:02:09 [cuda_communicator.py:266] Using ['PYNCCL'] all-reduce backends (in dispatch order) for group 'tp:0' out of potential backends: ['NCCL_SYMM_MEM', 'QUICK_REDUCE', 'FLASHINFER', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=137) INFO 09-06 06:02:09 [parallel_state.py:1977] rank 0 in world size 2 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(Worker pid=137) INFO 09-06 06:02:09 [gpu_worker.py:385] Using V2 Model Runner
+(Worker_TP0 pid=137) INFO 09-06 06:02:09 [model_runner.py:308] Loading model from scratch...
+(Worker_TP0 pid=137) INFO 09-06 06:02:10 [rocm.py:651] Found incompatible backend(s) [TURBOQUANT] with AttentionType.DECODER. Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN'].
+(Worker_TP0 pid=137) WARNING 09-06 06:02:10 [compilation.py:1347] Op 'sparse_attn_indexer' doesn't exist (or wasn't imported/registered), enabling with '+sparse_attn_indexer' has no effect
+(Worker_TP0 pid=137) INFO 09-06 06:02:10 [weight_utils.py:867] Filesystem type for checkpoints: EXT4. Checkpoint size: 15.26 GiB. Available RAM: 16.12 GiB.
+(Worker_TP0 pid=137) INFO 09-06 06:02:10 [weight_utils.py:897] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (15.26 GiB) exceeds 90% of available RAM (16.12 GiB).
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards:   0% Completed | 0/5 [00:00<?, ?it/s]
+(Worker_TP1 pid=138) INFO 09-06 06:02:10 [rocm.py:651] Found incompatible backend(s) [TURBOQUANT] with AttentionType.DECODER. Overriding with ROCM_ATTN out of potential backends: ['ROCM_ATTN', 'TRITON_ATTN'].
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards:  20% Completed | 1/5 [00:02<00:11,  2.87s/it]
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards:  40% Completed | 2/5 [00:05<00:08,  2.94s/it]
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards:  60% Completed | 3/5 [00:08<00:05,  2.90s/it]
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards:  80% Completed | 4/5 [00:11<00:02,  2.90s/it]
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:14<00:00,  2.76s/it]
+(Worker_TP0 pid=137) Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:14<00:00,  2.82s/it]
+(Worker_TP0 pid=137) 
+(Worker_TP0 pid=137) INFO 09-06 06:02:24 [default_loader.py:430] Loading weights took 14.20 seconds
+(Worker_TP1 pid=138) INFO 09-06 06:02:25 [model_runner.py:329] Model loading took 7.64 GiB and 15.823634 seconds
+(Worker_TP0 pid=137) INFO 09-06 06:02:25 [model_runner.py:329] Model loading took 7.64 GiB and 15.981418 seconds
+(Worker_TP0 pid=137) INFO 09-06 06:02:28 [caching.py:343] reconstructed serializable fn from standalone compile artifacts. num_artifacts=3 num_submods=37
+(Worker_TP0 pid=137) INFO 09-06 06:02:28 [decorators.py:311] Directly load AOT compilation from path /root/.cache/vllm/torch_compile_cache/torch_aot_compile/9d023502242311c65e06b02715d88fd1cf511e9ae95dc73b9f81b3e4b21305fb/rank_0_0/model
+(Worker_TP0 pid=137) INFO 09-06 06:02:28 [monitor.py:53] torch.compile took 0.31 s in total
+(Worker_TP1 pid=138) INFO 09-06 06:02:28 [caching.py:343] reconstructed serializable fn from standalone compile artifacts. num_artifacts=3 num_submods=37
+(Worker_TP1 pid=138) INFO 09-06 06:02:28 [decorators.py:311] Directly load AOT compilation from path /root/.cache/vllm/torch_compile_cache/torch_aot_compile/9d023502242311c65e06b02715d88fd1cf511e9ae95dc73b9f81b3e4b21305fb/rank_1_0/model
+(Worker_TP0 pid=137) INFO 09-06 06:02:28 [monitor.py:81] Initial profiling/warmup run took 0.36 s
+(Worker_TP0 pid=137) INFO 09-06 06:02:30 [gpu_worker.py:563] Available KV cache memory: 9.69 GiB
+(EngineCore pid=105) INFO 09-06 06:02:30 [kv_cache_utils.py:2235] GPU KV cache size: 141,104 tokens
+(EngineCore pid=105) INFO 09-06 06:02:30 [kv_cache_utils.py:2236] Maximum concurrency for 8,192 tokens per request: 17.22x
+(Worker_TP0 pid=137) INFO 09-06 06:02:30 [ll_bf16.py:30] cuteDSL (CUTLASS Python) not available, ll_bf16_gemm disabled
+(Worker_TP1 pid=138) INFO 09-06 06:02:30 [ll_bf16.py:30] cuteDSL (CUTLASS Python) not available, ll_bf16_gemm disabled
+(Worker_TP0 pid=137) Capturing CUDA graphs (PIECEWISE):   0%|          | 0/51 [00:00<?, ?it/s]Capturing CUDA graphs (PIECEWISE):   2%|▏         | 1/51 [00:08<06:48,  8.17s/it]Capturing CUDA graphs (PIECEWISE):   4%|▍         | 2/51 [00:08<03:06,  3.81s/it]Capturing CUDA graphs (PIECEWISE):   6%|▌         | 3/51 [00:09<01:55,  2.41s/it]Capturing CUDA graphs (PIECEWISE):   8%|▊         | 4/51 [00:10<01:22,  1.75s/it]Capturing CUDA graphs (PIECEWISE):  10%|▉         | 5/51 [00:11<01:03,  1.38s/it]Capturing CUDA graphs (PIECEWISE):  12%|█▏        | 6/51 [00:11<00:51,  1.14s/it]Capturing CUDA graphs (PIECEWISE):  14%|█▎        | 7/51 [00:12<00:43,  1.01it/s]Capturing CUDA graphs (PIECEWISE):  16%|█▌        | 8/51 [00:13<00:38,  1.12it/s]Capturing CUDA graphs (PIECEWISE):  18%|█▊        | 9/51 [00:13<00:34,  1.22it/s]Capturing CUDA graphs (PIECEWISE):  20%|█▉        | 10/51 [00:14<00:31,  1.30it/s]Capturing CUDA graphs (PIECEWISE):  22%|██▏       | 11/51 [00:15<00:29,  1.37it/s]Capturing CUDA graphs (PIECEWISE):  24%|██▎       | 12/51 [00:15<00:27,  1.44it/s]Capturing CUDA graphs (PIECEWISE):  25%|██▌       | 13/51 [00:16<00:25,  1.49it/s]Capturing CUDA graphs (PIECEWISE):  27%|██▋       | 14/51 [00:16<00:23,  1.55it/s]Capturing CUDA graphs (PIECEWISE):  29%|██▉       | 15/51 [00:17<00:22,  1.59it/s]Capturing CUDA graphs (PIECEWISE):  31%|███▏      | 16/51 [00:18<00:21,  1.64it/s]Capturing CUDA graphs (PIECEWISE):  33%|███▎      | 17/51 [00:18<00:20,  1.70it/s]Capturing CUDA graphs (PIECEWISE):  35%|███▌      | 18/51 [00:19<00:19,  1.74it/s]Capturing CUDA graphs (PIECEWISE):  37%|███▋      | 19/51 [00:19<00:18,  1.77it/s]Capturing CUDA graphs (PIECEWISE):  39%|███▉      | 20/51 [00:20<00:17,  1.79it/s]Capturing CUDA graphs (PIECEWISE):  41%|████      | 21/51 [00:20<00:16,  1.82it/s]Capturing CUDA graphs (PIECEWISE):  43%|████▎     | 22/51 [00:21<00:15,  1.84it/s]Capturing CUDA graphs (PIECEWISE):  45%|████▌     | 23/51 [00:21<00:15,  1.86it/s]Capturing CUDA graphs (PIECEWISE):  47%|████▋     | 24/51 [00:22<00:14,  1.86it/s]Capturing CUDA graphs (PIECEWISE):  49%|████▉     | 25/51 [00:22<00:13,  1.87it/s]Capturing CUDA graphs (PIECEWISE):  51%|█████     | 26/51 [00:23<00:13,  1.87it/s]Capturing CUDA graphs (PIECEWISE):  53%|█████▎    | 27/51 [00:23<00:12,  1.88it/s]Capturing CUDA graphs (PIECEWISE):  55%|█████▍    | 28/51 [00:24<00:12,  1.89it/s]Capturing CUDA graphs (PIECEWISE):  57%|█████▋    | 29/51 [00:25<00:11,  1.89it/s]Capturing CUDA graphs (PIECEWISE):  59%|█████▉    | 30/51 [00:25<00:11,  1.89it/s]Capturing CUDA graphs (PIECEWISE):  61%|██████    | 31/51 [00:26<00:10,  1.89it/s]Capturing CUDA graphs (PIECEWISE):  63%|██████▎   | 32/51 [00:26<00:10,  1.89it/s]Capturing CUDA graphs (PIECEWISE):  65%|██████▍   | 33/51 [00:27<00:09,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  67%|██████▋   | 34/51 [00:27<00:08,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  69%|██████▊   | 35/51 [00:28<00:08,  1.91it/s]Capturing CUDA graphs (PIECEWISE):  71%|███████   | 36/51 [00:28<00:07,  1.91it/s]Capturing CUDA graphs (PIECEWISE):  73%|███████▎  | 37/51 [00:29<00:07,  1.91it/s]Capturing CUDA graphs (PIECEWISE):  75%|███████▍  | 38/51 [00:29<00:06,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  76%|███████▋  | 39/51 [00:30<00:06,  1.88it/s]Capturing CUDA graphs (PIECEWISE):  78%|███████▊  | 40/51 [00:30<00:05,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  80%|████████  | 41/51 [00:31<00:05,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  82%|████████▏ | 42/51 [00:31<00:04,  1.91it/s]Capturing CUDA graphs (PIECEWISE):  84%|████████▍ | 43/51 [00:32<00:04,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  86%|████████▋ | 44/51 [00:32<00:03,  1.92it/s]Capturing CUDA graphs (PIECEWISE):  88%|████████▊ | 45/51 [00:33<00:03,  1.91it/s]Capturing CUDA graphs (PIECEWISE):  90%|█████████ | 46/51 [00:33<00:02,  1.90it/s]Capturing CUDA graphs (PIECEWISE):  92%|█████████▏| 47/51 [00:34<00:02,  1.95it/s]Capturing CUDA graphs (PIECEWISE):  94%|█████████▍| 48/51 [00:34<00:01,  1.96it/s]Capturing CUDA graphs (PIECEWISE):  96%|█████████▌| 49/51 [00:35<00:01,  1.92it/s]Capturing CUDA graphs (PIECEWISE):  98%|█████████▊| 50/51 [00:35<00:00,  2.00it/s]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 51/51 [00:36<00:00,  2.05it/s]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 51/51 [00:36<00:00,  1.40it/s]
+(Worker_TP0 pid=137) Capturing CUDA graphs (FULL):   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graphs (FULL):   3%|▎         | 1/35 [00:00<00:16,  2.09it/s]Capturing CUDA graphs (FULL):   6%|▌         | 2/35 [00:00<00:15,  2.11it/s]Capturing CUDA graphs (FULL):   9%|▊         | 3/35 [00:01<00:15,  2.13it/s]Capturing CUDA graphs (FULL):  11%|█▏        | 4/35 [00:01<00:14,  2.13it/s]Capturing CUDA graphs (FULL):  14%|█▍        | 5/35 [00:02<00:14,  2.14it/s]Capturing CUDA graphs (FULL):  17%|█▋        | 6/35 [00:02<00:13,  2.14it/s]Capturing CUDA graphs (FULL):  20%|██        | 7/35 [00:03<00:13,  2.14it/s]Capturing CUDA graphs (FULL):  23%|██▎       | 8/35 [00:03<00:12,  2.14it/s]Capturing CUDA graphs (FULL):  26%|██▌       | 9/35 [00:04<00:12,  2.14it/s]Capturing CUDA graphs (FULL):  29%|██▊       | 10/35 [00:04<00:11,  2.15it/s]Capturing CUDA graphs (FULL):  31%|███▏      | 11/35 [00:05<00:11,  2.15it/s]Capturing CUDA graphs (FULL):  34%|███▍      | 12/35 [00:05<00:10,  2.16it/s]Capturing CUDA graphs (FULL):  37%|███▋      | 13/35 [00:06<00:10,  2.16it/s]Capturing CUDA graphs (FULL):  40%|████      | 14/35 [00:06<00:09,  2.16it/s]Capturing CUDA graphs (FULL):  43%|████▎     | 15/35 [00:06<00:09,  2.16it/s]Capturing CUDA graphs (FULL):  46%|████▌     | 16/35 [00:07<00:08,  2.17it/s]Capturing CUDA graphs (FULL):  49%|████▊     | 17/35 [00:07<00:08,  2.16it/s]Capturing CUDA graphs (FULL):  51%|█████▏    | 18/35 [00:08<00:07,  2.17it/s]Capturing CUDA graphs (FULL):  54%|█████▍    | 19/35 [00:08<00:07,  2.17it/s]Capturing CUDA graphs (FULL):  57%|█████▋    | 20/35 [00:09<00:06,  2.18it/s]Capturing CUDA graphs (FULL):  60%|██████    | 21/35 [00:09<00:06,  2.18it/s]Capturing CUDA graphs (FULL):  63%|██████▎   | 22/35 [00:10<00:05,  2.18it/s]Capturing CUDA graphs (FULL):  66%|██████▌   | 23/35 [00:10<00:05,  2.19it/s]Capturing CUDA graphs (FULL):  69%|██████▊   | 24/35 [00:11<00:05,  2.18it/s]Capturing CUDA graphs (FULL):  71%|███████▏  | 25/35 [00:11<00:04,  2.19it/s]Capturing CUDA graphs (FULL):  74%|███████▍  | 26/35 [00:12<00:04,  2.19it/s]Capturing CUDA graphs (FULL):  77%|███████▋  | 27/35 [00:12<00:03,  2.19it/s]Capturing CUDA graphs (FULL):  80%|████████  | 28/35 [00:12<00:03,  2.19it/s]Capturing CUDA graphs (FULL):  83%|████████▎ | 29/35 [00:13<00:02,  2.19it/s]Capturing CUDA graphs (FULL):  86%|████████▌ | 30/35 [00:13<00:02,  2.19it/s]Capturing CUDA graphs (FULL):  89%|████████▊ | 31/35 [00:14<00:01,  2.18it/s]Capturing CUDA graphs (FULL):  91%|█████████▏| 32/35 [00:14<00:01,  2.18it/s]Capturing CUDA graphs (FULL):  94%|█████████▍| 33/35 [00:15<00:00,  2.22it/s]Capturing CUDA graphs (FULL):  97%|█████████▋| 34/35 [00:15<00:00,  2.24it/s](Worker_TP1 pid=138) INFO 09-06 06:03:23 [model_runner.py:791] Graph capturing finished in 53 secs, took 1.60 GiB
+(Worker_TP1 pid=138) INFO 09-06 06:03:23 [gpu_worker.py:789] Free memory on device (19.54/19.98 GiB) on startup. Desired GPU memory utilization is (0.9, 17.99 GiB). Actual usage is 8.1 GiB for consumed memory (weights + non-torch), 0.2 GiB for peak activation, and 1.6 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=8527157658` (7.94 GiB) to fit into requested memory, or `--kv-cache-memory=10199007232` (9.5 GiB) to fully utilize gpu memory. Current kv cache memory in use is 9.69 GiB.
+Capturing CUDA graphs (FULL): 100%|██████████| 35/35 [00:16<00:00,  2.25it/s]Capturing CUDA graphs (FULL): 100%|██████████| 35/35 [00:16<00:00,  2.18it/s]
+(Worker_TP0 pid=137) INFO 09-06 06:03:23 [model_runner.py:791] Graph capturing finished in 53 secs, took 1.60 GiB
+(Worker_TP0 pid=137) INFO 09-06 06:03:23 [gpu_worker.py:789] Free memory on device (19.54/19.98 GiB) on startup. Desired GPU memory utilization is (0.9, 17.99 GiB). Actual usage is 8.1 GiB for consumed memory (weights + non-torch), 0.2 GiB for peak activation, and 1.6 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=8527157658` (7.94 GiB) to fit into requested memory, or `--kv-cache-memory=10199007232` (9.5 GiB) to fully utilize gpu memory. Current kv cache memory in use is 9.69 GiB.
+:1:hip_memory.cpp           :3987: 25130863454 us:  Cannot get amd_mem_obj for ptr: 0x4ef86c50
+:1:hip_memory.cpp           :3987: 25130864218 us:  Cannot get amd_mem_obj for ptr: 0x4eeddab0
+:1:hip_memory.cpp           :3987: 25130865334 us:  Cannot get amd_mem_obj for ptr: 0x503e1f80
+:1:hip_memory.cpp           :3987: 25130865605 us:  Cannot get amd_mem_obj for ptr: 0x50283d70
+:1:hip_memory.cpp           :3987: 25131408714 us:  Cannot get amd_mem_obj for ptr: 0x4f58a8d0
+:1:hip_memory.cpp           :3987: 25131410509 us:  Cannot get amd_mem_obj for ptr: 0x50a5d900
+(EngineCore pid=105) INFO 09-06 06:03:31 [shm_broadcast.py:802] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+:1:hip_memory.cpp           :3987: 25143363053 us:  Cannot get amd_mem_obj for ptr: 0x5771edc0
+:1:hip_memory.cpp           :3987: 25143363694 us:  Cannot get amd_mem_obj for ptr: 0x555f8cb0
+:1:hip_memory.cpp           :3987: 25143367099 us:  Cannot get amd_mem_obj for ptr: 0x309134a0
+:1:hip_memory.cpp           :3987: 25143367243 us:  Cannot get amd_mem_obj for ptr: 0x57721a70
+:1:hip_memory.cpp           :3987: 25143367761 us:  Cannot get amd_mem_obj for ptr: 0x5690f980
+:1:hip_memory.cpp           :3987: 25143368326 us:  Cannot get amd_mem_obj for ptr: 0x569670e0
+:1:hip_memory.cpp           :3987: 25143371973 us:  Cannot get amd_mem_obj for ptr: 0x31562120
+:1:hip_memory.cpp           :3987: 25143372138 us:  Cannot get amd_mem_obj for ptr: 0x566cee70
+:1:hip_memory.cpp           :3987: 25145012599 us:  Cannot get amd_mem_obj for ptr: 0x31623740
+:1:hip_memory.cpp           :3987: 25145012946 us:  Cannot get amd_mem_obj for ptr: 0x566cee70
+:1:hip_memory.cpp           :3987: 25145165751 us:  Cannot get amd_mem_obj for ptr: 0x3014c940
+:1:hip_memory.cpp           :3987: 25145167088 us:  Cannot get amd_mem_obj for ptr: 0x57721a70
+(Worker_TP0 pid=137) INFO 09-06 06:03:39 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(Worker_TP1 pid=138) INFO 09-06 06:03:40 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=105) INFO 09-06 06:03:42 [core.py:348] init engine (profile, create kv cache, warmup model) took 76.81 s (compilation: 0.33 s)
+(EngineCore pid=105) INFO 09-06 06:03:48 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=63) INFO 09-06 06:03:49 [api_server.py:678] Supported tasks: ['generate']
+(APIServer pid=63) INFO 09-06 06:03:50 [hf.py:540] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+(APIServer pid=63) WARNING 09-06 06:03:51 [model.py:1637] Default vLLM sampling parameters have been overridden by the model's `generation_config.json`: `{'temperature': 0.6, 'top_k': 20, 'top_p': 0.95}`. If this is not intended, please relaunch vLLM instance with `--generation-config vllm`.
+(APIServer pid=63) INFO 09-06 06:03:51 [api_server.py:682] Starting vLLM server on http://0.0.0.0:8000
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:37] Available routes are:
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /openapi.json, Methods: GET, HEAD
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /docs, Methods: GET, HEAD
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /docs/oauth2-redirect, Methods: GET, HEAD
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /redoc, Methods: GET, HEAD
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /load, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /version, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /health, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /metrics, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /tokenize, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /detokenize, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/models, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /ping, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /ping, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /invocations, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/chat/completions, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/chat/completions/batch, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/responses, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/responses/{response_id}, Methods: GET
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/responses/{response_id}/cancel, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/completions, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/messages, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/messages/count_tokens, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /generative_scoring, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /scale_elastic_ep, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /is_scaling_elastic_ep, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/chat/completions/render, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/completions/render, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/chat/completions/derender, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /v1/completions/derender, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:46] Route: /inference/v1/generate, Methods: POST
+(APIServer pid=63) INFO 09-06 06:03:51 [launcher.py:99] API server: waiting for HTTP server to start
+(APIServer pid=63) INFO:     Started server process [63]
+(APIServer pid=63) INFO:     Waiting for application startup.
+(APIServer pid=63) INFO:     Application startup complete.
+(APIServer pid=63) INFO 09-06 06:03:55 [launcher.py:105] API server: HTTP server started
+(APIServer pid=63) INFO:     127.0.0.1:37306 - "GET /health HTTP/1.1" 200 OK
+:1:hip_memory.cpp           :3987: 25162967187 us:  Cannot get amd_mem_obj for ptr: 0x2a0bad10
+:1:hip_memory.cpp           :3987: 25162967339 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25162970924 us:  Cannot get amd_mem_obj for ptr: 0x28ba3d10
+:1:hip_memory.cpp           :3987: 25162971165 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25162987898 us:  Cannot get amd_mem_obj for ptr: 0x63ddf6a0
+:1:hip_memory.cpp           :3987: 25162988093 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163015173 us:  Cannot get amd_mem_obj for ptr: 0x629001e0
+:1:hip_memory.cpp           :3987: 25163015651 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163024800 us:  Cannot get amd_mem_obj for ptr: 0x477597e0
+:1:hip_memory.cpp           :3987: 25163024960 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163024963 us:  Cannot get amd_mem_obj for ptr: 0x4ed32fb0
+:1:hip_memory.cpp           :3987: 25163025160 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163036948 us:  Cannot get amd_mem_obj for ptr: 0x48701260
+:1:hip_memory.cpp           :3987: 25163037114 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163037328 us:  Cannot get amd_mem_obj for ptr: 0x48f1fe60
+:1:hip_memory.cpp           :3987: 25163037529 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163049009 us:  Cannot get amd_mem_obj for ptr: 0x474e0ca0
+:1:hip_memory.cpp           :3987: 25163049154 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163049318 us:  Cannot get amd_mem_obj for ptr: 0x4a3bffa0
+:1:hip_memory.cpp           :3987: 25163049553 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163061058 us:  Cannot get amd_mem_obj for ptr: 0x4e980f20
+:1:hip_memory.cpp           :3987: 25163061202 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163061380 us:  Cannot get amd_mem_obj for ptr: 0x439e0560
+:1:hip_memory.cpp           :3987: 25163061555 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163073152 us:  Cannot get amd_mem_obj for ptr: 0x47b24aa0
+:1:hip_memory.cpp           :3987: 25163073321 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163073654 us:  Cannot get amd_mem_obj for ptr: 0x44007e80
+:1:hip_memory.cpp           :3987: 25163073840 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163085287 us:  Cannot get amd_mem_obj for ptr: 0x43b1f020
+:1:hip_memory.cpp           :3987: 25163085340 us:  Cannot get amd_mem_obj for ptr: 0x483b1cd0
+:1:hip_memory.cpp           :3987: 25163085441 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163085904 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163097403 us:  Cannot get amd_mem_obj for ptr: 0x479f95a0
+:1:hip_memory.cpp           :3987: 25163097563 us:  Cannot get amd_mem_obj for ptr: 0x49d8efe0
+:1:hip_memory.cpp           :3987: 25163097582 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163098068 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163109633 us:  Cannot get amd_mem_obj for ptr: 0x4693ed20
+:1:hip_memory.cpp           :3987: 25163109649 us:  Cannot get amd_mem_obj for ptr: 0x48768930
+:1:hip_memory.cpp           :3987: 25163109819 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163110209 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163121697 us:  Cannot get amd_mem_obj for ptr: 0x557137f0
+:1:hip_memory.cpp           :3987: 25163121716 us:  Cannot get amd_mem_obj for ptr: 0x49c3b620
+:1:hip_memory.cpp           :3987: 25163121841 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163122192 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163133809 us:  Cannot get amd_mem_obj for ptr: 0x628fd560
+:1:hip_memory.cpp           :3987: 25163133834 us:  Cannot get amd_mem_obj for ptr: 0x4a3d6a60
+:1:hip_memory.cpp           :3987: 25163133948 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163134273 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163145898 us:  Cannot get amd_mem_obj for ptr: 0x47e58560
+:1:hip_memory.cpp           :3987: 25163145967 us:  Cannot get amd_mem_obj for ptr: 0x41fa1490
+:1:hip_memory.cpp           :3987: 25163146057 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163146492 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163158100 us:  Cannot get amd_mem_obj for ptr: 0x41c29d00
+:1:hip_memory.cpp           :3987: 25163158246 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163158695 us:  Cannot get amd_mem_obj for ptr: 0x4512a7d0
+:1:hip_memory.cpp           :3987: 25163158884 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163170348 us:  Cannot get amd_mem_obj for ptr: 0x4634abc0
+:1:hip_memory.cpp           :3987: 25163170499 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163170801 us:  Cannot get amd_mem_obj for ptr: 0x48747340
+:1:hip_memory.cpp           :3987: 25163170940 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163182528 us:  Cannot get amd_mem_obj for ptr: 0x48715fe0
+:1:hip_memory.cpp           :3987: 25163182703 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163182708 us:  Cannot get amd_mem_obj for ptr: 0x492c57f0
+:1:hip_memory.cpp           :3987: 25163182885 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163194483 us:  Cannot get amd_mem_obj for ptr: 0x4eaaf500
+:1:hip_memory.cpp           :3987: 25163194537 us:  Cannot get amd_mem_obj for ptr: 0x48f16860
+:1:hip_memory.cpp           :3987: 25163194643 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163194994 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163206633 us:  Cannot get amd_mem_obj for ptr: 0x488456a0
+:1:hip_memory.cpp           :3987: 25163206721 us:  Cannot get amd_mem_obj for ptr: 0x41fdab40
+:1:hip_memory.cpp           :3987: 25163206813 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163207212 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163218686 us:  Cannot get amd_mem_obj for ptr: 0x480cf360
+:1:hip_memory.cpp           :3987: 25163218691 us:  Cannot get amd_mem_obj for ptr: 0x4877d2f0
+:1:hip_memory.cpp           :3987: 25163218863 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163219169 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163230799 us:  Cannot get amd_mem_obj for ptr: 0x4e80c020
+:1:hip_memory.cpp           :3987: 25163230970 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163231185 us:  Cannot get amd_mem_obj for ptr: 0x4a27fb20
+:1:hip_memory.cpp           :3987: 25163231342 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163253656 us:  Cannot get amd_mem_obj for ptr: 0x407f67f0
+:1:hip_memory.cpp           :3987: 25163253838 us:  Cannot get amd_mem_obj for ptr: 0x46977af0
+:1:hip_memory.cpp           :3987: 25163253855 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163254106 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163257360 us:  Cannot get amd_mem_obj for ptr: 0x4a64b160
+:1:hip_memory.cpp           :3987: 25163257525 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163257873 us:  Cannot get amd_mem_obj for ptr: 0x41bb7470
+:1:hip_memory.cpp           :3987: 25163258026 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163267870 us:  Cannot get amd_mem_obj for ptr: 0x48342a20
+:1:hip_memory.cpp           :3987: 25163267945 us:  Cannot get amd_mem_obj for ptr: 0x49408aa0
+:1:hip_memory.cpp           :3987: 25163268040 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163268513 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163280010 us:  Cannot get amd_mem_obj for ptr: 0x4ed30af0
+:1:hip_memory.cpp           :3987: 25163280184 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163280398 us:  Cannot get amd_mem_obj for ptr: 0x45c6b570
+:1:hip_memory.cpp           :3987: 25163280705 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163291989 us:  Cannot get amd_mem_obj for ptr: 0x4f23fb10
+:1:hip_memory.cpp           :3987: 25163292154 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163292271 us:  Cannot get amd_mem_obj for ptr: 0x49289540
+:1:hip_memory.cpp           :3987: 25163292562 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163304095 us:  Cannot get amd_mem_obj for ptr: 0x4d6ed010
+:1:hip_memory.cpp           :3987: 25163304243 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163304388 us:  Cannot get amd_mem_obj for ptr: 0x48742100
+:1:hip_memory.cpp           :3987: 25163304731 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163316219 us:  Cannot get amd_mem_obj for ptr: 0x4dc92660
+:1:hip_memory.cpp           :3987: 25163316250 us:  Cannot get amd_mem_obj for ptr: 0x41f9e860
+:1:hip_memory.cpp           :3987: 25163316364 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163316399 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163328400 us:  Cannot get amd_mem_obj for ptr: 0x482ff730
+:1:hip_memory.cpp           :3987: 25163328565 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163328966 us:  Cannot get amd_mem_obj for ptr: 0x42060e90
+:1:hip_memory.cpp           :3987: 25163329156 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163340560 us:  Cannot get amd_mem_obj for ptr: 0x4e972680
+:1:hip_memory.cpp           :3987: 25163340715 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163341143 us:  Cannot get amd_mem_obj for ptr: 0x4bc70b80
+:1:hip_memory.cpp           :3987: 25163341316 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163352574 us:  Cannot get amd_mem_obj for ptr: 0x47c5c860
+:1:hip_memory.cpp           :3987: 25163352623 us:  Cannot get amd_mem_obj for ptr: 0x4919b6a0
+:1:hip_memory.cpp           :3987: 25163352723 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163352795 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163365032 us:  Cannot get amd_mem_obj for ptr: 0x4db586e0
+:1:hip_memory.cpp           :3987: 25163365171 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163365698 us:  Cannot get amd_mem_obj for ptr: 0x63aefe10
+:1:hip_memory.cpp           :3987: 25163365851 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163376845 us:  Cannot get amd_mem_obj for ptr: 0x4860aa00
+:1:hip_memory.cpp           :3987: 25163376874 us:  Cannot get amd_mem_obj for ptr: 0x4a4ee2e0
+:1:hip_memory.cpp           :3987: 25163376987 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163377440 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163388963 us:  Cannot get amd_mem_obj for ptr: 0x469ad210
+:1:hip_memory.cpp           :3987: 25163388983 us:  Cannot get amd_mem_obj for ptr: 0x48c7d960
+:1:hip_memory.cpp           :3987: 25163389117 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163389530 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163401120 us:  Cannot get amd_mem_obj for ptr: 0x473894a0
+:1:hip_memory.cpp           :3987: 25163401264 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163401543 us:  Cannot get amd_mem_obj for ptr: 0x482586e0
+:1:hip_memory.cpp           :3987: 25163401692 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163413216 us:  Cannot get amd_mem_obj for ptr: 0x47e40f20
+:1:hip_memory.cpp           :3987: 25163413349 us:  Cannot get amd_mem_obj for ptr: 0x4fbddcb0
+:1:hip_memory.cpp           :3987: 25163413359 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163413534 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163425283 us:  Cannot get amd_mem_obj for ptr: 0x4847c520
+:1:hip_memory.cpp           :3987: 25163425367 us:  Cannot get amd_mem_obj for ptr: 0x499115b0
+:1:hip_memory.cpp           :3987: 25163425434 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163425827 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163437543 us:  Cannot get amd_mem_obj for ptr: 0x625e53f0
+:1:hip_memory.cpp           :3987: 25163437583 us:  Cannot get amd_mem_obj for ptr: 0x4ea7a050
+:1:hip_memory.cpp           :3987: 25163437683 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163438092 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163449650 us:  Cannot get amd_mem_obj for ptr: 0x48762e40
+:1:hip_memory.cpp           :3987: 25163449717 us:  Cannot get amd_mem_obj for ptr: 0x4ef574e0
+:1:hip_memory.cpp           :3987: 25163449902 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163450181 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163461720 us:  Cannot get amd_mem_obj for ptr: 0x4e94f0e0
+:1:hip_memory.cpp           :3987: 25163461816 us:  Cannot get amd_mem_obj for ptr: 0x48554790
+:1:hip_memory.cpp           :3987: 25163461872 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163462455 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163473753 us:  Cannot get amd_mem_obj for ptr: 0x48472550
+:1:hip_memory.cpp           :3987: 25163473775 us:  Cannot get amd_mem_obj for ptr: 0x4ebfe090
+:1:hip_memory.cpp           :3987: 25163473895 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163474235 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163485861 us:  Cannot get amd_mem_obj for ptr: 0x46595210
+:1:hip_memory.cpp           :3987: 25163485890 us:  Cannot get amd_mem_obj for ptr: 0x490e1370
+:1:hip_memory.cpp           :3987: 25163486018 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163486357 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163498105 us:  Cannot get amd_mem_obj for ptr: 0x4739fe60
+:1:hip_memory.cpp           :3987: 25163498246 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163498464 us:  Cannot get amd_mem_obj for ptr: 0x487c5660
+:1:hip_memory.cpp           :3987: 25163498617 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163510217 us:  Cannot get amd_mem_obj for ptr: 0x47395fa0
+:1:hip_memory.cpp           :3987: 25163510363 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163510720 us:  Cannot get amd_mem_obj for ptr: 0x42fc2290
+:1:hip_memory.cpp           :3987: 25163510883 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163522355 us:  Cannot get amd_mem_obj for ptr: 0x4646a4a0
+:1:hip_memory.cpp           :3987: 25163522453 us:  Cannot get amd_mem_obj for ptr: 0x468d5fc0
+:1:hip_memory.cpp           :3987: 25163522541 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163522964 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163534407 us:  Cannot get amd_mem_obj for ptr: 0x48340160
+:1:hip_memory.cpp           :3987: 25163534449 us:  Cannot get amd_mem_obj for ptr: 0x4894d860
+:1:hip_memory.cpp           :3987: 25163534558 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163534923 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163547112 us:  Cannot get amd_mem_obj for ptr: 0x625b4780
+:1:hip_memory.cpp           :3987: 25163547253 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163547551 us:  Cannot get amd_mem_obj for ptr: 0x4f045820
+:1:hip_memory.cpp           :3987: 25163547719 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163559406 us:  Cannot get amd_mem_obj for ptr: 0x46eb2ba0
+:1:hip_memory.cpp           :3987: 25163559462 us:  Cannot get amd_mem_obj for ptr: 0x4eea3c00
+:1:hip_memory.cpp           :3987: 25163559553 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163559904 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163571373 us:  Cannot get amd_mem_obj for ptr: 0x41ec8c60
+:1:hip_memory.cpp           :3987: 25163571484 us:  Cannot get amd_mem_obj for ptr: 0x496d1e40
+:1:hip_memory.cpp           :3987: 25163571535 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163572098 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163583497 us:  Cannot get amd_mem_obj for ptr: 0x557137f0
+:1:hip_memory.cpp           :3987: 25163583532 us:  Cannot get amd_mem_obj for ptr: 0x48259350
+:1:hip_memory.cpp           :3987: 25163583638 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163584043 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163595583 us:  Cannot get amd_mem_obj for ptr: 0x3f3bae60
+:1:hip_memory.cpp           :3987: 25163595614 us:  Cannot get amd_mem_obj for ptr: 0x4a3ba2a0
+:1:hip_memory.cpp           :3987: 25163595728 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163596193 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163607715 us:  Cannot get amd_mem_obj for ptr: 0x4edf1bd0
+:1:hip_memory.cpp           :3987: 25163607743 us:  Cannot get amd_mem_obj for ptr: 0x4a270ea0
+:1:hip_memory.cpp           :3987: 25163607861 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163608200 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163619821 us:  Cannot get amd_mem_obj for ptr: 0x469d6080
+:1:hip_memory.cpp           :3987: 25163619938 us:  Cannot get amd_mem_obj for ptr: 0x2a072650
+:1:hip_memory.cpp           :3987: 25163619966 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163620501 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163632093 us:  Cannot get amd_mem_obj for ptr: 0x469df0b0
+:1:hip_memory.cpp           :3987: 25163632236 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163632475 us:  Cannot get amd_mem_obj for ptr: 0x496b36a0
+:1:hip_memory.cpp           :3987: 25163632629 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163644177 us:  Cannot get amd_mem_obj for ptr: 0x481fa3a0
+:1:hip_memory.cpp           :3987: 25163644320 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163644612 us:  Cannot get amd_mem_obj for ptr: 0x4a1a0060
+:1:hip_memory.cpp           :3987: 25163644772 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163656298 us:  Cannot get amd_mem_obj for ptr: 0x46b66bc0
+:1:hip_memory.cpp           :3987: 25163656340 us:  Cannot get amd_mem_obj for ptr: 0x4ee7e260
+:1:hip_memory.cpp           :3987: 25163656446 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163656818 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163668440 us:  Cannot get amd_mem_obj for ptr: 0x4849a6b0
+:1:hip_memory.cpp           :3987: 25163668478 us:  Cannot get amd_mem_obj for ptr: 0x4878fad0
+:1:hip_memory.cpp           :3987: 25163668581 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163668970 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163681393 us:  Cannot get amd_mem_obj for ptr: 0x4ef574e0
+:1:hip_memory.cpp           :3987: 25163681461 us:  Cannot get amd_mem_obj for ptr: 0x49eaaa60
+:1:hip_memory.cpp           :3987: 25163681543 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163681957 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163693523 us:  Cannot get amd_mem_obj for ptr: 0x47e569a0
+:1:hip_memory.cpp           :3987: 25163693530 us:  Cannot get amd_mem_obj for ptr: 0x491496f0
+:1:hip_memory.cpp           :3987: 25163693669 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163694032 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163705605 us:  Cannot get amd_mem_obj for ptr: 0x4d5eb980
+:1:hip_memory.cpp           :3987: 25163705634 us:  Cannot get amd_mem_obj for ptr: 0x42fc9ad0
+:1:hip_memory.cpp           :3987: 25163705751 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163706114 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163725825 us:  Cannot get amd_mem_obj for ptr: 0x4883e370
+:1:hip_memory.cpp           :3987: 25163725890 us:  Cannot get amd_mem_obj for ptr: 0x4919ec60
+:1:hip_memory.cpp           :3987: 25163725993 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163726516 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163729826 us:  Cannot get amd_mem_obj for ptr: 0x4f23fb10
+:1:hip_memory.cpp           :3987: 25163729852 us:  Cannot get amd_mem_obj for ptr: 0x4565b0b0
+:1:hip_memory.cpp           :3987: 25163729987 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163730362 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163741935 us:  Cannot get amd_mem_obj for ptr: 0x478dc9d0
+:1:hip_memory.cpp           :3987: 25163742096 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163742628 us:  Cannot get amd_mem_obj for ptr: 0x4917bd20
+:1:hip_memory.cpp           :3987: 25163742865 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163754213 us:  Cannot get amd_mem_obj for ptr: 0x43f98fa0
+:1:hip_memory.cpp           :3987: 25163754294 us:  Cannot get amd_mem_obj for ptr: 0x42073900
+:1:hip_memory.cpp           :3987: 25163754347 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163754452 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+:1:hip_memory.cpp           :3987: 25163766092 us:  Cannot get amd_mem_obj for ptr: 0x4a7a9a20
+:1:hip_memory.cpp           :3987: 25163766139 us:  Cannot get amd_mem_obj for ptr: 0x482586e0
+:1:hip_memory.cpp           :3987: 25163766232 us:  Cannot get amd_mem_obj for ptr: 0x625cec80
+:1:hip_memory.cpp           :3987: 25163766287 us:  Cannot get amd_mem_obj for ptr: 0x63a83350
+(APIServer pid=63) INFO:     127.0.0.1:37314 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=63) INFO:     127.0.0.1:37322 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=63) INFO 09-06 06:03:57 [launcher.py:112] [shutdown] API server: shutdown triggered
+(APIServer pid=63) INFO 09-06 06:03:57 [launcher.py:128] [shutdown] API server: stopping engine client mode=abort timeout=0s
+(APIServer pid=63) INFO 09-06 06:03:57 [core_client.py:686] [shutdown] MPClient: start timeout=0s
+(APIServer pid=63) INFO 09-06 06:03:57 [core_client.py:688] [shutdown] MPClient: stopping engine manager
+(APIServer pid=63) INFO 09-06 06:03:57 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore
+(APIServer pid=63) WARNING 09-06 06:03:57 [utils.py:632] [shutdown] Process manager: force killing remaining processes count=1
+(APIServer pid=63) WARNING 09-06 06:03:57 [utils.py:637] [shutdown] Process manager: force killing remaining process EngineCore pid 105
+(EngineCore pid=105) INFO 09-06 06:03:57 [core.py:1332] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=105) INFO 09-06 06:03:57 [core.py:1468] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=105) INFO 09-06 06:03:57 [core.py:1499] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=105) INFO 09-06 06:03:57 [core.py:1345] [shutdown] EngineCore: exiting busy loop
+(EngineCore pid=105) INFO 09-06 06:03:57 [multiproc_executor.py:440] [shutdown] Executor: waiting for worker exit count=2
+(APIServer pid=63) INFO 09-06 06:03:57 [core_client.py:690] [shutdown] MPClient: engine manager stopped
+(APIServer pid=63) INFO 09-06 06:03:57 [core_client.py:691] [shutdown] MPClient: cleaning up background resources
+(APIServer pid=63) INFO 09-06 06:03:57 [core_client.py:693] [shutdown] MPClient: complete
+(APIServer pid=63) INFO 09-06 06:03:57 [launcher.py:137] [shutdown] API server: engine client stopped
+(APIServer pid=63) INFO 09-06 06:03:57 [launcher.py:140] [shutdown] API server: signalling HTTP server shutdown
+(APIServer pid=63) INFO 09-06 06:03:57 [launcher.py:161] [shutdown] API server: shutting down FastAPI HTTP server
+(APIServer pid=63) INFO:     Shutting down
+(APIServer pid=63) INFO:     Waiting for application shutdown.
+(APIServer pid=63) INFO:     Application shutdown complete.
+/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/multiprocessing/resource_tracker.py:475: UserWarning: resource_tracker: There appear to be 2 leaked semaphore objects to clean up at shutdown: {'/mp-jjbd7pj2', '/mp-5g_vc4fk'}
+  warnings.warn(
+/root/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/lib/python3.14/multiprocessing/resource_tracker.py:475: UserWarning: resource_tracker: There appear to be 4 leaked shared_memory objects to clean up at shutdown: {'/psm_df6060c1', '/psm_80c4bdb7', '/psm_d532b0e8', '/psm_765517bc'}
+  warnings.warn(

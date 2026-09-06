@@ -51,6 +51,8 @@ its own RCCL 2.30.4, give the same table cell for cell —
 
 And with a fifteen-line opt-in on top of the check, **stock RCCL 2.30.4 completes
 all twelve collectives without atomics** — [item 3, measured](#item-3-measured-an-opt-in-null-buffer-and-stock-2304-runs-without-atomics).
+Under the same opt-in, **vLLM serves Qwen3-8B at TP=2 on stock 2.30.4 without
+atomics** — [end to end](#end-to-end-vllm-at-tp2-on-stock-2304-without-atomics).
 
 ---
 
@@ -212,6 +214,37 @@ user's. The device-library half of item 3, OCKL checking for a null buffer and
 returning, would turn that fault into a no-op; it is not implemented here.
 Logs: `logs/*rocm10c*`.
 
+## End to end: vLLM at TP=2 on stock 2.30.4, without atomics
+
+The collective cases are RCCL alone. The failure this repository exists for
+is `--tensor-parallel-size 2` under vLLM, so the opt-in was also run the way
+a user meets it: Qwen3-8B, bf16, TP=2, vLLM 0.27 in the ROCm 10.0 container,
+one chat request (`serve_c_row.sh <state> <stock|patched>` with
+`one_request_tp.py`; the patched cells run with `HIP_HOSTCALL_ALLOW_MISSING=1
+AMD_LOG_LEVEL=1`, the runtime swapped in place and md5-verified as in the
+other rows):
+
+    Qwen3-8B, TP=2, vLLM 0.27, stock RCCL 2.30.4; one request, 64 tokens asked for
+
+                          stock runtime                                   A + the opt-in
+    AtomicOps present     healthy in 201 s, 64 tokens                     healthy in 138 s, 64 tokens; nothing marked
+    AtomicOps absent      never healthy (600 s): a worker raises          healthy in 99 s, 64 tokens; 718 kernels marked
+                          "NCCL error: unhandled cuda error", the         at load "proceed with a null hostcall buffer",
+                          engine stays up and broken -- July's failure    0 refused, 0 faults
+
+**vLLM serves at TP=2 on stock RCCL 2.30.4 without PCIe atomics under the
+opt-in**, and the 718 load-time lines are the static scan made dynamic: 26
+from RCCL (13 per worker), 512 from vLLM's paged-attention family (256 per
+worker, the CDNA stubs whose body on gfx11 is `assert(false)`) and 178 from
+its `wvSplitK` kernels — 361 distinct names per worker, [C1](../hostcall-abi-2026-09-04/README.md)'s
+`_rocm_C` 348 plus RCCL's 13. Every one of them was given a null buffer, none
+of them faulted, and the engine answered: a declaration is not a dispatch,
+measured one more way. torch's own declaring kernels did not appear in the
+log; this serve does not load them. The stock cells are the control: with
+atomics the SDK runtime serves; without, it hangs where it hung in July. Load
+times are one run each, page cache uncontrolled. Logs: `logs/serve-rocm10c-*`
+and `logs/SERVE-rocm10c-*`.
+
 ## What this licenses, and what it does not
 
 **Licensed.** On this platform, at the 7.14 and the 10.0 runtime commits, moving the check to
@@ -222,7 +255,7 @@ collective library's own error path carries the sentence through
 (`enqueue.cc:2061` in the 7.14 image's RCCL, `enqueue.cc:2119` in 10.0's) with no
 change to RCCL or torch. Under an explicit opt-in, a declaring kernel that
 never executes a hostcall runs with a null buffer: stock 2.30.4, 12/12, no
-atomics, no rebuild. The thirteen kernels the
+atomics, no rebuild; vLLM serves Qwen3-8B at TP=2 on it. The thirteen kernels the
 runtime names are the thirteen the static scan counted.
 
 **Not licensed.** That a real submission would use error code 1055, or log
@@ -278,6 +311,7 @@ is the part neither attempted, and it is the part that composes with both.
     CLR_SDK=rocm10 bash clr_demo_row.sh atomics_absent
     # PR A alone at 10.0: link the tarball as /rb/clr-rocm10a-src.tgz, then CLR_TAG=rocm10a with clr-hostcall-load-check-a.patch, CLR_SDK=rocm10a for the rows
     # the opt-in (item 3) at 10.0: /rb/clr-rocm10c-src.tgz, CLR_TAG=rocm10c with clr-hostcall-load-check-ac.patch, CLR_SDK=rocm10c for the rows
+    bash serve_c_row.sh atomics_present stock; bash serve_c_row.sh atomics_present patched   # and the same in the absent state: TP=2 under vLLM
 
 `logs/` holds every row, every per-cell log with the runtime's `:1:` lines,
 the build logs, the diagnostic, the two earlier attempts, the ROCm 10.0

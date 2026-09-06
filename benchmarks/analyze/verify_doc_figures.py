@@ -9152,6 +9152,59 @@ def _run_checks(_opened, _audit_state):
     ck("open-questions 0, the 2026-09-06 addendum: stock 2.30.4 ran without atomics under the opt-in", "1",
        1 if "**Addendum 2026-09-06.**" in _oq0 and "completed all twelve collective cases on this pair with AtomicOps absent" in _oq0 else 0)
     ck("open-questions 0, and keeps 2.27.7 as the rebuild route until it ships", "1", 1 if "2.27.7 remains the route that needs nothing\n> but a rebuild" in _oq0 else 0)
+    ck("open-questions 0, the addendum says vLLM served at TP=2 on it", "1", 1 if "and vLLM 0.27 served Qwen3-8B at TP=2 on it" in _oq0 else 0)
+    # --- end to end: vLLM 0.27, Qwen3-8B, TP=2, stock RCCL 2.30.4, under the opt-in ---
+    _srows = [json.loads(l) for l in open(os.path.join(_CLOG, "serve-rocm10c-cells.jsonl")) if l.strip()]
+    _sc = {(r["row"], r["runtime"]): r for r in _srows}
+    ck("CLR serve C, four cells", "4", len(_sc))
+    _SMISSING = {"healthy": None, "answered": None, "completion_tokens": -1, "load_s": -1, "null_buffer_lines": -1, "refusal_lines": -1,
+                 "memory_fault_lines": -1, "generic_error_lines": -1, "ok": None, "error": "MISSING", "runtime_md5": "", "tensor_parallel": -1, "backend_chosen": None, "env": None, "model": ""}
+    for _row in ("atomics_present", "atomics_absent"):
+        for _rt in ("stock", "patched"):
+            _sc.setdefault((_row, _rt), dict(_SMISSING, row=_row, runtime=_rt))
+    ck("CLR serve C, every cell is TP=2 on Qwen3-8B", "4", sum(1 for r in _srows if r["tensor_parallel"] == 2 and r["model"] == "/models/Qwen3-8B"))
+    ck("CLR serve C, patched cells ran under the opt-in", "2", sum(1 for r in _srows if r["runtime"] == "patched" and r.get("env") == "HIP_HOSTCALL_ALLOW_MISSING=1 AMD_LOG_LEVEL=1"))
+    ck("CLR serve C, patched cells ran the opt-in library", "2", sum(1 for r in _srows if r["runtime"] == "patched" and r["runtime_md5"] == {x["patched_libamdhip64_md5"] for x in _crowsC}.pop()))
+    ck("CLR serve C, stock cells ran the 10.0 SDK's library", "2", sum(1 for r in _srows if r["runtime"] == "stock" and r["runtime_md5"] == "7c440eb52803588cef83b955dd4494b5"))
+    for _rt in ("stock", "patched"):
+        ck(f"CLR serve C, present {_rt} served 64 tokens", "64", _sc[("atomics_present", _rt)]["completion_tokens"])
+        ck(f"CLR serve C, present {_rt} ok", "1", 1 if _sc[("atomics_present", _rt)]["ok"] else 0)
+    ck("CLR serve C, present patched marked nothing", "0", _sc[("atomics_present", "patched")]["null_buffer_lines"])
+    _ss = _sc[("atomics_absent", "stock")]
+    ck("CLR serve C, absent stock never became healthy", "0", 1 if _ss["healthy"] else 0)
+    ck("CLR serve C, absent stock: a worker raised NCCL error: unhandled cuda error", "1", 1 if "NCCL error: unhandled cuda error" in (_ss["error"] or "") else 0)
+    _sp = _sc[("atomics_absent", "patched")]
+    ck("CLR serve C, absent patched ok", "1", 1 if _sp["ok"] else 0)
+    ck("CLR serve C, absent patched served 64 tokens", "64", _sp["completion_tokens"])
+    ck("CLR serve C, absent patched: 718 kernels marked at load", "718", _sp["null_buffer_lines"])
+    ck("CLR serve C, absent patched: nothing refused, no fault, no generic error", "0", _sp["refusal_lines"] + _sp["memory_fault_lines"] + _sp["generic_error_lines"])
+    ck("CLR serve C, three healthy cells chose ROCM_ATTN", "3", sum(1 for r in _srows if r["healthy"] and r["backend_chosen"] == "ROCM_ATTN"))
+    for _row, _rt, _secs in (("atomics_present", "stock", "201"), ("atomics_present", "patched", "138"), ("atomics_absent", "patched", "99")):
+        ck(f"CLR serve C, {_row} {_rt} healthy in {_secs} s", _secs, int(_sc[(_row, _rt)]["load_s"]))
+    ck("CLR serve C, absent stock waited the full 600 s", "600", int(_ss["load_s"]))
+    _slog = open(os.path.join(_CLOG, "serve-rocm10c-atomics_absent-patched.log"), encoding="utf-8", errors="replace").read()
+    _fam = {"rccl": 0, "paged_attention": 0, "wvSplitK": 0, "other": 0}
+    _snames = set()
+    for _l in _slog.splitlines():
+        _m = re.search(r"kernel (\S+) declares hidden_hostcall_buffer", _l)
+        if _m and "proceed with a null hostcall buffer" in _l:
+            _n = _m.group(1); _snames.add(_n)
+            _fam["rccl" if ("ncclDevKernel" in _n or "ncclSymk" in _n) else "paged_attention" if "paged_attention" in _n else "wvSplitK" if "wvSplitK" in _n else "other"] += 1
+    ck("CLR serve C, the 718: 26 RCCL", "26", _fam["rccl"])
+    ck("CLR serve C, the 718: 512 paged attention", "512", _fam["paged_attention"])
+    ck("CLR serve C, the 718: 178 wvSplitK", "178", _fam["wvSplitK"])
+    ck("CLR serve C, the 718: nothing else", "0", _fam["other"])
+    ck("CLR serve C, 361 distinct names = C1's 348 + RCCL's 13", "361", len(_snames))
+    for _row, _caps, _dmc in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
+        ck(f"CLR serve C, {_row} root ports with completer support", _caps, {r["root_ports_with_completer_support"] for r in _srows if r["row"] == _row}.pop())
+        ck(f"CLR serve C, {_row} amdgpu complaints", _dmc, {r["dmesg_no_atomics_lines"] for r in _srows if r["row"] == _row}.pop())
+    for _what, _frag in (
+        ("the headline", "**vLLM serves at TP=2 on stock RCCL 2.30.4 without PCIe atomics under the\nopt-in**"),
+        ("the decomposition", "361 distinct names per worker"),
+        ("the control", "hangs where it hung in July"),
+        ("the licensing line", "vLLM serves Qwen3-8B at TP=2 on it."),
+    ):
+        ck(f"CLR serve C README, states {_what}", "1", 1 if _frag in _crm else 0)
     ck("root-cause version scope, points at the addendum", "1",
        1 if "Addendum 2026-09-06: a runtime-side opt-in lets stock 2.30.4 run without" in open(os.path.join(ROOT, "docs", "root-cause.md"), encoding="utf-8").read() else 0)
 
