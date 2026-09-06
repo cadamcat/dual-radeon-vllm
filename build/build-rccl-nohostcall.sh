@@ -8,8 +8,10 @@
 # can see exactly what was done. Paths are specific to our container — adapt:
 #
 #   SRC=...     RCCL source tree. Get the verified version with:
-#                 git clone --depth 1 -b release/rocm-rel-7.1.1.1 \
+#                 git clone -b release/rocm-rel-7.1.1.1 \
 #                   https://github.com/ROCm/rccl.git
+#                 git -C rccl checkout bf3ebf549fec376521b7d35f09a67f67071c96d3
+#               The commit is what pins the tree; the branch is mutable.
 #               That is 2.27.7. Do NOT use 2.30.4 from the rocm-systems
 #               monorepo — NDEBUG is not sufficient there, and we have tested
 #               that on hardware. See ../docs/open-questions.md section 0.

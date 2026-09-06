@@ -8378,6 +8378,17 @@ def _run_checks(_opened, _audit_state):
     # no-hostcall RCCL. §1's answer (2026-09-06) shows AMD then removed NDEBUG
     # deliberately, so that argument cuts both ways; the claim is scoped to what
     # was measured and the categorical wording must not come back.
+    # B1's source tree was pinned to a mutable branch, with a note claiming a
+    # shallow clone has no commit to quote — it does. The commit is recorded
+    # now, and the build recipe has to hand out the same one, so the two cannot
+    # drift apart.
+    _prov = json.load(open(os.path.join(
+        ROOT, "benchmarks", "rccl-ndebug-ab-2026-09-04", "PROVENANCE.json")))
+    _pin = _prov["source"]["upstream_commit_resolved_2026-09-06"]
+    ck("B1 provenance pins a full commit", "40", len(_pin))
+    ck("B1 build recipe hands out that same commit", "1",
+       1 if _pin in open(os.path.join(ROOT, "build", "build-rccl-nohostcall.sh"),
+                         encoding="utf-8").read() else 0)
     ck("root-cause §4 scopes the safety claim to the measured build", "1",
        1 if "## 4. Why removing the hostcall requirement is safe on this build"
        in _rcrm else 0)

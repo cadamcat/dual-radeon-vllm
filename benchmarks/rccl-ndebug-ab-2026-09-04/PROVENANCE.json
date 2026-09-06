@@ -4,7 +4,9 @@
  "host": "VM 101, the VFIO guest, RX 7900 XT pair, TP=2",
  "source": {
   "tree": "/data/rccl-build/rccl-rocm-7.1.1",
-  "upstream": "ROCm/rccl release/rocm-rel-7.1.1.1, --depth 1, so no .git and no commit to quote",
+  "upstream": "ROCm/rccl release/rocm-rel-7.1.1.1, cloned --depth 1; the commit was not recorded at build time",
+  "upstream_commit_resolved_2026-09-06": "bf3ebf549fec376521b7d35f09a67f67071c96d3",
+  "upstream_commit_note": "resolved after the fact, not asserted by the build. That branch tip has been unchanged since 2025-11-06, ten months before this build, so it is almost certainly the tree cloned here. A --depth 1 clone does keep .git and does know its own commit; the earlier note claiming otherwise was wrong.",
   "version": "RCCL 2.27.7 (NCCL_MAJOR 2, NCCL_MINOR 27)",
   "files_excluding_build_dirs": 634,
   "tree_md5_excluding_CMakeLists": "318534aeaba1aac01516f70af34dbb08",
