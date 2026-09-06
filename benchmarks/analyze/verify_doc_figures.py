@@ -9267,7 +9267,26 @@ def main():
             opened.append(file)
         return original_open(file, mode, *args, **kwargs)
 
+    # A file the verifier only probes for existence still decides a check's
+    # value (six checks read an os.path.exists result straight into ck), so it
+    # is an input like any other and has to be committed: a pristine checkout
+    # of HEAD would not see an uncommitted one and could answer differently.
+    # Only paths that are actually there are recorded — an absent path is not
+    # an input, and recording it would flag every optional file the verifier
+    # asks about and does not find.
+    original_exists = os.path.exists
+
+    def tracking_exists(path):
+        found = original_exists(path)
+        if found:
+            try:
+                opened.append(os.fspath(path))
+            except TypeError:
+                pass
+        return found
+
     builtins.open = tracking_open
+    os.path.exists = tracking_exists
     try:
         return _run_checks(opened, audit_state)
     except BaseException:
@@ -9282,6 +9301,7 @@ def main():
         raise
     finally:
         builtins.open = original_open
+        os.path.exists = original_exists
 
 
 
