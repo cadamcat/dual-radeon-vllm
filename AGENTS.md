@@ -112,32 +112,39 @@ Python 3 and the standard library; only the runners (`benchmarks/bench_runner.py
 no build system, no CI in this repository.
 
 ```bash
-# the gate over every published number                        COST: MEDIUM (~90 s)
+# the gate over every published number                        0.7 s
 python3 benchmarks/analyze/verify_doc_figures.py
 
-# the gate as a clean checkout sees it (the real test)        COST: MEDIUM
+# the gate as a clean checkout sees it (the real test)        0.9 s incl. the worktree
 git worktree add /tmp/pristine HEAD --detach
 python3 /tmp/pristine/benchmarks/analyze/verify_doc_figures.py
 git worktree remove /tmp/pristine --force
 
-# projections, after new rows land                            COST: LOW
+# projections, after new rows land
 cd benchmarks/analyze && python3 build_ledger.py && python3 build_prefill.py && python3 build_decode.py
 
-# the campaign index, after a README is added or retitled     COST: LOW
+# the campaign index, after a README is added or retitled
 python3 benchmarks/analyze/build_campaigns.py
 
 # the site: build docs/, or check that docs/ matches its source, writing nothing
 python3 site/build.py
 python3 site/build.py --check
 
-# the harness on a laptop, no GPU                             COST: LOW
+# the harness on a laptop, no GPU
 python3 benchmarks/harness/test_runner_cuda.py
 
 # a probe (on the guest, in the container)
 hipcc -O1 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-Run the smallest relevant check first; the full gate is the last one.
+Every gate in this repository is local and sub-second — measured on this Mac
+2026-09-06: the verifier 0.7 s over 4 743 checks, the pristine worktree run
+0.9 s including the checkout, `site/build.py` and its `--check` under 0.1 s,
+the letter's whole `verify.sh` (figure, LaTeX, its own verifier run) 2.3 s, a
+six-case break test 4.3 s. There is nothing to ration and no reason to defer:
+run the full gate whenever you want to know. The annotation here said 90 s
+until 2026-09-06, which was wrong by two orders of magnitude and had agents
+economising on a check that costs less than reading the file they changed.
 
 ## Architecture constraints
 
