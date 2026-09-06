@@ -8402,6 +8402,50 @@ def _run_checks(_opened, _audit_state):
     ck("B1 build recipe hands out that same commit", "1",
        1 if _pin in open(os.path.join(ROOT, "build", "build-rccl-nohostcall.sh"),
                          encoding="utf-8").read() else 0)
+    # campaign-2026-09-03 said the pair's retention ordering was the one the
+    # H100 gave. Half of it is: Muse is flattest on both, but the hybrid's rank
+    # inverts — above every gemma here, below every gemma there. The claim was
+    # ungated until 2026-09-06, which is how it survived. Retention is computed
+    # at matched depth from both machines' committed rows, not typed.
+    def _retain(paths, cfg, lo, hi):
+        base, deep = [], []
+        for _p in paths:
+            for _l in open(os.path.join(ROOT, "benchmarks", _p), encoding="utf-8"):
+                try:
+                    _r = json.loads(_l)
+                except ValueError:
+                    continue
+                if _r.get("kind") != "decode" or _r.get("cfg") != cfg: continue
+                if _r.get("decode_tps") is None: continue
+                _d = _r.get("prompt_tokens") or _r.get("target")
+                if _d is None: continue
+                (base if _d < 700 else deep if lo <= _d <= hi else []).append(_r["decode_tps"])
+        if not base or not deep: return None
+        return sum(deep) / len(deep) / (sum(base) / len(base)) * 100
+
+    _RAD = ["campaign-2026-09-03/results.jsonl"]
+    _H100 = ["cuda-h100/campaign-2026-09-03/results.jsonl",
+             "cuda-h100/campaign-2026-09-03/results-q38.jsonl"]
+    _rad_hy = _retain(_RAD, "D8-27B-tp2-long", 79000, 81000)
+    _h_hy = _retain(_H100, "Q38", 79000, 81000)
+    ck("09-03 README, the hybrid's retention at 80 000 on the pair", "75.8", _rad_hy)
+    ck("09-03 README, and on the H100", "85.0", _h_hy)
+    _rad_gem = [_retain(_RAD, _c, 79000, 81000)
+                for _c in ("A-12B-tp2-long", "C-31B-tp2-long", "E-26B-tp2-long")]
+    _h_gem = [_retain(_H100, _c, 79000, 81000) for _c in ("G12", "G26A4B", "G31")]
+    ck("09-03 README, the hybrid is above every gemma on the pair", "1",
+       1 if all(_rad_hy > _g for _g in _rad_gem) else 0)
+    ck("09-03 README, and below every gemma on the H100", "1",
+       1 if all(_h_hy < _g for _g in _h_gem) else 0)
+    # and the page has to print the numbers the rows give, not merely not
+    # contradict them: the old claim was wrong precisely because no gate read it
+    _c93 = open(os.path.join(ROOT, "benchmarks", "campaign-2026-09-03",
+                             "README.md"), encoding="utf-8").read()
+    ck("09-03 README prints both retentions it now claims", "1",
+       1 if (f"retains {_rad_hy:.1f} % here" in _c93
+             and f"and {_h_hy:.1f} % on the H100" in _c93) else 0)
+    ck("09-03 README no longer claims the whole ordering is shared", "0",
+       _c93.count("That is the ordering the H100 gave"))
     ck("root-cause §4 scopes the safety claim to the measured build", "1",
        1 if "## 4. Why removing the hostcall requirement is safe on this build"
        in _rcrm else 0)

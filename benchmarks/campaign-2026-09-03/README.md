@@ -26,12 +26,20 @@ is a 1 024-token sliding window with a global layer every sixth, go on losing
 at the rate they were losing and reach 128 000 at roughly half their
 500-token rate; Muse-Glimmer, whose every layer attends through a 2 048-token
 window, loses 17 % over the same span; the hybrid-SSM 27B loses 28 % to
-96 000. That is the ordering the H100 gave the same six checkpoints on the
-same day — Muse flattest, the hybrid no flatter than dense — and it is the
-ordering [`cuda-modal/`](../cuda-modal/README.md) reads as *a bounded window
-flattens a curve, a recurrent state does not*. The pair adds a second reading
-of the same order on a third vendor's kernels, and adds what the H100 could not
-say: why. The telemetry table below has all three gemma arms at the power cap
+96 000. **Only half of that ordering is what the H100 gave the same six
+checkpoints the same day, and the half that differs is the interesting one.**
+Muse is flattest on both. The hybrid is not: at 80 000 it retains 75.8 % here,
+above every gemma arm, and 85.0 % on the H100, *below* every gemma arm — it is
+the second-flattest model on this pair and the least flat on that one. At
+32 000 the inversion is wider still, first here and fifth there. So the
+reading in [`cuda-modal/`](../cuda-modal/README.md) — *a bounded window
+flattens a curve, a recurrent state does not* — holds for the window and not
+for the
+recurrent state, whose rank moves with the machine. This README asserted the
+whole ordering was shared until 2026-09-06; recomputing retention at matched
+depth from the committed rows of both machines is what showed it was not.
+
+What the pair does add is what the H100 could not say: why. The telemetry table below has all three gemma arms at the power cap
 with `mem_busy` at 24–25 % by 128 000 — attention has become compute — while
 Muse sits at 74 %, still reading weights, because a 2 048 window is the same
 amount of attention at 128 000 as at 4 000.
