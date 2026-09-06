@@ -112,39 +112,44 @@ Python 3 and the standard library; only the runners (`benchmarks/bench_runner.py
 no build system, no CI in this repository.
 
 ```bash
-# the gate over every published number                        0.7 s
+# the gate over every published number                        COST: LOW
 python3 benchmarks/analyze/verify_doc_figures.py
 
-# the gate as a clean checkout sees it (the real test)        0.9 s incl. the worktree
+# the gate as a clean checkout sees it (the real test)        COST: LOW
 git worktree add /tmp/pristine HEAD --detach
 python3 /tmp/pristine/benchmarks/analyze/verify_doc_figures.py
 git worktree remove /tmp/pristine --force
 
-# projections, after new rows land
+# projections, after new rows land                            COST: LOW
 cd benchmarks/analyze && python3 build_ledger.py && python3 build_prefill.py && python3 build_decode.py
 
-# the campaign index, after a README is added or retitled
+# the campaign index, after a README is added or retitled     COST: LOW
 python3 benchmarks/analyze/build_campaigns.py
 
 # the site: build docs/, or check that docs/ matches its source, writing nothing
 python3 site/build.py
 python3 site/build.py --check
 
-# the harness on a laptop, no GPU
+# the harness on a laptop, no GPU                             COST: LOW
 python3 benchmarks/harness/test_runner_cuda.py
 
 # a probe (on the guest, in the container)
 hipcc -O1 diagnose/hipgate3.cpp -o hipgate3 && ./hipgate3
 ```
 
-Every gate in this repository is local and sub-second — measured on this Mac
-2026-09-06: the verifier 0.7 s over 4 743 checks, the pristine worktree run
-0.9 s including the checkout, `site/build.py` and its `--check` under 0.1 s,
-the letter's whole `verify.sh` (figure, LaTeX, its own verifier run) 2.3 s, a
-six-case break test 4.3 s. There is nothing to ration and no reason to defer:
-run the full gate whenever you want to know. The annotation here said 90 s
-until 2026-09-06, which was wrong by two orders of magnitude and had agents
-economising on a check that costs less than reading the file they changed.
+Every gate here is **COST: LOW**. All of them are local — none touches the
+network, a GPU or a package index — so there is nothing to ration and no
+reason to defer one: run the full gate whenever you want to know.
+
+*Informational, not a contract:* measured warm on one Mac on 2026-09-06, the
+verifier ran in well under a second over 4 743 checks, the pristine-worktree
+run in about the same including its checkout, `site/build.py --check` and a
+break case in less again, and the letter's whole `verify.sh` — figure, LaTeX
+and its own verifier run — in a couple of seconds. Take those as an order of
+magnitude on one machine, not a number to depend on; they will drift as the
+data grows. What is durable is the level. This block said `~90 s` until
+2026-09-06, which was wrong by two orders of magnitude and had agents
+economising on a check cheaper than opening the file they were changing.
 
 ## Architecture constraints
 
