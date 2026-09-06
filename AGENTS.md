@@ -98,6 +98,8 @@ which is one exclusive resource:
   never in the foreground of a session that can be interrupted.
 - Without the lease a process may read `/sys`, logs and finished results; it
   may not start a container, a serve or a build.
+- Run `benchmarks/harness/preflight_host_link.sh <campaign-dir>` before every
+  campaign: the PCIe link state (x8 has happened) is part of the stack to assert.
 - A result is scoped to the host that produced it. A PASS on the Mac says
   nothing about the guest (measured: the same fetch returns 200 here and 403
   there). Any Python fetching over the network from the guest sets an explicit
@@ -150,6 +152,8 @@ Run the smallest relevant check first; the full gate is the last one.
   `.gitignore` negation; a log kept anywhere else needs its own negation or
   the gate breaks in a clean checkout.
 - Compiled libraries (`*.so`) and probe binaries are never committed.
+- A campaign earns a front-page mention only if it answers a question about
+  the pair; otherwise it lives in its directory and in `CAMPAIGNS.md`.
 
 ## Definition of done
 
