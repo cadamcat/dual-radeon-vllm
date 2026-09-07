@@ -985,7 +985,23 @@ LONG_PAIR = ["A-12B-tp2-long", "B-8B-tp2-long", "E-26B-tp2-long",
 LONG_PAIR_ABSENT = {
     "B-8B-tp2-long": "its own config caps context at 40 960, so its ladder "
                      "stops at 32 000 and is Figure 1's",
+    # Not a gap and not a ceiling: a choice, so it is declared like one. This
+    # figure follows Figure 1's rule -- each model's fastest measured
+    # configuration -- and for this checkpoint that stopped being the 0.23.1
+    # ladder on 2026-09-07. Those weights decode 12.33 tok/s at 500 there and
+    # 49.36 on 0.27.1, so drawing the old line on the front page would leave a
+    # reader with a number wrong by four times. The 0.23.1 rows are not
+    # withdrawn: campaign-2026-09-03 and campaign-2026-09-07 both keep them,
+    # and the depth-cost article is about exactly the difference.
+    "D8-27B-tp2-long": "superseded on the front page by the same checkpoint on "
+                       "vLLM 0.27.1, which is 4x faster at 500 tokens; the "
+                       "0.23.1 ladder is kept in its campaign and in the "
+                       "depth-cost article",
 }
+# The configurations above that RAN and are deliberately not drawn, as opposed
+# to those that never reached past 32 000. Declared separately so the assertion
+# below cannot be satisfied by forgetting one.
+LONG_PAIR_SUPERSEDED = {"D8-27B-tp2-long"}
 # The L4 ran gemma-4-12B to 128 000 on the same day, as the platform control
 # that lets every rented ratio be read as a card difference. It is a real
 # sixteen-rung ladder on a card Figure 1 already names, so it is offered here
@@ -1012,13 +1028,15 @@ LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None, False),
               # the default view and leaves has taken away a number wrong by four
               # times for this model. The six stay; this is drawn beside them.
               ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027b", "2026-09-07b",
-               "RX 7900 XT · vLLM 0.27", True),
+               "RX 7900 XT · vLLM 0.27 · ROCM_ATTN", False),
               # And the finding campaign-2026-09-07 is about: one serve flag,
               # the same weights and cards, and less than half the depth cost.
               ("rdna3-027t", "RX 7900 XT", "D8-27B-tp2-triton-long-027b",
-               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN", False)]
-# not lit: one model drawn three times by default is a worse default than the
-# one the line above is fixing
+               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN", True)]
+# Figure 1's rule, applied here: the lit line is the fastest configuration this
+# checkpoint has been measured in, which is TRITON_ATTN on 0.27.1 -- 1.48x the
+# default backend's decode at 128 000. ROCM_ATTN stays one click away because
+# it is what a current vLLM picks on its own, and prefill runs the other way.
 LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
 
 
@@ -1099,8 +1117,11 @@ def _long_figure(rows_all, kind):
                        for c in cfgs_on_pair}
     missing = [c for c in LONG_PAIR if c not in cfgs_on_pair]
     shallow = [c for c in cfgs_on_pair if deepest_on_pair[c] <= FIG12_MAX_CTX]
-    assert set(missing) | set(shallow) == set(LONG_PAIR_ABSENT), \
-        f"the pair's long campaign: {missing} absent, {shallow} never past 32 000, {sorted(LONG_PAIR_ABSENT)} explained"
+    assert set(missing) | set(shallow) | LONG_PAIR_SUPERSEDED == set(LONG_PAIR_ABSENT), \
+        (f"the pair's long campaign: {missing} absent, {shallow} never past 32 000, "
+         f"{sorted(LONG_PAIR_SUPERSEDED)} superseded, {sorted(LONG_PAIR_ABSENT)} explained")
+    assert LONG_PAIR_SUPERSEDED <= set(cfgs_on_pair), \
+        "a superseded configuration has to be one the campaign actually ran"
     not_drawn = []
     # the pair first, in the order the campaign ran them
     for cfg in LONG_PAIR:

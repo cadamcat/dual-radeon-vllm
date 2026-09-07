@@ -158,10 +158,9 @@ rented the same day one click away as the background.</p>
   <figcaption>
     <p class="caplede"><b>Figure 3.</b> Decode rate at batch 1 against context length, 500 to
     128&nbsp;000, log axis. The default view is 2&times; RX 7900 XT at tensor parallelism 2 on the
-    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; <b>plus the same
-    <code>Qwen3.8-27B</code> on vLLM 0.27.1</b>, because on the 0.23.1 ladder those weights decode
-    12.33&nbsp;tok/s at 500 and on 0.27.1 they do 49.36, and the six-on-one-stack comparison is not
-    worth leaving a reader with the first number alone. The switch above
+    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; with
+    <code>Qwen3.8-27B</code> drawn as Figure&nbsp;1 draws it, on the fastest configuration it has been
+    measured in rather than on that campaign's stack. The switch above
     the chart puts one model on every machine rented that day instead. The controls are Figure 1's.</p>
     <dl class="capnotes">
       <dt>The whole ladder</dt>
@@ -169,24 +168,21 @@ rented the same day one click away as the background.</p>
         is only readable against where it started. Where a rung is on both this ladder and Figure 1's,
         the two are different sittings on different prompt cuts, and the tooltip carries each point's
         own date.</dd>
-      <dt>Qwen3.8-27B is a quarter of its Figure&nbsp;1 line</dt>
-      <dd>At every rung the two ladders share. The pair's own six lines here ran on vLLM 0.23.1
-        &mdash; the two beside them, added 2026-09-07, are the same checkpoint on 0.27.1 and are
-        labelled as such &mdash; while
-        Figure 1 takes each model's fastest measured configuration &mdash; for this one model that is a
-        0.27.1 run, and for the pair's other four it is 0.23.1 as here. Read as time per step the gap
-        is flat: <b>61.0&nbsp;ms</b> at 500 tokens and <b>68.8&nbsp;ms</b> at 32&nbsp;000, so it is a
-        per-step cost rather than anything context does.
-        <code>Qwen3.8-27B-AWQ-INT4</code> is asymmetric, and 0.23.x is before
-        <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>, so its linear layers
-        are served by <code>TritonW4A16LinearKernel</code> there &mdash; the flat cost
-        <a href="w4a16-two-problems.html">the W4A16 article</a> separates out. <b>What the line does
-        past 32&nbsp;000 on 0.27 is now measured</b>, on this ladder and to 128&nbsp;000: switch on
-        either 0.27 line above, or read
-        <a href="depth-cost-is-the-stacks.html">what a retention percentage is made of</a>, which is
-        what those two lines are for. The depth cost falls from <b>0.350</b> to <b>0.233</b>
-        microseconds per context token across that version, and to <b>0.111</b> with
-        <code>--attention-backend TRITON_ATTN</code>.</dd>
+      <dt>Qwen3.8-27B is Figure&nbsp;1's line, measured again</dt>
+      <dd>Both figures now draw this checkpoint on <code>TRITON_ATTN</code> and vLLM 0.27.1, so the
+        two are the same configuration in two sittings a week apart, on the narrowed and the restored
+        PCIe link. They agree to <b>1.78&nbsp;%</b> at worst across the eleven rungs they share &mdash;
+        which is what a cross-sitting control looks like when nothing but the sitting differs.
+        <b>The 0.23.1 ladder that used to be drawn here is not.</b> It is not withdrawn: it is in
+        <code>campaign-2026-09-03</code>, and the difference between it and these lines is the subject
+        of <a href="depth-cost-is-the-stacks.html">what a retention percentage is made of</a>. It is
+        off this figure because those weights decode <b>12.33&nbsp;tok/s</b> at 500 there and
+        <b>50.52</b> here, and a front page that draws the first is telling a reader something about
+        this machine that stopped being true. <b>What that ladder does past
+        32&nbsp;000 on 0.27 is now measured</b>, to 128&nbsp;000 and on both attention backends: the
+        depth cost falls from <b>0.350</b> to <b>0.233</b> microseconds per context token across the
+        version, and to <b>0.111</b> with <code>--attention-backend TRITON_ATTN</code>, which is the
+        line drawn here.</dd>
       <dt>Deliberately absent</dt>
       <dd>Qwen3-8B, on every machine. Its own config caps context at 40&nbsp;960, so its ladder is
         Figure 1's eleven rungs everywhere it was run &mdash; a ceiling the model carries, not the

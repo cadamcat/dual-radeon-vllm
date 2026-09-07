@@ -1297,26 +1297,25 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
   <figcaption>
     <p class="caplede"><b>图 3.</b> 批量 1 的解码速率对上下文长度，500 到 128&nbsp;000，横轴取对数。默认视图是
     2&times; RX 7900 XT、张量并行 2，跑 2026-09-03 那条阶梯 —— 这台机器上第一批超过 32&nbsp;000 的行 ——
-    <b>外加同一个 <code>Qwen3.8-27B</code> 在 vLLM 0.27.1 上的那条</b>：在 0.23.1 的阶梯上这份权重
-    500 档解码 12.33&nbsp;tok/s，在 0.27.1 上是 49.36，而"六个模型同一个栈"的可比性，不值得让读者
-    只带走前一个数。图上方的开关换成一个模型在当天租用的每台机器上。控件和图 1 一样。</p>
+    其中 <code>Qwen3.8-27B</code> 按图 1 的规则来画：取它实测最快的那个配置，而不是那次 campaign 的栈。
+    图上方的开关换成一个模型在当天租用的每台机器上。控件和图 1 一样。</p>
     <dl class="capnotes">
       <dt>整条阶梯</dt>
       <dd>十六档、从 500 起，而不是只画 32&nbsp;000 以上的五档：一条曲线在深处的形状，只有对着它的起点才读得出来。
         凡是本阶梯与图 1 都有的档位，两边是不同日期、不同提示词裁切的两次会话，每个点的悬浮提示带着自己的日期。</dd>
-      <dt>Qwen3.8-27B 只有它图 1 那条线的四分之一</dt>
-      <dd>在两条阶梯共有的每一档上都是。这条阶梯上这一对卡自己的六条线跑在 vLLM 0.23.1 上——旁边那两条是
-        2026-09-07 加的，是同一个 checkpoint 在 0.27.1 上，并已如此标注——而图 1 取的是每个模型实测最快的配置
-        —— 只有这一个模型取到的是 0.27.1 的一次运行，双卡的另外四条和这里一样是 0.23.1。换成每步耗时看，
-        这个差是平的：500 token 处 <b>61.0&nbsp;ms</b>，32&nbsp;000 处 <b>68.8&nbsp;ms</b>，
-        所以它是每一步的固定开销，与上下文无关。<code>Qwen3.8-27B-AWQ-INT4</code> 是非对称的，
-        而 0.23.x 早于 <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>，
-        它的线性层在那里由 <code>TritonW4A16LinearKernel</code> 承担 —— 正是
-        <a href="w4a16-two-problems.zh.html">W4A16 那篇</a>分离出来的那个固定项。<b>这条线在 0.27 上
-        越过 32&nbsp;000 会是什么样，现在测了</b>，就在这条阶梯上，一直到 128&nbsp;000：打开上面任意一条
-        0.27 的线，或者读<a href="depth-cost-is-the-stacks.zh.html">保留率百分比是由什么构成的</a>——
-        那两条线正是为它而画。跨过那个版本，深度成本从 <b>0.350</b> 降到 <b>0.233</b> 微秒每上下文
-        token，再加 <code>--attention-backend TRITON_ATTN</code> 降到 <b>0.111</b>。</dd>
+      <dt>Qwen3.8-27B 就是图 1 那条线，又测了一遍</dt>
+      <dd>两张图现在画的都是这个 checkpoint 在 <code>TRITON_ATTN</code> 和 vLLM 0.27.1 上的表现，
+        所以它们是同一个配置相隔一周的两次坐席，一次在收窄的 PCIe 链路上、一次在恢复之后。
+        在共有的十一档上最差只差 <b>1.78&nbsp;%</b> —— 当除了坐席之外什么都不变时，跨坐席对照
+        就该是这个样子。<b>原先画在这里的那条 0.23.1 阶梯不在了。</b>它没有被撤销：它在
+        <code>campaign-2026-09-03</code> 里，而它和这几条线之间的差，正是
+        <a href="depth-cost-is-the-stacks.zh.html">保留率百分比是由什么构成的</a>那篇的主题。
+        它离开这张图，是因为同一份权重在那里 500 档解码 <b>12.33&nbsp;tok/s</b>，在这里是
+        <b>50.52</b>，而首页画前一个数，等于在告诉读者一件关于这台机器、但已经不成立的事。
+        <b>那条阶梯在 0.27 上越过 32&nbsp;000 会是什么样，现在测了</b>，一直到 128&nbsp;000，
+        两种注意力后端都测：深度成本跨过那个版本从 <b>0.350</b> 降到 <b>0.233</b> 微秒每上下文
+        token，再加 <code>--attention-backend TRITON_ATTN</code> 降到 <b>0.111</b>——画在这里的
+        就是后面那条。</dd>
       <dt>刻意不画的</dt>
       <dd>Qwen3-8B，在每台机器上都没有。它自己的配置把上下文封顶在 40&nbsp;960，所以它在每台跑过它的机器上都只有
         图 1 的十一档 —— 这个天花板是模型自带的，不是 campaign 的。</dd>
@@ -7959,143 +7958,6 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
      }
     },
     {
-     "model": "Qwen3.8-27B",
-     "machine": "rdna3",
-     "machine_name": "RX 7900 XT",
-     "tp": 2,
-     "lit": true,
-     "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-     "patches": [
-      "vllm#45916 split-KV",
-      "window block-skip",
-      "vllm#45450 3D admission"
-     ],
-     "harness": "campaign-server",
-     "date": "2026-09-03",
-     "quant": "int4 AWQ",
-     "quant_label": "INT4 AWQ",
-     "arch": "hybrid SSM",
-     "attn_backend": "ROCM_ATTN",
-     "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long",
-     "source": "benchmarks/decode.jsonl",
-     "rungs_measured": 15,
-     "points": [
-      {
-       "ctx": 500,
-       "tok_s": 12.329999999999998,
-       "runs": 2,
-       "range_pct": 0.6488240064882407,
-       "graded": true
-      },
-      {
-       "ctx": 1000,
-       "tok_s": 12.215,
-       "runs": 2,
-       "range_pct": 0.4093327875562891,
-       "graded": true
-      },
-      {
-       "ctx": 2000,
-       "tok_s": 12.09,
-       "runs": 2,
-       "range_pct": 0.16542597187758123,
-       "graded": true
-      },
-      {
-       "ctx": 4000,
-       "tok_s": 11.95,
-       "runs": 2,
-       "range_pct": 0.3347280334728111,
-       "graded": true
-      },
-      {
-       "ctx": 6000,
-       "tok_s": 11.84,
-       "runs": 2,
-       "range_pct": 0.16891891891891533,
-       "graded": true
-      },
-      {
-       "ctx": 8000,
-       "tok_s": 11.74,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 12000,
-       "tok_s": 11.545,
-       "runs": 2,
-       "range_pct": 0.08661758336943753,
-       "graded": true
-      },
-      {
-       "ctx": 16000,
-       "tok_s": 11.395,
-       "runs": 2,
-       "range_pct": 0.08775778850372784,
-       "graded": true
-      },
-      {
-       "ctx": 20000,
-       "tok_s": 11.225000000000001,
-       "runs": 2,
-       "range_pct": 0.08908685968819409,
-       "graded": true
-      },
-      {
-       "ctx": 24000,
-       "tok_s": 11.08,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 32000,
-       "tok_s": 10.79,
-       "runs": 2,
-       "range_pct": 0.1853568118628485,
-       "graded": true
-      },
-      {
-       "ctx": 48000,
-       "tok_s": 10.254999999999999,
-       "runs": 2,
-       "range_pct": 0.0975134080936108,
-       "graded": true
-      },
-      {
-       "ctx": 64000,
-       "tok_s": 9.76,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 80000,
-       "tok_s": 9.34,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 96000,
-       "tok_s": 8.93,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      }
-     ],
-     "retained": {
-      "from_ctx": 500,
-      "to_ctx": 96000,
-      "from_tok_s": 12.329999999999998,
-      "to_tok_s": 8.93,
-      "change_pct": -27.575020275750195
-     }
-    },
-    {
      "model": "gemma-4-31B-it",
      "machine": "rdna3",
      "machine_name": "RX 7900 XT",
@@ -12288,9 +12150,9 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     {
      "model": "Qwen3.8-27B",
      "machine": "rdna3-027",
-     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · ROCM_ATTN",
      "tp": 2,
-     "lit": true,
+     "lit": false,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -12432,7 +12294,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
      "machine": "rdna3-027t",
      "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -13119,163 +12981,6 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
       "ctx": 128000,
       "tokens": 128032,
       "pct": 73.28990798019453
-     }
-    },
-    {
-     "model": "Qwen3.8-27B",
-     "machine": "rdna3",
-     "machine_name": "RX 7900 XT",
-     "tp": 2,
-     "lit": true,
-     "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-     "patches": [
-      "vllm#45916 split-KV",
-      "window block-skip",
-      "vllm#45450 3D admission"
-     ],
-     "harness": "campaign-server",
-     "date": "2026-09-03",
-     "quant": "int4 AWQ",
-     "quant_label": "INT4 AWQ",
-     "arch": "hybrid SSM",
-     "attn_backend": "ROCM_ATTN",
-     "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long",
-     "source": "benchmarks/prefill.jsonl",
-     "rungs_measured": 15,
-     "points": [
-      {
-       "ctx": 1000,
-       "tokens": 1028,
-       "tok_s": 977.0005702337959,
-       "ttft_s": 1.0522,
-       "runs": 2,
-       "range_pct": 4.98004181714503
-      },
-      {
-       "ctx": 2000,
-       "tokens": 2080,
-       "tok_s": 1025.7168922750698,
-       "ttft_s": 2.02785,
-       "runs": 2,
-       "range_pct": 1.9676011539315172
-      },
-      {
-       "ctx": 4000,
-       "tokens": 4102,
-       "tok_s": 1060.373017616875,
-       "ttft_s": 3.86845,
-       "runs": 2,
-       "range_pct": 0.3955072445036206
-      },
-      {
-       "ctx": 6000,
-       "tokens": 6020,
-       "tok_s": 1081.945705017029,
-       "ttft_s": 5.56405,
-       "runs": 2,
-       "range_pct": 0.14557741213685466
-      },
-      {
-       "ctx": 8000,
-       "tokens": 8070,
-       "tok_s": 1067.1921078035944,
-       "ttft_s": 7.5619,
-       "runs": 2,
-       "range_pct": 0.07405546225155413
-      },
-      {
-       "ctx": 12000,
-       "tokens": 12076,
-       "tok_s": 1037.3411904168777,
-       "ttft_s": 11.641300000000001,
-       "runs": 2,
-       "range_pct": 0.13744169465609524
-      },
-      {
-       "ctx": 16000,
-       "tokens": 16099,
-       "tok_s": 1010.260111072762,
-       "ttft_s": 15.935500000000001,
-       "runs": 2,
-       "range_pct": 0.1581374917636716
-      },
-      {
-       "ctx": 20000,
-       "tokens": 20114,
-       "tok_s": 980.9051695760417,
-       "ttft_s": 20.50555,
-       "runs": 2,
-       "range_pct": 0.22676787503871765
-      },
-      {
-       "ctx": 24000,
-       "tokens": 24084,
-       "tok_s": 951.216766755598,
-       "ttft_s": 25.31915,
-       "runs": 2,
-       "range_pct": 0.04305041835922401
-      },
-      {
-       "ctx": 32000,
-       "tokens": 32128,
-       "tok_s": 896.1010344991089,
-       "ttft_s": 35.8531,
-       "runs": 2,
-       "range_pct": 0.09036875472414561
-      },
-      {
-       "ctx": 48000,
-       "tokens": 48132,
-       "tok_s": 800.1137035180766,
-       "ttft_s": 60.15645,
-       "runs": 2,
-       "range_pct": 0.1022334263408084
-      },
-      {
-       "ctx": 64000,
-       "tokens": 64162,
-       "tok_s": 720.1360763347384,
-       "ttft_s": 89.09705,
-       "runs": 2,
-       "range_pct": 0.6335787772995799
-      },
-      {
-       "ctx": 80000,
-       "tokens": 80206,
-       "tok_s": 653.4953478604314,
-       "ttft_s": 122.73384999999999,
-       "runs": 2,
-       "range_pct": 0.2578750686953965
-      },
-      {
-       "ctx": 96000,
-       "tokens": 96218,
-       "tok_s": 598.9560070678526,
-       "ttft_s": 160.64285,
-       "runs": 2,
-       "range_pct": 0.06629613456186263
-      }
-     ],
-     "dropped": [
-      {
-       "ctx": 500,
-       "range_pct": 52.39097060328651
-      }
-     ],
-     "fit": {
-      "a_ms": 340.4374908092827,
-      "b_us_tok": 820.984521349174,
-      "c_ns_tok2": 8.764932763305458,
-      "r2": 0.9999946211423822,
-      "rungs": 14
-     },
-     "fit_scope": "the whole ladder",
-     "crossover_tokens": 93666.95028012534,
-     "quadratic_share_deepest": {
-      "ctx": 96000,
-      "tokens": 96218,
-      "pct": 50.564241330983485
      }
     },
     {
@@ -18142,9 +17847,9 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     {
      "model": "Qwen3.8-27B",
      "machine": "rdna3-027",
-     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · ROCM_ATTN",
      "tp": 2,
-     "lit": true,
+     "lit": false,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -18307,7 +18012,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
      "machine": "rdna3-027t",
      "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -18599,13 +18304,16 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
    "A-12B-tp2-long",
    "E-26B-tp2-long",
    "G-30B-tp2-long",
-   "D8-27B-tp2-long",
    "C-31B-tp2-long"
   ],
   "pair_absent": [
    {
     "cfg": "B-8B-tp2-long",
     "why": "its own config caps context at 40 960, so its ladder stops at 32 000 and is Figure 1's"
+   },
+   {
+    "cfg": "D8-27B-tp2-long",
+    "why": "superseded on the front page by the same checkpoint on vLLM 0.27.1, which is 4x faster at 500 tokens; the 0.23.1 ladder is kept in its campaign and in the depth-cost article"
    }
   ],
   "date": "2026-09-03",

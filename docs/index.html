@@ -1321,10 +1321,9 @@ rented the same day one click away as the background.</p>
   <figcaption>
     <p class="caplede"><b>Figure 3.</b> Decode rate at batch 1 against context length, 500 to
     128&nbsp;000, log axis. The default view is 2&times; RX 7900 XT at tensor parallelism 2 on the
-    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; <b>plus the same
-    <code>Qwen3.8-27B</code> on vLLM 0.27.1</b>, because on the 0.23.1 ladder those weights decode
-    12.33&nbsp;tok/s at 500 and on 0.27.1 they do 49.36, and the six-on-one-stack comparison is not
-    worth leaving a reader with the first number alone. The switch above
+    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; with
+    <code>Qwen3.8-27B</code> drawn as Figure&nbsp;1 draws it, on the fastest configuration it has been
+    measured in rather than on that campaign's stack. The switch above
     the chart puts one model on every machine rented that day instead. The controls are Figure 1's.</p>
     <dl class="capnotes">
       <dt>The whole ladder</dt>
@@ -1332,24 +1331,21 @@ rented the same day one click away as the background.</p>
         is only readable against where it started. Where a rung is on both this ladder and Figure 1's,
         the two are different sittings on different prompt cuts, and the tooltip carries each point's
         own date.</dd>
-      <dt>Qwen3.8-27B is a quarter of its Figure&nbsp;1 line</dt>
-      <dd>At every rung the two ladders share. The pair's own six lines here ran on vLLM 0.23.1
-        &mdash; the two beside them, added 2026-09-07, are the same checkpoint on 0.27.1 and are
-        labelled as such &mdash; while
-        Figure 1 takes each model's fastest measured configuration &mdash; for this one model that is a
-        0.27.1 run, and for the pair's other four it is 0.23.1 as here. Read as time per step the gap
-        is flat: <b>61.0&nbsp;ms</b> at 500 tokens and <b>68.8&nbsp;ms</b> at 32&nbsp;000, so it is a
-        per-step cost rather than anything context does.
-        <code>Qwen3.8-27B-AWQ-INT4</code> is asymmetric, and 0.23.x is before
-        <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>, so its linear layers
-        are served by <code>TritonW4A16LinearKernel</code> there &mdash; the flat cost
-        <a href="w4a16-two-problems.html">the W4A16 article</a> separates out. <b>What the line does
-        past 32&nbsp;000 on 0.27 is now measured</b>, on this ladder and to 128&nbsp;000: switch on
-        either 0.27 line above, or read
-        <a href="depth-cost-is-the-stacks.html">what a retention percentage is made of</a>, which is
-        what those two lines are for. The depth cost falls from <b>0.350</b> to <b>0.233</b>
-        microseconds per context token across that version, and to <b>0.111</b> with
-        <code>--attention-backend TRITON_ATTN</code>.</dd>
+      <dt>Qwen3.8-27B is Figure&nbsp;1's line, measured again</dt>
+      <dd>Both figures now draw this checkpoint on <code>TRITON_ATTN</code> and vLLM 0.27.1, so the
+        two are the same configuration in two sittings a week apart, on the narrowed and the restored
+        PCIe link. They agree to <b>1.78&nbsp;%</b> at worst across the eleven rungs they share &mdash;
+        which is what a cross-sitting control looks like when nothing but the sitting differs.
+        <b>The 0.23.1 ladder that used to be drawn here is not.</b> It is not withdrawn: it is in
+        <code>campaign-2026-09-03</code>, and the difference between it and these lines is the subject
+        of <a href="depth-cost-is-the-stacks.html">what a retention percentage is made of</a>. It is
+        off this figure because those weights decode <b>12.33&nbsp;tok/s</b> at 500 there and
+        <b>50.52</b> here, and a front page that draws the first is telling a reader something about
+        this machine that stopped being true. <b>What that ladder does past
+        32&nbsp;000 on 0.27 is now measured</b>, to 128&nbsp;000 and on both attention backends: the
+        depth cost falls from <b>0.350</b> to <b>0.233</b> microseconds per context token across the
+        version, and to <b>0.111</b> with <code>--attention-backend TRITON_ATTN</code>, which is the
+        line drawn here.</dd>
       <dt>Deliberately absent</dt>
       <dd>Qwen3-8B, on every machine. Its own config caps context at 40&nbsp;960, so its ladder is
         Figure 1's eleven rungs everywhere it was run &mdash; a ceiling the model carries, not the
@@ -8005,143 +8001,6 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
      }
     },
     {
-     "model": "Qwen3.8-27B",
-     "machine": "rdna3",
-     "machine_name": "RX 7900 XT",
-     "tp": 2,
-     "lit": true,
-     "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-     "patches": [
-      "vllm#45916 split-KV",
-      "window block-skip",
-      "vllm#45450 3D admission"
-     ],
-     "harness": "campaign-server",
-     "date": "2026-09-03",
-     "quant": "int4 AWQ",
-     "quant_label": "INT4 AWQ",
-     "arch": "hybrid SSM",
-     "attn_backend": "ROCM_ATTN",
-     "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long",
-     "source": "benchmarks/decode.jsonl",
-     "rungs_measured": 15,
-     "points": [
-      {
-       "ctx": 500,
-       "tok_s": 12.329999999999998,
-       "runs": 2,
-       "range_pct": 0.6488240064882407,
-       "graded": true
-      },
-      {
-       "ctx": 1000,
-       "tok_s": 12.215,
-       "runs": 2,
-       "range_pct": 0.4093327875562891,
-       "graded": true
-      },
-      {
-       "ctx": 2000,
-       "tok_s": 12.09,
-       "runs": 2,
-       "range_pct": 0.16542597187758123,
-       "graded": true
-      },
-      {
-       "ctx": 4000,
-       "tok_s": 11.95,
-       "runs": 2,
-       "range_pct": 0.3347280334728111,
-       "graded": true
-      },
-      {
-       "ctx": 6000,
-       "tok_s": 11.84,
-       "runs": 2,
-       "range_pct": 0.16891891891891533,
-       "graded": true
-      },
-      {
-       "ctx": 8000,
-       "tok_s": 11.74,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 12000,
-       "tok_s": 11.545,
-       "runs": 2,
-       "range_pct": 0.08661758336943753,
-       "graded": true
-      },
-      {
-       "ctx": 16000,
-       "tok_s": 11.395,
-       "runs": 2,
-       "range_pct": 0.08775778850372784,
-       "graded": true
-      },
-      {
-       "ctx": 20000,
-       "tok_s": 11.225000000000001,
-       "runs": 2,
-       "range_pct": 0.08908685968819409,
-       "graded": true
-      },
-      {
-       "ctx": 24000,
-       "tok_s": 11.08,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 32000,
-       "tok_s": 10.79,
-       "runs": 2,
-       "range_pct": 0.1853568118628485,
-       "graded": true
-      },
-      {
-       "ctx": 48000,
-       "tok_s": 10.254999999999999,
-       "runs": 2,
-       "range_pct": 0.0975134080936108,
-       "graded": true
-      },
-      {
-       "ctx": 64000,
-       "tok_s": 9.76,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 80000,
-       "tok_s": 9.34,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      },
-      {
-       "ctx": 96000,
-       "tok_s": 8.93,
-       "runs": 2,
-       "range_pct": 0.0,
-       "graded": true
-      }
-     ],
-     "retained": {
-      "from_ctx": 500,
-      "to_ctx": 96000,
-      "from_tok_s": 12.329999999999998,
-      "to_tok_s": 8.93,
-      "change_pct": -27.575020275750195
-     }
-    },
-    {
      "model": "gemma-4-31B-it",
      "machine": "rdna3",
      "machine_name": "RX 7900 XT",
@@ -12334,9 +12193,9 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     {
      "model": "Qwen3.8-27B",
      "machine": "rdna3-027",
-     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · ROCM_ATTN",
      "tp": 2,
-     "lit": true,
+     "lit": false,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -12478,7 +12337,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
      "machine": "rdna3-027t",
      "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -13165,163 +13024,6 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
       "ctx": 128000,
       "tokens": 128032,
       "pct": 73.28990798019453
-     }
-    },
-    {
-     "model": "Qwen3.8-27B",
-     "machine": "rdna3",
-     "machine_name": "RX 7900 XT",
-     "tp": 2,
-     "lit": true,
-     "vllm": "0.23.1.dev1+g9ddef7117.d20260715",
-     "patches": [
-      "vllm#45916 split-KV",
-      "window block-skip",
-      "vllm#45450 3D admission"
-     ],
-     "harness": "campaign-server",
-     "date": "2026-09-03",
-     "quant": "int4 AWQ",
-     "quant_label": "INT4 AWQ",
-     "arch": "hybrid SSM",
-     "attn_backend": "ROCM_ATTN",
-     "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long",
-     "source": "benchmarks/prefill.jsonl",
-     "rungs_measured": 15,
-     "points": [
-      {
-       "ctx": 1000,
-       "tokens": 1028,
-       "tok_s": 977.0005702337959,
-       "ttft_s": 1.0522,
-       "runs": 2,
-       "range_pct": 4.98004181714503
-      },
-      {
-       "ctx": 2000,
-       "tokens": 2080,
-       "tok_s": 1025.7168922750698,
-       "ttft_s": 2.02785,
-       "runs": 2,
-       "range_pct": 1.9676011539315172
-      },
-      {
-       "ctx": 4000,
-       "tokens": 4102,
-       "tok_s": 1060.373017616875,
-       "ttft_s": 3.86845,
-       "runs": 2,
-       "range_pct": 0.3955072445036206
-      },
-      {
-       "ctx": 6000,
-       "tokens": 6020,
-       "tok_s": 1081.945705017029,
-       "ttft_s": 5.56405,
-       "runs": 2,
-       "range_pct": 0.14557741213685466
-      },
-      {
-       "ctx": 8000,
-       "tokens": 8070,
-       "tok_s": 1067.1921078035944,
-       "ttft_s": 7.5619,
-       "runs": 2,
-       "range_pct": 0.07405546225155413
-      },
-      {
-       "ctx": 12000,
-       "tokens": 12076,
-       "tok_s": 1037.3411904168777,
-       "ttft_s": 11.641300000000001,
-       "runs": 2,
-       "range_pct": 0.13744169465609524
-      },
-      {
-       "ctx": 16000,
-       "tokens": 16099,
-       "tok_s": 1010.260111072762,
-       "ttft_s": 15.935500000000001,
-       "runs": 2,
-       "range_pct": 0.1581374917636716
-      },
-      {
-       "ctx": 20000,
-       "tokens": 20114,
-       "tok_s": 980.9051695760417,
-       "ttft_s": 20.50555,
-       "runs": 2,
-       "range_pct": 0.22676787503871765
-      },
-      {
-       "ctx": 24000,
-       "tokens": 24084,
-       "tok_s": 951.216766755598,
-       "ttft_s": 25.31915,
-       "runs": 2,
-       "range_pct": 0.04305041835922401
-      },
-      {
-       "ctx": 32000,
-       "tokens": 32128,
-       "tok_s": 896.1010344991089,
-       "ttft_s": 35.8531,
-       "runs": 2,
-       "range_pct": 0.09036875472414561
-      },
-      {
-       "ctx": 48000,
-       "tokens": 48132,
-       "tok_s": 800.1137035180766,
-       "ttft_s": 60.15645,
-       "runs": 2,
-       "range_pct": 0.1022334263408084
-      },
-      {
-       "ctx": 64000,
-       "tokens": 64162,
-       "tok_s": 720.1360763347384,
-       "ttft_s": 89.09705,
-       "runs": 2,
-       "range_pct": 0.6335787772995799
-      },
-      {
-       "ctx": 80000,
-       "tokens": 80206,
-       "tok_s": 653.4953478604314,
-       "ttft_s": 122.73384999999999,
-       "runs": 2,
-       "range_pct": 0.2578750686953965
-      },
-      {
-       "ctx": 96000,
-       "tokens": 96218,
-       "tok_s": 598.9560070678526,
-       "ttft_s": 160.64285,
-       "runs": 2,
-       "range_pct": 0.06629613456186263
-      }
-     ],
-     "dropped": [
-      {
-       "ctx": 500,
-       "range_pct": 52.39097060328651
-      }
-     ],
-     "fit": {
-      "a_ms": 340.4374908092827,
-      "b_us_tok": 820.984521349174,
-      "c_ns_tok2": 8.764932763305458,
-      "r2": 0.9999946211423822,
-      "rungs": 14
-     },
-     "fit_scope": "the whole ladder",
-     "crossover_tokens": 93666.95028012534,
-     "quadratic_share_deepest": {
-      "ctx": 96000,
-      "tokens": 96218,
-      "pct": 50.564241330983485
      }
     },
     {
@@ -18188,9 +17890,9 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     {
      "model": "Qwen3.8-27B",
      "machine": "rdna3-027",
-     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · ROCM_ATTN",
      "tp": 2,
-     "lit": true,
+     "lit": false,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -18353,7 +18055,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
      "machine": "rdna3-027t",
      "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -18645,13 +18347,16 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
    "A-12B-tp2-long",
    "E-26B-tp2-long",
    "G-30B-tp2-long",
-   "D8-27B-tp2-long",
    "C-31B-tp2-long"
   ],
   "pair_absent": [
    {
     "cfg": "B-8B-tp2-long",
     "why": "its own config caps context at 40 960, so its ladder stops at 32 000 and is Figure 1's"
+   },
+   {
+    "cfg": "D8-27B-tp2-long",
+    "why": "superseded on the front page by the same checkpoint on vLLM 0.27.1, which is 4x faster at 500 tokens; the 0.23.1 ladder is kept in its campaign and in the depth-cost article"
    }
   ],
   "date": "2026-09-03",

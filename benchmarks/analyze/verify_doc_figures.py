@@ -6686,29 +6686,47 @@ def _run_checks(_opened, _audit_state):
     # as time per step at two depths and calls the ratio a quarter; both are
     # recomputed here from the two series the figures draw, so the sentence cannot
     # drift from the lines above it.
-    def _xq(block):
+    def _xq(block, cfg):
+        """One named line's points. It used to pick by (model, machine, not-alt),
+        which silently found a different line once Figure 3 stopped drawing the
+        0.23.1 ladder -- naming the cfg is what makes the comparison the one the
+        caption claims."""
         for _s in block["series"]:
-            if (_s["model"] == "Qwen3.8-27B" and _s["machine"] == "rdna3"
-                    and not _s.get("spec") and not _s.get("alt")):
+            if _s["cfg"] == cfg:
                 return {_p["ctx"]: _p["tok_s"] for _p in _s["points"]}
         return {}
-    _q1, _q3 = _xq(XFIG["best"]), _xq(XFIG["long"]["decode"])
+    # Until 2026-09-07b this block checked a "quarter of its Figure 1 line"
+    # claim: Figure 3 drew the 0.23.1 ladder and Figure 1 the 0.27 one, and the
+    # gap was the stack. Figure 3 now draws the same configuration Figure 1
+    # does, so what is checked is the opposite -- that two sittings of one
+    # configuration agree -- and the old claim must be gone rather than stale.
+    _q1 = _xq(XFIG["best"], "Q38-triton-tp2")
+    _q3 = _xq(XFIG["long"]["decode"], "D8-27B-tp2-triton-long-027b")
     _qsh = sorted(set(_q1) & set(_q3))
     ck("index figure 3, the two Qwen3.8 ladders overlap", "11", len(_qsh))
-    # a quarter is a claim about every shared rung, not only the two printed
-    ck("index figure 3, and the ratio is a quarter at each of them", str(len(_qsh)),
-       sum(1 for _c in _qsh if 0.2 <= _q3[_c] / _q1[_c] < 0.3))
-    for _lang, _fn, _dt in (("en", "index.html", r"<dt>Qwen3\.8-27B is a quarter"),
-                            ("zh", "index.zh.html", r"<dt>Qwen3\.8-27B 只有它图 1")):
-        _blk = re.search(_dt + r"[\s\S]*?</dd>", XI[_fn])
-        ck("index figure 3 %s, the caption carries that block" % _lang, "1", 1 if _blk else 0)
-        _ms = re.findall(r"<b>([\d.]+)&nbsp;ms</b>", _blk.group(0)) if _blk else []
-        ck("index figure 3 %s, and prints the gap at two depths" % _lang, "2", len(_ms))
-        if len(_ms) == 2:
-            ck("index figure 3 %s, per-step gap at the shallowest shared rung" % _lang,
-               _ms[0], 1000.0 / _q3[_qsh[0]] - 1000.0 / _q1[_qsh[0]])
-            ck("index figure 3 %s, and at the deepest" % _lang,
-               _ms[1], 1000.0 / _q3[_qsh[-1]] - 1000.0 / _q1[_qsh[-1]])
+    ck("index figure 3, and they are the same configuration now", "1",
+       1 if all(abs(_q3[_c] / _q1[_c] - 1) < 0.03 for _c in _qsh) else 0)
+    ck("index figure 3, worst disagreement across them", "1.78",
+       max(abs(_q3[_c] / _q1[_c] - 1) for _c in _qsh) * 100)
+    ck("index figure 3, the 0.23.1 ladder is no longer drawn", "0",
+       sum(1 for _x in XFIG["long"]["decode"]["series"]
+           if _x["cfg"] == "D8-27B-tp2-long"))
+    ck("index figure 3, and its absence says why", "1",
+       sum(1 for _a in XFIG["long"]["pair_absent"]
+           if _a["cfg"] == "D8-27B-tp2-long" and "superseded" in _a["why"]))
+    for _lang, _fn in (("en", "index.html"), ("zh", "index.zh.html")):
+        ck("index figure 3 %s, the old quarter claim is gone" % _lang, "0",
+           sum(1 for _t in ("is a quarter of its Figure", "只有它图 1")
+               if _t in XI[_fn]))
+        ck("index figure 3 %s, and the two rates are printed" % _lang, "2",
+           sum(1 for _t in ("12.33", "50.52") if _t in XI[_fn]))
+    _dec500 = [json.loads(_l) for _l in
+               open(os.path.join(HERE, "..", "decode.jsonl"), encoding="utf-8")]
+    for _c, _claim in (("D8-27B-tp2-long", "12.33"),
+                       ("D8-27B-tp2-triton-long-027b", "50.52")):
+        ck(f"index figure 3, {_c} at 500 is what the caption prints", _claim,
+           next(_r["decode_tok_s"] for _r in _dec500
+                if _r["cfg"] == _c and _r["ctx"] == 500))
 
     ck("index, the two versions share one data block", "1",
        1 if xblock(XI[XIP[0]], "articles") == xblock(XI[XIP[1]], "articles") else 0)
@@ -7308,15 +7326,19 @@ def _run_checks(_opened, _audit_state):
        len(XL["pair_cfgs"]) + len(XL["pair_absent"]))
     ck("long figures, and every absent one says why", "0",
        sum(1 for a in XL["pair_absent"] if not a.get("why")))
-    ck("long figures, and the absent one is the capped 8B", "1",
-       1 if [a["cfg"] for a in XL["pair_absent"]] == ["B-8B-tp2-long"] else 0)
+    # two absent since 2026-09-07b, for two different kinds of reason: one
+    # cannot be drawn (its own context ceiling) and one is not drawn (a newer
+    # measurement of the same checkpoint supersedes it on this page)
+    ck("long figures, and the absent ones are named", "1",
+       1 if sorted(a["cfg"] for a in XL["pair_absent"])
+       == ["B-8B-tp2-long", "D8-27B-tp2-long"] else 0)
     ck("long figures, decode lines", str(len(XLP["series"])), len(XLD["series"]))
     ck("long figures, and the same lines on both", "1",
        1 if [(x["machine"], x["cfg"]) for x in XLD["series"]]
        == [(x["machine"], x["cfg"]) for x in XLP["series"]] else 0)
-    ck("long figures, lines on the pair", "5",
+    ck("long figures, lines on the pair", "4",
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3"))
-    ck("long figures, and every one of them is lit", "5",
+    ck("long figures, and every one of them is lit", "4",
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3" and x["lit"]))
     # one other line is lit since 2026-09-07b, deliberately: the same pair on
     # vllm 0.27, because the default view's own 27B line is 12.33 tok/s at 500
@@ -7324,8 +7346,9 @@ def _run_checks(_opened, _audit_state):
     # the switches should not leave with the first number alone.
     ck("long figures, and one other line is", "1",
        sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
-    ck("long figures, and it is the pair on 0.27", "1",
-       sum(1 for x in XLD["series"] if x["lit"] and x["cfg"] == "D8-27B-tp2-long-027b"))
+    ck("long figures, and it is the pair's Triton arm on 0.27", "1",
+       sum(1 for x in XLD["series"] if x["lit"]
+           and x["cfg"] == "D8-27B-tp2-triton-long-027b"))
     # nine since 2026-09-07: eight machines, plus the pair a second time on
     # vllm 0.27 -- campaign-2026-09-06, which is why the row exists
     ck("long figures, machines offered", "10", len(XL["machines"]))
@@ -9536,18 +9559,11 @@ def _run_checks(_opened, _audit_state):
        (1 if "past 32&nbsp;000 on 0.27 is not measured" in _ix_en else 0)
        + (1 if "越过 32&nbsp;000 会是什么样，没有实测" in _ix_zh else 0))
     ck("index caption, says it is measured and where", "2",
-       (1 if "past 32&nbsp;000 on 0.27 is now measured" in _ix_en else 0)
+       (1 if "32&nbsp;000 on 0.27 is now measured" in _ix_en else 0)
        + (1 if "越过 32&nbsp;000 会是什么样，现在测了" in _ix_zh else 0))
     ck("index caption, and stops calling the whole ladder 0.23.1", "0",
        (1 if "The whole of this ladder ran on vLLM 0.23.1" in _ix_en else 0)
        + (1 if "这条阶梯整体跑在 vLLM 0.23.1 上" in _ix_zh else 0))
-    ck("index caption, says why the 0.27 line is lit", "2",
-       (1 if "12.33&nbsp;tok/s at 500 and on 0.27.1 they do 49.36" in _ix_en else 0)
-       + (1 if "500 档解码 12.33&nbsp;tok/s，在 0.27.1 上是 49.36" in _ix_zh else 0))
-    ck("index caption, and those two rates are the rows'", "2",
-       sum(1 for _c, _v in (("D8-27B-tp2-long", 12.33), ("D8-27B-tp2-long-027b", 49.36))
-           if any(abs(_r["decode_tok_s"] - _v) < 0.005 for _r in XDEC
-                  if _r["cfg"] == _c and _r["ctx"] == 500)))
     ck("index caption, quotes the three costs", "2",
        (1 if all(v in _ix_en for v in ("0.350", "0.233", "0.111")) else 0)
        + (1 if all(v in _ix_zh for v in ("0.350", "0.233", "0.111")) else 0))
@@ -9738,17 +9754,20 @@ def _run_checks(_opened, _audit_state):
     # the front page draws it as an extra line, not in place of the 0.23 one
     _lng = json.load(open(os.path.join(ROOT, "site", "src", "figures-index.json"),
                           encoding="utf-8"))["long"]["decode"]["series"]
-    ck("front page, the 0.23 27B line is still drawn", "1",
+    # inverted 2026-09-07b: the page follows Figure 1's rule and draws this
+    # checkpoint's fastest measured configuration, so the campaign's own 0.23.1
+    # ladder is declared absent instead of drawn
+    ck("front page, the 0.23 27B line is not drawn", "0",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long"))
     ck("front page, and the 0.27 one is beside it", "1",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b"))
     # the split is the point: the backend a current vLLM picks on its own is
     # lit, the one behind a flag is not -- one model drawn three times by
     # default would be a worse default than the one this fixes
-    ck("front page, the 0.27 default-backend line is lit", "1",
-       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b" and _x["lit"]))
-    ck("front page, and the Triton one is not", "0",
+    ck("front page, the fastest configuration is the lit one", "1",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-triton-long-027b" and _x["lit"]))
+    ck("front page, and the default backend is one click away", "0",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b" and _x["lit"]))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
