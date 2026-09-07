@@ -1,0 +1,11 @@
+14:16:27 | ===== start stock (limit 20) =====
+14:16:39 | vllm=0.27.1.dev5+gf46a9dfe2.d20260827 model=/models/gemma-3-27b-it-w4a16 arm=stock cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+14:16:39 | tokenizer=/data/incoming/gemma-3-27b-it-w4a16 config.json=e1d4bf4f0bf0a483da877eafa26f2f36, the served checkpoint
+14:19:19 | server healthy after 170s
+14:20:56 | lm_eval exit=0
+14:20:56 | routes: pid=148 (2, 128, 16, 0, False) pid=148 (2, 128, 16, 1023, False) pid=149 (2, 128, 16, 0, False) pid=149 (2, 128, 16, 1023, False) 
+14:20:56 | restore: stopping the server, returning the guest to its services
+14:20:57 | container restored: cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+14:21:20 | services: active active 
+14:21:20 | vram: 27971584 27971584, both at baseline
+14:21:20 | ===== END stock =====

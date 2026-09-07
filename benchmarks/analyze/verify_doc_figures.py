@@ -9778,6 +9778,161 @@ def _run_checks(_opened, _audit_state):
     ck("front page, and the default backend is one click away", "0",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b" and _x["lit"]))
 
+    # --- vllm#54210's gsm8k half (benchmarks/vllm-54210-gsm8k/) -------------
+    # tjtanaa (MEMBER) asked for an end-to-end gsm8k score against the gate this
+    # PR widens. Two arms, full 1 319. Every number the README publishes is
+    # recomputed here from the per-document rows, and cross-checked against
+    # lm_eval's own aggregate output -- if strip_samples.py ever dropped a row,
+    # the recomputation and the aggregate would part company and this would say so.
+    _G8 = os.path.join(HERE, "..", "vllm-54210-gsm8k")
+    _r8 = open(os.path.join(_G8, "README.md"), encoding="utf-8").read()
+
+    def _g8load(arm):
+        by = {}
+        for _l in open(os.path.join(_G8, f"samples-{arm}.jsonl"), encoding="utf-8"):
+            _d = json.loads(_l)
+            by.setdefault(_d["doc_id"], {})[_d["filter"]] = _d
+        return by
+
+    _g8s, _g8w = _g8load("stock"), _g8load("widened")
+    ck("54210 gsm8k, documents per arm", "1319", len(_g8s))
+    ck("54210 gsm8k, both arms have the same documents", "1",
+       1 if set(_g8s) == set(_g8w) else 0)
+    _g8rows = sum(len(v) for v in _g8s.values())
+    ck("54210 gsm8k README, rows per arm", "2638", _g8rows)
+    ck("54210 gsm8k, rows per arm agree", "2638", sum(len(v) for v in _g8w.values()))
+
+    # The paired table's own precondition: the two arms were asked the same
+    # thing. lm_eval hashes prompt, document and target into every record, and
+    # those hashes are what survive strip_samples.py dropping the prompt text.
+    for _f, _lbl in (("prompt_hash", "prompt"), ("doc_hash", "document"),
+                     ("target_hash", "target")):
+        ck(f"54210 gsm8k, identical {_lbl} on every row", "2638",
+           sum(1 for _i in _g8s for _k in _g8s[_i]
+               if _g8s[_i][_k][_f] == _g8w[_i][_k][_f]))
+
+    _g8agg = {a: json.load(open(os.path.join(_G8, f"results-{a}.json"),
+                                encoding="utf-8"))["results"]["gsm8k_local"]
+              for a in ("stock", "widened")}
+    for _arm, _by, _filt, _n, _rate, _se in (
+            ("stock",   _g8s, "strict-match",     "1209", "0.9166", "0.0076"),
+            ("stock",   _g8s, "flexible-extract", "1211", "0.9181", "0.0076"),
+            ("widened", _g8w, "strict-match",     "1207", "0.9151", "0.0077"),
+            ("widened", _g8w, "flexible-extract", "1213", "0.9196", "0.0075")):
+        _hit = sum(_by[_i][_filt]["exact_match"] for _i in _by)
+        ck(f"54210 gsm8k README, {_arm} {_filt} correct", _n, _hit)
+        ck(f"54210 gsm8k README, {_arm} {_filt} rate", _rate, _hit / len(_by))
+        # lm_eval's own aggregate, independently of the per-document rows
+        ck(f"54210 gsm8k, {_arm} {_filt} agrees with lm_eval's aggregate", _rate,
+           _g8agg[_arm][f"exact_match,{_filt}"])
+        ck(f"54210 gsm8k README, {_arm} {_filt} stderr", _se,
+           _g8agg[_arm][f"exact_match_stderr,{_filt}"])
+        ck(f"54210 gsm8k README, publishes the {_arm} {_filt} count", "1",
+           1 if f"{_n}/1319" in _r8 else 0)
+
+    # the paired transitions, which are the result -- and they run OPPOSITE ways
+    for _filt, _rw, _wr in (("strict-match", "4", "2"),
+                            ("flexible-extract", "3", "5")):
+        ck(f"54210 gsm8k README, {_filt} right->wrong", _rw,
+           sum(1 for _i in _g8s if _g8s[_i][_filt]["exact_match"] == 1
+               and _g8w[_i][_filt]["exact_match"] == 0))
+        ck(f"54210 gsm8k README, {_filt} wrong->right", _wr,
+           sum(1 for _i in _g8s if _g8s[_i][_filt]["exact_match"] == 0
+               and _g8w[_i][_filt]["exact_match"] == 1))
+    ck("54210 gsm8k, and the two filters move opposite ways", "1",
+       1 if (sum(_g8w[_i]["strict-match"]["exact_match"] for _i in _g8w)
+             - sum(_g8s[_i]["strict-match"]["exact_match"] for _i in _g8s)) *
+            (sum(_g8w[_i]["flexible-extract"]["exact_match"] for _i in _g8w)
+             - sum(_g8s[_i]["flexible-extract"]["exact_match"] for _i in _g8s)) < 0
+       else 0)
+
+    # 277 differing continuations, stated in "Not established" and NOT attributed
+    ck("54210 gsm8k README, continuations that differ", "277",
+       sum(1 for _i in _g8s
+           if _g8s[_i]["strict-match"]["resps"] != _g8w[_i]["strict-match"]["resps"]))
+    ck("54210 gsm8k README, publishes that count", "1",
+       1 if "**277 of the 1 319 continuations differ between the arms**" in _r8 else 0)
+    ck("54210 gsm8k README, and does not attribute it", "1",
+       1 if "Nothing here separates that from this box's own greedy-decode" in _r8
+       else 0)
+    ck("54210 gsm8k README, names the control that was not run", "1",
+       1 if "a second stock arm compared against the first" in _r8
+       and "was not run" in _r8 else 0)
+
+    # the routing verdict, read out of the dispatch: the widened arm reaches the
+    # kernel on BOTH ranks and the stock arm reaches it nowhere. Without this the
+    # score is about a checkpoint rather than about the gate.
+    _g8rt = {a: sorted(set(open(os.path.join(_G8, f"route-{a}.txt"),
+                                encoding="utf-8").read().split("\n")) - {""})
+             for a in ("stock", "widened")}
+    for _arm, _want in (("stock", "False"), ("widened", "True")):
+        ck(f"54210 gsm8k, {_arm} decode layers routed the same on both ranks", "2",
+           sum(1 for _x in _g8rt[_arm] if _x.endswith(f"(2, 128, 16, 0, {_want})")))
+        ck(f"54210 gsm8k, {_arm} sliding layers stay off the custom kernel", "2",
+           sum(1 for _x in _g8rt[_arm] if _x.endswith("(2, 128, 16, 1023, False)")))
+        ck(f"54210 gsm8k, {_arm} recorded nothing else", "4", len(_g8rt[_arm]))
+    ck("54210 gsm8k, the stock arm never reached the custom kernel", "0",
+       sum(1 for _x in _g8rt["stock"] if _x.endswith("True)")))
+
+    # why this checkpoint: the box was enumerated, not remembered
+    _g8ck = [json.loads(_l) for _l in
+             open(os.path.join(_G8, "checkpoints.jsonl"), encoding="utf-8")]
+    ck("54210 gsm8k README, checkpoints on the guest", "11", len(_g8ck))
+    ck("54210 gsm8k README, reached by the change", "1",
+       sum(1 for _c in _g8ck if _c["reached_by_54210"]))
+    ck("54210 gsm8k, and it is the one that was measured", "1",
+       1 if [_c["checkpoint"] for _c in _g8ck if _c["reached_by_54210"]]
+       == ["gemma-3-27b-it-w4a16"] else 0)
+    ck("54210 gsm8k README, refused on head_dim before gqa_ratio is read", "7",
+       sum(1 for _c in _g8ck if _c["head_dim"] == 256))
+    ck("54210 gsm8k README, already admitted at gqa_ratio 4 or 16", "3",
+       sum(1 for _c in _g8ck if _c["head_dim"] == 128 and _c["gqa_ratio"] >= 3))
+    # the three groups have to be the whole box, or "the only one" is not a claim
+    ck("54210 gsm8k, and those three groups are every checkpoint", "11",
+       sum(1 for _c in _g8ck if _c["head_dim"] == 256)
+       + sum(1 for _c in _g8ck if _c["head_dim"] == 128 and _c["gqa_ratio"] >= 3)
+       + sum(1 for _c in _g8ck if _c["reached_by_54210"]))
+
+    # the 20-question validation both arms were launched on
+    for _arm in ("stock", "widened"):
+        _v = json.load(open(os.path.join(_G8, "validate-20q", f"results-{_arm}.json"),
+                            encoding="utf-8"))["results"]["gsm8k_local"]
+        ck(f"54210 gsm8k, 20-question validation {_arm} documents", "20", _v["sample_len"])
+        ck(f"54210 gsm8k README, 20-question validation {_arm} score", "0.75",
+           _v["exact_match,strict-match"])
+    ck("54210 gsm8k README, says both validation arms scored it", "1",
+       1 if "Both scored\n0.75" in _r8 else 0)
+
+    # The 20-question widened validation ran BEFORE the route file was cleared
+    # on both sides of the copy, so it carries an earlier attempt's pids as well
+    # as its own. That is the campaign's own evidence for the defect, and the
+    # README explains it; if the file is ever quietly tidied, this says so.
+    _g8v = [_x for _x in open(os.path.join(_G8, "validate-20q", "route-widened.txt"),
+                              encoding="utf-8").read().split("\n") if _x]
+    ck("54210 gsm8k, the validation route file kept both runs", "8", len(_g8v))
+    ck("54210 gsm8k, from two attempts", "2",
+       len({_x.split()[0] for _x in _g8v}) // 2)
+    ck("54210 gsm8k, while the stock validation carries only its own", "4",
+       len([_x for _x in open(os.path.join(_G8, "validate-20q", "route-stock.txt"),
+                              encoding="utf-8").read().split("\n") if _x]))
+    ck("54210 gsm8k README, explains why that file is longer", "1",
+       1 if "a stale `True` from a" in _r8 and "would have inverted exactly that" in _r8
+       else 0)
+
+    # the stack the run asserted, quoted in the README as it is in the log
+    _g8log = open(os.path.join(_G8, "logs", "progress.log"), encoding="utf-8").read()
+    ck("54210 gsm8k, each arm asserted the patched runtime before running", "2",
+       sum(1 for _l in _g8log.splitlines()
+           if "vllm=" in _l and "cppd=84c6d4f9b2dfe2714b3a8f43ee832b02" in _l))
+    ck("54210 gsm8k, and each put it back afterwards", "2",
+       _g8log.count("container restored: cppd=84c6d4f9b2dfe2714b3a8f43ee832b02"))
+    ck("54210 gsm8k README, publishes that md5", "1",
+       1 if "84c6d4f9b2dfe2714b3a8f43ee832b02" in _r8 else 0)
+    ck("54210 gsm8k, both arms returned the cards to baseline", "2",
+       _g8log.count("both at baseline"))
+    ck("54210 gsm8k, and neither warned about vram", "0",
+       _g8log.count("WARNING vram"))
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

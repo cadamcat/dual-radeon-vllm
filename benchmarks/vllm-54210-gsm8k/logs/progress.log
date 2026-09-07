@@ -1,0 +1,22 @@
+14:24:38 | ===== start stock =====
+14:24:50 | vllm=0.27.1.dev5+gf46a9dfe2.d20260827 model=/models/gemma-3-27b-it-w4a16 arm=stock cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+14:24:50 | tokenizer=/data/incoming/gemma-3-27b-it-w4a16 config.json=e1d4bf4f0bf0a483da877eafa26f2f36, the served checkpoint
+14:27:50 | server healthy after 190s
+15:49:09 | lm_eval exit=0
+15:49:09 | routes: pid=148 (2, 128, 16, 0, False) pid=148 (2, 128, 16, 1023, False) pid=149 (2, 128, 16, 0, False) pid=149 (2, 128, 16, 1023, False) 
+15:49:09 | restore: stopping the server, returning the guest to its services
+15:49:10 | container restored: cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+15:49:33 | services: active active 
+15:49:33 | vram: 27971584 27971584, both at baseline
+15:49:33 | ===== END stock =====
+15:49:33 | ===== start widened =====
+15:49:45 | vllm=0.27.1.dev5+gf46a9dfe2.d20260827 model=/models/gemma-3-27b-it-w4a16 arm=widened cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+15:49:45 | tokenizer=/data/incoming/gemma-3-27b-it-w4a16 config.json=e1d4bf4f0bf0a483da877eafa26f2f36, the served checkpoint
+15:52:46 | server healthy after 190s
+17:12:55 | lm_eval exit=0
+17:12:55 | routes: pid=148 (2, 128, 16, 0, True) pid=148 (2, 128, 16, 1023, False) pid=149 (2, 128, 16, 0, True) pid=149 (2, 128, 16, 1023, False) 
+17:12:55 | restore: stopping the server, returning the guest to its services
+17:12:55 | container restored: cppd=84c6d4f9b2dfe2714b3a8f43ee832b02
+17:13:19 | services: active active 
+17:13:19 | vram: 27971584 27971584, both at baseline
+17:13:19 | ===== END widened =====

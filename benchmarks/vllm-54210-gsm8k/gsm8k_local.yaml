@@ -1,0 +1,16 @@
+# The stock gsm8k task, reading the parquet files from disk.
+#
+# This machine cannot reach Hugging Face, so `dataset_path: openai/gsm8k` fails.
+# Everything else is `lm_eval/tasks/gsm8k/gsm8k.yaml` at 0.4.13 unchanged --
+# same prompt, same 5 shots, same filters, same generation kwargs -- so the
+# score is comparable to any other gsm8k run of that version. The parquet files
+# are openai/gsm8k at revision 740312add88f; their md5s are in
+# /data/gsm8k/PROVENANCE.json and were checked on both sides of the copy.
+include: gsm8k.yaml
+task: gsm8k_local
+dataset_path: parquet
+dataset_name: null
+dataset_kwargs:
+  data_files:
+    train: /data/gsm8k/main/train-00000-of-00001.parquet
+    test: /data/gsm8k/main/test-00000-of-00001.parquet

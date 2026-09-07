@@ -1,0 +1,12 @@
+{
+ "test-00000-of-00001.parquet": {
+  "bytes": 419088,
+  "md5": "204963167ec69cd5d500ecd79f6950e3"
+ },
+ "train-00000-of-00001.parquet": {
+  "bytes": 2306545,
+  "md5": "979c9d17cd5753bc11d745e945289382"
+ },
+ "dataset": "openai/gsm8k",
+ "revision": "740312add88f"
+}
