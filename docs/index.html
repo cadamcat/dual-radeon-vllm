@@ -731,7 +731,16 @@ window.lineChart = function (opts) {
     var pad = (hi - lo) * 0.08 || 1;
     if (opts.y.min === undefined) lo -= pad;
     if (opts.y.max === undefined) hi += pad;
-    var Y = function (v) { return H - M.b - (v - lo) / (hi - lo) * (H - M.t - M.b); };
+    // y is linear unless a chart asks for scale:"log". A ratio or a rate whose
+    // claim is "this one keeps X % of its own start" is multiplicative, and on
+    // a linear axis a 50 % fall from 230 draws five times the drop of a 50 %
+    // fall from 43 -- so the reader cannot see the ranking such a caption
+    // asserts. Opt-in, so every existing chart keeps the axis it was drawn on.
+    var ylg = opts.y.scale === "log" && lo > 0 && hi > 0;
+    var yscale = function (v) { return ylg ? Math.log(v) : v; };
+    var Y = function (v) {
+      return H - M.b - (yscale(v) - yscale(lo)) / (yscale(hi) - yscale(lo)) * (H - M.t - M.b);
+    };
     // Ordinal by default: a ladder of depths spaced by value buries 1K and 8K
     // against the left edge. A chart whose series do not share one ladder asks
     // for scale:"log" (or "linear") and gives each series its own points.

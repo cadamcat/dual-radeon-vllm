@@ -220,7 +220,9 @@ carries a recurrent state that does not grow at all; and <code>Muse-Glimmer-30B<
     <div class="barunit" id="deepnote"></div>
   </div>
   <figcaption>
-    <b>Figure 7.</b> Decode rate against context on the H100, sixteen rungs, two rounds a cell, log axis.
+    <b>Figure 7.</b> Decode rate against context on the H100, sixteen rungs, two rounds a cell, both axes
+    log — equal fractions of a model's own rate are equal slopes, which is what the retention figures
+    below are about.
     It landed below both. <code>Muse-Glimmer-30B</code> keeps all but <strong>4.8&nbsp;%</strong> of its
     500-token rate at 128&nbsp;000; the hybrid SSM loses <strong>21.8&nbsp;%</strong>, as far as the dense
     31B's 22.0&nbsp;%. The recurrent-state model is not the flat one. What flattens a curve is a bounded
@@ -292,7 +294,7 @@ depends on them.</p>
  "setH": ["model", "on the base", "against the base", "ratio"],
  "setKind": "{k} · against {b} · {d}",
  "setBusy": "mem_busy {p} %",
- "setNote": "decode at the 500 rung · the fill is the ratio, the mark is 1.0 · in every one of the {n} settings the memory-bound end moves further from 1.0 than the compute-bound end",
+ "setNote": "decode at the 500 rung · the centre line is 1.0; a bar is how far from parity and which way, on a log scale fixed at ×0.5 to ×2 · in every one of the {n} settings the memory-bound end moves further from 1.0 than the compute-bound end",
  "predH": ["model", "mem_busy, H100 → H200", "predicted", "measured", "rung"],
  "predNote": "r = {r} from measured memory clocks, {a} → {b} MHz · spread predicted {p}, measured {m} · {x} exceeds r itself",
  "collH": ["configuration", "link", "one token, a decode step", "µs", "16 384 tokens", "µs"],
@@ -387,10 +389,20 @@ depends on them.</p>
   (function () {
     var box = document.getElementById("set");
     S.setH.forEach(function (h, i) { el(box, "h " + ["m", "b", "", "v"][i], esc(h)); });
-    var top = 0;
-    F.fig1.settings.forEach(function (s) {
-      s.models.forEach(function (m) { if (m.ratio > top) top = m.ratio; });
-    });
+    // Parity is the origin and the scale is logarithmic, on a domain fixed at
+    // x0.5 to x2 rather than taken from the data.
+    //
+    // These are ratios, and the bars used to run from zero to whichever ratio
+    // happened to be largest. That drew 0.554x -- a loss of 1.81x -- as a third
+    // of the track and 1.696x -- a gain of 1.70x -- as the whole of it: two
+    // almost equal multiplicative moves, one drawn three times the other, with
+    // the loss the one made small. It also meant the scale, and the position of
+    // the 1.0 mark, were defined by the largest number present, so a re-run that
+    // moved it silently rescaled every bar in the figure and no two versions of
+    // this page could be compared. Distance from the centre is now the size of
+    // the effect and the side is its direction, which is what the surrounding
+    // text claims and what the PRO 6000 row exists to show.
+    var DOM = 2, L2 = Math.log(DOM);
     F.fig1.settings.forEach(function (s) {
       el(box, "g rv", esc(s.what) + '<span class="tag">' +
          esc(fmt(S.setKind, { k: s.kind, b: s.base, d: s.date })) + "</span>");
@@ -398,9 +410,16 @@ depends on them.</p>
         el(box, "m rv", esc(m.model));
         el(box, "b rv", esc(fmt(S.setBusy, { p: busy(m.mem_busy) })));
         var t = el(box, "track rv");
-        var one = el(t, "one"); one.style.left = (1 / top * 100).toFixed(1) + "%";
-        var f = el(t, "fill" + (i ? " lo" : "") + (m.ratio < 1 ? " bad" : ""));
-        fills.push({ el: f, w: m.ratio / top * 100 });
+        el(t, "half");
+        el(t, "one");
+        var lg = Math.log(m.ratio) / L2;
+        // A value past the domain pins at the end, so it is drawn square rather
+        // than round: a clipped bar has to say that it is one. Nothing in the
+        // data reaches it today -- 0.554x is 85 % of the half-track -- and the
+        // exact number is in the column beside it either way.
+        var f = el(t, "fill" + (i ? " lo" : "") + (m.ratio < 1 ? " dn" : " up") +
+                    (Math.abs(lg) > 1 ? " clip" : ""));
+        fills.push({ el: f, w: Math.min(1, Math.abs(lg)) * 50 });
         el(box, "v rv" + (i ? "" : " hi"), x(m.ratio));
       });
     });
@@ -524,7 +543,17 @@ depends on them.</p>
       el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
       fitLit: true, lit: isLit,
       x: { scale: "log", min: 500, max: 128000, label: S.deepAxisX, fmt: kctx, ticks: ticks },
-      y: { label: S.deepAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      // Both axes are log, and the y one is the point. This figure's caption is
+      // a claim about retention -- what each model keeps of its OWN 500-token
+      // rate -- and on the linear axis it used to have, the MoE's 230.56 -> 189.38
+      // fell 41 units against Muse-Glimmer's 4, ten times the drop on screen for
+      // 3.7 times the proportional loss. On a log axis equal fractions are equal
+      // slopes, which is the comparison the caption asks the reader to make.
+      // min/max are fixed rather than fitted to the lit series: rezooming on a
+      // toggle would change the slopes being compared.
+      y: { scale: "log", label: S.deepAxisY, min: 60, max: 250,
+           ticks: [60, 80, 100, 150, 200, 250],
+           fmt: function (v) { return v.toFixed(0); } },
       series: ser
     });
     rows.forEach(function (r, i) {
