@@ -216,7 +216,7 @@ rented the same day one click away as the background.</p>
 
 <h2><span class="n">2</span>Articles</h2>
 
-<p>Twelve write-ups, newest first by the date on the card &mdash; the last day evidence for that
+<p>Thirteen write-ups, newest first by the date on the card &mdash; the last day evidence for that
 article was taken here, reported upstream or re-read. Under each title
 is the line that article used to lead with. Beneath it is what the piece establishes, in the words the
 synthesis article uses to classify it, so the two cannot describe a finding differently.</p>
@@ -226,8 +226,8 @@ synthesis article uses to classify it, so the two cannot describe a finding diff
 <h2><span class="n">3</span>What each of these is dated to</h2>
 
 <p>The date on an article marks when its evidence was taken, not when it was written. Three of
-the twelve are dated to the last week of July, eight to the last week of August and one to the first
-week of September. The machine itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks &mdash;
+the thirteen are dated to the last week of July, eight to the last week of August and two to
+September. The machine itself ran on 25, 26 and 28 July and on 1 August, then not again for three weeks &mdash;
 the second cluster is largely re-measurement of the first under conditions the first got wrong. A bar
 spanning two dates is an article whose evidence comes from two separate sittings, not one that ran throughout.</p>
 
@@ -240,7 +240,7 @@ spanning two dates is an article whose evidence comes from two separate sittings
     <div class="barunit" id="tlnote"></div>
   </div>
   <figcaption>
-    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the twelve are not
+    <b>Figure 5.</b> Positioned by date, not by publication order. Two of the thirteen are not
     measurements of this machine: one records the date a defect was reported upstream, and the
     synthesis re-read sixteen upstream threads rather than running anything. Both are marked as such
     rather than given a measurement date they do not have.
@@ -324,6 +324,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
  "cPct": "per cent change from turning speculation on, against context",
  "cMs": "milliseconds per decode step the packaging costs, against context",
  "cRun": "decode tok/s over four identical runs, back to back",
+ "cMsTok": "milliseconds per decoded token · the gradient is what a token of context costs",
  "cRetained": "per cent of each model's own rate at the shortest depth",
  "cRatio": "the excluded kernel against the fallback it is passed over for",
  "cMsStep": "milliseconds per decode step, each packaging of the same model",
@@ -437,7 +438,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun, cRatioX: S.cRatioX,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
     cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
-    cRetained: S.cRetained
+    cRetained: S.cRetained, cMsTok: S.cMsTok
   };
   var CFLABEL = {
     cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager,

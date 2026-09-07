@@ -1284,7 +1284,7 @@ fig = lambda n: json.load(open(D / n))
 
 A_HYB, A_A100, A_SPEC = fig("figures.json"), fig("figures-a100.json"), fig("figures-spec.json")
 A_W4, A_MEAS, A_MOE = fig("figures-w4a16.json"), fig("figures-measure.json"), fig("figures-moe.json")
-A_MODAL = fig("figures-modal.json")
+A_MODAL, A_DEPTH = fig("figures-modal.json"), fig("figures-depth.json")
 A_LOAD, A_RCCL, A_RD = fig("figures-loader.json"), fig("figures-rccl.json"), fig("figures-rdna3.json")
 A_GQA, A_65 = fig("figures-gqa.json"), fig("figures-6565.json")
 
@@ -1296,6 +1296,19 @@ _gqaex = [r for r in _gqa023["rows"] if not r["admitted"]]
 _meas = A_MEAS["fig2"]["rows"][0]
 
 cards = {
+ # the depth-cost article: the same weights on three software stacks, drawn as
+ # milliseconds per decoded token so that the slope IS the depth cost and three
+ # lines leaving one intercept at three gradients is the whole finding. Drawn
+ # from the article's own figure rather than recomputed here, so the card and
+ # the article cannot disagree.
+ "depth-cost-is-the-stacks": {
+   "form": "line", "unit": "cMsTok", "xlog": True, "y0": 0, "xctx": True,
+   "series": [{"name": st["label"],
+               "kind": "bad" if i == 0 else None,
+               "alt": i == 1,
+               "pts": [[p["ctx"], p["ms_tok"]] for p in st["points"]]}
+              for i, st in enumerate(A_DEPTH["fig2"]["stacks"])],
+   "src": "figures-depth.json fig2"},
  # the rented sweep: the most memory-bound model's gain in each of the five
  # settings, the article's Figure 1 in one bar each; a bar below parity is
  # the slower card (the PRO 6000), drawn as such

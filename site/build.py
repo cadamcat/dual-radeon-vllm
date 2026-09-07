@@ -311,6 +311,26 @@ if (D / "gqa-body-zh.html").exists():
                            "它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。",
                       out="articles/" + Q_ZH, nav=lang_nav("zh", Q_EN, Q_ZH), labels=ZH_LABELS))
 
+D_EN, D_ZH = "depth-cost-is-the-stacks.html", "depth-cost-is-the-stacks.zh.html"
+built.append(page("depth-body.html", lang="en", figures="figures-depth.json",
+                  extra_css="depth-extra.css",
+                  title='The flattest model by retention is the steepest by cost',
+                  desc="Six checkpoints on one ladder: the retention percentage and the depth "
+                       "cost rank them in almost opposite orders, because a percentage divides "
+                       "by a baseline and these baselines span 8.4x. And the cost is not the "
+                       "model's either -- the same weights measure 0.350, 0.233 and 0.117 us "
+                       "per context token across a vLLM version and one serve flag.",
+                  out="articles/" + D_EN, nav=lang_nav("en", D_EN, D_ZH), labels=EN_LABELS))
+if (D / "depth-body-zh.html").exists():
+    built.append(page("depth-body-zh.html", lang="zh-CN", figures="figures-depth.json",
+                      extra_css="depth-extra.css", script_from="depth-body.html",
+                      title='按保留率最平的那个模型，按成本是最陡的',
+                      desc="六个 checkpoint 跑同一条阶梯：保留率和深度成本给出的排序几乎相反，"
+                           "因为百分比要除以基线，而这些基线跨 8.4 倍。而成本也不是模型的性质——"
+                           "同一份权重在一个 vLLM 版本和一个 serve 参数之间，测得 0.350、0.233 "
+                           "和 0.117 微秒每上下文 token。",
+                      out="articles/" + D_ZH, nav=lang_nav("zh", D_EN, D_ZH), labels=ZH_LABELS))
+
 built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",
                   extra_css="n6565-extra.css",
                   title="The reporter's own script counts rank 0, shown by injecting a one-sided fault",
@@ -370,6 +390,15 @@ ESTABLISHES = {f["slug"]: {"en": f["mechanism"], "zh": f["mechanism_zh"]} for f 
 # the three the synthesis does not classify: it is one of them itself, and the
 # other two are about method rather than about a mechanism in the stack
 ESTABLISHES.update({
+    "depth-cost-is-the-stacks": {
+        "en": "a long-context retention percentage ranks models by their baseline as much "
+              "as by their depth cost, and the depth cost itself is a property of the "
+              "software as much as of the model",
+        "zh": "长上下文的保留率百分比，"
+              "既在按深度成本排序，也在"
+              "按基线排序；而深度成本本"
+              "身，既属于模型，也同样属"
+              "于软件"},
     "mem-busy-orders-five-settings": {
         "en": "what a second card or a faster card is worth is ordered by the memory "
               "controller's busy fraction, not by the interconnect, and the ordering "
@@ -400,6 +429,24 @@ ESTABLISHES.update({
 })
 
 ART = [
+ {"slug": "depth-cost-is-the-stacks", "en": D_EN, "zh": D_ZH, "zhbody": "depth-body-zh.html",
+  "tags": ["long context", "retention", "attention backend", "RX 7900 XT"],
+  "blurb": {
+   "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost "
+         "the reverse by what depth costs them, because a retention percentage divides by a "
+         "baseline and these baselines span 8.4x. The cost is not the model's either: the "
+         "same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per "
+         "context token across a vLLM version and one serve flag.",
+   "zh": "六个 checkpoint 跑同一条"
+         "阶梯，按深处保留了多少排是"
+         "一个顺序，按深度花了多少排"
+         "几乎是反的——因为保留率要"
+         "除以基线，而这些基线跨 8.4"
+         " 倍。成本也不是模型的性质："
+         "同样的权重、同样的卡，跨一"
+         "个 vLLM 版本和一个 serve 参"
+         "数，测得 0.350、0.233 和 "
+         "0.117 微秒每上下文 token。"}},
  {"slug": "mem-busy-orders-five-settings", "en": V_EN, "zh": V_ZH, "zhbody": "modal-body-zh.html",
   "tags": ["rented", "mem_busy", "H100", "B300"],
   "blurb": {

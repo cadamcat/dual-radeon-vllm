@@ -1346,7 +1346,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
 
 <h2><span class="n">2</span>文章</h2>
 
-<p>十二篇，按卡片上的日期从新到旧。这一日期是该文证据最后一次在本机实测、
+<p>十三篇，按卡片上的日期从新到旧。这一日期是该文证据最后一次在本机实测、
 向上游上报或重新核对的日子。每个标题下方是该文最初的导语。
 其下则是它所确立的内容，措辞与综述篇给它分类时的原话一致，两处不会对同一发现有不同表述。</p>
 
@@ -1354,7 +1354,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
 
 <h2><span class="n">3</span>它们各自记的是哪一天</h2>
 
-<p>文章标注的日期是取得证据的日期，而非撰写的日期。十二篇中有三篇落在七月最后一周，八篇落在八月最后一周，一篇落在九月第一周。
+<p>文章标注的日期是取得证据的日期，而非撰写的日期。十三篇中有三篇落在七月最后一周，八篇落在八月最后一周，两篇落在九月。
 机器本身是在 7 月 25、26、28 日和 8 月 1 日跑的，此后三周未再运行。第二批测量大多是在第一批条件有误的情况下重新实测。
 横跨两个日期的条形，表示该文证据来自两轮分开的测量，而非期间一直在跑。</p>
 
@@ -1366,7 +1366,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     <div class="tl" id="tl"></div>
     <div class="barunit" id="tlnote"></div>
   </div>
-  <figcaption><b>图 5.</b> 按日期排，不按发表顺序。十二篇里有两篇不是对这台机器的测量：
+  <figcaption><b>图 5.</b> 按日期排，不按发表顺序。十三篇里有两篇不是对这台机器的测量：
   一篇的日期是把缺陷上报到上游的日期，而综述篇是把十六条上游 issue 与 PR 重读了一遍，没有跑任何东西。
   这两篇都如实标出，而不是安一个它们并没有的测量日期。</figcaption>
 </figure>
@@ -25254,6 +25254,225 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
   "fastest": 250.1764
  },
  "cards": {
+  "depth-cost-is-the-stacks": {
+   "form": "line",
+   "unit": "cMsTok",
+   "xlog": true,
+   "y0": 0,
+   "xctx": true,
+   "series": [
+    {
+     "name": "vLLM 0.23.1 · ROCM_ATTN",
+     "kind": "bad",
+     "alt": false,
+     "pts": [
+      [
+       500,
+       81.10300081103001
+      ],
+      [
+       1000,
+       81.86655751125666
+      ],
+      [
+       2000,
+       82.71298593879239
+      ],
+      [
+       4000,
+       83.68200836820084
+      ],
+      [
+       6000,
+       84.45945945945947
+      ],
+      [
+       8000,
+       85.17887563884156
+      ],
+      [
+       12000,
+       86.617583369424
+      ],
+      [
+       16000,
+       87.75778850372971
+      ],
+      [
+       20000,
+       89.08685968819599
+      ],
+      [
+       24000,
+       90.25270758122744
+      ],
+      [
+       32000,
+       92.67840593141798
+      ],
+      [
+       48000,
+       97.51340809361288
+      ],
+      [
+       64000,
+       102.45901639344262
+      ],
+      [
+       80000,
+       107.06638115631692
+      ],
+      [
+       96000,
+       111.98208286674132
+      ]
+     ]
+    },
+    {
+     "name": "vLLM 0.27.1 · ROCM_ATTN",
+     "kind": null,
+     "alt": true,
+     "pts": [
+      [
+       500,
+       20.257267294641956
+      ],
+      [
+       1000,
+       20.34587995930824
+      ],
+      [
+       2000,
+       20.56978298878947
+      ],
+      [
+       4000,
+       21.04377104377104
+      ],
+      [
+       6000,
+       21.479969928042102
+      ],
+      [
+       8000,
+       21.958717610891526
+      ],
+      [
+       12000,
+       22.893772893772894
+      ],
+      [
+       16000,
+       23.85211687537269
+      ],
+      [
+       20000,
+       24.76780185758514
+      ],
+      [
+       24000,
+       25.690430314707772
+      ],
+      [
+       32000,
+       27.59001241550559
+      ],
+      [
+       48000,
+       31.303803412114572
+      ],
+      [
+       64000,
+       35.06926179203928
+      ],
+      [
+       80000,
+       38.85758694385079
+      ],
+      [
+       96000,
+       42.66211604095563
+      ],
+      [
+       128000,
+       50.22601707684581
+      ]
+     ]
+    },
+    {
+     "name": "vLLM 0.27.1 · TRITON_ATTN",
+     "kind": null,
+     "alt": false,
+     "pts": [
+      [
+       500,
+       19.79610016826685
+      ],
+      [
+       1000,
+       19.845207382417147
+      ],
+      [
+       2000,
+       19.94415636218588
+      ],
+      [
+       4000,
+       20.147073637554143
+      ],
+      [
+       6000,
+       20.39359641072703
+      ],
+      [
+       8000,
+       20.678246484698096
+      ],
+      [
+       12000,
+       21.14388413151496
+      ],
+      [
+       16000,
+       21.63097555699762
+      ],
+      [
+       20000,
+       22.07749199690915
+      ],
+      [
+       24000,
+       22.532672374943665
+      ],
+      [
+       32000,
+       23.4246896228625
+      ],
+      [
+       48000,
+       25.220680958385874
+      ],
+      [
+       64000,
+       26.98327037236913
+      ],
+      [
+       80000,
+       28.72737719046251
+      ],
+      [
+       96000,
+       30.473868657626088
+      ],
+      [
+       128000,
+       33.944331296673454
+      ]
+     ]
+    }
+   ],
+   "src": "figures-depth.json fig2"
+  },
   "mem-busy-orders-five-settings": {
    "form": "bars",
    "unit": "cRatioX",
@@ -25825,6 +26044,71 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
 }</script>
 <script type="application/json" id="articles">{
  "articles": [
+  {
+   "slug": "depth-cost-is-the-stacks",
+   "href": {
+    "en": "articles/depth-cost-is-the-stacks.html",
+    "zh": "articles/depth-cost-is-the-stacks.zh.html"
+   },
+   "title": {
+    "en": "The flattest model by retention is the steepest by cost, and one serve flag moves it three places",
+    "zh": "按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次"
+   },
+   "sub": {
+    "en": "What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing",
+    "zh": "「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变"
+   },
+   "blurb": {
+    "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost the reverse by what depth costs them, because a retention percentage divides by a baseline and these baselines span 8.4x. The cost is not the model's either: the same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per context token across a vLLM version and one serve flag.",
+    "zh": "六个 checkpoint 跑同一条阶梯，按深处保留了多少排是一个顺序，按深度花了多少排几乎是反的——因为保留率要除以基线，而这些基线跨 8.4 倍。成本也不是模型的性质：同样的权重、同样的卡，跨一个 vLLM 版本和一个 serve 参数，测得 0.350、0.233 和 0.117 微秒每上下文 token。"
+   },
+   "establishes": {
+    "en": "a long-context retention percentage ranks models by their baseline as much as by their depth cost, and the depth cost itself is a property of the software as much as of the model",
+    "zh": "长上下文的保留率百分比，既在按深度成本排序，也在按基线排序；而深度成本本身，既属于模型，也同样属于软件"
+   },
+   "dates": [
+    "2026-09-07"
+   ],
+   "date": "2026-09-07",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmRocm",
+     "v": [
+      "0.27.1.dev5",
+      "10.0"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dCampaign",
+     "v": [
+      "2026-09-07"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "long context",
+    "retention",
+    "attention backend",
+    "RX 7900 XT"
+   ]
+  },
   {
    "slug": "mem-busy-orders-five-settings",
    "href": {
@@ -26811,6 +27095,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
  "cPct": "打开投机后的百分比变化，横轴是上下文",
  "cMs": "打包方式每步多花的毫秒，横轴是上下文",
  "cRun": "连着跑四次相同运行的解码 tok/s",
+ "cMsTok": "每解码一个 token 的毫秒数 · 它的梯度就是一个上下文 token 的成本",
  "cRetained": "各自相对自己在最短深度上的速率的百分比",
  "cRatio": "被排除的 kernel 对它让位给的兜底路径",
  "cMsStep": "每步解码的毫秒，同一个模型的两种打包",
@@ -26924,7 +27209,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     cTokS: S.cTokS, cAdv: S.cAdv, cPct: S.cPct, cMs: S.cMs, cRun: S.cRun, cRatioX: S.cRatioX,
     cRatio: S.cRatio, cMsLog: S.cMsLog, cFindings: S.cFindings,
     cInits: S.cInits, cHostcall: S.cHostcall, cMsStep: S.cMsStep,
-    cRetained: S.cRetained
+    cRetained: S.cRetained, cMsTok: S.cMsTok
   };
   var CFLABEL = {
     cRdna3: S.cRdna3, cNotRdna3: S.cNotRdna3, cEager: S.cEager,

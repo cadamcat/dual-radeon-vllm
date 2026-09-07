@@ -1,0 +1,325 @@
+<header class="top">
+  <div class="kicker">2× RX 7900 XT · six checkpoints to 128 000 tokens · three software stacks · one checkpoint measured on both attention backends</div>
+  <h1>The flattest model by retention is the steepest by cost,<br>and one serve flag moves it three places</h1>
+  <p class="sub">What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing</p>
+  <p class="lede">Six checkpoints ran the same sixteen-rung ladder on the same two cards. Ranked by
+  what each keeps of its own 500-token rate, <code>Qwen3.8-27B</code> is the flattest of them.
+  Ranked by what each pays per token of context, it is the steepest. Both numbers are correct and
+  they are not about the same thing &mdash; and the second one moves by <strong>3.00&times;</strong> on
+  this checkpoint when nothing but the software changes.</p>
+  <div class="meta">
+__CHIPS__
+  </div>
+</header>
+
+<div class="abstract"> <h3>Abstract</h3>
+<p>A long-context benchmark usually reports <em>retention</em>: what fraction of its short-prompt
+rate a model keeps at depth. On the six arms of <code>campaign-2026-09-03</code> that number ranks
+the models in almost the reverse of the order they pay in. The reason is arithmetic rather than
+subtle: a retention percentage divides the depth cost by the baseline, and across these six the
+baselines span <strong>8.4&times;</strong>. The slowest model in the set is the one that looks most
+depth-robust.</p>
+<p><strong>The alternative is not safe either.</strong> Fitting milliseconds per token against
+context gives a slope in microseconds per context token, which is a cost rather than a ratio and
+does not carry the baseline. On this pair that slope is a better description &mdash; and it is still
+not a property of the model. The same <code>Qwen3.8-27B</code> checkpoint, on the same two cards
+with the same weights and the same upstream patch, measures <strong>0.350</strong>, <strong>0.233</strong>
+and <strong>0.117&nbsp;&micro;s per context token</strong> on three software stacks that differ by a
+vLLM version and one serve flag. That is 3.00&times;, and it moves the checkpoint from last place in
+this set to third.</p>
+<p><strong>The backend half of that is an attribution, not a comparison.</strong> The two attention
+backends were measured in two sessions of one run, and a third session repeated the first arm to
+price the session boundary: <strong>0.50&nbsp;%</strong> at worst, against a gap that reaches
+<strong>48&nbsp;%</strong>. Their intercepts agree to 1.5&nbsp;% while their slopes differ by 2.11&times;,
+so the flag moves the depth term and leaves the baseline where it was. What it costs is prefill:
+the decode advantage widens to <strong>1.48&times;</strong> at 128 000 tokens while prefill falls to
+<strong>0.44&times;</strong>, and neither has turned over at the deepest rung this machine can hold.</p>
+</div>
+
+<h2><span class="n">1</span>Two numbers, and they disagree</h2>
+
+<p>Every arm below is the same ladder on the same two cards, TP=2, batch 1, from
+<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-03"><code>campaign-2026-09-03</code></a>.
+Their deepest rungs differ &mdash; 32 000 for the 8B, 128 000 for three of the others &mdash; so both
+columns are computed on the span every arm has, 500 to 32 000. A slope taken over a longer span is a
+different number, and comparing one to the other would be comparing curvature.</p>
+
+<figure class="rv">
+  <div class="figbox">
+    <div class="figtitle">Figure 1 · the same six arms, ranked twice
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="tab rank" id="rank"></div>
+    <div class="barunit" id="ranknote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 1.</b> Decode on two RX 7900 XT, TP=2, over the rungs all six arms share. <em>Retention</em>
+    is what the arm keeps from its 500-token rate to 32 000; <em>cost</em> is the slope of milliseconds
+    per token against context, fitted over the same rungs, in microseconds per context token.
+    <code>r&sup2;</code> is carried because it is what says whether a slope describes the curve at all.
+    The two rankings agree nowhere except at their extremes being different arms: the model the
+    retention column calls flattest is the one the cost column calls steepest.
+  </figcaption>
+</figure>
+
+<h2><span class="n">2</span>What the percentage is dividing by</h2>
+
+<p>The inversion is not a paradox and not a measurement error. Retention is
+<code>1 &minus; cost&nbsp;&times;&nbsp;depth / baseline</code>, so an arm with a large baseline hides a
+large cost. The intercepts of these six fits &mdash; what a decode step costs before any context is
+read &mdash; span <span class="v" id="ispread"></span>, from the MoE's fastest step to the hybrid
+SSM's slowest. Over 32 000 tokens the hybrid pays the most per token of anything here, and it is
+still only an eighth of a step it was already spending. It looks robust because it is slow.</p>
+
+<p>That is worth stating plainly, because the reading it invites is the opposite one:
+<strong>a retention percentage rewards a slow baseline.</strong> Two models can have identical
+depth behaviour and different retention, and two models with identical retention can differ by
+several times in what depth actually costs them.</p>
+
+<h2><span class="n">3</span>The same weights, three stacks</h2>
+
+<p>If the slope is the better number, the next question is whose property it is. This checkpoint has
+now been measured on three software stacks with the weights, the cards, the parallelism, the ladder
+and the <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> split-KV patch all
+held: vLLM 0.23.1 on ROCm 7.14, which is the arm the campaign published; vLLM 0.27.1 on ROCm 10.0,
+which is <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-06"><code>campaign-2026-09-06</code></a>;
+and the same 0.27.1 with <code>--attention-backend TRITON_ATTN</code>, which is
+<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-07"><code>campaign-2026-09-07</code></a>.</p>
+
+<figure class="rv">
+  <div class="figbox">
+    <div class="figtitle">Figure 2 · one checkpoint, three stacks, milliseconds per token
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="legend" id="stackkey"></div>
+    <svg class="chart" id="stacks" role="img"></svg>
+    <div class="barunit" id="stacknote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 2.</b> Milliseconds per decoded token against context, which is the quantity whose slope
+    is the depth cost. A straight line means the cost per context token is constant, and its gradient
+    is that cost. All three arms are the same weights on the same two cards; the ladder is the same
+    sixteen rungs. On the span the six arms of Figure 1 share, the three measure
+    <span class="v" id="s3"></span> microseconds per context token.
+  </figcaption>
+</figure>
+
+<p><strong>Nothing about the model changed between those three lines.</strong> The span is
+<span class="v" id="span"></span>, and it is enough to move this checkpoint from the bottom of
+Figure 1's cost ranking to third &mdash; past the MoE, and within a whisker of
+<code>Qwen3-8B</code>, which is a quarter of its size.</p>
+
+<h2><span class="n">4</span>Why the last step is the backend and not the session</h2>
+
+<p>A backend is chosen when the server starts, so the two 0.27 arms cannot share a session, and an
+A&ndash;B difference is a backend difference only if the session boundary costs less than it does.
+This repository has been caught by exactly that before:
+<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/rccl-ndebug-ab-2026-09-04"><code>rccl-ndebug-ab-2026-09-04</code></a>
+published a 3.6&nbsp;% arm effect that turned out to be session order. So the run has a third
+session, repeating the first arm at three rungs after the second one finished.</p>
+
+<figure class="rv">
+  <div class="figbox">
+    <div class="figtitle">Figure 3 · the trade, and the drift that would have to explain it
+      <span class="prov yes">recomputable from repo</span></div>
+    <div class="tab trade" id="trade"></div>
+    <div class="figsub">the drift control &mdash; the same arm, three rungs, one session later</div>
+    <div class="tab drift" id="drift"></div>
+    <div class="barunit" id="tradenote"></div>
+  </div>
+  <figcaption>
+    <b>Figure 3.</b> Above: <code>TRITON_ATTN</code> divided by <code>ROCM_ATTN</code> at each rung,
+    decode and prefill, same session structure and same flags but for the backend. Below: the first
+    arm measured again after the second, which prices the session boundary the comparison rests on.
+    The drift is at most <span class="v" id="drift1"></span>; the decode gap it would have to account
+    for reaches <span class="v" id="gap1"></span>.
+  </figcaption>
+</figure>
+
+<p>Two further things make the pair an attribution rather than a race. The intercepts of the two fits
+agree to <strong>1.5&nbsp;%</strong> while the slopes differ by <strong>2.11&times;</strong>: the flag
+moves what a token of context costs and leaves what a step costs alone. And the direction reverses in
+prefill, which is the shape of a trade rather than of one arm simply being better.</p>
+
+<h2><span class="n">5</span>The trade has not turned over</h2>
+
+<p><code>campaign-2026-09-02c</code> measured these two backends to 32 000 tokens and found them
+trading, with both gaps still widening where it stopped. At four times that depth they are still
+widening: decode reaches <span class="v" id="wd"></span> and prefill <span class="v" id="wp"></span>
+at 128 000. <strong>Neither backend is the better one.</strong> They divide one cost between prefill
+and decode, and which division a deployment wants is a question about its traffic.</p>
+
+<h2><span class="n">6</span>The arm whose curve is not a line</h2>
+
+<p>One row of Figure 1 carries a warning rather than a measurement. <code>Muse-Glimmer-30B</code>
+fits a line at <span class="v" id="r2m"></span>, where every other arm is above
+<span class="v" id="r2r"></span>. Its attention runs through a 2 048-token window, so its cost per
+token stops growing rather than growing more slowly, and a straight line cannot say that. Its slope
+is listed because removing it would be worse than printing it beside a caveat, but it is not the same
+kind of number as the others and it should not be ranked against them.</p>
+
+<p>That is also the case for reporting <code>r&sup2;</code> next to any slope of this kind: it is what
+tells a reader whether the single number in front of them describes the curve it was fitted to.</p>
+
+<h2><span class="n">7</span>What to report instead</h2>
+
+<p>Two numbers rather than one, and a third that says whether they mean anything:
+<strong>the intercept</strong>, which is what a decode step costs before context;
+<strong>the slope</strong>, which is what each token of context adds; and <strong><code>r&sup2;</code></strong>,
+which says whether the fit is a description or a summary. A retention percentage is derivable from
+the first two at any depth, while neither is derivable from it.</p>
+
+<p>None of this makes the slope a property of a model. On this machine it is a property of a model
+<em>and</em> the kernel that serves it, and the second term is the larger one:
+<span class="v" id="span2"></span> from software against the 2.7&times; that separates the six
+different checkpoints in Figure 1's cost column.</p>
+
+<h2><span class="n">8</span>What is not established</h2>
+
+<ul>
+  <li><strong>Only one checkpoint was measured on both backends.</strong> Whether the other five would
+  move the same way is not known, and they cannot be re-run together on 0.27 in any case: gemma-4's
+  Quark plugin reads a heterogeneous <code>head_dim</code> and dies before loading.</li>
+  <li><strong>Nothing here opens either kernel.</strong> That prefill moves the other way is the shape
+  of a trade, not an explanation of one.</li>
+  <li><strong>Every cell is batch 1.</strong> <code>max-num-seqs</code> is 16 for capacity, not for
+  load. What either backend does under concurrency at depth is a different measurement.</li>
+  <li><strong>The six arms of Figure 1 are one machine.</strong> The claim about what a percentage
+  divides by is arithmetic and travels; the particular ordering is this pair's.</li>
+</ul>
+
+<script type="application/json" id="figures">__FIGURES_JSON__</script>
+<script type="application/json" id="strings">{
+ "rankH": ["arm", "architecture", "retention 500 → 32 000", "cost µs/context token", "r²"],
+ "rankNote": "decode at batch 1 on two RX 7900 XT, TP=2 · both columns over the {t} rungs every arm shares · the ranks beside each column are that column's order",
+ "stackAxisX": "context length",
+ "stackAxisY": "ms per decoded token",
+ "stackUnit": "the same weights, cards, parallelism, ladder and split-KV patch in all three · a straight line is a constant cost per context token and its gradient is that cost",
+ "stackRow": "{l} — {s} µs/tok, intercept {i} ms, r² {r}",
+ "tradeH": ["context", "decode TRITON / ROCM", "prefill TRITON / ROCM"],
+ "driftH": ["context", "first session", "again, after the other arm", "drift"],
+ "tradeNote": "one run, three sessions: the two backends and then the first arm again · the drift is what the session boundary is worth, and the comparison above rests on it being small"
+}</script>
+<script>
+(function () {
+  "use strict";
+  var F = JSON.parse(document.getElementById("figures").textContent);
+  var S = JSON.parse(document.getElementById("strings").textContent);
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+  function fmt(t, o) { return String(t).replace(/\{(\w+)\}/g, function (_, k) {
+    return o[k] === undefined ? "{" + k + "}" : o[k]; }); }
+  function el(p, cls, html) {
+    var d = document.createElement("div");
+    d.className = cls; if (html !== undefined) d.innerHTML = html;
+    p.appendChild(d); return d;
+  }
+  function kctx(v) { return v >= 1000 ? (v / 1000) + "K" : String(v); }
+  function put(id, html) { var e = document.getElementById(id); if (e) e.innerHTML = html; }
+  var fills = [];
+
+  /* ---------- Figure 1: the two rankings ---------- */
+  (function () {
+    var box = document.getElementById("rank");
+    S.rankH.forEach(function (h, i) {
+      el(box, "h " + ["m", "a", "p", "s", "r"][i], esc(h));
+    });
+    F.fig1.rows.forEach(function (r) {
+      el(box, "m rv", esc(r.model));
+      el(box, "a rv", esc(r.arch));
+      el(box, "p rv", '<span class="rk">#' + r.rank_pct + "</span>" +
+         r.pct.toFixed(1) + "&nbsp;%");
+      el(box, "s rv" + (r.rank_slope === 1 || r.rank_slope === F.fig1.rows.length ? " hi" : ""),
+         '<span class="rk">#' + r.rank_slope + "</span>" + r.slope_us_tok.toFixed(3));
+      el(box, "r rv" + (r.r2 < 0.9 ? " warn" : ""), r.r2.toFixed(4));
+    });
+    put("ranknote", esc(fmt(S.rankNote, { t: F.fig1.rows[0].rungs })));
+    put("ispread", F.fig1.intercept_spread.toFixed(1) + "&times;");
+    put("r2m", F.fig1.worst_r2.toFixed(4));
+    put("r2r", F.fig1.best_r2_of_the_rest.toFixed(3));
+  })();
+
+  /* ---------- Figure 2: one checkpoint, three stacks ---------- */
+  (function () {
+    var svg = document.getElementById("stacks"), key = document.getElementById("stackkey");
+    var rows = F.fig2.stacks;
+    var ser = rows.map(function (r, i) {
+      return { colour: "var(--s" + (i + 1) + ")",
+               tip: function (j) {
+                 var p = r.points[j];
+                 return '<span class="hd">' + esc(r.label) + "</span><br>" + kctx(p.ctx) +
+                        " &middot; <b>" + p.ms_tok.toFixed(1) + "</b> ms/tok";
+               },
+               points: r.points.map(function (p) { return [p.ctx, p.ms_tok]; }) };
+    });
+    window.lineChart({
+      el: svg, reduce: reduce, h: 340, m: { t: 16, r: 20, b: 46, l: 62 },
+      x: { scale: "log", min: 500, max: 128000, label: S.stackAxisX, fmt: kctx,
+           ticks: [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000] },
+      y: { label: S.stackAxisY, min: 0, fmt: function (v) { return v.toFixed(0); } },
+      series: ser
+    });
+    rows.forEach(function (r, i) {
+      var b = document.createElement("span");
+      b.className = "lg on";
+      b.style.setProperty("--c", "var(--s" + (i + 1) + ")");
+      b.innerHTML = '<span class="sw"></span>' + esc(r.label);
+      key.appendChild(b);
+    });
+    var lines = [esc(S.stackUnit)];
+    rows.forEach(function (r) {
+      lines.push('<span class="nrow">' + esc(fmt(S.stackRow, {
+        l: r.label, s: r.slope_on_shared.toFixed(3),
+        i: r.intercept_ms.toFixed(1), r: r.r2.toFixed(4) })) + "</span>");
+    });
+    put("stacknote", lines.join("<br>"));
+    put("s3", rows.map(function (r) { return r.slope_on_shared.toFixed(3); }).join(", "));
+    put("span", "<strong>" + F.fig2.slope_span.toFixed(2) + "&times;</strong>");
+    put("span2", F.fig2.slope_span.toFixed(2) + "&times;");
+  })();
+
+  /* ---------- Figure 3: the trade and the drift ---------- */
+  (function () {
+    var box = document.getElementById("trade");
+    S.tradeH.forEach(function (h, i) { el(box, "h " + ["k", "d", "p"][i], esc(h)); });
+    var top = 0;
+    F.fig3.trade.forEach(function (t) { top = Math.max(top, t.decode, 1 / t.prefill); });
+    F.fig3.trade.forEach(function (t) {
+      el(box, "k rv", kctx(t.ctx));
+      ["decode", "prefill"].forEach(function (which) {
+        var v = t[which];
+        var c = el(box, (which === "decode" ? "d" : "p") + " rv");
+        var tr = el(c, "track");
+        el(tr, "one");
+        var lg = Math.log(v) / Math.log(top);
+        var f = el(tr, "fill " + (v >= 1 ? "up" : "dn") + (which === "prefill" ? " lo" : ""));
+        fills.push({ el: f, w: Math.min(1, Math.abs(lg)) * 50 });
+        el(c, "v", v.toFixed(2) + "&times;");
+      });
+    });
+    var d = document.getElementById("drift");
+    S.driftH.forEach(function (h, i) { el(d, "h " + ["k", "n", "n", "n"][i], esc(h)); });
+    F.fig3.drift.forEach(function (r) {
+      el(d, "k rv", kctx(r.ctx));
+      el(d, "n rv", r.first.toFixed(2));
+      el(d, "n rv", r.again.toFixed(2));
+      el(d, "n rv good", (r.pct >= 0 ? "+" : "") + r.pct.toFixed(2) + "&nbsp;%");
+    });
+    put("tradenote", esc(S.tradeNote));
+    put("drift1", "<strong>" + F.fig3.worst_drift_pct.toFixed(2) + "&nbsp;%</strong>");
+    put("gap1", "<strong>" + F.fig3.gap_pct.toFixed(0) + "&nbsp;%</strong>");
+    put("wd", "<strong>" + F.fig3.widest_decode.toFixed(2) + "&times;</strong>");
+    put("wp", "<strong>" + F.fig3.widest_prefill.toFixed(2) + "&times;</strong>");
+  })();
+
+  function grow() { fills.forEach(function (f) { f.el.style.width = f.w + "%"; }); }
+  if (reduce || !window.IntersectionObserver) { grow(); }
+  else {
+    var seen = false;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; grow(); } });
+    }, { threshold: 0.15 });
+    var t = document.getElementById("trade");
+    if (t) io.observe(t); else grow();
+  }
+})();
+</script>

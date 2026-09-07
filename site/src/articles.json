@@ -1,6 +1,71 @@
 {
  "articles": [
   {
+   "slug": "depth-cost-is-the-stacks",
+   "href": {
+    "en": "articles/depth-cost-is-the-stacks.html",
+    "zh": "articles/depth-cost-is-the-stacks.zh.html"
+   },
+   "title": {
+    "en": "The flattest model by retention is the steepest by cost, and one serve flag moves it three places",
+    "zh": "按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次"
+   },
+   "sub": {
+    "en": "What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing",
+    "zh": "「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变"
+   },
+   "blurb": {
+    "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost the reverse by what depth costs them, because a retention percentage divides by a baseline and these baselines span 8.4x. The cost is not the model's either: the same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per context token across a vLLM version and one serve flag.",
+    "zh": "六个 checkpoint 跑同一条阶梯，按深处保留了多少排是一个顺序，按深度花了多少排几乎是反的——因为保留率要除以基线，而这些基线跨 8.4 倍。成本也不是模型的性质：同样的权重、同样的卡，跨一个 vLLM 版本和一个 serve 参数，测得 0.350、0.233 和 0.117 微秒每上下文 token。"
+   },
+   "establishes": {
+    "en": "a long-context retention percentage ranks models by their baseline as much as by their depth cost, and the depth cost itself is a property of the software as much as of the model",
+    "zh": "长上下文的保留率百分比，既在按深度成本排序，也在按基线排序；而深度成本本身，既属于模型，也同样属于软件"
+   },
+   "dates": [
+    "2026-09-07"
+   ],
+   "date": "2026-09-07",
+   "kind": "measured",
+   "chips": [
+    {
+     "kind": "hardware",
+     "w": "hwTriple",
+     "v": [
+      "RX 7900 XT",
+      "gfx1100",
+      "TP=2"
+     ]
+    },
+    {
+     "kind": "stack",
+     "w": "stackVllmRocm",
+     "v": [
+      "0.27.1.dev5",
+      "10.0"
+     ]
+    },
+    {
+     "kind": "date",
+     "tl": "measured",
+     "w": "dCampaign",
+     "v": [
+      "2026-09-07"
+     ]
+    }
+   ],
+   "langs": [
+    "EN",
+    "中"
+   ],
+   "tags": [
+    "long context",
+    "retention",
+    "attention backend",
+    "RX 7900 XT"
+   ]
+  },
+  {
    "slug": "mem-busy-orders-five-settings",
    "href": {
     "en": "articles/mem-busy-orders-five-settings.html",

@@ -5937,9 +5937,9 @@ def _run_checks(_opened, _audit_state):
     # which one each date is
     XTLK = ["measured", "reported", "reviewed"]
     XDC = {s: [c for c in CH[s] if c.get("kind") == "date"] for s in XSLUGS if s != "index"}
-    ck("chips, every article carries exactly one date chip", "12",
+    ck("chips, every article carries exactly one date chip", "13",
        sum(1 for v in XDC.values() if len(v) == 1))
-    ck("chips, every date chip says what kind of claim it is", "12",
+    ck("chips, every date chip says what kind of claim it is", "13",
        sum(1 for v in XDC.values() if len(v) == 1 and v[0].get("tl") in XTLK))
     ck("chips, every date is an ISO date", "0",
        sum(1 for v in XDC.values() for c in v for d in c.get("v", [])
@@ -5951,7 +5951,7 @@ def _run_checks(_opened, _audit_state):
        1 if sorted(s for s, v in XDC.items() if v and v[0].get("tl") == "reviewed")
        == ["rdna3-second-class"] else 0)
 
-    ck("index, one record per article", "12", len(AJ))
+    ck("index, one record per article", "13", len(AJ))
 
     ck("index, every record's dates come from its date chip", "0",
        sum(1 for a in AJ if a.get("dates") != (XDC.get(a.get("slug")) or [{}])[0].get("v")))
@@ -5971,8 +5971,10 @@ def _run_checks(_opened, _audit_state):
        sum(1 for a in AJ if a.get("slug") in ZF
            and (a.get("establishes") or {}).get("en") == ZF[a["slug"]].get("mechanism")
            and (a.get("establishes") or {}).get("zh") == ZF[a["slug"]].get("mechanism_zh")))
-    # four since 2026-09-03: the rented-sweep article is also outside the synthesis
-    ck("index, and the other four are written for it", "4",
+    # four since 2026-09-03: the rented-sweep article is also outside the
+    # synthesis; five since 2026-09-07b, which adds the depth-cost one -- it is
+    # about what a measurement means rather than about a mechanism in the stack
+    ck("index, and the other five are written for it", "5",
        sum(1 for a in AJ if a.get("slug") not in ZF
            and (a.get("establishes") or {}).get("en")
            and (a.get("establishes") or {}).get("zh")))
@@ -6084,7 +6086,7 @@ def _run_checks(_opened, _audit_state):
     # claim about the timeline drawn directly below it
     XSIT = sorted({d for a in AJ for d in (a.get("dates") or [])})
     xday = lambda d: (int(d[:4]), int(d[5:7]), int(d[8:10]))
-    ck("index, distinct sitting dates on the timeline", "11", len(XSIT))
+    ck("index, distinct sitting dates on the timeline", "12", len(XSIT))
     ck("index, the sittings before the long gap", "4",
        sum(1 for d in XSIT if d <= "2026-08-01"))
     ck("index, the long gap is three weeks", "22",
@@ -6116,7 +6118,7 @@ def _run_checks(_opened, _audit_state):
     XCARD = json.loads(xblock(XI["index.html"], "bestdata"))["cards"]
     _sd = os.path.join(HERE, "..", "..", "site", "src")
     _af = lambda n: json.load(open(os.path.join(_sd, n), encoding="utf-8"))
-    ck("index cards, one per article", "12", len(XCARD))
+    ck("index cards, one per article", "13", len(XCARD))
     ck("index cards, every article has one", "0",
        sum(1 for a in AJ if a["slug"] not in XCARD))
 
@@ -9516,6 +9518,91 @@ def _run_checks(_opened, _audit_state):
                    ("results-failed-util092-nomns.jsonl", 5)):
         ck(f"09-06 README, {_f} kept", str(_n),
            sum(1 for _l in open(os.path.join(_c96, _f), encoding="utf-8")))
+    # --- the depth-cost article (figures-depth.json) -----------------------
+    # Every number the article prints comes out of this file, and this file is
+    # recomputed from decode.jsonl, prefill.jsonl and campaign-2026-09-07 by
+    # site/src/genfig-depth.py. What is checked here is that the figure agrees
+    # with the rows, and that the prose agrees with the figure.
+    _FD = json.load(open(os.path.join(ROOT, "site", "src", "figures-depth.json"),
+                         encoding="utf-8"))
+    _d1, _d2, _d3 = _FD["fig1"], _FD["fig2"], _FD["fig3"]
+    ck("depth fig1, the six arms", "6", len(_d1["rows"]))
+    ck("depth fig1, the span they share", "32000", _d1["shared_to"])
+    ck("depth fig1, the inversion is first against last", "1",
+       1 if (_d1["worst_inversion"]["rank_pct"] == 1
+             and _d1["worst_inversion"]["rank_slope"] == 6
+             and _d1["worst_inversion"]["model"] == "Qwen3.8-27B") else 0)
+    ck("depth fig1, the flattest by retention", "-12.5", _d1["worst_inversion"]["pct"])
+    ck("depth fig1, and its cost is the steepest", "0.350",
+       _d1["worst_inversion"]["slope_us_tok"])
+    ck("depth fig1, its intercept", "81.9", _d1["worst_inversion"]["intercept_ms"])
+    ck("depth fig1, the baselines span", "8.4", _d1["intercept_spread"])
+    ck("depth fig1, the arm whose curve is not a line", "0.3145", _d1["worst_r2"])
+    ck("depth fig1, and every other arm is above", "0.978",
+       _d1["best_r2_of_the_rest"], 0.001)
+    ck("depth fig1, is Muse-Glimmer", "1",
+       1 if _d1["worst_r2_model"] == "Muse-Glimmer-30B" else 0)
+    # every row of the figure recomputes from decode.jsonl
+    _bad1 = 0
+    for _r in _d1["rows"]:
+        _d = {x["ctx"]: x["decode_tok_s"] for x in XDEC
+              if x["machine"] == "RX 7900 XT" and x["cfg"] == _r["cfg"]
+              and x["date"] == "2026-09-03" and x["ctx"] <= _d1["shared_to"]}
+        _xs = sorted(_d)
+        if abs((_d[_xs[-1]] / _d[_xs[0]] - 1) * 100 - _r["pct"]) > 1e-9:
+            _bad1 += 1
+    ck("depth fig1, retentions that do not recompute", "0", _bad1)
+    # fig2: one checkpoint, three stacks
+    ck("depth fig2, three stacks", "3", len(_d2["stacks"]))
+    ck("depth fig2, the span software moves it", "3.00", _d2["slope_span"])
+    ck("depth fig2, the steepest", "0.350", _d2["slope_hi"])
+    ck("depth fig2, and the flattest", "0.117", _d2["slope_lo"])
+    _by = {s["cfg"]: s for s in _d2["stacks"]}
+    ck("depth fig2, 0.27 on the backend it picks", "0.233",
+       _by["D8-27B-tp2-long-027b"]["slope_on_shared"])
+    ck("depth fig2, and its full-ladder fit", "0.235",
+       _by["D8-27B-tp2-long-027b"]["slope_us_tok"])
+    ck("depth fig2, Triton on the full ladder", "0.111",
+       _by["D8-27B-tp2-triton-long-027b"]["slope_us_tok"])
+    ck("depth fig2, every stack is sixteen rungs or the published fifteen", "2",
+       sum(1 for s in _d2["stacks"] if s["rungs"] == 16))
+    # fig3: the trade and the drift that licenses it
+    ck("depth fig3, the decode gap at its widest", "1.48", _d3["widest_decode"])
+    ck("depth fig3, and prefill at its widest", "0.44", _d3["widest_prefill"])
+    ck("depth fig3, the drift at worst", "0.50", _d3["worst_drift_pct"])
+    ck("depth fig3, three drift rungs", "3", len(_d3["drift"]))
+    ck("depth fig3, the gap the drift would have to explain", "48", _d3["gap_pct"])
+    # and the prose, in both languages, says what the figure found
+    _dp_en = open(os.path.join(ROOT, "site", "src", "depth-body.html"),
+                  encoding="utf-8").read()
+    _dp_zh = open(os.path.join(ROOT, "site", "src", "depth-body-zh.html"),
+                  encoding="utf-8").read()
+    for _frag_en, _frag_zh, _what in (
+        ("3.00&times;", "3.00&times;", "the span software moves the cost"),
+        ("8.4&times;", "8.4&times;", "what the percentage divides by"),
+        ("0.350", "0.350", "the published arm's cost"),
+        ("0.117", "0.117", "and the flattest stack's"),
+        ("2.11&times;", "2.11&times;", "the two backends' slopes"),
+        ("0.50&nbsp;%", "0.50&nbsp;%", "the drift"),
+        ("1.48&times;", "1.48&times;", "the widest decode gap"),
+        ("0.44&times;", "0.44&times;", "and the widest prefill one"),
+    ):
+        ck(f"depth prose, both languages carry {_what}", "2",
+           (1 if _frag_en in _dp_en else 0) + (1 if _frag_zh in _dp_zh else 0))
+    ck("depth prose, declines to call the slope the model's", "2",
+       (1 if "None of this makes the slope a property of a model" in _dp_en else 0)
+       + (1 if "都没有把斜率变成模型的性质" in _dp_zh else 0))
+    ck("depth prose, and says Muse is not rankable with the rest", "2",
+       (1 if "should not be ranked against them" in _dp_en else 0)
+       + (1 if "不应该和它们一起排序" in _dp_zh else 0))
+    ck("depth article, is registered in both languages", "2",
+       sum(1 for _f in ("depth-cost-is-the-stacks.html",
+                        "depth-cost-is-the-stacks.zh.html")
+           if os.path.exists(os.path.join(ROOT, "docs", "articles", _f))))
+    ck("depth article, and the index lists thirteen", "13",
+       len(json.load(open(os.path.join(ROOT, "site", "src", "articles.json"),
+                          encoding="utf-8"))["articles"]))
+
     # --- campaign-2026-09-07: the backend owns half the depth cost ---------
     _c97 = os.path.join(ROOT, "benchmarks", "campaign-2026-09-07")
     _r97 = [json.loads(_l) for _l in open(os.path.join(_c97, "results.jsonl"),

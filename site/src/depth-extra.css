@@ -1,0 +1,51 @@
+  /* ---- the depth article: two rankings, three stacks, one trade ---- */
+  .tab { display:grid; column-gap:1em; align-items:center; font-size:.85rem; }
+  .tab > div { padding:.42em 0; border-bottom:1px solid var(--border); }
+  .tab .h { font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+            text-transform:uppercase; color:var(--text-dim);
+            border-bottom:1px solid var(--border-2); }
+  .tab .k { font-family:var(--mono); font-size:.78rem; color:var(--text-2); }
+  .tab .n { font-family:var(--mono); font-size:.8rem; font-variant-numeric:tabular-nums;
+            text-align:right; color:var(--text); }
+  .tab .n.good { color:var(--s3); }
+
+  /* Figure 1. The rank badge is the point of the figure: the same row carries a
+     different position in each column, so the number is put beside the value
+     rather than left for the reader to count down the list. */
+  .rank { grid-template-columns:max-content max-content 1fr 1fr max-content; }
+  .rank .m { font-family:var(--mono); font-size:.78rem; color:var(--text); }
+  .rank .a { font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .rank .p, .rank .s { font-family:var(--mono); font-size:.8rem;
+                       font-variant-numeric:tabular-nums; text-align:right;
+                       color:var(--text-2); }
+  .rank .s.hi { color:var(--text); font-weight:700; }
+  .rank .r { font-family:var(--mono); font-size:.74rem; text-align:right;
+             color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  .rank .r.warn { color:var(--red); }
+  .rank .rk { color:var(--accent); font-size:.7rem; margin-right:.55em;
+              font-weight:700; }
+  @media (max-width:560px){ .rank { grid-template-columns:max-content 1fr 1fr; }
+                            .rank .a, .rank .r { display:none; } }
+
+  /* Figure 3. Parity is the middle of the track and the side is the direction,
+     for the reason figure 2 of the rented-sweep article gives: these are
+     ratios, and a bar from zero draws a halving as a third of a doubling. */
+  .trade { grid-template-columns:max-content 1fr 1fr; }
+  .trade .d, .trade .p { display:grid; grid-template-columns:1fr max-content;
+                         column-gap:.7em; align-items:center; }
+  .trade .track { background:var(--surface-3); border-radius:99px; height:13px;
+                  overflow:hidden; position:relative; }
+  .trade .track .one { position:absolute; left:50%; top:0; bottom:0; width:1px;
+                       background:var(--text-dim); }
+  .trade .fill { position:absolute; top:0; bottom:0; width:0; border-radius:99px;
+                 background:var(--s1); transition:width .8s cubic-bezier(.2,.7,.2,1); }
+  .trade .fill.up { left:50%; }
+  .trade .fill.dn { right:50%; }
+  .trade .fill.lo { background:var(--s3); }
+  .trade .v { font-family:var(--mono); font-size:.78rem; text-align:right;
+              font-variant-numeric:tabular-nums; color:var(--text); }
+  .drift { grid-template-columns:max-content 1fr 1fr 1fr; margin-top:.4em; }
+  .figsub { font-family:var(--mono); font-size:.7rem; letter-spacing:.04em;
+            text-transform:uppercase; color:var(--text-dim); margin:1.4em 0 .2em; }
+  .nrow { color:var(--text-dim); }
+  .v { font-variant-numeric:tabular-nums; }
