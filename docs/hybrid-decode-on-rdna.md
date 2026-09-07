@@ -322,7 +322,7 @@ on both ranks at all three depths in both passes. The recorder is installed
 before any vLLM import: doing it afterwards is what silently produced no
 records at all in the gqa-gate work on this same image.
 
-Two comparisons worth keeping straight. Run B's discarded warm-up cell gives
+Two comparisons to keep straight. Run B's discarded warm-up cell gives
 37.0398 against run A's first measured cell at 37.0397, which is what says run
 A was not penalised for being first — the cold-machine effect that cost the
 harness calibration three runs does not reach a method that pays a multi-minute

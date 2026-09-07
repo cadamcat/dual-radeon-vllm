@@ -152,7 +152,7 @@ collective is pure latency up to 16 tokens; it is not.
 The plateau is close to half the 13.9 GB/s one-way ceiling `pcie_probe.py`
 measured, which is what a `NCCL_P2P_DISABLE=1` path predicts — with P2P off the
 route is device → host → device, so every byte crosses the link twice. That
-consistency is worth noting; it is not itself a measurement of the route.
+consistency is not itself a measurement of the route.
 
 ## Counted, on 2026-09-03: 73 per forward pass, not 72
 
