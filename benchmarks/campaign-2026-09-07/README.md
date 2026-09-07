@@ -91,6 +91,10 @@ comparable.
 - **Nothing about why.** The two arms differ in the decoder's attention kernel
   and this campaign does not open either. That prefill moves the other way is
   the shape of a trade, not an explanation of one.
+- **Nothing about stock Triton.** Arm B ran the Triton path carrying vllm#45450, the
+  state this container has held since `campaign-2026-08-29`; the image's own Triton is
+  `49fab3b6` and was not measured here. What is compared is two backends in one container,
+  not two upstream defaults.
 - **Nothing about batch.** Every cell here is batch 1. `max-num-seqs` is 16 for
   capacity, not for load; a serving deployment at depth is a different question.
 - **Two sittings of arm A, on different days, differ by up to 1.23 %**
@@ -102,8 +106,20 @@ comparable.
 
     container    vllm-027, rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0
     vllm         0.27.1.dev5+gf46a9dfe2.d20260827        ROCm 10.0, kernel 7.0.0-30
-    patch        chunked_prefill_paged_decode.py 84c6d4f9b2dfe2714b3a8f43ee832b02 (vllm#45916),
-                 asserted by run.sh before any cell was measured
+    patch        the two attention paths are independent files, and this run asserted only
+                 one of them before measuring -- the other was read out of the container
+                 afterwards, on 2026-09-07, and is recorded here rather than implied:
+                   chunked_prefill_paged_decode.py  84c6d4f9...  vllm#45916   ROCM_ATTN's path
+                   triton_unified_attention.py      9416a868...  vllm#45450   TRITON_ATTN's
+                   triton_attn.py                   8bd13173...  vllm#45450   TRITON_ATTN's
+                 The two Triton md5s are what `campaign-2026-09-02c/runner.py` records for
+                 vllm#45450, and they are the state its own Triton arm ran, so the two
+                 campaigns' Triton arms are the same arm. **Arm B is not stock Triton**, and
+                 a reading of it as "TRITON_ATTN out of the box" would be wrong.
+                 Both arms ran in one container with those three files in one state; only
+                 `--attention-backend` differed between them, which is what makes A-B the
+                 backend and not the patch state. `run.sh` asserting one path and not the
+                 other is a gap in the runner, not in this comparison
     checkpoint   /data/incoming/Qwen3.8-27B-AWQ-INT4
     serve        TP=2, mml 130000, util 0.92, max-num-seqs 16; arm B adds
                  --attention-backend TRITON_ATTN and nothing else

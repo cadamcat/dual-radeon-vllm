@@ -9681,7 +9681,21 @@ def _run_checks(_opened, _audit_state):
     ck("09-07 README, 140 measurements", "140",
        sum(1 for r in _r97 if r.get("kind") in ("decode", "prefill")))
     ck("09-07 README, and no errors", "0", sum(1 for r in _r97 if r.get("err")))
+    # both attention paths, because only one was asserted before the run and a
+    # reader who takes arm B for stock Triton is reading the wrong experiment
     _rm97 = open(os.path.join(_c97, "README.md"), encoding="utf-8").read()
+    for _md5, _what in (("84c6d4f9", "ROCM_ATTN's path at vllm#45916"),
+                        ("9416a868", "the Triton path's state"),
+                        ("8bd13173", "and its backend wrapper's")):
+        ck(f"09-07 README, records {_what}", "1", 1 if _md5 in _rm97 else 0)
+    ck("09-07 README, says arm B is not stock Triton", "1",
+       1 if "Arm B is not stock Triton" in _rm97 else 0)
+    # the two Triton md5s are campaign-2026-09-02c's, so the two Triton arms match
+    _r02c = open(os.path.join(ROOT, "benchmarks", "campaign-2026-09-02c",
+                              "runner.py"), encoding="utf-8").read()
+    ck("09-07 README, and they are 09-02c's own Triton state", "2",
+       sum(1 for _m in ("9416a868", "8bd13173") if _m in _r02c))
+
     for _frag, _what in (
         ("Nothing about why", "it does not open either kernel"),
         ("Nothing about batch", "every cell is batch 1"),
