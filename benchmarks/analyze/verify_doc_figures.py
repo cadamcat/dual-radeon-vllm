@@ -9489,6 +9489,16 @@ def _run_checks(_opened, _audit_state):
                    ("results-failed-util092-nomns.jsonl", 5)):
         ck(f"09-06 README, {_f} kept", str(_n),
            sum(1 for _l in open(os.path.join(_c96, _f), encoding="utf-8")))
+    # and the sitting whose percentage this corrects has to say so, or a reader
+    # meets the architecture claim with nothing beside it
+    _rm93 = open(os.path.join(ROOT, "benchmarks", "campaign-2026-09-03",
+                              "README.md"), encoding="utf-8").read()
+    ck("09-03 README, says the 28 % belongs to its stack", "1",
+       1 if "belongs to this sitting's stack and not to the" in _rm93 else 0)
+    ck("09-03 README, and points at the sitting that shows it", "1",
+       1 if "campaign-2026-09-06" in _rm93 else 0)
+    ck("09-03 README, quotes the slope that does not move", "1",
+       1 if "0.236 \u00b5s per context token against 0.304" in _rm93 else 0)
     _rm96 = open(os.path.join(_c96, "README.md"), encoding="utf-8").read()
     for _frag, _what in (
         ("still a hypothesis the campaign", "the kernel is not attributed"),

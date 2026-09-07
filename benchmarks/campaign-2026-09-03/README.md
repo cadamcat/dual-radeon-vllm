@@ -26,7 +26,12 @@ is a 1 024-token sliding window with a global layer every sixth, go on losing
 at the rate they were losing and reach 128 000 at roughly half their
 500-token rate; Muse-Glimmer, whose every layer attends through a 2 048-token
 window, loses 17 % over the same span; the hybrid-SSM 27B loses 28 % to
-96 000. **Only half of that ordering is what the H100 gave the same six
+96 000. **That last percentage belongs to this sitting's stack and not to the
+model** — [`campaign-2026-09-06`](../campaign-2026-09-06/README.md) ran the same
+checkpoint, cards, TP and split-KV patch on vllm 0.27.1/ROCm 10.0 and it gives
+up 48.9 % over the span these two share, while its decode *slope* is flatter:
+0.236 µs per context token against 0.304. A percentage divides the depth cost by
+a baseline, and that baseline moved 4.19×. **Only half of that ordering is what the H100 gave the same six
 checkpoints the same day, and the half that differs is the interesting one.**
 Muse is flattest on both. The hybrid is not: at 80 000 it retains 75.8 % here,
 above every gemma arm, and 85.0 % on the H100, *below* every gemma arm — it is
