@@ -9518,6 +9518,27 @@ def _run_checks(_opened, _audit_state):
                    ("results-failed-util092-nomns.jsonl", 5)):
         ck(f"09-06 README, {_f} kept", str(_n),
            sum(1 for _l in open(os.path.join(_c96, _f), encoding="utf-8")))
+    # The index's Figure 3/4 caption said this ladder had not been re-run past
+    # 32 000 on 0.27, which stopped being true on 2026-09-07 -- and the figure
+    # was already drawing the two lines that made it untrue. A caption that
+    # denies its own figure is the failure this pair of checks is for.
+    _ix_en = open(os.path.join(ROOT, "site", "src", "index-body.html"),
+                  encoding="utf-8").read()
+    _ix_zh = open(os.path.join(ROOT, "site", "src", "index-body-zh.html"),
+                  encoding="utf-8").read()
+    ck("index caption, no longer says 0.27 past 32 000 is unmeasured", "0",
+       (1 if "past 32&nbsp;000 on 0.27 is not measured" in _ix_en else 0)
+       + (1 if "越过 32&nbsp;000 会是什么样，没有实测" in _ix_zh else 0))
+    ck("index caption, says it is measured and where", "2",
+       (1 if "past 32&nbsp;000 on 0.27 is now measured" in _ix_en else 0)
+       + (1 if "越过 32&nbsp;000 会是什么样，现在测了" in _ix_zh else 0))
+    ck("index caption, and stops calling the whole ladder 0.23.1", "0",
+       (1 if "The whole of this ladder ran on vLLM 0.23.1" in _ix_en else 0)
+       + (1 if "这条阶梯整体跑在 vLLM 0.23.1 上" in _ix_zh else 0))
+    ck("index caption, quotes the three costs", "2",
+       (1 if all(v in _ix_en for v in ("0.350", "0.233", "0.111")) else 0)
+       + (1 if all(v in _ix_zh for v in ("0.350", "0.233", "0.111")) else 0))
+
     # --- the depth-cost article (figures-depth.json) -----------------------
     # Every number the article prints comes out of this file, and this file is
     # recomputed from decode.jsonl, prefill.jsonl and campaign-2026-09-07 by

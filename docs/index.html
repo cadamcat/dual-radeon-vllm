@@ -1330,7 +1330,9 @@ rented the same day one click away as the background.</p>
         the two are different sittings on different prompt cuts, and the tooltip carries each point's
         own date.</dd>
       <dt>Qwen3.8-27B is a quarter of its Figure&nbsp;1 line</dt>
-      <dd>At every rung the two ladders share. The whole of this ladder ran on vLLM 0.23.1, while
+      <dd>At every rung the two ladders share. The pair's own six lines here ran on vLLM 0.23.1
+        &mdash; the two beside them, added 2026-09-07, are the same checkpoint on 0.27.1 and are
+        labelled as such &mdash; while
         Figure 1 takes each model's fastest measured configuration &mdash; for this one model that is a
         0.27.1 run, and for the pair's other four it is 0.23.1 as here. Read as time per step the gap
         is flat: <b>61.0&nbsp;ms</b> at 500 tokens and <b>68.8&nbsp;ms</b> at 32&nbsp;000, so it is a
@@ -1338,8 +1340,13 @@ rented the same day one click away as the background.</p>
         <code>Qwen3.8-27B-AWQ-INT4</code> is asymmetric, and 0.23.x is before
         <a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a>, so its linear layers
         are served by <code>TritonW4A16LinearKernel</code> there &mdash; the flat cost
-        <a href="w4a16-two-problems.html">the W4A16 article</a> separates out. What the line would do
-        past 32&nbsp;000 on 0.27 is not measured: this ladder has not been re-run.</dd>
+        <a href="w4a16-two-problems.html">the W4A16 article</a> separates out. <b>What the line does
+        past 32&nbsp;000 on 0.27 is now measured</b>, on this ladder and to 128&nbsp;000: switch on
+        either 0.27 line above, or read
+        <a href="depth-cost-is-the-stacks.html">what a retention percentage is made of</a>, which is
+        what those two lines are for. The depth cost falls from <b>0.350</b> to <b>0.233</b>
+        microseconds per context token across that version, and to <b>0.111</b> with
+        <code>--attention-backend TRITON_ATTN</code>.</dd>
       <dt>Deliberately absent</dt>
       <dd>Qwen3-8B, on every machine. Its own config caps context at 40&nbsp;960, so its ladder is
         Figure 1's eleven rungs everywhere it was run &mdash; a ceiling the model carries, not the
