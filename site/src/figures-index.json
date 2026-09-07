@@ -10889,7 +10889,7 @@
      "machine": "rdna3-027",
      "machine_name": "RX 7900 XT · vLLM 0.27",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -16743,7 +16743,7 @@
      "machine": "rdna3-027",
      "machine_name": "RX 7900 XT · vLLM 0.27",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"

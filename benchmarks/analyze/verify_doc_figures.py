@@ -7318,8 +7318,14 @@ def _run_checks(_opened, _audit_state):
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3"))
     ck("long figures, and every one of them is lit", "5",
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3" and x["lit"]))
-    ck("long figures, and no other line is", "0",
+    # one other line is lit since 2026-09-07b, deliberately: the same pair on
+    # vllm 0.27, because the default view's own 27B line is 12.33 tok/s at 500
+    # on a stack where those weights do 49.36, and a reader who does not touch
+    # the switches should not leave with the first number alone.
+    ck("long figures, and one other line is", "1",
        sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
+    ck("long figures, and it is the pair on 0.27", "1",
+       sum(1 for x in XLD["series"] if x["lit"] and x["cfg"] == "D8-27B-tp2-long-027b"))
     # nine since 2026-09-07: eight machines, plus the pair a second time on
     # vllm 0.27 -- campaign-2026-09-06, which is why the row exists
     ck("long figures, machines offered", "10", len(XL["machines"]))
@@ -9535,6 +9541,13 @@ def _run_checks(_opened, _audit_state):
     ck("index caption, and stops calling the whole ladder 0.23.1", "0",
        (1 if "The whole of this ladder ran on vLLM 0.23.1" in _ix_en else 0)
        + (1 if "这条阶梯整体跑在 vLLM 0.23.1 上" in _ix_zh else 0))
+    ck("index caption, says why the 0.27 line is lit", "2",
+       (1 if "12.33&nbsp;tok/s at 500 and on 0.27.1 they do 49.36" in _ix_en else 0)
+       + (1 if "500 档解码 12.33&nbsp;tok/s，在 0.27.1 上是 49.36" in _ix_zh else 0))
+    ck("index caption, and those two rates are the rows'", "2",
+       sum(1 for _c, _v in (("D8-27B-tp2-long", 12.33), ("D8-27B-tp2-long-027b", 49.36))
+           if any(abs(_r["decode_tok_s"] - _v) < 0.005 for _r in XDEC
+                  if _r["cfg"] == _c and _r["ctx"] == 500)))
     ck("index caption, quotes the three costs", "2",
        (1 if all(v in _ix_en for v in ("0.350", "0.233", "0.111")) else 0)
        + (1 if all(v in _ix_zh for v in ("0.350", "0.233", "0.111")) else 0))
@@ -9729,8 +9742,13 @@ def _run_checks(_opened, _audit_state):
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long"))
     ck("front page, and the 0.27 one is beside it", "1",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b"))
-    ck("front page, the 0.27 line is off by default", "0",
-       sum(1 for _x in _lng if _x["cfg"].endswith("027b") and _x["lit"]))
+    # the split is the point: the backend a current vLLM picks on its own is
+    # lit, the one behind a flag is not -- one model drawn three times by
+    # default would be a worse default than the one this fixes
+    ck("front page, the 0.27 default-backend line is lit", "1",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b" and _x["lit"]))
+    ck("front page, and the Triton one is not", "0",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-triton-long-027b" and _x["lit"]))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

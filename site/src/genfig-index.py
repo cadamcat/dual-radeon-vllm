@@ -990,7 +990,8 @@ LONG_PAIR_ABSENT = {
 # that lets every rented ratio be read as a card difference. It is a real
 # sixteen-rung ladder on a card Figure 1 already names, so it is offered here
 # too, off by default like every other background line.
-LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None),
+# (id, machine, cfg, date, label, lit-by-default)
+LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None, False),
               # The same checkpoint, cards, TP and split-KV patch as the pair's
               # own 27B line, on vllm 0.27.1/ROCm 10.0 instead of 0.23.1/7.14.
               # It is an extra rather than a replacement on purpose: the six
@@ -1003,12 +1004,21 @@ LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None),
               # in one session with sixteen rungs instead of eight, the two
               # sittings agreeing to 1.23 %. campaign-2026-09-06 keeps the
               # first sitting and its account; drawing both would be noise.
+              # LIT, unlike every other extra, and the reason is what the figure
+              # leaves a reader with rather than what it lets them compare. The
+              # six lines are six models on one stack and that is worth keeping,
+              # but on that stack this checkpoint decodes 12.33 tok/s at 500
+              # where the same weights on 0.27 do 49.36 -- so a reader who takes
+              # the default view and leaves has taken away a number wrong by four
+              # times for this model. The six stay; this is drawn beside them.
               ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027b", "2026-09-07b",
-               "RX 7900 XT · vLLM 0.27"),
+               "RX 7900 XT · vLLM 0.27", True),
               # And the finding campaign-2026-09-07 is about: one serve flag,
               # the same weights and cards, and less than half the depth cost.
               ("rdna3-027t", "RX 7900 XT", "D8-27B-tp2-triton-long-027b",
-               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN")]
+               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN", False)]
+# not lit: one model drawn three times by default is a worse default than the
+# one the line above is fixing
 LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
 
 
@@ -1115,8 +1125,8 @@ def _long_figure(rows_all, kind):
                                   "deepest": deepest})
                 continue
             out.append(_long_series(rows_all, mname, mid, cfg, LONG_DATE, False, kind))
-    for mid, mname, cfg, date, label in LONG_EXTRA:
-        out.append(_long_series(rows_all, mname, mid, cfg, date, False, kind, label))
+    for mid, mname, cfg, date, label, lit in LONG_EXTRA:
+        out.append(_long_series(rows_all, mname, mid, cfg, date, lit, kind, label))
     return out, not_drawn
 
 

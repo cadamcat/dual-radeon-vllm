@@ -158,7 +158,10 @@ rented the same day one click away as the background.</p>
   <figcaption>
     <p class="caplede"><b>Figure 3.</b> Decode rate at batch 1 against context length, 500 to
     128&nbsp;000, log axis. The default view is 2&times; RX 7900 XT at tensor parallelism 2 on the
-    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; and the switch above
+    2026-09-03 ladder &mdash; the first rows on this machine past 32&nbsp;000 &mdash; <b>plus the same
+    <code>Qwen3.8-27B</code> on vLLM 0.27.1</b>, because on the 0.23.1 ladder those weights decode
+    12.33&nbsp;tok/s at 500 and on 0.27.1 they do 49.36, and the six-on-one-stack comparison is not
+    worth leaving a reader with the first number alone. The switch above
     the chart puts one model on every machine rented that day instead. The controls are Figure 1's.</p>
     <dl class="capnotes">
       <dt>The whole ladder</dt>

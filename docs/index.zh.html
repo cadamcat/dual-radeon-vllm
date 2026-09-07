@@ -1296,8 +1296,10 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
   </div>
   <figcaption>
     <p class="caplede"><b>图 3.</b> 批量 1 的解码速率对上下文长度，500 到 128&nbsp;000，横轴取对数。默认视图是
-    2&times; RX 7900 XT、张量并行 2，跑 2026-09-03 那条阶梯 —— 这台机器上第一批超过 32&nbsp;000 的行；
-    图上方的开关换成一个模型在当天租用的每台机器上。控件和图 1 一样。</p>
+    2&times; RX 7900 XT、张量并行 2，跑 2026-09-03 那条阶梯 —— 这台机器上第一批超过 32&nbsp;000 的行 ——
+    <b>外加同一个 <code>Qwen3.8-27B</code> 在 vLLM 0.27.1 上的那条</b>：在 0.23.1 的阶梯上这份权重
+    500 档解码 12.33&nbsp;tok/s，在 0.27.1 上是 49.36，而"六个模型同一个栈"的可比性，不值得让读者
+    只带走前一个数。图上方的开关换成一个模型在当天租用的每台机器上。控件和图 1 一样。</p>
     <dl class="capnotes">
       <dt>整条阶梯</dt>
       <dd>十六档、从 500 起，而不是只画 32&nbsp;000 以上的五档：一条曲线在深处的形状，只有对着它的起点才读得出来。
@@ -12288,7 +12290,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
      "machine": "rdna3-027",
      "machine_name": "RX 7900 XT · vLLM 0.27",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
@@ -18142,7 +18144,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
      "machine": "rdna3-027",
      "machine_name": "RX 7900 XT · vLLM 0.27",
      "tp": 2,
-     "lit": false,
+     "lit": true,
      "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
      "patches": [
       "vllm#45916 split-KV"
