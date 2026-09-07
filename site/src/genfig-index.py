@@ -1002,37 +1002,24 @@ LONG_PAIR_ABSENT = {
 # to those that never reached past 32 000. Declared separately so the assertion
 # below cannot be satisfied by forgetting one.
 LONG_PAIR_SUPERSEDED = {"D8-27B-tp2-long"}
+# What replaces it, drawn on the pair itself rather than as another machine:
+# the fastest configuration this checkpoint has been measured in, with the
+# backend a current vLLM picks on its own hanging off it as a switch. This is
+# Figure 1's shape -- one line per model, alternatives as arms -- and it is the
+# only shape that gets the model's own colour and a button. Putting them in the
+# machine row instead, which this figure did for one commit on 2026-09-07b,
+# leaves the model greyed out in the default view: `isLit` draws only the
+# picked machine, so a line hung on another machine id is not drawn at all.
+LONG_PAIR_REPLACED = [
+    dict(cfg="D8-27B-tp2-triton-long-027b", date="2026-09-07b", lit=True, alt=None),
+    dict(cfg="D8-27B-tp2-long-027b", date="2026-09-07b", lit=False, alt="backend"),
+]
 # The L4 ran gemma-4-12B to 128 000 on the same day, as the platform control
 # that lets every rented ratio be read as a card difference. It is a real
 # sixteen-rung ladder on a card Figure 1 already names, so it is offered here
 # too, off by default like every other background line.
 # (id, machine, cfg, date, label, lit-by-default)
-LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None, False),
-              # The same checkpoint, cards, TP and split-KV patch as the pair's
-              # own 27B line, on vllm 0.27.1/ROCm 10.0 instead of 0.23.1/7.14.
-              # It is an extra rather than a replacement on purpose: the six
-              # lines above are six models on ONE stack, and swapping one of
-              # them for another stack would end that. What it is here to show
-              # is that the 27B line's *percentage* belongs to its stack --
-              # see campaign-2026-09-06/README.md, which reports the slope
-              # instead, in the unit that does not move.
-              # Superseded 2026-09-07b by the arm below: the same configuration
-              # in one session with sixteen rungs instead of eight, the two
-              # sittings agreeing to 1.23 %. campaign-2026-09-06 keeps the
-              # first sitting and its account; drawing both would be noise.
-              # LIT, unlike every other extra, and the reason is what the figure
-              # leaves a reader with rather than what it lets them compare. The
-              # six lines are six models on one stack and that is worth keeping,
-              # but on that stack this checkpoint decodes 12.33 tok/s at 500
-              # where the same weights on 0.27 do 49.36 -- so a reader who takes
-              # the default view and leaves has taken away a number wrong by four
-              # times for this model. The six stay; this is drawn beside them.
-              ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027b", "2026-09-07b",
-               "RX 7900 XT · vLLM 0.27 · ROCM_ATTN", False),
-              # And the finding campaign-2026-09-07 is about: one serve flag,
-              # the same weights and cards, and less than half the depth cost.
-              ("rdna3-027t", "RX 7900 XT", "D8-27B-tp2-triton-long-027b",
-               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN", True)]
+LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None, False)]
 # Figure 1's rule, applied here: the lit line is the fastest configuration this
 # checkpoint has been measured in, which is TRITON_ATTN on 0.27.1 -- 1.48x the
 # default backend's decode at 128 000. ROCM_ATTN stays one click away because
@@ -1040,7 +1027,8 @@ LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None, False),
 LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
 
 
-def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind, label=None):
+def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind, label=None,
+                 alt=None):
     rows = sorted([r for r in rows_all if r["machine"] == machine_name
                    and r["cfg"] == cfg and r["date"] == date], key=lambda r: r["ctx"])
     assert rows, (machine_name, cfg, date)
@@ -1052,7 +1040,7 @@ def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind, label=None):
          "tp": r0["tp"], "lit": lit, "vllm": r0["vllm"], "patches": list(r0["patches"]),
          "harness": r0["harness"], "date": date, "quant": quant,
          "quant_label": qlabel(quant), "arch": arch, "attn_backend": r0["attn_backend"],
-         "prefix_caching": r0.get("prefix_caching"), "cfg": cfg,
+         "prefix_caching": r0.get("prefix_caching"), "cfg": cfg, "alt": alt,
          "source": "benchmarks/decode.jsonl" if kind == "decode" else "benchmarks/prefill.jsonl",
          "rungs_measured": len(rows)}
     if kind == "decode":
@@ -1132,6 +1120,9 @@ def _long_figure(rows_all, kind):
             continue
         out.append(_long_series(rows_all, "RX 7900 XT", "rdna3", cfg, LONG_DATE,
                                 CFG_MODEL[cfg] in LIT, kind))
+    for _r in LONG_PAIR_REPLACED:
+        out.append(_long_series(rows_all, "RX 7900 XT", "rdna3", _r["cfg"],
+                                _r["date"], _r["lit"], kind, alt=_r["alt"]))
     # the rented machines, from the same day, every one off by default. B8 is
     # not here on any of them and that is arithmetic: its config.json caps
     # context at 40 960, so its ladder is Figure 1's eleven rungs everywhere.
@@ -1189,9 +1180,7 @@ FAMILY_ORDER = ["h100", "h200", "b300", "pro6000", "a100", "l4", "t4"]
 LONG_MACHINES = ([{"id": "rdna3", "default": True, "cards": 2, "family": "radeon"}]
                  + [{"id": m, "default": False, "cards": c, "family": FAMILY[m]}
                     for m, _n, c in RENTED]
-                 + [{"id": "l4", "default": False, "cards": 1, "family": "l4"},
-                    {"id": "rdna3-027", "default": False, "cards": 2, "family": "radeon"},
-                    {"id": "rdna3-027t", "default": False, "cards": 2, "family": "radeon"}])
+                 + [{"id": "l4", "default": False, "cards": 1, "family": "l4"}])
 assert [m["id"] for m in LONG_MACHINES] == list(dict.fromkeys(
     [x["machine"] for x in long_dec])), "the machine row is not the lines' order"
 LONG_OUT = {

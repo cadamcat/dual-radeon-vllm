@@ -776,9 +776,13 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
         if (!o.arms) return;
         var m = mode === "machine" ? it : pick, mach = mode === "machine" ? pick : it;
         var lab = BB.labels[m] || {};
+        // `arms: true` offers both kinds; `arms: ["alt"]` offers only the one
+        // named. A figure that has no speculative rows would otherwise print a
+        // permanently disabled MTP switch, which is worse than not offering it.
         [["spec", lab.spec_label, specOn, S.bestSpecOf, S.bestSpecAway],
          ["alt", lab.alt_label, altOn, S.bestAltOf, null]].forEach(function (a) {
           if (!a[1]) return;
+          if (Array.isArray(o.arms) && o.arms.indexOf(a[0]) < 0) return;
           var arm = F.series.filter(function (x) { return x[a[0]] && x.model === m; });
           var live = arm.some(function (x) { return x.machine === mach; });
           // in the one-model view a machine that never ran the arm gets no
@@ -927,6 +931,11 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     /* Figures 3 and 4: the same two questions, to 128 000 */
     build({
       data: LG.decode, machines: LG.machines, svg: "long", h: 380, xkey: "ctx",
+      // arms, like Figure 1: this checkpoint's line is the fastest configuration
+      // it has been measured in and the backend a current vLLM picks on its own
+      // hangs off it as a switch, rather than sitting in the machine row. Only
+      // the backend arm -- these ladders have no speculative rows.
+      arms: ["alt"],
       ids: { seg: "longmode", mach: "longmach", model: "longkey", machLab: "longmachlab",
              modelLab: "longkeylab", note: "longnote" },
       xlabel: S.bestAxisX, ylabel: S.bestAxisY, unit: S.longDecUnit,
@@ -960,6 +969,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     });
     build({
       data: LG.prefill, machines: LG.machines, svg: "longpre", h: 340, xkey: "tokens",
+      arms: ["alt"],
       ids: { seg: "longpremode", mach: "longpremach", model: "longprekey", machLab: "longpremachlab",
              modelLab: "longprekeylab", note: "longprenote" },
       xlabel: S.preAxisX, ylabel: S.preAxisY, unit: S.longPreUnit,

@@ -7336,23 +7336,32 @@ def _run_checks(_opened, _audit_state):
     ck("long figures, and the same lines on both", "1",
        1 if [(x["machine"], x["cfg"]) for x in XLD["series"]]
        == [(x["machine"], x["cfg"]) for x in XLP["series"]] else 0)
-    ck("long figures, lines on the pair", "4",
+    # six since 2026-09-07b: four models on the campaign's stack, plus this
+    # checkpoint's fastest configuration and the backend switch hanging off it
+    ck("long figures, lines on the pair", "6",
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3"))
-    ck("long figures, and every one of them is lit", "4",
+    ck("long figures, and every one of them is lit but the arm", "5",
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3" and x["lit"]))
-    # one other line is lit since 2026-09-07b, deliberately: the same pair on
-    # vllm 0.27, because the default view's own 27B line is 12.33 tok/s at 500
-    # on a stack where those weights do 49.36, and a reader who does not touch
-    # the switches should not leave with the first number alone.
-    ck("long figures, and one other line is", "1",
+    ck("long figures, and no other machine's line is", "0",
        sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
-    ck("long figures, and it is the pair's Triton arm on 0.27", "1",
-       sum(1 for x in XLD["series"] if x["lit"]
+    # the arm is Figure 1's shape: one line per model, the backend it is not as
+    # a switch on that line rather than as another machine in the row. Drawn as
+    # a machine it is not drawn at all in the default view -- `isLit` keeps only
+    # the picked machine -- which is how the model went grey for one commit.
+    ck("long figures, the 27B's line is its fastest configuration", "1",
+       sum(1 for x in XLD["series"] if x["lit"] and x["machine"] == "rdna3"
            and x["cfg"] == "D8-27B-tp2-triton-long-027b"))
+    ck("long figures, and the other backend is an arm on it", "1",
+       sum(1 for x in XLD["series"] if x["machine"] == "rdna3"
+           and x["cfg"] == "D8-27B-tp2-long-027b" and x.get("alt") == "backend"
+           and not x["lit"]))
+    ck("long figures, and the arm is on the pair, not in the machine row", "1",
+       1 if all(x["machine"] == "rdna3" for x in XLD["series"]
+                if x.get("alt")) else 0)
     # nine since 2026-09-07: eight machines, plus the pair a second time on
     # vllm 0.27 -- campaign-2026-09-06, which is why the row exists
-    ck("long figures, machines offered", "10", len(XL["machines"]))
-    ck("long figures, and three of the rows are the same pair", "3",
+    ck("long figures, machines offered", "8", len(XL["machines"]))
+    ck("long figures, and one row is the pair", "1",
        sum(1 for m in XL["machines"] if m["family"] == "radeon"))
     ck("long figures, and only the pair is on by default", "1",
        1 if [m["id"] for m in XL["machines"] if m["default"]] == ["rdna3"] else 0)
