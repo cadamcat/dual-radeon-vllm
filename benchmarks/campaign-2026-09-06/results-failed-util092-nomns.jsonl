@@ -1,0 +1,5 @@
+{"kind": "note", "cfg": "D8-27B-tp2-long-027", "note": "no-kv-room, mml->66000", "ts": 1788728344.5}
+{"kind": "note", "cfg": "D8-27B-tp2-long-027", "note": "no-kv-room, mml->33000", "ts": 1788728480.2}
+{"kind": "note", "cfg": "D8-27B-tp2-long-027", "note": "no-kv-room, mml->16500", "ts": 1788728625.8}
+{"kind": "note", "cfg": "D8-27B-tp2-long-027", "note": "no-kv-room, mml->8250", "ts": 1788728771.5}
+{"kind": "config_failed", "cfg": "D8-27B-tp2-long-027", "why": "startup retries exhausted", "ts": 1788728771.5}

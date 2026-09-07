@@ -980,11 +980,21 @@ LONG_PAIR_ABSENT = {
 # that lets every rented ratio be read as a card difference. It is a real
 # sixteen-rung ladder on a card Figure 1 already names, so it is offered here
 # too, off by default like every other background line.
-LONG_EXTRA = [("l4", "L4", "G12")]
+LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None),
+              # The same checkpoint, cards, TP and split-KV patch as the pair's
+              # own 27B line, on vllm 0.27.1/ROCm 10.0 instead of 0.23.1/7.14.
+              # It is an extra rather than a replacement on purpose: the six
+              # lines above are six models on ONE stack, and swapping one of
+              # them for another stack would end that. What it is here to show
+              # is that the 27B line's *percentage* belongs to its stack --
+              # see campaign-2026-09-06/README.md, which reports the slope
+              # instead, in the unit that does not move.
+              ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027", "2026-09-07",
+               "RX 7900 XT · vLLM 0.27")]
 LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
 
 
-def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind):
+def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind, label=None):
     rows = sorted([r for r in rows_all if r["machine"] == machine_name
                    and r["cfg"] == cfg and r["date"] == date], key=lambda r: r["ctx"])
     assert rows, (machine_name, cfg, date)
@@ -992,7 +1002,7 @@ def _long_series(rows_all, machine_name, mid, cfg, date, lit, kind):
         f"{machine_name}/{cfg}: stops at {rows[-1]['ctx']}, which is Figure 1's subject"
     r0 = rows[0]
     quant, arch = _QA[r0["model"]]
-    s = {"model": r0["model"], "machine": mid, "machine_name": machine_name,
+    s = {"model": r0["model"], "machine": mid, "machine_name": label or machine_name,
          "tp": r0["tp"], "lit": lit, "vllm": r0["vllm"], "patches": list(r0["patches"]),
          "harness": r0["harness"], "date": date, "quant": quant,
          "quant_label": qlabel(quant), "arch": arch, "attn_backend": r0["attn_backend"],
@@ -1087,8 +1097,8 @@ def _long_figure(rows_all, kind):
                                   "deepest": deepest})
                 continue
             out.append(_long_series(rows_all, mname, mid, cfg, LONG_DATE, False, kind))
-    for mid, mname, cfg in LONG_EXTRA:
-        out.append(_long_series(rows_all, mname, mid, cfg, LONG_DATE, False, kind))
+    for mid, mname, cfg, date, label in LONG_EXTRA:
+        out.append(_long_series(rows_all, mname, mid, cfg, date, False, kind, label))
     return out, not_drawn
 
 
@@ -1130,7 +1140,8 @@ FAMILY_ORDER = ["h100", "h200", "b300", "pro6000", "a100", "l4", "t4"]
 LONG_MACHINES = ([{"id": "rdna3", "default": True, "cards": 2, "family": "radeon"}]
                  + [{"id": m, "default": False, "cards": c, "family": FAMILY[m]}
                     for m, _n, c in RENTED]
-                 + [{"id": "l4", "default": False, "cards": 1, "family": "l4"}])
+                 + [{"id": "l4", "default": False, "cards": 1, "family": "l4"},
+                    {"id": "rdna3-027", "default": False, "cards": 2, "family": "radeon"}])
 assert [m["id"] for m in LONG_MACHINES] == list(dict.fromkeys(
     [x["machine"] for x in long_dec])), "the machine row is not the lines' order"
 LONG_OUT = {

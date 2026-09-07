@@ -119,6 +119,7 @@ CFG = {
     "E-26B-tp2-long":            ("gemma-4-26B-A4B", "int4 AWQ", "MoE, 128 experts", 2),
     "G-30B-tp2-long":            ("Muse-Glimmer-30B", "int4", "sliding window 2048", 2),
     "D8-27B-tp2-long":           ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "D8-27B-tp2-long-027":       ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "C-31B-tp2-long":            ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
 }
 
@@ -187,6 +188,11 @@ ARMS = {
     # Qwen3.8-27B int4 AWQ: the override line again (logs/D8-27B-tp2-long.log),
     # as Q38-tp2 / Q38-tp2-x16 above; served at max_num_seqs 161
     "D8-27B-tp2-long":           (None,   "ROCM_ATTN"),
+    # Same decoder backend as the 0.23 arm above, and its log says so in the
+    # same words: "Overriding with ROCM_ATTN out of potential backends:
+    # ['ROCM_ATTN', 'TRITON_ATTN']". The TORCH_SDPA that also appears in that
+    # log is MMEncoderAttention's, which is the multimodal encoder and not this.
+    "D8-27B-tp2-long-027":       (None,   "ROCM_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 

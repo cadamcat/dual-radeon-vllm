@@ -10883,6 +10883,92 @@
       "to_tok_s": 21.59325,
       "change_pct": -23.638726560635114
      }
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "rdna3-027",
+     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "tp": 2,
+     "lit": false,
+     "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+     "patches": [
+      "vllm#45916 split-KV"
+     ],
+     "harness": "campaign-server",
+     "date": "2026-09-07",
+     "quant": "int4 AWQ",
+     "quant_label": "INT4 AWQ",
+     "arch": "hybrid SSM",
+     "attn_backend": "ROCM_ATTN",
+     "prefix_caching": true,
+     "cfg": "D8-27B-tp2-long-027",
+     "source": "benchmarks/decode.jsonl",
+     "rungs_measured": 8,
+     "points": [
+      {
+       "ctx": 8000,
+       "tok_s": 46.105000000000004,
+       "runs": 2,
+       "range_pct": 0.021689621516100228,
+       "graded": true
+      },
+      {
+       "ctx": 16000,
+       "tok_s": 42.425,
+       "runs": 2,
+       "range_pct": 0.07071302298173515,
+       "graded": true
+      },
+      {
+       "ctx": 32000,
+       "tok_s": 36.63,
+       "runs": 2,
+       "range_pct": 0.0,
+       "graded": true
+      },
+      {
+       "ctx": 48000,
+       "tok_s": 32.15,
+       "runs": 2,
+       "range_pct": 0.06220839813373568,
+       "graded": true
+      },
+      {
+       "ctx": 64000,
+       "tok_s": 28.685000000000002,
+       "runs": 2,
+       "range_pct": 0.1743071291615852,
+       "graded": true
+      },
+      {
+       "ctx": 80000,
+       "tok_s": 25.88,
+       "runs": 2,
+       "range_pct": 0.15455950540957938,
+       "graded": true
+      },
+      {
+       "ctx": 96000,
+       "tok_s": 23.57,
+       "runs": 2,
+       "range_pct": 0.0848536274925735,
+       "graded": true
+      },
+      {
+       "ctx": 128000,
+       "tok_s": 20.01,
+       "runs": 2,
+       "range_pct": 0.0,
+       "graded": true
+      }
+     ],
+     "retained": {
+      "from_ctx": 8000,
+      "to_ctx": 128000,
+      "from_tok_s": 46.105000000000004,
+      "to_tok_s": 20.01,
+      "change_pct": -56.5990673462748
+     }
     }
    ],
    "ticks": [
@@ -16453,6 +16539,108 @@
       "tokens": 128013,
       "pct": 64.78125475883041
      }
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "rdna3-027",
+     "machine_name": "RX 7900 XT · vLLM 0.27",
+     "tp": 2,
+     "lit": false,
+     "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+     "patches": [
+      "vllm#45916 split-KV"
+     ],
+     "harness": "campaign-server",
+     "date": "2026-09-07",
+     "quant": "int4 AWQ",
+     "quant_label": "INT4 AWQ",
+     "arch": "hybrid SSM",
+     "attn_backend": "ROCM_ATTN",
+     "prefix_caching": true,
+     "cfg": "D8-27B-tp2-long-027",
+     "source": "benchmarks/prefill.jsonl",
+     "rungs_measured": 8,
+     "points": [
+      {
+       "ctx": 8000,
+       "tokens": 8070,
+       "tok_s": 1184.1004798027966,
+       "ttft_s": 6.815300000000001,
+       "runs": 2,
+       "range_pct": 0.6191950464396319
+      },
+      {
+       "ctx": 16000,
+       "tokens": 16098,
+       "tok_s": 1197.17105312084,
+       "ttft_s": 13.4467,
+       "runs": 2,
+       "range_pct": 0.17699509916932313
+      },
+      {
+       "ctx": 32000,
+       "tokens": 32127,
+       "tok_s": 1104.170497369918,
+       "ttft_s": 29.096049999999998,
+       "runs": 2,
+       "range_pct": 0.31378829772426287
+      },
+      {
+       "ctx": 48000,
+       "tokens": 48132,
+       "tok_s": 1023.3306721746627,
+       "ttft_s": 47.03465,
+       "runs": 2,
+       "range_pct": 0.14988949636065235
+      },
+      {
+       "ctx": 64000,
+       "tokens": 64162,
+       "tok_s": 952.2834201582143,
+       "ttft_s": 67.377,
+       "runs": 2,
+       "range_pct": 0.05966427712720762
+      },
+      {
+       "ctx": 80000,
+       "tokens": 80205,
+       "tok_s": 894.6952453035611,
+       "ttft_s": 89.64505,
+       "runs": 2,
+       "range_pct": 0.03603099111439195
+      },
+      {
+       "ctx": 96000,
+       "tokens": 96220,
+       "tok_s": 844.358388102111,
+       "ttft_s": 113.95635,
+       "runs": 2,
+       "range_pct": 0.07643277447899341
+      },
+      {
+       "ctx": 128000,
+       "tokens": 128298,
+       "tok_s": 754.0649170089547,
+       "ttft_s": 170.14184999999998,
+       "runs": 2,
+       "range_pct": 0.023098373504224407
+      }
+     ],
+     "dropped": [],
+     "fit": {
+      "a_ms": 169.44347919418007,
+      "b_us_tok": 763.1016702086339,
+      "c_ns_tok2": 4.375384694905295,
+      "r2": 0.9999919338571065,
+      "rungs": 8
+     },
+     "fit_scope": "the whole ladder",
+     "crossover_tokens": 174407.9031718493,
+     "quadratic_share_deepest": {
+      "ctx": 128000,
+      "tokens": 128298,
+      "pct": 42.34149106017037
+     }
     }
    ],
    "ticks": [
@@ -16467,7 +16655,7 @@
     128000
    ],
    "ctx_min": 500,
-   "ctx_max": 128055,
+   "ctx_max": 128298,
    "not_drawn": [
     {
      "machine": "rdna3",
@@ -16561,6 +16749,12 @@
     "default": false,
     "cards": 1,
     "family": "l4"
+   },
+   {
+    "id": "rdna3-027",
+    "default": false,
+    "cards": 2,
+    "family": "radeon"
    }
   ],
   "family_order": [

@@ -1,0 +1,21 @@
+07:36:40 | ===== start =====
+07:36:43 | services stopped: inactive inactive 
+07:36:51 | vllm=0.27.1.dev5+gf46a9dfe2.d20260827  chunked_prefill_paged_decode.py=84c6d4f9b2dfe2714b3a8f43ee832b02
+07:36:51 | === campaign start rev3 (['D8-27B-tp2-long-027']) ===
+07:42:13 | D8-27B-tp2-long-027: still starting (5 min, idle 31s)
+07:44:52 | D8-27B-tp2-long-027: ready (mml=130000, util=0.92), 8 points x 2 rounds
+07:45:45 | D8-27B-tp2-long-027: point 8000 done
+07:47:07 | D8-27B-tp2-long-027: point 16000 done
+07:49:35 | D8-27B-tp2-long-027: point 32000 done
+07:53:19 | D8-27B-tp2-long-027: point 48000 done
+07:58:28 | D8-27B-tp2-long-027: point 64000 done
+08:05:10 | D8-27B-tp2-long-027: point 80000 done
+08:13:34 | D8-27B-tp2-long-027: point 96000 done
+08:25:49 | D8-27B-tp2-long-027: point 128000 done
+08:25:49 | D8-27B-tp2-long-027: COMPLETE (32 ok, 0 err)
+08:26:00 | === campaign end: container stopped, services restored ===
+08:26:00 | runner exit=0
+08:26:00 | restore: stopping vllm, returning the guest to its services
+08:26:13 | services: active active 
+08:26:13 | vram: 27971584 27971584   (baseline 27971584)
+08:26:13 | ===== END =====

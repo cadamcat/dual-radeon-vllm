@@ -2038,7 +2038,7 @@ def _run_checks(_opened, _audit_state):
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "30", len(_camps))
+    ck("campaigns, every results.jsonl found", "31", len(_camps))
     # the generated index, since 2026-09-03: the hand-typed table it replaced
     # named eighteen of forty-two directories
     import build_campaigns as _bc
@@ -2142,9 +2142,9 @@ def _run_checks(_opened, _audit_state):
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "298", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "306", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "304", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "312", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -3466,12 +3466,13 @@ def _run_checks(_opened, _audit_state):
     # vLLM routed to FLASH_ATTN by its own default rather than being forced --
     # the A100 forces gemma-4 onto Triton "FA4 not available" and this machine
     # does not, which is why `default` moves by the whole 118.
-    ck("route column, rows carrying one", "1834", len(_rt))
+    # +16 on 2026-09-07: campaign-2026-09-06's eight rungs, prefill and decode
+    ck("route column, rows carrying one", "1850", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "240", _dec.get("override", 0))
+    ck("route column, chosen by override", "256", _dec.get("override", 0))
     ck("route column, forced", "590", _dec.get("forced", 0))
     ck("route column, left to the default", "1004", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
@@ -3490,9 +3491,9 @@ def _run_checks(_opened, _audit_state):
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "240",
+    ck("route column, ROCm offered both of its backends", "256",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "240",
+    ck("route column, and Triton was the other one", "256",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
@@ -7314,7 +7315,11 @@ def _run_checks(_opened, _audit_state):
        sum(1 for x in XLD["series"] if x["machine"] == "rdna3" and x["lit"]))
     ck("long figures, and no other line is", "0",
        sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
-    ck("long figures, machines offered", "8", len(XL["machines"]))
+    # nine since 2026-09-07: eight machines, plus the pair a second time on
+    # vllm 0.27 -- campaign-2026-09-06, which is why the row exists
+    ck("long figures, machines offered", "9", len(XL["machines"]))
+    ck("long figures, and two of the rows are the same pair", "2",
+       sum(1 for m in XL["machines"] if m["family"] == "radeon"))
     ck("long figures, and only the pair is on by default", "1",
        1 if [m["id"] for m in XL["machines"] if m["default"]] == ["rdna3"] else 0)
     ck("long figures, every line reaches past 32 000", "0",
@@ -7327,8 +7332,12 @@ def _run_checks(_opened, _audit_state):
     # every decode point is decode.jsonl's, on the date the figure names
     _lbad = _lret = 0
     for x in XLD["series"]:
-        rows = {r["ctx"]: r for r in XDEC if r["machine"] == x["machine_name"]
-                and r["cfg"] == x["cfg"] and r["date"] == XL["date"]}
+        # each line's own date and each line's own machine: since 2026-09-07 the
+        # figure carries a second sitting -- the same 27B on vllm 0.27 -- so a
+        # single figure-level date no longer keys every line, and the extra line
+        # displays a label rather than the machine string its rows carry.
+        rows = {r["ctx"]: r for r in XDEC if r["machine"] == x["machine_name"].split(" · ")[0]
+                and r["cfg"] == x["cfg"] and r["date"] == x["date"]}
         for p in x["points"]:
             r = rows.get(p["ctx"])
             if not r or abs(r["decode_tok_s"] - p["tok_s"]) > 1e-9 or r["chart_grade"] != p["graded"]:
@@ -7346,15 +7355,16 @@ def _run_checks(_opened, _audit_state):
     _lfits = {(f["machine"], f["cfg"], f["date"]): f for f in _bpm.fits(XPFROWS)}
     _lbad = _lfit = _lder = _lung = 0
     for x in XLP["series"]:
-        rows = {r["ctx"]: r for r in XPFROWS if r["machine"] == x["machine_name"]
-                and r["cfg"] == x["cfg"] and r["date"] == XL["date"]}
+        _mach = x["machine_name"].split(" · ")[0]      # the label may name a stack
+        rows = {r["ctx"]: r for r in XPFROWS if r["machine"] == _mach
+                and r["cfg"] == x["cfg"] and r["date"] == x["date"]}
         for p in x["points"]:
             r = rows.get(p["ctx"])
             if not r or abs(r["prefill_tok_s"] - p["tok_s"]) > 1e-9:
                 _lbad += 1
             elif not r["chart_grade"]:
                 _lung += 1
-        f = _lfits.get((x["machine_name"], x["cfg"], x["date"]))
+        f = _lfits.get((_mach, x["cfg"], x["date"]))
         if (not f or abs(f["b_us_tok"] - x["fit"]["b_us_tok"]) > 1e-9
                 or abs(f["c_ns_tok2"] - x["fit"]["c_ns_tok2"]) > 1e-9
                 or x["fit_scope"] != "the whole ladder"):
@@ -7711,12 +7721,13 @@ def _run_checks(_opened, _audit_state):
     # 6000s. The sentence no longer needs a special case for the one that runs
     # furthest, because seven of the sixteen now rise and the spread across
     # one checkpoint is 134 points.
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "17", len(_lad))
+    # eighteen since 2026-09-07: the same checkpoint again on 0.27 (campaign-2026-09-06)
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "18", len(_lad))
     ck("hybrid section 6, rising by more than 1 pct", "7",
        sum(1 for x in _lad if x > 1))
     ck("hybrid section 6, flat inside 1 pct", "1",
        sum(1 for x in _lad if 0 < x <= 1))
-    ck("hybrid section 6, and falling", "9", sum(1 for x in _lad if x < 0))
+    ck("hybrid section 6, and falling", "10", sum(1 for x in _lad if x < 0))
     ck("hybrid section 6, the steepest fall", "-38.7", min(_lad), 0.01)
     ck("hybrid section 6, and the range across one checkpoint", "142", round(max(_lad) - min(_lad)))
     ck("hybrid section 6, and the steepest rise", "103.0", max(_lad), 0.01)
@@ -9362,6 +9373,139 @@ def _run_checks(_opened, _audit_state):
         ck(f"CLR serve C README, states {_what}", "1", 1 if _frag in _crm else 0)
     ck("root-cause version scope, points at the addendum", "1",
        1 if "Addendum 2026-09-06: a runtime-side opt-in lets stock 2.30.4 run without" in open(os.path.join(ROOT, "docs", "root-cause.md"), encoding="utf-8").read() else 0)
+
+    # --- campaign-2026-09-06: the 27B's depth curve on 0.27 --------------
+    # Every number the README publishes, recomputed from its own rows and from
+    # the projections the 0.23 arm lives in. The two arms share their ladder,
+    # so the comparison is per-rung and not a fit against different rungs.
+    _c96 = os.path.join(ROOT, "benchmarks", "campaign-2026-09-06")
+    _r96 = [json.loads(_l) for _l in open(os.path.join(_c96, "results.jsonl"),
+                                          encoding="utf-8")]
+    def _med96(kind, key, target):
+        _v = [r[key] for r in _r96 if r.get("kind") == kind
+              and r.get("target") == target and r.get(key) is not None]
+        return statistics.median(_v) if _v else float("nan")
+    _dec23 = {r["ctx"]: r["decode_tok_s"] for r in XDEC
+              if r.get("cfg") == "D8-27B-tp2-long"}
+    _pre23 = {r["ctx"]: r["prefill_tok_s"] for r in XPFROWS
+              if r.get("cfg") == "D8-27B-tp2-long"}
+    for _t, _p27, _d27 in ((8000, "1184.2", "46.11"), (16000, "1197.1", "42.42"),
+                           (32000, "1104.2", "36.63"), (48000, "1023.3", "32.15"),
+                           (64000, "952.3", "28.69"), (80000, "894.7", "25.88"),
+                           (96000, "844.4", "23.57"), (128000, "754.0", "20.01")):
+        ck(f"09-06 README, decode {_t} on 0.27", _d27, _med96("decode", "decode_tps", _t))
+        ck(f"09-06 README, prefill {_t} on 0.27", _p27, _med96("prefill", "prefill_tps", _t))
+    # the 0.23 column is the published arm, read from the projection it feeds
+    for _t, _p23, _d23 in ((8000, "1067.2", "11.74"), (32000, "896.1", "10.79"),
+                           (96000, "599.0", "8.93")):
+        _k = min(_dec23, key=lambda c: abs(c - _t))
+        ck(f"09-06 README, decode {_t} on 0.23", _d23, _dec23[_k])
+        ck(f"09-06 README, prefill {_t} on 0.23", _p23, _pre23[_k])
+    # The result the campaign turns on: a percentage carries the baseline into
+    # a claim about depth, and the two stacks' baselines differ 4.19x. The fit
+    # is ms per token against context over the rungs the two arms share.
+    def _slope(pairs):                       # -> (us per context token, intercept ms)
+        _xs = sorted(pairs); _ys = [1000.0 / pairs[x] for x in _xs]
+        _n = len(_xs); _mx = sum(_xs) / _n; _my = sum(_ys) / _n
+        _b = (sum((x - _mx) * (y - _my) for x, y in zip(_xs, _ys))
+              / sum((x - _mx) ** 2 for x in _xs))
+        return _b * 1000, _my - _b * _mx
+    _sh = [8000, 16000, 32000, 48000, 64000, 80000, 96000]
+    _f27 = {t: _med96("decode", "decode_tps", t) for t in _sh}
+    _f23 = {t: _dec23[min(_dec23, key=lambda c: abs(c - t))] for t in _sh}
+    _b27, _a27 = _slope(_f27)
+    _b23, _a23 = _slope(_f23)
+    ck("09-06 README, 0.23 slope us per context token", "0.304", _b23)
+    ck("09-06 README, 0.27 slope us per context token", "0.236", _b27)
+    ck("09-06 README, 0.23 intercept ms", "82.9", _a23)
+    ck("09-06 README, 0.27 intercept ms", "19.8", _a27)
+    ck("09-06 README, the slope is 0.78 of the old one", "0.78", _b27 / _b23)
+    ck("09-06 README, and the baseline moved 4.19x", "4.19", _a23 / _a27)
+    ck("09-06 README, percent given up on 0.27", "48.9",
+       (1 - _f27[96000] / _f27[8000]) * 100)
+    ck("09-06 README, percent given up on 0.23", "23.9",
+       (1 - _f23[96000] / _f23[8000]) * 100)
+    # 0.236 is inside the band hybrid-decode-on-rdna 6.5 gives for dense models
+    ck("09-06 README, the slope is inside the dense band", "1",
+       1 if 0.118 <= _b27 <= 0.339 else 0)
+    ck("09-06 README, quotes 6.5's 0.430 for the same checkpoint on 0.23", "1",
+       1 if "0.430" in open(os.path.join(ROOT, "docs", "hybrid-decode-on-rdna.md"),
+                            encoding="utf-8").read() else 0)
+    # An md5 says the file is patched; this says the path was taken. The A/B's
+    # patched arm at 32 768 against this run's 32 000, and its stock arm.
+    # both passes of the A/B, not one: it was run twice with the arm order
+    # counterbalanced (A stock-first, B splitkv-first) and the figure that
+    # describes it is the median of the pair, which is what the README quotes.
+    _ab = [json.loads(_l) for _f in ("qwen38-027-depth.jsonl", "qwen38-027-depth-b.jsonl")
+           for _l in open(os.path.join(ROOT, "benchmarks", "hybrid-splitkv-027", _f),
+                          encoding="utf-8")]
+    _abv = lambda arm, ctx: statistics.median(
+        [r["decode_tok_s"] for r in _ab if r["arm"] == arm and r["ctx"] == ctx])
+    ck("09-06 README, the A/B's patched arm at 32 768", "36.12", _abv("splitkv", 32768))
+    ck("09-06 README, its stock arm at the same depth", "3.82", _abv("stock", 32768))
+    ck("09-06 README, this run lands 1.4 % from the patched arm", "1.4",
+       abs(_med96("decode", "decode_tps", 32000) / _abv("splitkv", 32768) - 1) * 100)
+    # The two failures, from the serve logs they are evidence of. These are the
+    # numbers the README's memory account is made of.
+    _lg96 = open(os.path.join(_c96, "logs", "D8-27B-tp2-long-027.log"),
+                 encoding="utf-8", errors="replace").read()
+    _lg02c = open(os.path.join(ROOT, "benchmarks", "campaign-2026-09-02c", "logs",
+                               "Q38-tp2-x16.log"), encoding="utf-8",
+                  errors="replace").read()
+    def _last(pat, text):
+        _m = re.findall(pat, text)
+        return float(_m[-1]) if _m else float("nan")
+    ck("09-06 README, the successful run's graph estimate GiB", "0.95",
+       _last(r"Estimated CUDA graph memory: ([\d.]+) GiB", _lg96))
+    ck("09-06 README, 09-02c's graph estimate is the same", "0.95",
+       _last(r"Estimated CUDA graph memory: ([\d.]+) GiB", _lg02c))
+    ck("09-06 README, model loading per card GiB", "10.11",
+       _last(r"Model loading took ([\d.]+) GiB", _lg96))
+    ck("09-06 README, 09-02c loads the same weights", "10.11",
+       _last(r"Model loading took ([\d.]+) GiB", _lg02c))
+    ck("09-06 README, the KV pool in tokens", "140000",
+       _last(r"GPU KV cache size: ([\d,]+) tokens",
+             _lg96.replace(",", "")) if "GPU KV cache size" in _lg96
+       else next(float(r["kv_tokens"]) for r in _r96 if r.get("kind") == "model_meta"))
+    ck("09-06 README, KV GiB", "4.37",
+       next(float(r["kv_gib"]) for r in _r96 if r.get("kind") == "model_meta"))
+    ck("09-06 README, concurrency at mml 130 000", "1.08",
+       next(float(r["concurrency"]) for r in _r96 if r.get("kind") == "model_meta"))
+    ck("09-06 README, mml", "130000",
+       next(float(r["mml"]) for r in _r96 if r.get("kind") == "config_complete"))
+    ck("09-06 README, util", "0.92",
+       next(float(r["util"]) for r in _r96 if r.get("kind") == "config_complete"))
+    ck("09-06 README, eight rungs, two rounds, no errors", "16",
+       sum(1 for r in _r96 if r.get("kind") == "decode"))
+    ck("09-06 README, worst cell range per cent", "0.17",
+       max(_g["range_pct"] for _g in
+           [{"range_pct": (max(v) - min(v)) / statistics.median(v) * 100}
+            for v in [[r["decode_tps"] for r in _r96
+                       if r.get("kind") == "decode" and r.get("target") == t]
+                      for t in sorted({r["target"] for r in _r96
+                                       if r.get("kind") == "decode"})]]))
+    # the two failed attempts are kept, and say what they were
+    for _f, _n in (("results-failed-util085.jsonl", 5),
+                   ("results-failed-util092-nomns.jsonl", 5)):
+        ck(f"09-06 README, {_f} kept", str(_n),
+           sum(1 for _l in open(os.path.join(_c96, _f), encoding="utf-8")))
+    _rm96 = open(os.path.join(_c96, "README.md"), encoding="utf-8").read()
+    for _frag, _what in (
+        ("still a hypothesis the campaign", "the kernel is not attributed"),
+        ("The 500 rung was not run", "the missing rung is declared"),
+        ("It is not an attribution", "the differences are named"),
+        ("absolute reservation, not a percentage", "the graph memory is put in scale"),
+    ):
+        ck(f"09-06 README, states that {_what}", "1", 1 if _frag in _rm96 else 0)
+    # the front page draws it as an extra line, not in place of the 0.23 one
+    _lng = json.load(open(os.path.join(ROOT, "site", "src", "figures-index.json"),
+                          encoding="utf-8"))["long"]["decode"]["series"]
+    ck("front page, the 0.23 27B line is still drawn", "1",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long"))
+    ck("front page, and the 0.27 one is beside it", "1",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027"))
+    ck("front page, the 0.27 line is off by default", "0",
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027" and _x["lit"]))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
