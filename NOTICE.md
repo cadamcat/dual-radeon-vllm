@@ -38,7 +38,7 @@ and `LICENSE.rccl.txt` is attached to the release as a file.
 
 An earlier version of this paragraph also promised "the exact base image digest
 and source commit they were built from". That was not true of the v0.1.0 release,
-which carried neither, and the claim is withdrawn rather than quietly dropped.
+which carried neither, and the claim is withdrawn.
 What is known: the source is RCCL's `release/rocm-rel-7.1.1.1` branch, and the
 library reports itself as `2.27.7-release/rocm-rel-7.1.1.1:bf3ebf5+` at runtime,
 the `+` marking the local NDEBUG change. The build script clones that branch

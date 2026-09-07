@@ -79,8 +79,7 @@ so the host side is a subtraction.
 
 **The 0.2 ms is the kernel.** A 16-query, 4096-key attention on this card simply
 costs that. There is no systematic dilution, the wall ratios were kernel ratios
-all along, and the finding is exactly as strong as the table — no weaker, and no
-stronger either.
+all along.
 
 Not that they agree everywhere, which would be the second wrong claim about this
 constant. At the four smallest cells the host cost is asymmetric between the arms

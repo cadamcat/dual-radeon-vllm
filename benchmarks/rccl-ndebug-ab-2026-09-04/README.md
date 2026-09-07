@@ -48,8 +48,7 @@ both metadata *and* code:
 | version string | `RCCL version 2.27.7` | `RCCL version 2.27.7` |
 | deployable md5 | `76f1916f…` | `666c8aae…` |
 
-So this measures **the fix**, which is what a reader deciding whether to apply
-it needs. It does not isolate the declaration from the assert code, and no
+So this measures **the fix**. It does not isolate the declaration from the assert code, and no
 claim here should be read that way.
 
 The kernel count is identical, which is the structural half of "the fix changes
@@ -138,7 +137,7 @@ one size the letter's headline case uses, and it is the opposite sign from its
 neighbours. Two builds differ in more than a flag — code layout, alignment and
 the presence of the assert paths all move — so a small size-dependent
 difference that is not monotonic is exactly what an unexplained build effect
-would look like. It is reported as measured and not smoothed away.
+would look like.
 
 ## End to end: no difference, and a confound the design caught
 
@@ -161,7 +160,7 @@ beside that campaign's. Zero errors, and all four sessions verified that the
 
 **No cell differs by more than 0.6 %, five of six are inside 0.5 %, and five
 of six put the unfixed arm nominally ahead.** On Qwen3-8B at 8 000 and 32 000 tokens the five repeats agree to 0.2–0.4 %,
-so this is not a measurement too blunt to see a difference; there is no difference to see. That
+so a difference that size would have shown. That
 is the same answer the collective sweep gives at ntok=1, which is the shape a
 batch-1 decode step reduces.
 

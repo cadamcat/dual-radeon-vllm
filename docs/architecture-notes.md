@@ -260,5 +260,5 @@ are either absent, gated out, or tuned for someone else's hardware. This gap
 extends to RDNA4.
 
 **None of this is fixable by configuration.** It is where the ecosystem
-currently is. Which is why the honest recommendation is: **run dense models**,
+currently is. Which is why the recommendation is: **run dense models**,
 and use llama.cpp where it is faster.

@@ -113,8 +113,7 @@ Pass 2 measured the size of that difference against the local ULP:
 `pr` and `bm64` differ from `base` identically, so the wider query block causes
 it and the warp pin does not. One ULP on a ten-thousandth of a percent of
 elements is the same class of reordering our
-[#45450 kernel check](../45450-validation/README.md) bounded, and it is worth
-stating precisely rather than calling the change bitwise-equal in general: on
+[#45450 kernel check](../45450-validation/README.md) bounded. On
 CUDA it is bitwise-equal for four of the five slices tested and one ULP on the
 fifth.
 

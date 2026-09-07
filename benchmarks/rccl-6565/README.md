@@ -85,7 +85,7 @@ concurrent init copies from 1 to 16 and the transport from SHM to `NET/Socket`
 | P2P | selected, IPC, and 7000x slow (their #6576) | none; `isAllDirectP2p 0`, SHM |
 | link | CPU-attached Gen4 x8/x8, separate root ports | cross-die, `AtomicOpsCap: Routing-` |
 
-The atomics row is worth stating because it is the axis this repository is
+The atomics row is the axis this repository is
 otherwise known for: since 2026-08-23 this guest advertises PCIe AtomicOp
 completer support (see [vfio-atomics.md](../../docs/vfio-atomics.md)), so it is
 **not** an atomics-starved cell and does not differ from theirs there. `dmesg`

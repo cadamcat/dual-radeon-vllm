@@ -65,7 +65,7 @@ was committed before that run's data, applying `1/((1-f) + f/r)` with `f` =
 `mem_busy` and `r` = the two cards' measured memory clocks. The ordering came
 back right at both ends and the spread came back nearly double the prediction —
 0.210 measured against 0.114 — with `B8` at 1.254× exceeding `r` itself, which
-that form cannot produce. Ordinal, not cardinal, and now on the record as such.
+that form cannot produce. Ordinal, not cardinal.
 
 ## Four cards, three attention backends, nobody asked for any of them
 

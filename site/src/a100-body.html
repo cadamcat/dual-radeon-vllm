@@ -15,7 +15,7 @@ consumer card adds, and only then what the pair delivers.</p>
 models it buys <strong>1.11× to 1.23×</strong>. The per-step all-reduce has since been
 timed, and it is <em>not</em> the bottleneck: it takes roughly a ninth of a step. On the same machine,
 <code>Qwen3-8B</code> reaches 1.70× from its second card while paying the same collective. What holds these
-two models back is not the interconnect; section 9 says so rather than guessing.
+two models back is not the interconnect; section 9 says what does.
 <strong>At prefill the same card buys 1.56× to 1.87×</strong> in wall time, because attention parallelises with no communication at all.</p>
 <p><strong>Prefill is two terms and they do not move together.</strong> Fitting T(S) = a + bS + cS²,
 against one 7900 XT the A100 leads by <strong>3.3× on b and 6.7× on c</strong> for the dense 12B. The gap
@@ -199,8 +199,7 @@ Both figures reside in <code>benchmarks/campaign-2026-08-29/</code> and
 1.14× at 16K, back to 1.87× at 32K — an anomaly this article was originally named for. Eleven matched rungs on the
 same two machines, averaged over two rounds a cell, produce a flat 1.36× to 1.44× instead. The 16K point that
 looked like a minimum was a single cell of one run, whose deepest neighbor compared two different
-depths. The shape did not survive replication; the raw points remain visible on the page
-because retracting data quietly is worse than acknowledging it openly.</p>
+depths. The shape did not survive replication; the raw points remain visible on the page.</p>
 
 <p><strong>And now at prefill too.</strong> The A100 side of this comparison lacked usable prefill
 until 2026-08-30: the session that measured its decode ran with prefix caching on, across a ladder

@@ -46,7 +46,7 @@ ninety seconds of sustained load, so **a short prefill cell measures the card's
 thermal history as much as the model**, and the 8 000 and 32 000 cells agree
 with 2026-08-30 because they are long enough to reach the steady state. This
 is why the 500-token prefill rung has no chart-grade row on the L4 in the
-projection, and it is the mechanism, not a guess.
+projection.
 
 ## What is here
 

@@ -1150,8 +1150,7 @@ magnitude outside it.</p>
   <span class="lbl">One disturbed point, stated rather than dropped</span>
   The ROCm 16 384 point came out at 21.35 tok/s with a standard deviation of 2.635 against 0.06–0.09
   everywhere else, and the deeper 24 576 point is faster. That single measurement was disturbed and should
-  not be read on its own. It is kept in the figure because removing inconvenient points quietly is worse
-  than showing one.
+  not be read on its own. It is kept in the figure.
 </div>
 
 <p>Prefill, meanwhile, runs the other way for this configuration: throughput <em>improves</em> with
@@ -1218,7 +1217,7 @@ context</strong>, and retention from 1 K to 32 K from 10.2 % to 70.0 %. The coll
 
 <h2><span class="n">8</span>What is not established</h2>
 
-<p>Four limits, because an honest result states what it leaves unproven.</p>
+<p>Four limits.</p>
 
 <h3>One cell of the A/B is bimodal</h3>
 <p>At 8 192 tokens the patched arm ran 47.02, 40.14, 47.58, and 42.41 tok/s over four passes. Sorted, the middle gap spans over half the range: these are <strong>two modes about 15 % apart</strong>, not noise. Passes three and four widened the span from 15.8 % to 16.8 %. The deterministic split heuristic cannot cause this; no mechanism is established. The quoted 3.52× mean fits neither cluster.</p>

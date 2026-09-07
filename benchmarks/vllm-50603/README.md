@@ -270,7 +270,7 @@ rows above are the prefill step, which the guard excludes by design. That half
 rests on the code read, where `max_query_len` comes from the shared scheduler
 output in both runners.
 
-Also worth stating: this image's MRv2 predates the fused multi-step draft
+This image's MRv2 predates the fused multi-step draft
 decoding in `docs/design/model_runner_v2.md` — `draft_decode_metadata` appears
 nowhere in the installed tree — so this describes MRv2 as of 0.27.1.dev5, not
 as of current `main`.
@@ -414,7 +414,7 @@ cells and 2.8% in the sixth. The 1024 gain is small but it is not noise; it
 reproduces in both orders at a repeatability an order of magnitude tighter than
 the effect.
 
-**The routing proof needed its own run, and the reason is worth recording.**
+**The routing proof needed its own run.**
 Stage 3's recorder writes from inside the TP workers by rewriting
 `chunked_prefill_paged_decode.py` before the engine starts. On 0.27 it produced
 nothing. The diagnosis is in the line numbers: the worker logged the fallback

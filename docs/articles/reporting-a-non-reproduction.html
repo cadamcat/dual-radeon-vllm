@@ -1018,7 +1018,7 @@ The reported fault affects only the first of several concurrent init copies. Bec
 the sweep scales channel count from one to sixteen and switches the transport from shared memory to sockets.
 Second, <strong>a stated contrast</strong> between the two testbeds. The machines differ in platform, kernel, and RCCL version,
 but agree on PCIe atomics and IOMMU, so the obvious explanations are named rather than left for the reader to guess at.
-Third, <strong>an honest bound</strong> on what a clean run from someone else's script can say.</p> <p>That third one turned out to be the interesting one.
+Third, <strong>a bound</strong> on what a clean run from someone else's script can say.</p> <p>That third one turned out to be the interesting one.
 The upstream reproducer computes corruption checks across all ranks but tallies failures only on rank 0;
 consequently, <strong>corruption visible only on rank 1 would print <code>ALL CORRECT</code></strong>.
 The negative result was therefore narrower than originally reported.

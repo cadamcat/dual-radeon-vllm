@@ -654,8 +654,7 @@ further rounds** on a fresh server start:
 Neither anomaly reproduced, so both are one-off glitches. **All four rounds remain
 in `results.jsonl`** — the added ones numbered 3 and 4 and tagged
 `"note": "re-measured …"`. Nothing was deleted, which means the low reading still
-drags the @2000 decode mean down from ~58.6 to 56.5. We would rather publish the
-conservative number than curate the dataset.
+drags the @2000 decode mean down from ~58.6 to 56.5.
 
 Across the 142 (config, context, kind) cells, taking (max − min) / mean,
 **30 exceed 1 %**: 14 decode and 16 prefill, or 28 excluding the two named above.

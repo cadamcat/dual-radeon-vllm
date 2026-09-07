@@ -129,7 +129,7 @@ a good trade for production.
 
 ---
 
-Keeping this list honest is the point. Everything in
+Everything in
 [root-cause.md](root-cause.md) has a test behind it; everything here does not.
 If you can close one of these, it is a genuinely useful contribution — and #1 is
 the missing piece of a good upstream bug report.

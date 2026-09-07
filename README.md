@@ -279,7 +279,7 @@ excluded.
 **A second campaign on 2026-08-24** measured the same ladder on a patched
 container: 372 measurements, nine configurations, six of them the July ones
 rerun as controls. Four reproduce within 0.25 %, one is too noisy to say, and one
-does not — which is discussed rather than dropped ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)).
+does not ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)).
 
 ![decode throughput vs context length, best known configuration](docs/assets/decode-vs-context-best.svg)
 
@@ -509,7 +509,7 @@ A100 a decode step reads 81.6 % of the checkpoint on the 12B and 85.6 % on the
 two factors differ by 4.7 %, so no correction is applied to this number: read
 it as an upper bound. [The measurement](benchmarks/cuda-a100/campaign-2026-09-02/README.md).)*
 
-**The two stacks cannot be matched, and that is not laziness.** Each arm is stock
+**The two stacks cannot be matched.** Each arm is stock
 on the stack its platform actually runs — vLLM 0.23 on the pair, 0.28.0 on the
 A100 — because gemma-4 cannot be served on the ROCm 0.27 image at all: its Quark
 plugin reads `head_dim` off a heterogeneous config and dies before loading. Every
@@ -601,8 +601,6 @@ draw the pair's 2026-09-03 ladder against every rented machine, to 128 000.
 ---
 
 ## What does *not* work
-
-Stating this plainly is the point of the repository.
 
 | | Status |
 |---|---|

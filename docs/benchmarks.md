@@ -52,7 +52,7 @@ drawn from [`../benchmarks/ledger.jsonl`](../benchmarks/ledger.jsonl) by
 
 ![the hybrid-SSM collapse and what closes it](assets/hybrid-ssm-collapse.svg)
 
-Three things about them are worth saying out loud.
+Three things about them.
 
 **Qwen3.8-27B is not the same line here as in §6.** There it is the 2026-08-24
 campaign at 10.68 tok/s at 32 K; here it is vLLM 0.27 with
@@ -277,7 +277,7 @@ despite moving 55 % more data.
 > 151 808 to 354 707 tokens and concurrency from 4.60× to 10.75×, while single-stream
 > decode gains only 19 %.
 
-**Honest caveat.** The 8B and 12B also differ in layer count (36 vs 48), hidden size
+**Caveat.** The 8B and 12B also differ in layer count (36 vs 48), hidden size
 (4096 vs 3840), heads (32/8 vs 16/8), vocabulary (151 936 vs 262 144) and sliding-window
 attention (none vs 1024). Two claims survive strictly: *(a)* the 12B is not
 bandwidth-bound (single-model test), and *(b)* at equal quantisation, bigger means

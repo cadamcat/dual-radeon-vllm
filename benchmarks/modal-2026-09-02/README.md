@@ -59,7 +59,7 @@ that axis is not a detail.
 ## What is deliberately not here
 
 `power.limit` equals `power.max_limit` on every one of the seven, so none of
-these cards is being rented to us de-rated. That is worth knowing because it is not
+these cards is being rented to us de-rated. It is not
 true of everything: the L4 measured on Colab on 2026-09-02 ran at a 72 W cap
 throughout, and the Radeon pair sits at 100.0–100.4 % of its 265 W cap during
 prefill at depth. **A power cap is a measurement condition, and this file

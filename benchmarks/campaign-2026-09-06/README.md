@@ -120,8 +120,7 @@ existed before and was simply taken after the KV cache was sized.
   not, which narrows the list but does not end it. The last two are not
   choices: 0.85 places no KV block at all on 0.27, and `mns` had to be capped for
   the reason above. Neither moves a single-stream rate — they decide how many
-  sequences fit, not how fast one runs — but they are differences and they are
-  named rather than buried.
+  sequences fit, not how fast one runs — but they are differences.
 - **The 500 rung was not run**, so the published table's "500 → deepest" column
   cannot be rewritten from this file alone. The slope above does not need it:
   both fits are over the same 8 000–96 000 span.

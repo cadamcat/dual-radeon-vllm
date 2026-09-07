@@ -43,7 +43,7 @@ in the AMDGPU metadata note — and the subset whose argument list declares
 [root-cause.md](../../docs/root-cause.md) uses, applied to everything instead
 of to one file.
 
-**Doing that honestly took four readers, not one**, because ROCm ships device
+**Doing that took four readers, not one**, because ROCm ships device
 code in four shapes and three of them defeat the obvious inspection:
 
 | shape | where the device code is | what reads it |
@@ -170,8 +170,7 @@ measured that on this box, with the capability flipped both ways, and found why:
 on gfx11 the `mfma4` kernel's body is `assert(false)`.
 
 **Whether any of these is ever dispatched on this box is not measured here.**
-The scan counts declarations. It is worth flagging that
-`vllm/platforms/rocm.py:328` `use_rocm_custom_paged_attention` does **not**
+The scan counts declarations. `vllm/platforms/rocm.py:328` `use_rocm_custom_paged_attention` does **not**
 exclude RDNA — the `_ON_GFX1X` branch enables it for `head_size == 128`,
 `block_size == 16`, `gqa_ratio` 3–16 — so the vLLM family is reachable in
 principle on gfx1100 rather than dead weight. Testing that against the
