@@ -6,8 +6,7 @@ the platform the numerators came from, at Colab's `mml` 33 000 and its
 eleven rungs.
 
 **Four rungs inside 0.07 %** of Colab's 2026-08-30 sitting -- closer than
-Colab's own two sittings agree with each other. The band was not chosen
-after the fact: Colab measured this arm twice in August and both rows have
+Colab's own two sittings agree with each other. Colab measured this arm twice in August and both rows have
 been committed since.
 
 `B8` here is one rung. The run was stopped after it to free credit for a

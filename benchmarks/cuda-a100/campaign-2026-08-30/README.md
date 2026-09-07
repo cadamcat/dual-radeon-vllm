@@ -24,8 +24,7 @@ never measured.
 
 **Only the stock arms were re-measured.** Speculation changes what happens after
 the first token, not the forward pass over the prompt, so a speculative arm's
-prefill answers no question this round asked; the decode those arms produced was
-never in doubt and stands.
+prefill answers no question this round asked; the decode those arms produced stands.
 
 The `backend` column is read from each run's own `model_meta`, and two of these
 are the first record of it: the 2026-08-29 campaign captured no backend at all —
@@ -56,7 +55,7 @@ prefill. Its recorded `prefill_tps` at 32 K was 159 299.
 130 of that campaign's 132 prefill rungs fail the repeatability cut, which is
 how `build_prefill.py` excludes them without needing to know the cause.
 
-**Decode is unaffected and was never in question**: decode rate is measured from
+**Decode is unaffected**: decode rate is measured from
 the stream after the first token, and every one of those rungs is chart-grade.
 The 2026-08-29 decode rows stand.
 

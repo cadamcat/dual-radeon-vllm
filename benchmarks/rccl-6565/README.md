@@ -20,8 +20,7 @@ reporter's script, whose verdict counts failures on rank 0 only; what it
 established was narrower than what it was reported as, and the gap was
 [disclosed here](#a-limitation-of-the-reporters-script-disclosed-2026-08-27) the
 same night. The 135 above were re-run on 2026-08-28 through a cross-rank variant
-that all-reduces the count before deciding anything. The bound is gone rather
-than merely stated.
+that all-reduces the count before deciding anything.
 
 ## What was run
 
@@ -181,8 +180,8 @@ Both originals are untouched; the injection is applied to copies under `/tmp`
 inside the container, and the reporter's script still hashes to
 `bffbc297cad9f1956c8bb2b7e8a4bb0f`. `logs/blindspot-check.log`.
 
-One defect in the first attempt at the arm runner is worth recording, because it
-is the same class of mistake as the one this stage exists to fix. It counted
+One defect in the first attempt at the arm runner is
+the same class of mistake as the one this stage exists to fix. It counted
 ranks with `grep -c`, which counts *lines*; the two ranks' prints frequently land
 on one line, so it reported 6 of 20 runs as one-sided when both ranks had in fact
 reported. Counting occurrences instead fixed it. No measurement was affected —

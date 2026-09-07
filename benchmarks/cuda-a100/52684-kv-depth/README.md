@@ -85,8 +85,7 @@ Not that they agree everywhere, which would be the second wrong claim about this
 constant. At the four smallest cells the host cost is asymmetric between the arms
 and moves the ratio by up to a fifth — **in both directions depending on the
 cell**, 0.566 → 0.684 in one and 0.535 → 0.481 in another. No cell's sign
-changes: every short-`q_len` device ratio is still below 1. `kv_depth3.jsonl` carries `dev_ms`, `wall_ms` and `host_ms` per arm so
-this is checkable rather than assertable.
+changes: every short-`q_len` device ratio is still below 1. `kv_depth3.jsonl` carries `dev_ms`, `wall_ms` and `host_ms` per arm.
 
 What remains unexplained is the **scale**, not the ratio: he reports 0.058 ms
 for shapes that cost 0.2 here, on a slower card. Nothing in this run accounts for

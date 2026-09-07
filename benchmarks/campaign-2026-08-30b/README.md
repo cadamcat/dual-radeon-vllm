@@ -1,8 +1,7 @@
 # Qwen3-8B on one RX 7900 XT, vLLM 0.27, fully stock — 2026-08-30
 
 Run to lift the July ladder's 6 000 ceiling by raising `--gpu-memory-utilization`
-to 0.95. **It did not lift it**, and what it produced instead is worth more than
-the ceiling would have been.
+to 0.95. **It did not lift it.**
 
 Five rungs, two rounds each: **20 measurements, 0 errors**, every rung
 chart-grade. `results.jsonl` is the raw data, `runner.py` produced it,

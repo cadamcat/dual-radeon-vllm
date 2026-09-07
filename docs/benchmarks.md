@@ -540,8 +540,7 @@ six thousand tokens on one card and has five.
 gemma-4-12B at TP=1 has a spread of five and a half percentage points, wide
 enough that its own mean says nothing, while gemma-4-31B's eleven points span
 0.36 points and never cross zero. Only the second is a measurement; the first is
-a wide interval that happens to be centred nearby. Both are in the table because
-a control that is inconvenient is still a control.
+a wide interval that happens to be centred nearby. Both are in the table.
 
 The TP=1 row does carry one piece of information. It is a single-card
 configuration with no collectives at all, so nothing mediated by RCCL or by PCIe

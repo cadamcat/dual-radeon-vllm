@@ -67,7 +67,7 @@ in `analyze/build_prefill.py` now reads this campaign's `host_link.json` rather
 than inferring from the date — the reboot landed in the middle of 2026-09-02 and
 campaigns are dated by day, so a date can no longer answer the question.
 
-**One difference that is not the link, recorded because it is a difference.**
+**One difference that is not the link.**
 The KV pool came out 6.78 GiB / 85 766 tokens against 08-29's 6.49 / 82 106 —
 4.5% more at the same utilisation, after a reboot with nothing else resident. It
 changes the reported concurrency (2.60× against 2.49×) and no rung of a

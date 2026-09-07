@@ -108,7 +108,7 @@ bad_into = [...]        <span class="c"># computed on every rank</span>
 <p>When corruption occurs exclusively on rank 1, the script detects the bad data but discards the result, reporting
 <code>ALL CORRECT</code> regardless. Since every pass among the 135 runs relied on that tally, the negative
 result established only that there was <em>"no corruption observed on rank 0"</em>. That limitation was documented in the repository
-ten hours after the upstream comment was posted, prior to any public inquiry.</p>
+ten hours after the upstream comment was posted.</p>
 
 <p>Modifying the reporter's script directly was not an acceptable fix.
 Altering the script, even to insert a cross-rank reduction, destroys its status as an impartial test.
@@ -126,13 +126,12 @@ The original file was therefore preserved alongside its cryptographic hash, an i
     forcing it non-empty on rank 1 and only rank 1, in one of the twelve cases. The reporter's script
     calls that run correct and exits zero. The variant counts it and exits one. Both originals are
     untouched — the injection is applied to copies, and the reporter's script still hashes to the value
-    the directory quotes. This is the difference between saying a script has a blind spot and showing
-    what the blind spot does.
+    the directory quotes.
   </figcaption>
 </figure>
 
 <p>The variant was then evaluated across the identical eight arms and sample sizes, recording 135 of 135 clean executions verified across both
-ranks. Rather than refining a caveat, the new benchmark replaces uncertainty with verified data. Both sweeps are
+ranks. Both sweeps are
 validated to ensure they cover the same configurations at matching sample counts, preventing any silent divergence.</p>
 
 <div class="note warn">

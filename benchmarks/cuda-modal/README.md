@@ -38,7 +38,7 @@ Four rungs inside **0.07 %** — closer than Colab's own two sittings agree with
 each other. The L4 control says the same on a card that appears in no
 conclusion: 25.29 tok/s at 32 000 against Colab's 25.07 and 25.17.
 
-The band was not chosen after seeing the answer. Colab measured that A100 twice
+Colab measured that A100 twice
 and that L4 twice, in August, and those four rows have been committed since.
 
 ## `mem_busy` predicts, ordinally, in five independent settings

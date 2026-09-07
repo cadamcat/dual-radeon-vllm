@@ -126,7 +126,7 @@ fills the cache with NaN and uses lengths that straddle the final tile:
 | garbage (1e4) | all | either | any | finite, correct | finite, correct |
 
 So the harness sees corruption when corruption is there, and Stage 1's flat
-band means something. Three side notes worth keeping:
+band means something. Three side notes:
 
 - only NaN propagates; finite garbage at 1e4 is handled correctly by the score
   mask alone, which is why this is subtle;

@@ -42,7 +42,7 @@ topology. **The topology axis is not testable from this box**: their W7900D has
 48 GB, while Muse-Glimmer-30B-INT4 is 21 GB and gemma-3-27b-it-w4a16 is 19 GB on
 disk against 19.98 GiB of card here, so neither model runs at TP=1.
 
-## One qualitative difference worth recording
+## One qualitative difference
 
 At `muse` / 512, the eight generations split differently under the two states.
 With graphs on, all eight begin with the same token and diverge at index 9 or 23.

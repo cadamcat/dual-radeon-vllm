@@ -1,7 +1,7 @@
 # Four H100s, TP=4 — one model — 2026-09-03
 
 Qwen3-8B only, and the budget is the reason: $15.80/h with $2.29 of credit
-left buys one configuration. It is the right one -- the second card was
+left buys one configuration. The second card was
 worth 1.484x to this model against 1.029x to the least memory-bound one,
 so a third point on the steepest curve says whether that keeps going.
 

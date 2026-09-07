@@ -195,7 +195,7 @@ Two things disproved it. Reading
 token, and not dependent on AITER. Then the profile showed that kernel costing
 8.466 µs at 1K and 8.038 µs at 32K, with identical call counts.
 
-A methodological note worth keeping. The first profiling attempt used
+A methodological note. The first profiling attempt used
 `enforce_eager`, because torch profiler cannot see inside a captured CUDA graph.
 The eager decode slope came out ~18× the graph one, which meant the eager profile
 was describing a different, amplified phenomenon; it was discarded and the run
@@ -279,7 +279,7 @@ Using the pooled figures, decode goes from 26.7 to 19.4 ms/token at 1K and
 from 261.9 to 27.7 at 32K, the slope from 7.408 to **0.262 ms per 1 000 tokens
 of context**, and what is retained from 1K to 32K from 10.2% to 70.0%.
 
-**The two arms are not equally stable, and that is worth more than the
+**The two arms are not equally stable, and it shows in the
 averages.** Across the two passes the stock arm moves 1.9%, 0.5% and 0.5%; the
 split-KV arm moves 0.7%, **14.6%** and 5.3%.
 

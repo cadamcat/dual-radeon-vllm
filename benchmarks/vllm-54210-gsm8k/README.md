@@ -61,7 +61,7 @@ Of the **11** checkpoints there, exactly **1** is reached by the change:
 - **`gemma-3-27b-it-w4a16`** is `head_dim` 128 at `gqa_ratio` 2 — inside the
   band the change opens, and the only checkpoint here that is.
 
-So the model was not chosen. It is the one the box can test the change with.
+It is the one checkpoint the box can test the change with.
 
 ## Method
 

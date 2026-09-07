@@ -80,8 +80,7 @@ magnitude from the unpatched one.
 ## Three attempts, and what the two failures measured
 
 The first two attempts produced no measurements and are kept —
-`results-failed-util085.jsonl` and `results-failed-util092-nomns.jsonl` — because
-what they cost is worth writing down.
+`results-failed-util085.jsonl` and `results-failed-util092-nomns.jsonl`.
 
 Both died on `No available memory for the cache blocks`, at every `mml` from
 132 000 down to 8 250. Halving the ladder was the runner's only lever and it was

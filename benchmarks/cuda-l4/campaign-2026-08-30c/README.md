@@ -52,8 +52,7 @@ which is the hybrid-SSM page alignment, and is a second reason its floor is
 high.
 
 **`Qwen3.8-27B-AWQ-INT4 does not fit on a 23 GB L4.`** That is a ceiling like
-the two this repository already publishes, not a configuration that was tried
-badly: `--enforce-eager` and `max_num_seqs 1` are both applied, and raising
+the two this repository already publishes: `--enforce-eager` and `max_num_seqs 1` are both applied, and raising
 `util` past 0.95 is deliberately not tried — the runner's rev2 note records that
 these cards keep scratch above it, and on the Radeon it produced
 `HSA_STATUS_ERROR_OUT_OF_RESOURCES` rather than a bigger pool.

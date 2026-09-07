@@ -53,7 +53,7 @@ The linear term improves about 2×; the quadratic term improves 4.5–9.5×. A
 quadratic term that shrinks eight times faster than the linear one is exactly
 a machine whose lead grows with depth.
 
-**One caveat, and it is not small: the three gemma arms changed backend as
+**One caveat: the three gemma arms changed backend as
 well as machine.** vLLM routes gemma-4 to `TRITON_ATTN` on the A100 and to
 `FLASH_ATTN` here, by its own default and not by any flag this campaign sets —
 which is why the runner reads the backend out of the serve log instead of

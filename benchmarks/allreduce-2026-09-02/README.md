@@ -67,8 +67,7 @@ how one card spent 2026-08-29 to 2026-09-02 at x8 unnoticed.
 | `t_stream_us` | N back to back on one stream, one host sync | 55.2–58.8 µs |
 | `t_sync_us_median` | one at a time, host sync after each | 79.1–89.1 µs |
 
-The graph number is the one a decode step pays, and that is not a judgement
-call. `G31-tp2`'s serve log records `cudagraph_mode:
+The graph number is the one a decode step pays. `G31-tp2`'s serve log records `cudagraph_mode:
 CUDAGraphMode.FULL_AND_PIECEWISE` and then `Capturing CUDA graphs (decode,
 FULL)` — a batch-1 decode step is replayed as one captured graph with its
 collectives inside it, which is exactly what `t_graph_us` measures. The
@@ -82,7 +81,7 @@ outlier at the very first cell measured, which is the JIT of that kernel and not
 a reading. So the collective is not merely a launch.
 
 **The two ranks agree to 0.43%** at every cell (`results.rank1.jsonl` is rank
-1's own file, written so this is checkable rather than asserted).
+1's own file).
 
 ## What it costs a step, and what that explains
 

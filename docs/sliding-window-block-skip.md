@@ -364,7 +364,7 @@ executable lines are the same as §2's after normalising `first_block` against
 wording, not in reasoning.
 
 We found this by running vLLM's own duplicate check from `AGENTS.md` before
-drafting anything, which is the point of that check. **Nothing here has been
+drafting anything. **Nothing here has been
 opened as a second PR.** The evidence on this page was posted to that PR on
 2026-08-26, as a comment in support of it leaving draft.
 

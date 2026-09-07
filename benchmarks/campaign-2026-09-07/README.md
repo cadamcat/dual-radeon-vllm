@@ -79,8 +79,7 @@ and here the kernel is the larger term.
 **Muse-Glimmer's 0.066 is not the same kind of number.** Its ms/tok curve fits a
 line at **r² 0.3145** where every other arm is above 0.978: a 2 048-token window
 bounds its cost instead of growing it, so a linear slope cannot describe it. The
-figure is listed because leaving it out would be worse, not because it is
-comparable.
+figure is listed, but it is not comparable.
 
 ## What this does not establish
 
@@ -99,8 +98,7 @@ comparable.
   capacity, not for load; a serving deployment at depth is a different question.
 - **Two sittings of arm A, on different days, differ by up to 1.23 %**
   (`campaign-2026-09-06`'s eight rungs against A's). Within one run the boundary
-  is worth ≤ 0.50 %. Both are small beside what is claimed here, and both are
-  measured rather than assumed.
+  is worth ≤ 0.50 %. Both are small beside what is claimed here.
 
 ## Provenance
 
@@ -108,7 +106,7 @@ comparable.
     vllm         0.27.1.dev5+gf46a9dfe2.d20260827        ROCm 10.0, kernel 7.0.0-30
     patch        the two attention paths are independent files, and this run asserted only
                  one of them before measuring -- the other was read out of the container
-                 afterwards, on 2026-09-07, and is recorded here rather than implied:
+                 afterwards, on 2026-09-07:
                    chunked_prefill_paged_decode.py  84c6d4f9...  vllm#45916   ROCM_ATTN's path
                    triton_unified_attention.py      9416a868...  vllm#45450   TRITON_ATTN's
                    triton_attn.py                   8bd13173...  vllm#45450   TRITON_ATTN's

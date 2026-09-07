@@ -1033,7 +1033,7 @@ checkpoint class, and a performance heuristic written into one architecture's br
 while omitted from the other.</p> <p>The purest instance is one line.
 <code>use_rocm_custom_paged_attention</code> requires <code>gqa_ratio &gt;= 3</code> on gfx11 and
 <code>&gt;= 1</code> on CDNA, for the same kernel. In the excluded range that kernel is
-<strong>1.84× to 7.28× faster</strong> than the fallback it is passed over for, and the two bands overlap. The bound does not separate anything.</p> <p>Four of the eight are <em>not</em> RDNA3 problems, and saying so is what the measurements were for. Two are vendor-neutral
+<strong>1.84× to 7.28× faster</strong> than the fallback it is passed over for, and the two bands overlap. The bound does not separate anything.</p> <p>Four of the eight are <em>not</em> RDNA3 problems. Two are vendor-neutral
 on distinct evidence. The same attention gate was measured on an A100, where it loses
 61 % at 50K. In addition, the single-threaded compile setting was traced to a file that runs on every platform. One
 is AMD-wide, at a kernel line AMD named. One is a PCIe capability that hits bare metal too.</p>

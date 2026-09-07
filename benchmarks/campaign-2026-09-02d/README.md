@@ -43,8 +43,7 @@ at 100.0–100.4 % of its cap at the 32 000 prefill rung, so "the cards are
 power-limited, and a power-limited card cannot halve its step when its bytes
 halve" was a live explanation. It is dead at decode. **Prefill and decode are in
 different regimes on this box** — prefill at depth is at the power limit, decode
-is at half of it — which is itself worth knowing and was invisible before the
-harness sampled both.
+is at half of it — and it was invisible before the harness sampled both.
 
 ## What the 12B's card is doing instead
 
