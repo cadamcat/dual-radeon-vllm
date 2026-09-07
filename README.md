@@ -29,7 +29,7 @@ Since then the same ladder has been run on eleven other machine configurations, 
 | H200 143G · B300 275G | 1 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | RTX PRO 6000 96G | 1 and 2 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 
-Thirteen machine configurations, eight checkpoints, 5 656 request-level measurements in 59 results files, 2 263 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 12 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
+Thirteen machine configurations, eight checkpoints, 5 796 request-level measurements in 60 results files, 2 330 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 12 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
 
 ### What is in here
 

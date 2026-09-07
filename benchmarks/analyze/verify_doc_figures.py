@@ -2038,7 +2038,7 @@ def _run_checks(_opened, _audit_state):
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "31", len(_camps))
+    ck("campaigns, every results.jsonl found", "32", len(_camps))
     # the generated index, since 2026-09-03: the hand-typed table it replaced
     # named eighteen of forty-two directories
     import build_campaigns as _bc
@@ -2142,9 +2142,9 @@ def _run_checks(_opened, _audit_state):
     for _r in _RTD:
         if _r.get("machine") == "RX 7900 XT":
             _hl_d[_r.get("host_link")] = _hl_d.get(_r.get("host_link"), 0) + 1
-    ck("host_link, prefill rows on x16/x16", "306", _hl_p.get("x16/x16", 0))
+    ck("host_link, prefill rows on x16/x16", "341", _hl_p.get("x16/x16", 0))
     ck("host_link, prefill rows on x8/x16", "100", _hl_p.get("x8/x16", 0))
-    ck("host_link, decode rows on x16/x16", "312", _hl_d.get("x16/x16", 0))
+    ck("host_link, decode rows on x16/x16", "347", _hl_d.get("x16/x16", 0))
     ck("host_link, decode rows on x8/x16", "100", _hl_d.get("x8/x16", 0))
     ck("host_link, and no Radeon row without one", "0",
        _hl_p.get(None, 0) + _hl_d.get(None, 0))
@@ -3467,14 +3467,17 @@ def _run_checks(_opened, _audit_state):
     # the A100 forces gemma-4 onto Triton "FA4 not available" and this machine
     # does not, which is why `default` moves by the whole 118.
     # +16 on 2026-09-07: campaign-2026-09-06's eight rungs, prefill and decode
-    ck("route column, rows carrying one", "1850", len(_rt))
+    # +70 on 2026-09-07b: campaign-2026-09-07's three arms, prefill and decode
+    ck("route column, rows carrying one", "1920", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "256", _dec.get("override", 0))
+    ck("route column, chosen by override", "294", _dec.get("override", 0))
     ck("route column, forced", "590", _dec.get("forced", 0))
-    ck("route column, left to the default", "1004", _dec.get("default", 0))
+    # +32: the Triton arm is FORCED by a serve flag, so its rows are `default`
+    # in the log's own terms -- nothing overrode anything, the flag decided
+    ck("route column, left to the default", "1036", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
     for _r in _rt:
@@ -3491,9 +3494,9 @@ def _run_checks(_opened, _audit_state):
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "256",
+    ck("route column, ROCm offered both of its backends", "294",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "256",
+    ck("route column, and Triton was the other one", "294",
        _cand.get("TRITON_ATTN", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
@@ -7317,8 +7320,8 @@ def _run_checks(_opened, _audit_state):
        sum(1 for x in XLD["series"] if x["machine"] != "rdna3" and x["lit"]))
     # nine since 2026-09-07: eight machines, plus the pair a second time on
     # vllm 0.27 -- campaign-2026-09-06, which is why the row exists
-    ck("long figures, machines offered", "9", len(XL["machines"]))
-    ck("long figures, and two of the rows are the same pair", "2",
+    ck("long figures, machines offered", "10", len(XL["machines"]))
+    ck("long figures, and three of the rows are the same pair", "3",
        sum(1 for m in XL["machines"] if m["family"] == "radeon"))
     ck("long figures, and only the pair is on by default", "1",
        1 if [m["id"] for m in XL["machines"] if m["default"]] == ["rdna3"] else 0)
@@ -7722,14 +7725,17 @@ def _run_checks(_opened, _audit_state):
     # furthest, because seven of the sixteen now rise and the spread across
     # one checkpoint is 134 points.
     # eighteen since 2026-09-07: the same checkpoint again on 0.27 (campaign-2026-09-06)
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "18", len(_lad))
+    # twenty-one since 2026-09-07b: campaign-2026-09-07's three arms
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "21", len(_lad))
     ck("hybrid section 6, rising by more than 1 pct", "7",
        sum(1 for x in _lad if x > 1))
     ck("hybrid section 6, flat inside 1 pct", "1",
        sum(1 for x in _lad if 0 < x <= 1))
-    ck("hybrid section 6, and falling", "10", sum(1 for x in _lad if x < 0))
-    ck("hybrid section 6, the steepest fall", "-38.7", min(_lad), 0.01)
-    ck("hybrid section 6, and the range across one checkpoint", "142", round(max(_lad) - min(_lad)))
+    ck("hybrid section 6, and falling", "13", sum(1 for x in _lad if x < 0))
+    # the steepest fall changed hands on 2026-09-07b: the same checkpoint pinned
+    # to TRITON_ATTN and carried to 128 000 falls further than anything before it
+    ck("hybrid section 6, the steepest fall", "-68.3", min(_lad), 0.01)
+    ck("hybrid section 6, and the range across one checkpoint", "171", round(max(_lad) - min(_lad)))
     ck("hybrid section 6, and the steepest rise", "103.0", max(_lad), 0.01)
     # the two ends are one checkpoint on two machines, which is the claim
     _ends = {}
@@ -7741,11 +7747,30 @@ def _run_checks(_opened, _audit_state):
     # 2026-09-03 evening: the pair's own sixteen-rung ladder of the same
     # checkpoint (campaign-2026-09-03, ROCM_ATTN, to 96 000) falls further than
     # the Triton-pinned arm did to 32 000, so the low end moved
-    ck("hybrid section 6, the fall is the Radeon pair's 2026-09-03 ladder", "1",
-       1 if _lo[1] == "RX 7900 XT" and _lo[0].endswith("-long") else 0)
+    ck("hybrid section 6, the fall is the pair's Triton-pinned 0.27 ladder", "1",
+       1 if _lo[1] == "RX 7900 XT" and "triton" in _lo[0] and _lo[2] == "2026-09-07b" else 0)
     ck("hybrid section 6, and the article says which ladder", "2",
-       sum(1 for f, t in (("article-body.html", "the 2026-09-03\nladder to 96 000, on <code>ROCM_ATTN</code>"), ("article-body-zh.html", "2026-09-03 那条到 96 000 的阶梯（<code>ROCM_ATTN</code>）"))
+       sum(1 for f, t in (("article-body.html", "the 2026-09-07\nladder to 128 000, pinned to <code>TRITON_ATTN</code>"), ("article-body-zh.html", "2026-09-07 那条到 128 000、锁定 <code>TRITON_ATTN</code> 的阶梯"))
            if t in open(os.path.join(HERE, "..", "..", "site", "src", f), encoding="utf-8").read()))
+    # The count in the sentence is a WORD, and until 2026-09-07b nothing read
+    # it: the tally above moved from seventeen to eighteen and the article went
+    # on saying "seventeen" for a day. Both languages, spelled as published.
+    _ab_en = open(os.path.join(HERE, "..", "..", "site", "src",
+                               "article-body.html"), encoding="utf-8").read()
+    _ab_zh = open(os.path.join(HERE, "..", "..", "site", "src",
+                               "article-body-zh.html"), encoding="utf-8").read()
+    ck("hybrid section 6, the article spells the tally", "2",
+       (1 if "twenty-one stock hybrid-SSM ladders" in _ab_en else 0)
+       + (1 if "二十一条 stock hybrid-SSM 阶梯" in _ab_zh else 0))
+    ck("hybrid section 6, and how many fall", "2",
+       (1 if "seven rise by more than 1 %, one is flat, and thirteen fall" in _ab_en else 0)
+       + (1 if "七条阶梯上升超过 1 %，一条持平，十三条下降" in _ab_zh else 0))
+    ck("hybrid section 6, and the range it spans", "2",
+       (1 if "range of 171 points" in _ab_en else 0)
+       + (1 if "横跨 171 个百分点" in _ab_zh else 0))
+    ck("hybrid section 6, and the machine configurations behind it", "2",
+       (1 if "across nine machine configurations" in _ab_en else 0)
+       + (1 if "跨九种机器配置" in _ab_zh else 0))
     ck("hybrid section 6, and the rise is two H100s", "1",
        1 if _hi[1] == "H100-80GB-HBM3-x2" else 0)
     ck("hybrid section 6, both are the same checkpoint", "1",
@@ -7818,12 +7843,14 @@ def _run_checks(_opened, _audit_state):
                  or fl("原来写的是这个 checkpoint 的预填充「从来没有上升过」") in _t)
            else 0)
         ck("hybrid section 6 %s, quotes both ends of the spread" % _lang,
-           "2", sum(1 for _v in ("38.7 %", "103.0 %") if fl(_v) in _t))
-        ck("hybrid section 6 %s, and counts seventeen ladders" % _lang, "1",
-           1 if (fl("seventeen stock hybrid-SSM ladders") in _t
-                 or fl("十七条 stock hybrid-SSM 阶梯") in _t) else 0)
+           "2", sum(1 for _v in ("68.3 %", "103.0 %") if fl(_v) in _t))
+        ck("hybrid section 6 %s, and counts twenty-one ladders" % _lang, "1",
+           1 if (fl("twenty-one stock hybrid-SSM ladders") in _t
+                 or fl("二十一条 stock hybrid-SSM 阶梯") in _t) else 0)
         ck("hybrid section 6 %s, and the old low end is gone" % _lang, "0",
-           sum(1 for _v in ("31.1 %", "sixteen stock hybrid-SSM ladders", "十六条 stock hybrid-SSM 阶梯") if fl(_v) in _t))
+           sum(1 for _v in ("31.1 %", "38.7 %", "sixteen stock hybrid-SSM ladders",
+                            "十六条 stock hybrid-SSM 阶梯", "seventeen stock hybrid-SSM ladders",
+                            "十七条 stock hybrid-SSM 阶梯") if fl(_v) in _t))
         ck("hybrid section 6 %s, and no longer counts nine or eight" % _lang, "0",
            1 if (fl("nine stock hybrid-SSM ladders") in _t
                  or fl("eight stock hybrid-SSM ladders") in _t
@@ -9489,6 +9516,72 @@ def _run_checks(_opened, _audit_state):
                    ("results-failed-util092-nomns.jsonl", 5)):
         ck(f"09-06 README, {_f} kept", str(_n),
            sum(1 for _l in open(os.path.join(_c96, _f), encoding="utf-8")))
+    # --- campaign-2026-09-07: the backend owns half the depth cost ---------
+    _c97 = os.path.join(ROOT, "benchmarks", "campaign-2026-09-07")
+    _r97 = [json.loads(_l) for _l in open(os.path.join(_c97, "results.jsonl"),
+                                          encoding="utf-8")]
+    def _m97(cfg, kind, key, t):
+        _v = [r[key] for r in _r97 if r.get("cfg") == cfg and r.get("kind") == kind
+              and r.get("target") == t and r.get(key) is not None]
+        return statistics.median(_v) if _v else float("nan")
+    def _lad97(cfg, kind="decode", key="decode_tps"):
+        _t = sorted({r["target"] for r in _r97 if r.get("cfg") == cfg
+                     and r.get("kind") == kind})
+        return {t: _m97(cfg, kind, key, t) for t in _t}
+    def _fit97(d):
+        _x = sorted(d); _y = [1000.0 / d[k] for k in _x]; _n = len(_x)
+        _mx = sum(_x) / _n; _my = sum(_y) / _n
+        _b = (sum((k - _mx) * (y - _my) for k, y in zip(_x, _y))
+              / sum((k - _mx) ** 2 for k in _x))
+        _i = _my - _b * _mx
+        _ss = sum((y - _my) ** 2 for y in _y)
+        _rs = sum((y - (_i + _b * k)) ** 2 for k, y in zip(_x, _y))
+        return _b * 1000, _i, 1 - _rs / _ss
+    _A97, _B97, _C97 = ("D8-27B-tp2-long-027b", "D8-27B-tp2-triton-long-027b",
+                        "D8-27B-tp2-long-027c")
+    _da, _db, _dc = _lad97(_A97), _lad97(_B97), _lad97(_C97)
+    _ba, _ia, _ra = _fit97(_da)
+    _bb, _ib, _rb = _fit97(_db)
+    ck("09-07 README, ROCM_ATTN slope", "0.235", _ba)
+    ck("09-07 README, ROCM_ATTN intercept ms", "20.08", _ia)
+    ck("09-07 README, ROCM_ATTN r2", "1.0000", _ra)
+    ck("09-07 README, TRITON_ATTN slope", "0.111", _bb)
+    ck("09-07 README, TRITON_ATTN intercept ms", "19.79", _ib)
+    ck("09-07 README, TRITON_ATTN r2", "0.9998", _rb)
+    ck("09-07 README, the slopes differ by", "2.11", _ba / _bb)
+    ck("09-07 README, the intercepts agree to per cent", "1.5",
+       abs(_ia / _ib - 1) * 100)
+    ck("09-07 README, ROCM_ATTN 500 to 128 000", "-59.7",
+       (_da[128000] / _da[500] - 1) * 100)
+    ck("09-07 README, TRITON_ATTN 500 to 128 000", "-41.7",
+       (_db[128000] / _db[500] - 1) * 100)
+    # the drift control, which is what makes the pair an attribution
+    for _t, _claim in ((500, "0.40"), (8000, "0.18"), (32000, "0.50")):
+        ck(f"09-07 README, drift at {_t}", _claim, (_dc[_t] / _da[_t] - 1) * 100)
+    ck("09-07 README, worst drift is under the A-B gap", "1",
+       1 if max(abs(_dc[t] / _da[t] - 1) for t in _dc) * 100 < 0.51 else 0)
+    # the trade, and that neither end has turned over
+    _pa97, _pb97 = _lad97(_A97, "prefill", "prefill_tps"), _lad97(_B97, "prefill", "prefill_tps")
+    for _t, _dcl, _pcl in ((500, "1.02", "0.99"), (8000, "1.06", "0.89"),
+                           (32000, "1.18", "0.69"), (64000, "1.30", "0.56"),
+                           (96000, "1.40", "0.48"), (128000, "1.48", "0.44")):
+        ck(f"09-07 README, decode T/R at {_t}", _dcl, _db[_t] / _da[_t])
+        ck(f"09-07 README, prefill T/R at {_t}", _pcl, _pb97[_t] / _pa97[_t])
+    _dr = [_db[t] / _da[t] for t in sorted(_da)]
+    ck("09-07 README, the decode ratio never turns back", "1",
+       1 if all(b >= a - 1e-9 for a, b in zip(_dr, _dr[1:])) else 0)
+    ck("09-07 README, 140 measurements", "140",
+       sum(1 for r in _r97 if r.get("kind") in ("decode", "prefill")))
+    ck("09-07 README, and no errors", "0", sum(1 for r in _r97 if r.get("err")))
+    _rm97 = open(os.path.join(_c97, "README.md"), encoding="utf-8").read()
+    for _frag, _what in (
+        ("Nothing about why", "it does not open either kernel"),
+        ("Nothing about batch", "every cell is batch 1"),
+        ("not the same kind of number", "Muse's fit is not comparable"),
+        ("not an optional part of this campaign", "the drift arm is required"),
+    ):
+        ck(f"09-07 README, states that {_what}", "1", 1 if _frag in _rm97 else 0)
+
     # and the sitting whose percentage this corrects has to say so, or a reader
     # meets the architecture claim with nothing beside it
     _rm93 = open(os.path.join(ROOT, "benchmarks", "campaign-2026-09-03",
@@ -9513,9 +9606,9 @@ def _run_checks(_opened, _audit_state):
     ck("front page, the 0.23 27B line is still drawn", "1",
        sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long"))
     ck("front page, and the 0.27 one is beside it", "1",
-       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027"))
+       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027b"))
     ck("front page, the 0.27 line is off by default", "0",
-       sum(1 for _x in _lng if _x["cfg"] == "D8-27B-tp2-long-027" and _x["lit"]))
+       sum(1 for _x in _lng if _x["cfg"].endswith("027b") and _x["lit"]))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

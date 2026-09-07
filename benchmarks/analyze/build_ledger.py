@@ -120,6 +120,9 @@ CFG = {
     "G-30B-tp2-long":            ("Muse-Glimmer-30B", "int4", "sliding window 2048", 2),
     "D8-27B-tp2-long":           ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "D8-27B-tp2-long-027":       ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "D8-27B-tp2-long-027b":      ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "D8-27B-tp2-triton-long-027b": ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
+    "D8-27B-tp2-long-027c":      ("Qwen3.8-27B", "int4 AWQ", "hybrid SSM", 2),
     "C-31B-tp2-long":            ("gemma-4-31B-it", "w4a16 QAT", "dense", 2),
 }
 
@@ -193,6 +196,11 @@ ARMS = {
     # ['ROCM_ATTN', 'TRITON_ATTN']". The TORCH_SDPA that also appears in that
     # log is MMEncoderAttention's, which is the multimodal encoder and not this.
     "D8-27B-tp2-long-027":       (None,   "ROCM_ATTN"),
+    # 2026-09-07: the same arm twice more (A and its drift control C) and once
+    # with the other backend forced, which is the campaign's whole variable.
+    "D8-27B-tp2-long-027b":      (None,   "ROCM_ATTN"),
+    "D8-27B-tp2-triton-long-027b": (None, "TRITON_ATTN"),
+    "D8-27B-tp2-long-027c":      (None,   "ROCM_ATTN"),
 }
 MODELS = {"/data/incoming/Qwen3.8-27B-AWQ-INT4": "D8-27B-tp2"}
 

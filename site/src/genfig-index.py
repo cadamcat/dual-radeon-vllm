@@ -773,8 +773,18 @@ PF_LIT = set(LIT)
 _PF32 = [r for r in _PF if r["ctx"] <= FIG12_MAX_CTX]
 _fits = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF32)}
 _fits_full = {(f["machine"], f["cfg"], f["date"]): f for f in _bp.fits(_PF)}
+# The exemption is a property, not a date. It used to be `_k[2] == "2026-09-03"`
+# because that campaign was the only ladder past 32 000; campaign-2026-09-06 and
+# -09-07 are two more, and an arm that HAS deeper rungs must have a different
+# truncated fit -- that is what truncation means. What the check is for is a
+# short-ladder arm whose fit moves when cut, which would mean the cut is reaching
+# rungs it should not.
+_deepest = {}
+for _r in _PF:
+    _kk = (_r["machine"], _r["cfg"], _r["date"])
+    _deepest[_kk] = max(_deepest.get(_kk, 0), _r["ctx"])
 for _k, _f in _fits.items():
-    if _k[2] == "2026-09-03":
+    if _deepest.get(_k, 0) > FIG12_MAX_CTX:
         continue
     _g = _fits_full.get(_k)
     if _g and "b_us_tok" in _f and "b_us_tok" in _g:
@@ -989,8 +999,16 @@ LONG_EXTRA = [("l4", "L4", "G12", LONG_DATE, None),
               # is that the 27B line's *percentage* belongs to its stack --
               # see campaign-2026-09-06/README.md, which reports the slope
               # instead, in the unit that does not move.
-              ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027", "2026-09-07",
-               "RX 7900 XT · vLLM 0.27")]
+              # Superseded 2026-09-07b by the arm below: the same configuration
+              # in one session with sixteen rungs instead of eight, the two
+              # sittings agreeing to 1.23 %. campaign-2026-09-06 keeps the
+              # first sitting and its account; drawing both would be noise.
+              ("rdna3-027", "RX 7900 XT", "D8-27B-tp2-long-027b", "2026-09-07b",
+               "RX 7900 XT · vLLM 0.27"),
+              # And the finding campaign-2026-09-07 is about: one serve flag,
+              # the same weights and cards, and less than half the depth cost.
+              ("rdna3-027t", "RX 7900 XT", "D8-27B-tp2-triton-long-027b",
+               "2026-09-07b", "RX 7900 XT · vLLM 0.27 · TRITON_ATTN")]
 LONG_TICKS_ALL = [500 * 2 ** i for i in range(9)]   # 500 .. 128 000
 
 
@@ -1141,7 +1159,8 @@ LONG_MACHINES = ([{"id": "rdna3", "default": True, "cards": 2, "family": "radeon
                  + [{"id": m, "default": False, "cards": c, "family": FAMILY[m]}
                     for m, _n, c in RENTED]
                  + [{"id": "l4", "default": False, "cards": 1, "family": "l4"},
-                    {"id": "rdna3-027", "default": False, "cards": 2, "family": "radeon"}])
+                    {"id": "rdna3-027", "default": False, "cards": 2, "family": "radeon"},
+                    {"id": "rdna3-027t", "default": False, "cards": 2, "family": "radeon"}])
 assert [m["id"] for m in LONG_MACHINES] == list(dict.fromkeys(
     [x["machine"] for x in long_dec])), "the machine row is not the lines' order"
 LONG_OUT = {

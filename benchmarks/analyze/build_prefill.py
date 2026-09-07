@@ -290,6 +290,13 @@ SOURCES = [
          cuda=None, kernel="7.0.0-30", prefix_caching=True,
          patches=["vllm#45916 split-KV", "window block-skip",
                   "vllm#45450 3D admission"]),
+    # 2026-09-07, three sittings in one run: the default decoder backend, the
+    # other candidate, and the first repeated as a drift control. Same flags
+    # otherwise, so arm B differs from arm A in --attention-backend alone.
+    dict(file="campaign-2026-09-07/results.jsonl", machine="RX 7900 XT",
+         date="2026-09-07b", vllm="0.27.1.dev5+gf46a9dfe2.d20260827", rocm="10.0",
+         cuda=None, kernel="7.0.0-30", prefix_caching=True,
+         patches=["vllm#45916 split-KV"]),
     # 2026-09-07. The same checkpoint, cards, TP and split-KV patch as the
     # 09-03 arm above, on 0.27.1/ROCm 10.0 instead of 0.23.1/7.14 -- the one
     # thing that campaign could not vary, because it chose 0.23 for continuity

@@ -1,0 +1,52 @@
+08:56:32 | ===== start =====
+08:56:35 | services stopped: inactive inactive 
+08:56:43 | vllm=0.27.1.dev5+gf46a9dfe2.d20260827  chunked_prefill_paged_decode.py=84c6d4f9b2dfe2714b3a8f43ee832b02
+08:56:43 | === campaign start rev3 (['D8-27B-tp2-long-027b', 'D8-27B-tp2-triton-long-027b', 'D8-27B-tp2-long-027c']) ===
+09:00:18 | D8-27B-tp2-long-027b: ready (mml=130000, util=0.92), 16 points x 2 rounds
+09:00:45 | D8-27B-tp2-long-027b: point 500 done
+09:01:13 | D8-27B-tp2-long-027b: point 1000 done
+09:01:45 | D8-27B-tp2-long-027b: point 2000 done
+09:02:24 | D8-27B-tp2-long-027b: point 4000 done
+09:03:10 | D8-27B-tp2-long-027b: point 6000 done
+09:04:03 | D8-27B-tp2-long-027b: point 8000 done
+09:05:10 | D8-27B-tp2-long-027b: point 12000 done
+09:06:33 | D8-27B-tp2-long-027b: point 16000 done
+09:08:12 | D8-27B-tp2-long-027b: point 20000 done
+09:10:07 | D8-27B-tp2-long-027b: point 24000 done
+09:12:37 | D8-27B-tp2-long-027b: point 32000 done
+09:16:21 | D8-27B-tp2-long-027b: point 48000 done
+09:21:30 | D8-27B-tp2-long-027b: point 64000 done
+09:28:12 | D8-27B-tp2-long-027b: point 80000 done
+09:36:35 | D8-27B-tp2-long-027b: point 96000 done
+09:48:50 | D8-27B-tp2-long-027b: point 128000 done
+09:48:50 | D8-27B-tp2-long-027b: COMPLETE (64 ok, 0 err)
+09:54:11 | D8-27B-tp2-triton-long-027b: still starting (5 min, idle 28s)
+09:56:53 | D8-27B-tp2-triton-long-027b: ready (mml=130000, util=0.92), 16 points x 2 rounds
+09:57:20 | D8-27B-tp2-triton-long-027b: point 500 done
+09:57:48 | D8-27B-tp2-triton-long-027b: point 1000 done
+09:58:19 | D8-27B-tp2-triton-long-027b: point 2000 done
+09:58:58 | D8-27B-tp2-triton-long-027b: point 4000 done
+09:59:44 | D8-27B-tp2-triton-long-027b: point 6000 done
+10:00:39 | D8-27B-tp2-triton-long-027b: point 8000 done
+10:01:52 | D8-27B-tp2-triton-long-027b: point 12000 done
+10:03:25 | D8-27B-tp2-triton-long-027b: point 16000 done
+10:05:22 | D8-27B-tp2-triton-long-027b: point 20000 done
+10:07:43 | D8-27B-tp2-triton-long-027b: point 24000 done
+10:11:00 | D8-27B-tp2-triton-long-027b: point 32000 done
+10:16:38 | D8-27B-tp2-triton-long-027b: point 48000 done
+10:25:12 | D8-27B-tp2-triton-long-027b: point 64000 done
+10:37:19 | D8-27B-tp2-triton-long-027b: point 80000 done
+10:53:37 | D8-27B-tp2-triton-long-027b: point 96000 done
+11:20:14 | D8-27B-tp2-triton-long-027b: point 128000 done
+11:20:14 | D8-27B-tp2-triton-long-027b: COMPLETE (64 ok, 0 err)
+11:23:42 | D8-27B-tp2-long-027c: ready (mml=130000, util=0.92), 3 points x 2 rounds
+11:24:09 | D8-27B-tp2-long-027c: point 500 done
+11:25:02 | D8-27B-tp2-long-027c: point 8000 done
+11:27:31 | D8-27B-tp2-long-027c: point 32000 done
+11:27:31 | D8-27B-tp2-long-027c: COMPLETE (12 ok, 0 err)
+11:27:41 | === campaign end: container stopped, services restored ===
+11:27:41 | runner exit=0
+11:27:41 | restore: stopping vllm, returning the guest to its services
+11:27:49 | services: active active 
+11:27:49 | vram: 27971584 27971584   (baseline 27971584)
+11:27:49 | ===== END =====

@@ -10895,79 +10895,277 @@
       "vllm#45916 split-KV"
      ],
      "harness": "campaign-server",
-     "date": "2026-09-07",
+     "date": "2026-09-07b",
      "quant": "int4 AWQ",
      "quant_label": "INT4 AWQ",
      "arch": "hybrid SSM",
      "attn_backend": "ROCM_ATTN",
      "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long-027",
+     "cfg": "D8-27B-tp2-long-027b",
      "source": "benchmarks/decode.jsonl",
-     "rungs_measured": 8,
+     "rungs_measured": 16,
      "points": [
       {
-       "ctx": 8000,
-       "tok_s": 46.105000000000004,
+       "ctx": 500,
+       "tok_s": 49.364999999999995,
        "runs": 2,
-       "range_pct": 0.021689621516100228,
+       "range_pct": 0.020257267294637924,
        "graded": true
       },
       {
-       "ctx": 16000,
-       "tok_s": 42.425,
+       "ctx": 1000,
+       "tok_s": 49.150000000000006,
        "runs": 2,
-       "range_pct": 0.07071302298173515,
+       "range_pct": 0.08138351983723122,
        "graded": true
       },
       {
-       "ctx": 32000,
-       "tok_s": 36.63,
+       "ctx": 2000,
+       "tok_s": 48.614999999999995,
+       "runs": 2,
+       "range_pct": 0.14398848092152688,
+       "graded": true
+      },
+      {
+       "ctx": 4000,
+       "tok_s": 47.52,
        "runs": 2,
        "range_pct": 0.0,
        "graded": true
       },
       {
-       "ctx": 48000,
-       "tok_s": 32.15,
+       "ctx": 6000,
+       "tok_s": 46.555,
        "runs": 2,
-       "range_pct": 0.06220839813373568,
+       "range_pct": 0.06443990978412874,
+       "graded": true
+      },
+      {
+       "ctx": 8000,
+       "tok_s": 45.54,
+       "runs": 2,
+       "range_pct": 0.2635046113307083,
+       "graded": true
+      },
+      {
+       "ctx": 12000,
+       "tok_s": 43.68,
+       "runs": 2,
+       "range_pct": 0.18315018315017925,
+       "graded": true
+      },
+      {
+       "ctx": 16000,
+       "tok_s": 41.925,
+       "runs": 2,
+       "range_pct": 0.07155635062612078,
+       "graded": true
+      },
+      {
+       "ctx": 20000,
+       "tok_s": 40.375,
+       "runs": 2,
+       "range_pct": 0.07430340557275823,
+       "graded": true
+      },
+      {
+       "ctx": 24000,
+       "tok_s": 38.925,
+       "runs": 2,
+       "range_pct": 0.17983301220295514,
+       "graded": true
+      },
+      {
+       "ctx": 32000,
+       "tok_s": 36.245,
+       "runs": 2,
+       "range_pct": 0.08277003724651989,
+       "graded": true
+      },
+      {
+       "ctx": 48000,
+       "tok_s": 31.945,
+       "runs": 2,
+       "range_pct": 0.03130380341210834,
        "graded": true
       },
       {
        "ctx": 64000,
-       "tok_s": 28.685000000000002,
+       "tok_s": 28.515,
        "runs": 2,
-       "range_pct": 0.1743071291615852,
+       "range_pct": 0.10520778537612183,
        "graded": true
       },
       {
        "ctx": 80000,
-       "tok_s": 25.88,
+       "tok_s": 25.735,
        "runs": 2,
-       "range_pct": 0.15455950540957938,
+       "range_pct": 0.03885758694384306,
        "graded": true
       },
       {
        "ctx": 96000,
-       "tok_s": 23.57,
+       "tok_s": 23.44,
        "runs": 2,
-       "range_pct": 0.0848536274925735,
+       "range_pct": 0.0,
        "graded": true
       },
       {
        "ctx": 128000,
-       "tok_s": 20.01,
+       "tok_s": 19.91,
+       "runs": 2,
+       "range_pct": 0.10045203415370732,
+       "graded": true
+      }
+     ],
+     "retained": {
+      "from_ctx": 500,
+      "to_ctx": 128000,
+      "from_tok_s": 49.364999999999995,
+      "to_tok_s": 19.91,
+      "change_pct": -59.667780816367866
+     }
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "rdna3-027t",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
+     "tp": 2,
+     "lit": false,
+     "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+     "patches": [
+      "vllm#45916 split-KV"
+     ],
+     "harness": "campaign-server",
+     "date": "2026-09-07b",
+     "quant": "int4 AWQ",
+     "quant_label": "INT4 AWQ",
+     "arch": "hybrid SSM",
+     "attn_backend": "TRITON_ATTN",
+     "prefix_caching": true,
+     "cfg": "D8-27B-tp2-triton-long-027b",
+     "source": "benchmarks/decode.jsonl",
+     "rungs_measured": 16,
+     "points": [
+      {
+       "ctx": 500,
+       "tok_s": 50.515,
+       "runs": 2,
+       "range_pct": 0.05938830050480281,
+       "graded": true
+      },
+      {
+       "ctx": 1000,
+       "tok_s": 50.39,
+       "runs": 2,
+       "range_pct": 0.11907124429450738,
+       "graded": true
+      },
+      {
+       "ctx": 2000,
+       "tok_s": 50.14,
+       "runs": 2,
+       "range_pct": 0.07977662544874183,
+       "graded": true
+      },
+      {
+       "ctx": 4000,
+       "tok_s": 49.635000000000005,
+       "runs": 2,
+       "range_pct": 0.020147073637550136,
+       "graded": true
+      },
+      {
+       "ctx": 6000,
+       "tok_s": 49.035,
+       "runs": 2,
+       "range_pct": 0.06118078923216893,
+       "graded": true
+      },
+      {
+       "ctx": 8000,
+       "tok_s": 48.36,
+       "runs": 2,
+       "range_pct": 0.0,
+       "graded": true
+      },
+      {
+       "ctx": 12000,
+       "tok_s": 47.295,
+       "runs": 2,
+       "range_pct": 0.021143884131510752,
+       "graded": true
+      },
+      {
+       "ctx": 16000,
+       "tok_s": 46.230000000000004,
+       "runs": 2,
+       "range_pct": 0.043261951114001995,
+       "graded": true
+      },
+      {
+       "ctx": 20000,
+       "tok_s": 45.295,
+       "runs": 2,
+       "range_pct": 0.06623247599072996,
+       "graded": true
+      },
+      {
+       "ctx": 24000,
+       "tok_s": 44.38,
+       "runs": 2,
+       "range_pct": 0.0,
+       "graded": true
+      },
+      {
+       "ctx": 32000,
+       "tok_s": 42.69,
+       "runs": 2,
+       "range_pct": 0.09369875849144799,
+       "graded": true
+      },
+      {
+       "ctx": 48000,
+       "tok_s": 39.650000000000006,
+       "runs": 2,
+       "range_pct": 0.10088272383354134,
+       "graded": true
+      },
+      {
+       "ctx": 64000,
+       "tok_s": 37.06,
+       "runs": 2,
+       "range_pct": 0.0,
+       "graded": true
+      },
+      {
+       "ctx": 80000,
+       "tok_s": 34.81,
+       "runs": 2,
+       "range_pct": 0.057454754380934,
+       "graded": true
+      },
+      {
+       "ctx": 96000,
+       "tok_s": 32.815,
+       "runs": 2,
+       "range_pct": 0.09142160597288174,
+       "graded": true
+      },
+      {
+       "ctx": 128000,
+       "tok_s": 29.46,
        "runs": 2,
        "range_pct": 0.0,
        "graded": true
       }
      ],
      "retained": {
-      "from_ctx": 8000,
+      "from_ctx": 500,
       "to_ctx": 128000,
-      "from_tok_s": 46.105000000000004,
-      "to_tok_s": 20.01,
-      "change_pct": -56.5990673462748
+      "from_tok_s": 50.515,
+      "to_tok_s": 29.46,
+      "change_pct": -41.68068890428586
      }
     }
    ],
@@ -16551,95 +16749,319 @@
       "vllm#45916 split-KV"
      ],
      "harness": "campaign-server",
-     "date": "2026-09-07",
+     "date": "2026-09-07b",
      "quant": "int4 AWQ",
      "quant_label": "INT4 AWQ",
      "arch": "hybrid SSM",
      "attn_backend": "ROCM_ATTN",
      "prefix_caching": true,
-     "cfg": "D8-27B-tp2-long-027",
+     "cfg": "D8-27B-tp2-long-027b",
      "source": "benchmarks/prefill.jsonl",
-     "rungs_measured": 8,
+     "rungs_measured": 16,
      "points": [
+      {
+       "ctx": 1000,
+       "tokens": 1029,
+       "tok_s": 1070.481144343303,
+       "ttft_s": 0.9612499999999999,
+       "runs": 2,
+       "range_pct": 1.029908972691798
+      },
+      {
+       "ctx": 2000,
+       "tokens": 2080,
+       "tok_s": 1169.7221909796424,
+       "ttft_s": 1.7782,
+       "runs": 2,
+       "range_pct": 0.0337419862782552
+      },
+      {
+       "ctx": 4000,
+       "tokens": 4102,
+       "tok_s": 1211.7810404419367,
+       "ttft_s": 3.3851,
+       "runs": 2,
+       "range_pct": 0.1536143688517419
+      },
+      {
+       "ctx": 6000,
+       "tokens": 6020,
+       "tok_s": 1230.0650790245297,
+       "ttft_s": 4.89405,
+       "runs": 2,
+       "range_pct": 0.11646795598735506
+      },
       {
        "ctx": 8000,
        "tokens": 8070,
-       "tok_s": 1184.1004798027966,
-       "ttft_s": 6.815300000000001,
+       "tok_s": 1220.8035822340553,
+       "ttft_s": 6.6104,
        "runs": 2,
-       "range_pct": 0.6191950464396319
+       "range_pct": 0.405421759651454
+      },
+      {
+       "ctx": 12000,
+       "tokens": 12076,
+       "tok_s": 1203.5980365285427,
+       "ttft_s": 10.033249999999999,
+       "runs": 2,
+       "range_pct": 0.21030075000621723
       },
       {
        "ctx": 16000,
-       "tokens": 16098,
-       "tok_s": 1197.17105312084,
-       "ttft_s": 13.4467,
+       "tokens": 16100,
+       "tok_s": 1181.3652473162465,
+       "ttft_s": 13.6283,
        "runs": 2,
-       "range_pct": 0.17699509916932313
+       "range_pct": 0.019077948093300483
+      },
+      {
+       "ctx": 20000,
+       "tokens": 20114,
+       "tok_s": 1155.233412975556,
+       "ttft_s": 17.4112,
+       "runs": 2,
+       "range_pct": 0.07006984010292219
+      },
+      {
+       "ctx": 24000,
+       "tokens": 24084,
+       "tok_s": 1133.3113735824197,
+       "ttft_s": 21.250999999999998,
+       "runs": 2,
+       "range_pct": 0.12234718366194439
       },
       {
        "ctx": 32000,
        "tokens": 32127,
-       "tok_s": 1104.170497369918,
-       "ttft_s": 29.096049999999998,
+       "tok_s": 1095.7665966329232,
+       "ttft_s": 29.3192,
        "runs": 2,
-       "range_pct": 0.31378829772426287
+       "range_pct": 0.07230756637288989
       },
       {
        "ctx": 48000,
        "tokens": 48132,
-       "tok_s": 1023.3306721746627,
-       "ttft_s": 47.03465,
+       "tok_s": 1019.6139905647788,
+       "ttft_s": 47.2061,
        "runs": 2,
-       "range_pct": 0.14988949636065235
+       "range_pct": 0.15803042403419004
       },
       {
        "ctx": 64000,
        "tokens": 64162,
-       "tok_s": 952.2834201582143,
-       "ttft_s": 67.377,
+       "tok_s": 953.0437107537143,
+       "ttft_s": 67.32325,
        "runs": 2,
-       "range_pct": 0.05966427712720762
+       "range_pct": 0.08808249750273116
       },
       {
        "ctx": 80000,
-       "tokens": 80205,
-       "tok_s": 894.6952453035611,
-       "ttft_s": 89.64505,
+       "tokens": 80204,
+       "tok_s": 896.2647626273998,
+       "ttft_s": 89.48695000000001,
        "runs": 2,
-       "range_pct": 0.03603099111439195
+       "range_pct": 0.0834758587704608
+      },
+      {
+       "ctx": 96000,
+       "tokens": 96218,
+       "tok_s": 844.0812201622227,
+       "ttft_s": 113.9914,
+       "runs": 2,
+       "range_pct": 0.05105648320838183
+      },
+      {
+       "ctx": 128000,
+       "tokens": 128299,
+       "tok_s": 754.8436423048739,
+       "ttft_s": 169.96765,
+       "runs": 2,
+       "range_pct": 0.04418487871073817
+      }
+     ],
+     "dropped": [
+      {
+       "ctx": 500,
+       "range_pct": 8.455058350722616
+      }
+     ],
+     "fit": {
+      "a_ms": 162.61824806886926,
+      "b_us_tok": 767.4225455026722,
+      "c_ns_tok2": 4.327771354784644,
+      "r2": 0.9999985568854028,
+      "rungs": 15
+     },
+     "fit_scope": "the whole ladder",
+     "crossover_tokens": 177325.11322582574,
+     "quadratic_share_deepest": {
+      "ctx": 128000,
+      "tokens": 128299,
+      "pct": 41.93915510041492
+     }
+    },
+    {
+     "model": "Qwen3.8-27B",
+     "machine": "rdna3-027t",
+     "machine_name": "RX 7900 XT · vLLM 0.27 · TRITON_ATTN",
+     "tp": 2,
+     "lit": false,
+     "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+     "patches": [
+      "vllm#45916 split-KV"
+     ],
+     "harness": "campaign-server",
+     "date": "2026-09-07b",
+     "quant": "int4 AWQ",
+     "quant_label": "INT4 AWQ",
+     "arch": "hybrid SSM",
+     "attn_backend": "TRITON_ATTN",
+     "prefix_caching": true,
+     "cfg": "D8-27B-tp2-triton-long-027b",
+     "source": "benchmarks/prefill.jsonl",
+     "rungs_measured": 16,
+     "points": [
+      {
+       "ctx": 1000,
+       "tokens": 1028,
+       "tok_s": 1039.7491655709518,
+       "ttft_s": 0.9886999999999999,
+       "runs": 2,
+       "range_pct": 0.8900576514615183
+      },
+      {
+       "ctx": 2000,
+       "tokens": 2080,
+       "tok_s": 1135.99126160568,
+       "ttft_s": 1.831,
+       "runs": 2,
+       "range_pct": 0.6444565811032241
+      },
+      {
+       "ctx": 4000,
+       "tokens": 4103,
+       "tok_s": 1137.5734723300434,
+       "ttft_s": 3.6068,
+       "runs": 2,
+       "range_pct": 0.9592991016967879
+      },
+      {
+       "ctx": 6000,
+       "tokens": 6021,
+       "tok_s": 1123.467617039539,
+       "ttft_s": 5.359299999999999,
+       "runs": 2,
+       "range_pct": 0.09329576623812613
+      },
+      {
+       "ctx": 8000,
+       "tokens": 8068,
+       "tok_s": 1087.7200078195042,
+       "ttft_s": 7.41735,
+       "runs": 2,
+       "range_pct": 0.3707523576479451
+      },
+      {
+       "ctx": 12000,
+       "tokens": 12076,
+       "tok_s": 1018.1738466921576,
+       "ttft_s": 11.86045,
+       "runs": 2,
+       "range_pct": 0.05143143809889165
+      },
+      {
+       "ctx": 16000,
+       "tokens": 16099,
+       "tok_s": 956.2957572877531,
+       "ttft_s": 16.83475,
+       "runs": 2,
+       "range_pct": 0.08019127103164889
+      },
+      {
+       "ctx": 20000,
+       "tokens": 20114,
+       "tok_s": 897.1814211988884,
+       "ttft_s": 22.4191,
+       "runs": 2,
+       "range_pct": 0.012489350598376294
+      },
+      {
+       "ctx": 24000,
+       "tokens": 24084,
+       "tok_s": 843.8549497292439,
+       "ttft_s": 28.54045,
+       "runs": 2,
+       "range_pct": 0.050805085413853604
+      },
+      {
+       "ctx": 32000,
+       "tokens": 32127,
+       "tok_s": 757.0810656681281,
+       "ttft_s": 42.43535,
+       "runs": 2,
+       "range_pct": 0.14728286676084915
+      },
+      {
+       "ctx": 48000,
+       "tokens": 48132,
+       "tok_s": 624.7331074021242,
+       "ttft_s": 77.0441,
+       "runs": 2,
+       "range_pct": 0.1471884284455433
+      },
+      {
+       "ctx": 64000,
+       "tokens": 64161,
+       "tok_s": 531.7091705557376,
+       "ttft_s": 120.66935000000001,
+       "runs": 2,
+       "range_pct": 0.06323063810320446
+      },
+      {
+       "ctx": 80000,
+       "tokens": 80203,
+       "tok_s": 462.3969194678252,
+       "ttft_s": 173.45055000000002,
+       "runs": 2,
+       "range_pct": 0.017007729292304326
       },
       {
        "ctx": 96000,
        "tokens": 96220,
-       "tok_s": 844.358388102111,
-       "ttft_s": 113.95635,
+       "tok_s": 408.3956675764527,
+       "ttft_s": 235.60485,
        "runs": 2,
-       "range_pct": 0.07643277447899341
+       "range_pct": 0.004796166123068196
       },
       {
        "ctx": 128000,
        "tokens": 128298,
-       "tok_s": 754.0649170089547,
-       "ttft_s": 170.14184999999998,
+       "tok_s": 329.3153073813596,
+       "ttft_s": 389.59015,
        "runs": 2,
-       "range_pct": 0.023098373504224407
+       "range_pct": 0.06917526020614063
       }
      ],
-     "dropped": [],
+     "dropped": [
+      {
+       "ctx": 500,
+       "range_pct": 10.022848438690017
+      }
+     ],
      "fit": {
-      "a_ms": 169.44347919418007,
-      "b_us_tok": 763.1016702086339,
-      "c_ns_tok2": 4.375384694905295,
-      "r2": 0.9999919338571065,
-      "rungs": 8
+      "a_ms": 496.8614126696033,
+      "b_us_tok": 715.7041353063346,
+      "c_ns_tok2": 18.02490891445487,
+      "r2": 0.9999925203537564,
+      "rungs": 15
      },
      "fit_scope": "the whole ladder",
-     "crossover_tokens": 174407.9031718493,
+     "crossover_tokens": 39706.39400748283,
      "quadratic_share_deepest": {
       "ctx": 128000,
       "tokens": 128298,
-      "pct": 42.34149106017037
+      "pct": 76.26832360109694
      }
     }
    ],
@@ -16655,7 +17077,7 @@
     128000
    ],
    "ctx_min": 500,
-   "ctx_max": 128298,
+   "ctx_max": 128299,
    "not_drawn": [
     {
      "machine": "rdna3",
@@ -16752,6 +17174,12 @@
    },
    {
     "id": "rdna3-027",
+    "default": false,
+    "cards": 2,
+    "family": "radeon"
+   },
+   {
+    "id": "rdna3-027t",
     "default": false,
     "cards": 2,
     "family": "radeon"
