@@ -56,24 +56,6 @@
 
 ## RCCL 故障
 
-### 谁会遇到
-
-触发条件是 **GPU 到 root complex 的 PCIe 路径缺少 AtomicOps**。消费级芯片组后的插槽，以及某些 QEMU/VFIO 直通配置都可能出现；虚拟化 Instinct 也不能只凭卡型排除。裸机上，[@adderek 的双 7900 XTX／B550 记录](https://github.com/ROCm/legacy-rocm-build/issues/6520) 复现了故障和修复：CPU 直连的卡正常，经过芯片组的卡受影响，关闭 IOMMU 也不改变结果。
-
-| 构建目标 | 典型显卡 | 验证状态 |
-|---|---|---|
-| **gfx1100** | RX 7900 XTX / XT | ✅ 在本机 RX 7900 XT 上端到端验证 |
-| gfx1030 | RX 6800 / 6800 XT / 6900 XT | 🟡 混合 gfx1030+gfx1100 机器上，原版在 gfx1030 rank 拒绝分派，重建版到达 Init COMPLETE；尚无完成的 collective。两种架构混用时仍在 `libamdhip64` 出错，缺少第二张 gfx1030 无法隔离原因 |
-| gfx1101 | RX 7800 XT / 7700 XT | ⚪ 仅静态验证 |
-| gfx1102 | RX 7600 / 7600 XT | ⚪ 仅静态验证 |
-| gfx1200 | RX 9060 | ⚪ 仅静态验证 |
-| gfx1201 | RX 9070 / 9070 XT | ⚪ 仅静态验证 |
-| gfx908 | MI100 | ⚪ 仅静态验证 |
-
-⚪ 指设备镜像的 `hidden_hostcall_buffer` 为零，尚未在对应硬件运行；🟡 指有原版对照的分派验证，不代表 collective 或模型已跑通。
-
-编译库不放进 git。[Releases](../../releases) 提供 gfx1100 和多架构构建及 SHA256；也可运行 [`build/build-rccl-nohostcall.sh`](build/build-rccl-nohostcall.sh)，再用 [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) 独立检查。慢主机上单目标构建约 85 分钟。
-
 ### 报错原文
 
 <details>
@@ -94,18 +76,6 @@ amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
 `cuMem support requires VMM RDMA support` 是例外：它表示 RCCL 放弃自己的 cuMem 路径，并不是本故障的原因。它与真正错误出现在同一份日志里。`NCCL_CUMEM_ENABLE=1` 在本机没有作用；[`diagnose/sweep.sh`](diagnose/sweep.sh) 记录了试过的环境变量组合。
 
 </details>
-
-### 已验证的原始配置
-
-| 项目 | 七月 Radeon 基线 |
-|---|---|
-| GPU | 2× RX 7900 XT（gfx1100、RDNA3），每卡 20 GB |
-| 互连 | 跨 die、PCIe 3.0、无 P2P，`NCCL_P2P_DISABLE=1` |
-| 主机 | Threadripper 1950X、X399 |
-| 虚拟化 | Proxmox VE + QEMU，VFIO 直通；七月基线没有 PCIe atomics |
-| 软件栈 | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · 重建的 RCCL 2.27.7 |
-
-后续 Qwen3.8 campaign 使用 ROCm 10.0、vLLM 0.27，各自记录后端和补丁。这里没有匹配的裸机 P2P 性能对照，不能把 VFIO 吞吐当作它的下界。
 
 ### 诊断与修复 RCCL
 
@@ -140,6 +110,36 @@ ROCm **7.2.1** 起的 RCCL 设备内核带 hostcall 声明。缺少 AtomicOp 到
 2.30.4 重建的设备镜像即使不含 `__ockl_*` 符号，设备链接器仍保留 hostcall buffer 声明；仅靠 `NDEBUG` 无法去掉这个要求。源码迁移及证据见 [开放问题](docs/open-questions.md)。
 
 有 atomics 时，**原版 2.30.4 通过 12/12 个 collective 用例**（[能力矩阵](benchmarks/rccl-ndebug-ab-2026-09-04/)）。没有 atomics 时，**打过补丁的 HIP runtime 加 `HIP_HOSTCALL_ALLOW_MISSING=1` 也通过 12/12 个 collective**，并完成 TP=2 Qwen3-8B serve 请求（[runtime 实验](benchmarks/clr-hostcall-load-check-2026-09-05/)）。这个 flag 需要对应 runtime 补丁；实际执行 hostcall 会在设备上出错。
+
+### 谁会遇到
+
+触发条件是 **GPU 到 root complex 的 PCIe 路径缺少 AtomicOps**。消费级芯片组后的插槽，以及某些 QEMU/VFIO 直通配置都可能出现；虚拟化 Instinct 也不能只凭卡型排除。裸机上，[@adderek 的双 7900 XTX／B550 记录](https://github.com/ROCm/legacy-rocm-build/issues/6520) 复现了故障和修复：CPU 直连的卡正常，经过芯片组的卡受影响，关闭 IOMMU 也不改变结果。
+
+| 构建目标 | 典型显卡 | 验证状态 |
+|---|---|---|
+| **gfx1100** | RX 7900 XTX / XT | ✅ 在本机 RX 7900 XT 上端到端验证 |
+| gfx1030 | RX 6800 / 6800 XT / 6900 XT | 🟡 混合 gfx1030+gfx1100 机器上，原版在 gfx1030 rank 拒绝分派，重建版到达 Init COMPLETE；尚无完成的 collective。两种架构混用时仍在 `libamdhip64` 出错，缺少第二张 gfx1030 无法隔离原因 |
+| gfx1101 | RX 7800 XT / 7700 XT | ⚪ 仅静态验证 |
+| gfx1102 | RX 7600 / 7600 XT | ⚪ 仅静态验证 |
+| gfx1200 | RX 9060 | ⚪ 仅静态验证 |
+| gfx1201 | RX 9070 / 9070 XT | ⚪ 仅静态验证 |
+| gfx908 | MI100 | ⚪ 仅静态验证 |
+
+⚪ 指设备镜像的 `hidden_hostcall_buffer` 为零，尚未在对应硬件运行；🟡 指有原版对照的分派验证，不代表 collective 或模型已跑通。
+
+编译库不放进 git。[Releases](../../releases) 提供 gfx1100 和多架构构建及 SHA256；也可运行 [`build/build-rccl-nohostcall.sh`](build/build-rccl-nohostcall.sh)，再用 [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) 独立检查。慢主机上单目标构建约 85 分钟。
+
+### 已验证的原始配置
+
+| 项目 | 七月 Radeon 基线 |
+|---|---|
+| GPU | 2× RX 7900 XT（gfx1100、RDNA3），每卡 20 GB |
+| 互连 | 跨 die、PCIe 3.0、无 P2P，`NCCL_P2P_DISABLE=1` |
+| 主机 | Threadripper 1950X、X399 |
+| 虚拟化 | Proxmox VE + QEMU，VFIO 直通；七月基线没有 PCIe atomics |
+| 软件栈 | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · 重建的 RCCL 2.27.7 |
+
+后续 Qwen3.8 campaign 使用 ROCm 10.0、vLLM 0.27，各自记录后端和补丁。这里没有匹配的裸机 P2P 性能对照，不能把 VFIO 吞吐当作它的下界。
 
 从 PCIe 路径到失败内核的完整调查，见文章 [RCCL、atomics 与 hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.zh.html)。
 

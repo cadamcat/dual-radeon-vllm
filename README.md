@@ -136,56 +136,8 @@ Each finding links to the experiment that supports it.
 ## The RCCL bug
 
 The failure this section diagnoses: `--tensor-parallel-size 2` dies in the
-first collective. Who it hits, how to tell in sixty seconds, and the one-line
-and the ninety-minute fix.
-
-### Who is hit
-
-The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU that
-cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
-and QEMU/VFIO passthrough guests, including virtualised Instinct.
-
-**In a guest, check the VM configuration first** — passing a card's audio
-function alongside the GPU is enough to remove AtomicOps on its own
-([the one-line fix](docs/vfio-atomics.md)). The rebuild below is for hardware
-that genuinely cannot deliver AtomicOps: chipset-fed slots on bare metal, root
-ports without completer support, QEMU older than 8.1.0. We build it for seven
-targets:
-
-| Target | Cards | Status |
-|---|---|---|
-| **gfx1100** | RX 7900 XTX / XT | ✅ **verified end to end**: every number in this repository |
-| gfx1030 | RX 6800 / 6800 XT / 6900 XT | 🟡 dispatch gate verified, collectives not. On a mixed gfx1030+gfx1100 pair the stock library fails on the gfx1030 rank with "the operation cannot be performed in the present state" and ours reaches Init COMPLETE on that same rank. No collective ran: the pair faults in `libamdhip64` under every env tried, and we cannot separate that from architecture mixing without a second gfx1030 |
-| gfx1101 | RX 7800 XT / 7700 XT | ⚪ same |
-| gfx1102 | RX 7600 / 7600 XT | ⚪ same |
-| gfx1200 | RX 9060 | ⚪ same |
-| gfx1201 | RX 9070 / 9070 XT | ⚪ same |
-| gfx908 | MI100 | ⚪ same |
-
-⚪ means the device image passes the static check that matters
-(`hidden_hostcall_buffer` = 0) but has never been run on real silicon. 🟡 means the
-dispatch gate was verified against a stock control but no collective completed. We
-have only ever owned 7900 XTs and borrowed a 6800 XT for two days, so if you try one
-of the others, a one-line report either way is genuinely useful.
-
-The failure is **not** limited to virtual machines: @adderek independently reproduced
-it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
-board) in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520). Their machine is also
-a useful shape to know about — one GPU affected because it sits behind the chipset,
-one healthy because it is CPU-direct. On mainstream boards the second
-full-length slot is often wired to the chipset rather than the CPU, so a
-two-GPU build can land in exactly this shape with no VM involved.
-
-> **The built library is not in this repository.** A 97 MB binary does not belong in
-> git. Two ways to get one:
->
-> - **[Releases](../../releases)** — `librccl-nohostcall-2.27.7-gfx1100.so` (19 MB,
->   what every number here was measured on) or the 97 MB multi-arch build, both with
->   SHA256 sums.
-> - **Build it yourself** with [`build/build-rccl-nohostcall.sh`](build/build-rccl-nohostcall.sh):
->   about 85 minutes for one target on a slow host, and
->   [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) checks the result
->   independently of who compiled it.
+first collective. The messages it leaves, how to tell in sixty seconds, who
+it hits, and the one-line and the ninety-minute fix.
 
 ### The messages
 
@@ -209,8 +161,8 @@ or inside a **VFIO/QEMU passthrough VM**, then this repository has the root caus
 
 It applies to **RX 7900 XTX / XT / GRE, RX 7800 XT, RX 7600, RX 6800 / 6900 XT,
 RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe path to
-the card rather than the card itself. Verified end to end on gfx1100; the table above
-says what is and is not tested for the rest.
+the card rather than the card itself. Verified end to end on gfx1100; the table under
+*Who is hit* says what is and is not tested for the rest.
 
 One line in that list is the odd one out. `cuMem support requires VMM RDMA support`
 is RCCL declining its own cuMem path because VMM RDMA is unavailable — benign, and
@@ -219,23 +171,6 @@ because people search for it. `NCCL_CUMEM_ENABLE=1` changes nothing on this mach
 it is one of the 11 combinations in `diagnose/sweep.sh`.
 
 </details>
-
-### Verified configuration
-
-The original Radeon baseline used the configuration below. Later campaigns
-name their own versions and settings; the newer Qwen3.8 arms use ROCm 10.0
-and vLLM 0.27.
-
-| | |
-|---|---|
-| **GPUs** | 2× Radeon RX 7900 XT (gfx1100, RDNA3), 20 GB each = 40 GB |
-| **Interconnect** | Cross-die, PCIe 3.0, **no P2P**, `NCCL_P2P_DISABLE=1` |
-| **Host** | Threadripper 1950X (Zen 1), X399 |
-| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough**. No PCIe atomics in the July baseline; later campaigns record the platform state — [see below](#hardware-notes) |
-| **Stack** | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · **RCCL 2.27.7 rebuilt** |
-
-> These are measurements of this topology. A bare-metal P2P configuration
-> has not been benchmarked here.
 
 ### Am I hit by the RCCL bug?
 
@@ -301,6 +236,71 @@ with the 13 hypotheses that were tested and the 12 that were eliminated.
 > ([runtime experiment](benchmarks/clr-hostcall-load-check-2026-09-05/)).
 > The flag requires that runtime patch; an actual hostcall under the opt-in
 > faults on the device. It is a tested alternative, not a general bypass.
+
+### Who is hit
+
+The bug is triggered by the **platform**, not by the GPU, so it hits any AMD GPU that
+cannot get PCIe AtomicOps to its root complex: cards behind a consumer chipset switch,
+and QEMU/VFIO passthrough guests, including virtualised Instinct.
+
+**In a guest, check the VM configuration first** — passing a card's audio
+function alongside the GPU is enough to remove AtomicOps on its own
+([the one-line fix](docs/vfio-atomics.md)). The rebuild above is for hardware
+that genuinely cannot deliver AtomicOps: chipset-fed slots on bare metal, root
+ports without completer support, QEMU older than 8.1.0. We build it for seven
+targets:
+
+| Target | Cards | Status |
+|---|---|---|
+| **gfx1100** | RX 7900 XTX / XT | ✅ **verified end to end**: every number in this repository |
+| gfx1030 | RX 6800 / 6800 XT / 6900 XT | 🟡 dispatch gate verified, collectives not. On a mixed gfx1030+gfx1100 pair the stock library fails on the gfx1030 rank with "the operation cannot be performed in the present state" and ours reaches Init COMPLETE on that same rank. No collective ran: the pair faults in `libamdhip64` under every env tried, and we cannot separate that from architecture mixing without a second gfx1030 |
+| gfx1101 | RX 7800 XT / 7700 XT | ⚪ same |
+| gfx1102 | RX 7600 / 7600 XT | ⚪ same |
+| gfx1200 | RX 9060 | ⚪ same |
+| gfx1201 | RX 9070 / 9070 XT | ⚪ same |
+| gfx908 | MI100 | ⚪ same |
+
+⚪ means the device image passes the static check that matters
+(`hidden_hostcall_buffer` = 0) but has never been run on real silicon. 🟡 means the
+dispatch gate was verified against a stock control but no collective completed. We
+have only ever owned 7900 XTs and borrowed a 6800 XT for two days, so if you try one
+of the others, a one-line report either way is genuinely useful.
+
+The failure is **not** limited to virtual machines: @adderek independently reproduced
+it, and the fix, on bare metal with IOMMU entirely disabled (2× RX 7900 XTX on a B550
+board) in [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520). Their machine is also
+a useful shape to know about — one GPU affected because it sits behind the chipset,
+one healthy because it is CPU-direct. On mainstream boards the second
+full-length slot is often wired to the chipset rather than the CPU, so a
+two-GPU build can land in exactly this shape with no VM involved.
+
+> **The built library is not in this repository.** A 97 MB binary does not belong in
+> git. Two ways to get one:
+>
+> - **[Releases](../../releases)** — `librccl-nohostcall-2.27.7-gfx1100.so` (19 MB,
+>   what every number here was measured on) or the 97 MB multi-arch build, both with
+>   SHA256 sums.
+> - **Build it yourself** with [`build/build-rccl-nohostcall.sh`](build/build-rccl-nohostcall.sh):
+>   about 85 minutes for one target on a slow host, and
+>   [`build/verify-nohostcall.sh`](build/verify-nohostcall.sh) checks the result
+>   independently of who compiled it.
+
+### Verified configuration
+
+The original Radeon baseline used the configuration below. Later campaigns
+name their own versions and settings; the newer Qwen3.8 arms use ROCm 10.0
+and vLLM 0.27.
+
+| | |
+|---|---|
+| **GPUs** | 2× Radeon RX 7900 XT (gfx1100, RDNA3), 20 GB each = 40 GB |
+| **Interconnect** | Cross-die, PCIe 3.0, **no P2P**, `NCCL_P2P_DISABLE=1` |
+| **Host** | Threadripper 1950X (Zen 1), X399 |
+| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough**. No PCIe atomics in the July baseline; later campaigns record the platform state — [see below](#hardware-notes) |
+| **Stack** | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · **RCCL 2.27.7 rebuilt** |
+
+> These are measurements of this topology. A bare-metal P2P configuration
+> has not been benchmarked here.
 
 The investigation from the PCIe path to the failing kernel is told in
 [RCCL, atomics and hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.html).
