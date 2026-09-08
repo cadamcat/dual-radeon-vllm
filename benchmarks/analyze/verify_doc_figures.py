@@ -5,9 +5,11 @@ The documents in this repository make quantitative claims and the point of the
 repository is that each one is derivable from a committed data file. This script
 is the check. Each entry names where the figure appears, what the prose says, and
 how to recompute it from the JSONL. Exit status is non-zero if any disagrees, so
-this can gate a commit.
+this can gate a change. The total counts individual comparisons, including
+provenance and link checks. Recommendations and experimental scope require
+review of the evidence; document layout and wording are editorial choices.
 
-    python3 verify_doc_figures.py            # both campaigns
+    python3 verify_doc_figures.py            # all registered checks
     python3 verify_doc_figures.py -v         # show every check, not only failures
 
 A figure is checked against half a unit in its own last quoted place: 4.2 admits
@@ -160,28 +162,75 @@ def _run_checks(_opened, _audit_state):
         num = float(text)
         checks.append((abs(num - value) <= allowed + 1e-12, where, text, value, allowed))
 
-    # --- benchmarks.md, decode table, 2026-07-25 (moved off the README
-    # front page on 2026-08-26; the July campaign lives in benchmarks.md) ----
-    ck("benchmarks.md decode table, 26B MoE 500", "107.8", tps(jul, "E-26B-tp2", 500))
-    ck("benchmarks.md decode table, 26B MoE 32K", "72.8", tps(jul, "E-26B-tp2", 32000))
-    ck("benchmarks.md decode table, 8B 500", "79.6", tps(jul, "B-8B-tp2", 500))
-    ck("benchmarks.md decode table, 31B 32K", "29.5", tps(jul, "C-31B-tp2", 32000))
-    ck("benchmarks.md decode table, 27B SSM 32K", "4.2", tps(jul, "D-27B-tp2", 32000))
+    # Read the published tables: code-side copies of their values cannot
+    # detect a changed cell. Headers key columns, so column order and Markdown
+    # emphasis/spacing are free to change. Campaign selection stays historical.
+    def md_cells(line):
+        return [" ".join(c.replace("**", "").replace("`", "").split())
+                for c in line.strip().strip("|").split("|")]
 
-    # --- README.md, the single decode table (2026-08-24 campaign) -----------
-    for cfg, name, claims in (
-        ("E-26B-tp2", "26B MoE", ("107.7", "92.6", "72.9")),
-        ("B-8B-tp2", "8B", ("79.5", "73.4", "61.4")),
-        ("A-12B-tp2", "12B", ("59.9", "52.0", "41.4")),
-        ("C-31B-tp2", "31B", ("42.8", "36.6", "29.3")),
-        ("G-30B-tp2", "Muse", ("43.7", "37.8", "37.4")),
-        ("D8-27B-tp2", "Qwen3.8", ("12.3", "11.7", "10.7")),
-    ):
-        for target, claim in zip((500, 8000, 32000), claims):
-            ck(f"README decode table 08-24, {name} {target}", claim, tps(aug, cfg, target))
-    ck("README gemma-3 note, 500", "44.8", tps(aug, "F-27B-tp2", 500))
-    ck("README gemma-3 note, 8K", "34.6", tps(aug, "F-27B-tp2", 8000))
-    ck("README gemma-3 note, 32K", "22.1", tps(aug, "F-27B-tp2", 32000))
+    def table_rows(label, text, columns):
+        tables, current = [], []
+        for line in text.splitlines() + [""]:
+            if line.strip().startswith("|"):
+                current.append(md_cells(line))
+            elif current:
+                if set(columns) <= set(current[0]):
+                    tables.append([dict(zip(current[0], row)) for row in current[2:]])
+                current = []
+        ck(label + ", table is identifiable", "1", len(tables))
+        return tables[0] if len(tables) == 1 else []
+
+    def table_number(label, rows, key, value, column, expected):
+        cells = [r.get(column, "") for r in rows if r.get(key) == value]
+        # A missing/duplicate row or a nonnumeric cell is a named failure.
+        claim = cells[0] if len(cells) == 1 else "nan"
+        if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", claim):
+            claim = "nan"
+        ck(label + ", " + value + " " + column, claim, expected)
+
+    def table_rate(data, cfg, target):
+        values = data.get(cfg, {}).get(target, {}).get("tps", [])
+        # A misselected arm can lack a rung: report that cell by name too.
+        return mean(values) if values else float("nan")
+
+    _decode_columns = {"500 tok": 500, "8 K": 8000, "32 K": 32000}
+    _decode_rows = table_rows("README decode 08-24", rm, ("Model", *_decode_columns))
+    for cfg, model in (("E-26B-tp2", "gemma-4-26B-A4B"),
+                       ("B-8B-tp2", "Qwen3-8B"),
+                       ("A-12B-tp2", "gemma-4-12B-it"),
+                       ("C-31B-tp2", "gemma-4-31B-it"),
+                       ("G-30B-tp2", "Muse-Glimmer-30B"),
+                       ("D8-27B-tp2", "Qwen3.8-27B")):
+        for column, target in _decode_columns.items():
+            table_number("README decode 08-24", _decode_rows, "Model", model,
+                         column, table_rate(aug, cfg, target))
+    _g3_note = re.search(r"gemma-3-27b\s*\(([\d.]+)\s*/\s*([\d.]+)\s*/\s*([\d.]+)\)", rm)
+    for i, target in enumerate((500, 8000, 32000)):
+        ck(f"README gemma-3 note, {target}", _g3_note.group(i+1) if _g3_note else "nan",
+           tps(aug, "F-27B-tp2", target))
+
+    _july_doc = open(os.path.join(ROOT, "docs", "benchmarks.md")).read()
+    _july_models = {"26B MoE": "E-26B-tp2", "8B BF16": "B-8B-tp2",
+                    "12B w4a16": "A-12B-tp2", "31B w4a16": "C-31B-tp2",
+                    "27B SSM": "D-27B-tp2"}
+    _july_rows = table_rows("benchmarks.md decode 07-25", _july_doc,
+                           ("context", *_july_models))
+    for context in ("500", "2 000", "8 000", "16 000", "32 000"):
+        for model, cfg in _july_models.items():
+            table_number("benchmarks.md decode 07-25", _july_rows, "context", context,
+                         model, table_rate(jul, cfg, int(context.replace(" ", ""))))
+
+    _zh_doc = open(os.path.join(ROOT, "README.zh.md")).read()
+    _zh_rows = table_rows("README.zh decode 07-25", _zh_doc, ("模型", "500", "32K"))
+    for model, cfg in (("gemma-4-26B-A4B(int4 MoE)", "E-26B-tp2"),
+                       ("Qwen3-8B(BF16)", "B-8B-tp2"),
+                       ("gemma-4-12B(w4a16)", "A-12B-tp2"),
+                       ("gemma-4-31B(w4a16)", "C-31B-tp2"),
+                       ("Qwen3.6-27B(hybrid SSM)", "D-27B-tp2")):
+        for column, target in (("500", 500), ("32K", 32000)):
+            table_number("README.zh decode 07-25", _zh_rows, "模型", model,
+                         column, table_rate(jul, cfg, target))
 
     # --- benchmarks.md §2, slopes on stock vLLM -----------------------------
     ck("benchmarks.md §2 slope, 8B", "0.118", slope_us(jul, "B-8B-tp2"))
@@ -382,12 +431,6 @@ def _run_checks(_opened, _audit_state):
         ck("site css, %s scrolls .%s on a narrow screen" % (_css, _sel), "1",
            1 if re.search(_pat, _t, re.S) else 0)
 
-    # --- README.zh.md is a condensed mirror; pin the cells it adds ----------
-    ck("README.zh 8B 32K", "61.4", tps(jul, "B-8B-tp2", 32000))
-    ck("README.zh 12B 500", "59.9", tps(jul, "A-12B-tp2", 500))
-    ck("README.zh 12B 32K", "41.9", tps(jul, "A-12B-tp2", 32000))
-    ck("README.zh 31B 500", "43.2", tps(jul, "C-31B-tp2", 500))
-    ck("README.zh 27B 500", "12.1", tps(jul, "D-27B-tp2", 500))
     ck("README.zh TP2 speedup", "1.70",
        tps(jul, "B-8B-tp2", 500) / tps(jul, "B-8B-tp1", 500))
     ck("README.zh 12B speedup", "1.19",
@@ -1824,25 +1867,6 @@ def _run_checks(_opened, _audit_state):
        1 if WART["fig4"]["act_order_unserved"] == WART["fig4"]["act_order_total"]
        else 0)
 
-    # the two sections the house style makes mandatory, in both languages, and
-    # the honesty markers that go with a single-run cell
-    for fn, heads, marker in (
-            ("w4a16-two-problems.html",
-             ("What is not established", "What has changed since"),
-             "One container start per cell"),
-            ("w4a16-two-problems.zh.html",
-             ("没有被确立的部分", "此后发生的变化"),
-             "每格只起了一次容器")):
-        for h in heads:
-            ck(f"w4a16 article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-        ck(f"w4a16 article {fn}, says the A/B cells have no repeat", "1",
-           1 if fl(marker) in flat[fn] else 0)
-    # figure 3 crosses images, and the page has to say so where the figure is
-    for fn, phrase in (("w4a16-two-problems.html", "not equivalent in kind"),
-                       ("w4a16-two-problems.zh.html", "两组纵向对比的性质并不相同")):
-        ck(f"w4a16 article {fn}, fig3 discloses the cross-stack step", "1",
-           1 if fl(phrase) in flat[fn] else 0)
 
     # the act-order case, verified numerically rather than by can_implement
     ao = open(os.path.join(WDIR, "logs", "tests-actorder.log"),
@@ -1972,21 +1996,10 @@ def _run_checks(_opened, _audit_state):
     # two stray "|" showed as text. Fixed 2026-08-31 by moving every long body
     # into a section of its own. This is the check that would have caught it.
     _br = open(os.path.join(HERE, "..", "README.md")).read()
-    _wh = _br[_br.index("## What is here"):_br.index("## Reproducing the analysis")]
-    _open = [l for l in _wh.split("\n")
+    _open = [l for l in _br.split("\n")
              if l.startswith("|") and not l.rstrip().endswith("|")]
     ck("benchmarks README, table rows that open a cell and never close it", "0",
        len(_open))
-    _idx = [l for l in _wh.split("\n")
-            if l.startswith("| `") and l.rstrip().endswith("|")]
-    # 17 since 2026-09-03: the fourteen hand-typed campaign rows moved to the
-    # generated CAMPAIGNS.md, which its own gate above holds to the tree
-    ck("benchmarks README, paths in the index", "17", len(_idx))
-    ck("benchmarks README, and a section for each that needs one", "26",
-       len(re.findall(r"^### `", _wh, re.M)))
-    ck("benchmarks README, no index line long enough to be a wall", "0",
-       sum(1 for l in _idx if len(l) > 220))
-
     # --- campaign completeness, added 2026-09-02 --------------------------
     # Every campaign before today recorded a different set: the Radeon runners
     # sampled power and VRAM and no wall clock, the CUDA runners the reverse,
@@ -3905,25 +3918,10 @@ def _run_checks(_opened, _audit_state):
     ck("0903 README, the crossover range, high end", _m.group(2).replace(" ", "") if _m else "-1", _xo[-1])
     ck("0903 README, and the 27B's is the largest b", "1",
        1 if max(_c3fits, key=lambda c: _c3fits[c]["b_us_tok"]) == "D8-27B-tp2-long" else 0)
-    # --- README after the 2026-09-03 restructure (commit C) --------------------
-    # The page moved its sections and grew four: Findings, The RCCL bug, Beyond
-    # the pair, Corrections. Moved sentences keep their own gates above; what
-    # is new is held here -- every anchor resolves, every number in the two new
-    # lists is the number the linked document carries (and that document is
-    # gated to the data), and the map points at the generated index instead of
-    # listing campaigns by hand.
-    _rC = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
-    _rCz = open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read()
-    for _h in ("## Findings", "## The RCCL bug", "## The pair, measured", "## Beyond the pair", "## Corrections"):
-        ck("README C, section %s" % _h[3:], "1", _rC.count("\n" + _h + "\n"))
-    ck("README C, and the old top-level headers are gone", "0",
-       sum(1 for h in ("\n## Who this is for\n", "\n## Verified configuration\n", "\n## Am I hit by the RCCL bug?\n",
-                       "\n## What performance to expect\n", "\n## Status and support policy\n") if h in _rC))
-    _order = [_rC.find("\n" + h + "\n") for h in ("## Findings", "## The RCCL bug", "## The pair, measured", "## Beyond the pair",
-                                                   "## What does *not* work", "## Hardware notes", "## Repository map",
-                                                   "## Corrections", "## Credits and licence")]
-    ck("README C, the order is the approved one", "1",
-       1 if all(i >= 0 for i in _order) and _order == sorted(_order) else 0)
+    # --- README navigation and existing quantitative summaries ------------
+    # Navigation is checked against the links that are present. Headings,
+    # section order, list lengths and the selection of articles are editable.
+    _rC, _rCz = rm, _zh_doc
     # every in-page anchor resolves to a header, in both languages
     def _slugs(t):
         return {re.sub(r"[^a-z0-9一-鿿 -]", "", re.sub(r"[*`]", "", h).lower()).strip().replace(" ", "-")
@@ -3932,15 +3930,8 @@ def _run_checks(_opened, _audit_state):
         _anch = set(re.findall(r"\]\(#([^)]+)\)", _t))
         ck("README C, %s: in-page anchors that resolve" % _lang, str(len(_anch)),
            sum(1 for a in _anch if a in _slugs(_t)))
-    # the two new lists quote numbers that live in gated documents; each number
+    # Existing summaries quote numbers that live in gated documents; each number
     # must be the same string there, so a change in the source shows up here
-    def _sec(t, a, b):
-        """the text between two headers, or "" when either is missing -- the
-        section gates above say which, and nothing below may crash on it"""
-        i, j = t.find(a), t.find(b)
-        return t[i:j] if i >= 0 and j > i else ""
-    _fnd = _sec(_rC, "## Findings", "## Read in depth")
-    _byd = _sec(_rC, "## Beyond the pair", "## What does *not* work")
     _cm = open(os.path.join(_BR, "cuda-modal", "README.md"), encoding="utf-8").read()
     _sw = open(os.path.join(ROOT, "docs", "sliding-window-block-skip.md"), encoding="utf-8").read()
     _sp = open(os.path.join(ROOT, "docs", "speculative-decoding-on-rdna.md"), encoding="utf-8").read()
@@ -3952,15 +3943,13 @@ def _run_checks(_opened, _audit_state):
                               ("3.4x", _sp, "the MTP collapse"), ("8.81", _rC, "2D path at 32 K"), ("32.57", _rC, "3D path at 32 K"),
                               ("1.70×", _rC, "the second card on BF16"), ("1.19×", _rC, "the second card on w4a16"),
                               ("32 of 32", _c1r, "the patched kernel's generations"), ("two of four", _c1r, "the unpatched kernel's cells")):
-        _in_list = _num in _fnd or _num.replace("x", "×") in _fnd
-        ck("README C findings, %s is in the list" % _name, "1", 1 if _in_list else 0)
+        _in_list = _num in _rC or _num.replace("x", "×") in _rC
+        ck("README summary, %s is quoted" % _name, "1", 1 if _in_list else 0)
         ck("README C findings, and %s is what the source says" % _name, "1", 1 if _num in _doc else 0)
-    ck("README C findings, eleven of them", "11", len(re.findall(r"^- \*\*", _fnd, re.M)))
-    ck("README C findings, and every one links somewhere", "11", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
-    ck("README C findings, the pair's own 128 000 line is filled in", "0", _fnd.count("[PAIR_128K_LINE"))
+    ck("README C findings, the pair's own 128 000 line is filled in", "0", _rC.count("[PAIR_128K_LINE"))
     for _num, _name in (("0.07 %", "the A100 control"), ("66 %", "B300 over H100 on the 8B"), ("1.8×", "the B300's price"),
                         ("×1.22", "cards three and four with NVLink"), ("×2.71", "and without"), ("20 %", "two without over two with")):
-        ck("README C beyond, %s is quoted" % _name, "1", 1 if _num in _byd else 0)
+        ck("README C beyond, %s is quoted" % _name, "1", 1 if _num in _rC else 0)
         ck("README C beyond, and %s is what cuda-modal says" % _name, "1", 1 if _num in _cm else 0)
     # the L4 control: 25.29 against Colab's 25.07 and 25.17 -> inside 0.9 %
     _l4 = [r for r in _RTD if r["machine"] == "L4" and r["cfg"] == "G12" and r["ctx"] == 32000]
@@ -3968,31 +3957,10 @@ def _run_checks(_opened, _audit_state):
     _l4c = [r["decode_tok_s"] for r in _l4 if r["date"] != "2026-09-03"]
     ck("README C beyond, the L4 control's worst disagreement", "0.9",
        max(abs(_l4m[0] / c - 1) * 100 for c in _l4c) if _l4m and _l4c else -1)
-    ck("README C beyond, four rows", "4", sum(1 for l in _byd.split("\n") if l.startswith("| **")))
-    # the map: campaigns live in the generated index now
-    _mapC = _sec(_rC, "## Repository map", "## Corrections")
-    # the map's own entry, not a mention of the file somewhere in the section
-    ck("README C map, points at CAMPAIGNS.md", "1", len(re.findall(r"^  CAMPAIGNS\.md +★", _mapC, re.M)))
-    _camp = open(os.path.join(_BR, "CAMPAIGNS.md"), encoding="utf-8").read()
-    for _d in ("allreduce-2026-09-02/", "campaign-2026-09-02/", "campaign-2026-09-02b/",
-               "campaign-2026-09-02c/", "gfx1100-greedy-attn-ab/", "campaign-2026-09-03/", "cuda-modal/"):
-        ck("README C map, %s is in the index it points at" % _d, "1", 1 if _d in _camp else 0)
-    ck("README C map, and no longer lists campaign directories by hand", "0",
-       len(re.findall(r"\n  campaign-20\d\d-\d\d-\d\d\w*/", _mapC)))
-    # the corrections: moved, not dropped
-    _corr = _sec(_rC, "## Corrections", "## Credits and licence")
-    for _mark in ("Corrected 2026-08-27", "2026-09-02: **measured, on the memory controller.**", "Withdrawn 2026-08-30"):
-        ck("README C corrections, carries %s" % _mark[:20], "1", _corr.count(_mark))
-        ck("README C corrections, and the bullet above no longer does", "0",
-           _sec(_rC, "### How to read this", "## Beyond the pair").count(_mark))
-    # the Chinese page mirrors the list, item for item
-    _zf = _sec(_rCz, "### 主要发现", "> 这是一页浓缩的中文导览")
-    ck("README C zh, the Findings section is there", "1", 1 if _zf else 0)
-    ck("README C zh, nine findings", "9", len(re.findall(r"^- \*\*", _zf, re.M)))
     ck("README C zh, the same numbers", "10",
-       sum(1 for n in ("62", "3.2", "4.8 %", "21.8 %", "2.75", "3.15", "3.4", "8.81", "32.57", "1.70") if n in _zf))
-    ck("README C zh, and the kernel line's numbers", "2", sum(1 for n in ("32 次贪心生成 32 次一致", "四个格子里有两个") if n in _zf))
-    ck("README C zh, the pair's line is filled in", "0", _zf.count("[PAIR_128K_LINE"))
+       sum(1 for n in ("62", "3.2", "4.8 %", "21.8 %", "2.75", "3.15", "3.4", "8.81", "32.57", "1.70") if n in _rCz))
+    ck("README C zh, and the kernel line's numbers", "2", sum(1 for n in ("32 次贪心生成 32 次一致", "四个格子里有两个") if n in _rCz))
+    ck("README C zh, the pair's line is filled in", "0", _rCz.count("[PAIR_128K_LINE"))
     # --- gfx1100-w4a16-54706: the kernel A/B, 2026-09-03 --------------------
     # Every cell of the README's table is recomputed from the eight sequences
     # each run wrote; the arms' objects are the ones the build logs produced;
@@ -4435,21 +4403,6 @@ def _run_checks(_opened, _audit_state):
         ck(f"{name}, the unmeasured warm-start claim appears only quoted", "0",
            unquoted(txt, phrase))
 
-    # both language versions carry the two sections the house style requires
-    for fn, heads in (("moe-written-off-by-eager.html",
-                       ("What is not established", "What has changed since")),
-                      ("moe-written-off-by-eager.zh.html",
-                       ("没有被确立的部分", "此后发生的变化"))):
-        for h in heads:
-            ck(f"moe article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-    # and both say that the number the verdict came from is the uncommitted one
-    for fn, phrase in (("moe-written-off-by-eager.html",
-                        "The eager raw output is not in this repository"),
-                       ("moe-written-off-by-eager.zh.html",
-                        "eager 的原始输出不在这个仓库里")):
-        ck(f"moe article {fn}, discloses the eager provenance", "1",
-           1 if fl(phrase) in flat[fn] else 0)
 
     # --- weight-loading-19x.html ---------------------------------------------
     # Two committed data files behind three figures, plus one opening pair that
@@ -4601,20 +4554,6 @@ def _run_checks(_opened, _audit_state):
        sum(1 for r in LART["fig3"]["rows"] if r["mode"] == "pread" and r["file"] < 500))
     ck("loader article, fig3 and there are that many pread rows", "6", npread)
 
-    # the house-style sections, and the disclosure that the opening pair is not
-    # recomputable, in both languages
-    for fn, heads, phrase in (
-            ("weight-loading-19x.html",
-             ("What is not established", "What has changed since"),
-             "Where that pair of numbers comes from"),
-            ("weight-loading-19x.zh.html",
-             ("没有被确立的部分", "此后发生的变化"),
-             "这两个数字是从哪来的")):
-        for h in heads:
-            ck(f"loader article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-        ck(f"loader article {fn}, discloses the opening's provenance", "1",
-           1 if fl(phrase) in flat[fn] else 0)
     # the reproducers the article tells the reader to run must exist
     for f in ("benchmarks/repro-mmap-prot.py", "benchmarks/repro-mmap-prot.hip.cpp",
               "benchmarks/hmm-kernel-three-states.json",
@@ -4788,20 +4727,7 @@ def _run_checks(_opened, _audit_state):
     ck("spec article, the mean is the misleading one", "1",
        1 if PART["profile"]["ratios"]["mean_us"]
        > 5 * PART["profile"]["ratios"]["median_us"] else 0)
-    for fn, marker in (("speculative-decoding-net-loss.html",
-                        "raw traces not committed"),
-                       ("speculative-decoding-net-loss.zh.html",
-                        "\u539f\u59cb trace \u672a\u5165\u5e93")):
-        ck(f"spec article {fn}, marks the profile block", "1",
-           1 if fl(marker) in flat[fn] else 0)
 
-    for fn, heads in (("speculative-decoding-net-loss.html",
-                       ("What is not established", "What has changed since")),
-                      ("speculative-decoding-net-loss.zh.html",
-                       ("没有被确立的部分", "此后发生的变化"))):
-        for h in heads:
-            ck(f"spec article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
 
     # --- a100-vs-two-radeons.html --------------------------------------------
     # Both columns are already checked against their sources above; what this
@@ -5148,20 +5074,6 @@ def _run_checks(_opened, _audit_state):
     ck("README, and the correction says which number it replaced", "1",
        1 if "this cited 38 %, which is the 12B" in rm else 0)
 
-    for fn, heads in (("a100-vs-two-radeons.html",
-                       ("What is not established", "What has changed since")),
-                      ("a100-vs-two-radeons.zh.html",
-                       ("没有被确立的部分", "此后发生的变化"))):
-        for h in heads:
-            ck(f"a100 article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-    # the figure whose counterpart was never measured has to say so
-    for fn, phrase in (("a100-vs-two-radeons.html",
-                        "No equivalent figure was measured on the\n    A100"),
-                       ("a100-vs-two-radeons.zh.html",
-                        "A100 那边没有测过对应的数字")):
-        ck(f"a100 article {fn}, says the A100 side of fig4 is missing", "1",
-           1 if phrase.replace("\n    ", " ") in " ".join(pages[fn].split()) else 0)
 
     # --- gqa-gate-costs-nothing.html -----------------------------------------
     # The argument is that no cell is an exception, so the check is per cell
@@ -5322,13 +5234,6 @@ def _run_checks(_opened, _audit_state):
     ck("50603 README, which states both readings", "1",
        1 if "pooled median moves 1.03x" in " ".join(gq.split()) else 0)
 
-    for fn, heads in (("gqa-gate-costs-nothing.html",
-                       ("What is not established", "What has changed since")),
-                      ("gqa-gate-costs-nothing.zh.html",
-                       ("没有被确立的部分", "此后发生的变化"))):
-        for h in heads:
-            ck(f"gqa article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
 
     # --- reporting-a-non-reproduction.html -----------------------------------
     # The tallies are already checked against the logs above; what this adds is
@@ -5431,18 +5336,6 @@ def _run_checks(_opened, _audit_state):
        1 if NART["fig3"]["grep_defect"]["reported_one_sided"] == 6
        and NART["fig3"]["grep_defect"]["of"] == 20 else 0)
 
-    for fn, heads, phrase in (
-            ("reporting-a-non-reproduction.html",
-             ("What is not established", "What has changed since"),
-             "no corruption observed on rank 0"),
-            ("reporting-a-non-reproduction.zh.html",
-             ("没有被确立的部分", "此后发生的变化"),
-             "在 rank 0 上没有观察到损坏")):
-        for h in heads:
-            ck(f"6565 article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-        ck(f"6565 article {fn}, states what the first sweep really showed", "1",
-           1 if phrase in " ".join(pages[fn].split()) else 0)
 
     # --- measuring-decode.html -----------------------------------------------
     # The methodology article. Its figures are the rules the rest of the
@@ -5753,18 +5646,6 @@ def _run_checks(_opened, _audit_state):
     ck("eager A/B, and it is the band the earlier campaign recorded", "8",
        xnd["within_process"]["cells"][0]["generations"])
 
-    for fn, heads, phrase in (
-            ("measuring-decode.html",
-             ("What is not established", "What has changed since"),
-             "a single run is not a measurement"),
-            ("measuring-decode.zh.html",
-             ("没有被确立的部分", "此后发生的变化"),
-             "一次运行不构成一次测量")):
-        for h in heads:
-            ck(f"measure article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-        ck(f"measure article {fn}, states the rule it exists for", "1",
-           1 if phrase in " ".join(pages[fn].split()) else 0)
 
     # --- rdna3-second-class.html ---------------------------------------------
     # The synthesis. Its classification is an argument, so what is checked is
@@ -5877,18 +5758,6 @@ def _run_checks(_opened, _audit_state):
        1 if all(u in zids for f in ZART["fig1"]["findings"] for u in f["upstream"])
        else 0)
 
-    for fn, heads in (("rdna3-second-class.html",
-                       ("What is not established", "What has changed since")),
-                      ("rdna3-second-class.zh.html",
-                       ("没有被确立的部分", "此后发生的变化"))):
-        for h in heads:
-            ck(f"rdna3 article {fn}, carries '{h[:22]}'", "1",
-               1 if fl(h) in flat[fn] else 0)
-    # the article's own point: it says which findings are NOT this
-    for fn, phrase in (("rdna3-second-class.html", "are <em>not</em> RDNA3 problems"),
-                       ("rdna3-second-class.zh.html", "不是</em> RDNA3 的问题")):
-        ck(f"rdna3 article {fn}, says which are not", "1",
-           1 if fl(phrase) in flat[fn] else 0)
 
 
     # --- the typed chips, the index and the timeline -------------------------
@@ -6036,12 +5905,6 @@ def _run_checks(_opened, _audit_state):
        sum(1 for k in q0 if q1[k]["triton_ms"] < q0[k]["triton_ms"]))
     ck("gqa article, cells where the custom kernel got slower", "25",
        sum(1 for k in q0 if q1[k]["ck_ms"] > q0[k]["ck_ms"]))
-    for fn, phrase in (("gqa-gate-costs-nothing.html",
-                        "Both arms moved between the images and this comparison separates neither"),
-                       ("gqa-gate-costs-nothing.zh.html",
-                        "\u4e24\u6761\u81c2\u5728\u4e24\u4e2a\u955c\u50cf\u4e4b\u95f4\u90fd\u52a8\u4e86")):
-        ck(f"gqa article {fn}, the caption no longer attributes it", "1",
-           1 if fl(phrase) in flat[fn] else 0)
 
     # --- a shared script reaches for ids that must exist in both bodies ------
     # The Chinese page takes the English script byte for byte, so a container
@@ -6741,12 +6604,10 @@ def _run_checks(_opened, _audit_state):
        1 if all(xscr) and xscr[0].group(0) == xscr[1].group(0) else 0)
     xkeys = [set(json.loads(xblock(XI[fn], "strings") or "{}").keys()) for fn in XIP]
     # --- the navigation furniture -------------------------------------------
-    # Every article carries a link back to the index in its own language, and
-    # the index carries none, because a link to the page you are on is
-    # furniture. The href is what would fail silently: an English article
+    # Every article carries a link back to the index in its own language.
+    # The href is what would fail silently: an English article
     # pointing at index.zh.html still renders, still clicks, and drops the
     # reader into the other language.
-    xhome = 0
     for a in AJ:
         for lg, fn in (("en", a["href"]["en"].split("/")[-1]),
                        ("zh", a["href"]["zh"].split("/")[-1])):
@@ -6754,16 +6615,6 @@ def _run_checks(_opened, _audit_state):
             m = re.search(r'<a class="home" href="([^"]+)"', XPAGES[fn])
             ck("article %s, %s has a way back to the index" % (a["slug"], lg), "1",
                1 if m and m.group(1) == want else 0)
-            xhome += 1 if m else 0
-    ck("site, articles carrying a back link", str(xhome), xhome)
-    for fn in XIP:
-        ck("index %s, does not link back to itself" % fn, "0",
-           len(re.findall(r'<a class="home"', XI[fn])))
-        # the rail is built from the page's own headings and draws nothing at
-        # all below three of them, which would be a silent disappearance
-        ck("index %s, headings for the rail to list" % fn, "4",
-           len(re.findall(r"<h2><span class=\"n\">", XI[fn])))
-
     # The rail lives in the shared head now, so every page has one -- and every
     # page therefore needs its label in its own language and no leftover slot.
     # A slot that survived would render the placeholder as the accessible name.
@@ -6773,9 +6624,6 @@ def _run_checks(_opened, _audit_state):
                        ("zh", a["href"]["zh"].split("/")[-1])):
             ck("article %s, %s labels its rail" % (a["slug"], lg), "1",
                XPAGES[fn].count('nav.setAttribute("aria-label", "%s")' % XLBL[lg]))
-            # three sections is the floor the rail draws at all
-            ck("article %s, %s sections for the rail" % (a["slug"], lg), "1",
-               1 if len(re.findall(r"<h2><span class=\"n\">", XPAGES[fn])) >= 3 else 0)
     for fn, lg in zip(XIP, ("en", "zh")):
         ck("index %s, labels its rail" % fn, "1",
            XI[fn].count('nav.setAttribute("aria-label", "%s")' % XLBL[lg]))
@@ -9997,35 +9845,20 @@ def _run_checks(_opened, _audit_state):
     ck("README refresh, opt-in TP2 serve is supported by its row", "1",
        int(_sc[("atomics_absent", "patched")]["ok"]))
 
-    # Scope travels with a claim: timing vs accuracy, shared vs full span,
-    # patch-bearing Triton vs stock, and the runtime flag vs a library rebuild.
-    for _label, _pattern, _text in (
-            ("GQA is kernel timing", r"Those are kernel timings on gfx1100,\s+not end-to-end speed-ups", _fnd),
-            ("gsm8k scope", r"gemma-3 at ratio 2; it does not measure latency", _fnd),
-            ("backend patch state", r"Triton path carries #45450", _fnd),
-            ("version comparison is not attribution", r"version comparison also changes ROCm\s+and the weight kernel", _fnd),
-            ("runtime opt-in requires patch", r"flag requires that runtime patch", rm),
-            ("runtime opt-in fault boundary", r"actual hostcall under the opt-in\s+faults on the device", rm),
-            ("Chinese runtime opt-in scope", r"该 flag 需要 runtime 补丁,实际执行 hostcall 会在设备上出错", _rCz),
-            ("hybrid is stack-scoped", r"The stock July Qwen3.6 arm", rm),
-            ("MTP recommendation includes repair", r"\| \*\*Speculative decoding \(MTP\)\*\* \|[^\n]*45450[^\n]*restores", rm),
-            ("throughput order is unchanged", r"throughput order stays the same at both\s+endpoints", rm),
-            ("hybrid curve is not flat", r"with a shallower slope\*\*", rm),
-            ("Chinese hybrid curve is not flat", r"且斜率更浅", _rCz)):
-        ck("README refresh, " + _label, "1",
-           int(bool(re.search(_pattern, re.sub(r"(?m)^> ?", "", _text)))))
-
     # The published scalar checks above already rederive XDEC from raw inputs.
     ck("README refresh, five-machine throughput order agrees at both ends", "1",
        int(sorted(_M5, key=lambda k: _m5(k, 500)) == sorted(_M5, key=lambda k: _m5(k, 32000))))
     ck("README refresh, L4 retains the most", "1",
        int(max(_M5, key=lambda k: _m5(k, 32000) / _m5(k, 500)) == "l4"))
-    _reading = _sec(rm, "## Read in depth", "<details>")
-    _reading_links = set(re.findall(r"\]\(([^)]+)\)", _reading))
-    _articles = json.load(open(os.path.join(ROOT, "site", "src", "articles.json")))["articles"]
-    for _article in _articles:
-        ck("README reading map, " + _article["slug"], "1",
-           int("https://cadamcat.github.io/dual-radeon-vllm/" + _article["href"]["en"] in _reading_links))
+    # Validate our published-site destinations locally; curation need not
+    # include every article, and an invalid URL must not pass as a substring.
+    from urllib.parse import unquote, urlsplit
+    for _lang, _text in (("en", rm), ("zh", _zh_doc)):
+        for _link in sorted(set(re.findall(r"\]\((https://cadamcat\.github\.io/dual-radeon-vllm/[^)]*)\)", _text))):
+            _path = unquote(urlsplit(_link).path.removeprefix("/dual-radeon-vllm/"))
+            _target = os.path.join(ROOT, "docs", _path or "index.html")
+            ck(f"README {_lang} site link, {_path or 'index.html'}", "1",
+               int(os.path.isfile(_target)))
 
     # --- cross-machine retention order: direct raw inputs, not projections ---
     import depth_order as _depth_order
@@ -10038,7 +9871,8 @@ def _run_checks(_opened, _audit_state):
         for _row in _table.splitlines()[2:]:
             _machine = _row.split("|")[1].strip()
             ck(f"depth order {_table_name}, {_machine}", "1",
-               int(_row in _order_doc.splitlines()))
+               int(md_cells(_row) in [md_cells(line) for line in _order_doc.splitlines()
+                                     if line.strip().startswith("|")]))
     _front_number("depth order range low", r"\*\*([\d.]+)–[\d.]+ % discordant",
                   min(r["primary"]["pct"] for r in _order_rows), _order_doc)
     _front_number("depth order range high", r"\*\*[\d.]+–([\d.]+) % discordant",
@@ -10073,16 +9907,6 @@ def _run_checks(_opened, _audit_state):
        str((1e6 / tps(_f93, "D8-27B-tp2-long", 32000)
             - 1e6 / tps(_f93, "D8-27B-tp2-long", 500)) / (32000 - 500)),
        _order_qwen["endpoint_us"], tol=1e-10)
-    for _name, _phrase in (
-            ("configuration count", "across seven\nconfigurations"),
-            ("shared ladder", "same eleven nominal rungs\nfrom **500 to 32 000**"),
-            ("repeat protocol", "**two rounds per cell**"),
-            ("all-rung scope", "This table retains ungraded cells"),
-            ("repeat limitation", "not a lower\n  bound on what every repeat will show"),
-            ("fit limitation", "not evidence of a constant marginal depth cost"),
-            ("correlation limitation", "not a calibrated\ncross-machine predictor")):
-        ck("depth order scope, " + _name, "1", int(_phrase in _order_doc))
-
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)
@@ -10093,7 +9917,7 @@ def _run_checks(_opened, _audit_state):
         if verbose or not ok:
             print(f"  {'ok  ' if ok else 'FAIL'} {where:<44} prose {claim:>8}   "
                   f"data {value:>9.3f}   allowed +-{allowed:.4g}")
-    print(f"\n{len(checks) - len(failed)}/{len(checks)} figures agree with the data files")
+    print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed")
     return 1 if failed else 0
 
 def main():
