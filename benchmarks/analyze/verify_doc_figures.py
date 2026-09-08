@@ -10027,6 +10027,62 @@ def _run_checks(_opened, _audit_state):
         ck("README reading map, " + _article["slug"], "1",
            int("https://cadamcat.github.io/dual-radeon-vllm/" + _article["href"]["en"] in _reading_links))
 
+    # --- cross-machine retention order: direct raw inputs, not projections ---
+    import depth_order as _depth_order
+    _order_data = _depth_order.analyze(ROOT)
+    _order_rows = _order_data["configurations"]
+    _order_doc = open(os.path.join(ROOT, "docs", "depth-cost-cross-machine.md"),
+                      encoding="utf-8").read()
+    _order_tables = _depth_order.tables(_order_data).split("\n\n")
+    for _table_name, _table in zip(("summary", "sensitivity"), _order_tables):
+        for _row in _table.splitlines()[2:]:
+            _machine = _row.split("|")[1].strip()
+            ck(f"depth order {_table_name}, {_machine}", "1",
+               int(_row in _order_doc.splitlines()))
+    _front_number("depth order range low", r"\*\*([\d.]+)–[\d.]+ % discordant",
+                  min(r["primary"]["pct"] for r in _order_rows), _order_doc)
+    _front_number("depth order range high", r"\*\*[\d.]+–([\d.]+) % discordant",
+                  max(r["primary"]["pct"] for r in _order_rows), _order_doc)
+    ck("depth order, seven configurations", "7", len(_order_rows))
+    ck("depth order, no exact ties in the primary ranking", "0",
+       sum(r["primary"]["ties"] for r in _order_rows))
+    _front_number("depth order worst repeat spread", r"worst spread is\s+\*\*([\d.]+) %",
+                  max(r["worst_repeat_spread_pct"] for r in _order_rows), _order_doc)
+    _front_number("depth order poorest fit", r"MoE fit has \*\*r² ([\d.]+)",
+                  next(r for r in _order_rows if r["machine"] == "H200 TP1")["fits"]["G26A4B"]["r2"], _order_doc)
+    _front_number("depth order correlation", r"Pearson r = ([\d.]+)",
+                  _order_data["correlation"], _order_doc)
+    _front_number("depth order correlation without pair", r"gives \*\*r = ([\d.]+)",
+                  _order_data["correlation_without_pair"], _order_doc)
+    _front_number("depth order endpoint disagreement", r"disagrees on \*\*([\d.]+) %",
+                  _order_rows[0]["endpoint"]["pct"], _order_doc)
+    _front_number("depth order no-window low", r"range is \*\*([\d.]+)–",
+                  min(r["no_window"]["pct"] for r in _order_rows), _order_doc)
+    _front_number("depth order no-window high", r"range is \*\*[\d.]+–([\d.]+) %",
+                  max(r["no_window"]["pct"] for r in _order_rows), _order_doc)
+    ck("depth order, actual-token axis preserves every pair verdict", "1",
+       int(all(r["primary"]["pairs"] == r["actual_tokens"]["pairs"] for r in _order_rows)))
+    ck("depth order, two ungraded cells confined to H200", "1",
+       int(all(r["ungraded_cells"] == (2 if r["machine"] == "H200 TP1" else 0) for r in _order_rows)))
+    # Independent of the new fitter: the README checks above already compute
+    # the same Radeon Qwen OLS directly from that campaign's raw JSONL.
+    _order_qwen = _order_rows[0]["fits"]["D8-27B-tp2-long"]
+    ck("depth order, OLS units match raw Radeon Qwen", str(_front_slopes[0]),
+       _order_qwen["slope_us"], tol=1e-10)
+    ck("depth order, endpoint cost matches raw Radeon Qwen",
+       str((1e6 / tps(_f93, "D8-27B-tp2-long", 32000)
+            - 1e6 / tps(_f93, "D8-27B-tp2-long", 500)) / (32000 - 500)),
+       _order_qwen["endpoint_us"], tol=1e-10)
+    for _name, _phrase in (
+            ("configuration count", "across seven\nconfigurations"),
+            ("shared ladder", "same eleven nominal rungs\nfrom **500 to 32 000**"),
+            ("repeat protocol", "**two rounds per cell**"),
+            ("all-rung scope", "This table retains ungraded cells"),
+            ("repeat limitation", "not a lower\n  bound on what every repeat will show"),
+            ("fit limitation", "not evidence of a constant marginal depth cost"),
+            ("correlation limitation", "not a calibrated\ncross-machine predictor")):
+        ck("depth order scope, " + _name, "1", int(_phrase in _order_doc))
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

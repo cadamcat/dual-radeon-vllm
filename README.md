@@ -94,6 +94,10 @@ Each article has a Chinese edition in its language switch. For commands, use
 [deployment](docs/deploy-vllm.md) or [diagnosis](docs/diagnosis.md); for unresolved
 claims, use [open questions](docs/open-questions.md).
 
+The [cross-machine retention check](docs/depth-cost-cross-machine.md) extends
+the depth-cost article with the rented ladders and shows which ranking changes
+survive different repeats and cost definitions.
+
 <details>
 <summary><b>Measured machines, repository scope and support status</b></summary>
 
