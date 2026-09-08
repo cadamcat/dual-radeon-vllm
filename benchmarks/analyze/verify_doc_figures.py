@@ -613,7 +613,10 @@ def _run_checks(_opened, _audit_state):
     # hardcodes the expected numbers catches the data drifting from the prose
     # and not the prose drifting from the data, and this section's whole content
     # is the table -- putting the old 1.14x back into it passed, once.
-    _sec = rm[rm.index("### Two Radeons against one A100"):rm.index("### Want the raw numbers?")]
+    # the section ends at whatever heading follows it, so it can move
+    _sec_at = rm.index("### Two Radeons against one A100")
+    _sec_end = re.search(r"\n#{2,3} ", rm[_sec_at + 1:])
+    _sec = rm[_sec_at:_sec_at + 1 + _sec_end.start()] if _sec_end else rm[_sec_at:]
     _rows = []
     for _c, _p, _a, _adv in re.findall(
             r"^\|\s*([0-9]+(?:\s*K)?)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*\*{0,2}([\d.]+)×",

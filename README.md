@@ -396,53 +396,6 @@ records its process-to-process spread and the layer-split restore failure.
 
 ### The charts worth the scroll
 
-**One model, five machine configurations from the August campaigns.**
-`gemma-4-12B-it` runs on all five — eleven rungs, two rounds a cell, every
-point chart-grade on every line. The later rented sweep is in
-[Beyond the pair](#beyond-the-pair):
-
-![batch-1 decode for one model across five machines](docs/assets/decode-five-machines-gemma4-12b.svg)
-
-| | @500 | @32 K | retains |
-|---|--:|--:|--:|
-| one A100 80G | 115.0 | 71.3 | 61.9 % |
-| **2× RX 7900 XT** | **59.9** | **41.4** | **69.2 %** |
-| one RX 7900 XT | 50.6 | 36.7 | 72.6 % |
-| one L4 24G | 28.2 | 25.1 | 88.8 % |
-| one Tesla T4 16G | 20.3 | 9.0 | 44.3 % |
-
-Three readings, and the third is the one worth having.
-
-**The A100's lead narrows with depth**, 1.92× over the pair at 500 and 1.72× at
-32 K — batch-1 decode is bandwidth-bound, and the pair's two 800 GB/s cards
-against one 2.0 TB/s card is a smaller nominal gap than the price gap suggests.
-
-**The second card buys almost nothing here**: 1.18× at 500 falling to 1.13× at
-32 K. That is not a defect, it is the model — the 12B fits comfortably on one
-card, so the second one adds bandwidth the decode step was not waiting on. The
-next chart down is the same question on a model that *does* need it, where the
-two arms separate; and on **prefill** the answer is different again — the second
-card buys 1.2–1.5× on the linear term and 1.9–2.2× on the quadratic, because
-attention parallelises better than the GEMMs
-([benchmarks/README.md](benchmarks/README.md)).
-
-**Retention is not ranked the way throughput is.** The T4 is last on both, but
-it is last on retention by a different mechanism: it is the only card here whose
-decode more than halves across the ladder, 0.36× of the L4 at 32 K against 0.72×
-at 500. The L4 is flattest. The throughput order stays the same at both
-endpoints; the gaps and retention do not. One tok/s number cannot show those
-differences.
-
-The T4 line is dashed because that card cannot serve this model at all without
-[vllm#39018](https://github.com/vllm-project/vllm/pull/39018) — the engine dies
-at kernel load asking 98 304 bytes of shared memory against Turing's 65 536.
-**That patch changes prefill's tile size and nothing else**, so the decode
-numbers above are not affected by it. Prefill on that card is a different story
-and does not compare;
-[its README](benchmarks/cuda-t4/campaign-2026-08-30/README.md) says why, and
-also why one rung measured on a second VM moves the fitted linear coefficient by
-30 %.
-
 **What the second GPU actually buys.** Dashed is one card, solid is two. The blue pair
 (BF16) separates; the green pair (4-bit) barely does. Same machine, same interconnect,
 same RCCL, and a threefold difference in what the second card is worth. This is the
@@ -555,6 +508,113 @@ and [speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdn
 The attention route and its effect on the cost of speculation are explained in
 [Speculative decoding](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.html).
 
+### Want the raw numbers?
+
+```bash
+cd benchmarks/analyze
+python3 summarize.py       # every configuration, exactly as measured
+python3 decode_slope.py    # cost of one context token, per model
+python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
+```
+
+No GPU, no dependencies beyond the standard library. They read
+[`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records — 146 prefill
+and 146 decode measurements, each with its prompt length, TTFT, decode rate,
+per-card power and VRAM, plus 17 of engine metadata, run status and notes. That file is
+the 2026-07-25 campaign; the 2026-08-24 one is
+[`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl), and the separate
+findings have their own files. What ties them together is
+[`analyze/verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), which
+recomputes the headline figures quoted in this README and in `docs/` from whichever
+file each came from, and exits non-zero if one disagrees.
+
+### How to read this
+
+- **Architecture beats parameter count on the August stack.** Its fastest model is the 26B MoE,
+  ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
+  both measured in the 2026-08-24 campaign.
+- **Eager and graph-captured runs are different configurations.** The early `--enforce-eager` runs were recorded as **3.8–7.2×** slower,
+  with asymmetric power and context-independence; their raw output was not retained.
+  The compiled campaign has committed rows. Two wrong conclusions
+  in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
+  which was really 107.8.
+- **What the second card buys depends on the model.** In July, BF16 scales 1.70×; w4a16 only
+  1.19×, because the quantised model was never bandwidth-bound in the first place.
+  For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
+  151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
+- **Attention parallelises across two cards at about 90 %**, because it needs no
+  communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
+  1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
+  method. The linear term improves 1.23–1.31×.
+- **The stack changes the hybrid-SSM result.** The stock July Qwen3.6 arm
+  costs 4.84 µs of decode time per context token, **41× the dense 8B** — a
+  result about that checkpoint and path, which the matched Qwen3.8 A/B and
+  the three-stack chart above take apart.
+- **The llama.cpp comparison is the Qwen3.6 baseline.** It beats the July
+  stock vLLM arm by 2.1× at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K
+  (21.84 vs 4.2), same two cards and ROCm backend. It does not compare against
+  the newer Qwen3.8 checkpoint on vLLM 0.27.
+- Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
+  (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
+
+---
+
+## Beyond the pair
+
+The same ladder and the same harness on eleven other machine configurations:
+the Colab cards of August first, then the rented sweep of September, with the
+pair on every chart as the line the others are read against.
+
+### One model, five machines
+
+**One model, five machine configurations from the August campaigns.**
+`gemma-4-12B-it` runs on all five — eleven rungs, two rounds a cell, every
+point chart-grade on every line. The rented sweep is
+[below](#the-rented-sweep):
+
+![batch-1 decode for one model across five machines](docs/assets/decode-five-machines-gemma4-12b.svg)
+
+| | @500 | @32 K | retains |
+|---|--:|--:|--:|
+| one A100 80G | 115.0 | 71.3 | 61.9 % |
+| **2× RX 7900 XT** | **59.9** | **41.4** | **69.2 %** |
+| one RX 7900 XT | 50.6 | 36.7 | 72.6 % |
+| one L4 24G | 28.2 | 25.1 | 88.8 % |
+| one Tesla T4 16G | 20.3 | 9.0 | 44.3 % |
+
+Three readings, and the third is the one worth having.
+
+**The A100's lead narrows with depth**, 1.92× over the pair at 500 and 1.72× at
+32 K — batch-1 decode is bandwidth-bound, and the pair's two 800 GB/s cards
+against one 2.0 TB/s card is a smaller nominal gap than the price gap suggests.
+
+**The second card buys almost nothing here**: 1.18× at 500 falling to 1.13× at
+32 K. That is not a defect, it is the model — the 12B fits comfortably on one
+card, so the second one adds bandwidth the decode step was not waiting on. The
+single-card against dual-card chart in [The pair, measured](#the-pair-measured)
+is the same question on a model that *does* need it, where the two arms
+separate; and on **prefill** the answer is different again — the second
+card buys 1.2–1.5× on the linear term and 1.9–2.2× on the quadratic, because
+attention parallelises better than the GEMMs
+([benchmarks/README.md](benchmarks/README.md)).
+
+**Retention is not ranked the way throughput is.** The T4 is last on both, but
+it is last on retention by a different mechanism: it is the only card here whose
+decode more than halves across the ladder, 0.36× of the L4 at 32 K against 0.72×
+at 500. The L4 is flattest. The throughput order stays the same at both
+endpoints; the gaps and retention do not. One tok/s number cannot show those
+differences.
+
+The T4 line is dashed because that card cannot serve this model at all without
+[vllm#39018](https://github.com/vllm-project/vllm/pull/39018) — the engine dies
+at kernel load asking 98 304 bytes of shared memory against Turing's 65 536.
+**That patch changes prefill's tile size and nothing else**, so the decode
+numbers above are not affected by it. Prefill on that card is a different story
+and does not compare;
+[its README](benchmarks/cuda-t4/campaign-2026-08-30/README.md) says why, and
+also why one rung measured on a second VM moves the fitted linear coefficient by
+30 %.
+
 ### Two Radeons against one A100
 
 **Rewritten 2026-08-31.** This section used to quote four single-run probes on a
@@ -621,61 +681,9 @@ puts the A100 at 3.3× on the linear term and 6.7× on the quadratic against
 [One A100 against the pair](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.html)
 walks through the comparison, including where the software paths differ.
 
-### Want the raw numbers?
+### The rented sweep
 
-```bash
-cd benchmarks/analyze
-python3 summarize.py       # every configuration, exactly as measured
-python3 decode_slope.py    # cost of one context token, per model
-python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
-```
-
-No GPU, no dependencies beyond the standard library. They read
-[`benchmarks/results.jsonl`](benchmarks/results.jsonl): 309 records — 146 prefill
-and 146 decode measurements, each with its prompt length, TTFT, decode rate,
-per-card power and VRAM, plus 17 of engine metadata, run status and notes. That file is
-the 2026-07-25 campaign; the 2026-08-24 one is
-[`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl), and the separate
-findings have their own files. What ties them together is
-[`analyze/verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), which
-recomputes the headline figures quoted in this README and in `docs/` from whichever
-file each came from, and exits non-zero if one disagrees.
-
-### How to read this
-
-- **Architecture beats parameter count on the August stack.** Its fastest model is the 26B MoE,
-  ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
-  both measured in the 2026-08-24 campaign.
-- **Eager and graph-captured runs are different configurations.** The early `--enforce-eager` runs were recorded as **3.8–7.2×** slower,
-  with asymmetric power and context-independence; their raw output was not retained.
-  The compiled campaign has committed rows. Two wrong conclusions
-  in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
-  which was really 107.8.
-- **What the second card buys depends on the model.** In July, BF16 scales 1.70×; w4a16 only
-  1.19×, because the quantised model was never bandwidth-bound in the first place.
-  For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
-  151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
-- **Attention parallelises across two cards at about 90 %**, because it needs no
-  communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
-  1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
-  method. The linear term improves 1.23–1.31×.
-- **The stack changes the hybrid-SSM result.** The stock July Qwen3.6 arm
-  costs 4.84 µs of decode time per context token, **41× the dense 8B** — a
-  result about that checkpoint and path, which the matched Qwen3.8 A/B and
-  the three-stack chart above take apart.
-- **The llama.cpp comparison is the Qwen3.6 baseline.** It beats the July
-  stock vLLM arm by 2.1× at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K
-  (21.84 vs 4.2), same two cards and ROCm backend. It does not compare against
-  the newer Qwen3.8 checkpoint on vLLM 0.27.
-- Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
-  (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
-
----
-
-## Beyond the pair
-
-The same ladder, the same six checkpoints and the same harness on eleven other
-machine configurations. The document for the rented sweep is
+The same six checkpoints on the rented cards. The document for the sweep is
 [`benchmarks/cuda-modal/README.md`](benchmarks/cuda-modal/README.md); the four
 tables it turns on, in one line each:
 
