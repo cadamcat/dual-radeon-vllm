@@ -887,7 +887,8 @@ docs/
                        repeats and the definition of cost
   deploy-vllm.md       step-by-step deployment
   diagnosis.md         is this your bug?
-  assets/              every chart above and in docs/, as standalone SVG
+  assets/              every chart above and in docs/, as standalone SVG; the
+                       repository cover as cover.svg and its 1280×640 cover.png
 
 ```
 

@@ -386,7 +386,7 @@ docs/
   speculative-decoding-on-rdna.md  投机解码路径与跨厂商验证
   depth-cost-cross-machine.md     保留率排序的跨机器敏感性
   deploy-vllm.md / diagnosis.md    部署与诊断
-  assets/                   独立 SVG
+  assets/                   独立 SVG；仓库封面 cover.svg 及其 1280×640 的 cover.png
 ```
 
 `wintest.py` 记录过的 token ids 不能单独证明补丁正确：本机未打补丁时，greedy 解码也曾不确定。原因和修复已由内核 A/B 单独验证。

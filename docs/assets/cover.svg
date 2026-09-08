@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" font-family="-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Helvetica,Arial,sans-serif" role="img" aria-labelledby="title desc">
+<title id="title">dual-radeon-vllm — quiet record</title>
+<desc id="desc">Two Radeon GPUs, ROCm and vLLM: a tensor-parallel measurement record.</desc>
+<rect x="0" y="0" width="1280" height="640" fill="#100e0a" />
+<rect x="72" y="236" width="8" height="156" fill="#f08a6d" />
+<text x="112" y="311" font-size="92" fill="#ede7d7" font-weight="700" class="name">dual-radeon-vllm</text>
+<text x="112" y="376" font-size="30" fill="#b9b19c" font-weight="400">Two Radeon GPUs · ROCm / vLLM · a tensor-parallel measurement record</text>
+</svg>
