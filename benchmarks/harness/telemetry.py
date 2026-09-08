@@ -65,7 +65,7 @@ import re
 import threading
 import time
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 #: what this harness deliberately does not carry, and why. Kept as data so a
 #: reader and a gate see the same list.
@@ -215,6 +215,13 @@ class Sampler(threading.Thread):
     The first third and the last sixth of the samples are dropped, as the Radeon
     runners have always done: the head is engine warm-up and the tail is the
     request draining, and neither is the steady state the cell is about.
+
+    v3, 2026-09-09: every sample carries the second it was taken at, counted
+    from the sampler's start, so a request can be split at its first token.
+    One request is a prefill followed by a decode, and before v3 one summary
+    served both rows: on the H100 rows of 2026-09-03 the kept window at the
+    32 000 rung was up to 93 % prefill, so a decode row's `mem_busy_pct_max`
+    could be a prefill reading. `phases()` gives each row its own phase.
     """
 
     PERIOD_S = 1.5
@@ -224,12 +231,21 @@ class Sampler(threading.Thread):
         self.period = period_s or self.PERIOD_S
         self.stop_ev = threading.Event()
         self.rows = []
+        self.times = []          # seconds since t0, one per entry of rows
+        self.t0 = None
         self.cards = cards()
+
+    def start(self):
+        if self.t0 is None:
+            self.t0 = time.perf_counter()
+        super().start()
 
     def run(self):
         while not self.stop_ev.is_set():
             try:
+                t = time.perf_counter() - self.t0
                 self.rows.append([c.sample() for c in self.cards])
+                self.times.append(t)
             except Exception:
                 pass
             self.stop_ev.wait(self.period)
@@ -248,6 +264,25 @@ class Sampler(threading.Thread):
         self.stop_ev.set()
         self.join(timeout=self.period * 2 + 1)
         return summarise(self.rows, period=self.period)
+
+    def phases(self, split_s):
+        """The request's samples split at its first token, one summary per phase.
+
+        `split_s` is the time to first token, in seconds from the sampler's
+        start. The prefill phase is every sample up to and including it, kept
+        untrimmed because a prefill is short and its head is the phase; the
+        decode phase is every sample after it, trimmed as a whole cell is.
+        Call after the sampler has stopped. Each summary names its phase and the
+        split it was cut at, so a v3 row never has to be dated to be read.
+        """
+        pre = [r for t, r in zip(self.times, self.rows) if t <= split_s]
+        dec = [r for t, r in zip(self.times, self.rows) if t > split_s]
+        out = {"prefill": summarise(pre, period=self.period, trim=False),
+               "decode": summarise(dec, period=self.period)}
+        for name, s in out.items():
+            s["tele_phase"] = name
+            s["tele_split_s"] = round(split_s, 4)
+        return out
 
 
 #: the aggregate keys every measured row carries, whatever the platform and
@@ -268,23 +303,34 @@ SUMMARY_KEYS = ("gpu_busy_pct_max", "mem_busy_pct_max", "power_w_max",
                 # kept beside the maximum, because for a cell shorter than the
                 # card's clock ramp the question is what state it started in.
                 "tele_period_s", "sclk_mhz_first", "sclk_mhz_min",
-                "temp_c_first")
+                "temp_c_first",
+                # v3, 2026-09-09. Which phase of the request the samples came
+                # from, the first-token time the request was split at, and how
+                # many samples the phase held before trimming. A v2 row carries
+                # none of these and its window is the whole request.
+                "tele_phase", "tele_split_s", "tele_samples_raw")
 
 
-def _empty(period=None):
+def _empty(period=None, raw=0):
     d = {"tele_samples": 0, "tele_schema": SCHEMA_VERSION, "per_card": {}}
     d.update({k: None for k in SUMMARY_KEYS})
     d["tele_period_s"] = period
+    d["tele_phase"] = "request"
+    d["tele_samples_raw"] = raw
     return d
 
 
-def summarise(rows, period=None):
-    """Per-cell aggregates, with the field names every machine emits."""
+def summarise(rows, period=None, trim=True):
+    """Per-cell aggregates, with the field names every machine emits.
+
+    `trim` drops the first third and last sixth when six or more samples were
+    taken; a phase summary that is itself the head of a request passes False.
+    """
     raw = rows
-    if len(rows) >= 6:
+    if trim and len(rows) >= 6:
         rows = rows[len(rows) // 3: -max(1, len(rows) // 6)]
     if not rows:
-        return _empty(period)
+        return _empty(period, raw=len(raw))
     n = len(rows[0])
 
     def vals(card, key):
@@ -339,6 +385,8 @@ def summarise(rows, period=None):
                            if _first else None)
     _sall = [c.get("sclk_mhz") for r in raw for c in r if c.get("sclk_mhz")]
     out["sclk_mhz_min"] = min(_sall) if _sall else None
+    out["tele_phase"] = "request"                 # phases() relabels its two halves
+    out["tele_samples_raw"] = len(raw)
     for k in SUMMARY_KEYS:                        # never a ragged row
         out.setdefault(k, None)
     return out

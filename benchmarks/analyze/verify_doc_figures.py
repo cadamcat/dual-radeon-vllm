@@ -2096,8 +2096,13 @@ def _run_checks(_opened, _audit_state):
            if os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))))
     # the module both platforms now share, and the fields it promises
     _TELE = open(os.path.join(_BR, "harness", "telemetry.py")).read()
-    ck("harness, telemetry module carries a schema version", "2",
-       int(re.search(r"SCHEMA_VERSION = (\d+)", _TELE).group(1)))
+    # the version the module writes on every row is the one SCHEMA.md's title
+    # documents -- read from both files, so bumping one without the other fails
+    _tv = int(re.search(r"SCHEMA_VERSION = (\d+)", _TELE).group(1))
+    _sv = re.search(r"^# Campaign record schema — v(\d+)",
+                    open(os.path.join(_BR, "harness", "SCHEMA.md"), encoding="utf-8").read(), re.M)
+    ck("harness, telemetry module carries the schema version SCHEMA.md documents",
+       _sv.group(1) if _sv else "0", _tv)
     ck("harness, and names what it cannot measure", "2",
        len(re.findall(r'^\s{4}"[a-z_]+":$|^\s{4}"[a-z_]+":\s', _TELE[
            _TELE.index("ABSENT = {"):_TELE.index("def _f(")], re.M)))
@@ -2141,6 +2146,10 @@ def _run_checks(_opened, _audit_state):
            _src.count("class Sampler("))
         ck("harness, %s names the runner it came from" % _t, "1",
            1 if _parent in _src else 0)
+        # v3, 2026-09-09: each row's telemetry is its own phase, split at the
+        # first token, or a deep decode row reads the prefill's counter
+        ck("harness, %s splits the samples at the first token" % _t, "1",
+           1 if ".phases(" in _src else 0)
     # the Radeon template's own fix: the old one sampled decode only
     _rr = open(os.path.join(_BR, "harness", "runner_radeon.py")).read()
     ck("harness, the Radeon template no longer samples decode alone", "0",

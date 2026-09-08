@@ -525,25 +525,31 @@ def run_cfg(cfg, done):
                 ok += 1
                 continue
             try:
-                smp = Sampler()
+                # 0.25 s, not the module's 1.5 s: an NVML sample costs 9 ms, and
+                # at 1.5 s an H100 cell at the 500 rung held two to four samples
+                # (2026-09-03 rows), which is a maximum of almost nothing.
+                smp = Sampler(period_s=0.25)
                 with smp:
                     ttft, n, wall, usage = post(f"{MODELS}/{cfg['model']}",
                                                 e["text"], GEN, 900)
                 dec = (n - 1) / (wall - ttft) if ttft and wall > ttft and n > 1 else 0.0
-                # one request produces both rows, so one sampler covers both.
-                # wall_s is the request's on both rows rather than the sampler's,
-                # or the field would mean two things depending on the row.
-                tele = dict(smp.result, wall_s=round(wall, 3))
+                # one request produces both rows. Before v3 one summary served
+                # both, and on the 32 000 rung the kept window was mostly the
+                # prefill; now the samples are split at the first token and each
+                # row carries its own phase. wall_s stays the request's on both
+                # rows, or the field would mean two things depending on the row.
+                ph = smp.phases(ttft if ttft else wall)
                 emit({"kind": "prefill", "cfg": cid, "machine": MACHINE,
                       "target": e["target"], "round": rnd,
                       "prompt_tokens": usage.get("prompt_tokens", e["prompt_tokens"]),
                       "ttft": round(ttft or 0, 4), "gen_tokens": 0,
                       "prefill_tps": round((usage.get("prompt_tokens") or e["prompt_tokens"]) / ttft, 1)
-                      if ttft else 0} | tele)
+                      if ttft else 0} | dict(ph["prefill"], wall_s=round(wall, 3)))
                 emit({"kind": "decode", "cfg": cid, "machine": MACHINE,
                       "target": e["target"], "round": rnd,
                       "prompt_tokens": usage.get("prompt_tokens", e["prompt_tokens"]),
-                      "gen_tokens": n, "decode_tps": round(dec, 4)} | tele)
+                      "ttft": round(ttft or 0, 4),
+                      "gen_tokens": n, "decode_tps": round(dec, 4)} | dict(ph["decode"], wall_s=round(wall, 3)))
                 ok += 1
                 log(f"{cid}: {e['target']} r{rnd} {dec:.2f} tok/s")
             except Exception as ex:

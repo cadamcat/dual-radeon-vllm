@@ -1,4 +1,4 @@
-# Campaign record schema — v2, 2026-09-02
+# Campaign record schema — v3, 2026-09-09
 
 Every campaign writes JSONL. One record per line, `kind` says which.
 `harness/telemetry.py` produces the hardware half on both platforms; it was
@@ -59,6 +59,10 @@ Measurement, unchanged from before plus the telemetry block:
     sclk_mhz_first       the FIRST sample's clock, untrimmed          (v2)
     temp_c_first         the FIRST sample's temperature, untrimmed    (v2)
     sclk_mhz_min         the lowest clock in the cell, untrimmed      (v2)
+    tele_phase           "prefill", "decode" or "request": which part of the
+                         request the samples came from                   (v3)
+    tele_split_s         the first-token time the request was split at   (v3)
+    tele_samples_raw     samples in the phase before trimming            (v3)
     per_card             the same keys, one entry per card
 
 Sampling is a background thread. The default period is 1.5 s; the Radeon
@@ -86,6 +90,35 @@ the cell started in.
 v1 rows stay v1. `tele_schema` is on every row so a reader never has to date
 one to know which set it carries.
 
+## v3, and the window that was mostly prefill — 2026-09-09
+
+One request is a prefill followed by a decode, and through v2 one summary
+served both rows: `runner_cuda.py` wrapped a single sampler around the request
+and wrote the same aggregates into the prefill and the decode row, and a Radeon
+decode request begins with its own prefill. How much of a decode row's window
+was prefill follows from `ttft`, `wall_s` and `tele_period_s`, and on the
+committed rows it is not small: on the H100 rows of 2026-09-03 the kept window
+at the 32 000 rung is **0.24–0.93 prefill** by cell (median over rounds), at
+8 000 it is 0.07–0.23, at 500 it is 0.01–0.03; on the Radeon pair's 32 000
+rung the median is 0.59. A `mem_busy_pct_max` on a deep decode row was
+therefore often a prefill reading, and nothing on the row said so.
+
+v3 records the second each sample was taken at and splits the request at the
+first token. The prefill row's telemetry is every sample up to `ttft`, kept
+untrimmed because the phase is short and its head is the phase; the decode
+row's is every sample after it, trimmed as a cell always was. Three fields say
+so: `tele_phase`, `tele_split_s` and `tele_samples_raw`. The CUDA template
+also samples at **0.25 s** rather than the module's 1.5 s default — an NVML
+sample costs 9 ms, and at 1.5 s an H100 cell at the 500 rung held two to four
+samples. The period is on the row either way.
+
+v2 rows stay v2 and their window is the whole request. For the predictor the
+MLSys line reads from them the difference does not move the ranking: the six
+calibration models keep the same `mem_busy_pct_max` order at 500, 8 000 and
+32 000, and scoring every depth with the 500-rung value (a window that is
+1–3 % prefill) reproduces the frozen rule's 79.0 % / 61.2 % / +17.8 pp exactly.
+The check is `benchmarks/harness/test_telemetry.py`, on a laptop.
+
 ## `kind: telemetry_meta`, once per configuration
 
 `n_cards`, each card's `slot`, `vram_total_b`, `link_speed`, `link_width`, and
@@ -101,6 +134,9 @@ falsify what actually ran.
 
     runner_radeon.py   generalised from campaign-2026-08-30b/runner.py
     runner_cuda.py     generalised from cuda-l4/campaign-2026-08-30c/run.py
+
+Both split their samples at the first token since v3 (2026-09-09); the
+campaign copies before that date wrote whole-request telemetry and are records.
 
 The Radeon template also fixes something the old one did that no schema could
 have caught: it started the sampler **only for decode**, so every prefill row in

@@ -354,9 +354,13 @@ def run_cfg(cfg, done, util=None, attempt=1):
             # emits the same keys with tele_samples 0 rather than a shorter row
             with smp:
                 m = chat(model, base, 512 if kind == "decode" else 1, to)
+            # v3: a decode request begins with its own prefill, and at 32 000 on
+            # this box that prefill was most of the sampled window. The samples
+            # are split at the first token and the row keeps its own phase.
+            tele = smp.phases(m["ttft"] or smp.result["wall_s"])[kind]
             rec = {"kind": kind, "cfg": cid, "machine": MACHINE, "target": target,
                    "round": rnd, "prompt_tokens": m["prompt_tokens"],
-                   "ttft": m["ttft"]} | smp.result
+                   "ttft": m["ttft"]} | tele | {"wall_s": smp.result["wall_s"]}
             if kind == "prefill":
                 rec["prefill_tps"] = m["prefill_tps"]
                 rec["gen_tokens"] = 0
