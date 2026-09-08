@@ -503,7 +503,11 @@ those rankings depend on repeats and the definition of cost.
 **What eleven lines buy on a windowed model.** The sliding-window block skip
 changes nothing below each model's own window (1.00×, there is nothing to
 skip), then the gain grows monotonically: 2.75× on gemma-3 and 3.15× on
-Muse-Glimmer at 32 K. The shape is the mechanism check —
+Muse-Glimmer at 32 K. The stock loop is why `gemma-3-27b` decodes at 8.05
+tok/s at 32 K where the larger `gemma-4-31B`, routed to a backend that bounds
+its loop, does 30.21; end to end on 2026-08-24 the patched gemma-3 reaches
+22.05 and Muse-Glimmer runs flat at 37.4 from its window onward. The shape is
+the mechanism check —
 [the patch and its correctness argument](docs/sliding-window-block-skip.md):
 
 ![sliding-window block skip](docs/assets/sliding-window-block-skip.svg)
@@ -656,10 +660,9 @@ file each came from, and exits non-zero if one disagrees.
   1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
   method. The linear term improves 1.23–1.31×.
 - **The stack changes the hybrid-SSM result.** The stock July Qwen3.6 arm
-  costs 4.84 µs of decode time per context token, **41× the dense 8B**.
-  That is a result about that checkpoint and path. The matched Qwen3.8 A/B
-  above repairs the attention route; the [depth-cost experiment](benchmarks/campaign-2026-09-07/)
-  then separates version and backend effects on the same checkpoint.
+  costs 4.84 µs of decode time per context token, **41× the dense 8B** — a
+  result about that checkpoint and path, which the matched Qwen3.8 A/B and
+  the three-stack chart above take apart.
 - **The llama.cpp comparison is the Qwen3.6 baseline.** It beats the July
   stock vLLM arm by 2.1× at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K
   (21.84 vs 4.2), same two cards and ROCm backend. It does not compare against
@@ -702,8 +705,8 @@ its version. A result on one of those images is not a claim about every later re
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
 | **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 The stock July Qwen3.6 and August Qwen3.8 rows differ in checkpoint as well as patch, so their retention comparison is not a patch A/B. The [matched 0.27 A/B](benchmarks/hybrid-splitkv-027/) isolates #45916; the [later backend campaign](benchmarks/campaign-2026-09-07/) reaches the long ladder with the same Qwen3.8 checkpoint. Choose the recorded stack and backend, rather than rejecting the architecture. |
 | **Speculative decoding (MTP)** | 🟡 The unpatched Triton path collapses at long context when speculation selects serial attention. [vllm#45450 validation](benchmarks/cuda-a100/45450-validation/README.md) restores the segmented path on both vendors; the full ladders still show model-dependent gains. Use the [backend and speculation comparison](docs/speculative-decoding-on-rdna.md) for the arm you intend to run. |
-| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Measured block-skip patch, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed — **`gemma-3-27b` pays it at 8.05 tok/s while the larger `gemma-4-31B`, routed to a backend that bounds its loop, does 30.21**. Skipping the masked blocks is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each window; end to end on 2026-08-24, gemma-3 reaches 22.05 tok/s and `Muse-Glimmer-30B` runs flat at 37.4 from its window onward. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
-| **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took `init_engine_s` **1569 s** here and `gemma-4-12B` at **TP=2** took **1538 s**; both ran at one core out of eight. *(Corrected 2026-08-29: this said "26 min" and "TP=1 took 24". The 12B's long start is at TP=2 — its TP=1 starts were 59.67 s and 33.36 s — and `init_engine_s` bounds the compile rather than measuring it.)* Patch the line; `--enforce-eager` avoids the compile at 3.8–7.2× and invents artefacts, see [the article](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.html) |
+| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Measured block-skip patch, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed. Skipping them is an identity, not an approximation, worth 2.75× and 3.15× at 32 K on the two windowed models ([the chart](#the-charts-worth-the-scroll)); upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
+| **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took `init_engine_s` **1569 s** here and `gemma-4-12B` at **TP=2** took **1538 s**; both ran at one core out of eight (corrected 2026-08-29, see [Corrections](#corrections)). Patch the line; `--enforce-eager` avoids the compile at 3.8–7.2× and invents artefacts, see [the article](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.html) |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
 | RCCL 2.30.4 | 🟡 Stock works with atomics; the `NDEBUG` rebuild alone does not remove its requirement. The patched-runtime opt-in is a separate tested route, with the hostcall fault boundary stated above. |
@@ -956,6 +959,12 @@ reached, not the request number
 ([`campaign-2026-09-02b/`](benchmarks/campaign-2026-09-02b/)). A 500-token
 cell here carries roughly 15 % of noise however many rounds you give it, and
 the three sittings that have measured it split 2:1 for the pair being ahead.
+
+**Under *MoE `torch.compile`* in the limits table.**
+
+*(Corrected 2026-08-29: the row said "26 min" and "TP=1 took 24". The 12B's
+long start is at TP=2 — its TP=1 starts were 59.67 s and 33.36 s — and
+`init_engine_s` bounds the compile rather than measuring it.)*
 
 **Under *A fix*, *Am I hit by the RCCL bug* and the repository map.**
 
