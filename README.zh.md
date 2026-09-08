@@ -71,7 +71,7 @@ rocvirtual.cpp:4636  AQL dispatch failed!
 amdgpu 0000:0b:00.0: amdgpu: PCIE atomic ops is not supported
 ```
 
-适用于两张或更多 AMD GPU 上调用 RCCL 的程序，包括 vLLM、PyTorch DDP/FSDP。这里的探针用于区分 hostcall 拒绝与其他 RCCL 故障。
+适用于两张或更多 AMD GPU 上调用 RCCL 的程序，包括 vLLM、PyTorch DDP/FSDP。这里的探针用于区分 hostcall 拒绝与其他 RCCL 故障。搜索引擎对型号的切词不同，这里写全：RX 7900 XT 也写作 7900XT、RX7900XT；XTX 写作 7900XTX、RX7900XTX。
 
 `cuMem support requires VMM RDMA support` 是例外：它表示 RCCL 放弃自己的 cuMem 路径，并不是本故障的原因。它与真正错误出现在同一份日志里。`NCCL_CUMEM_ENABLE=1` 在本机没有作用；[`diagnose/sweep.sh`](diagnose/sweep.sh) 记录了试过的环境变量组合。
 

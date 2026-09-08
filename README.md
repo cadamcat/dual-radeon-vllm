@@ -162,7 +162,9 @@ or inside a **VFIO/QEMU passthrough VM**, then this repository has the root caus
 It applies to **RX 7900 XTX / XT / GRE, RX 7800 XT, RX 7600, RX 6800 / 6900 XT,
 RX 9070 / 9060 and virtualised Instinct**, because the trigger is the PCIe path to
 the card rather than the card itself. Verified end to end on gfx1100; the table under
-*Who is hit* says what is and is not tested for the rest.
+*Who is hit* says what is and is not tested for the rest. Search engines split these
+names differently, so for the record: RX 7900 XT is also written 7900XT and RX7900XT,
+and the XTX 7900XTX and RX7900XTX.
 
 One line in that list is the odd one out. `cuMem support requires VMM RDMA support`
 is RCCL declining its own cuMem path because VMM RDMA is unavailable — benign, and

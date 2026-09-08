@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次</title>
 <meta name="description" content="六个 checkpoint 跑同一条阶梯：保留率和深度成本给出的排序几乎相反，因为百分比要除以基线，而这些基线跨 8.4 倍。而成本也不是模型的性质——同一份权重在一个 vLLM 版本和一个 serve 参数之间，测得 0.350、0.233 和 0.117 微秒每上下文 token。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次">
+<meta property="og:description" content="六个 checkpoint 跑同一条阶梯：保留率和深度成本给出的排序几乎相反，因为百分比要除以基线，而这些基线跨 8.4 倍。而成本也不是模型的性质——同一份权重在一个 vLLM 版本和一个 serve 参数之间，测得 0.350、0.233 和 0.117 微秒每上下文 token。">
+<meta property="og:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
 <style>
   /* ===================== theme =====================
      Light lives on bare :root so a viewer with no preference and no stored

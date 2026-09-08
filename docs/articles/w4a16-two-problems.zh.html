@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SUPPORTED_QUANT_TYPES 中的一行代码每步增加固定 60 ms，压在随上下文增长的注意力开销下面</title>
 <meta name="description" content="一个 27B 模型上叠着两笔独立开销：W4A16 线性 kernel 每步固定 60 ms，以及随上下文增长的 paged attention。用一次 A/B 把它们分开，两个修复都是别人做的。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SUPPORTED_QUANT_TYPES 中的一行代码每步增加固定 60 ms，压在随上下文增长的注意力开销下面">
+<meta property="og:description" content="一个 27B 模型上叠着两笔独立开销：W4A16 线性 kernel 每步固定 60 ms，以及随上下文增长的 paged attention。用一次 A/B 把它们分开，两个修复都是别人做的。">
+<meta property="og:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
 <style>
   /* ===================== theme =====================
      Light lives on bare :root so a viewer with no preference and no stored

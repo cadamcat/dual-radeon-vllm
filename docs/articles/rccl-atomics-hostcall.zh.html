@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来</title>
 <meta name="description" content="两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层：没有 PCIe atomics，就没有 hostcall buffer，dispatch 被拒。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ROCr 在根端口未广告 AtomicOps 时拒绝任何声明 hostcall buffer 的内核，所有 RCCL 集合通信皆在此列；而一行虚拟机配置就能把这条广告加回来">
+<meta property="og:description" content="两张 Radeon、张量并行，以及 hipErrorIllegalState。根因在 RCCL 下面四层：没有 PCIe atomics，就没有 hostcall buffer，dispatch 被拒。">
+<meta property="og:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
 <style>
   /* ===================== theme =====================
      Light lives on bare :root so a viewer with no preference and no stored

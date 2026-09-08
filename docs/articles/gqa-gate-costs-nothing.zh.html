@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，且两个区间互相重叠</title>
 <meta name="description" content="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 gqa_ratio 3 这道门挡在外面。而在被排除的区间里，它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="vLLM 的 ROCm 定制 paged-attention 内核在六十个格子里全赢，且两个区间互相重叠">
+<meta property="og:description" content="vLLM 的 ROCm 定制 paged attention 在 gfx11 上被 gqa_ratio 3 这道门挡在外面。而在被排除的区间里，它比兜底路径快 1.70–7.28 倍，六十个格子无一例外。">
+<meta property="og:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cadamcat.github.io/dual-radeon-vllm/assets/cover.png">
 <style>
   /* ===================== theme =====================
      Light lives on bare :root so a viewer with no preference and no stored
