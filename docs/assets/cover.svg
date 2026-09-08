@@ -1,8 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" font-family="-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Helvetica,Arial,sans-serif" role="img" aria-labelledby="title desc">
-<title id="title">dual-radeon-vllm — quiet record</title>
-<desc id="desc">Two Radeon GPUs, ROCm and vLLM: a tensor-parallel measurement record.</desc>
+<title id="title">dual-radeon-vllm — tinted results</title>
+<desc id="desc">Two Radeon GPUs, ROCm and vLLM: a tensor-parallel measurement record. Measured results sit beneath the description, with their model and precision conditions attached.</desc>
 <rect x="0" y="0" width="1280" height="640" fill="#100e0a" />
-<rect x="72" y="236" width="8" height="156" fill="#f08a6d" />
-<text x="112" y="311" font-size="92" fill="#ede7d7" font-weight="700" class="name">dual-radeon-vllm</text>
-<text x="112" y="376" font-size="30" fill="#b9b19c" font-weight="400">Two Radeon GPUs · ROCm / vLLM · a tensor-parallel measurement record</text>
+<rect x="72" y="166" width="8" height="156" fill="#f08a6d" />
+<text x="112" y="241" font-size="92" fill="#ede7d7" font-weight="700" class="name">dual-radeon-vllm</text>
+<text x="112" y="306" font-size="30" fill="#b9b19c" font-weight="400">Two Radeon GPUs · ROCm / vLLM · a tensor-parallel measurement record</text>
+<!-- Secondary results block: identical geometry in both variants. -->
+<text x="112" y="402" font-size="48" fill="#ede7d7" font-weight="500"><tspan font-size="48" fill="#e7b45c">43</tspan><tspan font-size="30" fill="#f08a6d" font-weight="400"> tok/s</tspan></text>
+<text x="488" y="402" font-size="48" fill="#ede7d7" font-weight="500"><tspan font-size="48" fill="#b096ec">108</tspan><tspan font-size="30" fill="#f08a6d" font-weight="400"> tok/s</tspan></text>
+<text x="864" y="402" font-size="48" fill="#63b3e0" font-weight="500">1.70×</text>
+<text x="112" y="453" font-size="30" fill="#b9b19c" font-weight="400">gemma-4-31B</text>
+<text x="112" y="493" font-size="30" fill="#b9b19c" font-weight="400">w4a16, TP=2</text>
+<text x="488" y="453" font-size="30" fill="#b9b19c" font-weight="400">gemma-4-26B-A4B</text>
+<text x="488" y="493" font-size="30" fill="#b9b19c" font-weight="400">MoE, TP=2</text>
+<text x="864" y="453" font-size="30" fill="#b9b19c" font-weight="400">TP=2 speed-up</text>
+<text x="864" y="493" font-size="30" fill="#b9b19c" font-weight="400">on BF16</text>
 </svg>
