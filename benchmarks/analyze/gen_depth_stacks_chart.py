@@ -109,8 +109,8 @@ def render():
          f'<text x="{L}" y="24" font-size="16" font-weight="700" fill="{GREY}">'
          f'One checkpoint, three software stacks: what a token of context costs</text>',
          f'<text x="{L}" y="42" font-size="11.5" fill="{GREY}" opacity=".85">'
-         f'Qwen3.8-27B AWQ on 2x RX 7900 XT, TP=2 &#183; left: ms per decoded token against context '
-         f'&#183; right: TRITON_ATTN &#247; ROCM_ATTN on 0.27.1</text>',
+         f'Qwen3.8-27B AWQ, 2x RX 7900 XT, TP=2 &#183; left: ms per decoded token against context '
+         f'&#183; right: TRITON_ATTN &#247; ROCM_ATTN</text>',
          f'<text x="{L}" y="58" font-size="10.5" fill="{GREY}" opacity=".7">'
          f'same weights, same two cards, same ladder &#183; the 0.23.1 arm ends at '
          f'{max(arms[0][0]) // 1000} K, the 0.27.1 arms at {deepest // 1000} K &#183; '
