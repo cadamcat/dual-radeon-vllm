@@ -9858,6 +9858,43 @@ def _run_checks(_opened, _audit_state):
             ck(f"README {_lang} site link, {_path or 'index.html'}", "1",
                int(os.path.isfile(_target)))
 
+    # --- README, the three-stack depth-cost chart ---------------------------
+    # docs/assets/depth-cost-three-stacks.svg is drawn by gen_depth_stacks_chart.py
+    # from decode.jsonl and prefill.jsonl. Two things are held. The committed
+    # file is byte-for-byte what the generator draws from the committed rows,
+    # so a hand-edited SVG fails; and the numbers it labels agree with the raw
+    # campaign rows rederived just above (_front_slopes, _da/_db, _pa97/_pb97),
+    # so a generator that fits the wrong span, unit or denominator fails too.
+    import gen_depth_stacks_chart as _gds
+    _gsvg = open(os.path.join(ROOT, "docs", "assets", _gds.FN), encoding="utf-8").read()
+    ck("depth-stacks chart, the committed SVG is what the generator draws", "1",
+       1 if _gds.render() == _gsvg else 0)
+    _gtxt = " ".join(re.findall(r">([^<]*)</text>", _gsvg))
+    _glab = re.findall(r"([\d.]+) &#181;s per context token", _gtxt)
+    ck("depth-stacks chart, three slopes in the legend", "3", len(_glab))
+    for _l, _v, _n in zip(_glab, _front_slopes, ("0.23.1", "0.27.1 ROCM_ATTN", "0.27.1 TRITON_ATTN")):
+        ck("depth-stacks chart, the %s slope it labels" % _n, _l, _v)
+    _gspan = re.search(r"the steepest is ([\d.]+)x the flattest", _gtxt)
+    ck("depth-stacks chart, the span it states", _gspan.group(1) if _gspan else "nan",
+       max(_front_slopes) / min(_front_slopes))
+    _gdec = re.search(r"decode ([\d.]+)&#215;", _gtxt)
+    _gpre = re.search(r"prefill ([\d.]+)&#215;", _gtxt)
+    ck("depth-stacks chart, the decode ratio at the deepest rung",
+       _gdec.group(1) if _gdec else "nan", _db[128000] / _da[128000])
+    ck("depth-stacks chart, and the prefill ratio",
+       _gpre.group(1) if _gpre else "nan", _pb97[128000] / _pa97[128000])
+    # a point per rung: the three decode ladders on the left, and on the right
+    # the two ratios on every rung both 0.27.1 arms measured in both phases
+    _grungs = (len(_f93["D8-27B-tp2-long"]) + len(_da) + len(_db)
+               + 2 * len(set(_da) & set(_db) & set(_pa97) & set(_pb97)))
+    ck("depth-stacks chart, a point per rung", str(_grungs), _gsvg.count("<circle "))
+    for _name, _txt in (("README.md", rm), ("README.zh.md", _zh_doc)):
+        ck(f"{_name} embeds the three-stack chart", "1", _txt.count(_gds.FN))
+    _front_number("chart paragraph span", r"the steepest slope is \*\*([\d.]+)×\*\* the",
+                  max(_front_slopes) / min(_front_slopes))
+    _front_number("chart paragraph span (zh)", r"最陡的斜率是最平的 \*\*([\d.]+)×\*\*",
+                  max(_front_slopes) / min(_front_slopes), text=_zh_doc)
+
     # --- cross-machine retention order: direct raw inputs, not projections ---
     import depth_order as _depth_order
     _order_data = _depth_order.analyze(ROOT)

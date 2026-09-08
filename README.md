@@ -459,6 +459,24 @@ uses the same selection through August as the static throughput chart above.
 
 ![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
 
+**The same checkpoint on three software stacks.** Every line above is one
+model on the stack that measured it best through August. This chart holds the
+model still and changes the stack: Qwen3.8-27B, the same weights on the same
+two cards, on the published 0.23.1 arm, on 0.27.1 with the backend it picks for
+itself, and on 0.27.1 with `--attention-backend TRITON_ATTN`. Fitted over the
+500–32 000 rungs all three ladders share, the steepest slope is **3.00×** the
+flattest; the numbers are the ones in [Findings](#findings). The right-hand
+panel is why the flattest line is not simply the best one: Triton against the
+backend 0.27 picks gains at decode and loses at prefill, and both ratios move
+away from 1.0 monotonically with depth. Within 0.27 only the backend flag
+changes; the version step also changes ROCm and the weight kernel, so the first
+step is a stack difference rather than a backend one. Rows:
+[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) for the 0.23.1 arm and
+[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) for the pair of 0.27
+arms and the drift control that prices their session boundary.
+
+![one checkpoint on three software stacks, and the backend trade](docs/assets/depth-cost-three-stacks.svg)
+
 **The hybrid-SSM collapse on the measured stock path, and its repair.**
 Qwen3.8-27B is a hybrid SSM: 48 linear-attention layers that promise O(1) per
 token, and 16 full-attention layers that do not. On the tested vLLM 0.27 stock path the full

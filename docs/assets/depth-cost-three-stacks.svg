@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 544" width="780" height="544" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<text x="62" y="24" font-size="16" font-weight="700" fill="#8a8a8a">One checkpoint, three software stacks: what a token of context costs</text>
+<text x="62" y="42" font-size="11.5" fill="#8a8a8a" opacity=".85">Qwen3.8-27B AWQ on 2x RX 7900 XT, TP=2 &#183; left: ms per decoded token against context &#183; right: TRITON_ATTN &#247; ROCM_ATTN on 0.27.1</text>
+<text x="62" y="58" font-size="10.5" fill="#8a8a8a" opacity=".7">same weights, same two cards, same ladder &#183; the 0.23.1 arm ends at 96 K, the 0.27.1 arms at 128 K &#183; every decode point chart-grade</text>
+<rect x="68.8" y="76" width="267.8" height="220" fill="#8a8a8a" opacity=".06"/>
+<text x="72.8" y="88" font-size="9.5" fill="#8a8a8a" opacity=".8">slopes fitted here: 500 &#8211; 32 K</text>
+<line x1="62" y1="296.0" x2="436" y2="296.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="300.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0</text>
+<line x1="62" y1="259.3" x2="436" y2="259.3" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="263.3" font-size="10.5" fill="#8a8a8a" text-anchor="end">20</text>
+<line x1="62" y1="222.7" x2="436" y2="222.7" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="226.7" font-size="10.5" fill="#8a8a8a" text-anchor="end">40</text>
+<line x1="62" y1="186.0" x2="436" y2="186.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="190.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">60</text>
+<line x1="62" y1="149.3" x2="436" y2="149.3" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="153.3" font-size="10.5" fill="#8a8a8a" text-anchor="end">80</text>
+<line x1="62" y1="112.7" x2="436" y2="112.7" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="116.7" font-size="10.5" fill="#8a8a8a" text-anchor="end">100</text>
+<line x1="62" y1="76.0" x2="436" y2="76.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="54" y="80.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">120</text>
+<line x1="512" y1="296.0" x2="762" y2="296.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="504" y="300.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0.25&#215;</text>
+<line x1="512" y1="252.0" x2="762" y2="252.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="504" y="256.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0.5&#215;</text>
+<line x1="512" y1="208.0" x2="762" y2="208.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="504" y="212.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">0.75&#215;</text>
+<line x1="512" y1="164.0" x2="762" y2="164.0" stroke="#8a8a8a" stroke-width="1" opacity=".6"/>
+<text x="504" y="168.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">1&#215;</text>
+<line x1="512" y1="120.0" x2="762" y2="120.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="504" y="124.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">1.25&#215;</text>
+<line x1="512" y1="76.0" x2="762" y2="76.0" stroke="#8a8a8a" stroke-width="1" opacity=".28"/>
+<text x="504" y="80.0" font-size="10.5" fill="#8a8a8a" text-anchor="end">1.5&#215;</text>
+<line x1="68.8" y1="296" x2="68.8" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="68.8" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">500</text>
+<line x1="113.4" y1="296" x2="113.4" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="113.4" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="158.0" y1="296" x2="158.0" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="158.0" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="202.7" y1="296" x2="202.7" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="202.7" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="247.3" y1="296" x2="247.3" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="247.3" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="291.9" y1="296" x2="291.9" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="291.9" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="336.5" y1="296" x2="336.5" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="336.5" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">32K</text>
+<line x1="381.2" y1="296" x2="381.2" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="381.2" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">64K</text>
+<line x1="425.8" y1="296" x2="425.8" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="425.8" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">128K</text>
+<text x="249" y="333" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
+<line x1="516.5" y1="296" x2="516.5" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="516.5" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">500</text>
+<line x1="546.4" y1="296" x2="546.4" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="546.4" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">1K</text>
+<line x1="576.2" y1="296" x2="576.2" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="576.2" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">2K</text>
+<line x1="606.0" y1="296" x2="606.0" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="606.0" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">4K</text>
+<line x1="635.9" y1="296" x2="635.9" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="635.9" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">8K</text>
+<line x1="665.7" y1="296" x2="665.7" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="665.7" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">16K</text>
+<line x1="695.5" y1="296" x2="695.5" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="695.5" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">32K</text>
+<line x1="725.3" y1="296" x2="725.3" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="725.3" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">64K</text>
+<line x1="755.2" y1="296" x2="755.2" y2="301" stroke="#8a8a8a" stroke-width="1" opacity=".5"/>
+<text x="755.2" y="315" font-size="10.5" fill="#8a8a8a" text-anchor="middle">128K</text>
+<text x="637" y="333" font-size="11" fill="#8a8a8a" text-anchor="middle">context length (tokens, log scale)</text>
+<text x="18" y="186" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 18 186)">ms per decoded token</text>
+<text x="468" y="186" font-size="11" fill="#8a8a8a" text-anchor="middle" transform="rotate(-90 468 186)">TRITON_ATTN &#247; ROCM_ATTN</text>
+<polyline points="68.8,147.3 113.4,145.9 158.0,144.4 202.7,142.6 228.8,141.2 247.3,139.8 273.4,137.2 291.9,135.1 306.3,132.7 318.0,130.5 336.5,126.1 362.6,117.2 381.2,108.2 395.5,99.7 407.3,90.7" fill="none" stroke="#3f8fd4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="68.8" cy="147.3" r="3" fill="#3f8fd4"/>
+<circle cx="113.4" cy="145.9" r="3" fill="#3f8fd4"/>
+<circle cx="158.0" cy="144.4" r="3" fill="#3f8fd4"/>
+<circle cx="202.7" cy="142.6" r="3" fill="#3f8fd4"/>
+<circle cx="228.8" cy="141.2" r="3" fill="#3f8fd4"/>
+<circle cx="247.3" cy="139.8" r="3" fill="#3f8fd4"/>
+<circle cx="273.4" cy="137.2" r="3" fill="#3f8fd4"/>
+<circle cx="291.9" cy="135.1" r="3" fill="#3f8fd4"/>
+<circle cx="306.3" cy="132.7" r="3" fill="#3f8fd4"/>
+<circle cx="318.0" cy="130.5" r="3" fill="#3f8fd4"/>
+<circle cx="336.5" cy="126.1" r="3" fill="#3f8fd4"/>
+<circle cx="362.6" cy="117.2" r="3" fill="#3f8fd4"/>
+<circle cx="381.2" cy="108.2" r="3" fill="#3f8fd4"/>
+<circle cx="395.5" cy="99.7" r="3" fill="#3f8fd4"/>
+<circle cx="407.3" cy="90.7" r="3" fill="#3f8fd4"/>
+<polyline points="68.8,258.9 113.4,258.7 158.0,258.3 202.7,257.4 228.8,256.6 247.3,255.7 273.4,254.0 291.9,252.3 306.3,250.6 318.0,248.9 336.5,245.4 362.6,238.6 381.2,231.7 395.5,224.8 407.3,217.8 425.8,203.9" fill="none" stroke="#d99a24" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="68.8" cy="258.9" r="3" fill="#d99a24"/>
+<circle cx="113.4" cy="258.7" r="3" fill="#d99a24"/>
+<circle cx="158.0" cy="258.3" r="3" fill="#d99a24"/>
+<circle cx="202.7" cy="257.4" r="3" fill="#d99a24"/>
+<circle cx="228.8" cy="256.6" r="3" fill="#d99a24"/>
+<circle cx="247.3" cy="255.7" r="3" fill="#d99a24"/>
+<circle cx="273.4" cy="254.0" r="3" fill="#d99a24"/>
+<circle cx="291.9" cy="252.3" r="3" fill="#d99a24"/>
+<circle cx="306.3" cy="250.6" r="3" fill="#d99a24"/>
+<circle cx="318.0" cy="248.9" r="3" fill="#d99a24"/>
+<circle cx="336.5" cy="245.4" r="3" fill="#d99a24"/>
+<circle cx="362.6" cy="238.6" r="3" fill="#d99a24"/>
+<circle cx="381.2" cy="231.7" r="3" fill="#d99a24"/>
+<circle cx="395.5" cy="224.8" r="3" fill="#d99a24"/>
+<circle cx="407.3" cy="217.8" r="3" fill="#d99a24"/>
+<circle cx="425.8" cy="203.9" r="3" fill="#d99a24"/>
+<polyline points="68.8,259.7 113.4,259.6 158.0,259.4 202.7,259.1 228.8,258.6 247.3,258.1 273.4,257.2 291.9,256.3 306.3,255.5 318.0,254.7 336.5,253.1 362.6,249.8 381.2,246.5 395.5,243.3 407.3,240.1 425.8,233.8" fill="none" stroke="#e05c48" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="68.8" cy="259.7" r="3" fill="#e05c48"/>
+<circle cx="113.4" cy="259.6" r="3" fill="#e05c48"/>
+<circle cx="158.0" cy="259.4" r="3" fill="#e05c48"/>
+<circle cx="202.7" cy="259.1" r="3" fill="#e05c48"/>
+<circle cx="228.8" cy="258.6" r="3" fill="#e05c48"/>
+<circle cx="247.3" cy="258.1" r="3" fill="#e05c48"/>
+<circle cx="273.4" cy="257.2" r="3" fill="#e05c48"/>
+<circle cx="291.9" cy="256.3" r="3" fill="#e05c48"/>
+<circle cx="306.3" cy="255.5" r="3" fill="#e05c48"/>
+<circle cx="318.0" cy="254.7" r="3" fill="#e05c48"/>
+<circle cx="336.5" cy="253.1" r="3" fill="#e05c48"/>
+<circle cx="362.6" cy="249.8" r="3" fill="#e05c48"/>
+<circle cx="381.2" cy="246.5" r="3" fill="#e05c48"/>
+<circle cx="395.5" cy="243.3" r="3" fill="#e05c48"/>
+<circle cx="407.3" cy="240.1" r="3" fill="#e05c48"/>
+<circle cx="425.8" cy="233.8" r="3" fill="#e05c48"/>
+<polyline points="516.5,159.9 546.4,159.6 576.2,158.5 606.0,156.2 623.5,154.6 635.9,153.1 653.3,149.4 665.7,145.9 675.3,142.6 683.1,139.3 695.5,132.7 713.0,121.5 725.3,111.3 734.9,101.9 742.8,93.6 755.2,79.6" fill="none" stroke="#2ea36a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="516.5" cy="159.9" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="546.4" cy="159.6" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="576.2" cy="158.5" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="606.0" cy="156.2" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="623.5" cy="154.6" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="635.9" cy="153.1" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="653.3" cy="149.4" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="665.7" cy="145.9" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="675.3" cy="142.6" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="683.1" cy="139.3" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="695.5" cy="132.7" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="713.0" cy="121.5" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="725.3" cy="111.3" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="734.9" cy="101.9" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="742.8" cy="93.6" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<circle cx="755.2" cy="79.6" r="3" fill="#2ea36a" stroke="#2ea36a" stroke-width="1.5"/>
+<polyline points="516.5,166.6 546.4,169.1 576.2,169.1 606.0,174.8 623.5,179.3 635.9,183.2 653.3,191.1 665.7,197.5 675.3,203.3 683.1,209.0 695.5,218.4 713.0,232.2 725.3,241.8 734.9,249.2 742.8,254.8 755.2,263.2" fill="none" stroke="#8b6ee0" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<circle cx="516.5" cy="166.6" r="3" fill="#ffffff" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="546.4" cy="169.1" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="576.2" cy="169.1" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="606.0" cy="174.8" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="623.5" cy="179.3" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="635.9" cy="183.2" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="653.3" cy="191.1" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="665.7" cy="197.5" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="675.3" cy="203.3" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="683.1" cy="209.0" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="695.5" cy="218.4" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="713.0" cy="232.2" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="725.3" cy="241.8" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="734.9" cy="249.2" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="742.8" cy="254.8" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<circle cx="755.2" cy="263.2" r="3" fill="#8b6ee0" stroke="#8b6ee0" stroke-width="1.5"/>
+<text x="749.2" y="71.6" font-size="10.5" font-weight="700" fill="#2ea36a" text-anchor="end">decode 1.48&#215;</text>
+<text x="749.2" y="277.2" font-size="10.5" font-weight="700" fill="#8b6ee0" text-anchor="end">prefill 0.44&#215;</text>
+<line x1="62" y1="350" x2="84" y2="350" stroke="#3f8fd4" stroke-width="3"/>
+<text x="91" y="354" font-size="11.5" fill="#8a8a8a">vLLM 0.23.1 &#183; ROCm 7.14 &#183; ROCM_ATTN &#183; 2026-09-03 &#8212; 0.350 &#181;s per context token</text>
+<line x1="62" y1="369" x2="84" y2="369" stroke="#d99a24" stroke-width="3"/>
+<text x="91" y="373" font-size="11.5" fill="#8a8a8a">vLLM 0.27.1 &#183; ROCm 10.0 &#183; ROCM_ATTN &#183; 2026-09-07 &#8212; 0.233 &#181;s per context token</text>
+<line x1="62" y1="388" x2="84" y2="388" stroke="#e05c48" stroke-width="3"/>
+<text x="91" y="392" font-size="11.5" fill="#8a8a8a">vLLM 0.27.1 &#183; ROCm 10.0 &#183; TRITON_ATTN &#183; 2026-09-07 &#8212; 0.117 &#181;s per context token</text>
+<line x1="62" y1="407" x2="84" y2="407" stroke="#2ea36a" stroke-width="3"/>
+<text x="91" y="411" font-size="11.5" fill="#8a8a8a">right panel, decode: TRITON_ATTN &#247; ROCM_ATTN at each rung</text>
+<line x1="62" y1="426" x2="84" y2="426" stroke="#8b6ee0" stroke-width="3" stroke-dasharray="7 4"/>
+<text x="91" y="430" font-size="11.5" fill="#8a8a8a">right panel, prefill: the same ratio &#183; hollow: a rung the ledger does not grade on one of the two arms</text>
+<text x="62" y="457" font-size="10" fill="#8a8a8a" opacity=".75">slope: least squares of ms per decoded token on context over the rungs all three ladders share, 500 to 32 000, which is the number</text>
+<text x="62" y="472" font-size="10" fill="#8a8a8a" opacity=".75">the Findings quote; the steepest is 3.00x the flattest. Patches, from the rows: the 0.23.1 arm carries vllm#45916 split-KV,</text>
+<text x="62" y="487" font-size="10" fill="#8a8a8a" opacity=".75">the window block-skip and vllm#45450; the 0.27.1 arms carry vllm#45916 split-KV. The version step also changes ROCm and the weight</text>
+<text x="62" y="502" font-size="10" fill="#8a8a8a" opacity=".75">kernel (Triton W4A16 to the native RDNA hybrid kernel); within 0.27.1 only the backend flag changes. Hollow prefill rung: 500.</text>
+<text x="62" y="517" font-size="10" fill="#8a8a8a" opacity=".75">decode.jsonl and prefill.jsonl, RX 7900 XT rows; campaign-2026-09-03 and campaign-2026-09-07 are the campaigns, and the latter holds the</text>
+<text x="62" y="532" font-size="10" fill="#8a8a8a" opacity=".75">drift control that prices the session boundary between its two arms.</text>
+</svg>

@@ -213,6 +213,10 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 
 ![解码时间与上下文：ledger 候选中的配置选择](docs/assets/decode-ms-per-token-best.svg)
 
+**同一 checkpoint 在三个软件栈上。** 上面每条线都是一个模型在截至八月测得最好的栈上；这张图固定模型、换栈：Qwen3.8-27B，同样的权重、同样的两张卡，分别在已发布的 0.23.1 臂、0.27.1 自选后端，以及 0.27.1 加 `--attention-backend TRITON_ATTN` 上。在三条梯度共有的 500–32 000 档上拟合，最陡的斜率是最平的 **3.00×**；数字与[主要发现](#主要发现)一致。右图说明最平的线不等于全面更好：Triton 相对 0.27 自选的后端，decode 占优、prefill 吃亏，两个比值都随深度单调远离 1.0。0.27 内部只换后端参数；跨版本还同时换了 ROCm 和权重内核，所以第一步是栈的差别，不只是后端的差别。原始行：[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) 是 0.23.1 臂，[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) 是两条 0.27 臂和给会话边界定价的漂移对照。
+
+![同一 checkpoint 在三个软件栈上，以及后端的取舍](docs/assets/depth-cost-three-stacks.svg)
+
 **混合 SSM 在测过的 stock 路径上崩塌，注意力修复让斜率变浅。** Qwen3.8 的线性注意力层之外仍有 full-attention 层。在该 0.27 stock 路径上，32 K 每 token 为 **261.9 ms**；应用 #45916 后为 **27.7 ms**，深端快 **9.5×**，斜率从 **7.41 降到 0.26 ms/千 token**。
 
 ![hybrid SSM 的崩塌与修复](docs/assets/hybrid-ssm-collapse.svg)
