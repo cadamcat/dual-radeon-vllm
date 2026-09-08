@@ -10,7 +10,7 @@
 
 **从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部 campaign](benchmarks/CAMPAIGNS.md)
 
-### 测量平台
+## 测量平台
 
 | 机器 | 卡数 | 来源 | 上下文范围 | 起始日期 |
 |---|---|---|---|---|
@@ -24,13 +24,13 @@
 
 十三种机器配置、八个 checkpoint、60 个结果文件里 5 796 条请求级测量、两份跨机器投影里 2 330 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文——这些计数由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
 
-### 三部分内容，各自可以独立使用
+## 三部分内容，各自可以独立使用
 
 - **RCCL 修复。** 57 行的复现程序定位 hostcall 分派拒绝；裸机使用去掉 hostcall 的 RCCL 重建，虚拟机通常先检查一行直通配置。
 - **数据与工具。** 逐请求原始记录、生成这些记录的 runner，以及无需 GPU 的分析脚本。后续 campaign 在每格旁记录时钟、功耗、温度、显存和内存控制器忙碌比例。`prefill.jsonl`、`decode.jsonl` 从原始记录生成，并与之核对。
 - **Ubuntu 内核中的权重加载回归。** 可写文件映射的 host→device 拷贝在 `7.0.0-28-generic` 上降到 **2 MiB/s**；补齐缺失提交可修复，Ubuntu 的正常稳定版更新 `7.0.0-30.30~24.04.1` 也包含修复。同一机器、同一复现程序从 **16 019.3 ms → 15.3 ms**（[数据](benchmarks/hmm-kernel-three-states.json)）。该修复并非由本报告促成。内核升级后，可写映射本身的代价仍在：clone flag 在 checkpoint 放得进 RAM 时值 **1.5–2.0×**，放不进时值 **7.5×**（[数据](benchmarks/loader-flag-kernel-30.json)）。早期发布的 3.9–5.6× 没有控制 page cache，未能复现。完整证据、被推翻的解释及 [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)、[LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)、[vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的关系见 [§8](docs/open-questions.md)。
 
-### 适用对象与支持状态
+## 适用对象与支持状态
 
 双卡一启动就报错，先看[诊断](#诊断与修复-rccl)；已经跑通、想知道性能，看[实测](#双卡实测)；准备购买或搭建，先看[限制](#限制与绕行方法)。
 
@@ -257,7 +257,7 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 
 由每 GPU 的 bytes/token 推得的 31B 带宽利用率约 **63 %**，计算值 **62.8 %**，应读作上界。A100 上真正测到的单步权重读取比例是 12B 的 **81.6 %** 和 31B 的 **85.6 %**；“每步把全部 checkpoint 读一遍”的推导在那里高估 **17–23 %**。不能把另一台机器的修正系数直接套回 Radeon（[内存控制器测量](benchmarks/cuda-a100/campaign-2026-09-02/README.md)）。
 
-投机解码会倒转比较：MTP `k=3` 在 32 K 对 Radeon 为 **+7.9 %**，对 A100 为 **−20.1 %**，两机开投机后接近。补丁不匹配，所以它回答各机所测配置能做到什么，不能隔离硬件效果。A100 在 prefill 和批量吞吐的计算优势另看；dense 12B 的 prefill 线性项差 **3.3×**、二次项差 **6.7×**。
+投机解码会倒转比较：MTP `k=3` 在 32 K 对 Radeon 为 **+7.9 %**，对 A100 为 **−20.1 %**，两机开投机后接近。补丁不匹配，所以它回答各机所测配置能做到什么，不能隔离硬件效果。A100 在 prefill 和批量吞吐的计算优势另看：对单张 Radeon，dense 12B 的 prefill 线性项差 **3.3×**、二次项差 **6.7×**（[benchmarks.md §4](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)）。
 
 文章 [一张 A100 对两张 Radeon](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.zh.html)逐步展开这组比较，以及两边软件路径不同带来的限制。
 
@@ -367,6 +367,7 @@ patches/        复现实验使用的下游改动，详情见其 README
   adapt-muse-glimmer.py            向旧版 vLLM 适配模型文件
 docs/
   root-cause.md              RCCL 故障的证据链
+  vfio-atomics.md            虚拟机里的一行修复：单功能直通的 A/B
   benchmarks.md             双卡基线、复测和拟合
   open-questions.md          未证明的问题与被推翻的解释
   architecture-notes.md      MoE、dense、hybrid SSM 的路径差异

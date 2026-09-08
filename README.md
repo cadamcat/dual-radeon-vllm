@@ -24,7 +24,7 @@ Since then the same ladder has been run on eleven other machine configurations, 
 [Limits and workarounds](#what-does-not-work) ·
 [Every campaign](benchmarks/CAMPAIGNS.md)
 
-### Measured on
+## Measured on
 
 | machine | cards | whose | context ladder | since |
 |---|---|---|---|---|
@@ -38,17 +38,17 @@ Since then the same ladder has been run on eleven other machine configurations, 
 
 Thirteen machine configurations, eight checkpoints, 5 796 request-level measurements in 60 results files, 2 330 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
 
-### What is in here
+## What is in here
 
 Three things, each usable on its own:
 
-| | |
+| Part | What it is |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 57-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
 | 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
-### Who this is for
+## Who this is for
 
 You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actually work. You are probably here because of one of these:
 
@@ -591,9 +591,10 @@ a like-for-like pair.
 
 What none of this covers is the territory the A100 wins outright: prefill and
 batched throughput are compute-bound, where its tensor cores run against RDNA3
-WMMA that realises only ~37 % of nominal peak here. Figure 2 above has the
-prefill decomposition; the gap there is 3.3× on the linear term and 6.7× on the
-quadratic for the dense 12B.
+WMMA that realises only ~37 % of nominal peak here. The prefill decomposition in
+[benchmarks.md §4](docs/benchmarks.md#4-prefill-peaks-and-where-the-peak-sits)
+puts the A100 at 3.3× on the linear term and 6.7× on the quadratic against
+*one* Radeon for the dense 12B.
 
 [One A100 against the pair](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.html)
 walks through the comparison, including where the software paths differ.
@@ -657,7 +658,7 @@ machine configurations. The document for the rented sweep is
 [`benchmarks/cuda-modal/README.md`](benchmarks/cuda-modal/README.md); the four
 tables it turns on, in one line each:
 
-| | |
+| Finding | Evidence and boundary |
 |---|---|
 | **Two controls first** | A Modal A100 and a Modal L4 reproduce Colab's August rows inside 0.07 % and 0.9 %, on those control arms. The other card ratios still include their selected kernels and backends. |
 | **`mem_busy` predicts, ordinally** | The most memory-bound model gains most from bandwidth and loses most without it, in five settings; a prediction committed before the H200 run got the order right and the magnitude wrong. |
@@ -676,7 +677,7 @@ explains what the ordering predicts and where it falls short.
 These are limits of the measured images and paths; each linked campaign names
 its version. A result on one of those images is not a claim about every later release.
 
-| | Status |
+| Item | Status |
 |---|---|
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
@@ -684,7 +685,7 @@ its version. A result on one of those images is not a claim about every later re
 | **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 The stock July Qwen3.6 and August Qwen3.8 rows differ in checkpoint as well as patch, so their retention comparison is not a patch A/B. The [matched 0.27 A/B](benchmarks/hybrid-splitkv-027/) isolates #45916; the [later backend campaign](benchmarks/campaign-2026-09-07/) reaches the long ladder with the same Qwen3.8 checkpoint. Choose the recorded stack and backend, rather than rejecting the architecture. |
 | **Speculative decoding (MTP)** | 🟡 The unpatched Triton path collapses at long context when speculation selects serial attention. [vllm#45450 validation](benchmarks/cuda-a100/45450-validation/README.md) restores the segmented path on both vendors; the full ladders still show model-dependent gains. Use the [backend and speculation comparison](docs/speculative-decoding-on-rdna.md) for the arm you intend to run. |
 | **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Measured block-skip patch, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed — **`gemma-3-27b` pays it at 8.05 tok/s while the larger `gemma-4-31B`, routed to a backend that bounds its loop, does 30.21**. Skipping the masked blocks is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each window; end to end on 2026-08-24, gemma-3 reaches 22.05 tok/s and `Muse-Glimmer-30B` runs flat at 37.4 from its window onward. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
-| **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took `init_engine_s` **1569 s** here and `gemma-4-12B` at **TP=2** took **1538 s**; both ran at one core out of eight. *(Corrected 2026-08-29: this said "26 min" and "TP=1 took 24". The 12B's long start is at TP=2 — its TP=1 starts were 59.67 s and 33.36 s — and `init_engine_s` bounds the compile rather than measuring it.)* Patch the line; `--enforce-eager` avoids the compile at 3.8–7.2× and invents artefacts, see [the article](docs/articles/moe-written-off-by-eager.html) |
+| **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took `init_engine_s` **1569 s** here and `gemma-4-12B` at **TP=2** took **1538 s**; both ran at one core out of eight. *(Corrected 2026-08-29: this said "26 min" and "TP=1 took 24". The 12B's long start is at TP=2 — its TP=1 starts were 59.67 s and 33.36 s — and `init_engine_s` bounds the compile rather than measuring it.)* Patch the line; `--enforce-eager` avoids the compile at 3.8–7.2× and invents artefacts, see [the article](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.html) |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
 | RCCL 2.30.4 | 🟡 Stock works with atomics; the `NDEBUG` rebuild alone does not remove its requirement. The patched-runtime opt-in is a separate tested route, with the hostcall fault boundary stated above. |
@@ -839,6 +840,8 @@ patches/      Downstream changes to the installed vLLM, so the numbers above can
 docs/
   benchmarks.md        ★ the five-model study, with all four charts
   root-cause.md        the RCCL bug: evidence chain and 13 tested hypotheses
+  vfio-atomics.md      the bug in a VM is one line of VM configuration: the
+                       single-function passthrough A/B
   open-questions.md    what we have NOT proven — including one root cause we
                        published, disproved ourselves, and rewrote
   architecture-notes.md  why MoE, dense and hybrid-SSM behave so differently here
@@ -848,6 +851,11 @@ docs/
                        and masks the window away; 11 lines, 2.75-3.15× at 32K on
                        two models, why gemma-3 pays it and gemma-4 does not, and
                        the correctness argument we had to withdraw and replace
+  speculative-decoding-on-rdna.md  speculation on RDNA3: the 2D/3D attention
+                       path it selects, and the check on both vendors
+  depth-cost-cross-machine.md  the retention and depth-cost rankings recomputed
+                       across the measured machines, and how they move with
+                       repeats and the definition of cost
   deploy-vllm.md       step-by-step deployment
   diagnosis.md         is this your bug?
   assets/              every chart above and in docs/, as standalone SVG
