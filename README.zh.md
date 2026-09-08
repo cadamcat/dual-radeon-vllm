@@ -2,9 +2,9 @@
 
 # dual-radeon-vllm
 
-**两张消费级 Radeon(RX 7900 XT,gfx1100,ROCm 7.14)跑通 vLLM 张量并行的完整工程记录——拦住大多数人的那个 RCCL 崩溃,这里有根因、修复,和一个 30 行的复现程序。**
+**两张消费级 Radeon(RX 7900 XT,gfx1100,ROCm 7.14)跑通 vLLM 张量并行的完整工程记录——PCIe AtomicOps 缺失触发的 RCCL 崩溃,这里有根因、修复,和一个 57 行的复现程序。**
 
-`gemma-4-31B`(w4a16)在 2× RX 7900 XT 上解码 **43 tok/s**,两张卡同时压满 265 W;26B 的 MoE 短上下文能到 **108 tok/s**。而且测试机还是台 VFIO 虚拟机:无 P2P、跨 die PCIe 3.0——拓扑故意挑了最差的。这里都能跑通;带 P2P 的裸机没有在这里测过,这些数字是最差拓扑下的底线,不是硬件的上限。
+`gemma-4-31B`(w4a16)在 2× RX 7900 XT 上解码 **43 tok/s**,两张卡同时压满 265 W;26B 的 MoE 短上下文能到 **108 tok/s**。而且测试机还是台 VFIO 虚拟机:无 P2P、跨 die PCIe 3.0——拓扑故意挑了最差的。这里都能跑通;带 P2P 的裸机没有在这里测过,这些数字只描述测过的拓扑,不构成别的机器的性能底线。
 
 此后同一条阶梯又在另外十一种机器配置上跑过,租的和借的都有,全部拿来对照这一对卡;本页每一个数字发布前都由闸门从已入库的原始行重算。
 
@@ -26,10 +26,10 @@
 
 一行一条，数字在前，链接后面是正文；每个数字发布前都由 `verify_doc_figures.py` 从已入库的行重算。
 
-- **第二张卡值多少，由内存控制器决定，不由互联决定**——`mem_busy` 在五种互不共享硬件的设定里都排对了顺序，从第二张 Radeon 到第二张 H100（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
+- **内存控制器忙碌比例排对了测到的第二张卡收益**——`mem_busy` 在五种设定里都排对了顺序，从第二张 Radeon 到第二张 H100（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
 - **集合通信在七组双卡/四卡上跨 62 倍，而推理一点没用到**：batch 1 解码落在延迟端，那一端只跨 3.2 倍（[`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)）。
 - **四张租来的卡自己选了三种注意力后端**，没人传过参数，所以每个跨机器比值都带一项后端差——从每份 serve 日志里读出来的，不是假定的（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
-- **128 000 token 处让曲线变平的是有界注意力窗口，不是循环状态**：H100 上 Muse-Glimmer 掉 4.8 %，混合 SSM 的 27B 掉 21.8 %，跟稠密 31B 一样深（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
+- **在测过的 H100 软件栈上，有界窗口的 Muse-Glimmer 比混合 SSM 更平**：H100 上 Muse-Glimmer 掉 4.8 %，混合 SSM 的 27B 掉 21.8 %，跟稠密 31B 一样深（[`cuda-modal/`](benchmarks/cuda-modal/README.md)）。
 - **这对卡自己也到了 128 000**——六个模型里四个在两张 20 GB 卡上跑完十六档到 128 000，gemma 各臂到头只剩 500 token 时的一半左右（12B −52.5 %），有界窗口的 Muse-Glimmer 只掉 17.3 %，遥测能说清哪一个是算力、哪一个是内存（[`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)）。
 - **分页解码内核里改十一行，两个滑窗模型在 32 K 各值 2.75 倍和 3.15 倍**，因为原版循环把整段序列读一遍再把窗口外的掩掉（[为什么](docs/sliding-window-block-skip.md)）。
 - **投机解码在 32 K 慢 3.4 倍，是路径选择的问题**：每步两个 query token 让 Triton 注意力从分段的 3D 路径掉到串行的 2D 路径，放回 3D（vllm#45450）后这对卡在 32 K 从 8.81 回到 32.57 tok/s，两家厂商的卡上都验证过（[为什么](docs/speculative-decoding-on-rdna.md)）。
@@ -65,7 +65,7 @@ plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因
 
 消费级主板的第二条显卡槽往往走芯片组,裸机装双卡很容易正好踩进第一行。虚拟机那一行修复的原理与 A/B 验证在 [docs/vfio-atomics.md](docs/vfio-atomics.md),裸机完整流程在 [docs/deploy-vllm.md](docs/deploy-vllm.md),想逐步排查看 [docs/diagnosis.md](docs/diagnosis.md)。
 
-版本要盯紧:重建请用 RCCL **2.27.7**(`release/rocm-rel-7.1.1.1` 分支)。2.30.4 的问题出在设备链接那一步,`NDEBUG` 治不了——已经在硬件上验证过会失败,细节见英文 README 的警告框。
+版本要盯紧:这份 `NDEBUG` 重建配方请用 RCCL **2.27.7**(`release/rocm-rel-7.1.1.1` 分支)。在测过的 2.30.4 重建中,设备链接仍保留 hostcall 声明,所以它不能修复无 atomics 的环境。有 atomics 时原版 2.30.4 可以运行;无 atomics 时,另一个[打过补丁的 HIP runtime 加 opt-in 的实验](benchmarks/clr-hostcall-load-check-2026-09-05/)也跑通了原版 RCCL。该 flag 需要 runtime 补丁,实际执行 hostcall 会在设备上出错。
 
 ## 能跑多快
 
@@ -91,7 +91,7 @@ plain 内核能跑、hostcall 内核显示 `REFUSED`,就是这个问题。原因
 
 滑窗模型 Muse-Glimmer-30B 从自己的窗口位置起一路跑平,32K 仍有 **37.4 tok/s**。图上的虚线要的补丁上游都还没合并,复现脚本在 [patches/](patches/)。
 
-hybrid SSM 的崩塌单独一张图。同一个模型、同一台机器,只差一个补丁:发行版 vLLM 在 32K 上每 token 要 **261.9 ms** 且随上下文直线上升,加上 vllm#45916 是 **27.7 ms** 且是平的 —— 9.5 倍,斜率从 7.41 降到 0.26 ms/千 token。两臂各跑两轮且顺序反转,路由从 TP worker 内部记录;8K 那格四次运行分成两个模态,图注写明了画的是高的那个。
+hybrid SSM 的崩塌单独一张图。同一个模型、同一台机器,只差一个补丁:测过的原版 vLLM 0.27 路径在 32K 上每 token 要 **261.9 ms** 且随上下文直线上升,加上 vllm#45916 是 **27.7 ms** 且斜率更浅 —— 9.5 倍,斜率从 7.41 降到 0.26 ms/千 token。两臂各跑两轮且顺序反转,路由从 TP worker 内部记录;8K 那格四次运行分成两个模态,图注写明了画的是高的那个。
 
 ![hybrid SSM 的崩塌与修复](docs/assets/hybrid-ssm-collapse.svg)
 

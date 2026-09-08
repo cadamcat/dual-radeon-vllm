@@ -998,6 +998,7 @@ def _run_checks(_opened, _audit_state):
     ck("hipgate3.cpp, lines", "57", _hgn)
     for _f, _pats in (
             ("README.md", (r"(\d+)-line reproducer", r"decisive, (\d+) lines")),
+            ("README.zh.md", (r"(\d+) 行的复现程序",)),
             ("docs/root-cause.md", (r"\*\*(\d+) lines of HIP\*\*",)),
             ("site/src/rccl-body.html", (r"<strong>fifty-seven lines of HIP</strong>",)),
             ("site/src/rccl-body-zh.html", (r"<strong>五十七行 HIP 代码</strong>",))):
@@ -3938,7 +3939,7 @@ def _run_checks(_opened, _audit_state):
         section gates above say which, and nothing below may crash on it"""
         i, j = t.find(a), t.find(b)
         return t[i:j] if i >= 0 and j > i else ""
-    _fnd = _sec(_rC, "## Findings", "## The RCCL bug")
+    _fnd = _sec(_rC, "## Findings", "## Read in depth")
     _byd = _sec(_rC, "## Beyond the pair", "## What does *not* work")
     _cm = open(os.path.join(_BR, "cuda-modal", "README.md"), encoding="utf-8").read()
     _sw = open(os.path.join(ROOT, "docs", "sliding-window-block-skip.md"), encoding="utf-8").read()
@@ -3954,8 +3955,8 @@ def _run_checks(_opened, _audit_state):
         _in_list = _num in _fnd or _num.replace("x", "×") in _fnd
         ck("README C findings, %s is in the list" % _name, "1", 1 if _in_list else 0)
         ck("README C findings, and %s is what the source says" % _name, "1", 1 if _num in _doc else 0)
-    ck("README C findings, nine of them", "9", len(re.findall(r"^- \*\*", _fnd, re.M)))
-    ck("README C findings, and every one links somewhere", "9", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
+    ck("README C findings, eleven of them", "11", len(re.findall(r"^- \*\*", _fnd, re.M)))
+    ck("README C findings, and every one links somewhere", "11", sum(1 for l in _fnd.split("\n- ")[1:] if "](" in l))
     ck("README C findings, the pair's own 128 000 line is filled in", "0", _fnd.count("[PAIR_128K_LINE"))
     for _num, _name in (("0.07 %", "the A100 control"), ("66 %", "B300 over H100 on the 8B"), ("1.8×", "the B300's price"),
                         ("×1.22", "cards three and four with NVLink"), ("×2.71", "and without"), ("20 %", "two without over two with")):
@@ -6870,9 +6871,9 @@ def _run_checks(_opened, _audit_state):
               and r["machine"] == "L4" and r["ctx"] == 32000))
 
     # --- README.md, the five-machine chart and the table under it ------------
-    # gemma-4-12B is the only model measured on all five, and the figure's whole
-    # argument is that the five do not order the same way at 500 as at 32 K. Both
-    # ends of every line, the retention, and each ratio the prose states.
+    # Throughput order is unchanged at the endpoints; retention order differs.
+    # The old prose claimed throughput order reversed, although its own table
+    # showed otherwise. Both endpoints, retention and each ratio are held here.
     _M5 = {"a100":  ("A100-SXM4-80GB", "A100-G12",  "2026-08-29"),
            "pair":  ("RX 7900 XT",     "A-12B-tp2", "2026-08-24"),
            "one":   ("RX 7900 XT",     "A-12B-tp1", "2026-08-24"),
@@ -9934,6 +9935,97 @@ def _run_checks(_opened, _audit_state):
        _g8log.count("both at baseline"))
     ck("54210 gsm8k, and neither warned about vram", "0",
        _g8log.count("WARNING vram"))
+
+    # --- README refresh, 2026-09-08: read the new claims, then the raw rows ---
+    # A literal in this script cannot detect a changed number on the page.
+    # Missing prose is a named failure too, not a failed regex traceback.
+    def _front_number(label, pattern, value, text=rm):
+        match = re.search(pattern, text, re.S)
+        claim = match.group(1).replace(" ", "").replace("−", "-") if match else "nan"
+        ck("README refresh, " + label, claim, value)
+
+    _fgqa = [json.loads(l) for l in open(os.path.join(GDIR, "stage1-rocm-paths.jsonl"))]
+    _excluded = [r["triton"]["median_ms"] / r["ck"]["median_ms"]
+                 for r in _fgqa if r["gqa_ratio"] in (1, 2)]
+    _front_number("GQA kernel floor", r"kernel that is ([\d.]+)–[\d.]+× faster", min(_excluded))
+    _front_number("GQA kernel ceiling", r"kernel that is [\d.]+–([\d.]+)× faster", max(_excluded))
+    _front_number("gsm8k paired denominator", r"over \*\*([\d ]+) questions", len(_g8s))
+    for _filter, _word in (("strict-match", "strict"), ("flexible-extract", "flexible")):
+        _delta = sum(_g8w[i][_filter]["exact_match"] - _g8s[i][_filter]["exact_match"]
+                     for i in _g8s)
+        _front_number("gsm8k " + _word + " change",
+                      _word + r" accuracy by\s+\*\*([−+\d]+) questions", _delta)
+
+    # Match genfig-depth's nominal-rung fit on the shared ladder, but read the
+    # campaigns directly. The full 128000 fit is a different slope (0.111).
+    _f93 = decode(os.path.join(ROOT, "benchmarks", "campaign-2026-09-03", "results.jsonl"))
+    _front_ladders = [{t: statistics.median(v["tps"])
+                       for t, v in _f93["D8-27B-tp2-long"].items()}, _da, _db]
+    _front_slopes = [_slope({t: v for t, v in d.items() if 500 <= t <= 32000})[0]
+                     for d in _front_ladders]
+    _front_number("shared depth-cost span", r"checkpoint spans ([\d.]+)× in depth cost",
+                  max(_front_slopes) / min(_front_slopes))
+    for _i, _pat in enumerate((r"costs \*\*([\d.]+) →", r"costs \*\*[\d.]+ → ([\d.]+) →",
+                               r"costs \*\*[\d.]+ → [\d.]+ → ([\d.]+) µs")):
+        _front_number("shared slope " + ("0.23", "ROCM_ATTN", "TRITON_ATTN")[_i],
+                      _pat, _front_slopes[_i])
+    _shared_rungs = set.intersection(*(set(d) for d in _front_ladders))
+    _front_number("shared ladder starts", r"shared \*\*([\d ]+)–", min(_shared_rungs))
+    # All six original model arms must share the comparison ceiling.
+    _ceiling = min(max(d) for d in _f93.values())
+    _front_number("shared ladder ceiling", r"shared \*\*[\d ]+–([\d ]+)\*\*", min(32000, _ceiling))
+    _front_number("backend trade depth", r"At \*\*([\d ]+)\*\*, Triton gives", max(set(_da) & set(_db)))
+    _front_number("backend decode trade", r"Triton gives \*\*([\d.]+)× decode", _db[128000] / _da[128000])
+    _front_number("backend prefill trade", r"and \*\*([\d.]+)× prefill", _pb97[128000] / _pa97[128000])
+    _front_number("July hybrid cost", r"costs ([\d.]+) µs of decode time per context token",
+                  slope_us(jul, "D-27B-tp2"))
+    _front_number("July hybrid to dense slope", r"\*\*([\d.]+)× the dense 8B",
+                  slope_us(jul, "D-27B-tp2") / slope_us(jul, "B-8B-tp2"))
+    _llama_raw = json.load(open(os.path.join(ROOT, "benchmarks", "llamacpp-depth-sweep-rocm.json")))
+    _llama_by = {r["n_depth"]: r["avg_ts"] for r in _llama_raw}
+    _front_number("llama shallow rate", r"512 tokens \(([\d.]+) vs", _llama_by[512])
+    _front_number("llama deep rate", r"\(([\d.]+) vs 4\.2\)", _llama_by[32768])
+    _front_number("llama shallow comparison", r"arm by ([\d.]+)× at 512", _llama_by[512] / tps(jul, "D-27B-tp2", 500))
+    _front_number("llama deep comparison", r"and ([\d.]+)× at 32 K\s+\(21\.84", _llama_by[32768] / tps(jul, "D-27B-tp2", 32000))
+    _front_number("stock RCCL with atomics", r"stock 2\.30\.4 passes (\d+)/12 collective",
+                  _cap[("atomics_present", "stock2304")]["correctness_passed"])
+    _front_number("stock RCCL under runtime opt-in", r"2\.30\.4: \*\*(\d+)/12 collectives",
+                  _ccC[("atomics_absent", "patched", "collective")]["correctness_passed"])
+    for _label, _pat in (("stock RCCL total", r"stock 2\.30\.4 passes \d+/(\d+) collective"),
+                         ("runtime opt-in total", r"2\.30\.4: \*\*\d+/(\d+) collectives")):
+        _front_number(_label, _pat, _cap[("atomics_present", "stock2304")]["correctness_total"])
+    ck("README refresh, opt-in TP2 serve is supported by its row", "1",
+       int(_sc[("atomics_absent", "patched")]["ok"]))
+
+    # Scope travels with a claim: timing vs accuracy, shared vs full span,
+    # patch-bearing Triton vs stock, and the runtime flag vs a library rebuild.
+    for _label, _pattern, _text in (
+            ("GQA is kernel timing", r"Those are kernel timings on gfx1100,\s+not end-to-end speed-ups", _fnd),
+            ("gsm8k scope", r"gemma-3 at ratio 2; it does not measure latency", _fnd),
+            ("backend patch state", r"Triton path carries #45450", _fnd),
+            ("version comparison is not attribution", r"version comparison also changes ROCm\s+and the weight kernel", _fnd),
+            ("runtime opt-in requires patch", r"flag requires that runtime patch", rm),
+            ("runtime opt-in fault boundary", r"actual hostcall under the opt-in\s+faults on the device", rm),
+            ("Chinese runtime opt-in scope", r"该 flag 需要 runtime 补丁,实际执行 hostcall 会在设备上出错", _rCz),
+            ("hybrid is stack-scoped", r"The stock July Qwen3.6 arm", rm),
+            ("MTP recommendation includes repair", r"\| \*\*Speculative decoding \(MTP\)\*\* \|[^\n]*45450[^\n]*restores", rm),
+            ("throughput order is unchanged", r"throughput order stays the same at both\s+endpoints", rm),
+            ("hybrid curve is not flat", r"with a shallower slope\*\*", rm),
+            ("Chinese hybrid curve is not flat", r"且斜率更浅", _rCz)):
+        ck("README refresh, " + _label, "1",
+           int(bool(re.search(_pattern, re.sub(r"(?m)^> ?", "", _text)))))
+
+    # The published scalar checks above already rederive XDEC from raw inputs.
+    ck("README refresh, five-machine throughput order agrees at both ends", "1",
+       int(sorted(_M5, key=lambda k: _m5(k, 500)) == sorted(_M5, key=lambda k: _m5(k, 32000))))
+    ck("README refresh, L4 retains the most", "1",
+       int(max(_M5, key=lambda k: _m5(k, 32000) / _m5(k, 500)) == "l4"))
+    _reading = _sec(rm, "## Read in depth", "<details>")
+    _reading_links = set(re.findall(r"\]\(([^)]+)\)", _reading))
+    _articles = json.load(open(os.path.join(ROOT, "site", "src", "articles.json")))["articles"]
+    for _article in _articles:
+        ck("README reading map, " + _article["slug"], "1",
+           int("https://cadamcat.github.io/dual-radeon-vllm/" + _article["href"]["en"] in _reading_links))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

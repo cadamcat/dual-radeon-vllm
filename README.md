@@ -2,9 +2,9 @@
 
 English | [中文](README.zh.md)
 
-**Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL bug that stops most people before they start.**
+**Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL failure caused by missing PCIe AtomicOps.**
 
-`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: deliberately the least favourable topology.
+`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: the topology on which the baseline was measured.
 
 Since then the same ladder has been run on eleven other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
 
@@ -16,6 +16,86 @@ Since then the same ladder has been run on eleven other machine configurations, 
 <td><b>265 W × 2</b><br><sub>31B, both cards together = real tensor parallel</sub></td>
 </tr>
 </table>
+
+**Start here:** [Diagnose and fix RCCL](#am-i-hit-by-the-rccl-bug) ·
+[Findings](#findings) · [Measured performance](#the-pair-measured) ·
+[Limits and workarounds](#what-does-not-work) · [Read in depth](#read-in-depth) ·
+[Every campaign](benchmarks/CAMPAIGNS.md) ·
+[Interactive charts · EN / 中文](https://cadamcat.github.io/dual-radeon-vllm/)
+
+## Findings
+
+Each finding links to the experiment that supports it.
+
+- **Memory-controller activity orders the measured second-card gains** —
+  `mem_busy` orders the answer in five settings, second Radeon to second H100
+  ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
+- **The collective spans 62× across seven pairs and quads, and inference uses
+  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
+  ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
+- **Four rented cards chose three attention backends** with no flag anywhere,
+  so every cross-machine ratio carries a backend term — read out of each serve
+  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
+- **A bounded window keeps Muse-Glimmer flatter than the hybrid SSM on the
+  measured H100 stack**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
+  21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
+- **The pair itself now reaches 128 000** — four of six models run the sixteen-rung ladder to 128 000 on two 20 GB cards, the gemma arms ending at about half their 500-token rate (the 12B −52.5 %) and the bounded-window Muse-Glimmer at −17.3 %, with the telemetry saying which of those is compute and which is memory ([`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)).
+- **The gfx11 GQA gate excludes a kernel that is 1.84–7.28× faster** in the
+  tested `gqa_ratio` 1–2 range. Those are kernel timings on gfx1100,
+  not end-to-end speed-ups ([raw timing and accuracy records](benchmarks/vllm-50603/)).
+  For [vllm#54210](https://github.com/vllm-project/vllm/pull/54210),
+  [gsm8k on the pair](benchmarks/vllm-54210-gsm8k/) supplies the application check:
+  over **1 319 questions**, widening the gate moves strict accuracy by
+  **−2 questions** and flexible accuracy by **+2 questions**, with dispatch
+  recorded on both ranks. This covers gemma-3 at ratio 2; it does not measure latency.
+- **The same checkpoint spans 3.00× in depth cost across software stacks.**
+  Qwen3.8-27B on this pair costs **0.350 → 0.233 → 0.117 µs per context token**
+  over the shared **500–32 000** ladder: vLLM 0.23.1, then 0.27.1, then
+  `--attention-backend TRITON_ATTN`. The version comparison also changes ROCm
+  and the weight kernel; within 0.27 only the backend flag changes, and that
+  Triton path carries #45450. At **128 000**, Triton gives **1.48× decode**
+  and **0.44× prefill** relative to ROCM_ATTN. The earlier
+  [version re-run](benchmarks/campaign-2026-09-06/) separates retention from
+  absolute cost; the [backend A/B and drift control](benchmarks/campaign-2026-09-07/)
+  show that the cost itself depends on the implementation.
+- **Eleven lines in the paged-decode kernel are worth 2.75× and 3.15× at 32 K**
+  on the two sliding-window models, because the stock loop reads the whole
+  sequence and masks the window away ([why](docs/sliding-window-block-skip.md)).
+- **Speculative decoding's 3.4× collapse at 32 K is a path choice**: two query
+  tokens a step drop the Triton attention launcher from the segmented 3D path to
+  the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
+  to 32.57 tok/s at 32 K, validated on both vendors
+  ([why](docs/speculative-decoding-on-rdna.md)).
+- **The greedy non-determinism is the W4A16 kernel's split-K epilogue**: with
+  vllm#54706's fixed-order reduction built into this container's own vLLM
+  commit, 32 of 32 greedy generations come back identical where the same build
+  without it varies in two of four cells, backend held
+  ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
+- **The second Radeon buys 1.70× on BF16 and 1.19× on w4a16**, on the August stack; the RCCL fix
+  and the measured configurations follow below
+  ([the pair, measured](#the-pair-measured)).
+
+---
+
+## Read in depth
+
+The articles explain why the results change; the campaign directories carry the
+measurements. Choose a question, then follow its evidence:
+
+| Question | Articles |
+|---|---|
+| Why does the pair fail to start, or take so long to load? | [RCCL, atomics and hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.html) · [Weight loading and the kernel regression](https://cadamcat.github.io/dual-radeon-vllm/articles/weight-loading-19x.html) |
+| What does another card buy? | [One A100 against the pair](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.html) · [Memory-controller activity across machines](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.html) |
+| Which software path is costing throughput? | [Hybrid-SSM attention](https://cadamcat.github.io/dual-radeon-vllm/articles/hybrid-ssm-collapse.html) · [W4A16 and checkpoint symmetry](https://cadamcat.github.io/dual-radeon-vllm/articles/w4a16-two-problems.html) · [The GQA gate](https://cadamcat.github.io/dual-radeon-vllm/articles/gqa-gate-costs-nothing.html) · [Speculative decoding](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.html) |
+| What makes a benchmark conclusion hold? | [Retention versus depth cost](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.html) · [Measuring decode](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.html) · [What eager mode changed](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.html) |
+| How far does a Radeon finding generalise? | [RDNA3 kernel findings after cross-vendor controls](https://cadamcat.github.io/dual-radeon-vllm/articles/rdna3-second-class.html) · [Reporting a non-reproduction](https://cadamcat.github.io/dual-radeon-vllm/articles/reporting-a-non-reproduction.html) |
+
+Each article has a Chinese edition in its language switch. For commands, use
+[deployment](docs/deploy-vllm.md) or [diagnosis](docs/diagnosis.md); for unresolved
+claims, use [open questions](docs/open-questions.md).
+
+<details>
+<summary><b>Measured machines, repository scope and support status</b></summary>
 
 ### Measured on
 
@@ -47,71 +127,36 @@ You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actual
 
 - 🔴 **It crashes immediately**: `NCCL error: unhandled cuda error`, or
   `HIP failure 'the operation cannot be performed in the present state'`.
-  → **[Jump to the 60-second triage](#am-i-hit-by-the-rccl-bug)**. This is the single biggest blocker on consumer Radeon, it has been open upstream for months with no published root cause, and this repository explains and fixes it.
+  → **[Jump to the 60-second triage](#am-i-hit-by-the-rccl-bug)**. The probe separates a hostcall refusal from other RCCL failures.
 - 🟡 **It runs, but you do not know what to expect** → [The pair, measured](#the-pair-measured)
 - 🟢 **You are deciding whether to buy/build this** → [What does *not* work](#what-does-not-work) first, please
 
-**Not a vLLM fork.** The RCCL fix lives below vLLM — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against. [`patches/`](patches/) does carry downstream vLLM changes, but only the ones the 2026-08-24 campaign needed; none of them is part of the fix this repository is about.
+**Not a vLLM fork.** The RCCL fix lives below vLLM — in the VM configuration if you are in a guest, otherwise in one RCCL rebuild — so there is no upstream to keep rebasing against. [`patches/`](patches/) does carry downstream vLLM changes, with the campaigns that exercised them; the RCCL fix does not require those vLLM patches.
 
 **Status.** A reproducible engineering record, not a supported product:
 
-- The RCCL fix exists because upstream has been silent for months. **When ROCm
-  ships an RCCL whose device kernels declare no hostcall, that part becomes
-  obsolete** and will be marked as such.
-- ROCm releases roughly every 6 weeks; expect version drift. Binaries are tied to
-  **both** an architecture and a ROCm version.
+- The RCCL rebuild removes the hostcall requirement. A separate
+  [runtime opt-in](benchmarks/clr-hostcall-load-check-2026-09-05/README.md)
+  has also been tested; it leaves the declaration in place and permits a null
+  buffer. A kernel that actually executes a hostcall can fault under that opt-in.
+- Binaries are tied to **both** an architecture and a ROCm version; each campaign
+  records the stack it used.
 - Verified on **gfx1100 only**. Prebuilt binaries cover more architectures
   because they cost nothing extra to compile — they are **not verified**.
 - Welcome: `hipgate3` output from any machine, benchmark numbers, corrections.
   Out of scope: general ROCm/vLLM support.
 
 [**docs/open-questions.md**](docs/open-questions.md) lists what we deliberately
-have *not* proven — including which upstream change flipped shipped binaries
-from zero hostcall to three.
+have *not* proven — including the rebuild-and-count test still missing after the
+source change that dropped `NDEBUG` was identified.
 
----
-
-## Findings
-
-One line each, the number first, the write-up behind the link. Every figure is
-recomputed from the committed rows by `verify_doc_figures.py` before it is
-published, and the page each link opens says how.
-
-- **What a second card is worth is decided by the memory controller, not the
-  interconnect** — `mem_busy` orders the answer in five settings that share no
-  hardware, second Radeon to second H100 ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
-- **The collective spans 62× across seven pairs and quads, and inference uses
-  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
-  ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
-- **Four rented cards chose three attention backends** with no flag anywhere,
-  so every cross-machine ratio carries a backend term — read out of each serve
-  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
-- **What flattens a curve at 128 000 tokens is a bounded attention window, not a
-  recurrent state**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
-  21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
-- **The pair itself now reaches 128 000** — four of six models run the sixteen-rung ladder to 128 000 on two 20 GB cards, the gemma arms ending at about half their 500-token rate (the 12B −52.5 %) and the bounded-window Muse-Glimmer at −17.3 %, with the telemetry saying which of those is compute and which is memory ([`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)).
-- **Eleven lines in the paged-decode kernel are worth 2.75× and 3.15× at 32 K**
-  on the two sliding-window models, because the stock loop reads the whole
-  sequence and masks the window away ([why](docs/sliding-window-block-skip.md)).
-- **Speculative decoding's 3.4× collapse at 32 K is a path choice**: two query
-  tokens a step drop the Triton attention launcher from the segmented 3D path to
-  the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
-  to 32.57 tok/s at 32 K, validated on both vendors
-  ([why](docs/speculative-decoding-on-rdna.md)).
-- **The greedy non-determinism is the W4A16 kernel's split-K epilogue**: with
-  vllm#54706's fixed-order reduction built into this container's own vLLM
-  commit, 32 of 32 greedy generations come back identical where the same build
-  without it varies in two of four cells, backend held
-  ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
-- **The second Radeon buys 1.70× on BF16 and 1.19× on w4a16**, and the RCCL fix
-  that makes it possible at all is the section after next
-  ([the pair, measured](#the-pair-measured)).
+</details>
 
 ---
 
 ## The RCCL bug
 
-What stops most people before they start: `--tensor-parallel-size 2` dies in the
+The failure this section diagnoses: `--tensor-parallel-size 2` dies in the
 first collective. Who it hits, how to tell in sixty seconds, and the one-line
 and the ninety-minute fix.
 
@@ -198,18 +243,20 @@ it is one of the 11 combinations in `diagnose/sweep.sh`.
 
 ### Verified configuration
 
-Everything below was measured on this machine. Nothing is extrapolated.
+The original Radeon baseline used the configuration below. Later campaigns
+name their own versions and settings; the newer Qwen3.8 arms use ROCm 10.0
+and vLLM 0.27.
 
 | | |
 |---|---|
 | **GPUs** | 2× Radeon RX 7900 XT (gfx1100, RDNA3), 20 GB each = 40 GB |
 | **Interconnect** | Cross-die, PCIe 3.0, **no P2P**, `NCCL_P2P_DISABLE=1` |
 | **Host** | Threadripper 1950X (Zen 1), X399 |
-| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough**. No PCIe atomics through 2026-08-23, single-function and with atomics since — [see below](#hardware-notes) |
+| **Virtualisation** | Proxmox VE + QEMU, **VFIO passthrough**. No PCIe atomics in the July baseline; later campaigns record the platform state — [see below](#hardware-notes) |
 | **Stack** | ROCm 7.14 · vLLM 0.23 · PyTorch 2.11 · **RCCL 2.27.7 rebuilt** |
 
-> The topology is intentionally hostile. If it works here, a bare-metal box with
-> P2P should do at least as well.
+> These are measurements of this topology. A bare-metal P2P configuration
+> has not been benchmarked here.
 
 ### Am I hit by the RCCL bug?
 
@@ -254,17 +301,27 @@ with the 13 hypotheses that were tested and the 12 that were eliminated.
 
 **→ Fix it: [docs/deploy-vllm.md](docs/deploy-vllm.md)** · **→ Not sure yet: [docs/diagnosis.md](docs/diagnosis.md)**
 
-> ### ⚠️ Build RCCL **2.27.7**, not the newest source
+> ### RCCL rebuild: use the tested **2.27.7** recipe
 >
 > | RCCL source | `NDEBUG` patch | Status |
 > |---|---|---|
 > | **2.27.7** — `ROCm/rccl`, `release/rocm-rel-7.1.1.1` | hostcall → **0** | ✅ **Verified working** |
 > | 2.30.4 — `ROCm/rocm-systems`, `projects/rccl` | hostcall still **3** | ❌ **Verified failing** |
 >
-> On 2.30.4 the device linker declares the hostcall buffer even though the linked
+> This table is the **`NDEBUG` rebuild without PCIe atomics**, not a verdict
+> on every way of running these versions. On the tested 2.30.4 rebuild, the
+> device linker declares the hostcall buffer even though the linked
 > image contains *zero* `__ockl_*` symbols. `NDEBUG` cannot fix that.
 > [Details](docs/open-questions.md). Note RCCL **moved**: `ROCm/rccl` is now
 > `develop_deprecated`; development continues in the `rocm-systems` monorepo.
+>
+> With atomics present, **stock 2.30.4 passes 12/12 collective cases**
+> ([capability matrix](benchmarks/rccl-ndebug-ab-2026-09-04/)). Without atomics,
+> a **patched HIP runtime with `HIP_HOSTCALL_ALLOW_MISSING=1`** also runs stock
+> 2.30.4: **12/12 collectives**, and a TP=2 Qwen3-8B serve request
+> ([runtime experiment](benchmarks/clr-hostcall-load-check-2026-09-05/)).
+> The flag requires that runtime patch; an actual hostcall under the opt-in
+> faults on the device. It is a tested alternative, not a general bypass.
 
 ---
 
@@ -318,12 +375,15 @@ three lines read as one.
 
 > **The Qwen3.8-27B row is checkpoint-bound, not architecture-bound**
 > *(2026-08-27)*. That checkpoint is asymmetric int4, which misses vLLM's native
-> gfx1100 W4A16 kernel and sends every quantised linear to Triton. The same
-> model with a symmetric checkpoint is **3.24× faster at 1 K** under matched
+> gfx1100 W4A16 kernel **on the 0.23 image** and sends every quantised linear
+> to Triton. The same model with a symmetric checkpoint is
+> **3.24× faster at 1 K** under matched
 > conditions, a flat ~60 ms per decode step
 > ([benchmarks/w4a16-symmetry](benchmarks/w4a16-symmetry/)). The *slope*
-> conclusions for this row are unaffected. Note also that gemma-3-27b, one row
-> above in size, is symmetric — the two 27B models differ by 3.64× here.
+> conclusions are specific to that stack too: the
+> [version and backend experiments](benchmarks/campaign-2026-09-07/) change
+> the depth cost on the same asymmetric checkpoint. gemma-3-27b is symmetric;
+> the two 27B models differ by 3.64× in this campaign.
 
 ### llama.cpp, for comparison
 
@@ -336,11 +396,10 @@ three lines read as one.
 
 ### The charts worth the scroll
 
-**One model, five machines.** Every other chart here holds the machine fixed and
-varies the model, because for most of this repository's life there was one
-machine. There are five now, and `gemma-4-12B-it` is the only model measured on
-all of them — eleven rungs, two rounds a cell, every point chart-grade on every
-line:
+**One model, five machine configurations from the August campaigns.**
+`gemma-4-12B-it` runs on all five — eleven rungs, two rounds a cell, every
+point chart-grade on every line. The later rented sweep is in
+[Beyond the pair](#beyond-the-pair):
 
 ![batch-1 decode for one model across five machines](docs/assets/decode-five-machines-gemma4-12b.svg)
 
@@ -370,9 +429,9 @@ attention parallelises better than the GEMMs
 **Retention is not ranked the way throughput is.** The T4 is last on both, but
 it is last on retention by a different mechanism: it is the only card here whose
 decode more than halves across the ladder, 0.36× of the L4 at 32 K against 0.72×
-at 500. The L4 is slowest but flattest. A single tok/s number at one depth would
-order these five cards differently at 500 and at 32 K, which is the reason the
-chart is a chart.
+at 500. The L4 is flattest. The throughput order stays the same at both
+endpoints; the gaps and retention do not. One tok/s number cannot show those
+differences.
 
 The T4 line is dashed because that card cannot serve this model at all without
 [vllm#39018](https://github.com/vllm-project/vllm/pull/39018) — the engine dies
@@ -400,13 +459,13 @@ is that model at its best known configuration.
 
 ![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
 
-**The one architecture that was unusable at long context, and what closes it.**
+**The hybrid-SSM collapse on the measured stock path, and its repair.**
 Qwen3.8-27B is a hybrid SSM: 48 linear-attention layers that promise O(1) per
-token, and 16 full-attention layers that do not. On a released vLLM the full
+token, and 16 full-attention layers that do not. On the tested vLLM 0.27 stock path the full
 layers dominate and the cost climbs a straight line to **261.9 ms per token at
 32 K**. The same model on the same machine with
 [#45916](https://github.com/vllm-project/vllm/pull/45916) applied is **27.7 ms
-and flat** — 9.5× at 32 K, and the slope falls from 7.41 to 0.26 ms per
+with a shallower slope** — 9.5× at 32 K, and the slope falls from 7.41 to 0.26 ms per
 thousand tokens of context. That PR is not merged.
 
 ![the hybrid-SSM collapse and what closes it](docs/assets/hybrid-ssm-collapse.svg)
@@ -551,10 +610,10 @@ file each came from, and exits non-zero if one disagrees.
 
 ### How to read this
 
-- **Architecture beats parameter count.** The fastest model here is the 26B MoE,
+- **Architecture beats parameter count on the August stack.** Its fastest model is the 26B MoE,
   ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
   both measured in the 2026-08-24 campaign.
-- **Never benchmark with `--enforce-eager`.** It costs **3.8–7.2×** on this stack and
+- **Eager and graph-captured runs are different configurations.** `--enforce-eager` costs **3.8–7.2×** on this stack and
   invents artefacts (asymmetric power, context-independence). Two wrong conclusions
   in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
   which was really 107.8.
@@ -566,16 +625,15 @@ file each came from, and exits non-zero if one disagrees.
   communication: the quadratic coefficient of `T(S) = a + b·S + c·S²` improves
   1.83–2.08× from TP=1 to TP=2, reproduced in two campaigns and by a second
   method. The linear term improves 1.23–1.31×.
-- **Long context: avoid hybrid-SSM *under vLLM*.** The 27B costs 4.84 µs of decode
-  time per token of context, **41× the dense 8B**; dense and MoE lose only 23–32 %
-  out to 32 K. The cause is not the SSM layers — it is the model's few
-  full-attention layers falling off the ROCm paged-attention fast path
-  ([why](docs/hybrid-decode-on-rdna.md)).
-- **For Qwen3.5/3.6, llama.cpp wins, and by more the longer the context**:
-  against stock vLLM, 2.1× at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K
-  (21.84 vs 4.2), same two cards, same model, ROCm backend both sides. With
-  vllm#45916's gate widened the 32 K gap narrows to 2.0× (21.84 vs 10.72); that
-  PR is not merged.
+- **The stack changes the hybrid-SSM result.** The stock July Qwen3.6 arm
+  costs 4.84 µs of decode time per context token, **41× the dense 8B**.
+  That is a result about that checkpoint and path. The matched Qwen3.8 A/B
+  above repairs the attention route; the [depth-cost experiment](benchmarks/campaign-2026-09-07/)
+  then separates version and backend effects on the same checkpoint.
+- **The llama.cpp comparison is the Qwen3.6 baseline.** It beats the July
+  stock vLLM arm by 2.1× at 512 tokens (24.89 vs 12.1) and 5.1× at 32 K
+  (21.84 vs 4.2), same two cards and ROCm backend. It does not compare against
+  the newer Qwen3.8 checkpoint on vLLM 0.27.
 - Bandwidth utilisation at decode: 88 % (8B BF16, single card) down to 38 %
   (12B w4a16, TP=2). Prefill saturates at ~37 % of FP16 peak.
 
@@ -590,30 +648,33 @@ tables it turns on, in one line each:
 
 | | |
 |---|---|
-| **Two controls first** | A Modal A100 and a Modal L4 reproduce Colab's August rows inside 0.07 % and 0.9 %, so every rented ratio below is a card difference, not a platform one. |
+| **Two controls first** | A Modal A100 and a Modal L4 reproduce Colab's August rows inside 0.07 % and 0.9 %, on those control arms. The other card ratios still include their selected kernels and backends. |
 | **`mem_busy` predicts, ordinally** | The most memory-bound model gains most from bandwidth and loses most without it, in five settings; a prediction committed before the H200 run got the order right and the magnitude wrong. |
 | **The newest card is not the fastest card** | A B300 loses to an H100 on the 26B MoE and wins by 66 % on the 8B, at 1.8× the price. |
 | **NVLink is for the fourth card** | Adding cards three and four costs ×1.22 with NVLink and ×2.71 without; two without cost 20 % over two with. |
 
-The front page's [Figures 3 and 4](https://cadamcat.github.io/dual-radeon-vllm/#figlong)
+The interactive site's [Figures 3 and 4](https://cadamcat.github.io/dual-radeon-vllm/#figlong)
 draw the pair's 2026-09-03 ladder against every rented machine, to 128 000.
 
 ---
 
 ## What does *not* work
 
+These are limits of the measured images and paths; each linked campaign names
+its version. A result on one of those images is not a claim about every later release.
+
 | | Status |
 |---|---|
 | **FP8 weights/KV** | 🔴 Not available. FP8 is MI300+; RDNA3 has no FP8 path |
 | **AITER kernels** | 🔴 Gated to `is MI3XX` in vLLM. gfx1100 silently falls back to Triton |
 | **Tuned fused-MoE configs** | 🔴 vLLM ships none for *any* AMD GPU. MoE runs a generic default |
-| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 **Fixed upstream, not yet merged.** Stock vLLM keeps 35.1 % of its short-context rate at 32 K; with [vllm#45916](https://github.com/vllm-project/vllm/pull/45916)'s split-KV gate widened to RDNA3 the same architecture holds **86.8 %**, a slope of 0.390 µs against 4.840 — verified at the kernel (69/69, 15.8×) and end to end over the eleven-point ladder ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24), [details](docs/hybrid-decode-on-rdna.md)). llama.cpp is ahead either way at 32K: 5.1× against stock vLLM, 2.0× with the gate widened |
-| **Speculative decoding (MTP)** | 🟡 Context-dependent. `gemma-4-31B` with Google's official MTP assistant is **+36.9% at 1K** and **−70.8% at 32K** on this hardware: speculation sets `max_seqlen_q=2`, which disables the Triton backend's segmented-softmax path that long-context decode relies on. Enable it for short prompts, disable it by 8K, where it is already 14% down ([details](docs/speculative-decoding-on-rdna.md)) |
-| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Ours to fix, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed — **`gemma-3-27b` pays it at 8.05 tok/s while the larger `gemma-4-31B`, routed to a backend that bounds its loop, does 30.21**. Skipping the masked blocks is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each window; end to end on 2026-08-24, gemma-3 reaches 22.05 tok/s and `Muse-Glimmer-30B` runs flat at 37.4 from its window onward. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
+| **Hybrid SSM (Qwen3.5/3.6/3.8)** | 🟡 The stock July Qwen3.6 and August Qwen3.8 rows differ in checkpoint as well as patch, so their retention comparison is not a patch A/B. The [matched 0.27 A/B](benchmarks/hybrid-splitkv-027/) isolates #45916; the [later backend campaign](benchmarks/campaign-2026-09-07/) reaches the long ladder with the same Qwen3.8 checkpoint. Choose the recorded stack and backend, rather than rejecting the architecture. |
+| **Speculative decoding (MTP)** | 🟡 The unpatched Triton path collapses at long context when speculation selects serial attention. [vllm#45450 validation](benchmarks/cuda-a100/45450-validation/README.md) restores the segmented path on both vendors; the full ladders still show model-dependent gains. Use the [backend and speculation comparison](docs/speculative-decoding-on-rdna.md) for the arm you intend to run. |
+| **Sliding-window decode on `ROCM_ATTN`** | 🟡 **Measured block-skip patch, 11 lines.** The Triton paged-decode kernel iterates the whole sequence and masks the window away afterwards, so a 1 024-token window at 32 K reads 2 048 blocks where 64 are needed — **`gemma-3-27b` pays it at 8.05 tok/s while the larger `gemma-4-31B`, routed to a backend that bounds its loop, does 30.21**. Skipping the masked blocks is an identity, not an approximation: **2.75× on gemma-3 and 3.15× on `Muse-Glimmer-30B`** at 32 K, 1.00× below each window; end to end on 2026-08-24, gemma-3 reaches 22.05 tok/s and `Muse-Glimmer-30B` runs flat at 37.4 from its window onward. Upstream's own kernel suite passes with no case changing outcome. **The same eleven lines were already proposed as [vllm#49588](https://github.com/vllm-project/vllm/pull/49588) on 2026-07-23 and have sat as a draft since**, so this is a second body of evidence rather than a second PR ([details](docs/sliding-window-block-skip.md)) |
 | **MoE `torch.compile`** | 🟡 vLLM hardcodes `TORCHINDUCTOR_COMPILE_THREADS=1` in `env_override.py`, unconditionally and on every `import vllm`, so **setting that variable in the environment does not help — it is overwritten**. Inductor's own default would be one thread per core. A 128-expert graph took `init_engine_s` **1569 s** here and `gemma-4-12B` at **TP=2** took **1538 s**; both ran at one core out of eight. *(Corrected 2026-08-29: this said "26 min" and "TP=1 took 24". The 12B's long start is at TP=2 — its TP=1 starts were 59.67 s and 33.36 s — and `init_engine_s` bounds the compile rather than measuring it.)* Patch the line; `--enforce-eager` avoids the compile at 3.8–7.2× and invents artefacts, see [the article](docs/articles/moe-written-off-by-eager.html) |
 | **Multi-tenant serving** | 🟡 Untested. Everything here is single-stream or light concurrency |
 | **P2P between cards** | 🔴 Not on this topology. Everything measured is *without* it |
-| RCCL 2.30.4 | 🔴 See the warning above |
+| RCCL 2.30.4 | 🟡 Stock works with atomics; the `NDEBUG` rebuild alone does not remove its requirement. The patched-runtime opt-in is a separate tested route, with the hostcall fault boundary stated above. |
 
 Background on the SSM and MoE findings, with source-level evidence:
 **[docs/architecture-notes.md](docs/architecture-notes.md)**
@@ -651,9 +712,9 @@ automatically, and the guest gets atomics — QEMU has done this since 8.1.0.
 
 **This machine changed sides on 2026-08-23 at 14:17 UTC.** Everything measured
 before that, including the 2026-07-25 campaign, ran multifunction and without
-AtomicOps; everything after, including the 2026-08-24 campaign, the loader work
-and the sliding-window measurements, ran single-function and with them. Where
-that matters to a comparison it is called out at the comparison.
+AtomicOps; the 2026-08-24 campaign, the loader work and the sliding-window measurements
+ran single-function and with them. Later hostcall campaigns deliberately toggled
+that capability again and record each state in their rows.
 
 **Do I need atomics for inference?** No. They are a precondition for *hostcall*,
 which is a debug facility (device `printf`/`assert`), and AMD's own ROCm 7.1.1
@@ -782,9 +843,9 @@ docs/
 [#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074). The passthrough caveat behind
 it went to `pve-devel` on 2026-08-24 as a two-patch `pve-docs` series and is at
 [v3](https://lore.proxmox.com/all/20260831130752.37364-1-Xy2462381442@gmail.com/)
-as a single patch after review. The SSM
-behaviour is written up in `docs/` but not filed; see
-[open-questions.md](docs/open-questions.md) for what is claimed and how strongly.
+as a single patch after review. The hybrid attention evidence is linked from
+[hybrid-decode-on-rdna.md](docs/hybrid-decode-on-rdna.md), including the
+#45916 A/B; the GQA-gate performance and gsm8k records are linked above.
 
 **If you only open one file:** [`docs/benchmarks.md`](docs/benchmarks.md) if you came
 for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
@@ -795,6 +856,15 @@ for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
 
 Every correction this page has carried stays on it. The bullets above now
 state what holds; what they used to say, and what changed it, is here.
+
+**Stack scope, corrected 2026-09-08.** The long-context advice still told
+readers to avoid hybrid SSM and disable MTP, after the matched attention A/Bs
+had measured their repairs. The limitations table now points to those paths.
+The July Qwen3.6 versus August Qwen3.8 comparison changes checkpoint as well as
+patch; it cannot isolate a patch effect. The five-machine chart's prose also
+claimed its throughput order changed with depth; its rows keep the same order
+at both endpoints. The RCCL rebuild warning now distinguishes a failed rebuild
+from stock operation with atomics and the separate runtime opt-in without them.
 
 **Under *Architecture beats parameter count*.**
 
