@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+**[Project website · interactive charts and articles](https://cadamcat.github.io/dual-radeon-vllm/)**
+
 **Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL failure caused by missing PCIe AtomicOps.**
 
 `gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: the topology on which the baseline was measured.
@@ -19,87 +21,8 @@ Since then the same ladder has been run on eleven other machine configurations, 
 
 **Start here:** [Diagnose and fix RCCL](#am-i-hit-by-the-rccl-bug) ·
 [Findings](#findings) · [Measured performance](#the-pair-measured) ·
-[Limits and workarounds](#what-does-not-work) · [Read in depth](#read-in-depth) ·
-[Every campaign](benchmarks/CAMPAIGNS.md) ·
-[Interactive charts · EN / 中文](https://cadamcat.github.io/dual-radeon-vllm/)
-
-## Findings
-
-Each finding links to the experiment that supports it.
-
-- **Memory-controller activity orders the measured second-card gains** —
-  `mem_busy` orders the answer in five settings, second Radeon to second H100
-  ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
-- **The collective spans 62× across seven pairs and quads, and inference uses
-  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
-  ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
-- **Four rented cards chose three attention backends** with no flag anywhere,
-  so every cross-machine ratio carries a backend term — read out of each serve
-  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
-- **A bounded window keeps Muse-Glimmer flatter than the hybrid SSM on the
-  measured H100 stack**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
-  21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
-- **The pair itself now reaches 128 000** — four of six models run the sixteen-rung ladder to 128 000 on two 20 GB cards, the gemma arms ending at about half their 500-token rate (the 12B −52.5 %) and the bounded-window Muse-Glimmer at −17.3 %, with the telemetry saying which of those is compute and which is memory ([`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)).
-- **The gfx11 GQA gate excludes a kernel that is 1.84–7.28× faster** in the
-  tested `gqa_ratio` 1–2 range. Those are kernel timings on gfx1100,
-  not end-to-end speed-ups ([raw timing and accuracy records](benchmarks/vllm-50603/)).
-  For [vllm#54210](https://github.com/vllm-project/vllm/pull/54210),
-  [gsm8k on the pair](benchmarks/vllm-54210-gsm8k/) supplies the application check:
-  over **1 319 questions**, widening the gate moves strict accuracy by
-  **−2 questions** and flexible accuracy by **+2 questions**, with dispatch
-  recorded on both ranks. This covers gemma-3 at ratio 2; it does not measure latency.
-- **The same checkpoint spans 3.00× in depth cost across software stacks.**
-  Qwen3.8-27B on this pair costs **0.350 → 0.233 → 0.117 µs per context token**
-  over the shared **500–32 000** ladder: vLLM 0.23.1, then 0.27.1, then
-  `--attention-backend TRITON_ATTN`. The version comparison also changes ROCm
-  and the weight kernel; within 0.27 only the backend flag changes, and that
-  Triton path carries #45450. At **128 000**, Triton gives **1.48× decode**
-  and **0.44× prefill** relative to ROCM_ATTN. The earlier
-  [version re-run](benchmarks/campaign-2026-09-06/) separates retention from
-  absolute cost; the [backend A/B and drift control](benchmarks/campaign-2026-09-07/)
-  show that the cost itself depends on the implementation.
-- **Eleven lines in the paged-decode kernel are worth 2.75× and 3.15× at 32 K**
-  on the two sliding-window models, because the stock loop reads the whole
-  sequence and masks the window away ([why](docs/sliding-window-block-skip.md)).
-- **Speculative decoding's 3.4× collapse at 32 K is a path choice**: two query
-  tokens a step drop the Triton attention launcher from the segmented 3D path to
-  the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
-  to 32.57 tok/s at 32 K, validated on both vendors
-  ([why](docs/speculative-decoding-on-rdna.md)).
-- **The greedy non-determinism is the W4A16 kernel's split-K epilogue**: with
-  vllm#54706's fixed-order reduction built into this container's own vLLM
-  commit, 32 of 32 greedy generations come back identical where the same build
-  without it varies in two of four cells, backend held
-  ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
-- **The second Radeon buys 1.70× on BF16 and 1.18× on w4a16**, on the August stack; the RCCL fix
-  and the measured configurations follow below
-  ([the pair, measured](#the-pair-measured)).
-
----
-
-## Read in depth
-
-The articles explain why the results change; the campaign directories carry the
-measurements. Choose a question, then follow its evidence:
-
-| Question | Articles |
-|---|---|
-| Why does the pair fail to start, or take so long to load? | [RCCL, atomics and hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.html) · [Weight loading and the kernel regression](https://cadamcat.github.io/dual-radeon-vllm/articles/weight-loading-19x.html) |
-| What does another card buy? | [One A100 against the pair](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.html) · [Memory-controller activity across machines](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.html) |
-| Which software path is costing throughput? | [Hybrid-SSM attention](https://cadamcat.github.io/dual-radeon-vllm/articles/hybrid-ssm-collapse.html) · [W4A16 and checkpoint symmetry](https://cadamcat.github.io/dual-radeon-vllm/articles/w4a16-two-problems.html) · [The GQA gate](https://cadamcat.github.io/dual-radeon-vllm/articles/gqa-gate-costs-nothing.html) · [Speculative decoding](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.html) |
-| What makes a benchmark conclusion hold? | [Retention versus depth cost](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.html) · [Measuring decode](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.html) · [What eager mode changed](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.html) |
-| How far does a Radeon finding generalise? | [RDNA3 kernel findings after cross-vendor controls](https://cadamcat.github.io/dual-radeon-vllm/articles/rdna3-second-class.html) · [Reporting a non-reproduction](https://cadamcat.github.io/dual-radeon-vllm/articles/reporting-a-non-reproduction.html) |
-
-Each article has a Chinese edition in its language switch. For commands, use
-[deployment](docs/deploy-vllm.md) or [diagnosis](docs/diagnosis.md); for unresolved
-claims, use [open questions](docs/open-questions.md).
-
-The [cross-machine retention check](docs/depth-cost-cross-machine.md) extends
-the depth-cost article with the rented ladders and shows which ranking changes
-survive different repeats and cost definitions.
-
-<details>
-<summary><b>Measured machines, repository scope and support status</b></summary>
+[Limits and workarounds](#what-does-not-work) ·
+[Every campaign](benchmarks/CAMPAIGNS.md)
 
 ### Measured on
 
@@ -154,7 +77,59 @@ You have **two AMD consumer GPUs** and want `--tensor-parallel-size 2` to actual
 have *not* proven — including the rebuild-and-count test still missing after the
 source change that dropped `NDEBUG` was identified.
 
-</details>
+---
+
+## Findings
+
+Each finding links to the experiment that supports it.
+
+- **Memory-controller activity orders the measured second-card gains** —
+  `mem_busy` orders the answer in five settings, second Radeon to second H100
+  ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
+- **The collective spans 62× across seven pairs and quads, and inference uses
+  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
+  ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
+- **Four rented cards chose three attention backends** with no flag anywhere,
+  so every cross-machine ratio carries a backend term — read out of each serve
+  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
+- **A bounded window keeps Muse-Glimmer flatter than the hybrid SSM on the
+  measured H100 stack**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
+  21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
+- **The pair itself now reaches 128 000** — four of six models run the sixteen-rung ladder to 128 000 on two 20 GB cards, the gemma arms ending at about half their 500-token rate (the 12B −52.5 %) and the bounded-window Muse-Glimmer at −17.3 %, with the telemetry saying which of those is compute and which is memory ([`campaign-2026-09-03/`](benchmarks/campaign-2026-09-03/README.md)).
+- **The gfx11 GQA gate excludes a kernel that is 1.84–7.28× faster** in the
+  tested `gqa_ratio` 1–2 range. Those are kernel timings on gfx1100,
+  not end-to-end speed-ups ([raw timing and accuracy records](benchmarks/vllm-50603/)).
+  For [vllm#54210](https://github.com/vllm-project/vllm/pull/54210),
+  [gsm8k on the pair](benchmarks/vllm-54210-gsm8k/) supplies the application check:
+  over **1 319 questions**, widening the gate moves strict accuracy by
+  **−2 questions** and flexible accuracy by **+2 questions**, with dispatch
+  recorded on both ranks. This covers gemma-3 at ratio 2; it does not measure latency.
+- **The same checkpoint spans 3.00× in depth cost across software stacks.**
+  Qwen3.8-27B on this pair costs **0.350 → 0.233 → 0.117 µs per context token**
+  over the shared **500–32 000** ladder: vLLM 0.23.1, then 0.27.1, then
+  `--attention-backend TRITON_ATTN`. The version comparison also changes ROCm
+  and the weight kernel; within 0.27 only the backend flag changes, and that
+  Triton path carries #45450. At **128 000**, Triton gives **1.48× decode**
+  and **0.44× prefill** relative to ROCM_ATTN. The earlier
+  [version re-run](benchmarks/campaign-2026-09-06/) separates retention from
+  absolute cost; the [backend A/B and drift control](benchmarks/campaign-2026-09-07/)
+  show that the cost itself depends on the implementation.
+- **Eleven lines in the paged-decode kernel are worth 2.75× and 3.15× at 32 K**
+  on the two sliding-window models, because the stock loop reads the whole
+  sequence and masks the window away ([why](docs/sliding-window-block-skip.md)).
+- **Speculative decoding's 3.4× collapse at 32 K is a path choice**: two query
+  tokens a step drop the Triton attention launcher from the segmented 3D path to
+  the serial 2D one, and readmitting 3D (vllm#45450) takes the pair from 8.81
+  to 32.57 tok/s at 32 K, validated on both vendors
+  ([why](docs/speculative-decoding-on-rdna.md)).
+- **The greedy non-determinism is the W4A16 kernel's split-K epilogue**: with
+  vllm#54706's fixed-order reduction built into this container's own vLLM
+  commit, 32 of 32 greedy generations come back identical where the same build
+  without it varies in two of four cells, backend held
+  ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
+- **The second Radeon buys 1.70× on BF16 and 1.18× on w4a16**, on the August stack; the RCCL fix
+  and the measured configurations follow below
+  ([the pair, measured](#the-pair-measured)).
 
 ---
 
@@ -327,6 +302,9 @@ with the 13 hypotheses that were tested and the 12 that were eliminated.
 > The flag requires that runtime patch; an actual hostcall under the opt-in
 > faults on the device. It is a tested alternative, not a general bypass.
 
+The investigation from the PCIe path to the failing kernel is told in
+[RCCL, atomics and hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.html).
+
 ---
 
 ## The pair, measured
@@ -341,6 +319,9 @@ excluded.
 container: 372 measurements, nine configurations, six of them the July ones
 rerun as controls. Four reproduce within 0.25 %, one is too noisy to say, and one
 does not ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-second-campaign-on-2026-08-24)).
+
+For the measurement method and the checks behind the timings, read
+[Measuring decode](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.html).
 
 ![decode throughput vs context length, best known configuration](docs/assets/decode-vs-context-best.svg)
 
@@ -496,6 +477,10 @@ point came out in two modes and the chart says so. Method and raw rows:
 
 The per-campaign versions of the first two charts, with every model pinned to
 one stack, are in [benchmarks.md](docs/benchmarks.md).
+[Retention versus depth cost](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.html)
+explains the later version and backend comparisons; the
+[cross-machine retention check](docs/depth-cost-cross-machine.md) tests how
+those rankings depend on repeats and the definition of cost.
 
 **What eleven lines buy on a windowed model.** The sliding-window block skip
 changes nothing below each model's own window (1.00×, there is nothing to
@@ -544,6 +529,9 @@ case file: [45450-validation](benchmarks/cuda-a100/45450-validation/README.md)
 and [speculative-decoding-on-rdna.md §5–§6](docs/speculative-decoding-on-rdna.md):
 
 ![speculative decode on the 2D vs the 3D path](docs/assets/spec-decode-45450-ladder.svg)
+
+The attention route and its effect on the cost of speculation are explained in
+[Speculative decoding](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.html).
 
 ### Two Radeons against one A100
 
@@ -606,6 +594,9 @@ batched throughput are compute-bound, where its tensor cores run against RDNA3
 WMMA that realises only ~37 % of nominal peak here. Figure 2 above has the
 prefill decomposition; the gap there is 3.3× on the linear term and 6.7× on the
 quadratic for the dense 12B.
+
+[One A100 against the pair](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.html)
+walks through the comparison, including where the software paths differ.
 
 ### Want the raw numbers?
 
@@ -675,6 +666,8 @@ tables it turns on, in one line each:
 
 The interactive site's [Figures 3 and 4](https://cadamcat.github.io/dual-radeon-vllm/#figlong)
 draw the pair's 2026-09-03 ladder against every rented machine, to 128 000.
+[Memory-controller activity across machines](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.html)
+explains what the ordering predicts and where it falls short.
 
 ---
 
@@ -777,6 +770,9 @@ rather than free memory. A 21.67 GiB file would not map into the 21.43 GiB this
 guest had when that was first hit; the fix was to raise the VM's RAM, which is
 now 23.40 GiB with 8 GiB of swap, and that checkpoint loads. Size for the
 ceiling rather than expecting to hit it.
+
+[Weight loading and the kernel regression](https://cadamcat.github.io/dual-radeon-vllm/articles/weight-loading-19x.html)
+follows the kernel, mapping and memory-capacity experiments together.
 
 ---
 

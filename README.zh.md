@@ -2,44 +2,13 @@
 
 [English](README.md) | 中文
 
+**[项目网站 · 交互图表与文章](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html)**
+
 **两张消费级 Radeon（RX 7900 XT、gfx1100）运行 tensor-parallel vLLM 的实测记录，包括缺少 PCIe AtomicOps 导致的 RCCL 故障、修复方法和逐请求原始数据。**
 
 在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。
 
-**从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [深入阅读](#深入阅读) · [全部 campaign](benchmarks/CAMPAIGNS.md) · [交互图表](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html)
-
-本文与英文首页覆盖相同的发现、使用路径和限制。报错、命令、模型名、配置项及原始记录中的标识保留英文，方便直接搜索和复现。
-
-## 主要发现
-
-- **内存控制器忙碌比例排对了测到的第二张卡收益。** `mem_busy` 在五种设定里都排对了顺序，从第二张 Radeon 到第二张 H100。它支持的是这些实验里的排序关系，不能直接当作任意硬件的吞吐预测器（[跨机器记录](benchmarks/cuda-modal/README.md)）。
-- **集合通信带宽跨 62 倍，batch-1 解码所在的延迟端只跨 3.2 倍。** 七组双卡／四卡的带宽差，并没有转化为对应的推理差距（[all-reduce 实测](benchmarks/allreduce-2026-09-03/)）。
-- **四张租来的卡自动选了三种注意力后端。** 没有人显式传入 backend 参数；每个跨机器比值都包含软件路径的差别，后端身份来自各自的 serve 日志（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
-- **在测过的 H100 栈上，有界窗口比混合 SSM 更平。** 到 128 000，Muse-Glimmer 吞吐下降 4.8 %，混合 SSM 的 27B 下降 21.8 %，稠密 31B 下降 22.0 %。这些是所测路径的结果；下文的软件栈对照说明，不能直接归因于架构（[长上下文记录](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)）。
-- **这对卡自己也到了 128 000。** 六个模型里四个跑完十六档；12B 到末端下降 52.5 %，有界窗口的 Muse-Glimmer 下降 17.3 %。遥测随每格保存，可以区分计算、内存和时钟状态（[本机长上下文 campaign](benchmarks/campaign-2026-09-03/README.md)）。
-- **gfx11 的 GQA 门排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽门后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
-- **同一 checkpoint 的深度成本随软件栈相差 3.00×。** 在共同的 **500–32 000** 档位，Qwen3.8-27B 每增加一个上下文 token 的解码成本为 **0.350 → 0.233 → 0.117 µs**：依次是 vLLM 0.23.1、0.27.1，以及 0.27.1 加 `--attention-backend TRITON_ATTN`。跨版本还改变 ROCm 和权重内核；0.27 内部的 A/B 只改 backend，Triton 路径带 #45450。到 **128 000**，Triton 相对 ROCM_ATTN 的 **decode 为 1.48×，prefill 为 0.44×**。版本复测和后端 A/B 分别在 [09-06](benchmarks/campaign-2026-09-06/) 与 [09-07](benchmarks/campaign-2026-09-07/)。
-- **分页解码内核改十一行，滑窗模型在 32 K 获益 2.75× 和 3.15×。** 原循环读完整段序列，再掩掉窗口外的内容；跳过这些块避免了无效读取（[实现与正确性论证](docs/sliding-window-block-skip.md)）。
-- **投机解码在 32 K 慢 3.4×，原因是路径选择。** 每步两个 query token 让 Triton 从分段的 3D 解码落到串行 2D 路径；#45450 重新允许 3D 后，这对卡在 32 K 从 **8.81 → 32.57 tok/s**，并已跨两家厂商验证（[分析](docs/speculative-decoding-on-rdna.md)）。
-- **贪心解码的不确定性来自 W4A16 的 split-K 收尾。** 同一 vLLM 提交、相同后端，加入 #54706 固定顺序归约后，32 次贪心生成 32 次一致；同构建不打补丁时，4 个格子里有 2 个会变（[内核 A/B](benchmarks/gfx1100-w4a16-54706/README.md)）。
-- **第二张 Radeon 在 BF16 上值 1.70×，w4a16 上值 1.18×。** 这是八月软件栈上的结果；量化模型也会从第二张卡获得容量，不能只用单流解码吞吐判断它的用途（[双卡实测](#双卡实测)）。
-
-## 深入阅读
-
-文章解释原因，campaign 目录保存实验方法和证据。以下入口直接打开中文版文章：
-
-| 想回答的问题 | 文章 |
-|---|---|
-| 双卡为什么启动失败，或权重加载很慢？ | [RCCL、atomics 与 hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.zh.html) · [权重加载与内核回归](https://cadamcat.github.io/dual-radeon-vllm/articles/weight-loading-19x.zh.html) |
-| 多一张卡能买到什么？ | [一张 A100 对两张 Radeon](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.zh.html) · [跨机器的内存控制器忙碌比例](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.zh.html) |
-| 哪条软件路径拖慢了吞吐？ | [混合 SSM 注意力](https://cadamcat.github.io/dual-radeon-vllm/articles/hybrid-ssm-collapse.zh.html) · [W4A16 与 checkpoint 对称性](https://cadamcat.github.io/dual-radeon-vllm/articles/w4a16-two-problems.zh.html) · [GQA 门](https://cadamcat.github.io/dual-radeon-vllm/articles/gqa-gate-costs-nothing.zh.html) · [投机解码](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.zh.html) |
-| 什么样的测量能支持结论？ | [吞吐保留率与深度成本](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.zh.html) · [如何测解码](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.zh.html) · [eager 模式改变了什么](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.zh.html) |
-| Radeon 上的发现能推广多远？ | [跨厂商对照后的 RDNA3 内核问题](https://cadamcat.github.io/dual-radeon-vllm/articles/rdna3-second-class.zh.html) · [如何报告一次未复现](https://cadamcat.github.io/dual-radeon-vllm/articles/reporting-a-non-reproduction.zh.html) |
-
-操作步骤见 [部署](docs/deploy-vllm.md) 和 [诊断](docs/diagnosis.md)，未解决的问题见 [open-questions.md](docs/open-questions.md)。[跨机器保留率复算](docs/depth-cost-cross-machine.md) 进一步检验：换重复轮次、上下文轴或成本定义后，排名变化是否仍然成立。
-
-<details>
-<summary><b>测过哪些机器、仓库范围与支持状态</b></summary>
+**从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部 campaign](benchmarks/CAMPAIGNS.md)
 
 ### 测量平台
 
@@ -71,7 +40,19 @@
 
 [开放问题](docs/open-questions.md) 包括：虽然已经定位到去掉 `NDEBUG` 的源码变更，前后版本重建并计数的实验仍未完成。
 
-</details>
+## 主要发现
+
+- **内存控制器忙碌比例排对了测到的第二张卡收益。** `mem_busy` 在五种设定里都排对了顺序，从第二张 Radeon 到第二张 H100。它支持的是这些实验里的排序关系，不能直接当作任意硬件的吞吐预测器（[跨机器记录](benchmarks/cuda-modal/README.md)）。
+- **集合通信带宽跨 62 倍，batch-1 解码所在的延迟端只跨 3.2 倍。** 七组双卡／四卡的带宽差，并没有转化为对应的推理差距（[all-reduce 实测](benchmarks/allreduce-2026-09-03/)）。
+- **四张租来的卡自动选了三种注意力后端。** 没有人显式传入 backend 参数；每个跨机器比值都包含软件路径的差别，后端身份来自各自的 serve 日志（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
+- **在测过的 H100 栈上，有界窗口比混合 SSM 更平。** 到 128 000，Muse-Glimmer 吞吐下降 4.8 %，混合 SSM 的 27B 下降 21.8 %，稠密 31B 下降 22.0 %。这些是所测路径的结果；下文的软件栈对照说明，不能直接归因于架构（[长上下文记录](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)）。
+- **这对卡自己也到了 128 000。** 六个模型里四个跑完十六档；12B 到末端下降 52.5 %，有界窗口的 Muse-Glimmer 下降 17.3 %。遥测随每格保存，可以区分计算、内存和时钟状态（[本机长上下文 campaign](benchmarks/campaign-2026-09-03/README.md)）。
+- **gfx11 的 GQA 门排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽门后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
+- **同一 checkpoint 的深度成本随软件栈相差 3.00×。** 在共同的 **500–32 000** 档位，Qwen3.8-27B 每增加一个上下文 token 的解码成本为 **0.350 → 0.233 → 0.117 µs**：依次是 vLLM 0.23.1、0.27.1，以及 0.27.1 加 `--attention-backend TRITON_ATTN`。跨版本还改变 ROCm 和权重内核；0.27 内部的 A/B 只改 backend，Triton 路径带 #45450。到 **128 000**，Triton 相对 ROCM_ATTN 的 **decode 为 1.48×，prefill 为 0.44×**。版本复测和后端 A/B 分别在 [09-06](benchmarks/campaign-2026-09-06/) 与 [09-07](benchmarks/campaign-2026-09-07/)。
+- **分页解码内核改十一行，滑窗模型在 32 K 获益 2.75× 和 3.15×。** 原循环读完整段序列，再掩掉窗口外的内容；跳过这些块避免了无效读取（[实现与正确性论证](docs/sliding-window-block-skip.md)）。
+- **投机解码在 32 K 慢 3.4×，原因是路径选择。** 每步两个 query token 让 Triton 从分段的 3D 解码落到串行 2D 路径；#45450 重新允许 3D 后，这对卡在 32 K 从 **8.81 → 32.57 tok/s**，并已跨两家厂商验证（[分析](docs/speculative-decoding-on-rdna.md)）。
+- **贪心解码的不确定性来自 W4A16 的 split-K 收尾。** 同一 vLLM 提交、相同后端，加入 #54706 固定顺序归约后，32 次贪心生成 32 次一致；同构建不打补丁时，4 个格子里有 2 个会变（[内核 A/B](benchmarks/gfx1100-w4a16-54706/README.md)）。
+- **第二张 Radeon 在 BF16 上值 1.70×，w4a16 上值 1.18×。** 这是八月软件栈上的结果；量化模型也会从第二张卡获得容量，不能只用单流解码吞吐判断它的用途（[双卡实测](#双卡实测)）。
 
 ## RCCL 故障
 
@@ -160,11 +141,13 @@ ROCm **7.2.1** 起的 RCCL 设备内核带 hostcall 声明。缺少 AtomicOp 到
 
 有 atomics 时，**原版 2.30.4 通过 12/12 个 collective 用例**（[能力矩阵](benchmarks/rccl-ndebug-ab-2026-09-04/)）。没有 atomics 时，**打过补丁的 HIP runtime 加 `HIP_HOSTCALL_ALLOW_MISSING=1` 也通过 12/12 个 collective**，并完成 TP=2 Qwen3-8B serve 请求（[runtime 实验](benchmarks/clr-hostcall-load-check-2026-09-05/)）。这个 flag 需要对应 runtime 补丁；实际执行 hostcall 会在设备上出错。
 
+从 PCIe 路径到失败内核的完整调查，见文章 [RCCL、atomics 与 hostcall](https://cadamcat.github.io/dual-radeon-vllm/articles/rccl-atomics-hostcall.zh.html)。
+
 ## 双卡实测
 
 **2026-07-25 基线**：原生 vLLM，五个模型、十一档上下文，292 次测量、零错误。**2026-08-24 复测**：带补丁容器，相同梯度，372 次测量、九种配置，其中六种重跑七月配置作对照。四种在 0.25 % 内复现，一种噪声太大无法判断，一种不复现。完整方法见 [benchmarks.md](docs/benchmarks.md)。
 
-每次请求使用随机前缀避开 prefix cache；decode 计时从首 token 到末 token，排除 TTFT。以下日期是实验身份的一部分。
+每次请求使用随机前缀避开 prefix cache；decode 计时从首 token 到末 token，排除 TTFT。以下日期是实验身份的一部分。测量方法与计时检查见文章 [如何测解码](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.zh.html)。
 
 ![解码吞吐：ledger 候选中的配置选择](docs/assets/decode-vs-context-best.svg)
 
@@ -236,6 +219,8 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 
 两臂在同一栈各跑两遍，并反转顺序；路由从 TP worker 内部记录。8 K 出现两个模态，图画的是高模态均值，图注注明了这一点，ledger 仍将该格标为非 chart-grade。[方法与原始行](docs/hybrid-decode-on-rdna.md)。
 
+后续版本与后端对照见文章 [吞吐保留率与深度成本](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.zh.html)；[跨机器保留率复算](docs/depth-cost-cross-machine.md)进一步检验换重复轮次或成本定义后，排名变化是否仍然成立。
+
 **滑窗跳块。** 窗口以内没有可跳过的块，加速比为 **1.00×**；出窗口后收益递增，到 32 K，gemma-3 为 **2.75×**、Muse-Glimmer 为 **3.15×**。实现及已替换掉的旧正确性论证见[正文](docs/sliding-window-block-skip.md)。
 
 ![滑窗跳块收益](docs/assets/sliding-window-block-skip.svg)
@@ -251,6 +236,8 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 每步不止一个 query token 时，Triton 会把 decode 送到串行 2D 路径，绕开分段的 3D flash-decoding。#45450 让它重新进入 3D；Radeon 的 32 K 从 **8.81 → 32.57 tok/s**。A100 输出逐位一致，Radeon 内核误差受一 ULP 界约束。[跨厂商验证](benchmarks/cuda-a100/45450-validation/README.md)与[机制分析](docs/speculative-decoding-on-rdna.md)。
 
 ![投机解码的 2D 与 3D 路径](docs/assets/spec-decode-45450-ladder.svg)
+
+注意力路径如何改变投机解码的成本，见文章 [投机解码](https://cadamcat.github.io/dual-radeon-vllm/articles/speculative-decoding-net-loss.zh.html)。
 
 ### 两张 Radeon 对一张 A100
 
@@ -271,6 +258,8 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 由每 GPU 的 bytes/token 推得的 31B 带宽利用率约 **63 %**，计算值 **62.8 %**，应读作上界。A100 上真正测到的单步权重读取比例是 12B 的 **81.6 %** 和 31B 的 **85.6 %**；“每步把全部 checkpoint 读一遍”的推导在那里高估 **17–23 %**。不能把另一台机器的修正系数直接套回 Radeon（[内存控制器测量](benchmarks/cuda-a100/campaign-2026-09-02/README.md)）。
 
 投机解码会倒转比较：MTP `k=3` 在 32 K 对 Radeon 为 **+7.9 %**，对 A100 为 **−20.1 %**，两机开投机后接近。补丁不匹配，所以它回答各机所测配置能做到什么，不能隔离硬件效果。A100 在 prefill 和批量吞吐的计算优势另看；dense 12B 的 prefill 线性项差 **3.3×**、二次项差 **6.7×**。
+
+文章 [一张 A100 对两张 Radeon](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.zh.html)逐步展开这组比较，以及两边软件路径不同带来的限制。
 
 ### 获取原始数字
 
@@ -305,7 +294,7 @@ python3 verify_doc_figures.py
 | 新卡不总是更快 | B300 在 26B MoE 上输给 H100，在 8B 上赢 **66 %**，记录中的价格是 **1.8×** |
 | NVLink 的差别在第四张卡更明显 | 增加第三、第四张卡的成本，有 NVLink 为 **×1.22**，无 NVLink 为 **×2.71**；双卡无 NVLink 比有 NVLink 高 **20 %** |
 
-交互站的[长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)把本机 09-03 梯度与租用卡并排画到 128 000。不同 checkpoint、backend 或投机设置分别保留身份，不能只按显示名拼接。
+交互站的[长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)把本机 09-03 梯度与租用卡并排画到 128 000。不同 checkpoint、backend 或投机设置分别保留身份，不能只按显示名拼接。文章 [跨机器的内存控制器忙碌比例](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.zh.html)解释这种排序能预测什么、又在哪些地方失效。
 
 ## 限制与绕行方法
 
@@ -345,6 +334,8 @@ python3 verify_doc_figures.py
 **权重加载需要同时看内核、映射方式和 RAM。** 可写 mmap 的 host→device 拷贝会对 resident pages 触发 copy-on-write。先升级有回归的内核；残余映射代价可比较 [#49991 clone flag](https://github.com/vllm-project/vllm/pull/49991)、`safe_open(..., backend="pread")` 和 `--safetensors-load-strategy eager`。pread 的内存占用最小，eager 峰值约为一个 shard 的两倍，所以大单 shard 可能反而放不下。[四个 checkpoint、四条加载路径的记录](benchmarks/loader-flag-kernel-30.json)和[机制说明](docs/open-questions.md)。
 
 `mmap` 的上限看 `MemTotal`，不能只看当时的空闲内存。**21.67 GiB** 文件曾无法映射进该 guest 的 **21.43 GiB**；后来扩到 **23.40 GiB**，加 **8 GiB swap**，该 checkpoint 才能加载。容量需要为映射上限留空间。
+
+内核、映射与 RAM 容量之间的关系，见文章 [权重加载与内核回归](https://cadamcat.github.io/dual-radeon-vllm/articles/weight-loading-19x.zh.html)。
 
 ## 仓库地图
 
