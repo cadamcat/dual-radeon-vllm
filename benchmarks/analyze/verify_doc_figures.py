@@ -181,10 +181,12 @@ def _run_checks(_opened, _audit_state):
         ck(label + ", table is identifiable", "1", len(tables))
         return tables[0] if len(tables) == 1 else []
 
-    def table_number(label, rows, key, value, column, expected):
+    def table_number(label, rows, key, value, column, expected, unit=""):
         cells = [r.get(column, "") for r in rows if r.get(key) == value]
         # A missing/duplicate row or a nonnumeric cell is a named failure.
         claim = cells[0] if len(cells) == 1 else "nan"
+        if unit:
+            claim = claim[:-len(unit)].rstrip() if claim.endswith(unit) else "nan"
         if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", claim):
             claim = "nan"
         ck(label + ", " + value + " " + column, claim, expected)
@@ -222,15 +224,24 @@ def _run_checks(_opened, _audit_state):
                          model, table_rate(jul, cfg, int(context.replace(" ", ""))))
 
     _zh_doc = open(os.path.join(ROOT, "README.zh.md")).read()
-    _zh_rows = table_rows("README.zh decode 07-25", _zh_doc, ("模型", "500", "32K"))
-    for model, cfg in (("gemma-4-26B-A4B(int4 MoE)", "E-26B-tp2"),
-                       ("Qwen3-8B(BF16)", "B-8B-tp2"),
-                       ("gemma-4-12B(w4a16)", "A-12B-tp2"),
-                       ("gemma-4-31B(w4a16)", "C-31B-tp2"),
-                       ("Qwen3.6-27B(hybrid SSM)", "D-27B-tp2")):
-        for column, target in (("500", 500), ("32K", 32000)):
-            table_number("README.zh decode 07-25", _zh_rows, "模型", model,
-                         column, table_rate(jul, cfg, target))
+    _zh_rows = table_rows("README.zh decode 08-24", _zh_doc, ("模型", *_decode_columns))
+    for model, cfg in (("gemma-4-26B-A4B", "E-26B-tp2"),
+                       ("Qwen3-8B", "B-8B-tp2"),
+                       ("gemma-4-12B-it", "A-12B-tp2"),
+                       ("gemma-4-31B-it", "C-31B-tp2"),
+                       ("Muse-Glimmer-30B", "G-30B-tp2"),
+                       ("Qwen3.8-27B", "D8-27B-tp2")):
+        for column, target in _decode_columns.items():
+            table_number("README.zh decode 08-24", _zh_rows, "模型", model,
+                         column, table_rate(aug, cfg, target))
+
+    for lang, doc, context_col in (("en", rm, "Context"), ("zh", _zh_doc, "上下文")):
+        label = "README " + lang + " llama.cpp"
+        rows = table_rows(label, doc, (context_col, "ROCm", "Vulkan"))
+        for backend, column in (("rocm", "ROCm"), ("vulkan", "Vulkan")):
+            source = json.load(open(os.path.join(ROOT, "benchmarks", f"llamacpp-depth-sweep-{backend}.json")))
+            for row in source:
+                table_number(label, rows, context_col, str(row["n_depth"]), column, row["avg_ts"])
 
     # --- benchmarks.md §2, slopes on stock vLLM -----------------------------
     ck("benchmarks.md §2 slope, 8B", "0.118", slope_us(jul, "B-8B-tp2"))
@@ -430,11 +441,6 @@ def _run_checks(_opened, _audit_state):
         _pat = r"@media \(max-width:560px\)\{[^@]*?\." + _sel + r"\s*\{[^}]*overflow-x:auto"
         ck("site css, %s scrolls .%s on a narrow screen" % (_css, _sel), "1",
            1 if re.search(_pat, _t, re.S) else 0)
-
-    ck("README.zh TP2 speedup", "1.70",
-       tps(jul, "B-8B-tp2", 500) / tps(jul, "B-8B-tp1", 500))
-    ck("README.zh 12B speedup", "1.19",
-       tps(jul, "A-12B-tp2", 500) / tps(jul, "A-12B-tp1", 500))
 
     # --- claims README makes about the charts it now shows ------------------
     slopes = sorted(slope_us(aug, c) for c in
@@ -3545,14 +3551,15 @@ def _run_checks(_opened, _audit_state):
     # under it is recounted rather than trusted.
     _rmf = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
     _rmz = open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read()
-    _mo = _rmf[_rmf.index("### Measured on"):_rmf.index("### What is in here")]
-    _moz = _rmz[_rmz.index("### 测过的机器"):_rmz.index("> 这是一页浓缩的中文导览")]
+    _mo, _moz = _rmf, _rmz
+    _machine_en = table_rows("README en machines", _rmf, ("machine", "cards", "whose"))
+    _machine_zh = table_rows("README zh machines", _rmz, ("机器", "卡数", "来源"))
     for _fam in ("RX 7900 XT", "A100 SXM4 80G", "A100 SXM4 40G", "L4 24G", "T4 16G",
                  "H100 80G", "H200 143G", "B300 275G", "RTX PRO 6000 96G"):
         _fre = re.compile(r"(?<!\w)" + re.escape(_fam) + r"(?!\w)")   # "H100 80GB" is not "H100 80G"
         ck("README measured-on, names %s" % _fam, "2", (1 if _fre.search(_mo) else 0) + (1 if _fre.search(_moz) else 0))
     ck("README measured-on, the two languages have the same rows", "1",
-       1 if _mo.count("\n| ") == _moz.count("\n| ") else 0)
+       1 if len(_machine_en) == len(_machine_zh) else 0)
     _mfam = {"RX 7900 XT": "RX 7900 XT", "A100-SXM4-80GB": "A100 SXM4 80G", "A100-SXM4-40GB": "A100 SXM4 40G",
              "L4": "L4 24G", "T4": "T4 16G", "H100-80GB-HBM3": "H100 80G", "H100-80GB-HBM3-x2": "H100 80G",
              "H100-80GB-HBM3-x4": "H100 80G", "H200-143GB-HBM3e": "H200 143G", "B300-SXM6": "B300 275G",
@@ -3587,8 +3594,8 @@ def _run_checks(_opened, _audit_state):
         # a row is one or two machines (split on the middle dot) times the card
         # counts its second cell names: "L4 24G · T4 16G | 1" is two, "H100 80G | 1, 2 and 4" is three
         ck("README measured-on, and the table has a cell for each", "13",
-           sum((c.split("|")[1].count("·") + 1) * len(re.findall(r"\d+", c.split("|")[2]))
-               for c in _mo.split("\n") if c.startswith("| ") and not c.startswith("| machine") and "---" not in c))
+           sum((r["machine"].count("·") + 1) * len(re.findall(r"\d+", r["cards"]))
+               for r in _machine_en))
         ck("README measured-on, checkpoints", "8", len({r["model"] for r in _RTD + _RTP}))
         ck("README measured-on, request-level measurements", _msent.group(1).replace(" ", ""), _mreq)
         ck("README measured-on, results files", _msent.group(2), _mfiles)
@@ -3957,9 +3964,6 @@ def _run_checks(_opened, _audit_state):
     _l4c = [r["decode_tok_s"] for r in _l4 if r["date"] != "2026-09-03"]
     ck("README C beyond, the L4 control's worst disagreement", "0.9",
        max(abs(_l4m[0] / c - 1) * 100 for c in _l4c) if _l4m and _l4c else -1)
-    ck("README C zh, the same numbers", "10",
-       sum(1 for n in ("62", "3.2", "4.8 %", "21.8 %", "2.75", "3.15", "3.4", "8.81", "32.57", "1.70") if n in _rCz))
-    ck("README C zh, and the kernel line's numbers", "2", sum(1 for n in ("32 次贪心生成 32 次一致", "四个格子里有两个") if n in _rCz))
     ck("README C zh, the pair's line is filled in", "0", _rCz.count("[PAIR_128K_LINE"))
     # --- gfx1100-w4a16-54706: the kernel A/B, 2026-09-03 --------------------
     # Every cell of the README's table is recomputed from the eight sequences
@@ -4161,9 +4165,6 @@ def _run_checks(_opened, _audit_state):
     ck("README, the campaign table's Qwen3.8 at 32K", "10.68",
        next(r["decode_tok_s"] for r in led if r["cfg"] == "D8-27B-tp2"
             and r["ctx"] == 32000 and r["date"] == "2026-08-24"))
-    ck("README.zh, unpatched at 32K", "3.8", q32s["decode_tok_s"])
-    ck("README.zh, and the ratio between them", "9.5",
-       q32p["decode_tok_s"] / q32s["decode_tok_s"], tol=0.01)
     ck("README, the solid ms line at 32K", "261.9", 1000 / q32s["decode_tok_s"])
     ck("README, the dashed one", "27.7", 1000 / q32p["decode_tok_s"])
 
@@ -8285,9 +8286,6 @@ def _run_checks(_opened, _audit_state):
        sum(open(f, encoding="utf-8").read().count("2.27.7-b43") for f in _pages))
     ck("root-cause §1 chain row states the 7.2.1 boundary", "1",
        1 if "| 5 | → RCCL from ROCm 7.2.1 device kernels need hostcall |" in _rcrm else 0)
-    ck("README.zh states the same boundary", "1",
-       1 if "而 RCCL 从 ROCm 7.2.1 起的设备内核恰好全都声明了它"
-       in open(os.path.join(ROOT, "README.zh.md"), encoding="utf-8").read() else 0)
     ck("root-cause §2 prints the ROCm 10.0 row", "1",
        1 if f"| ROCm 10.0 (2.30.4) | **{_root_10[0]['hostcall_kernels']}** | fails |"
        in _rcrm else 0)
@@ -9907,6 +9905,167 @@ def _run_checks(_opened, _audit_state):
        str((1e6 / tps(_f93, "D8-27B-tp2-long", 32000)
             - 1e6 / tps(_f93, "D8-27B-tp2-long", 500)) / (32000 - 500)),
        _order_qwen["endpoint_us"], tol=1e-10)
+    # Chinese README publishes the same experiments at greater depth. Reuse
+    # their raw-derived values, but read this page's own numbers: comparing
+    # translations to each other would let a shared error pass. Patterns bind
+    # measurements and units; Markdown emphasis, wrapping and headings are free.
+    _zh_jul, _zh_aug = decode(JULY), decode(AUG)
+    _zh_md = lambda data, cfg, ctx: statistics.mean(data[(cfg, ctx)])
+    _zh_pool = lambda arm, ctx: statistics.mean(q38[(tag, arm, ctx)]["decode_tok_s"] for tag in ("A", "B"))
+    _zh_stock_pair = {r["ctx"]: r for r in _XD if r["cfg"] == "C-31B-tp2" and r["date"] == "2026-07-25" and r["spec"] is None}
+    _zh_stock_a100 = {r["ctx"]: r for r in _XD if r["cfg"] == "G31" and r["date"] == "2026-08-30" and r["spec"] is None}
+    _zh_sw = json.load(open(swin_f))
+    _zh_flat = re.sub(r"\s+", " ", _zh_doc.replace("**", "").replace("`", ""))
+
+    def zh_numbers(label, pattern, *values):
+        matches = list(re.finditer(pattern, _zh_flat))
+        groups = [m.groups() for m in matches] or [("nan",) * len(values)]
+        for occurrence, claims in enumerate(groups, 1):
+            for i, value in enumerate(values):
+                claim = claims[i].replace(" ", "").replace("−", "-")
+                ck(f"README zh {label}, occurrence {occurrence} value {i + 1}", claim, value)
+
+    zh_numbers("GQA speedup", r"自定义内核比回退路径快 ([\d.]+)–([\d.]+)×",
+               min(_excluded), max(_excluded))
+    zh_numbers("gsm8k denominator", r"跑完 ([\d ]+) 题 gsm8k", len(_g8s))
+    for filt, word in (("strict-match", "strict"), ("flexible-extract", "flexible")):
+        zh_numbers("gsm8k " + word, word + r"(?: 正确题数)?\s*改变 ([−+\d]+) 题",
+                   sum(_g8w[i][filt]["exact_match"] - _g8s[i][filt]["exact_match"] for i in _g8s))
+    zh_numbers("depth-cost span", r"深度成本随软件栈相差 ([\d.]+)×",
+               max(_front_slopes) / min(_front_slopes))
+    zh_numbers("depth-cost slopes", r"成本为 ([\d.]+) → ([\d.]+) → ([\d.]+) µs", *_front_slopes)
+    zh_numbers("shared ladder", r"共同的 ([\d ]+)–([\d ]+) 档位", min(_shared_rungs), min(32000, _ceiling))
+    zh_numbers("backend depth", r"到 ([\d ]+)，Triton 相对", max(set(_da) & set(_db)))
+    zh_numbers("backend trade", r"decode 为 ([\d.]+)×，prefill 为 ([\d.]+)×",
+               _db[128000] / _da[128000], _pb97[128000] / _pa97[128000])
+    _zh_collective = {n: [_ar(f, n) for f in os.listdir(_AR) if f.endswith("-results.jsonl")]
+                      + [next(r["t_graph_us"] for r in _rad if r["ntok"] == n)]
+                      for n in (1, 16384)}
+    zh_numbers("collective range", r"集合通信带宽跨 ([\d.]+) 倍.*?延迟端只跨 ([\d.]+) 倍",
+               *(max(_zh_collective[n]) / min(_zh_collective[n]) for n in (16384, 1)))
+    for name, cfg in (("Muse-Glimmer", "MG30"), ("混合 SSM 的 27B", "Q38"), ("稠密 31B", "G31")):
+        zh_numbers("H100 retention " + cfg, name + r" 吞吐下降 ([\d.]+) %" if cfg == "MG30"
+                   else name + r" 下降 ([\d.]+) %", 100 * (1 - _zh_md(_MH, cfg, 128000) / _zh_md(_MH, cfg, 500)))
+    for name, cfg in (("12B", "A-12B-tp2-long"), ("有界窗口的 Muse-Glimmer", "G-30B-tp2-long")):
+        zh_numbers("Radeon long retention " + cfg, name + r" (?:到末端)?下降 ([\d.]+) %",
+                   100 * (1 - tps(_f93, cfg, 128000) / tps(_f93, cfg, 500)))
+
+    zh_numbers("gemma-3 note", r"gemma-3-27b 的三个值为 ([\d.]+) / ([\d.]+) / ([\d.]+) tok/s",
+               *(tps(_zh_aug, "F-27B-tp2", t) for t in (500, 8000, 32000)))
+    zh_numbers("old chart Qwen", r"在表里约 ([\d.]+) tok/s，在旧图深端约 ([\d.]+) tok/s",
+               tps(_zh_aug, "D8-27B-tp2", 32000), q32p["decode_tok_s"])
+    zh_numbers("Muse slope", r"本场深度斜率 ([\d.]+) µs", slope_us(_zh_aug, "G-30B-tp2"))
+    zh_numbers("31B offset", r"除 31B 的 ([−\d.]+) %", offset(_zh_jul, _zh_aug, "C-31B-tp2"))
+    zh_numbers("checkpoint comparison", r"七月 Qwen3.6 的 ([\d.]+)×，斜率浅 ([\d.]+)×",
+               tps(_zh_aug, "D8-27B-tp2", 32000) / tps(_zh_jul, "D-27B-tp2", 32000),
+               slope_us(_zh_jul, "D-27B-tp2") / slope_us(_zh_aug, "D8-27B-tp2"))
+    zh_numbers("symmetry AB", r"在 1 K 快 ([\d.]+)×",
+               aby[("sym", 1024)]["decode_tok_s"] / aby[("asym", 1024)]["decode_tok_s"])
+    zh_numbers("two 27B models", r"两个 27B 的短上下文吞吐相差 ([\d.]+)×",
+               tps(_zh_aug, "F-27B-tp2", 500) / tps(_zh_aug, "D8-27B-tp2", 500))
+    _front_number("August second-card 12B headline", r"and ([\d.]+)× on w4a16",
+                  tps(_zh_aug, "A-12B-tp2", 500) / tps(_zh_aug, "A-12B-tp1", 500))
+    _front_number("August second-card 12B table", r"TP=1 → TP=2 only \*\*([\d.]+)×",
+                  tps(_zh_aug, "A-12B-tp2", 500) / tps(_zh_aug, "A-12B-tp1", 500))
+    for model, cfg in (("BF16", "B-8B"), ("w4a16", "A-12B")):
+        zh_numbers("second card " + model, model + r" 上值 ([\d.]+)×",
+                   tps(_zh_aug, cfg + "-tp2", 500) / tps(_zh_aug, cfg + "-tp1", 500))
+    for cfg, model in (("B-8B", "Qwen3-8B"), ("A-12B", "gemma-4-12B-it")):
+        zh_numbers("decode table second card " + cfg,
+                   r"\| " + model + r" \|(?:[^|]*\|){4}[^|]*?TP=1 → TP=2 为 ([\d.]+)×",
+                   tps(_zh_aug, cfg + "-tp2", 500) / tps(_zh_aug, cfg + "-tp1", 500))
+
+    _five_zh = table_rows("README zh five machines", _zh_doc, ("机器", "@500", "@32 K", "保留率"))
+    for key, name in (("a100", "A100 80G"), ("pair", "2× RX 7900 XT"), ("one", "RX 7900 XT"),
+                      ("l4", "L4 24G"), ("t4", "Tesla T4 16G")):
+        for col, expected in (("@500", _m5(key, 500)), ("@32 K", _m5(key, 32000)),
+                              ("保留率", 100 * _m5(key, 32000) / _m5(key, 500))):
+            table_number("README zh five machines", _five_zh, "机器", name, col, expected, "%" if col == "保留率" else "")
+    for label, pattern, num, den in (
+            ("A100 versus pair", r"A100 相对双卡的领先从 ([\d.]+)× 缩到 ([\d.]+)×", "a100", "pair"),
+            ("second Radeon", r"第二张 Radeon 的收益从 ([\d.]+)× 缩到 ([\d.]+)×", "pair", "one"),
+            ("T4 versus L4", r"T4 相对 L4 从浅端 ([\d.]+)× 降到深端 ([\d.]+)×", "t4", "l4")):
+        zh_numbers(label, pattern, *(_m5(num, t) / _m5(den, t) for t in (500, 32000)))
+    _stock_zh = table_rows("README zh two versus one", _zh_doc, ("上下文", "2× RX 7900 XT", "A100 80G", "A100 领先"))
+    for name, ctx in (("500", 500), ("2 K", 2000), ("8 K", 8000), ("16 K", 16000), ("32 K", 32000)):
+        for col, expected in (("2× RX 7900 XT", _zh_stock_pair[ctx]["decode_tok_s"]),
+                              ("A100 80G", _zh_stock_a100[ctx]["decode_tok_s"]),
+                              ("A100 领先", _zh_stock_a100[ctx]["decode_tok_s"] / _zh_stock_pair[ctx]["decode_tok_s"])):
+            table_number("README zh two versus one", _stock_zh, "上下文", name, col, expected, "×" if col == "A100 领先" else "")
+
+    zh_numbers("hybrid ms", r"每 token 为 ([\d.]+) ms；应用 #45916 后为 ([\d.]+) ms",
+               1000 / _zh_pool("stock", 32768), 1000 / _zh_pool("splitkv", 32768))
+    zh_numbers("hybrid speedup", r"深端快 ([\d.]+)×", _zh_pool("splitkv", 32768) / _zh_pool("stock", 32768))
+    zh_numbers("hybrid slopes", r"斜率从 ([\d.]+) 降到 ([\d.]+) ms/千 token",
+               *((1000 / _zh_pool(a, 32768) - 1000 / _zh_pool(a, 1024)) / ((32768 - 1024) / 1000)
+                 for a in ("stock", "splitkv")))
+    _sw_zh = []
+    for key in ("gemma-3-27b-it-quantized.w4a16", "Muse-Glimmer-30B-INT4"):
+        curve = _zh_sw["models_affected"][key]["depth_curve_n3"]
+        deep = next(r for r in curve if r["depth"] == 32768)
+        _sw_zh.append(deep["before_median_ms"] / deep["after_median_ms"])
+    zh_numbers("window speedups", r"32 K 获益 ([\d.]+)× 和 ([\d.]+)×", *_sw_zh)
+    zh_numbers("window model speedups", r"gemma-3 (?:为|的) ([\d.]+)×、Muse-Glimmer (?:为|的) ([\d.]+)×", *_sw_zh)
+    zh_numbers("prefill short ratio", r"八月 8B 在 500 档比 MoE 快 ([\d.]+)×", ba("B-8B-tp2", 500) / ba("E-26B-tp2", 500))
+    zh_numbers("prefill peaks", r"MoE 在 ([\d.]+) K、hybrid 在 ([\d.]+) K；同一 MoE 七月却在 ([\d.]+) K",
+               max(pre_a["E-26B-tp2"], key=lambda t: ba("E-26B-tp2", t)) / 1000,
+               max(pre_a["D8-27B-tp2"], key=lambda t: ba("D8-27B-tp2", t)) / 1000,
+               max(pre_j["E-26B-tp2"], key=lambda t: bj("E-26B-tp2", t)) / 1000)
+    zh_numbers("MTP backend losses", r"MTP 在 30 K 为 ([−+\d.]+) %、50 K 为 ([−+\d.]+) %",
+               pct(tf30["mtp"], tf30["nospec"]), pct(tf50["mtp"], tf50["nospec"]))
+    zh_numbers("MTP off speedup", r"关闭 MTP 快 ([\d.]+)×", tf50["nospec"] / tf50["mtp"])
+    zh_numbers("45450 rates", r"32 K 从 ([\d.]+) → ([\d.]+) tok/s", sweep("stock45450")[32768], sweep("p45450")[32768])
+    zh_numbers("weight read share", r"12B 的 ([\d.]+) % 和 31B 的 ([\d.]+) %",
+               _fac["gemma-4-12B-it"] * 100, _fac["gemma-4-31B-it"] * 100)
+    zh_numbers("31B inferred bandwidth", r"计算值 ([\d.]+) %", AART["bandwidth"]["subject_pct"])
+    zh_numbers("MoE ratios", r"八月 MoE 比 8B 快 ([\d.]+)×，比更大的 31B 快 ([\d.]+)×",
+               *(tps(_zh_aug, "E-26B-tp2", 500) / tps(_zh_aug, c, 500) for c in ("B-8B-tp2", "C-31B-tp2")))
+    zh_numbers("July hybrid slope", r"Qwen3.6 每增加一个上下文 token 成本 ([\d.]+) µs，.*?dense 8B 的 ([\d.]+)×",
+               slope_us(_zh_jul, "D-27B-tp2"), slope_us(_zh_jul, "D-27B-tp2") / slope_us(_zh_jul, "B-8B-tp2"))
+    zh_numbers("llama rates", r"512 token 时 ([\d.]+) tok/s，32 K 时 ([\d.]+) tok/s", _llama_by[512], _llama_by[32768])
+    zh_numbers("llama ratios", r"比七月 stock vLLM 快 ([\d.]+)×、([\d.]+)×",
+               _llama_by[512] / tps(_zh_jul, "D-27B-tp2", 500), _llama_by[32768] / tps(_zh_jul, "D-27B-tp2", 32000))
+    zh_numbers("July record counts", r"含 ([\d ]+) 条记录：([\d ]+) prefill、([\d ]+) decode，另有 ([\d ]+) 条",
+               sum(_kinds.values()), _kinds["prefill"], _kinds["decode"],
+               sum(v for k, v in _kinds.items() if k not in ("prefill", "decode")))
+    zh_numbers("engine init", r"MoE 的 init_engine_s 为 ([\d.]+) s，12B TP=2 为 ([\d.]+) s；12B TP=1 两次启动为 ([\d.]+) s、([\d.]+) s",
+               meta_by["E-26B-tp2"][0], meta_by["A-12B-tp2"][0], *meta_by["A-12B-tp1"])
+    zh_numbers("RCCL stock", r"原版 2.30.4 通过 (\d+)/(\d+) 个 collective",
+               _cap[("atomics_present", "stock2304")]["correctness_passed"], _cap[("atomics_present", "stock2304")]["correctness_total"])
+    zh_numbers("RCCL opt-in", r"HIP_HOSTCALL_ALLOW_MISSING=1 也通过 (\d+)/(\d+) 个 collective",
+               _ccC[("atomics_absent", "patched", "collective")]["correctness_passed"], int(re.search(r"\d+/(\d+) cases pass", _ccC[("atomics_absent", "patched", "collective")]["log_tail"]).group(1)))
+    zh_numbers("hostcall cost", r"未修复构建的 all-reduce 延迟高 ([\d.]+)–([\d.]+) %", (min(_bmed) - 1) * 100, (max(_bmed) - 1) * 100)
+    zh_numbers("collective timings", r"batch-1 collective 为 ([\d.]+)–([\d.]+) µs",
+               min(r["t_graph_us"] for r in _ar1.values()), max(r["t_graph_us"] for r in _ar1.values()))
+    zh_numbers("B300 B8 gain", r"在 8B 上赢 ([\d.]+) %", 100 * (_zh_md(_MB, "B8", 500) / _zh_md(_MH, "B8", 500) - 1))
+    zh_numbers("fourth card cost", r"有 NVLink 为 ×([\d.]+)，无 NVLink 为 ×([\d.]+)",
+               *(_ar(p + "-x4-results.jsonl", 1) / _ar(p + "-x2-results.jsonl", 1)
+                 for p in ("H100-80GB-HBM3", "RTX-PRO-6000-Blackwell")))
+
+    _zh_kernel_rows = [r for model in ("muse", "gemma3") for r in
+                       json.load(open(os.path.join(_k1, f"nondet-c1-pr54706-{model}-ROCM_ATTN-p1.json")))["rows"]]
+    zh_numbers("greedy repeats", r"([\d]+) 次贪心生成 ([\d]+) 次一致",
+               sum(r["repeats"] for r in _zh_kernel_rows),
+               sum(r["repeats"] for r in _zh_kernel_rows if r["distinct"] == 1))
+    zh_numbers("greedy baseline", r"([\d]+) 个格子里有 ([\d]+) 个会变",
+               sum(1 for k in _k1cells if k[0] == "baseline"),
+               sum(1 for k, distinct in _k1cells.items() if k[0] == "baseline" and distinct > 1))
+    _zh_meta = {r["cfg"]: r for r in jmeta}
+    zh_numbers("KV capacity", r"KV pool 从 ([\d ]+) → ([\d ]+) tokens",
+               *(int(_zh_meta[c]["kv_tokens"]) for c in ("A-12B-tp1", "A-12B-tp2")))
+    zh_numbers("KV concurrency", r"标称并发从 ([\d.]+)× → ([\d.]+)×",
+               *(float(_zh_meta[c]["concurrency"]) for c in ("A-12B-tp1", "A-12B-tp2")))
+    zh_numbers("A100 prefill", r"12B 的 prefill 线性项差 ([\d.]+)×、二次项差 ([\d.]+)×",
+               *(_pf_fit[_rad12][k] / _pf_fit[_a100_12][k] for k in ("b_us_tok", "c_ns_tok2")))
+    _zh_hmm = json.load(open(hmm_f))["states"]
+    _zh_before = float(re.search(r"upgrading: ([\d.]+) ms", _zh_hmm[-1]["note"]).group(1))
+    zh_numbers("kernel upgrade", r"从 ([\d .]+) ms → ([\d.]+) ms", _zh_before, _zh_hmm[-1]["rw_p_resident"])
+    zh_numbers("loader flag maximum", r"放不进时值 ([\d.]+)×", LART["fig2"]["best_flag"])
+    _zh_mtp_rates = {r["cfg"]: r["decode_tok_s"] for r in _XD if r["date"] == "2026-08-29" and r["ctx"] == 32000}
+    zh_numbers("MTP cross-machine", r"对 Radeon 为 ([+−\d.]+) %，对 A100 为 ([+−\d.]+) %",
+               100 * (_zh_mtp_rates["G31-mtp-p45450-tp2"] / _zh_mtp_rates["G31-tp2"] - 1),
+               100 * (_zh_mtp_rates["A100-G31-mtp-p45450"] / _zh_mtp_rates["A100-G31"] - 1))
+
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True
     _print_tracked_input_violations(_untracked)

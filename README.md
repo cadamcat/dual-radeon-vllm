@@ -71,7 +71,7 @@ Each finding links to the experiment that supports it.
   commit, 32 of 32 greedy generations come back identical where the same build
   without it varies in two of four cells, backend held
   ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
-- **The second Radeon buys 1.70× on BF16 and 1.19× on w4a16**, on the August stack; the RCCL fix
+- **The second Radeon buys 1.70× on BF16 and 1.18× on w4a16**, on the August stack; the RCCL fix
   and the measured configurations follow below
   ([the pair, measured](#the-pair-measured)).
 
@@ -344,15 +344,18 @@ does not ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-se
 
 ![decode throughput vs context length, best known configuration](docs/assets/decode-vs-context-best.svg)
 
-One line per model, each from whichever stack measured it best, with what that
+One line per model, selected among the ledger's candidates through August, with what that
 took written under the chart: solid needs nothing but a released vLLM, dashed
 needs a patch that is not merged. It is drawn from
 [`benchmarks/ledger.jsonl`](benchmarks/ledger.jsonl), which carries the date,
-vLLM, ROCm and patch list of every point.
+vLLM, ROCm and patch list of every point. September campaigns are outside this
+figure's candidate set; the [newer backend A/B](benchmarks/campaign-2026-09-07/)
+and [interactive long-context figures](https://cadamcat.github.io/dual-radeon-vllm/#figlong)
+carry the later measurements.
 
 **The chart and the table below answer different questions, and Qwen3.8-27B is
 where that shows.** The table is one campaign, run on one afternoon on one
-stack; the chart is the best each model has been measured at. That model reads
+stack; the chart selects across the ledger's candidates through August. That model reads
 10.7 tok/s at 32 K in the table and 36.1 on the chart, and the difference is
 vLLM 0.27 with [#45916](https://github.com/vllm-project/vllm/pull/45916)
 applied ([the A/B](docs/hybrid-decode-on-rdna.md)).
@@ -368,7 +371,7 @@ chart and table — lives in [benchmarks.md](docs/benchmarks.md).
 |---|---|---:|---:|---:|---|
 | **gemma-4-26B-A4B** | int4, 128-expert **MoE** | **107.7** | 92.6 | **72.9** | 🟢 fastest of the nine — *26-min first engine start; warm cost not measured here* |
 | Qwen3-8B | BF16 dense | 79.5 | 73.4 | 61.4 | 🟢 TP=1 → TP=2 is **1.70×** |
-| gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.19×** — see below |
+| gemma-4-12B-it | w4a16 QAT dense | 59.9 | 52.0 | 41.4 | 🟢 TP=1 → TP=2 only **1.18×** — see below |
 | **Muse-Glimmer-30B** | int4, **sliding window 2048** | 43.7 | 37.8 | **37.4** | 🟢 flat from its window onward. 0.122 µs slope, second only to BF16 |
 | **gemma-4-31B-it** | w4a16 QAT dense | 42.8 | 36.6 | 29.3 | 🟢 the workhorse. 265 W × 2 synchronised |
 | **Qwen3.8-27B** | AWQ int4 (asymmetric), **hybrid SSM** | 12.3 | 11.7 | **10.7** | 🟢 **2.51×** the July Qwen3.6 at 32 K, slope 12.4× flatter. Slowest in this campaign; on vLLM 0.27 with #45916 it is not — see the chart above |
@@ -391,12 +394,24 @@ three lines read as one.
 
 ### llama.cpp, for comparison
 
-| Model | Mode | Decode |
-|---|---|---|
-| gemma-4-12B | single card, Vulkan | **64.9 tok/s** |
-| gemma-4-31B | dual card, Vulkan layer split | 27.0 tok/s |
-| Qwen3.6-27B | dual card, Vulkan layer split | 27.7 tok/s |
-| **Qwen3.6-27B** | **+ MTP speculative decoding** | **34.5 tok/s** 🟢 |
+The committed comparison is Qwen3.6-27B Q4_K_M, two cards, layer split,
+llama-bench build `47c786924`, with 128 generated tokens per repetition.
+It compares the ROCm and Vulkan backends on that checkpoint, not the newer
+Qwen3.8 vLLM arms. Rates are decode tok/s at each recorded context depth.
+
+| Context | ROCm | Vulkan |
+|---:|---:|---:|
+| 512 | 24.89 | 28.61 |
+| 4096 | 24.56 | 28.27 |
+| 8192 | 24.17 | 27.79 |
+| 16384 | 21.35 | 27.04 |
+| 24576 | 22.48 | 26.43 |
+| 32768 | 21.84 | 26.04 |
+
+Raw records: [ROCm](benchmarks/llamacpp-depth-sweep-rocm.json) and
+[Vulkan](benchmarks/llamacpp-depth-sweep-vulkan.json). The separate
+[gemma-4 layer/tensor experiment](benchmarks/llamacpp-layer-vs-tensor.json)
+records its process-to-process spread and the layer-split restore failure.
 
 ### The charts worth the scroll
 
@@ -459,7 +474,7 @@ to a repeatability check on the whole apparatus — is in
 **What one context token costs at decode time.** The slope is the number that
 matters: it is milliseconds added per token of context, so a flat line is a
 model whose decode does not care how long the conversation is. Every line here
-is that model at its best known configuration.
+uses the same selection through August as the static throughput chart above.
 
 ![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
 
@@ -617,11 +632,12 @@ file each came from, and exits non-zero if one disagrees.
 - **Architecture beats parameter count on the August stack.** Its fastest model is the 26B MoE,
   ahead of the 8B dense by **1.355×** and of the *larger* 31B dense by **2.513×**,
   both measured in the 2026-08-24 campaign.
-- **Eager and graph-captured runs are different configurations.** `--enforce-eager` costs **3.8–7.2×** on this stack and
-  invents artefacts (asymmetric power, context-independence). Two wrong conclusions
+- **Eager and graph-captured runs are different configurations.** The early `--enforce-eager` runs were recorded as **3.8–7.2×** slower,
+  with asymmetric power and context-independence; their raw output was not retained.
+  The compiled campaign has committed rows. Two wrong conclusions
   in this repository came from exactly that, including "MoE is mediocre, ~15 tok/s",
   which was really 107.8.
-- **What the second card buys depends on the model.** BF16 scales 1.70×; w4a16 only
+- **What the second card buys depends on the model.** In July, BF16 scales 1.70×; w4a16 only
   1.19×, because the quantised model was never bandwidth-bound in the first place.
   For quantised models the second card mostly buys *capacity*: the 12B's KV pool goes
   151 808 → 354 707 tokens, concurrency 4.60× → 10.75×.
@@ -860,6 +876,13 @@ for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
 
 Every correction this page has carried stays on it. The bullets above now
 state what holds; what they used to say, and what changed it, is here.
+
+**Source audit, corrected 2026-09-08.** The earlier four-entry
+Vulkan/MTP summary had no corresponding rows in the committed llama.cpp records
+located during this audit. It is replaced by the recorded Qwen3.6 ROCm/Vulkan
+depth sweep. The 12B second-card ratio in the August headline and table is
+1.18×; 1.19× belongs to July. The eager comparison now identifies its missing
+raw output.
 
 **Stack scope, corrected 2026-09-08.** The long-context advice still told
 readers to avoid hybrid SSM and disable MTP, after the matched attention A/Bs
