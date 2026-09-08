@@ -8403,8 +8403,7 @@ def _run_checks(_opened, _audit_state):
        1 if (_adderek and f"| ROCm 7.2.4 (2.27.7) | {_adderek.group(1)} (reported) | fails |"
              in _rcrm) else 0)
     ck("root-cause §2 says whose count the 7.2.4 row is", "1",
-       1 if ("We dissected the shipped libraries. The 7.2.4 row is the one exception: it is a\n"
-             "third party's count of a distribution package, @adderek's in\n"
+       1 if ("counts marked *(reported)* come from the threads — 7.2.4 from @adderek in\n"
              in _rcrm) else 0)
     # the 10.0 row: the count comes from that container's own cross-target scan,
     # not from a literal, and the prose above the table has to keep counting the
@@ -8445,8 +8444,11 @@ def _run_checks(_opened, _audit_state):
        in _rcrm else 0)
     _read_here = sum(1 for _l in _rcrm.splitlines()
                      if _l.startswith("| ROCm ") and "(reported)" not in _l)
+    # Two of the five rows have no scan behind them -- ROCm 7.0's library is gone
+    # from this box and 7.1.1's was never on it -- so both counts are marked
+    # (reported), which is also what makes this arithmetic right.
     ck("root-cause §2 says how many rows it read itself", "1",
-       1 if f"the other {('one','two','three','four','five')[_read_here - 1]}\nwere read here"
+       1 if f"The {('one','two','three','four','five')[_read_here - 1]} 2.30.4 rows were read here"
        in _rcrm else 0)
     ck("root-cause §2 prints the RCCL kernel families", "1",
        1 if ("`ncclDevKernel_Generic_{1,2,4}`" in _rcrm

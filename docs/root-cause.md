@@ -47,16 +47,16 @@ hip_module.cpp:605   hipModuleLaunchKernel: Returned hipErrorIllegalState
 Community reports say "downgrade librccl to the ROCm 7.1.1 build and it works."
 That is true, and it is *consistent with* — in fact evidence *for* — this root cause.
 
-We dissected the shipped libraries. The 7.2.4 row is the one exception: it is a
-third party's count of a distribution package, @adderek's in
+We dissected the shipped libraries. The two 2.30.4 rows were read here; the
+counts marked *(reported)* come from the threads — 7.2.4 from @adderek in
 [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/issues/6520), quoted with
-its two rebuilt arms in [open-questions §3](open-questions.md); the other four
-were read here.
+its two rebuilt arms in [open-questions §3](open-questions.md), and the two
+zeros from the downgrade reports.
 
 | Shipped RCCL | `hidden_hostcall_buffer` count | Behaviour on a no-atomics platform |
 |---|---|---|
-| ROCm 7.0 (2.26.6) | 0 | works |
-| ROCm 7.1.1 (2.27.7-b38) | **0** | works |
+| ROCm 7.0 (2.26.6) | 0 (reported) | works |
+| ROCm 7.1.1 (2.27.7-b38) | **0** (reported) | works |
 | ROCm 7.2.4 (2.27.7) | 6 (reported) | fails |
 | ROCm 7.13 / 7.14 (2.30.4) | **13** (3 Generic + 10 Symk) | fails |
 | ROCm 10.0 (2.30.4) | **13** | fails |

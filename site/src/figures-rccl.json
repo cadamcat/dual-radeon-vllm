@@ -30,12 +30,12 @@
  "shipped": [
   {
    "rccl": "ROCm 7.0 (2.26.6)",
-   "hostcall": "0",
+   "hostcall": "0 (reported)",
    "behaviour": "works"
   },
   {
    "rccl": "ROCm 7.1.1 (2.27.7-b38)",
-   "hostcall": "0",
+   "hostcall": "0 (reported)",
    "behaviour": "works"
   },
   {
