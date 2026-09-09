@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""verify_doc_figures.py — recompute every headline figure the prose quotes.
+"""verify_doc_figures.py — verify registered figures and their evidence.
 
 The documents in this repository make quantitative claims and the point of the
 repository is that each one is derivable from a committed data file. This script
@@ -8,6 +8,9 @@ how to recompute it from the JSONL. Exit status is non-zero if any disagrees, so
 this can gate a change. The total counts individual comparisons, including
 provenance and link checks. Recommendations and experimental scope require
 review of the evidence; document layout and wording are editorial choices.
+Some legacy checks still compare code-side snapshots with data. Those are data
+regressions, not bindings to the current published text; a green total alone
+does not establish complete coverage of document edits.
 
     python3 verify_doc_figures.py            # all registered checks
     python3 verify_doc_figures.py -v         # show every check, not only failures
@@ -165,9 +168,11 @@ def _run_checks(_opened, _audit_state):
     # Read the published tables: code-side copies of their values cannot
     # detect a changed cell. Headers key columns, so column order and Markdown
     # emphasis/spacing are free to change. Campaign selection stays historical.
+    def prose_text(text):
+        return " ".join(text.replace("**", "").replace("`", "").replace("−", "-").split())
+
     def md_cells(line):
-        return [" ".join(c.replace("**", "").replace("`", "").split())
-                for c in line.strip().strip("|").split("|")]
+        return [prose_text(c) for c in line.strip().strip("|").split("|")]
 
     def table_rows(label, text, columns):
         tables, current = [], []
@@ -195,6 +200,27 @@ def _run_checks(_opened, _audit_state):
         values = data.get(cfg, {}).get(target, {}).get("tps", [])
         # A misselected arm can lack a rung: report that cell by name too.
         return mean(values) if values else float("nan")
+
+    def published_numbers(label, text, pattern, *expected):
+        """Bind a numeric clause, preserving its printed precision.
+
+        Normalise wrapping/emphasis, not values or units. Missing, malformed
+        and duplicate clauses fail by name rather than silently skipping a check.
+        Patterns identify the quantity; nonnumeric conclusions need evidence
+        review, not frozen sentences.
+        """
+        matches = list(re.finditer(pattern, prose_text(text)))
+        for i, value in enumerate(expected, 1):
+            claim = matches[0].group(i) if len(matches) == 1 else "nan"
+            claim = claim.replace(" ", "")
+            words = "zero one two three four five six seven eight nine ten eleven twelve".split()
+            if claim.lower() in words:
+                claim = str(words.index(claim.lower()))
+            if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", claim):
+                claim = "nan"
+            ck(f"{label}, value {i}", claim, value)
+
+    number = r"([+-]?\d+(?:\.\d+)?)"
 
     _decode_columns = {"500 tok": 500, "8 K": 8000, "32 K": 32000}
     _decode_rows = table_rows("README decode 08-24", rm, ("Model", *_decode_columns))
@@ -243,62 +269,112 @@ def _run_checks(_opened, _audit_state):
             for row in source:
                 table_number(label, rows, context_col, str(row["n_depth"]), column, row["avg_ts"])
 
-    # --- benchmarks.md §2, slopes on stock vLLM -----------------------------
-    ck("benchmarks.md §2 slope, 8B", "0.118", slope_us(jul, "B-8B-tp2"))
-    ck("benchmarks.md §2 slope, 26B", "0.142", slope_us(jul, "E-26B-tp2"))
-    ck("benchmarks.md §2 slope, 12B", "0.228", slope_us(jul, "A-12B-tp2"))
-    ck("benchmarks.md §2 slope, 31B", "0.339", slope_us(jul, "C-31B-tp2"))
-    ck("benchmarks.md §2 slope, 27B SSM", "4.840", slope_us(jul, "D-27B-tp2"))
+    # --- benchmarks.md, July slopes and the August comparison --------------
+    # These formerly compared code-side copies (including 37.99) with data:
+    # changing a published rate to 97.99 still passed. Bind the tables and
+    # numeric clauses themselves; table order and prose layout are not facts.
+    _slope_col = "ms/token added per context token"
+    _stock_slopes = table_rows("benchmarks.md stock slopes", _july_doc,
+                              ("model", _slope_col, "relative to 8B"))
+    for model, cfg in (("Qwen3-8B · BF16", "B-8B-tp2"),
+                       ("gemma-4-26B-A4B · MoE", "E-26B-tp2"),
+                       ("gemma-4-12B · w4a16", "A-12B-tp2"),
+                       ("gemma-4-31B · w4a16", "C-31B-tp2"),
+                       ("Qwen3.6-27B · hybrid SSM", "D-27B-tp2")):
+        for col, value, unit in (
+                (_slope_col, slope_us(jul, cfg), "µs"),
+                ("relative to 8B", slope_us(jul, cfg) / slope_us(jul, "B-8B-tp2"), "×"),
+                ("decode drop 500 → 32 K", retained(jul, cfg) - 100, "%")):
+            table_number("benchmarks.md stock slopes", _stock_slopes, "model", model,
+                         col, value, unit)
 
-    # --- benchmarks.md §6, the patched campaign -----------------------------
-    ck("benchmarks.md §6 Qwen3.6 retained %", "35.1", retained(jul, "D-27B-tp2"))
-    ck("benchmarks.md §6 Qwen3.8 retained %", "86.8", retained(aug, "D8-27B-tp2"))
-    ck("benchmarks.md §6 Qwen3.8 slope", "0.390", slope_us(aug, "D8-27B-tp2"))
-    ck("benchmarks.md §6 32K speedup",
-       "2.51", tps(aug, "D8-27B-tp2", 32000) / tps(jul, "D-27B-tp2", 32000))
-    ck("benchmarks.md §6 slope ratio 12.4x",
-       "12.4", slope_us(jul, "D-27B-tp2") / slope_us(aug, "D8-27B-tp2"))
-    ck("benchmarks.md §6 Muse slope", "0.122", slope_us(aug, "G-30B-tp2"))
-    ck("benchmarks.md §6 gemma-3 slope", "0.731", slope_us(aug, "F-27B-tp2"))
-    ck("benchmarks.md §6 Muse 500->32K %", "-14.4", (tps(aug, "G-30B-tp2", 32000) / tps(aug, "G-30B-tp2", 500) - 1) * 100)
-    ck("benchmarks.md §6 gemma-3 500->32K %", "-50.7", (tps(aug, "F-27B-tp2", 32000) / tps(aug, "F-27B-tp2", 500) - 1) * 100)
-    ck("benchmarks.md §6 gemma-3 32K ms/token",
-       "45.34", 1000 / tps(aug, "F-27B-tp2", 32000))
-    ck("benchmarks.md §6 Muse flat at 2000", "37.99", tps(aug, "G-30B-tp2", 2000))
+    _hybrid_rows = table_rows("benchmarks.md hybrid comparison", _july_doc,
+                             ("500", "32 K", "retained", "slope"))
+    for model, data, cfg in (("Qwen3.6-27B, 2026-07-25, stock", jul, "D-27B-tp2"),
+                             ("Qwen3.8-27B, 2026-08-24, patched", aug, "D8-27B-tp2")):
+        for col, value, unit in (("500", tps(data, cfg, 500), ""),
+                                 ("32 K", tps(data, cfg, 32000), ""),
+                                 ("retained", retained(data, cfg), "%"),
+                                 ("slope", slope_us(data, cfg), "µs")):
+            table_number("benchmarks.md hybrid comparison", _hybrid_rows, "", model,
+                         col, value, unit)
+    published_numbers("benchmarks.md hybrid speedup", _july_doc,
+                      number + r"× at 32 K\.",
+                      tps(aug, "D8-27B-tp2", 32000) / tps(jul, "D-27B-tp2", 32000))
+    published_numbers("benchmarks.md hybrid slope ratio", _july_doc,
+                      r"[Ss]lope falls " + number + "×",
+                      slope_us(jul, "D-27B-tp2") / slope_us(aug, "D8-27B-tp2"))
 
-    # --- benchmarks.md §6, the control offsets ------------------------------
-    ck("benchmarks.md §6 control, 8B", "-0.10", offset(jul, aug, "B-8B-tp2"))
-    ck("benchmarks.md §6 control, 12B", "-0.02", offset(jul, aug, "A-12B-tp2"))
-    ck("benchmarks.md §6 control, 26B", "-0.23", offset(jul, aug, "E-26B-tp2"))
-    ck("benchmarks.md §6 control, 31B", "-0.85", offset(jul, aug, "C-31B-tp2"))
-    ck("benchmarks.md §6 control, 8B TP=1", "0.01", offset(jul, aug, "B-8B-tp1"))
-    ck("benchmarks.md §6 control, 12B TP=1", "-0.82", offset(jul, aug, "A-12B-tp1"))
-    # the prose says six of the nine August configurations are July reruns
-    ck("benchmarks.md §6 control count", "6", len(set(jul) & set(aug)))
-    ck("benchmarks.md §6 new configuration count", "3", len(set(aug) - set(jul)))
-    # "steepest curve on the patched machine" — true of August only, and the
-    # July hybrid must stay above it or that qualifier is doing no work
-    ck("§6 gemma-3 steepest in August", "0.731", max(slope_us(aug, c) for c in aug if 32000 in aug[c]))
-    ck("§6 July hybrid still steeper", "4.840", slope_us(jul, "D-27B-tp2"))
+    _window_rows = table_rows("benchmarks.md window comparison", _july_doc,
+                             ("window", "full-attn layers", "slope", "500 → 32 K"))
+    for model, cfg in (("Muse-Glimmer-30B", "G-30B-tp2"), ("gemma-3-27b", "F-27B-tp2")):
+        table_number("benchmarks.md window comparison", _window_rows, "", model,
+                     "slope", slope_us(aug, cfg), "µs")
+        table_number("benchmarks.md window comparison", _window_rows, "", model,
+                     "500 → 32 K", retained(aug, cfg) - 100, "%")
+    published_numbers("benchmarks.md gemma-3 step", _july_doc,
+                      r"32 K point[^.]*?" + number + r" ms per token",
+                      1000 / tps(aug, "F-27B-tp2", 32000))
+    _muse_targets = sorted(t for t in aug["G-30B-tp2"] if 2000 <= t <= 32000)
+    published_numbers("benchmarks.md Muse rates", _july_doc,
+                      r"Muse-Glimmer[^:]*:\s*" + number + r" at 2\s*000, then "
+                      + r",\s*".join([number] * (len(_muse_targets) - 1)) + r" at 32 K",
+                      *(tps(aug, "G-30B-tp2", t) for t in _muse_targets))
+
+    _control_rows = table_rows("benchmarks.md controls", _july_doc,
+                              ("control", "mean offset, all shared points", "spread"))
+    for model, cfg in (("Qwen3-8B", "B-8B-tp2"), ("gemma-4-12B", "A-12B-tp2"),
+                       ("gemma-4-26B-A4B", "E-26B-tp2"), ("gemma-4-31B", "C-31B-tp2"),
+                       ("Qwen3-8B, TP=1", "B-8B-tp1"), ("gemma-4-12B, TP=1", "A-12B-tp1")):
+        table_number("benchmarks.md controls", _control_rows, "control", model,
+                     "mean offset, all shared points", offset(jul, aug, cfg), "%")
+        shared = sorted(set(jul[cfg]) & set(aug[cfg]))
+        deltas = [(tps(aug, cfg, t) / tps(jul, cfg, t) - 1) * 100 for t in shared]
+        cells = [r.get("spread", "") for r in _control_rows if r.get("control") == model]
+        published_numbers("benchmarks.md control spread, " + model,
+                          cells[0] if len(cells) == 1 else "",
+                          "^" + number + r"\s*\.\.\s*" + number + "$", min(deltas), max(deltas))
+    published_numbers("benchmarks.md control counts", _july_doc,
+                      r"(\w+) of the (\w+) configurations[^.]*?only (\w+) are new",
+                      len(set(jul) & set(aug)), len(aug), len(set(aug) - set(jul)))
+
+    # This structural assertion tests the selected historical comparison, not
+    # a particular adjective used to describe its slope ordering.
+    ck("August gemma-3 has the largest endpoint slope", "1",
+       int(slope_us(aug, "F-27B-tp2") == max(slope_us(aug, c) for c in aug if 32000 in aug[c])))
 
     # --- benchmarks.md §6, the gemma-4-31B offset investigation --------------
     off_file = os.path.join(HERE, "..", "gemma-4-31b-campaign-offset.json")
-    if os.path.exists(off_file):
-        off = json.load(open(off_file))
-        rep = off["reproducibility"]
-        ck("§6 offset, run1", "-0.85", rep["offset_against_july_pct"]["run1_in_campaign"])
-        ck("§6 offset, run2 cold", "-0.90", rep["offset_against_july_pct"]["run2_cold"])
-        ck("§6 offset, run3 warm", "-0.79", rep["offset_against_july_pct"]["run3_warm"])
-        ck("§6 offset, RSD mean", "0.077", rep["relative_stddev_across_the_three_pct"]["mean"])
-        ck("§6 offset, RSD max", "0.146", rep["relative_stddev_across_the_three_pct"]["max"])
-        ck("§6 offset, warm minus cold",
-           "0.11", off["temperature_is_not_the_cause"]["warm_minus_cold_pct"]["mean"])
-        ab = off["atomics_ab_2026_08_26"]
-        ck("§6 A/B run4 fresh boot", "-0.26",
-           ab["offset_against_july_pct"]["run4_fresh_boot"])
-        ck("§6 A/B run5 warm", "-0.78", ab["offset_against_july_pct"]["run5_warm"])
-        ck("§6 A/B run5 vs August mean", "0.07", ab["run5_vs_august_mean_pct"])
-        ck("§6 A/B run4-run5 gap", "0.52", ab["run4_vs_run5_offset_gap_pct"])
+    _offset_ladder = json.load(open(off_file))["ladder"]
+    _run_keys = ("aug_run1_in_campaign", "aug_run2_cold", "aug_run3_warm")
+    _offsets = {key: mean([(r[key] / r["july_2026_07_25"] - 1) * 100 for r in _offset_ladder])
+               for key in (*_run_keys, "noatom_run4_fresh_boot", "noatom_run5_warm")}
+    _offset_rows = table_rows("benchmarks.md offset runs", _july_doc, ("run", "offset against July"))
+    for model, key in zip(("in the campaign, first configuration", "again, from cold",
+                           "again, immediately after, from warm"), _run_keys):
+        table_number("benchmarks.md offset runs", _offset_rows, "run", model,
+                     "offset against July", _offsets[key], "%")
+    _rsds = [statistics.pstdev([r[k] for k in _run_keys]) / mean([r[k] for k in _run_keys]) * 100
+             for r in _offset_ladder]
+    published_numbers("benchmarks.md offset RSD", _july_doc,
+                      r"relative standard deviation of " + number + r" %, " + number + r" %",
+                      mean(_rsds), max(_rsds))
+    published_numbers("benchmarks.md offset warm/cold", _july_doc,
+                      r"warm run[^.]*?" + number + r" % faster",
+                      mean([(r[_run_keys[2]] / r[_run_keys[1]] - 1) * 100 for r in _offset_ladder]))
+    published_numbers("benchmarks.md offset atomics absent", _july_doc,
+                      r"landed at " + number + r" % against July",
+                      _offsets["noatom_run5_warm"])
+    published_numbers("benchmarks.md offset versus August", _july_doc,
+                      number + r" % against the August mean",
+                      mean([(r["noatom_run5_warm"] / mean([r[k] for k in _run_keys]) - 1) * 100
+                            for r in _offset_ladder]))
+    published_numbers("benchmarks.md offset fresh boot", _july_doc,
+                      r"configuration measured " + number + r" %",
+                      _offsets["noatom_run4_fresh_boot"])
+    published_numbers("benchmarks.md offset session gap", _july_doc,
+                      r"no-atomics runs disagree by " + number + r" points",
+                      _offsets["noatom_run4_fresh_boot"] - _offsets["noatom_run5_warm"])
 
     # --- sliding-window kernel block, read out of the committed trace tables ---
     swin = os.path.join(HERE, "..", "sliding-window-block-skip.json")
@@ -345,17 +421,20 @@ def _run_checks(_opened, _audit_state):
         ck("hmm control r--p 3.2", "3.2", st[2]["r_p_resident"])
         ck("hmm control rw-p 13.1", "13.1", st[2]["rw_p_not_resident"])
 
-    # --- figures the 2026-08-25 re-check corrected, pinned the same way -----
-    # benchmarks.md §3 used to derive its T columns from the rounded tok/s in
-    # the table above them (1000/46.7 = 21.41); these assert the raw-data
-    # derivations that replaced them.
-    ck("benchmarks.md §3 T(TP1) 8B", "21.42", 1000 / tps(jul, "B-8B-tp1", 500))
-    ck("benchmarks.md §3 T(TP2) 8B", "12.57", 1000 / tps(jul, "B-8B-tp2", 500))
-    ck("benchmarks.md §3 T(TP1) 12B", "19.87", 1000 / tps(jul, "A-12B-tp1", 500))
-    ck("benchmarks.md §3 12B saved", "3.18",
-       1000 / tps(jul, "A-12B-tp1", 500) - 1000 / tps(jul, "A-12B-tp2", 500))
-    ck("benchmarks.md §3 12B efficiency %", "60",
-       tps(jul, "A-12B-tp2", 500) / tps(jul, "A-12B-tp1", 500) / 2 * 100)
+    # TP times come from unrounded raw rates, not the adjacent rounded table.
+    _tp_rates = table_rows("benchmarks.md TP rates", _july_doc, ("model", "TP=1", "TP=2", "speed-up"))
+    _tp_times = table_rows("benchmarks.md TP times", _july_doc, ("model", "T(TP1)", "T(TP2)", "saved"))
+    for model, base in (("Qwen3-8B", "B-8B"), ("gemma-4-12B", "A-12B")):
+        quant = "BF16" if base == "B-8B" else "w4a16"
+        one, two = (tps(jul, base + f"-tp{tp}", 500) for tp in (1, 2))
+        for col, value, unit in (("TP=1", one, ""), ("TP=2", two, ""),
+                                 ("speed-up", two / one, "×"), ("efficiency", two / one / 2 * 100, "%")):
+            table_number("benchmarks.md TP rates", _tp_rates, "model", model + " · " + quant,
+                         col, value, unit)
+        for col, value in (("T(TP1)", 1000 / one), ("T(TP2)", 1000 / two),
+                           ("saved", 1000 / one - 1000 / two)):
+            table_number("benchmarks.md TP times", _tp_times, "model", model + " " + quant,
+                         col, value, "ms")
     pre_j = {}
     for line in open(JULY):
         line = line.strip()
@@ -365,17 +444,20 @@ def _run_checks(_opened, _audit_state):
         if r.get("kind") == "prefill":
             pre_j.setdefault(r["cfg"], {}).setdefault(r["target"], []).append(r["prefill_tps"])
     bj = lambda c, t: max(pre_j[c][t])
-    ck("§2 27B prefill 500", "805", bj("D-27B-tp2", 500))
-    ck("§2 27B prefill 32K", "883", bj("D-27B-tp2", 32000))
-    ck("§2 27B prefill rise %", "9.6",
-       (bj("D-27B-tp2", 32000) / bj("D-27B-tp2", 500) - 1) * 100)
-    ck("§2 MoE prefill rise %", "24",
-       (bj("E-26B-tp2", 32000) / bj("E-26B-tp2", 500) - 1) * 100)
+    published_numbers("benchmarks.md hybrid prefill", _july_doc,
+                      r"27B's prefill[^,]*, " + number + " → " + number + " tok/s, " + number + " %",
+                      bj("D-27B-tp2", 500), bj("D-27B-tp2", 32000),
+                      (bj("D-27B-tp2", 32000) / bj("D-27B-tp2", 500) - 1) * 100)
+    published_numbers("benchmarks.md MoE prefill", _july_doc,
+                      r"26B MoE goes ([\d ]+) → ([\d ]+), " + number + " %",
+                      bj("E-26B-tp2", 500), bj("E-26B-tp2", 32000),
+                      (bj("E-26B-tp2", 32000) / bj("E-26B-tp2", 500) - 1) * 100)
     # "measured peak" is the best-of-rounds argmax, which for the 27B is 4000
     # by one tok/s over 6000 - a margin inside the noise, but it is what the
     # best-of rule the table states actually yields.
-    ck("§4 27B measured prefill peak", "4000",
-       max(pre_j["D-27B-tp2"], key=lambda t: bj("D-27B-tp2", t)))
+    _peak_rows = table_rows("benchmarks.md prefill peak", _july_doc, ("configuration", "measured peak"))
+    table_number("benchmarks.md prefill peak", _peak_rows, "configuration", "Qwen3.6-27B TP2",
+                 "measured peak", max(pre_j["D-27B-tp2"], key=lambda t: bj("D-27B-tp2", t)))
 
     # 2026-08-31: the README used to give the peak positions with no campaign
     # and point at S* as the derivation behind them. S* was withdrawn on
@@ -428,8 +510,9 @@ def _run_checks(_opened, _audit_state):
 
     # July's own ratio for the pair the August number is quoted for, so the
     # table a reader can see and the figure beside it stop disagreeing
-    ck("benchmarks.md, MoE over the 31B in July", "2.498",
-       tps(jul, "E-26B-tp2", 500) / tps(jul, "C-31B-tp2", 500))
+    published_numbers("benchmarks.md MoE/31B July ratio", _july_doc,
+                      r"July table[^.]*?" + number + "×",
+                      tps(jul, "E-26B-tp2", 500) / tps(jul, "C-31B-tp2", 500))
 
     # 2026-08-31: three grids ran past a 390px viewport -- 6px, 21px and 89px --
     # because nothing scrolled them. Measured in a browser at 390px; this is the
@@ -2936,22 +3019,19 @@ def _run_checks(_opened, _audit_state):
     # breaks, and the fact that the kernel did not move with the backend.
     _AB = os.path.join(_BR, "gfx1100-greedy-attn-ab")
     _abc = {}
+    _ab_repeats = {}
     for _m in ("muse", "gemma3"):
         for _b in ("ROCM_ATTN", "TRITON_ATTN"):
             _j = json.load(open(os.path.join(_AB, f"nondet-attn-{_m}-{_b}-p1.json")))
             assert _j["attn_backend"] == _b
             for _r in _j["rows"]:
                 _abc[(_m, _b, _r["depth"])] = _r["distinct"]
+                _ab_repeats[(_m, _b, _r["depth"])] = len(_r["seqs"])
+                ck(f"attn A/B raw distinct, {_m} {_b} @{_r['depth']}",
+                   str(_r["distinct"]), len({tuple(seq) for seq in _r["seqs"]}))
+                ck(f"attn A/B raw repeats, {_m} {_b} @{_r['depth']}",
+                   str(_r["repeats"]), len(_r["seqs"]))
     ck("attn A/B, cells measured", "8", len(_abc))
-    for _k, _v in ((("muse", "ROCM_ATTN", 512), "6"),
-                   (("muse", "TRITON_ATTN", 512), "7"),
-                   (("muse", "ROCM_ATTN", 8192), "4"),
-                   (("muse", "TRITON_ATTN", 8192), "1"),
-                   (("gemma3", "ROCM_ATTN", 512), "1"),
-                   (("gemma3", "TRITON_ATTN", 512), "1"),
-                   (("gemma3", "ROCM_ATTN", 8192), "4"),
-                   (("gemma3", "TRITON_ATTN", 8192), "3")):
-        ck("attn A/B, %s %s @%d distinct of 8" % _k, _v, _abc[_k])
     # the binary, which is what is read: the same three cells vary under both
     ck("attn A/B, cells varying on ROCM_ATTN", "3",
        sum(1 for k, v in _abc.items() if k[1] == "ROCM_ATTN" and v > 1))
@@ -2996,29 +3076,31 @@ def _run_checks(_opened, _audit_state):
     ck("attn A/B, and it is recorded as withdrawn rather than deleted", "1",
        1 if "the affected models are on ROCM_ATTN"
        in _nd.get("reading_withdrawn_2026-09-02", {}).get("was", "") else 0)
-    ck("attn A/B, the withdrawal names what is left open", "1",
-       1 if "NOT established"
-       in _nd.get("reading_withdrawn_2026-09-02", {}).get("what_is_left", "") else 0)
-    # ...and the README that publishes it
+    # Check the published counts. The conclusion and historical qualification
+    # require evidence review; their punctuation, line breaks and exact wording
+    # are not a test of whether the backend or quantisation kernel was held.
     _rab = open(os.path.join(_AB, "README.md"), encoding="utf-8").read()
-    ck("attn A/B README, answers the question in its title", "1",
-       1 if _rab.count("**No.**") else 0)
-    ck("attn A/B README, states the kernel was held fixed", "1",
-       1 if "held at\n`RDNA3W4A16LinearKernel`" in _rab else 0)
-    # ...and does not overstate the result: neither model is rescued, but the
-    # counts are 3 against 2, not "the same three"
-    ck("attn A/B README, counts the varying cells both ways", "1",
-       1 if "3 of 4 on\n`ROCM_ATTN` against 2 of 4 on `TRITON_ATTN`" in _rab else 0)
-    ck("attn A/B README, says both models are still unstable", "1",
-       1 if "both unstable models are still unstable" in _rab else 0)
-    ck("attn A/B README, says #54706 needs a build and not a file swap", "1",
-       1 if "Budget a\nbuild, not an hour." in _rab else 0)
-    ck("attn A/B README, keeps the failed attempt and its rule", "1",
-       1 if "an arm that asks for a configuration is not an arm that got it" in _rab
-       else 0)
-    ck("attn A/B README, does not claim the kernel is the cause", "1",
-       1 if "**Not established:** that the quantisation kernel is the cause" in _rab
-       else 0)
+    _ab_rows = table_rows("attn A/B README counts", _rab, ("model", "ctx", "ROCM_ATTN", "TRITON_ATTN"))
+    _ab_model = ""
+    for _row in _ab_rows:
+        _ab_model = _row.get("model") or _ab_model
+        _row["cell"] = _ab_model + "/" + _row.get("ctx", "").replace(" ", "")
+    for _model, _name in (("muse", "Muse-Glimmer-30B-INT4"), ("gemma3", "gemma-3-27b-it-w4a16")):
+        for _depth in (512, 8192):
+            _cell = f"{_name}/{_depth}"
+            _rows = [r for r in _ab_rows if r["cell"] == _cell]
+            for _backend in ("ROCM_ATTN", "TRITON_ATTN"):
+                published_numbers(f"attn A/B README counts, {_cell} {_backend}",
+                                  _rows[0].get(_backend, "") if len(_rows) == 1 else "",
+                                  "^" + number + " of " + number + "$",
+                                  _abc[(_model, _backend, _depth)], _ab_repeats[(_model, _backend, _depth)])
+    published_numbers("attn A/B README varying cells", _rab,
+                      number + " of " + number + " on ROCM_ATTN against "
+                      + number + " of " + number + " on TRITON_ATTN",
+                      sum(v > 1 for k, v in _abc.items() if k[1] == "ROCM_ATTN"),
+                      sum(k[1] == "ROCM_ATTN" for k in _abc),
+                      sum(v > 1 for k, v in _abc.items() if k[1] == "TRITON_ATTN"),
+                      sum(k[1] == "TRITON_ATTN" for k in _abc))
 
     # --- the other two x8 lines, re-measured, 2026-09-02c -----------------
     _f38 = {(f["cfg"], f["date"]): f for f in _bpm.fits(_RTP)
@@ -10180,6 +10262,14 @@ def main():
     os.path.exists = tracking_exists
     try:
         return _run_checks(opened, audit_state)
+    except FileNotFoundError as exc:
+        # Required evidence must not disappear behind an optional-file branch
+        # or an interpreter traceback. Name the missing input and fail the gate.
+        print(f"  FAIL required verifier input is missing: {exc.filename}")
+        violations = _tracked_input_violations(
+            opened, os.path.join(HERE, "..", ".."))
+        _print_tracked_input_violations(violations)
+        return 1
     except BaseException:
         # A missing input can raise before _run_checks reaches its normal end.
         # Still report the path before preserving the original exception.
