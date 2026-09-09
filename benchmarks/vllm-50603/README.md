@@ -370,6 +370,8 @@ Files: `probe_53856_027.py`, `53856-027-{stock,patched}.jsonl`,
 
 Reported to the PR author on request, 2026-08-28:
 [pull/53856#issuecomment-5451557090](https://github.com/vllm-project/vllm/pull/53856#issuecomment-5451557090).
+The PR was approved on 2026-09-07 and merged on 2026-09-08, read from the API
+on 2026-09-09; the "open, assigned" in Stage 1c is its state on 2026-08-27.
 
 ## Stage 4: the same two questions, re-asked on 0.27
 
