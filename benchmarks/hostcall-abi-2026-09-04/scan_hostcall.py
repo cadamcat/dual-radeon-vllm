@@ -375,7 +375,12 @@ def main():
                    "kpack_dirs": sorted(kpack_dirs), "carriers": sorted(want),
                    "host": os.uname().nodename, "ts": t0})
         if "kpack" in want:
-            kp = Kpack(a.kpack_so)
+            # the fourth required tool: name it when it is missing, like the
+            # three above, instead of letting ctypes raise a bare OSError
+            try:
+                kp = Kpack(a.kpack_so)
+            except OSError as e:
+                sys.exit(f"required library not found: {a.kpack_so} ({e})")
             for kdir in sorted(kpack_dirs):
                 scan_kpacks(kp, kdir, a.arch, out, a.workdir)
         if "elf" in want:
