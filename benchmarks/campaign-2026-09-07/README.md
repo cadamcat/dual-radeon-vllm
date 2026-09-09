@@ -84,9 +84,12 @@ figure is listed, but it is not comparable.
 ## What this does not establish
 
 - **Nothing about the other five checkpoints.** Only this one was measured on
-  both backends. gemma-4 cannot be served on the 0.27 image at all — its Quark
-  plugin reads a heterogeneous `head_dim` and dies before loading — so the six
-  cannot be re-run together on this stack in any case.
+  both backends. gemma-4 does not start on the 0.27 image — vLLM 0.27's Gemma4
+  converter reads a global `head_dim` off a per-layer transformers config and
+  the accessor raises before loading
+  ([the traceback](../campaign-2026-08-29/logs/G31-tp2-on-027.log); fixed
+  upstream in vllm#49797, which 0.27.1 lacks) — so the six cannot be re-run
+  together on this stack in any case.
 - **Nothing about why.** The two arms differ in the decoder's attention kernel
   and this campaign does not open either. That prefill moves the other way is
   the shape of a trade, not an explanation of one.

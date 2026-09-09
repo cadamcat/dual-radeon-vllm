@@ -1160,8 +1160,8 @@ addEventListener("DOMContentLoaded", function () {
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-29 · 一场 campaign 同时落入其中三个类别</span>
-  在两张 Radeon 和一台租用的 A100 上测试二十个配置，每个类别各得出一个结论，将上述分类体系落到了实处。<b>与厂商无关：</b><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 仅在其修补的 Triton 内核实际处于执行路径上时方能生效。由于 <code>Qwen3.8-27B</code> 在<em>两家</em>平台上均绕开了该内核（本平台选走 <code>ROCM_ATTN</code>，CUDA 上则走 <code>FLASH_ATTN</code>），导致该补丁在两边虽已合入却均处于闲置状态。<b>AMD 全线：</b>由于 <code>TURBOQUANT</code> 无法与解码器兼容，ROCm 的选择器转向 <code>ROCM_ATTN</code>。在 32K 上下文下，这一抉择拱手让出了 15.0 % 的性能，而其所列出的候选列表中包含的 <code>TRITON_ATTN</code> 本可保全这部分性能。<b>以及本文反复遇到的中间案例：</b>gemma-4 在 0.27 ROCm 镜像上完全无法提供服务。不安全读取发生于 <code>model_arch_config_convertor.py</code> 中 vLLM 自带的 <code>getattr</code> 回退逻辑，该逻辑预期捕获 <code>AttributeError</code>，却收到了 transformers 5.x 抛出的自定义异常；且该分支之所以被执行，仅因 AMD 的 Quark 插件介入并修改了配置路径。这既非 AMD 单方面的过失，亦非 vLLM 独有的问题。
+  <span class="lbl">2026-08-29 · 一场 campaign 落入其中两个类别，另有一例起初被放在类别之间</span>
+  在两张 Radeon 和一台租用的 A100 上测试二十个配置，每个类别各得出一个结论，将上述分类体系落到了实处。<b>与厂商无关：</b><a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> 仅在其修补的 Triton 内核实际处于执行路径上时方能生效。由于 <code>Qwen3.8-27B</code> 在<em>两家</em>平台上均绕开了该内核（本平台选走 <code>ROCM_ATTN</code>，CUDA 上则走 <code>FLASH_ATTN</code>），导致该补丁在两边虽已合入却均处于闲置状态。<b>AMD 全线：</b>由于 <code>TURBOQUANT</code> 无法与解码器兼容，ROCm 的选择器转向 <code>ROCM_ATTN</code>。在 32K 上下文下，这一抉择拱手让出了 15.0 % 的性能，而其所列出的候选列表中包含的 <code>TRITON_ATTN</code> 本可保全这部分性能。<b>另有一例起初被放在类别之间，结果同样与厂商无关：</b>gemma-4 在 0.27 ROCm 镜像上无法启动。vLLM 0.27 的 Gemma4 converter 经由预期捕获 <code>AttributeError</code> 的 <code>getattr</code> 回退读取全局 <code>head_dim</code>，而 transformers 5.x 的按层访问器抛出的是自己的异常；<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">回溯</a>中的 AMD Quark 帧只是原样转发调用。上游 vLLM 已在 <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a> 修正这次读取，0.28.0 含而 0.27.1 不含，同一 checkpoint 在 CUDA 上的 0.28.0 可以服务。这是 ROCm 镜像所搭配的版本组合问题，不是任一厂商代码单独的过失；新镜像能否服务尚未实测。
 </div>
 
 <div class="foot-note">

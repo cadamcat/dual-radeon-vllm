@@ -192,7 +192,7 @@ support stood at the time of testing, not the velocity of upstream development.<
 </div>
 
 <div class="note ok">
-  <span class="lbl">2026-08-29 · a campaign that sorted into three of these bins at once</span>
+  <span class="lbl">2026-08-29 · a campaign that sorted into two of these bins, and one case first filed between them</span>
   Twenty configurations across the two Radeons and a rented A100 produced one finding in each category,
   putting this taxonomy into practice. <b>Vendor-neutral:</b>
   <a href="https://github.com/vllm-project/vllm/pull/45450">vllm#45450</a> has effect only when the
@@ -201,11 +201,14 @@ support stood at the time of testing, not the velocity of upstream development.<
   remains installed but idle on each. <b>AMD-wide:</b> ROCm's selector opts for
   <code>ROCM_ATTN</code> because <code>TURBOQUANT</code> cannot run with the decoder. That choice concedes
   15.0 % at 32K context that <code>TRITON_ATTN</code> — listed in the candidate options it displayed — would have
-  preserved. <b>And the middle case this article keeps finding:</b> gemma-4 fails to serve on the 0.27
-  ROCm image entirely. An unsafe read occurs in vLLM's fallback <code>getattr</code> logic in
-  <code>model_arch_config_convertor.py</code>, which expects <code>AttributeError</code> but receives
-  transformers 5.x's custom exception instead; this branch is reached only because AMD's Quark plugin patches the
-  config path. It is neither AMD's fault alone nor vLLM's alone.
+  preserved. <b>And a case this article first filed between the bins, which turned out to be
+  vendor-neutral too:</b> gemma-4 fails to start on the 0.27 ROCm image. vLLM 0.27's Gemma4 converter
+  reads a global <code>head_dim</code> through a <code>getattr</code> fallback that expects
+  <code>AttributeError</code>, and transformers 5.x's per-layer accessor raises its own exception
+  instead; the AMD Quark frame in <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">the traceback</a> only forwards the call. Upstream
+  vLLM fixed the read in <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a>, which 0.28.0 carries and 0.27.1 does not, and
+  the same checkpoint serves on 0.28.0 on CUDA. It is a version pairing the ROCm image shipped, not a
+  fault in either vendor's code alone; whether a newer image serves it is unmeasured.
 </div>
 
 <div class="foot-note">

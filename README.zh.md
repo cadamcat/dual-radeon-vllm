@@ -285,7 +285,7 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 
 差距约 **1.4×**，从浅端到深端缓慢扩大。早期由四个单次 probe 推出的 U 形差距没有在完整 campaign 中出现，围绕那个 U 形写出的机制解释也随之撤回。
 
-这不是完全匹配的软件栈：Radeon 为 vLLM 0.23，A100 为 0.28.0。ROCm 0.27 镜像的 Quark 插件无法加载 gemma-4 的异构 `head_dim` 配置，因此缺少同版本对照。其他已测组合还会带入不同补丁。
+这不是完全匹配的软件栈：Radeon 为 vLLM 0.23，A100 为 0.28.0。gemma-4 在 ROCm 0.27 镜像上无法启动：vLLM 0.27 的 Gemma4 converter 从已按层存储的 transformers 配置里读取全局 `head_dim`，访问器在加载前抛错（[回溯](benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log)；其中的 Quark 帧只是原样转发调用）。上游 vLLM 在 [#49797](https://github.com/vllm-project/vllm/pull/49797) 修正了这次读取，0.28.0 含此修正而 0.27.1 不含；新镜像能否加载尚未实测，因此缺少同版本对照。其他已测组合还会带入不同补丁。
 
 由每 GPU 的 bytes/token 推得的 31B 带宽利用率约 **63 %**，计算值 **62.8 %**，应读作上界。A100 上真正测到的单步权重读取比例是 12B 的 **81.6 %** 和 31B 的 **85.6 %**；“每步把全部 checkpoint 读一遍”的推导在那里高估 **17–23 %**。不能把另一台机器的修正系数直接套回 Radeon（[内存控制器测量](benchmarks/cuda-a100/campaign-2026-09-02/README.md)）。
 
@@ -403,6 +403,7 @@ RCCL 证据已提交到 [ROCm#6520](https://github.com/ROCm/legacy-rocm-build/is
 - **2026-08-27：参数量比较。** “27B 被更大的 31B 打败”混入了 checkpoint 对称性和内核回退影响；用[对称性 A/B](benchmarks/w4a16-symmetry/)隔离。MoE 相对 dense 的结果保留。
 - **2026-09-02：第二张卡收益。** [同场遥测](benchmarks/campaign-2026-09-02d/)显示，8B 单卡 `mem_busy` 为 **90 %**，12B 为 **56 %**；集合通信和功耗上限的控制也各有测量。它支持这组条件下的排序，不能证明任意机器的因果规律。
 - **2026-08-30 起：prefill 固定成本。** 已撤回由不稳定截距 `a` 推出的短上下文交叉点和“每次 all-reduce 约 1.05 ms”解释。之后[真正测到](benchmarks/allreduce-2026-09-02/) batch-1 collective 为 **16.6–21.5 µs**，8B 每步 73 次合计 **1.22 ms**。交叉点仍未确定；[多轮复测](benchmarks/campaign-2026-09-02b/)否定了“首请求总是慢”的说法，短上下文噪声随时钟状态变化。
+- **2026-09-09：gemma-4 在 0.27 镜像上的加载失败归因。** 本页、三份 campaign 说明和两篇文章曾写成镜像的 Quark 插件读取异构 `head_dim` 而崩溃。[已提交的回溯](benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log)显示执行读取的是 vLLM 自己的 Gemma4 converter，抛错的是 transformers 的按层访问器，Quark 帧只是原样转发。上游在 vLLM [#49797](https://github.com/vllm-project/vllm/pull/49797) 修正，0.28.0 含、0.27.1 不含。新镜像能否加载未实测。
 - **2026-09-05：复现程序长度。** “30 行”已更正为 57 行；旧数字不是源码曾经的准确长度。中文和英文使用同一份 `diagnose/hipgate3.cpp`。
 - **2026-08-31：A100 比较。** 由单次、投机、不同上下文 probe 推出的 U 形差距被完整 stock campaign 推翻；这里保留的是约 1.4× 的差距和无法完全匹配软件栈的限制。
 - **2026-08-29／09-02：带宽利用率。** 31B 比较曾误引 12B 的利用率，已改正；之后 A100 对实际权重读取量的测量又限定了这类推导的含义，当前按上界阅读。

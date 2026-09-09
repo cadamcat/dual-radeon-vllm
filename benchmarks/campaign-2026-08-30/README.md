@@ -36,9 +36,13 @@ either projection was measured at 0.95.
 
 ## Why 0.23 and not 0.27
 
-gemma-4 cannot be served on the 0.27 ROCm image at all — its Quark plugin reads
-`head_dim` off a heterogeneous config and dies before loading, see the
-2026-08-29 campaign handoff. So this ran in `vllm-tp2`, which is the **0.23**
+gemma-4 does not start on the 0.27 ROCm image: vLLM 0.27's Gemma4 converter
+reads a global `head_dim` off a transformers config that stores it per layer,
+and the accessor raises before loading — the traceback is
+[`campaign-2026-08-29/logs/G31-tp2-on-027.log`](../campaign-2026-08-29/logs/G31-tp2-on-027.log),
+and the Quark frame in it only forwards the call. Upstream fixed the read in
+[vllm#49797](https://github.com/vllm-project/vllm/pull/49797), which 0.28.0
+carries and 0.27.1 does not. So this ran in `vllm-tp2`, which is the **0.23**
 image (`rocm7.14.0_rdna_..._vllm_0.23.0`) despite its name; the name is the
 image it was built from, not the topology, and this arm is `tp=1`.
 

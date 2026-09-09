@@ -4143,6 +4143,45 @@ def _run_checks(_opened, _audit_state):
     ck("campaign 0829, and zero everywhere one of its three conditions is missing",
        "0", sum(v for k, v in _fired.items()
                 if k not in ("G31-mtp-p45450-tp2", "Q38-mtp-triton-p45450-tp2")))
+    # --- gemma-4 on the 0.27 image: what the committed traceback says --------
+    # The front page and three campaign READMEs explain the missing same-version
+    # A100 control by this failure. Until 2026-09-09 they said the image's Quark
+    # plugin performs the read; the traceback puts the read in vLLM's own Gemma4
+    # converter and the raise in transformers' per-layer accessor, with the Quark
+    # frame forwarding the call unchanged. These bind the explanation to the log
+    # rather than to a sentence: the frames, and the pages citing the file.
+    _g4p = os.path.join(HERE, "..", "campaign-2026-08-29", "logs", "G31-tp2-on-027.log")
+    _g4 = open(_g4p, encoding="utf-8").read()
+    ck("gemma-4 on 0.27, the failing read is vLLM's converter", "1",
+       1 if re.search(r'model_arch_config_convertor\.py", line \d+, in get_head_size\s*\n'
+                      r'.*head_dim = getattr\(self\.hf_text_config, "head_dim", 0\)', _g4) else 0)
+    ck("gemma-4 on 0.27, raised by transformers' per-layer accessor", "1",
+       1 if re.search(r'integrations/heterogeneity/configuration_utils\.py", line \d+, in __getattribute__',
+                      _g4) and "AmbiguousGlobalPerLayerAttributeError: 'head_dim' is a per-layer attribute" in _g4
+       else 0)
+    ck("gemma-4 on 0.27, the Quark frame only forwards to vLLM", "1",
+       1 if re.search(r'quark/online_quantization/vllm/plugin\.py", line \d+, in patched_create_model_config\s*\n'
+                      r'.*return orig_create_model_config\(self, \*args, \*\*kwargs\)', _g4) else 0)
+    ck("gemma-4 on 0.27, and no other Quark frame is in the trace", "1",
+       _g4.count("site-packages/quark/"))
+    ck("gemma-4 on 0.27, the trace names the measured vLLM", "1",
+       1 if "version 0.27.1.dev5+gf46a9dfe2" in _g4 else 0)
+    # the pages that make the claim cite the file, and the citation resolves
+    for _pg in ("README.md", "README.zh.md"):
+        _pt = open(os.path.join(ROOT, _pg), encoding="utf-8").read()
+        ck("%s cites the gemma-4 traceback" % _pg, "1",
+           1 if "benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log" in _pt else 0)
+    _g4links = 0
+    for _pg in ("README.md", "README.zh.md", "benchmarks/campaign-2026-08-30/README.md",
+                "benchmarks/campaign-2026-09-06/README.md",
+                "benchmarks/campaign-2026-09-07/README.md"):
+        _pt = open(os.path.join(ROOT, _pg), encoding="utf-8").read()
+        for _rel in re.findall(r"\]\(([^)]*G31-tp2-on-027\.log)\)", _pt):
+            _g4links += 1
+            if not os.path.exists(os.path.join(ROOT, os.path.dirname(_pg), _rel)):
+                _g4links -= 1000
+    ck("gemma-4 on 0.27, every relative citation of the traceback resolves", "1",
+       1 if _g4links > 0 else 0)
     ck("benchmarks README, points a later session supersedes", "2",
        sum(1 for r in led if r.get("superseded_values")))
     ck("benchmarks README, ledger range median", "0.17",

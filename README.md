@@ -661,10 +661,14 @@ it as an upper bound. [The measurement](benchmarks/cuda-a100/campaign-2026-09-02
 
 **The two stacks cannot be matched.** Each arm is stock
 on the stack its platform actually runs — vLLM 0.23 on the pair, 0.28.0 on the
-A100 — because gemma-4 cannot be served on the ROCm 0.27 image at all: its Quark
-plugin reads `head_dim` off a heterogeneous config and dies before loading. Every
-other pairing in the data is worse, not better: the 2026-08-29 Radeon arm carries
-three patches the A100 arm does not.
+A100 — because gemma-4 does not start on the ROCm 0.27 image: vLLM 0.27's
+Gemma4 converter reads a global `head_dim` off a transformers config that
+stores it per layer, and the accessor raises before anything loads
+([the traceback](benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log); the Quark frame in it only forwards the call).
+Upstream vLLM fixed that read in [#49797](https://github.com/vllm-project/vllm/pull/49797), which 0.28.0 carries and
+0.27.1 does not, so a newer ROCm image should load the model; that has not
+been measured here. Every other pairing in the data is worse, not better: the
+2026-08-29 Radeon arm carries three patches the A100 arm does not.
 
 **Speculation inverts the comparison.** MTP at k=3 is worth **+7.9 %** to the
 pair at 32 K and **−20.1 %** to the A100, so on speculative arms the two machines
@@ -912,6 +916,15 @@ for numbers, [`docs/root-cause.md`](docs/root-cause.md) if you came for the bug.
 
 Every correction this page has carried stays on it. The bullets above now
 state what holds; what they used to say, and what changed it, is here.
+
+**gemma-4 on the 0.27 image, corrected 2026-09-09.** This page, three
+campaign READMEs and two articles said the image's Quark plugin reads
+`head_dim` off gemma-4's heterogeneous config and dies before loading. The
+[committed traceback](benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log) shows vLLM's own Gemma4 converter performing the
+read and transformers' per-layer accessor raising; the Quark frame forwards
+the call unchanged. Upstream fixed the read in vLLM [#49797](https://github.com/vllm-project/vllm/pull/49797), present
+in 0.28.0 and absent from 0.27.1. Whether a newer ROCm image serves the model
+is not measured.
 
 **Source audit, corrected 2026-09-08.** The earlier four-entry
 Vulkan/MTP summary had no corresponding rows in the committed llama.cpp records

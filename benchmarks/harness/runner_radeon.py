@@ -36,10 +36,12 @@ from harness.telemetry import Sampler, describe   # noqa: E402
 
 D = "/data/rccl-build/bench0830d"
 D_IN_CONTAINER = "/rb/bench0830d"
-# gemma-4 cannot be served on the 0.27 ROCm image at all -- its Quark plugin
-# reads head_dim off a heterogeneous config and dies before loading. Its rows
-# come from the 0.23 container, which is the stack the 08-24 campaign used,
-# so the MTP arm has that campaign's own ladder as its control.
+# gemma-4 does not start on the 0.27 ROCm image: vLLM 0.27's Gemma4 converter
+# reads a global head_dim off a per-layer transformers config and the accessor
+# raises before loading (campaign-2026-08-29/logs/G31-tp2-on-027.log; fixed
+# upstream in vllm#49797, which 0.27.1 lacks). Its rows come from the 0.23
+# container, which is the stack the 08-24 campaign used, so the MTP arm has
+# that campaign's own ladder as its control.
 CONTAINER = os.environ.get("BENCH_CONTAINER", "vllm-027")
 OTHER_CONTAINERS = ("vllm-027", "vllm-tp2")
 MUSE_P = "/data/rccl-build/prompts-muse"

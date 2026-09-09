@@ -1165,8 +1165,11 @@ different checkpoints in Figure 1's cost column.</p>
 
 <ul>
   <li><strong>Only one checkpoint was measured on both backends.</strong> Whether the other five would
-  move the same way is not known, and they cannot be re-run together on 0.27 in any case: gemma-4's
-  Quark plugin reads a heterogeneous <code>head_dim</code> and dies before loading.</li>
+  move the same way is not known, and they cannot be re-run together on 0.27 in any case: gemma-4 does
+  not start on that image, because vLLM 0.27's Gemma4 converter reads a global <code>head_dim</code> off a
+  per-layer transformers config and the accessor raises before loading
+  (<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">the traceback</a>; fixed upstream in
+  <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a>, which 0.27.1 lacks).</li>
   <li><strong>Nothing here opens either kernel.</strong> That prefill moves the other way is the shape
   of a trade, not an explanation of one.</li>
   <li><strong>Every cell is batch 1.</strong> <code>max-num-seqs</code> is 16 for capacity, not for

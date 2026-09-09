@@ -124,8 +124,11 @@ existed before and was simply taken after the KV cache was sized.
   cannot be rewritten from this file alone. The slope above does not need it:
   both fits are over the same 8 000–96 000 span.
 - **Nothing here says the other five arms would move the same way.** They cannot
-  be re-run on 0.27 together in any case — gemma-4's Quark plugin reads a
-  heterogeneous `head_dim` and dies before loading.
+  be re-run on 0.27 together in any case — gemma-4 does not start on this
+  image: vLLM 0.27's Gemma4 converter reads a global `head_dim` off a
+  per-layer transformers config and the accessor raises before loading
+  ([the traceback](../campaign-2026-08-29/logs/G31-tp2-on-027.log); fixed
+  upstream in vllm#49797, which 0.27.1 lacks).
 
 ## Provenance
 

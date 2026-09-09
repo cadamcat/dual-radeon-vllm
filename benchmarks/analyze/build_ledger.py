@@ -230,10 +230,12 @@ CAMPAIGNS = [
     dict(file="results-2026-08-24.jsonl", date="2026-08-24",
          vllm="0.23.1.dev1+g9ddef7117", rocm="7.14", kernel="7.0.0-30",
          patches=["vllm#45916 split-KV", "window block-skip"]),
-    # One file, two stacks. gemma-4 cannot be served on the 0.27 image at all --
-    # its Quark plugin reads head_dim off a heterogeneous config and dies before
-    # loading -- so its arms ran on the 0.23 container the 08-24 campaign used,
-    # and `per_cfg` carries what differs per arm rather than per file.
+    # One file, two stacks. gemma-4 does not start on the 0.27 image -- vLLM
+    # 0.27's Gemma4 converter reads a global head_dim off a per-layer
+    # transformers config and the accessor raises before loading (the
+    # traceback is logs/G31-tp2-on-027.log; fixed upstream in vllm#49797) --
+    # so its arms ran on the 0.23 container the 08-24 campaign used, and
+    # `per_cfg` carries what differs per arm rather than per file.
     dict(file="campaign-2026-08-29/results.jsonl", date="2026-08-29",
          vllm="0.27.1.dev5+gf46a9dfe2", rocm="10.0", kernel="7.0.0-30",
          patches=["vllm#45916 split-KV"],

@@ -116,7 +116,7 @@ __CHIPS__
 <h2><span class="n">8</span>哪些没有被确立</h2>
 
 <ul>
-  <li><strong>只有一个 checkpoint 在两种后端上都测过。</strong>其余五个会不会同样移动并不知道，而且它们无论如何也不能在 0.27 上一起重跑：gemma-4 的 Quark 插件读到异构的 <code>head_dim</code> 就会在加载前死掉。</li>
+  <li><strong>只有一个 checkpoint 在两种后端上都测过。</strong>其余五个会不会同样移动并不知道，而且它们无论如何也不能在 0.27 上一起重跑：gemma-4 在那个镜像上无法启动，因为 vLLM 0.27 的 Gemma4 converter 从按层存储的 transformers 配置里读取全局 <code>head_dim</code>，访问器在加载前就抛错（<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">回溯</a>；上游已在 <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a> 修正，0.27.1 不含）。</li>
   <li><strong>这里没有打开任何一个内核。</strong>预填充朝反方向走，是权衡的形状，不是对权衡的解释。</li>
   <li><strong>每一格都是 batch 1。</strong><code>max-num-seqs</code> 设为 16 是为了容量，不是为了负载。两个后端在深度上的并发表现是另一次测量。</li>
   <li><strong>图 1 的六条臂来自一台机器。</strong>「百分比在除以什么」这个论断是算术，可以带走；而那个具体的排序属于这一对卡。</li>
