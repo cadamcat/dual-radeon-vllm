@@ -1111,6 +1111,7 @@ addEventListener("DOMContentLoaded", function () {
   <li><strong>图 1 的六条臂来自一台机器。</strong>「百分比在除以什么」这个论断是算术，可以带走；而那个具体的排序属于这一对卡。</li>
 </ul>
 
+<div class="tip" id="tip"></div>
 <script type="application/json" id="figures">{
  "_what": "The depth-cost article. One checkpoint family on one pair of cards: what a retention percentage measures, what a slope measures, and how much of each belongs to the software. Derived by site/src/genfig-depth.py from benchmarks/decode.jsonl, benchmarks/prefill.jsonl and benchmarks/campaign-2026-09-07/.",
  "fig1": {
@@ -1881,6 +1882,36 @@ addEventListener("DOMContentLoaded", function () {
   function put(id, html) { var e = document.getElementById(id); if (e) e.innerHTML = html; }
   var fills = [];
 
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
+
   /* ---------- Figure 1: the two rankings ---------- */
   (function () {
     var box = document.getElementById("rank");
@@ -1985,5 +2016,25 @@ addEventListener("DOMContentLoaded", function () {
     var t = document.getElementById("trade");
     if (t) io.observe(t); else grow();
   }
+
+  /* ---------- reveal ---------- */
+  // the same block every other body carries: without it every .rv element --
+  // all three figures and their rows -- stays at opacity 0 (2026-09-09)
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var rio = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        rio.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; rio.observe(e);
+    });
+  }
 })();
 </script>
+</body>
+</html>

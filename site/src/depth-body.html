@@ -186,6 +186,7 @@ different checkpoints in Figure 1's cost column.</p>
   divides by is arithmetic and travels; the particular ordering is this pair's.</li>
 </ul>
 
+<div class="tip" id="tip"></div>
 <script type="application/json" id="figures">__FIGURES_JSON__</script>
 <script type="application/json" id="strings">{
  "rankH": ["arm", "architecture", "retention 500 → 32 000", "cost µs/context token", "r²"],
@@ -216,6 +217,36 @@ different checkpoints in Figure 1's cost column.</p>
   function kctx(v) { return v >= 1000 ? (v / 1000) + "K" : String(v); }
   function put(id, html) { var e = document.getElementById(id); if (e) e.innerHTML = html; }
   var fills = [];
+
+  /* ---------- theme ---------- */
+  (function () {
+    var root = document.documentElement, KEY = "hssm-theme";
+    var btns = { auto: document.getElementById("th-auto"),
+                 light: document.getElementById("th-light"),
+                 dark: document.getElementById("th-dark") };
+    function paint(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      for (var k in btns) btns[k].setAttribute("aria-pressed", String(k === mode));
+    }
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) { /* private mode */ }
+    paint(stored === "light" || stored === "dark" ? stored : "auto");
+    // the bar is fixed, so it would sit on top of whatever scrolls under it
+    var bar = document.querySelector(".themebar"), last = window.scrollY;
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      bar.classList.toggle("away", y > last && y > 220);
+      last = y;
+    }, { passive: true });
+    Object.keys(btns).forEach(function (k) {
+      btns[k].addEventListener("click", function () {
+        paint(k);
+        try { k === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, k); }
+        catch (e) { /* nothing to persist to; the choice still applies to this page */ }
+      });
+    });
+  })();
 
   /* ---------- Figure 1: the two rankings ---------- */
   (function () {
@@ -321,5 +352,25 @@ different checkpoints in Figure 1's cost column.</p>
     var t = document.getElementById("trade");
     if (t) io.observe(t); else grow();
   }
+
+  /* ---------- reveal ---------- */
+  // the same block every other body carries: without it every .rv element --
+  // all three figures and their rows -- stays at opacity 0 (2026-09-09)
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e) { e.classList.add("in"); });
+  } else {
+    var rio = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        rio.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (e, i) {
+      e.style.transitionDelay = ((i % 8) * 55) + "ms"; rio.observe(e);
+    });
+  }
 })();
 </script>
+</body>
+</html>
