@@ -215,8 +215,8 @@
     "id": "vllm#53856",
     "kind": "PR",
     "author": "aoshen02",
-    "state": "open",
-    "when": "gfx11 evidence supplied 2026-08-28",
+    "state": "merged",
+    "when": "merged 2026-09-08; gfx11 evidence supplied 2026-08-28",
     "ours": false
    },
    {
@@ -287,8 +287,8 @@
     "id": "vllm#54210",
     "kind": "PR",
     "author": "cadamcat",
-    "state": "open",
-    "when": "2026-08-28",
+    "state": "open, under review",
+    "when": "gsm8k supplied 2026-09-07",
     "ours": true
    },
    {
@@ -316,9 +316,9 @@
     "ours": false
    }
   ],
-  "checked": "2026-08-29",
+  "checked": "2026-09-09",
   "ours": 8,
   "others": 8,
-  "merged": 1
+  "merged": 2
  }
 }

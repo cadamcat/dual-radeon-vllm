@@ -1144,16 +1144,17 @@ to external contributors where this test bench provided measurements they could 
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">Figure 3 · every thread, and where it stood on 2026-08-29
+    <div class="figtitle">Figure 3 · every thread, and where it stood on 2026-09-09
       <span class="prov cmd">check with gh api</span></div>
     <div class="thr" id="threads"></div>
     <div class="barunit" id="thrnote"></div>
   </div>
   <figcaption>
     <b>Figure 3.</b> Status as read from the API on the date shown, not from memory — these move, and a
-    page that says "open" forever is wrong within weeks. One is merged, by its own author, and it closed
+    page that says "open" forever is wrong within weeks. Two are merged. One, by its own author, closed
     the larger half of a problem this repository had spent a month characterising through a different
-    kernel. Two more had gfx11 as their explicit gap: their authors had validated on Instinct and said
+    kernel; the other, the V-cache padding fix, merged on 2026-09-08 with this repository's gfx11
+    evidence in its thread. Two more had gfx11 as their explicit gap: their authors had validated on Instinct and said
     so in their test plans.
   </figcaption>
 </figure>
@@ -1176,8 +1177,9 @@ Whether these findings apply to RDNA4 was not measured. The repository notes exp
 but that statement reflects documentation audits rather than benchmark runs.</p>
 
 <h3>Whether the gaps are closing</h3>
-<p>A single upstream pull request merged during this study, resolving half of one finding.
-That resolution indicates progress, but does not prove an ongoing trend. The data records where gfx11
+<p>One upstream pull request merged during this study, resolving half of one finding; a second,
+the V-cache padding fix, merged on 2026-09-08, after this page's first reading.
+Those resolutions indicate progress, but do not prove an ongoing trend. The data records where gfx11
 support stood at the time of testing, not the velocity of upstream development.</p>
 
 <h2><span class="n">6</span>What has changed since</h2>
@@ -1199,7 +1201,7 @@ support stood at the time of testing, not the velocity of upstream development.<
 
 <div class="note warn">
   <span class="lbl">Statuses expire</span>
-  Figure 3 represents a point-in-time snapshot. Everything in it except the single merge was open on 2026-08-29,
+  Figure 3 represents a point-in-time snapshot. Everything in it except the two merges was open on 2026-09-09,
   and the proper use of the page is to inspect the direct links rather than rely on the table status.
 </div>
 
@@ -1465,8 +1467,8 @@ support stood at the time of testing, not the velocity of upstream development.<
     "id": "vllm#53856",
     "kind": "PR",
     "author": "aoshen02",
-    "state": "open",
-    "when": "gfx11 evidence supplied 2026-08-28",
+    "state": "merged",
+    "when": "merged 2026-09-08; gfx11 evidence supplied 2026-08-28",
     "ours": false
    },
    {
@@ -1537,8 +1539,8 @@ support stood at the time of testing, not the velocity of upstream development.<
     "id": "vllm#54210",
     "kind": "PR",
     "author": "cadamcat",
-    "state": "open",
-    "when": "2026-08-28",
+    "state": "open, under review",
+    "when": "gsm8k supplied 2026-09-07",
     "ours": true
    },
    {
@@ -1566,13 +1568,12 @@ support stood at the time of testing, not the velocity of upstream development.<
     "ours": false
    }
   ],
-  "checked": "2026-08-29",
+  "checked": "2026-09-09",
   "ours": 8,
   "others": 8,
-  "merged": 1
+  "merged": 2
  }
-}
-</script>
+}</script>
 <script type="application/json" id="strings">{
  "axisNames": {
   "rdna3": "RDNA3 specifically",

@@ -140,6 +140,18 @@ for _f in FINDINGS:
     for _k, _v in ZH[_f["slug"]].items():
         _f[_k + "_zh"] = _v
 
+# A finding's title is the article's own <h1>, which build.py reads back into
+# articles.json; it is taken from there rather than retyped. The titles typed
+# above drifted once -- on 2026-09-09 all eight were the pre-retitling text and
+# the committed JSON had been corrected by hand, so regenerating it moved the
+# titles backwards and the gate caught it. Read from the registry, they cannot.
+_AJ = {a["slug"]: a for a in
+       json.load(open(pathlib.Path(__file__).parent / "articles.json",
+                      encoding="utf-8"))["articles"]}
+for _f in FINDINGS:
+    _f["title"] = _AJ[_f["slug"]]["title"]["en"]
+    _f["title_zh"] = _AJ[_f["slug"]]["title"]["zh"]
+
 AXES = {"rdna3": "RDNA3 specifically", "amd": "AMD-wide", "neutral": "vendor-neutral",
         "tp": "tensor parallelism", "platform": "platform capability"}
 fig1 = {"findings": FINDINGS, "axes": AXES,
@@ -177,8 +189,8 @@ STATUS = [
      "when": "verified here 2026-07-30", "ours": False},
     {"id": "vllm#45450", "kind": "PR", "author": "jinhuang12", "state": "open, conflicted",
      "when": "validated here 2026-08-26", "ours": False},
-    {"id": "vllm#53856", "kind": "PR", "author": "aoshen02", "state": "open",
-     "when": "gfx11 evidence supplied 2026-08-28", "ours": False},
+    {"id": "vllm#53856", "kind": "PR", "author": "aoshen02", "state": "merged",
+     "when": "merged 2026-09-08; gfx11 evidence supplied 2026-08-28", "ours": False},
     {"id": "vllm#49588", "kind": "PR", "author": "hec-ovi", "state": "open, draft",
      "when": "second evidence body 2026-08-24", "ours": False},
     {"id": "vllm#48076", "kind": "issue", "author": "tuananhlfc", "state": "open",
@@ -195,8 +207,8 @@ STATUS = [
      "when": "2026-08-26", "ours": True},
     {"id": "vllm#53930", "kind": "PR", "author": "cadamcat", "state": "open",
      "when": "2026-08-27", "ours": True},
-    {"id": "vllm#54210", "kind": "PR", "author": "cadamcat", "state": "open",
-     "when": "2026-08-28", "ours": True},
+    {"id": "vllm#54210", "kind": "PR", "author": "cadamcat", "state": "open, under review",
+     "when": "gsm8k supplied 2026-09-07", "ours": True},
     {"id": "ROCm#6520", "kind": "issue", "author": "cadamcat", "state": "open",
      "when": "2026-07-26", "ours": True},
     {"id": "ROCm#6523", "kind": "issue", "author": "cadamcat", "state": "open",
@@ -204,7 +216,7 @@ STATUS = [
     {"id": "ROCm#6565", "kind": "issue", "author": "BoJl4apa", "state": "open",
      "when": "contrast cell 2026-08-28", "ours": False},
 ]
-fig3 = {"threads": STATUS, "checked": "2026-08-29",
+fig3 = {"threads": STATUS, "checked": "2026-09-09",
         "ours": sum(1 for s in STATUS if s["ours"]),
         "others": sum(1 for s in STATUS if not s["ours"]),
         "merged": sum(1 for s in STATUS if s["state"] == "merged")}

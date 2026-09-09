@@ -1110,15 +1110,16 @@ addEventListener("DOMContentLoaded", function () {
 
 <figure class="rv" id="fig3">
   <div class="figbox">
-    <div class="figtitle">图 3 · 每一条 issue 与 PR，以及它在 2026-08-29 的状态
+    <div class="figtitle">图 3 · 每一条 issue 与 PR，以及它在 2026-09-09 的状态
       <span class="prov cmd">可用 gh api 自行核对</span></div>
     <div class="thr" id="threads"></div>
     <div class="barunit" id="thrnote"></div>
   </div>
   <figcaption>
     <b>图 3.</b> 状态是在标注日期从 API 读的，不是凭记忆写的 —— 这些会变，
-    而一个永远写着"开着"的页面几周内就错了。有一条已合并，由它自己的作者合的，
-    而它关掉的是本仓库花了一个月、经由另一个 kernel 刻画的那个问题里更大的一半。
+    而一个永远写着"开着"的页面几周内就错了。有两条已合并。一条由它自己的作者合的，
+    关掉的是本仓库花了一个月、经由另一个 kernel 刻画的那个问题里更大的一半；另一条是
+    V-cache padding 修复，2026-09-08 合并，线程里有本仓库补交的 gfx11 证据。
     另外两条明确把 gfx11 列为缺口：它们的作者在 Instinct 上验证过，并在测试计划里写明了。
   </figcaption>
 </figure>
@@ -1134,7 +1135,7 @@ addEventListener("DOMContentLoaded", function () {
 <p>所有实测均基于 VFIO 客户机上的 gfx1100，跨越两代 vLLM 与两个 ROCm 版本。这些结论是否适用于 RDNA4 并未做过实测；仓库架构笔记虽预期该生态缺口会延伸至该架构，但该断言仅来自对支持硬件文档的核对，而非基准测试。</p>
 
 <h3>这些缺口是否在收窄</h3>
-<p>测试期间仅有一项上游 PR 得到合并并解决了半个问题。这指明了改进方向，却不足以构成整体趋势。本文仅记录了测试当时 gfx11 支持的实际现状，并未衡量上游开发的推进速度。</p>
+<p>测试期间有一项上游 PR 合并并解决了半个问题；第二项（V-cache padding 修复）在本页首次读取之后于 2026-09-08 合并。这指明了改进方向，却不足以构成整体趋势。本文仅记录了测试当时 gfx11 支持的实际现状，并未衡量上游开发的推进速度。</p>
 
 <h2><span class="n">6</span>此后发生的变化</h2>
 
@@ -1150,7 +1151,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="note warn">
   <span class="lbl">状态信息具有时效性</span>
-  图 3 仅代表特定时间点的快照。除了一处合并，表中所有项目在 2026-08-29 时均处于开启状态。阅读本文时应当直接点击链接查看实时进展，而非单纯依赖表格中的状态列。
+  图 3 仅代表特定时间点的快照。除了两处合并，表中所有项目在 2026-09-09 时均处于开启状态。阅读本文时应当直接点击链接查看实时进展，而非单纯依赖表格中的状态列。
 </div>
 
 <div class="note warn">
@@ -1401,8 +1402,8 @@ addEventListener("DOMContentLoaded", function () {
     "id": "vllm#53856",
     "kind": "PR",
     "author": "aoshen02",
-    "state": "open",
-    "when": "gfx11 evidence supplied 2026-08-28",
+    "state": "merged",
+    "when": "merged 2026-09-08; gfx11 evidence supplied 2026-08-28",
     "ours": false
    },
    {
@@ -1473,8 +1474,8 @@ addEventListener("DOMContentLoaded", function () {
     "id": "vllm#54210",
     "kind": "PR",
     "author": "cadamcat",
-    "state": "open",
-    "when": "2026-08-28",
+    "state": "open, under review",
+    "when": "gsm8k supplied 2026-09-07",
     "ours": true
    },
    {
@@ -1502,13 +1503,12 @@ addEventListener("DOMContentLoaded", function () {
     "ours": false
    }
   ],
-  "checked": "2026-08-29",
+  "checked": "2026-09-09",
   "ours": 8,
   "others": 8,
-  "merged": 1
+  "merged": 2
  }
-}
-</script>
+}</script>
 <script type="application/json" id="strings">{
  "axisNames": {
   "rdna3": "RDNA3 特定",

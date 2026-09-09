@@ -5760,9 +5760,25 @@ def _run_checks(_opened, _audit_state):
     ck("rdna3 article, fig3 and half are not", "8", ZART["fig3"]["others"])
     ck("rdna3 article, fig3 the counts add up", "16",
        ZART["fig3"]["ours"] + ZART["fig3"]["others"])
-    ck("rdna3 article, fig3 one is merged", "1", ZART["fig3"]["merged"])
-    ck("rdna3 article, fig3 says when it was read", "1",
-       1 if ZART["fig3"]["checked"] == "2026-08-29" else 0)
+    # the merged count is read out of the page's own prose, in both languages,
+    # and out of its rows -- not a literal, which pinned "one" after a second
+    # PR merged on 2026-09-08
+    _zb = open(os.path.join(ROOT, "site", "src", "rdna3-body.html"), encoding="utf-8").read()
+    _zbz = open(os.path.join(ROOT, "site", "src", "rdna3-body-zh.html"), encoding="utf-8").read()
+    _mw = re.search(r"\b(One|Two|Three|Four) (?:is|are) merged", _zb)
+    ck("rdna3 article, fig3 merged count is the prose's",
+       str({"One": 1, "Two": 2, "Three": 3, "Four": 4}[_mw.group(1)]) if _mw else "nan",
+       ZART["fig3"]["merged"])
+    _zw = re.search(r"有([一两三四])条已合并", _zbz)
+    ck("rdna3 article, fig3 merged count is the Chinese prose's",
+       str({"一": 1, "两": 2, "三": 3, "四": 4}[_zw.group(1)]) if _zw else "nan",
+       ZART["fig3"]["merged"])
+    ck("rdna3 article, fig3 merged count is the rows'", str(ZART["fig3"]["merged"]),
+       sum(1 for s in ZART["fig3"]["threads"] if s["state"] == "merged"))
+    # the date the statuses were read is the one both figure titles print
+    ck("rdna3 article, fig3 says when it was read", "2",
+       (1 if f"where it stood on {ZART['fig3']['checked']}" in _zb else 0)
+       + (1 if f"它在 {ZART['fig3']['checked']} 的状态" in _zbz else 0))
     ck("rdna3 article, fig3 every thread names an author", "16",
        sum(1 for s in ZART["fig3"]["threads"] if s["author"]))
     # every finding's upstream references must appear in the thread table

@@ -70,6 +70,11 @@ backend and moves the kernel, and the variation goes. The source is the
 kernel's split-K epilogue, and #54706's replacement of it is the fix — on
 this box, at TP=2, for these two checkpoints and depths.
 
+Upstream has moved under this record: vllm#54809 (merged 2026-09-08) rewrote
+the RDNA3 W4A16 sources this A/B was built on, and #54706 was rebased onto it
+and approved on 2026-09-07 and 2026-09-09. The 32 of 32 above is a result on
+the pinned commit, not on current main. Read from the API on 2026-09-09.
+
 Eight repeats is what the published cells used, and it is not many: the
 baseline's Muse-Glimmer at 8 192 came back 1 of 8 where the wheel had 4 of 8,
 which is the same kernel on a different day. The claim rests on the patched
