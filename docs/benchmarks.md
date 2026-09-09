@@ -40,15 +40,19 @@ mean anything. That is the right frame for reading a campaign and the wrong one
 for the question most readers arrive with, so the two charts that answer *that*
 question come first.
 
-One line per model, each from whichever stack measured it best. Solid needs
-nothing but a released vLLM; dashed needs a patch that is not merged, named
-under the chart along with the date, vLLM and ROCm of every line. Both are
-drawn from [`../benchmarks/ledger.jsonl`](../benchmarks/ledger.jsonl) by
-[`gen_best_charts.py`](../benchmarks/analyze/gen_best_charts.py).
+One line per model, each from whichever of the ledger's candidates measured
+it best: the TP=2 series without speculation from the campaigns of
+2026-07-25, 2026-08-24 and 2026-08-29 and the 2026-08-28 probes, the deepest
+context first, then throughput, an unpatched series kept within 2 %. Solid
+needs nothing but a released vLLM; dashed needs a patch that is not merged,
+named under the chart along with the date, vLLM and ROCm of every line. Both
+are drawn from [`../benchmarks/ledger.jsonl`](../benchmarks/ledger.jsonl) by
+[`gen_best_charts.py`](../benchmarks/analyze/gen_best_charts.py); the
+September campaigns are not in that file.
 
-![decode throughput vs context length, best known configuration](assets/decode-vs-context-best.svg)
+![decode throughput vs context length, the best of the ledger's candidates](assets/decode-vs-context-best.svg)
 
-![cost of one context token at decode time, best known configuration](assets/decode-ms-per-token-best.svg)
+![cost of one context token at decode time, the best of the ledger's candidates](assets/decode-ms-per-token-best.svg)
 
 ![the hybrid-SSM collapse and what closes it](assets/hybrid-ssm-collapse.svg)
 

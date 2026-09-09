@@ -325,11 +325,14 @@ does not ([benchmarks.md §6](docs/benchmarks.md#6-the-same-machine-patched-a-se
 For the measurement method and the checks behind the timings, read
 [Measuring decode](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.html).
 
-![decode throughput vs context length, best known configuration](docs/assets/decode-vs-context-best.svg)
+![decode throughput vs context length, the best of the ledger's candidates](docs/assets/decode-vs-context-best.svg)
 
-One line per model, selected among the ledger's candidates through August, with what that
-took written under the chart: solid needs nothing but a released vLLM, dashed
-needs a patch that is not merged. It is drawn from
+One line per model, selected among the ledger's TP=2 candidates without
+speculation — the campaigns of 2026-07-25, 2026-08-24 and 2026-08-29 and the
+2026-08-28 probes — with what that took written under the chart: solid needs
+nothing but a released vLLM, dashed needs a patch that is not merged. The rule
+takes the deepest context a series reaches, then its throughput there, and
+keeps an unpatched series within 2 % of a patched one. It is drawn from
 [`benchmarks/ledger.jsonl`](benchmarks/ledger.jsonl), which carries the date,
 vLLM, ROCm and patch list of every point. September campaigns are outside this
 figure's candidate set; the [newer backend A/B](benchmarks/campaign-2026-09-07/)
@@ -338,7 +341,7 @@ carry the later measurements.
 
 **The chart and the table below answer different questions, and Qwen3.8-27B is
 where that shows.** The table is one campaign, run on one afternoon on one
-stack; the chart selects across the ledger's candidates through August. That model reads
+stack; the chart selects across the ledger's candidates to 2026-08-29. That model reads
 10.7 tok/s at 32 K in the table and 36.1 on the chart, and the difference is
 vLLM 0.27 with [#45916](https://github.com/vllm-project/vllm/pull/45916)
 applied ([the A/B](docs/hybrid-decode-on-rdna.md)).
@@ -410,12 +413,14 @@ to a repeatability check on the whole apparatus — is in
 **What one context token costs at decode time.** The slope is the number that
 matters: it is milliseconds added per token of context, so a flat line is a
 model whose decode does not care how long the conversation is. Every line here
-uses the same selection through August as the static throughput chart above.
+uses the same candidate set, to 2026-08-29, and the same rule as the static
+throughput chart above.
 
-![cost of one context token at decode time, best known configuration](docs/assets/decode-ms-per-token-best.svg)
+![cost of one context token at decode time, the best of the ledger's candidates](docs/assets/decode-ms-per-token-best.svg)
 
 **The same checkpoint on three software stacks.** Every line above is one
-model on the stack that measured it best through August. This chart holds the
+model on the stack that measured it best among the ledger's candidates to
+2026-08-29. This chart holds the
 model still and changes the stack: Qwen3.8-27B, the same weights on the same
 two cards, on the published 0.23.1 arm, on 0.27.1 with the backend it picks for
 itself, and on 0.27.1 with `--attention-backend TRITON_ATTN`. Fitted over the

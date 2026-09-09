@@ -4198,6 +4198,8 @@ def _run_checks(_opened, _audit_state):
        1 if spot["values"] == raw else 0)
 
     # --- the best-of charts: drawn from the ledger, and from nothing else ----
+    zh = open(os.path.join(ROOT, "README.zh.md")).read()
+    bm = open(os.path.join(ROOT, "docs", "benchmarks.md")).read()
     import gen_best_charts as gbc
     chosen = gbc.pick(led)
     ck("best charts, models drawn", "6", len(chosen))
@@ -4236,6 +4238,33 @@ def _run_checks(_opened, _audit_state):
     ck("best charts, the plotted 8K value", "47.30", sum(hi) / len(hi))
     ck("best charts, and the ledger still refuses to grade it", "0",
        1 if q8["chart_grade"] else 0)
+    # the span the charts and their captions claim for the candidate set is
+    # recomputed from the ledger with pick()'s own filter -- TP=2, the six
+    # models, no speculation -- so a caption cannot keep saying "through
+    # August" after the ledger moves, and cannot say "best in the repository"
+    # for a file that stops where it stops
+    _cand = [r for r in led if r["tp"] == 2 and r["model"] in gbc.COLOUR
+             and r.get("spec") is None]
+    _cd0, _cd1 = min(r["date"] for r in _cand), max(r["date"] for r in _cand)
+    _cn = len({(r["model"], r["date"], r["vllm"], r["rocm"], tuple(r["patches"]),
+                r.get("attn_backend")) for r in _cand})
+    _date = re.compile(r"(?<![-\w])(2026-\d\d-\d\d)(?![-\w/])")
+    for _nm, _svg in (("decode chart", svgd), ("cost chart", svgm)):
+        _sub = re.findall(r">([^<]*ledger[^<]*)</text>", _svg)
+        _sd = _date.findall(" ".join(_sub))
+        ck("best charts, the %s subtitle names the ledger's first candidate date" % _nm, "1",
+           1 if _sd and min(_sd) == _cd0 else 0)
+        ck("best charts, and its last", "1", 1 if _sd and max(_sd) == _cd1 else 0)
+        _sn = re.search(r"(\d+) (?:candidate series|ledger candidates)", " ".join(_sub))
+        ck("best charts, the %s subtitle counts the candidate series" % _nm,
+           str(_cn), int(_sn.group(1)) if _sn else -1)
+    for _nm, _txt in (("README.md", rm), ("README.zh.md", zh), ("benchmarks.md", bm)):
+        _i = _txt.index("decode-vs-context-best.svg")
+        _wd = _date.findall(_txt[max(0, _i - 1200):_i + 1200])
+        ck("%s, the best-chart caption's candidate span starts where the ledger's does" % _nm,
+           "1", 1 if _wd and min(_wd) == _cd0 else 0)
+        ck("%s, and ends where the ledger's does" % _nm, "1",
+           1 if _wd and max(_wd) == _cd1 else 0)
 
     # the collapse has its own figure now: one model, two arms, one patch apart
     svgc = open(os.path.join(HERE, "..", "..", "docs", "assets",
@@ -4254,8 +4283,6 @@ def _run_checks(_opened, _audit_state):
        1 if re.search(r'text-anchor="end">275</text>', svgc) else 0)
 
     # --- the front pages: what they embed, and the numbers they quote --------
-    zh = open(os.path.join(ROOT, "README.zh.md")).read()
-    bm = open(os.path.join(ROOT, "docs", "benchmarks.md")).read()
     for name, txt in (("README.md", rm), ("README.zh.md", zh)):
         ck(f"{name} embeds the best-of decode chart", "1",
            txt.count("decode-vs-context-best.svg"))
@@ -6360,6 +6387,22 @@ def _run_checks(_opened, _audit_state):
     ck("index caption, zh: the Radeon lines", str(_xz.get(_m.group(1), -1) if _m else -1), _xpair)
     ck("index caption, zh: from the one campaign", str(_xz.get(_m.group(2), -1) if _m else -1), XB["campaign"]["models"])
     ck("index caption, zh: and the rest", str(_xz.get(_m.group(3), -1) if _m else -1), _xpair - XB["campaign"]["models"])
+    # the candidate span the page states for the Radeon lines is the data
+    # block's, and the data block's is the ledger's TP=2 population
+    _xc = XB.get("candidates", {})
+    _xl2 = [r for r in XLED if r["tp"] == 2 and r["spec"] is None]
+    ck("index figure, the candidate set is the ledger", "1",
+       1 if _xc.get("source") == "benchmarks/ledger.jsonl" else 0)
+    ck("index figure, its first candidate date is the ledger's", "1",
+       1 if _xc.get("from") == min(r["date"] for r in _xl2) else 0)
+    ck("index figure, and its last", "1",
+       1 if _xc.get("to") == max(r["date"] for r in _xl2) else 0)
+    _xdate = re.compile(r"(?<![-\w])(2026-\d\d-\d\d)(?![-\w/])")
+    for _lang, _body in (("en", _xen), ("zh", _xzh)):
+        _para = _body[_body.index('<span class="n">1</span>'):_body.index('<figure class="rv" id="figbest">')]
+        _pd = _xdate.findall(_para)
+        ck("index caption, %s: the candidate span it states is the data block's" % _lang, "1",
+           1 if _pd and min(_pd) == _xc.get("from") and max(_pd) == _xc.get("to") else 0)
     ck("index figure, and a colour for each without wrapping", "1",
        1 if len(xmodels) <= len(set(re.findall(r"--m(\d):",
           open(os.path.join(HERE, "..", "..", "site", "src", "index-extra.css"),

@@ -22988,6 +22988,11 @@
     "window block-skip"
    ]
   },
+  "candidates": {
+   "source": "benchmarks/ledger.jsonl",
+   "from": "2026-07-25",
+   "to": "2026-08-29"
+  },
   "repro": {
    "cells": 60,
    "worst_pct": 3.95265501140189,
@@ -24387,12 +24392,12 @@
     {
      "label": "ROCm 7.0 (2.26.6)",
      "ok": true,
-     "note": "0"
+     "note": "N"
     },
     {
      "label": "ROCm 7.1.1 (2.27.7-b38)",
      "ok": true,
-     "note": "0"
+     "note": "N"
     },
     {
      "label": "ROCm 7.2.4 (2.27.7)",

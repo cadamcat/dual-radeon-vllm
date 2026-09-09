@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen_best_charts.py — one line per model, the best this machine is known to do.
+"""gen_best_charts.py — one line per model, the best among the ledger's candidates.
 
 The per-campaign charts answer "what did that run measure?". A reader arriving
 at this repository is asking "what does this box do?", and answering it with two
@@ -15,7 +15,11 @@ one stamp over the whole figure:
     the chart
 
 Selection, in order, per model at TP=2:
-  1. candidates are the (date, vllm, rocm, patches) groups in the ledger
+  1. candidates are the (date, vllm, rocm, patches, spec, backend) groups in
+     the ledger -- and only the ledger: campaigns that feed decode.jsonl but
+     not ledger.jsonl are outside this chart, and the subtitle says how far
+     the candidates run so a reader does not take a ledger cutoff for a
+     repository-wide best
   2. score each at the deepest context it reaches
   3. take the best, but prefer an unpatched candidate when it is within 2% of
      it, because a chart should not send a reader to install a patch that buys
@@ -123,6 +127,20 @@ def pick(rows):
                 and best[1] <= cand[1] * (1 + PREFER_UNPATCHED_WITHIN)):
             chosen[model] = cand
     return chosen
+
+
+def candidates(rows):
+    """The rows pick() chooses from, and the span it can claim: (first date,
+    last date, number of candidate series). Same filter as pick(), so the
+    subtitle cannot describe a different population than the one selected."""
+    keys, dates = set(), set()
+    for r in rows:
+        if r["tp"] != 2 or r["model"] not in COLOUR or r.get("spec") is not None:
+            continue
+        keys.add((r["model"], r["date"], r["vllm"], r["rocm"], tuple(r["patches"]),
+                  json.dumps(r.get("spec"), sort_keys=True), r.get("attn_backend")))
+        dates.add(r["date"])
+    return min(dates), max(dates), len(keys)
 
 
 def modes(row):
@@ -353,6 +371,7 @@ def collapse_chart(led):
 def main():
     led = [json.loads(l) for l in open(LEDGER)]
     chosen = pick(led)
+    d0, d1, ncand = candidates(led)
 
     series, notes = [], []
     for model in ORDER:
@@ -397,12 +416,14 @@ def main():
     mnotes = list(notes)
     out = [
         build("decode-vs-context-best.svg", "Decode throughput vs context length",
-              "one line per model, the best configuration measured here",
+              f"one line per model, the best of the ledger's {ncand} candidate series, "
+              f"{d0} to {d1} &#183; TP=2, no speculation",
               # 150, not 115: the fastest line reaches 107.8 and sat against
               # the top of the frame with nothing above it
               series, 150, "decode tok/s", notes, step=10),
         build("decode-ms-per-token-best.svg", "Cost of one context token at decode time",
-              "slope = ms added per token of context, each model at its best configuration",
+              f"slope = ms added per token of context; the same {ncand} ledger candidates, "
+              f"{d0} to {d1}",
               # every line here is now a patched-machine line, so the axis
               # stops at 40 and the broken axis the collapse needed is gone
               mseries, 40, "ms per generated token", mnotes, step=5),

@@ -1,12 +1,14 @@
-"""The index's "what this machine does today" figure.
+"""The index's "what this machine does" figure.
 
 One line per model, each the fastest configuration that model has been measured
-in. That is not one experiment: five of the lines come from a single campaign
-and are directly comparable, and two do not, because a later stack or
-speculative decoding beats that campaign by more than its own spread. Which
+in among the ledger's candidates. That is not one experiment: four of the lines
+come from a single campaign and are directly comparable, and two do not,
+because a later stack beats that campaign by more than its own spread. Which
 line is which is data, not a footnote -- every series carries the stack it
 needed, and this script refuses to emit a pick it cannot show is the best one
-in the repository.
+in the ledger. The ledger is the candidate set, and `candidates` below says
+how far it runs: decode.jsonl carries later ladders on this pair that are
+Figures 3 and 4's subject, not this figure's.
 
 Run it; do not hand-edit figures-index.json.
 """
@@ -531,7 +533,7 @@ assert not all(any(r["model"] == m and r["date"] == PRIOR for r in led) for m in
 # --- the pick has to survive the rest of the repository ----------------------
 # For every model on the Radeons, no other series in the ledger may beat the one
 # chosen here at a depth they share, by more than this machine repeats itself. A
-# faster run that exists and is not drawn would make "today's best" a lie.
+# faster run that exists and is not drawn would make the figure's claim a lie.
 # Like against like: a speculative row cannot beat a line drawn without
 # speculation, and does not answer the same question. Each layer is checked
 # against the rows of its own kind, so both the default view and the MTP one
@@ -1227,6 +1229,11 @@ out = {
         "series": series,
         "campaign": {"date": CAMPAIGN, "models": len(BACKBONE),
                      "vllm": series[0]["vllm"], "patches": series[0]["patches"]},
+        # the population the Radeon picks were chosen from, so the page can say
+        # how far its candidates run instead of implying the whole repository
+        "candidates": {"source": "benchmarks/ledger.jsonl",
+                       "from": min(r["date"] for r in led if r["tp"] == 2 and r["spec"] is None),
+                       "to": max(r["date"] for r in led if r["tp"] == 2 and r["spec"] is None)},
         "repro": REPRO,
         "overrides": over,
         "labels": labels,

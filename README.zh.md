@@ -151,7 +151,7 @@ ROCm **7.2.1** 起的 RCCL 设备内核带 hostcall 声明。缺少 AtomicOp 到
 
 ![解码吞吐：ledger 候选中的配置选择](docs/assets/decode-vs-context-best.svg)
 
-这张静态图从 [`ledger.jsonl`](benchmarks/ledger.jsonl) 为每个模型选择一条线，携带日期、vLLM、ROCm 和补丁信息；实线是记录中的发行版路径，虚线需要标出的补丁。**候选集停留在八月，未纳入九月 campaign。** 新栈和更深上下文的结果已在[后端 A/B](benchmarks/campaign-2026-09-07/)与[交互长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)中。
+这张静态图从 [`ledger.jsonl`](benchmarks/ledger.jsonl) 的 TP=2、不开投机的序列里为每个模型选择一条线：候选是 2026-07-25、2026-08-24、2026-08-29 三场 campaign 和 2026-08-28 的 probe；规则先取序列到达的最深上下文，再比该处吞吐，未打补丁的序列在 2 % 内优先。每条线携带日期、vLLM、ROCm 和补丁信息；实线是记录中的发行版路径，虚线需要标出的补丁。**候选集止于 2026-08-29，未纳入九月 campaign。** 新栈和更深上下文的结果已在[后端 A/B](benchmarks/campaign-2026-09-07/)与[交互长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)中。
 
 下表回答同一场、同一软件栈的模型比较；上图跨栈选线。Qwen3.8 在表里约 10.7 tok/s，在旧图深端约 36.1 tok/s，后者使用 0.27 和 #45916，不能把差额解释成同场模型比较。
 
@@ -193,11 +193,11 @@ Qwen3.8 的非对称 int4 checkpoint 在 **0.23 镜像**上错过 gfx1100 原生
 
 ![单卡与双卡：八月复测](docs/assets/tp1-vs-tp2-2026-08-24.svg)
 
-**一个上下文 token 要付多少解码时间。** 纵轴是每个输出 token 的耗时，斜率是增加上下文的边际成本。下面使用与前面静态吞吐图相同的截至八月底的候选集；它不包括九月的新路径。
+**一个上下文 token 要付多少解码时间。** 纵轴是每个输出 token 的耗时，斜率是增加上下文的边际成本。下面使用与前面静态吞吐图相同的候选集（止于 2026-08-29）和相同的选线规则；它不包括九月的新路径。
 
 ![解码时间与上下文：ledger 候选中的配置选择](docs/assets/decode-ms-per-token-best.svg)
 
-**同一 checkpoint 在三个软件栈上。** 上面每条线都是一个模型在截至八月测得最好的栈上；这张图固定模型、换栈：Qwen3.8-27B，同样的权重、同样的两张卡，分别在已发布的 0.23.1 臂、0.27.1 自选后端，以及 0.27.1 加 `--attention-backend TRITON_ATTN` 上。在三条梯度共有的 500–32 000 档上拟合，最陡的斜率是最平的 **3.00×**；数字与[主要发现](#主要发现)一致。右图说明最平的线不等于全面更好：Triton 相对 0.27 自选的后端，decode 占优、prefill 吃亏，两个比值都随深度单调远离 1.0。0.27 内部只换后端参数；跨版本还同时换了 ROCm 和权重内核，所以第一步是栈的差别，不只是后端的差别。原始行：[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) 是 0.23.1 臂，[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) 是两条 0.27 臂和给会话边界定价的漂移对照。
+**同一 checkpoint 在三个软件栈上。** 上面每条线都是一个模型在 ledger 候选（止于 2026-08-29）中测得最好的栈上；这张图固定模型、换栈：Qwen3.8-27B，同样的权重、同样的两张卡，分别在已发布的 0.23.1 臂、0.27.1 自选后端，以及 0.27.1 加 `--attention-backend TRITON_ATTN` 上。在三条梯度共有的 500–32 000 档上拟合，最陡的斜率是最平的 **3.00×**；数字与[主要发现](#主要发现)一致。右图说明最平的线不等于全面更好：Triton 相对 0.27 自选的后端，decode 占优、prefill 吃亏，两个比值都随深度单调远离 1.0。0.27 内部只换后端参数；跨版本还同时换了 ROCm 和权重内核，所以第一步是栈的差别，不只是后端的差别。原始行：[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) 是 0.23.1 臂，[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) 是两条 0.27 臂和给会话边界定价的漂移对照。
 
 ![同一 checkpoint 在三个软件栈上，以及后端的取舍](docs/assets/depth-cost-three-stacks.svg)
 

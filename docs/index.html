@@ -1180,17 +1180,19 @@ addEventListener("DOMContentLoaded", function () {
   </div>
 </header>
 
-<h2><span class="n">1</span>What this machine does today</h2>
+<h2><span class="n">1</span>What this machine does</h2>
 
 <p>The charts plot one line per model per machine. Each line reflects that model's fastest measured
 configuration rather than a common baseline. Four of the six Radeon lines come from a single campaign
 on one stack and are directly comparable; the other two are drawn from a later stack, because on those
 two models the campaign is no longer the best this machine can do. The A100 carries five of the same
-models from its own single-afternoon campaign. Every line marks which stack it runs.</p>
+models from its own single-afternoon campaign. Every line marks which stack it runs. The Radeon
+candidates are the ledger's TP=2 series, 2026-07-25 to 2026-08-29; the September ladders on this
+pair, which run past 32&nbsp;000, are Figures 3 and 4's subject.</p>
 
 <figure class="rv" id="figbest">
   <div class="figbox">
-    <div class="figtitle">Figure 1 · decode rate at batch 1, best measured configuration per model
+    <div class="figtitle">Figure 1 · decode rate at batch 1, the best configuration per model among the ledger's candidates
       <span class="prov yes">recomputable from repo</span></div>
     <div class="ctl">
       <div class="lab">compare</div><div class="seg" id="bestmode"></div>
@@ -24439,6 +24441,11 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     "window block-skip"
    ]
   },
+  "candidates": {
+   "source": "benchmarks/ledger.jsonl",
+   "from": "2026-07-25",
+   "to": "2026-08-29"
+  },
   "repro": {
    "cells": 60,
    "worst_pct": 3.95265501140189,
@@ -25838,12 +25845,12 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     {
      "label": "ROCm 7.0 (2.26.6)",
      "ok": true,
-     "note": "0"
+     "note": "N"
     },
     {
      "label": "ROCm 7.1.1 (2.27.7-b38)",
      "ok": true,
-     "note": "0"
+     "note": "N"
     },
     {
      "label": "ROCm 7.2.4 (2.27.7)",
