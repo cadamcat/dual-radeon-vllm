@@ -1064,13 +1064,15 @@ def _run_checks(_opened, _audit_state):
     ART = os.path.join(HERE, "..", "..", "docs", "articles")
 
     # --- the published pages are built, not hand-written -------------------
-    # site/build.py --check rebuilds every page into memory and compares. If a
-    # published file was edited in place it differs from its source, and the
-    # shared head means such an edit reaches one page and not the other four.
+    # site/build.py --check validates resources and language pairs in memory,
+    # then compares every published page with its source. Keep the resource
+    # policy there: citations and canonical metadata are not loaded assets.
     import subprocess
     bp = os.path.join(HERE, "..", "..", "site", "build.py")
     rc = subprocess.run([sys.executable, bp, "--check"], capture_output=True, text=True)
-    ck("site, every published page matches its source", "0", rc.returncode)
+    ck("site, pages pass validation and match their source", "0", rc.returncode)
+    if rc.returncode:
+        print(rc.stdout + rc.stderr)
 
     # --- the RCCL article: its figures are extracted from root-cause.md, so the
     # check is that the extraction still matches the document rather than that a
@@ -1114,9 +1116,6 @@ def _run_checks(_opened, _audit_state):
     zero = [r for r in RF["shipped"] if r["hostcall"] == "0"]
     ck("rccl article, the hostcall-free builds are the working ones", str(len(zero)),
        sum(1 for r in zero if "works" in r["behaviour"]))
-    ck("rccl article, loads no external asset", "0",
-       len(re.findall(r'\ssrc="(https?://[^"]+)"', rart)
-           + re.findall(r'<link[^>]+href="(https?://[^"]+)"', rart)))
     # every artifact the article tells the reader to run must exist
     for f in ("diagnose/hipgate3.cpp", "diagnose/check-platform.sh",
               "docs/root-cause.md", "docs/vfio-atomics.md"):
@@ -1150,9 +1149,6 @@ def _run_checks(_opened, _audit_state):
                 if _h.isdigit():
                     ck("%s, and the length it states" % _f, _h, _hgn)
 
-    # every host an article may link to. Assets are separate and must be
-    # local; the per-page check below keeps the two apart.
-    LINK_HOSTS = {"github.com", "bugs.launchpad.net"}
     PAIRS = [["hybrid-ssm-collapse.html", "hybrid-ssm-collapse.zh.html"],
              ["rccl-atomics-hostcall.html", "rccl-atomics-hostcall.zh.html"],
              ["w4a16-two-problems.html", "w4a16-two-problems.zh.html"],
@@ -1171,15 +1167,6 @@ def _run_checks(_opened, _audit_state):
     pages = {}
     for fn in LANGS:
         pages[fn] = open(os.path.join(ART, fn), encoding="utf-8").read()
-        # a published page that pulls a script or a font from elsewhere stops
-        # working the day that host does. Hyperlinks are not assets: an article
-        # cites the trackers it was reported to, so those are held to a list.
-        assets = (re.findall(r'\ssrc="(https?://[^"]+)"', pages[fn])
-                  + re.findall(r'<link[^>]+href="(https?://[^"]+)"', pages[fn]))
-        ck(f"article {fn}, loads no external asset", "0", len(assets))
-        hosts = {u.split("/")[2] for u in
-                 re.findall(r'<a [^>]*href="(https?://[^"]+)"', pages[fn])}
-        ck(f"article {fn}, links only to known hosts", "0", len(hosts - LINK_HOSTS))
 
     # A Cyrillic word once survived into a Chinese draft. It reads as CJK at a
     # glance and nothing here would have caught it.
@@ -6034,15 +6021,8 @@ def _run_checks(_opened, _audit_state):
 
     # --- the index pages are a language pair like any other ------------------
     XIP = ["index.html", "index.zh.html"]
-    XHOSTS = {"github.com", "bugs.launchpad.net"}
     XI = {fn: open(os.path.join(XDOCS, fn), encoding="utf-8").read() for fn in XIP}
     for fn in XIP:
-        ck("index %s, loads no external asset" % fn, "0",
-           len(re.findall(r'\ssrc="(https?://[^"]+)"', XI[fn])
-               + re.findall(r'<link[^>]+href="(https?://[^"]+)"', XI[fn])))
-        ck("index %s, links only to known hosts" % fn, "0",
-           len({u.split("/")[2] for u in
-                re.findall(r'<a [^>]*href="(https?://[^"]+)"', XI[fn])} - XHOSTS))
         ck("index %s, no stray Cyrillic" % fn, "0",
            len(re.findall(r"[Ѐ-ӿ]", XI[fn])))
         xnav = re.findall(r'<a class="lang" href="([^"]+)" hreflang="([a-z]+)"'

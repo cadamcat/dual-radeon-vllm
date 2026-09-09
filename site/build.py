@@ -6,6 +6,7 @@ are inserted from one source, which is what lets verify_doc_figures assert the
 two are byte-identical rather than hope so.
 """
 import json, pathlib, re, sys
+from check_resources import external_resources
 
 CHECK = "--check" in sys.argv   # build into memory and compare, writing nothing
 D = pathlib.Path(__file__).parent / "src"
@@ -128,19 +129,11 @@ def page(body, *, lang, title, desc, out, extra_css=None, nav=None, labels, figu
     # than retyped, so the index cannot introduce a third version of it
     m = re.search(r'<p class="sub">(.*?)</p>', b)
     SUBS[out] = m.group(1) if m else None
-    text = h + b
-    if CHECK:
-        if not p.exists():
-            MISMATCH.append(f"{out}: not published")
-        elif p.read_text() != text:
-            MISMATCH.append(f"{out}: published copy differs from its source")
-        return p
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(text)
+    RENDERED[p] = h + b
     return p
 
 
-MISMATCH = []
+RENDERED = {}
 TITLES = {}
 SUBS = {}
 EN_LABELS = ("Language and colour theme", "Match system", "Light", "Dark", "all write-ups",
@@ -616,11 +609,6 @@ for a in ART:
 records.sort(key=lambda r: r["date"], reverse=True)
 articles = {"articles": records}
 AJSON = json.dumps(articles, ensure_ascii=False, indent=1)
-if CHECK:
-    if (D / "articles.json").read_text() != AJSON:
-        MISMATCH.append("articles.json: committed copy differs from its source")
-else:
-    (D / "articles.json").write_text(AJSON)
 
 I_EN, I_ZH = "index.html", "index.zh.html"
 IDX_SUBS = {"__ARTICLES_JSON__": AJSON}
@@ -647,41 +635,47 @@ built.append(page("index-body-zh.html", lang="zh-CN", extra_css="index-extra.css
                       CHIPWORDS["zh"], ensure_ascii=False, indent=1))))
 
 
-if CHECK:
-    for m in MISMATCH:
-        print("  MISMATCH", m)
-    print(f"  {len(built)} pages checked, {len(MISMATCH)} differ from their source")
-    sys.exit(1 if MISMATCH else 0)
-
-for p in built:
-    print(f"  {str(p.relative_to(OUT)):40s} {p.stat().st_size:,} bytes")
-
-# no page may LOAD anything from outside the repository. A hyperlink is not an
-# asset -- the articles cite trackers other than GitHub, and those are held to
-# an allowlist instead, so a stray link still cannot creep in unnoticed.
-LINK_HOSTS = {"github.com", "bugs.launchpad.net"}
-for p in built:
-    t = p.read_text()
-    assets = (re.findall(r'\ssrc="(https?://[^"]+)"', t)
-              + re.findall(r'<link[^>]+href="(https?://[^"]+)"', t))
-    assert not assets, f"{p.name} loads external assets: {assets}"
-    hosts = {u.split("/")[2] for u in
-             re.findall(r'<a [^>]*href="(https?://[^"]+)"', t)}
-    assert hosts <= LINK_HOSTS, f"{p.name} links to {sorted(hosts - LINK_HOSTS)}"
+# Both modes validate the same proposed pages before comparing or writing any
+# output. The verifier invokes --check, so it also gets this resource policy.
+errors = []
+for p, text in RENDERED.items():
+    errors.extend(f"site resource {p.relative_to(OUT)}: {error}"
+                  for error in external_resources(text))
 # the language pairs must agree on the parts that are not prose
-for en, zh in ((H_EN, H_ZH), (R_EN, R_ZH), (W_EN, W_ZH), (M_EN, M_ZH),
-                 (L_EN, L_ZH), (S_EN, S_ZH), (A_EN, A_ZH), (Q_EN, Q_ZH),
-                 (N_EN, N_ZH), (X_EN, X_ZH), (Z_EN, Z_ZH), (I_EN, I_ZH)):
-    sub = OUT if en == I_EN else OUT / "articles"
-    a, b = sub / en, sub / zh
-    if not b.exists():
-        continue
-    ta, tb = a.read_text(), b.read_text()
+pairs = [("articles/" + a["en"], "articles/" + a["zh"]) for a in ART]
+pairs.append((I_EN, I_ZH))
+for en, zh in pairs:
+    ta, tb = RENDERED[OUT / en], RENDERED[OUT / zh]
     grab = lambda t, i: re.search(r'<script type="application/json" id="%s">(.*?)</script>' % i, t, re.S)
     data = "figures" if en != I_EN else "articles"
-    assert grab(ta, data).group(1) == grab(tb, data).group(1), f"{en}/{zh} data diverged"
-    sa = re.search(r"<script>\n\(function \(\).*?\n</script>", ta, re.S).group(0)
-    sb = re.search(r"<script>\n\(function \(\).*?\n</script>", tb, re.S).group(0)
-    assert sa == sb, f"{en}/{zh} scripts diverged"
-    print(f"  {en} / {zh}: data block and script identical")
-print(f"  no page loads an external asset; links stay within {sorted(LINK_HOSTS)}")
+    da, db = grab(ta, data), grab(tb, data)
+    if not da or not db or da.group(1) != db.group(1):
+        errors.append(f"site language pair {en}/{zh}: {data} data missing or diverged")
+    sa = re.search(r"<script>\n\(function \(\).*?\n</script>", ta, re.S)
+    sb = re.search(r"<script>\n\(function \(\).*?\n</script>", tb, re.S)
+    if not sa or not sb or sa.group(0) != sb.group(0):
+        errors.append(f"site language pair {en}/{zh}: script missing or diverged")
+if errors:
+    for error in errors:
+        print("  FAIL", error)
+    sys.exit(1)
+
+outputs = dict(RENDERED)
+outputs[D / "articles.json"] = AJSON
+if CHECK:
+    mismatches = []
+    for p, text in outputs.items():
+        label = str(p.relative_to(OUT)) if p in RENDERED else "articles.json"
+        if not p.exists():
+            mismatches.append(f"{label}: not published")
+        elif p.read_text() != text:
+            mismatches.append(f"{label}: published copy differs from its source")
+    for mismatch in mismatches:
+        print("  MISMATCH", mismatch)
+    print(f"  {len(built)} pages checked, {len(mismatches)} differ from their source")
+    sys.exit(1 if mismatches else 0)
+
+for p, text in outputs.items():
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text)
+print(f"  {len(built)} pages built; resource and language-pair checks passed")

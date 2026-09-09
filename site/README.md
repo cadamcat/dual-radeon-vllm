@@ -8,9 +8,10 @@ python3 site/build.py            # write docs/index.html and docs/articles/*.htm
 python3 site/build.py --check    # build into memory, compare, exit non-zero on any drift
 ```
 
-`--check` is what stops a published page from being edited in place: the head is
-shared across every page, so a change made in one file would otherwise silently
-diverge from the rest.
+Both modes validate resources and language pairs before comparing or writing
+output. `--check` also detects a published page edited in place or left behind
+after its source changes; it writes nothing. The repository verifier invokes
+this same check and reports its diagnostics.
 
 ## What is where
 
@@ -41,7 +42,15 @@ from the document behind it.
 a model's TP=1 and TP=2 lines. Both happened while building the first article.
 
 **Every page is self-contained.** No CDN, no external font, no external script.
-`build.py` asserts this.
+`check_resources.py` checks HTML and inline CSS by resource use: scripts,
+stylesheets, images (including `srcset` and SVG references), media, frames,
+CSS `url()`/`@import`, and resource-loading link relations must stay local or
+embedded. External citations, canonical/alternate links, Open Graph/Twitter
+metadata and SVG namespace declarations are allowed; there is no citation-host
+allowlist. Local paths, data URLs and SVG fragments are allowed. This is a
+static check of declarative dependencies; it does not execute JavaScript or
+fetch citation targets. Existing repository link checks still check local
+paths and anchors.
 
 **Language pairs share everything except prose.** The figures block and the
 script are inserted from one source, and `verify_doc_figures.py` asserts the two
