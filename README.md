@@ -519,9 +519,10 @@ The attention route and its effect on the cost of speculation are explained in
 
 ```bash
 cd benchmarks/analyze
-python3 summarize.py       # every configuration, exactly as measured
-python3 decode_slope.py    # cost of one context token, per model
-python3 analyze.py         # TP2/TP1 speed-up, bandwidth utilisation
+python3 summarize.py            # every configuration, exactly as measured
+python3 decode_slope.py         # cost of one context token, per model
+python3 analyze.py              # TP2/TP1 speed-up, bandwidth utilisation
+python3 verify_doc_figures.py   # recompute what this README and docs/ quote
 ```
 
 No GPU, no dependencies beyond the standard library. They read
@@ -534,6 +535,18 @@ findings have their own files. What ties them together is
 [`analyze/verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), which
 recomputes the headline figures quoted in this README and in `docs/` from whichever
 file each came from, and exits non-zero if one disagrees.
+
+Its inputs are all committed — it fails otherwise — so a fresh clone is enough
+to run it. The projections, the campaign index and the site are generated from
+those files and never edited by hand; rebuilding them in a fresh clone leaves
+nothing for git to report:
+
+```bash
+(cd benchmarks/analyze && python3 build_ledger.py && python3 build_prefill.py && python3 build_decode.py)
+python3 benchmarks/analyze/build_campaigns.py
+python3 site/build.py --check   # compares docs/ with its sources, writes nothing
+git status --short              # prints nothing
+```
 
 ### How to read this
 

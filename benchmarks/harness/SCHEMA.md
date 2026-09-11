@@ -138,6 +138,9 @@ falsify what actually ran.
 Both split their samples at the first token since v3 (2026-09-09); the
 campaign copies before that date wrote whole-request telemetry and are records.
 
+`test_runner_cuda.py` checks the CUDA template's prompt ladder on a laptop, with
+no GPU.
+
 The Radeon template also fixes something the old one did that no schema could
 have caught: it started the sampler **only for decode**, so every prefill row in
 this repository carries no hardware reading at all. Both kinds are sampled now.

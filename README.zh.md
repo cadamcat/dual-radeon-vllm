@@ -239,6 +239,15 @@ python3 verify_doc_figures.py
 
 这些分析无需 GPU，只依赖 Python 标准库。七月 [`results.jsonl`](benchmarks/results.jsonl) 含 **309 条记录**：146 prefill、146 decode，另有 17 条 engine 元数据、状态和注释。八月是 [`results-2026-08-24.jsonl`](benchmarks/results-2026-08-24.jsonl)，独立 campaign 各自保存记录；跨机器数据通过 `prefill.jsonl`、`decode.jsonl` 汇总。验证器检查的是发布值、证据和投影；结论的适用范围仍需回到实验判断。
 
+验证器的输入全部已提交（否则它自己报失败），所以新克隆就足以运行它。投影、campaign 索引和站点页面都由这些文件生成，从不手工编辑；在新克隆里重新生成，git 不会报告任何变化：
+
+```bash
+(cd benchmarks/analyze && python3 build_ledger.py && python3 build_prefill.py && python3 build_decode.py)
+python3 benchmarks/analyze/build_campaigns.py
+python3 site/build.py --check   # 只比较 docs/ 与源文件，不写入
+git status --short              # 无输出
+```
+
 ### 如何解释结果
 
 - **参数量不能代替架构和路径。** 八月 MoE 比 8B 快 **1.355×**，比更大的 31B 快 **2.513×**。非对称 checkpoint 绕过原生内核的影响要单独控制。
