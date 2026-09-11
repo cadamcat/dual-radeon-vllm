@@ -46,9 +46,11 @@ def _tracked_input_violations(opened, root):
     repo = os.path.realpath(root)
     source = os.path.realpath(__file__)
     harness = os.path.join(repo, "break_0905_tracked_inputs.py")
-    # CLAUDE.md at the root is a local agent adapter (excluded from git via
-    # .git/info/exclude), not a published document; the link scan opens it.
-    adapter = os.path.join(repo, "CLAUDE.md")
+    # CLAUDE.md and AGENTS.md at the root are local agent files (excluded from
+    # git via .git/info/exclude), not published documents; the link scan opens
+    # them. AGENTS.md is a link into the workspace, so match what each resolves to.
+    adapters = {os.path.realpath(os.path.join(repo, name))
+                for name in ("CLAUDE.md", "AGENTS.md")}
     candidates = []
     seen = set()
     for raw in opened:
@@ -62,7 +64,7 @@ def _tracked_input_violations(opened, root):
         parts = path.split(os.sep)
         # The existing repository-wide link scan opens this local break harness
         # too. It is test machinery, not a published verifier input.
-        if (path in (source, harness, adapter) or "__pycache__" in parts
+        if (path in (source, harness) or path in adapters or "__pycache__" in parts
                 or path.lower().endswith(".pyc")):
             continue
         if path not in seen:
