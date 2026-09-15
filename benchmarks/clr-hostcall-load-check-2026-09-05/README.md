@@ -1,11 +1,11 @@
 # Check at load, refuse by name: forty-five lines in the HIP runtime turn the opaque refusal into a named one — 2026-09-05
 
-The letter's §VI proposes that the runtime reconcile a kernel's hostcall
+The proposal tested here is that the runtime reconcile a kernel's hostcall
 requirement with the platform's capability **at load** and refuse **by name**,
 because both halves already exist in it. Items 1 and 2 of that proposal are
 now a patch against the exact runtime commit this box's container was built
 from, and the patched runtime was run through the same two-state toggle as
-[B2](../rccl-ndebug-ab-2026-09-04/README.md) and
+[the capability matrix](../rccl-ndebug-ab-2026-09-04/README.md) and
 [the dispatch experiment](../hostcall-dispatch-2026-09-05/README.md):
 
     gfx1100 pair, VM 101, the vLLM 0.23 container; runtime = rocm-systems 2b22ab01 (TheRock 7.14)
@@ -33,7 +33,7 @@ by name, when the launch is refused before any command exists:
 and, under stock RCCL 2.30.4 with two ranks, **thirteen kernels per rank**
 named at load — `ncclDevKernel_Generic_{1,2,4}` and the ten
 `ncclSymkDevKernel_ReduceScatter_RailA2A_LsaLD_{sum,avg}_{bf16,f16,f32,f8e4m3,f8e5m2}`,
-which is [C1's](../hostcall-abi-2026-09-04/README.md) list to the name — then
+which matches [the hostcall scan](../hostcall-abi-2026-09-04/README.md)'s list to the name — then
 the first launch refused:
 
     :1:hip_module.cpp :338 :  launch of _Z23ncclDevKernel_Generic_424ncclDevKernelArgsStorageILm4096EE refused:
@@ -83,11 +83,11 @@ half and item 4 (the toolchain) are not implemented here.
 
 ## What was run
 
-`clr_demo_row.sh <state>`, the [B2](../rccl-ndebug-ab-2026-09-04/capability_row.sh)
-skeleton: the label is checked against `lspci` and `dmesg`, the lease is
-taken, and four cells run — the 57-line probe and the twelve elementwise
+`clr_demo_row.sh <state>`, the [capability-matrix row](../rccl-ndebug-ab-2026-09-04/capability_row.sh)
+skeleton: the label is checked against `lspci` and `dmesg`, competing GPU
+services are stopped, and four cells run — the 57-line probe and the twelve elementwise
 collective cases under stock RCCL 2.30.4 (`librccl-stock2304.so`, installed
-and md5-checked as in B2), each once under the SDK's runtime and once under
+and md5-checked as in the capability matrix), each once under the SDK's runtime and once under
 the patched one. The platform state was flipped with the one VM-configuration
 line, both cards; the revert was verified line for line and the config
 compared byte for byte with the 2026-09-04 backup.
@@ -104,7 +104,7 @@ used `LD_LIBRARY_PATH` and its "patched" collective cells ran the stock
 runtime; they are kept as the reason the row now records what was mapped.
 
 **The build needs `ROCM_KPACK_ENABLED=ON`.** CLR's default is off; the SDK's
-own build has it on, because torch's device code is kpack-split ([C1](../hostcall-abi-2026-09-04/README.md)
+own build has it on, because torch's device code is kpack-split ([the hostcall scan](../hostcall-abi-2026-09-04/README.md)
 found the `NOBITS` fatbins) and a runtime without it cannot load a single
 torch kernel. The second attempt (`logs/clr-demo.attempt2.jsonl`) was built
 without it: the probe, a classic fatbin, worked, and every torch process
@@ -126,7 +126,7 @@ the 10.0 SDK ships its own `rocm-kpack-config.cmake`, so the stand-in is not
 written), and `clr_demo_row.sh` with `CLR_SDK=rocm10` runs the same four cells
 per state in a container of that image (`clr100`), with the image's own
 `librccl.so.1` as the stock library — md5 `a3963038…`, the file
-[C1](../hostcall-abi-2026-09-04/README.md)'s cross-architecture scan read,
+[the hostcall scan](../hostcall-abi-2026-09-04/README.md)'s cross-architecture read,
 checked unchanged at the end of each row.
 
     gfx1100 pair, VM 101, the vLLM 0.27 container; runtime = rocm-systems 6b0e43f3 (TheRock 10.0)
@@ -169,7 +169,7 @@ B. Logs: `logs/*rocm10a*`.
 
 ## Item 3, measured: an opt-in null buffer, and stock 2.30.4 runs without atomics
 
-The letter's third item is a fallback: a kernel that declares the buffer but
+The third part of the proposal is a fallback: a kernel that declares the buffer but
 never executes a hostcall should be able to run without one. Fifteen lines on
 top of A (`clr-hostcall-load-check-ac.patch`: five files, 48 added lines in
 all) add a runtime flag, `HIP_HOSTCALL_ALLOW_MISSING`, off by default. When it
@@ -236,7 +236,7 @@ other rows):
 opt-in**, and the 718 load-time lines are the static scan made dynamic: 26
 from RCCL (13 per worker), 512 from vLLM's paged-attention family (256 per
 worker, the CDNA stubs whose body on gfx11 is `assert(false)`) and 178 from
-its `wvSplitK` kernels — 361 distinct names per worker, [C1](../hostcall-abi-2026-09-04/README.md)'s
+its `wvSplitK` kernels — 361 distinct names per worker, [the hostcall scan](../hostcall-abi-2026-09-04/README.md)'s
 `_rocm_C` 348 plus RCCL's 13. Every one of them was given a null buffer, none
 of them faulted, and the engine answered: a declaration is not a dispatch,
 measured one more way. torch's own declaring kernels did not appear in the
@@ -293,7 +293,7 @@ Radeon AI PRO 9700); closed unmerged for inactivity on 2026-06-26.
 
 So the record has the refusal removed (unsafe without the device-library
 half) and the declaration removed for one of its sources (the trace, not the
-asserts that [B1](../rccl-ndebug-ab-2026-09-04/README.md) found load-bearing),
+asserts that [the NDEBUG A/B](../rccl-ndebug-ab-2026-09-04/README.md) found load-bearing),
 each stalled. What is here — keep the refusal, decide it at load, name it —
 is the part neither attempted, and it is the part that composes with both.
 
@@ -305,7 +305,7 @@ lands), with a comment on #377 pointing at it. Links and times: [UPSTREAM.md](UP
 
     # CPU only, ~15 min in a throwaway container of the vLLM 0.23 image; writes /rb/clr-build
     docker run --rm --entrypoint bash -v /data/rccl-build:/rb <image> /rb/clr_build.sh /rb/clr-hostcall-load-check.patch
-    # each state takes the lease, ~1 min; the flips are tools/pve_flip.sh in the workspace
+    # each state stops competing GPU services, ~1 min; toggle both hostpci GPU addresses and verify lspci/dmesg
     bash clr_demo_row.sh atomics_present
     bash clr_demo_row.sh atomics_absent
     python3 analyze.py                     # the table from logs/clr-demo.jsonl, non-zero if a cell is missing

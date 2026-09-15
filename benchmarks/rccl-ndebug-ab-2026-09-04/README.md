@@ -71,7 +71,7 @@ scripted run, back to back, with identical configure options:
 `build.ninja` contains **zero** occurrences of `NDEBUG`, so the flag did not
 leak into the control from a Release preset. `arm=ndebug`'s contains 251.
 
-This is the comparison [CAL-OUTLINE §B1] asks for and warns about: a
+The comparison must isolate the build flag: a
 2.27.7-no-hostcall library measured against a stock 2.30.4 would move version
 and hostcall together and answer a different question.
 
@@ -132,8 +132,8 @@ In absolute terms the gap in the affected band is **1.1 to 2.2 µs** — 26.47 �
 27.53 at ntok 2, 91.34 → 93.49 at ntok 64. Past 2 MB it is inside the noise in
 both directions.
 
-**The ntok=1 reversal is not explained.** It is five cells out of five, at the
-one size the letter's headline case uses, and it is the opposite sign from its
+**The ntok=1 reversal is not explained.** It is five cells out of five, at
+ntok=1, and it is the opposite sign from its
 neighbours. Two builds differ in more than a flag — code layout, alignment and
 the presence of the assert paths all move — so a small size-dependent
 difference that is not monotonic is exactly what an unexplained build effect
@@ -147,7 +147,7 @@ seed prefix so nothing comes from cache. The request shape is
 `benchmarks/campaign-2026-09-03/runner.py`'s, unchanged, so these rows sit
 beside that campaign's. Zero errors, and all four sessions verified that the
 **serving process** had mapped the arm's library, by md5 out of
-`/proc/<pid>/maps` rather than by what the orchestrator believed it installed.
+`/proc/<pid>/maps` rather than by what was meant to be installed.
 
 | model | depth | ndebug tok/s | nondebug tok/s | by arm | worst spread |
 |---|---|---|---|---|---|
@@ -216,7 +216,7 @@ cannot honour it.
 
 ## The capability matrix
 
-CAL's Table I. Two platform states, three libraries, one sitting, and the
+Two platform states, three libraries, one sitting, and the
 platform state read out of `lspci` and `dmesg` by the script rather than
 asserted by the operator.
 
@@ -229,7 +229,7 @@ Both refusals are the same string, and it is the one the whole repository
 started from: `the operation cannot be performed in the present state`.
 
 **The middle column is why this is three columns and not two.** It and the
-right-hand column are the same source one line of CMake apart — the B1 pair —
+right-hand column are the same source one line of CMake apart — the NDEBUG A/B pair —
 so in the bottom row the only difference between the cell that is refused and
 the cell that computes twelve correct collectives is the declaration itself. A
 two-column table invites "you compared 2.30.4 with 2.27.7 and the version
@@ -279,11 +279,11 @@ the old metadata and are superseded by `ar2-*`.
 
 ## Reproducing
 
-The builds are CPU-only and need no lease: 8 cores take about 20 minutes over
+The builds are CPU-only: 8 cores take about 20 minutes over
 507 of 510 targets and then a single-threaded `lld` device LTO link holds the
 remaining 70, at 18 GB RSS. 91 minutes per arm on this box.
 
-The measurement holds the lease. `logs/MEASURE2.txt` is the full record,
+The measurement stops the competing GPU services. `logs/MEASURE2.txt` is the full record,
 including the restore: the deployed library back to `ab5b50f0`, both services
 restarted, both cards back to the 27 971 584-byte VRAM baseline.
 

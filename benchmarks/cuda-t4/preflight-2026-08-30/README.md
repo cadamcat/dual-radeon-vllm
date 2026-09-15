@@ -1,8 +1,8 @@
 # The T4 pre-flight — 2026-08-30
 
 One engine start, asked one question: **can `gemma-4-12B-it-qat-w4a16-ct` be
-served on sm75 at all?** The answer is no, and the reason is not the one the
-plan expected.
+served on sm75 at all?** The answer is no, for a different reason from
+what was initially expected.
 
     Tesla T4 · 15360 MiB · compute capability 7.5 · driver 580.82.07
     vLLM 0.28.0 · torch 2.13.0+cu130 · transformers 5.15.1 · --dtype float16

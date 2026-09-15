@@ -112,8 +112,8 @@ also samples at **0.25 s** rather than the module's 1.5 s default — an NVML
 sample costs 9 ms, and at 1.5 s an H100 cell at the 500 rung held two to four
 samples. The period is on the row either way.
 
-v2 rows stay v2 and their window is the whole request. For the predictor the
-MLSys line reads from them the difference does not move the ranking: the six
+v2 rows stay v2 and their window is the whole request. For the predictor
+that reads from them, the difference does not move the ranking: the six
 calibration models keep the same `mem_busy_pct_max` order at 500, 8 000 and
 32 000, and scoring every depth with the 500-rung value (a window that is
 1–3 % prefill) reproduces the frozen rule's 79.0 % / 61.2 % / +17.8 pp exactly.

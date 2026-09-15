@@ -39,7 +39,7 @@ Every unstable cell is `RDNA3W4A16` **and** `ROCM_ATTN`, and each of the two
 stable models differs from the unstable ones on a *different* one of those two
 axes. That set is consistent with either being the cause and cannot choose
 between them. It was read as if it could, twice and in opposite directions: the
-published `reading` blamed the attention backend, and a handoff's open
+published `reading` blamed the attention backend, and an earlier
 prediction blamed the quantisation kernel.
 
 Holding one axis and moving the other is the whole experiment. The kernel stays

@@ -1,6 +1,6 @@
 # The inference engine's own attention kernel is not refused without PCIe AtomicOps — because the kernels that declare the requirement are never dispatched here — 2026-09-05
 
-[The C1 scan](../hostcall-abi-2026-09-04/README.md) counted 348 kernels in
+[The hostcall scan](../hostcall-abi-2026-09-04/README.md) counted 348 kernels in
 `vllm/_rocm_C` that declare `hidden_hostcall_buffer`, and said that whether any
 of them is dispatched on this box, and whether a platform without PCIe
 AtomicOps refuses them, was *not measured*. Two facts already in this
@@ -40,7 +40,7 @@ launcher never selects them.
 ## What was dispatched, and what declares the requirement
 
 The gfx1100 device image inside `vllm/_rocm_C.abi3.so` holds **2 350** kernels,
-of which **348** declare `hidden_hostcall_buffer` — the same 348 C1 counted —
+of which **348** declare `hidden_hostcall_buffer` — the same 348 the hostcall scan counted —
 and they are four template families, not one:
 
 | family | instantiations | declaring | reachable on gfx1100? |
@@ -53,7 +53,7 @@ and they are four template families, not one:
 | `wvSplitK_hf_`, `_sml_`, `_big_` | 300 | 0 | the skinny GEMM this box does use (`on_gfx9() or on_gfx1x()`) |
 
 `logs/rocm_C-gfx1100-kernels.tsv` is every kernel by name with its
-declaration, produced by `list_hostcall_kernels.py` with the C1 scanner's
+declaration, produced by `list_hostcall_kernels.py` with the hostcall scanner's
 reader over all five offload bundles the `.so` carries.
 
 **The 256 are one stub.** In `csrc/rocm/attention.cu` at this container's
@@ -98,7 +98,7 @@ all. Both named kernels are in the TSV with declaration 0.
 
 Two platform states × three probe arms, and two platform states × two served
 backends, on one machine, one container, one sitting per state. The design is
-[B2](../rccl-ndebug-ab-2026-09-04/README.md)'s: the state is flipped with
+[the capability matrix](../rccl-ndebug-ab-2026-09-04/README.md)'s: the state is flipped with
 `hostpci0: 0000:0b:00.0` → `0000:0b:00` (and `hostpci1` likewise, **both
 cards**), which makes QEMU pass the card with its audio function and stop
 advertising AtomicOp completion on the emulated root port; every row reads
@@ -153,14 +153,14 @@ run of every cell gave the same outcome:
 | absent | 5 | 1 | 7.0.0-31 |
 
 The guest booted a newer kernel on the first flip — `7.0.0-31-generic` had
-been installed by unattended upgrades after B2 — so the present row was
+been installed by unattended upgrades after the capability-matrix run — so the present row was
 repeated on `-31` after the revert. Outcomes and errors are identical on both.
 
-Before any accepted run, the harness was reviewed twice by a second model
-(`AGENTS/reviews/REVIEW-0007.md` in the workspace: 23 findings, then 13 more
-on the revision) and then failed its own first run, which is what the
-present row is for: `pa_probe.py` had loaded `libamdhip64` by bare name with
-`ctypes` to read the attribute, and this container ships **three** copies of
+Before any accepted run, the harness underwent two reviews:
+23 findings, then 13 more on the revision. It then failed its own first run,
+which is what the present row is for: `pa_probe.py` had loaded
+`libamdhip64` by bare name with `ctypes` to read the attribute,
+and this container ships **three** copies of
 it (`/usr/lib/.../libamdhip64.so.5` from ROCm 5.7, the SDK's `.so.7`, and a
 `/rb/hipkit` copy); a query against the wrong one left a sticky
 `hipErrorInvalidValue` that torch reported as `CUDA error: invalid argument`
@@ -176,7 +176,7 @@ gqa-4, head-128, bf16 model dispatches and serves without PCIe AtomicOps; the
 kernel it dispatches declares no hostcall buffer; the 256 paged-attention
 kernels in the same image that do declare it are the CDNA template's gfx11
 stubs, `assert(false)` and nothing else, and the RDNA launcher cannot reach
-them. C1's "the inference engine declares the requirement" stands as a
+them. The hostcall scan's "the inference engine declares the requirement" stands as a
 statement about the image; as a statement about what runs on gfx1100 it does
 not, and this directory is the measurement that separates the two.
 
@@ -190,14 +190,14 @@ commit. One host, one architecture, one model shape.
 
 ## Reproducing
 
-    # guest side, takes the lease; ~15 min per state
+    # guest side, stops competing GPU services; ~15 min per state
     bash pa_row.sh atomics_present                      # or atomics_absent; the label is checked against lspci/dmesg
     bash serve_row.sh atomics_present default
     bash serve_row.sh atomics_present triton
     PA_TRACE=1 bash pa_row.sh atomics_present           # adds the launched kernel names to each row
 
     # host side, the flip and the revert, each polled to completion and verified from the guest
-    bash tools/pve_flip.sh absent ; bash tools/pve_flip.sh present
+    # Toggle both hostpci GPU addresses as described under Design; after each reboot verify lspci and dmesg.
 
     python3 analyze.py                                  # both tables from logs/, non-zero if a cell is missing
 

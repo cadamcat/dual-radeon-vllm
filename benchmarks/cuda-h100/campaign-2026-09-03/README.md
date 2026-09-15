@@ -69,7 +69,7 @@ the fourth differs in `mns` and not in the backend. The A100 campaign measured
 `mns` 16 against the default at under 0.7 % on this model family, so `Q38`'s
 row is machine-only to about that, but 0.7 % is a figure this campaign has not
 reproduced on this machine. The control that would settle it — `Q38` here at
-`mns` 16 — is named in the plan and has not been bought.
+`mns` 16 — remains unmeasured.
 
 ## What limits this card at depth is its power cap
 

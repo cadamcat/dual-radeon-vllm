@@ -149,8 +149,8 @@ The three `Generic` kernels are the ones
 linker. The ten `Symk` kernels are new to 2.30.4 and had not been counted here
 before; the section's static-inspection table records **3**, which is correct
 for the build it describes — a local 2.30.4 built *with* `NDEBUG` — and the
-shipped library without `NDEBUG` has thirteen. The difference is a datum for
-[CAL experiment B1](../../../dual-radeon-vllm-workspace/CAL-OUTLINE-hostcall.md):
+shipped library without `NDEBUG` has thirteen. The difference separates the
+effect of the build flag from the library version:
 on 2.30.4, `NDEBUG` removes the ten and leaves the three.
 
 torch's are ordinary device code, not diagnostics:
@@ -204,8 +204,8 @@ torch is not invariant, and the shape of the variation is informative:
 
 The twelve missing on CDNA in 7.14 are exactly the `tinygemm` int4 kernels,
 which are not built there. So a per-architecture count is a claim about that
-architecture's build, and must be made per architecture — [INV-013] in the
-scanning direction.
+architecture's build, and must be measured separately for each
+architecture.
 
 ---
 
@@ -223,18 +223,18 @@ requirement to the platform before the dispatch that fails.
 
 **Not licensed.** That any of these kernels is dispatched in a normal run —
 not measured. That a no-atomics platform fails on them — inferred from this
-repository's RCCL result, not re-measured per library; the capability toggle
-([CAL B2](../../../dual-radeon-vllm-workspace/CAL-OUTLINE-hostcall.md)) is
+repository's RCCL result, not re-measured per library; toggling the
+platform's AtomicOps capability is
 where that would be established. That the counts hold for a non-wheel ROCm
 install — both containers here use the python-wheel SDK, and a `/opt/rocm`
-distribution packages device code differently. [INV-013]: this is two
+distribution packages device code differently. This is two
 containers on one host.
 
 ---
 
 ## Reproducing
 
-CPU only. No GPU, no lease, no services stopped; both cards stayed at the
+CPU only. No GPU, no services stopped; both cards stayed at the
 27 971 584 baseline throughout.
 
 ```bash
