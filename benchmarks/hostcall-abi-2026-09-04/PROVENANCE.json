@@ -1,5 +1,5 @@
 {
- "purpose": "CAL experiment C1: count hidden_hostcall_buffer across every shipped device code object in two ROCm containers, gfx1100 and 21 other targets. CPU only, no GPU, no lease.",
+ "purpose": "count hidden_hostcall_buffer across every shipped device code object in two ROCm containers, gfx1100 and 21 other targets. CPU only, no GPU.",
  "date": "2026-09-04",
  "host": "VM 101 (the VFIO guest), scanned inside docker containers, GPUs untouched",
  "arms": {

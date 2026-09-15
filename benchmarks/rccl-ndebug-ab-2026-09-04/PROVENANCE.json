@@ -1,5 +1,5 @@
 {
- "purpose": "CAL experiment B1: the +-NDEBUG RCCL A/B. Same source tree, one line apart, both measured on the atomics-enabled box.",
+ "purpose": "the +-NDEBUG RCCL A/B. Same source tree, one line apart, both measured on the atomics-enabled box.",
  "date": "2026-09-04",
  "host": "VM 101, the VFIO guest, RX 7900 XT pair, TP=2",
  "source": {
@@ -70,7 +70,7 @@
  "gpu_touched": true,
  "lease_held": true,
  "decode": {
-  "purpose": "B1's end-to-end half: 2 models x 3 depths x 5 repeats, both arms",
+  "purpose": "End-to-end NDEBUG A/B: 2 models x 3 depths x 5 repeats, both arms",
   "models": [
    "/models/gemma-4-12B-it-qat-w4a16-ct",
    "/models/Qwen3-8B"
@@ -92,11 +92,11 @@
   "known_confound": "prefill differences follow SESSION ORDER, not arm: the second session of a pair is faster in three of four interpretable cells, and the one cell with a significant separation (Q8 32000, p=0.008) is the largest order effect. Resolving it needs a server restart per repeat and was not done."
  },
  "capability_matrix": {
-  "purpose": "CAL experiment B2 / Table I: two platform states x three libraries, one sitting",
+  "purpose": "Capability matrix: two platform states x three libraries, one sitting",
   "libraries": {
    "stock2304": {
     "md5": "48fda13868ea868140ca2cd6af54eb76",
-    "note": "extracted from the pristine image; its device code is in the kpack, so the .so is only 4.2 MB. hidden_hostcall_buffer 13 for gfx1100, from the C1 scan.",
+    "note": "extracted from the pristine image; its device code is in the kpack, so the .so is only 4.2 MB. hidden_hostcall_buffer 13 for gfx1100, from the hostcall ABI scan.",
     "hostcall": 13
    },
    "nondebug": {

@@ -46,9 +46,9 @@ def _tracked_input_violations(opened, root):
     repo = os.path.realpath(root)
     source = os.path.realpath(__file__)
     harness = os.path.join(repo, "break_0905_tracked_inputs.py")
-    # CLAUDE.md and AGENTS.md at the root are local agent files (excluded from
-    # git via .git/info/exclude), not published documents; the link scan opens
-    # them. AGENTS.md is a link into the workspace, so match what each resolves to.
+    # These root-level files are local files excluded from git, not published
+    # documents. The repository-wide link scan may open them. Match their
+    # resolved paths so that local symlinks retain the same exemption.
     adapters = {os.path.realpath(os.path.join(repo, name))
                 for name in ("CLAUDE.md", "AGENTS.md")}
     candidates = []
@@ -8225,7 +8225,7 @@ def _run_checks(_opened, _audit_state):
                  or "价格是价目表，不是测量" in _t) else 0)
 
 
-    # --- benchmarks/hostcall-abi-2026-09-04, the C1 device-library scan ------
+    # --- benchmarks/hostcall-abi-2026-09-04, the hostcall ABI device-library scan ------
     # Every figure below is recomputed from the two scan JSONLs, by the same
     # library-level aggregation summarize.py uses: a kpack stores one library's
     # device code in numbered shards, so the shard index is stripped, and the
@@ -8442,7 +8442,7 @@ def _run_checks(_opened, _audit_state):
              in _oq3
              # the sentence that does the identifying, not merely the SHA
              # somewhere on the page: it appears three times, so a partial
-             # edit left the old gate passing (break_0906c case 1)
+             # edit left the old gate passing
              and "The change is `0af77e5` in `ROCm/rccl`" in _oq3) else 0)
     ck("open-questions §1 names the shadowing mechanism", "1",
        1 if ("selects `toolchain-linux.cmake` **before** `project(rccl CXX)`" in _oq3
@@ -8492,15 +8492,15 @@ def _run_checks(_opened, _audit_state):
     # no-hostcall RCCL. §1's answer (2026-09-06) shows AMD then removed NDEBUG
     # deliberately, so that argument cuts both ways; the claim is scoped to what
     # was measured and the categorical wording must not come back.
-    # B1's source tree was pinned to a mutable branch, with a note claiming a
+    # RCCL NDEBUG A/B's source tree was pinned to a mutable branch, with a note claiming a
     # shallow clone has no commit to quote — it does. The commit is recorded
     # now, and the build recipe has to hand out the same one, so the two cannot
     # drift apart.
     _prov = json.load(open(os.path.join(
         ROOT, "benchmarks", "rccl-ndebug-ab-2026-09-04", "PROVENANCE.json")))
     _pin = _prov["source"]["upstream_commit_resolved_2026-09-06"]
-    ck("B1 provenance pins a full commit", "40", len(_pin))
-    ck("B1 build recipe hands out that same commit", "1",
+    ck("RCCL NDEBUG A/B provenance pins a full commit", "40", len(_pin))
+    ck("RCCL NDEBUG A/B build recipe hands out that same commit", "1",
        1 if _pin in open(os.path.join(ROOT, "build", "build-rccl-nohostcall.sh"),
                          encoding="utf-8").read() else 0)
     # campaign-2026-09-03 said the pair's retention ordering was the one the
@@ -8602,7 +8602,7 @@ def _run_checks(_opened, _audit_state):
 
     # The recomputations above prove the numbers are derivable. These prove the
     # README still *says* them: a gate that only recomputes passes happily while
-    # the published sentence drifts, which is the 2026-08-30 lesson [INV-006].
+    # the published sentence drifts, which is the 2026-08-30 lesson.
     for _what, _frag in (
         ("the headline librccl row", "librccl.so.1.0                     13 of    105 kernels"),
         ("the headline libtorch_hip row", "lib/libtorch_hip.so                21 of 41 407 kernels"),
@@ -8655,7 +8655,7 @@ def _run_checks(_opened, _audit_state):
        1 if "**Not licensed.**" in _hrm else 0)
 
 
-    # --- benchmarks/rccl-ndebug-ab-2026-09-04, CAL experiment B1 ------------
+    # --- benchmarks/rccl-ndebug-ab-2026-09-04 — NDEBUG A/B ------------
     # The +-NDEBUG pair. Every figure the README quotes is recomputed here from
     # the six sweeps, by the same aggregation analyze.py uses: three repeats
     # averaged per cell, then the DIRECTION counted across cells, because the
@@ -8667,19 +8667,19 @@ def _run_checks(_opened, _audit_state):
     _brm = open(os.path.join(_BDIR, "README.md")).read()
     _bruns, _bkeys = _b1.load()
 
-    ck("B1, cells shared by all six sweeps", "55", len(_bkeys))
-    ck("B1, sweeps", "6", len(_bruns))
+    ck("RCCL NDEBUG A/B, cells shared by all six sweeps", "55", len(_bkeys))
+    ck("RCCL NDEBUG A/B, sweeps", "6", len(_bruns))
     for _a, _hc, _md5 in (("ndebug", "0", "76f1916fad88c97469f6359ebd731bc1"),
                           ("nondebug", "6", "666c8aae61dac16c664e9e1ba3e021f9")):
         for _r in (1, 2, 3):
             _m = _b1.meta(os.path.join(_BDIR, f"ar2-{_a}-r{_r}.jsonl"))["rccl_loaded"]
-            ck(f"B1, arm={_a} sweep {_r} mapped the right library", "1",
+            ck(f"RCCL NDEBUG A/B, arm={_a} sweep {_r} mapped the right library", "1",
                1 if _m["md5"] == _md5 else 0)
-            ck(f"B1, arm={_a} sweep {_r} hostcall count", _hc,
+            ck(f"RCCL NDEBUG A/B, arm={_a} sweep {_r} hostcall count", _hc,
                _m["hidden_hostcall_buffer"])
-            ck(f"B1, arm={_a} sweep {_r} read it from the notes, not strings", "1",
+            ck(f"RCCL NDEBUG A/B, arm={_a} sweep {_r} read it from the notes, not strings", "1",
                1 if _m.get("hidden_hostcall_buffer_method") == "notes" else 0)
-            ck(f"B1, arm={_a} sweep {_r} cells", "55",
+            ck(f"RCCL NDEBUG A/B, arm={_a} sweep {_r} cells", "55",
                sum(1 for l in open(os.path.join(_BDIR, f"ar2-{_a}-r{_r}.jsonl"))
                    if '"kind": "allreduce"' in l))
 
@@ -8689,14 +8689,14 @@ def _run_checks(_opened, _audit_state):
             ("t_stream_us", "2.76", "8.10", "1.0031", "34", "0.1048"),
             ("t_sync_us_median", "1.61", "3.63", "1.0061", "37", "0.0145")):
         _n = _b1.noise(_bruns, _bkeys, _metric)
-        ck(f"B1 README, {_metric} noise median pct", _noise,
+        ck(f"RCCL NDEBUG A/B README, {_metric} noise median pct", _noise,
            statistics.median(_n) * 100)
-        ck(f"B1 README, {_metric} noise p90 pct", _p90,
+        ck(f"RCCL NDEBUG A/B README, {_metric} noise p90 pct", _p90,
            sorted(_n)[int(.9 * len(_n))] * 100)
         _rs, _sl, _pv = _b1.block(_bruns, _bkeys, _metric)
-        ck(f"B1 README, {_metric} pooled ratio", _ratio, statistics.median(_rs))
-        ck(f"B1 README, {_metric} cells where nondebug is slower", _slower, _sl)
-        ck(f"B1 README, {_metric} sign p", _p, _pv)
+        ck(f"RCCL NDEBUG A/B README, {_metric} pooled ratio", _ratio, statistics.median(_rs))
+        ck(f"RCCL NDEBUG A/B README, {_metric} cells where nondebug is slower", _slower, _sl)
+        ck(f"RCCL NDEBUG A/B README, {_metric} sign p", _p, _pv)
 
     # only t_graph_us reproduces in all three sweeps; that is the load-bearing
     # claim and it is checked sweep by sweep
@@ -8704,11 +8704,11 @@ def _run_checks(_opened, _audit_state):
                              ("t_stream_us", ("39", "35", "24")),
                              ("t_sync_us_median", ("38", "42", "22"))):
         for _r, _claim in zip((1, 2, 3), _counts):
-            ck(f"B1 README, {_metric} sweep {_r} slower count", _claim,
+            ck(f"RCCL NDEBUG A/B README, {_metric} sweep {_r} slower count", _claim,
                sum(1 for x in _bkeys
                    if _bruns[("nondebug", _r)][x][_metric]
                    > _bruns[("ndebug", _r)][x][_metric]))
-    ck("B1, t_graph_us is the only metric slower in every sweep", "1",
+    ck("RCCL NDEBUG A/B, t_graph_us is the only metric slower in every sweep", "1",
        1 if all(sum(1 for x in _bkeys
                     if _bruns[("nondebug", _r)][x]["t_graph_us"]
                     > _bruns[("ndebug", _r)][x]["t_graph_us"]) > len(_bkeys) / 2
@@ -8725,23 +8725,23 @@ def _run_checks(_opened, _audit_state):
             ("16384", "1.0043", "3", "18837.76", "18884.46")):
         _ks = [k for k in _bkeys if k[1] == int(_nt)]
         _pairs = [_b1.means(_bruns, k, "t_graph_us") for k in _ks]
-        ck(f"B1 README, ntok={_nt} median ratio", _ratio,
+        ck(f"RCCL NDEBUG A/B README, ntok={_nt} median ratio", _ratio,
            statistics.median([b / a for a, b in _pairs]))
-        ck(f"B1 README, ntok={_nt} slower cells", _slower,
+        ck(f"RCCL NDEBUG A/B README, ntok={_nt} slower cells", _slower,
            sum(1 for a, b in _pairs if b > a))
-        ck(f"B1 README, ntok={_nt} ndebug us", _a,
+        ck(f"RCCL NDEBUG A/B README, ntok={_nt} ndebug us", _a,
            statistics.fmean([a for a, _ in _pairs]))
-        ck(f"B1 README, ntok={_nt} nondebug us", _b,
+        ck(f"RCCL NDEBUG A/B README, ntok={_nt} nondebug us", _b,
            statistics.fmean([b for _, b in _pairs]))
     for _label, _sel, _ratio, _slower, _n, _p in (
             ("ntok <= 16", lambda k: k[1] <= 16, "1.0390", "19", "25", "0.0146"),
             ("ntok >= 256", lambda k: k[1] >= 256, "1.0001", "11", "20", "0.8238")):
         _ks = [k for k in _bkeys if _sel(k)]
         _rs, _sl, _pv = _b1.block(_bruns, _ks, "t_graph_us")
-        ck(f"B1 README, {_label} cells", _n, len(_ks))
-        ck(f"B1 README, {_label} median ratio", _ratio, statistics.median(_rs))
-        ck(f"B1 README, {_label} slower", _slower, _sl)
-        ck(f"B1 README, {_label} sign p", _p, _pv)
+        ck(f"RCCL NDEBUG A/B README, {_label} cells", _n, len(_ks))
+        ck(f"RCCL NDEBUG A/B README, {_label} median ratio", _ratio, statistics.median(_rs))
+        ck(f"RCCL NDEBUG A/B README, {_label} slower", _slower, _sl)
+        ck(f"RCCL NDEBUG A/B README, {_label} sign p", _p, _pv)
 
     # correctness: twelve cases, both arms, both rounds
     for _a in ("ndebug", "nondebug"):
@@ -8749,23 +8749,23 @@ def _run_checks(_opened, _audit_state):
                          ("round 1", f"correct-{_a}.jsonl")):
             _rows = [json.loads(l) for l in open(os.path.join(_BDIR, _f))]
             _cases = [r for r in _rows if r.get("kind") == "correctness"]
-            ck(f"B1, {_tag} arm={_a} cases", "12", len(_cases))
-            ck(f"B1, {_tag} arm={_a} cases passing", "12",
+            ck(f"RCCL NDEBUG A/B, {_tag} arm={_a} cases", "12", len(_cases))
+            ck(f"RCCL NDEBUG A/B, {_tag} arm={_a} cases passing", "12",
                sum(1 for r in _cases if r["ok"]))
-            ck(f"B1, {_tag} arm={_a} nothing passed on an unchanged buffer", "0",
+            ck(f"RCCL NDEBUG A/B, {_tag} arm={_a} nothing passed on an unchanged buffer", "0",
                sum(1 for r in _cases if r.get("unchanged")))
 
-    # --- B1's end-to-end half -----------------------------------------------
+    # --- RCCL NDEBUG A/B's end-to-end half -----------------------------------------------
     _drows = [json.loads(l) for l in
               open(os.path.join(_BDIR, "decode.jsonl"))]
     _dmeta = [r for r in _drows if r["kind"] == "decode_meta"]
     _druns = [r for r in _drows if r["kind"] == "decode"]
-    ck("B1 decode, runs", "60", len(_druns))
-    ck("B1 decode, errors", "0", sum(1 for r in _druns if "error" in r))
-    ck("B1 decode, sessions", "4", len(_dmeta))
-    ck("B1 decode, sessions that served the library they were given", "4",
+    ck("RCCL NDEBUG A/B decode, runs", "60", len(_druns))
+    ck("RCCL NDEBUG A/B decode, errors", "0", sum(1 for r in _druns if "error" in r))
+    ck("RCCL NDEBUG A/B decode, sessions", "4", len(_dmeta))
+    ck("RCCL NDEBUG A/B decode, sessions that served the library they were given", "4",
        sum(1 for m in _dmeta if m["library_matches"]))
-    ck("B1 decode, the arm order is balanced across the two models", "1",
+    ck("RCCL NDEBUG A/B decode, the arm order is balanced across the two models", "1",
        1 if [(m["label"], m["arm"]) for m in _dmeta] ==
        [("G12", "ndebug"), ("G12", "nondebug"),
         ("Q8", "nondebug"), ("Q8", "ndebug")] else 0)
@@ -8778,51 +8778,51 @@ def _run_checks(_opened, _audit_state):
             ("Q8", 8000, "73.42", "73.43", "1.0002", "0.23"),
             ("Q8", 32000, "61.82", "61.87", "1.0008", "0.39")):
         _A, _B = _dc[(_lab, _dep)]["ndebug"], _dc[(_lab, _dep)]["nondebug"]
-        ck(f"B1 decode README, {_lab} {_dep} ndebug tok/s", _a, statistics.fmean(_A))
-        ck(f"B1 decode README, {_lab} {_dep} nondebug tok/s", _b, statistics.fmean(_B))
-        ck(f"B1 decode README, {_lab} {_dep} by arm", _r,
+        ck(f"RCCL NDEBUG A/B decode README, {_lab} {_dep} ndebug tok/s", _a, statistics.fmean(_A))
+        ck(f"RCCL NDEBUG A/B decode README, {_lab} {_dep} nondebug tok/s", _b, statistics.fmean(_B))
+        ck(f"RCCL NDEBUG A/B decode README, {_lab} {_dep} by arm", _r,
            statistics.fmean(_B) / statistics.fmean(_A))
-        ck(f"B1 decode README, {_lab} {_dep} worst spread pct", _n,
+        ck(f"RCCL NDEBUG A/B decode README, {_lab} {_dep} worst spread pct", _n,
            max((max(_A) - min(_A)) / statistics.fmean(_A),
                (max(_B) - min(_B)) / statistics.fmean(_B)) * 100)
-        ck(f"B1 decode, {_lab} {_dep} repeats per arm", "5", min(len(_A), len(_B)))
-    ck("B1 decode README, cells inside half a percent", "5",
+        ck(f"RCCL NDEBUG A/B decode, {_lab} {_dep} repeats per arm", "5", min(len(_A), len(_B)))
+    ck("RCCL NDEBUG A/B decode README, cells inside half a percent", "5",
        sum(1 for k, v in _dc.items()
            if abs(statistics.fmean(v["nondebug"]) / statistics.fmean(v["ndebug"]) - 1)
            <= 0.005))
-    ck("B1 decode README, and every cell inside 0.6 pct", "6",
+    ck("RCCL NDEBUG A/B decode README, and every cell inside 0.6 pct", "6",
        sum(1 for k, v in _dc.items()
            if abs(statistics.fmean(v["nondebug"]) / statistics.fmean(v["ndebug"]) - 1)
            <= 0.006))
-    ck("B1 decode README, cells where the unfixed arm is nominally ahead", "5",
+    ck("RCCL NDEBUG A/B decode README, cells where the unfixed arm is nominally ahead", "5",
        sum(1 for k, v in _dc.items()
            if statistics.fmean(v["nondebug"]) > statistics.fmean(v["ndebug"])))
 
     # the prefill cell that looked real, and the order analysis that says it is not
     _pf, _ = _b1.decode_cells("prefill_tps")
     _q32 = _pf[("Q8", 32000)]
-    ck("B1 README, Q8 32000 prefill separates completely", "1",
+    ck("RCCL NDEBUG A/B README, Q8 32000 prefill separates completely", "1",
        1 if min(_q32["ndebug"]) > max(_q32["nondebug"]) else 0)
-    ck("B1 README, Q8 32000 prefill ndebug low", "2134.7", min(_q32["ndebug"]))
-    ck("B1 README, Q8 32000 prefill ndebug high", "2146.3", max(_q32["ndebug"]))
-    ck("B1 README, Q8 32000 prefill nondebug low", "2052.5", min(_q32["nondebug"]))
-    ck("B1 README, Q8 32000 prefill nondebug high", "2073.3", max(_q32["nondebug"]))
+    ck("RCCL NDEBUG A/B README, Q8 32000 prefill ndebug low", "2134.7", min(_q32["ndebug"]))
+    ck("RCCL NDEBUG A/B README, Q8 32000 prefill ndebug high", "2146.3", max(_q32["ndebug"]))
+    ck("RCCL NDEBUG A/B README, Q8 32000 prefill nondebug low", "2052.5", min(_q32["nondebug"]))
+    ck("RCCL NDEBUG A/B README, Q8 32000 prefill nondebug high", "2073.3", max(_q32["nondebug"]))
     _oe = _b1.order_effect("prefill_tps", drop_depth={500})
     _ae = _b1.arm_effect("prefill_tps", drop_depth={500})
     for _lab, _dep, _o, _a in (("G12", 8000, "0.9991", "0.9991"),
                                ("G12", 32000, "1.0026", "1.0026"),
                                ("Q8", 8000, "1.0087", "0.9914"),
                                ("Q8", 32000, "1.0376", "0.9637")):
-        ck(f"B1 README, {_lab} {_dep} prefill 2nd/1st session", _o, _oe[(_lab, _dep)])
-        ck(f"B1 README, {_lab} {_dep} prefill nondebug/ndebug", _a, _ae[(_lab, _dep)])
-    ck("B1 README, prefill cells where the second session is faster", "3",
+        ck(f"RCCL NDEBUG A/B README, {_lab} {_dep} prefill 2nd/1st session", _o, _oe[(_lab, _dep)])
+        ck(f"RCCL NDEBUG A/B README, {_lab} {_dep} prefill nondebug/ndebug", _a, _ae[(_lab, _dep)])
+    ck("RCCL NDEBUG A/B README, prefill cells where the second session is faster", "3",
        sum(1 for v in _oe.values() if v > 1))
-    ck("B1 README, prefill cells where the unfixed arm is faster", "1",
+    ck("RCCL NDEBUG A/B README, prefill cells where the unfixed arm is faster", "1",
        sum(1 for v in _ae.values() if v > 1))
 
-    # --- B2, the capability matrix ------------------------------------------
+    # --- RCCL capability matrix, the capability matrix ------------------------------------------
     _cap = _b1.capability_cells()
-    ck("B2, cells", "6", len(_cap))
+    ck("RCCL capability matrix, cells", "6", len(_cap))
     for _row, _lib, _disp, _pass in (
             ("atomics_present", "stock2304", "1", "12"),
             ("atomics_present", "nondebug", "1", "12"),
@@ -8831,27 +8831,27 @@ def _run_checks(_opened, _audit_state):
             ("atomics_absent", "nondebug", "0", "0"),
             ("atomics_absent", "ndebug", "1", "12")):
         _c = _cap[(_row, _lib)]
-        ck(f"B2, {_row} {_lib} dispatched", _disp, 1 if _c["dispatched"] else 0)
-        ck(f"B2, {_row} {_lib} correctness cases passed", _pass,
+        ck(f"RCCL capability matrix, {_row} {_lib} dispatched", _disp, 1 if _c["dispatched"] else 0)
+        ck(f"RCCL capability matrix, {_row} {_lib} correctness cases passed", _pass,
            _c["correctness_passed"])
-    ck("B2, the load-bearing cell: same source, one line apart, one dispatches", "1",
+    ck("RCCL capability matrix, the load-bearing cell: same source, one line apart, one dispatches", "1",
        1 if (_cap[("atomics_absent", "ndebug")]["dispatched"] and
              not _cap[("atomics_absent", "nondebug")]["dispatched"]) else 0)
-    ck("B2, and stock 2.30.4 is correct where the platform can satisfy it", "1",
+    ck("RCCL capability matrix, and stock 2.30.4 is correct where the platform can satisfy it", "1",
        1 if (_cap[("atomics_present", "stock2304")]["dispatched"] and
              _cap[("atomics_present", "stock2304")]["correctness_passed"] == 12)
        else 0)
     for _row, _caps, _dm in (("atomics_present", "2", "0"),
                              ("atomics_absent", "0", "2")):
         _c = _cap[(_row, "ndebug")]
-        ck(f"B2, {_row} root ports with completer support", _caps,
+        ck(f"RCCL capability matrix, {_row} root ports with completer support", _caps,
            _c["root_ports_with_completer_support"])
-        ck(f"B2, {_row} amdgpu complaints in dmesg", _dm,
+        ck(f"RCCL capability matrix, {_row} amdgpu complaints in dmesg", _dm,
            _c["dmesg_no_atomics_lines"])
-    ck("B2, both refusals give the same error string", "2",
+    ck("RCCL capability matrix, both refusals give the same error string", "2",
        sum(1 for (r, l), c in _cap.items()
            if c["error"] == "the operation cannot be performed in the present state"))
-    ck("B2, nothing that was refused passed a single case", "0",
+    ck("RCCL capability matrix, nothing that was refused passed a single case", "0",
        sum(c["correctness_passed"] for c in _cap.values() if not c["dispatched"]))
 
     # and the prose says what the data licenses, including what it does not
@@ -8879,10 +8879,10 @@ def _run_checks(_opened, _audit_state):
         ("that it measures the fix, not the declaration", "So this measures **the fix**"),
         ("the strings correction", "so `strings` answers 0 whatever the kernels declare"),
     ):
-        ck(f"B1 README, states {_what}", "1", 1 if _frag in _brm else 0)
+        ck(f"RCCL NDEBUG A/B README, states {_what}", "1", 1 if _frag in _brm else 0)
 
     # --- the cost is measured, and four pages stopped saying "assumed" ------
-    # 2026-09-04, after B1: the B1 README's own headline named a band (16 KB to
+    # 2026-09-04, after RCCL NDEBUG A/B: the RCCL NDEBUG A/B README's own headline named a band (16 KB to
     # 512 KB, six token counts, 30 cells) but counted 24 of 25 cells and 3-4.6 %,
     # which are the numbers for 16 KB to 256 KB; and it said the Qwen repeats
     # agree to 0.2-0.4 % when the 500-token cell spreads 1.7 %. Both sentences
@@ -8891,25 +8891,25 @@ def _run_checks(_opened, _audit_state):
     # quote the segmented result. Every figure they quote recomputes here.
     _band = [k for k in _bkeys if 2 <= k[1] <= 64]
     _bpairs = [_b1.means(_bruns, k, "t_graph_us") for k in _band]
-    ck("B1 README, 16 KB-512 KB band cells", "30", len(_band))
-    ck("B1 README, 16 KB-512 KB band cells where nondebug is slower", "29",
+    ck("RCCL NDEBUG A/B README, 16 KB-512 KB band cells", "30", len(_band))
+    ck("RCCL NDEBUG A/B README, 16 KB-512 KB band cells where nondebug is slower", "29",
        sum(1 for a, b in _bpairs if b > a))
     _bmed = [statistics.median(b / a for a, b in
                                [_b1.means(_bruns, k, "t_graph_us")
                                 for k in _bkeys if k[1] == t])
              for t in (2, 4, 8, 16, 32, 64)]
-    ck("B1 README, band low pct", "2.7", (min(_bmed) - 1) * 100)
-    ck("B1 README, band high pct", "4.6", (max(_bmed) - 1) * 100)
-    ck("B1 README, states the band with its own cell count", "1",
+    ck("RCCL NDEBUG A/B README, band low pct", "2.7", (min(_bmed) - 1) * 100)
+    ck("RCCL NDEBUG A/B README, band high pct", "4.6", (max(_bmed) - 1) * 100)
+    ck("RCCL NDEBUG A/B README, states the band with its own cell count", "1",
        1 if "nondebug 2.7-4.6 % slower, 29 of 30 cells" in _brm else 0)
     _q8 = [(max(v[a]) - min(v[a])) / statistics.fmean(v[a]) * 100
            for k, v in _dc.items() if k[0] == "Q8" and k[1] >= 8000
            for a in ("ndebug", "nondebug")]
-    ck("B1 decode README, Q8 repeat spread at 8000 and 32000, low pct", "0.2",
+    ck("RCCL NDEBUG A/B decode README, Q8 repeat spread at 8000 and 32000, low pct", "0.2",
        min(_q8))
-    ck("B1 decode README, Q8 repeat spread at 8000 and 32000, high pct", "0.4",
+    ck("RCCL NDEBUG A/B decode README, Q8 repeat spread at 8000 and 32000, high pct", "0.4",
        max(_q8))
-    ck("B1 decode README, scopes the 0.2-0.4 % agreement to two depths", "1",
+    ck("RCCL NDEBUG A/B decode README, scopes the 0.2-0.4 % agreement to two depths", "1",
        1 if ("On Qwen3-8B at 8 000 and 32 000 tokens the five repeats agree to "
              "0.2–0.4 %") in _brm else 0)
     _n1 = statistics.median(b / a for a, b in
@@ -9191,7 +9191,7 @@ def _run_checks(_opened, _audit_state):
        sum(1 for r in _crows10 if "10.0.0.0-9999-6b0e43f3" in (r.get("rccl_version_string") or "")))
     _c1prov = json.load(open(os.path.join(HERE, "..", "hostcall-abi-2026-09-04", "PROVENANCE.json"), encoding="utf-8"))
     _c1md5 = next(v for k, v in _c1prov["arms"]["rocm10"]["md5"].items() if k.endswith("librccl.so.1"))
-    ck("CLR check 10.0, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crows10 if r.get("stock_librccl_md5") == _c1md5))
+    ck("CLR check 10.0, the stock RCCL is the file the hostcall ABI scan read (md5)", "8", sum(1 for r in _crows10 if r.get("stock_librccl_md5") == _c1md5))
     for _rt in ("stock", "patched"):
         ck(f"CLR check 10.0, present {_rt} probe ok", "1",
            1 if _cc10[("atomics_present", _rt, "probe")]["rc"] == 0 and not _cc10[("atomics_present", _rt, "probe")]["error"] else 0)
@@ -9263,7 +9263,7 @@ def _run_checks(_opened, _audit_state):
                 _ccA.setdefault((_row, _rt, _w), dict(_MISSING, refusals=-1, row=_row, runtime=_rt, what=_w))
     ck("CLR check A, every row says sdk rocm10a", "8", sum(1 for r in _crowsA if r.get("sdk") == "rocm10a"))
     ck("CLR check A, every row says runtime commit 6b0e43f3", "8", sum(1 for r in _crowsA if r.get("runtime_commit") == "6b0e43f3"))
-    ck("CLR check A, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crowsA if r.get("stock_librccl_md5") == _c1md5))
+    ck("CLR check A, the stock RCCL is the file the hostcall ABI scan read (md5)", "8", sum(1 for r in _crowsA if r.get("stock_librccl_md5") == _c1md5))
     for _rt in ("stock", "patched"):
         ck(f"CLR check A, present {_rt} probe ok", "1",
            1 if _ccA[("atomics_present", _rt, "probe")]["rc"] == 0 and not _ccA[("atomics_present", _rt, "probe")]["error"] else 0)
@@ -9334,7 +9334,7 @@ def _run_checks(_opened, _audit_state):
     ck("CLR check C, every row says sdk rocm10c", "8", sum(1 for r in _crowsC if r.get("sdk") == "rocm10c"))
     ck("CLR check C, every row says runtime commit 6b0e43f3", "8", sum(1 for r in _crowsC if r.get("runtime_commit") == "6b0e43f3"))
     ck("CLR check C, every row records the opt-in as the variant's setting", "8", sum(1 for r in _crowsC if r.get("patched_env") == "HIP_HOSTCALL_ALLOW_MISSING=1"))
-    ck("CLR check C, the stock RCCL is the file C1 scanned (md5)", "8", sum(1 for r in _crowsC if r.get("stock_librccl_md5") == _c1md5))
+    ck("CLR check C, the stock RCCL is the file the hostcall ABI scan read (md5)", "8", sum(1 for r in _crowsC if r.get("stock_librccl_md5") == _c1md5))
     for _rt in ("stock", "patched"):
         ck(f"CLR check C, present {_rt} probe ok", "1",
            1 if _ccC[("atomics_present", _rt, "probe")]["rc"] == 0 and not _ccC[("atomics_present", _rt, "probe")]["error"] else 0)
@@ -9450,7 +9450,7 @@ def _run_checks(_opened, _audit_state):
     ck("CLR serve C, the 718: 512 paged attention", "512", _fam["paged_attention"])
     ck("CLR serve C, the 718: 178 wvSplitK", "178", _fam["wvSplitK"])
     ck("CLR serve C, the 718: nothing else", "0", _fam["other"])
-    ck("CLR serve C, 361 distinct names = C1's 348 + RCCL's 13", "361", len(_snames))
+    ck("CLR serve C, 361 distinct names = hostcall ABI scan's 348 + RCCL's 13", "361", len(_snames))
     for _row, _caps, _dmc in (("atomics_present", "2", "0"), ("atomics_absent", "0", "2")):
         ck(f"CLR serve C, {_row} root ports with completer support", _caps, {r["root_ports_with_completer_support"] for r in _srows if r["row"] == _row}.pop())
         ck(f"CLR serve C, {_row} amdgpu complaints", _dmc, {r["dmesg_no_atomics_lines"] for r in _srows if r["row"] == _row}.pop())

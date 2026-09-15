@@ -128,7 +128,7 @@ CFG = {
 
 # What each 2026-08-29 arm ran with, beyond the model.
 #
-#   spec          handoff 6's descriptor, recording what the *engine* resolved
+#   spec          the descriptor, recording what the *engine* resolved
 #                 rather than what the flag asked for: the gemma arm requests
 #                 method "draft_model" and vLLM reports
 #                 SpeculativeConfig(method='mtp', ...). `drafter` is what keeps

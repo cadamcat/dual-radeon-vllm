@@ -17,7 +17,7 @@ three are the whole reason this file exists:
 
 Everything below this docstring is 08-30b's, unchanged. Its own notes follow.
 
---- 08-30b: five-model dual-GPU vLLM context-scan campaign (plan 2026-07-25, rev2).
+--- 08-30b: five-model dual-GPU vLLM context-scan campaign (campaign 2026-07-25, rev2).
 
 rev2 fixes (after the 2026-07-25 02:xx false-complete incident):
   * util 0.85, not 0.90 — at 0.90 the KV pool leaves ~54 MB free and the Triton

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Compare the collective RCCL sweep from B1's two NDEBUG arms.
+"""Compare the collective RCCL sweep from the two NDEBUG arms.
 
 The ratio printed by this tool is ``with-ndebug / without-ndebug``.  A ratio
 above one therefore means that the NDEBUG arm is slower.  The comparator
-requires matching B1 metadata before it compares the shared ``(hidden,
+requires matching RCCL A/B metadata before it compares the shared ``(hidden,
 ntok)`` cells, and can optionally emit those per-cell comparisons as JSONL.
 
 This tool compares the collective sweep only.  The end-to-end decode half of
-B1 -- 2 models x 3 depths x 5 repeats -- is a separate measurement that this
+the RCCL A/B -- 2 models x 3 depths x 5 repeats -- is a separate measurement that this
 tool does not touch; its shape is intentionally not encoded here.
 """
 
@@ -49,7 +49,7 @@ BASE_SYNTHETIC_KEYS = (
 
 
 class B1Refusal(Exception):
-    """A deliberate, named refusal with the status required by B1."""
+    """A deliberate, named refusal with the status defined below."""
 
     def __init__(self, name, status, detail):
         super().__init__(detail)
@@ -192,14 +192,14 @@ def _compare_runs(with_path, without_path):
 
     # Check the direct build/version confound first.  It is more fundamental
     # than any later identity or arm-direction check: comparing 2.27.7 to
-    # 2.30.4 changes two variables and is not a B1 experiment.
+    # 2.30.4 changes two variables and is not a single-variable NDEBUG experiment.
     if with_run.rccl_loaded["version_string"] != without_run.rccl_loaded[
         "version_string"
     ]:
         raise B1Refusal(
             "B1-VERSION",
             2,
-            "version_string differs between arms; B1 needs the same RCCL "
+            "version_string differs between arms; the NDEBUG comparison needs the same RCCL "
             f"version (with-ndebug={_one_line(with_run.rccl_loaded['version_string'])!r}, "
             f"without-ndebug={_one_line(without_run.rccl_loaded['version_string'])!r})",
         )
@@ -279,7 +279,7 @@ def _print_comparison(comparison):
     with_run = comparison.with_run
     without_run = comparison.without_run
     print(
-        "B1 RCCL collective sweep "
+        "NDEBUG RCCL collective sweep "
         "(ratio = with-ndebug / without-ndebug; lower latency wins)"
     )
     print(
