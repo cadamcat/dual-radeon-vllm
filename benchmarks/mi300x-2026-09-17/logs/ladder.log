@@ -1,0 +1,21 @@
+19:48:00 | === MI300X run start, vllm 0.27.1.dev5+gf46a9dfe2.d20260827, torch 2.12.0+rocm10.0.0, hip 7.15.26333, AMD Instinct MI300X VF, 196288 MiB, gfxgfx942:sramecc+:xnack- ===
+19:48:00 | telemetry: 1 card(s), readable ['gpu_busy_pct', 'mclk_mhz', 'mclk_mhz_cap', 'mem_busy_pct', 'power_cap_w', 'power_w', 'sclk_mhz', 'sclk_mhz_cap', 'temp_c', 'vram_used_b'], absent ['card0.pcie_rx_kbs', 'card0.pcie_tx_kbs']
+19:52:02 | Q38: still starting (4 min)
+19:52:45 | Q38: warmup ok
+19:53:36 | Q38: 500 r1 10.59 tok/s
+19:54:24 | Q38: 500 r2 10.59 tok/s
+19:55:13 | Q38: 1000 r1 10.47 tok/s
+19:56:03 | Q38: 1000 r2 10.48 tok/s
+19:56:53 | Q38: 2000 r1 10.26 tok/s
+19:57:43 | Q38: 2000 r2 10.26 tok/s
+19:58:36 | Q38: 4000 r1 9.86 tok/s
+19:59:29 | Q38: 4000 r2 9.86 tok/s
+20:00:24 | Q38: 6000 r1 9.48 tok/s
+20:01:20 | Q38: 6000 r2 9.48 tok/s
+20:02:18 | Q38: 8000 r1 9.14 tok/s
+20:03:16 | Q38: 8000 r2 9.14 tok/s
+20:04:19 | Q38: 12000 r1 8.52 tok/s
+20:05:22 | Q38: 12000 r2 8.51 tok/s
+20:06:31 | Q38: 16000 r1 7.97 tok/s
+20:07:39 | Q38: 16000 r2 7.97 tok/s
+20:08:53 | Q38: 20000 r1 7.50 tok/s

@@ -1,0 +1,19 @@
+{
+ "purpose": "one MI300X, TP=1: declaration versus launch on CDNA, the hostcall declaration count in this image, the sixteen-rung ladder and the batch dimension",
+ "date": "2026-09-17",
+ "host": "AMD Developer Cloud GPU droplet, 1x MI300X 192 GB",
+ "repo_commit": "ec76b21ac59cc80eecde258ca39b885dc68d86ca",
+ "site_packages": "/opt/python/lib/python3.14/site-packages",
+ "rocm_C": "/opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so",
+ "llvm_bin": "/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin",
+ "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+ "vllm_commit": "unknown",
+ "torch": "2.12.0+rocm10.0.0",
+ "gcnArchName": "gfx942:sramecc+:xnack-",
+ "rocm_version": "7.15.26333-0000000",
+ "driver": "6.19.14.31400000",
+ "kernel": "Linux rocm-10-0-gpu-mi300x1-192gb-devcloud-atl1 6.8.0-138-generic #138-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 31 22:41:49 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+ "rocm_smi": "device,Driver version\nsystem,6.19.14.31400000",
+ "disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/vda1       697G  136G  562G  20% /models\n/dev/vda1       697G  136G  562G  20% /work",
+ "container_image": "rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0@sha256:b8a082f346d069376d35784250e38b23a043efe979408ae3a33d7c6b62ee3276"
+}

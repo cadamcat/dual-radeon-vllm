@@ -1,0 +1,21 @@
+fetch   Qwen3-8B                           Qwen/Qwen3-8B@b968826d9c46
+Fetching 15 files:   0%|          | 0/15 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 15 files:  33%|███▎      | 5/15 [00:00<00:00, 35.89it/s]Fetching 15 files:  67%|██████▋   | 10/15 [00:05<00:03,  1.66it/s]Fetching 15 files:  80%|████████  | 12/15 [00:13<00:04,  1.44s/it]Fetching 15 files:  87%|████████▋ | 13/15 [00:15<00:03,  1.62s/it]Fetching 15 files:  93%|█████████▎| 14/15 [00:16<00:01,  1.40s/it]Fetching 15 files: 100%|██████████| 15/15 [00:16<00:00,  1.07s/it]
+ok      Qwen3-8B                             15.27 of 15.27 GiB
+fetch   gemma-4-12B-it-qat-w4a16-ct        google/gemma-4-12B-it-qat-w4a16-ct@1d2c2d7f2466
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  50%|█████     | 5/10 [00:00<00:00, 42.59it/s]Fetching 10 files:  90%|█████████ | 9/10 [00:13<00:00, 42.59it/s]Fetching 10 files: 100%|██████████| 10/10 [00:23<00:00,  2.72s/it]Fetching 10 files: 100%|██████████| 10/10 [00:23<00:00,  2.32s/it]
+ok      gemma-4-12B-it-qat-w4a16-ct           9.59 of 9.59 GiB
+fetch   gemma-4-26B-A4B-AWQ                cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit@0ef577a57100
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Fetching 13 files:  38%|███▊      | 5/13 [00:00<00:00, 45.23it/s]Fetching 13 files:  77%|███████▋  | 10/13 [00:08<00:02,  1.06it/s]Fetching 13 files:  77%|███████▋  | 10/13 [00:20<00:02,  1.06it/s]Fetching 13 files:  85%|████████▍ | 11/13 [00:27<00:07,  3.59s/it]Fetching 13 files:  92%|█████████▏| 12/13 [00:27<00:03,  3.02s/it]Fetching 13 files: 100%|██████████| 13/13 [00:27<00:00,  2.14s/it]
+ok      gemma-4-26B-A4B-AWQ                  16.04 of 16.04 GiB
+fetch   gemma-4-31B-it-qat-w4a16-ct        google/gemma-4-31B-it-qat-w4a16-ct@52f3f65bc7a0
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files:  89%|████████▉ | 8/9 [00:00<00:00, 13.14it/s]Fetching 9 files:  89%|████████▉ | 8/9 [00:12<00:00, 13.14it/s]Fetching 9 files: 100%|██████████| 9/9 [00:34<00:00,  5.20s/it]Fetching 9 files: 100%|██████████| 9/9 [00:34<00:00,  3.84s/it]
+ok      gemma-4-31B-it-qat-w4a16-ct          21.70 of 21.70 GiB
+fetch   Qwen3.8-27B-AWQ-INT4               cyankiwi/Qwen3.8-27B-AWQ-INT4@63768c10df38
+Fetching 18 files:   0%|          | 0/18 [00:00<?, ?it/s]Fetching 18 files:  22%|██▏       | 4/18 [00:00<00:00, 36.81it/s]Fetching 18 files:  56%|█████▌    | 10/18 [00:00<00:00, 46.65it/s]Fetching 18 files:  78%|███████▊  | 14/18 [00:18<00:00, 46.65it/s]Fetching 18 files:  83%|████████▎ | 15/18 [00:20<00:05,  1.82s/it]Fetching 18 files:  89%|████████▉ | 16/18 [00:20<00:03,  1.63s/it]Fetching 18 files: 100%|██████████| 18/18 [00:25<00:00,  1.44s/it]
+ok      Qwen3.8-27B-AWQ-INT4                 19.60 of 19.60 GiB
+fetch   Muse-Glimmer-30B-INT4              RedHatAI/Muse-Glimmer-30B-INT4@f5b410ce4234
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Fetching 12 files:   8%|▊         | 1/12 [00:00<00:01,  8.83it/s]Fetching 12 files:  58%|█████▊    | 7/12 [00:00<00:00, 36.47it/s]Fetching 12 files:  92%|█████████▏| 11/12 [00:09<00:01,  1.08s/it]Fetching 12 files:  92%|█████████▏| 11/12 [00:22<00:01,  1.08s/it]Fetching 12 files: 100%|██████████| 12/12 [00:56<00:00,  7.59s/it]Fetching 12 files: 100%|██████████| 12/12 [00:56<00:00,  4.72s/it]
+ok      Muse-Glimmer-30B-INT4                20.70 of 20.70 GiB
+
+6 of 6 complete

@@ -1,0 +1,234 @@
+19:11:33 | === MI300X run start, vllm 0.27.1.dev5+gf46a9dfe2.d20260827, torch 2.12.0+rocm10.0.0, hip 7.15.26333, AMD Instinct MI300X VF, 196288 MiB, gfxgfx942:sramecc+:xnack- ===
+19:11:33 | telemetry: 1 card(s), readable ['gpu_busy_pct', 'mclk_mhz', 'mclk_mhz_cap', 'mem_busy_pct', 'power_cap_w', 'power_w', 'sclk_mhz', 'sclk_mhz_cap', 'temp_c', 'vram_used_b'], absent ['card0.pcie_rx_kbs', 'card0.pcie_tx_kbs']
+19:11:33 | === MI300X run end ===
+19:12:40 | === MI300X run start, vllm 0.27.1.dev5+gf46a9dfe2.d20260827, torch 2.12.0+rocm10.0.0, hip 7.15.26333, AMD Instinct MI300X VF, 196288 MiB, gfxgfx942:sramecc+:xnack- ===
+19:12:40 | telemetry: 1 card(s), readable ['gpu_busy_pct', 'mclk_mhz', 'mclk_mhz_cap', 'mem_busy_pct', 'power_cap_w', 'power_w', 'sclk_mhz', 'sclk_mhz_cap', 'temp_c', 'vram_used_b'], absent ['card0.pcie_rx_kbs', 'card0.pcie_tx_kbs']
+19:12:52 | G12: crash, FAILED
+19:13:04 | G26A4B: crash, FAILED
+19:13:16 | G31: crash, FAILED
+19:14:23 | B8: warmup ok
+19:14:28 | B8: 500 r1 199.38 tok/s
+19:14:31 | B8: 500 r2 199.12 tok/s
+19:14:34 | B8: 1000 r1 197.79 tok/s
+19:14:36 | B8: 1000 r2 198.35 tok/s
+19:14:39 | B8: 2000 r1 196.17 tok/s
+19:14:41 | B8: 2000 r2 196.93 tok/s
+19:14:44 | B8: 4000 r1 192.07 tok/s
+19:14:47 | B8: 4000 r2 192.03 tok/s
+19:14:50 | B8: 6000 r1 189.86 tok/s
+19:14:53 | B8: 6000 r2 189.83 tok/s
+19:14:56 | B8: 8000 r1 186.57 tok/s
+19:14:59 | B8: 8000 r2 186.54 tok/s
+19:15:03 | B8: 12000 r1 180.90 tok/s
+19:15:06 | B8: 12000 r2 181.15 tok/s
+19:15:10 | B8: 16000 r1 174.58 tok/s
+19:15:14 | B8: 16000 r2 174.77 tok/s
+19:15:18 | B8: 20000 r1 168.98 tok/s
+19:15:22 | B8: 20000 r2 168.77 tok/s
+19:15:27 | B8: 24000 r1 164.96 tok/s
+19:15:31 | B8: 24000 r2 164.04 tok/s
+19:15:37 | B8: 32000 r1 154.16 tok/s
+19:15:43 | B8: 32000 r2 154.66 tok/s
+19:15:43 | B8: target 48000 exceeds mml, stop
+19:15:43 | B8: COMPLETE (22 ok, 0 err)
+19:19:51 | MG30: still starting (4 min)
+19:20:17 | MG30: warmup ok
+19:21:22 | MG30: 500 r1 0.44 tok/s
+19:22:23 | MG30: 500 r2 0.36 tok/s
+19:23:24 | MG30: 1000 r1 0.72 tok/s
+19:24:26 | MG30: 1000 r2 0.77 tok/s
+19:25:28 | MG30: 2000 r1 0.34 tok/s
+19:26:29 | MG30: 2000 r2 0.10 tok/s
+19:27:31 | MG30: 4000 r1 7.82 tok/s
+19:28:33 | MG30: 4000 r2 7.97 tok/s
+19:29:36 | MG30: 6000 r1 8.26 tok/s
+19:30:38 | MG30: 6000 r2 8.28 tok/s
+19:31:41 | MG30: 8000 r1 8.36 tok/s
+19:32:44 | MG30: 8000 r2 8.34 tok/s
+19:33:48 | MG30: 12000 r1 8.32 tok/s
+19:34:52 | MG30: 12000 r2 8.31 tok/s
+19:35:57 | MG30: 16000 r1 8.35 tok/s
+19:37:02 | MG30: 16000 r2 8.36 tok/s
+19:38:09 | MG30: 20000 r1 8.35 tok/s
+19:39:15 | MG30: 20000 r2 8.35 tok/s
+19:40:22 | MG30: 24000 r1 8.35 tok/s
+19:41:30 | MG30: 24000 r2 8.34 tok/s
+19:42:40 | MG30: 32000 r1 8.33 tok/s
+19:43:50 | MG30: 32000 r2 8.33 tok/s
+19:45:06 | MG30: 48000 r1 8.31 tok/s
+19:46:21 | MG30: 48000 r2 8.31 tok/s
+19:47:44 | MG30: 64000 r1 8.29 tok/s
+19:48:00 | === MI300X run start, vllm 0.27.1.dev5+gf46a9dfe2.d20260827, torch 2.12.0+rocm10.0.0, hip 7.15.26333, AMD Instinct MI300X VF, 196288 MiB, gfxgfx942:sramecc+:xnack- ===
+19:48:00 | telemetry: 1 card(s), readable ['gpu_busy_pct', 'mclk_mhz', 'mclk_mhz_cap', 'mem_busy_pct', 'power_cap_w', 'power_w', 'sclk_mhz', 'sclk_mhz_cap', 'temp_c', 'vram_used_b'], absent ['card0.pcie_rx_kbs', 'card0.pcie_tx_kbs']
+19:52:02 | Q38: still starting (4 min)
+19:52:45 | Q38: warmup ok
+19:53:36 | Q38: 500 r1 10.59 tok/s
+19:54:24 | Q38: 500 r2 10.59 tok/s
+19:55:13 | Q38: 1000 r1 10.47 tok/s
+19:56:03 | Q38: 1000 r2 10.48 tok/s
+19:56:53 | Q38: 2000 r1 10.26 tok/s
+19:57:43 | Q38: 2000 r2 10.26 tok/s
+19:58:36 | Q38: 4000 r1 9.86 tok/s
+19:59:29 | Q38: 4000 r2 9.86 tok/s
+20:00:24 | Q38: 6000 r1 9.48 tok/s
+20:01:20 | Q38: 6000 r2 9.48 tok/s
+20:02:18 | Q38: 8000 r1 9.14 tok/s
+20:03:16 | Q38: 8000 r2 9.14 tok/s
+20:04:19 | Q38: 12000 r1 8.52 tok/s
+20:05:22 | Q38: 12000 r2 8.51 tok/s
+20:06:31 | Q38: 16000 r1 7.97 tok/s
+20:07:39 | Q38: 16000 r2 7.97 tok/s
+20:08:53 | Q38: 20000 r1 7.50 tok/s
+20:09:51 | AITER probe: Q38-aiter with {'VLLM_ROCM_USE_AITER': '1'}
+20:13:53 | Q38-aiter: still starting (4 min)
+20:16:06 | Q38-aiter: warmup ok
+20:16:54 | Q38-aiter: 500 r1 10.66 tok/s
+20:17:42 | Q38-aiter: 500 r2 10.66 tok/s
+20:18:39 | Q38-aiter: 8000 r1 9.20 tok/s
+20:19:37 | Q38-aiter: 8000 r2 9.19 tok/s
+20:21:08 | Q38-aiter: 32000 r1 6.38 tok/s
+20:22:39 | Q38-aiter: 32000 r2 6.38 tok/s
+20:22:39 | Q38-aiter: COMPLETE (6 ok, 0 err)
+20:22:39 | AITER probe: Q38-noaiter with {'VLLM_ROCM_USE_AITER': '0'}
+20:24:08 | Q38-noaiter: warmup ok
+20:24:57 | Q38-noaiter: 500 r1 10.58 tok/s
+20:25:45 | Q38-noaiter: 500 r2 10.58 tok/s
+20:26:43 | Q38-noaiter: 8000 r1 9.14 tok/s
+20:27:41 | Q38-noaiter: 8000 r2 9.14 tok/s
+20:29:12 | Q38-noaiter: 32000 r1 6.35 tok/s
+20:30:44 | Q38-noaiter: 32000 r2 6.35 tok/s
+20:30:44 | Q38-noaiter: COMPLETE (6 ok, 0 err)
+20:30:44 | AITER probe done
+20:46:54 | batch/greedy pass over ['B8']: depths [500, 8000, 32000] batches [1, 2, 4, 8] repeats 5
+20:48:07 | B8: warmup ok
+20:48:09 | B8: 500 b1 r1 256/1.3s = 194.6 tok/s
+20:48:10 | B8: 500 b1 r2 256/1.3s = 195.0 tok/s
+20:48:11 | B8: 500 b1 r3 256/1.3s = 195.1 tok/s
+20:48:12 | B8: 500 b1 r4 256/1.3s = 194.3 tok/s
+20:48:14 | B8: 500 b1 r5 256/1.3s = 194.9 tok/s
+20:48:15 | B8: 500 b2 r1 512/1.6s = 328.0 tok/s
+20:48:17 | B8: 500 b2 r2 512/1.6s = 328.0 tok/s
+20:48:18 | B8: 500 b2 r3 512/1.6s = 327.7 tok/s
+20:48:20 | B8: 500 b2 r4 512/1.6s = 324.7 tok/s
+20:48:22 | B8: 500 b2 r5 512/1.6s = 328.2 tok/s
+20:48:23 | B8: 500 b4 r1 1024/1.8s = 565.4 tok/s
+20:48:25 | B8: 500 b4 r2 1024/1.8s = 562.8 tok/s
+20:48:27 | B8: 500 b4 r3 1024/1.8s = 559.4 tok/s
+20:48:29 | B8: 500 b4 r4 1024/1.8s = 564.4 tok/s
+20:48:31 | B8: 500 b4 r5 1024/1.8s = 562.4 tok/s
+20:48:36 | B8: 500 b8 r1 2048/4.8s = 427.1 tok/s
+20:48:37 | B8: 500 b8 r2 2048/1.8s = 1157.8 tok/s
+20:48:39 | B8: 500 b8 r3 2048/1.8s = 1157.4 tok/s
+20:48:41 | B8: 500 b8 r4 2048/1.8s = 1158.4 tok/s
+20:48:43 | B8: 500 b8 r5 2048/1.8s = 1159.7 tok/s
+20:48:44 | B8: 8000 b1 r1 256/1.7s = 149.8 tok/s
+20:48:46 | B8: 8000 b1 r2 256/1.7s = 149.6 tok/s
+20:48:48 | B8: 8000 b1 r3 256/1.7s = 150.0 tok/s
+20:48:49 | B8: 8000 b1 r4 256/1.7s = 149.9 tok/s
+20:48:51 | B8: 8000 b1 r5 256/1.7s = 150.1 tok/s
+20:48:54 | B8: 8000 b2 r1 512/2.4s = 212.0 tok/s
+20:48:56 | B8: 8000 b2 r2 512/2.4s = 212.1 tok/s
+20:48:58 | B8: 8000 b2 r3 512/2.4s = 211.9 tok/s
+20:49:01 | B8: 8000 b2 r4 512/2.4s = 211.7 tok/s
+20:49:03 | B8: 8000 b2 r5 512/2.4s = 211.9 tok/s
+20:49:07 | B8: 8000 b4 r1 1024/3.8s = 268.2 tok/s
+20:49:11 | B8: 8000 b4 r2 1024/3.8s = 268.7 tok/s
+20:49:15 | B8: 8000 b4 r3 1024/3.8s = 268.8 tok/s
+20:49:18 | B8: 8000 b4 r4 1024/3.8s = 268.8 tok/s
+20:49:22 | B8: 8000 b4 r5 1024/3.8s = 268.6 tok/s
+20:49:29 | B8: 8000 b8 r1 2048/6.2s = 328.8 tok/s
+20:49:35 | B8: 8000 b8 r2 2048/6.2s = 328.6 tok/s
+20:49:41 | B8: 8000 b8 r3 2048/6.2s = 328.5 tok/s
+20:49:47 | B8: 8000 b8 r4 2048/6.3s = 325.8 tok/s
+20:49:54 | B8: 8000 b8 r5 2048/6.2s = 328.6 tok/s
+20:49:58 | B8: 32000 b1 r1 255/4.1s = 62.0 tok/s
+20:50:02 | B8: 32000 b1 r2 256/4.1s = 62.5 tok/s
+20:50:06 | B8: 32000 b1 r3 256/4.1s = 62.6 tok/s
+20:50:10 | B8: 32000 b1 r4 255/4.1s = 62.4 tok/s
+20:50:14 | B8: 32000 b1 r5 255/4.1s = 62.2 tok/s
+20:50:22 | B8: 32000 b2 r1 512/8.5s = 60.4 tok/s
+20:50:31 | B8: 32000 b2 r2 512/8.5s = 60.4 tok/s
+20:50:39 | B8: 32000 b2 r3 512/8.5s = 60.4 tok/s
+20:50:48 | B8: 32000 b2 r4 512/8.5s = 60.5 tok/s
+20:50:56 | B8: 32000 b2 r5 512/8.4s = 60.8 tok/s
+20:51:14 | B8: 32000 b4 r1 1024/18.1s = 56.4 tok/s
+20:51:33 | B8: 32000 b4 r2 1024/18.1s = 56.5 tok/s
+20:51:51 | B8: 32000 b4 r3 1024/18.1s = 56.5 tok/s
+20:52:09 | B8: 32000 b4 r4 1024/18.1s = 56.5 tok/s
+20:52:27 | B8: 32000 b4 r5 1024/18.1s = 56.5 tok/s
+20:53:07 | B8: 32000 b8 r1 2048/39.7s = 51.6 tok/s
+20:53:46 | B8: 32000 b8 r2 2048/39.7s = 51.6 tok/s
+20:54:26 | B8: 32000 b8 r3 2048/39.7s = 51.6 tok/s
+20:55:06 | B8: 32000 b8 r4 2048/39.7s = 51.5 tok/s
+20:55:46 | B8: 32000 b8 r5 2048/39.7s = 51.6 tok/s
+20:55:46 | B8: greedy r1 128 tokens 8ddccbe1611b
+20:55:47 | B8: greedy r2 128 tokens 8ddccbe1611b
+20:55:47 | B8: greedy r3 128 tokens 8ddccbe1611b
+20:55:48 | B8: greedy r4 128 tokens 8ddccbe1611b
+20:55:49 | B8: greedy r5 128 tokens 8ddccbe1611b
+20:55:49 | B8: greedy r6 128 tokens 8ddccbe1611b
+20:55:50 | B8: greedy r7 128 tokens 8ddccbe1611b
+20:55:51 | B8: greedy r8 128 tokens 8ddccbe1611b
+20:55:51 | batch/greedy pass done
+20:55:54 | attention A/B: B8-rocm (--attention-backend ROCM_ATTN)
+20:57:07 | B8-rocm: warmup ok
+20:57:10 | B8-rocm: 500 r1 198.68 tok/s
+20:57:12 | B8-rocm: 500 r2 198.42 tok/s
+20:57:15 | B8-rocm: 1000 r1 197.32 tok/s
+20:57:17 | B8-rocm: 1000 r2 197.57 tok/s
+20:57:20 | B8-rocm: 2000 r1 195.61 tok/s
+20:57:23 | B8-rocm: 2000 r2 196.03 tok/s
+20:57:26 | B8-rocm: 4000 r1 191.60 tok/s
+20:57:28 | B8-rocm: 4000 r2 191.55 tok/s
+20:57:31 | B8-rocm: 6000 r1 189.42 tok/s
+20:57:34 | B8-rocm: 6000 r2 189.65 tok/s
+20:57:37 | B8-rocm: 8000 r1 186.30 tok/s
+20:57:41 | B8-rocm: 8000 r2 186.21 tok/s
+20:57:44 | B8-rocm: 12000 r1 180.54 tok/s
+20:57:47 | B8-rocm: 12000 r2 180.74 tok/s
+20:57:51 | B8-rocm: 16000 r1 174.44 tok/s
+20:57:55 | B8-rocm: 16000 r2 174.41 tok/s
+20:57:59 | B8-rocm: 20000 r1 168.77 tok/s
+20:58:04 | B8-rocm: 20000 r2 168.58 tok/s
+20:58:08 | B8-rocm: 24000 r1 164.48 tok/s
+20:58:13 | B8-rocm: 24000 r2 163.69 tok/s
+20:58:19 | B8-rocm: 32000 r1 153.85 tok/s
+20:58:24 | B8-rocm: 32000 r2 154.32 tok/s
+20:58:24 | B8-rocm: target 48000 exceeds mml, stop
+20:58:24 | B8-rocm: COMPLETE (22 ok, 0 err)
+20:58:24 | attention A/B: B8-triton (--attention-backend TRITON_ATTN)
+20:59:43 | B8-triton: warmup ok
+20:59:45 | B8-triton: 500 r1 198.90 tok/s
+20:59:48 | B8-triton: 500 r2 198.34 tok/s
+20:59:51 | B8-triton: 1000 r1 195.59 tok/s
+20:59:53 | B8-triton: 1000 r2 195.57 tok/s
+20:59:56 | B8-triton: 2000 r1 189.87 tok/s
+20:59:59 | B8-triton: 2000 r2 189.64 tok/s
+21:00:02 | B8-triton: 4000 r1 180.22 tok/s
+21:00:05 | B8-triton: 4000 r2 180.20 tok/s
+21:00:08 | B8-triton: 6000 r1 171.02 tok/s
+21:00:12 | B8-triton: 6000 r2 171.07 tok/s
+21:00:15 | B8-triton: 8000 r1 164.02 tok/s
+21:00:19 | B8-triton: 8000 r2 164.14 tok/s
+21:00:23 | B8-triton: 12000 r1 150.25 tok/s
+21:00:28 | B8-triton: 12000 r2 149.99 tok/s
+21:00:33 | B8-triton: 16000 r1 138.77 tok/s
+21:00:38 | B8-triton: 16000 r2 139.02 tok/s
+21:00:44 | B8-triton: 20000 r1 128.69 tok/s
+21:00:50 | B8-triton: 20000 r2 128.57 tok/s
+21:00:58 | B8-triton: 24000 r1 119.82 tok/s
+21:01:05 | B8-triton: 24000 r2 119.95 tok/s
+21:01:15 | B8-triton: 32000 r1 105.58 tok/s
+21:01:25 | B8-triton: 32000 r2 105.53 tok/s
+21:01:25 | B8-triton: target 48000 exceeds mml, stop
+21:01:25 | B8-triton: COMPLETE (22 ok, 0 err)
+21:01:25 | attention A/B: B8-rocm-b (--attention-backend ROCM_ATTN)
+21:02:23 | B8-rocm-b: warmup ok
+21:02:26 | B8-rocm-b: 500 r1 197.98 tok/s
+21:02:28 | B8-rocm-b: 500 r2 197.62 tok/s
+21:02:31 | B8-rocm-b: 8000 r1 185.90 tok/s
+21:02:35 | B8-rocm-b: 8000 r2 185.79 tok/s
+21:02:40 | B8-rocm-b: 32000 r1 154.97 tok/s
+21:02:46 | B8-rocm-b: 32000 r2 154.98 tok/s
+21:02:46 | B8-rocm-b: COMPLETE (6 ok, 0 err)
+21:02:46 | attention A/B done

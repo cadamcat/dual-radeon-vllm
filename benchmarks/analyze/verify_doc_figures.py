@@ -2133,7 +2133,7 @@ def _run_checks(_opened, _audit_state):
                 _seen |= set(_r)
         if _seen and not set(_TELE_REQUIRED) <= _seen:
             _missing.append((_rel, sorted(set(_TELE_REQUIRED) - _seen)[:4]))
-    ck("campaigns, every results.jsonl found", "32", len(_camps))
+    ck("campaigns, every results.jsonl found", "33", len(_camps))
     # the generated index, since 2026-09-03: the hand-typed table it replaced
     # named eighteen of forty-two directories
     import build_campaigns as _bc
@@ -2341,7 +2341,10 @@ def _run_checks(_opened, _audit_state):
     ck("preflight, refuses a card below x16", "1",
        1 if 'c["width"] != "x16"' in _pf else 0)
     # a new Radeon campaign must carry the preflight's record
+    # rented single-card campaigns have no pair and no root port to read, so
+    # they are excluded here as the rented CUDA ones are
     _need_hl = [c for c in _camps if c not in _PRE_SCHEMA and "cuda-" not in c
+                and "mi300x" not in c
                 and not os.path.exists(os.path.join(_BR, os.path.dirname(c), "host_link.json"))]
     ck("campaigns, new Radeon ones missing host_link.json", "0", len(_need_hl))
 
@@ -10276,6 +10279,133 @@ def _run_checks(_opened, _audit_state):
     zh_numbers("MTP cross-machine", r"对 Radeon 为 ([+−\d.]+) %，对 A100 为 ([+−\d.]+) %",
                100 * (_zh_mtp_rates["G31-mtp-p45450-tp2"] / _zh_mtp_rates["G31-tp2"] - 1),
                100 * (_zh_mtp_rates["A100-G31-mtp-p45450"] / _zh_mtp_rates["A100-G31"] - 1))
+
+    # --- benchmarks/mi300x-2026-09-17: one rented MI300X, four passes ------
+    # The campaign's own numbers, read out of its README and recomputed from
+    # the rows, the device-code scan and the launch traces beside it. The
+    # published figure is the claim; the row is the value.
+    _MI = os.path.join(HERE, "..", "mi300x-2026-09-17")
+    _mrm = open(os.path.join(_MI, "README.md"), encoding="utf-8").read()
+    _mrows = [json.loads(l) for l in open(os.path.join(_MI, "results.jsonl")) if l.strip()]
+
+    def _mfind(pattern, groups=1):
+        """the published figures of one sentence or table row, as written"""
+        m = re.search(pattern, _mrm)
+        return [m.group(i + 1).replace(" ", "").replace("\u2212", "-") for i in range(groups)] \
+            if m else ["nan"] * groups
+
+    _mdec, _mpre = {}, {}
+    for _r in _mrows:
+        if _r.get("kind") == "decode" and _r.get("decode_tps"):
+            _mdec.setdefault((_r["cfg"], _r["target"]), []).append(_r["decode_tps"])
+        if _r.get("kind") == "prefill" and _r.get("prefill_tps"):
+            _mpre.setdefault((_r["cfg"], _r["target"]), []).append(_r["prefill_tps"])
+
+    def _mrate(cfg, target, src=None):
+        vals = (src or _mdec)[(cfg, target)]
+        return sum(vals) / len(vals)
+
+    ck("MI300X README, the row count it states", _mfind(r"`results.jsonl` \((\d+) rows\)")[0], len(_mrows))
+
+    # the device-code scan: the counts the page gives for this image
+    _mtsv = [l.split("\t") for l in
+             open(os.path.join(_MI, "rocm_C-gfx942-kernels.tsv"), encoding="utf-8").read().splitlines()[1:]]
+    _mscan = _mfind(r"hold \*\*([\d ]+) kernels, of which ([\d ]+) declare\*\*", 2)
+    ck("MI300X scan, kernels in the gfx942 images", _mscan[0], len(_mtsv))
+    ck("MI300X scan, kernels that declare a hostcall buffer", _mscan[1],
+       sum(1 for t in _mtsv if t[0] == "1"))
+    _mpa = _mfind(r"has ([\d ]+) instantiations and none of them declares")
+    ck("MI300X scan, paged-attention instantiations", _mpa[0],
+       sum(1 for t in _mtsv if "paged_attention" in t[2]))
+    ck("MI300X scan, declaring paged-attention instantiations", "0",
+       sum(1 for t in _mtsv if "paged_attention" in t[2] and t[0] == "1"))
+
+    # the launch traces: what a serve of each model actually dispatched
+    for _label, _model in (("Qwen3-8B, bf16", "Qwen3-8B"),
+                           ("Muse-Glimmer-30B-INT4", "Muse-Glimmer-30B-INT4")):
+        _j = json.load(open(os.path.join(_MI, f"trace-join-{_model}.json")))
+        _serve = [v for k, v in _j.items() if k.startswith("trace-serve")][0]
+        _row = _mfind(r"\| " + re.escape(_label) + r" \| ([\d ]+) \| ([\d ]+) \| \*\*([\d]+)\*\* \|", 3)
+        ck(f"MI300X trace, {_model} distinct kernels", _row[0], _serve["kernels_launched"])
+        ck(f"MI300X trace, {_model} launches", _row[1], _serve["launches"])
+        ck(f"MI300X trace, {_model} declaring kernels launched", _row[2], _serve["launched_declaring"])
+
+    # the ladder, against the machines the page puts beside it
+    # the ladder rows bold this machine's column and follow it with a plain
+    # number, which the A/B table's all-bold row does not
+    for _t, _label in ((500, "500"), (8000, "8 000"), (32000, "32 000")):
+        _lad = _mfind(r"\| " + _label + r" \| \*\*([\d.]+)\*\* \| [\d.]+ \|")[0]
+        ck(f"MI300X ladder, Qwen3-8B at {_t}", _lad, _mrate("B8", _t))
+    _mq = _mfind(r"decode at ([\d.]+) \(Qwen3\.8-27B-AWQ-INT4 at 2 000\)\n?and ([\d.]+) "
+                 r"\(Muse-Glimmer-30B-INT4 at 8 000\)", 2)
+    ck("MI300X ladder, the AWQ model at 2 000", _mq[0], _mrate("Q38", 2000))
+    ck("MI300X ladder, the int4 model at 8 000", _mq[1], _mrate("MG30", 8000))
+
+    # AITER changes neither kernel nor rate
+    for _t in (500, 8000):
+        _pair = _mfind(r"\| " + ("500" if _t == 500 else "8 000") + r" \| ([\d.]+) \| ([\d.]+) \|", 2)
+        ck(f"MI300X AITER on, {_t}", _pair[0], _mrate("Q38-aiter", _t))
+        ck(f"MI300X AITER off, {_t}", _pair[1], _mrate("Q38-noaiter", _t))
+
+    # the attention A/B and its drift control
+    for _t, _label in ((8000, "8 000"), (16000, "16 000"), (32000, "32 000")):
+        _bold = r"\*\*" if _t == 32000 else ""
+        _ab = _mfind(r"\| " + _label + r" \| " + _bold + r"([\d.]+)" + _bold + r" \| " + _bold +
+                     r"([\d.]+)" + _bold + r" \| " + _bold + r"([\d.]+)" + _bold + r" \| " + _bold +
+                     r"([\d.]+)" + _bold + r" \|", 4)
+        ck(f"MI300X A/B, ROCM_ATTN at {_t}", _ab[0], _mrate("B8-rocm", _t))
+        ck(f"MI300X A/B, TRITON_ATTN at {_t}", _ab[1], _mrate("B8-triton", _t))
+        ck(f"MI300X A/B, decode ratio at {_t}", _ab[2], _mrate("B8-rocm", _t) / _mrate("B8-triton", _t))
+        ck(f"MI300X A/B, prefill ratio at {_t}", _ab[3],
+           _mrate("B8-rocm", _t, _mpre) / _mrate("B8-triton", _t, _mpre))
+    _mdrift = _mfind(r"three rungs: ([−+\d.]+) %,\n([−+\d.]+) % and ([+\d.]+) %", 3)
+    for _i, _t in enumerate((500, 8000, 32000)):
+        ck(f"MI300X A/B drift at {_t}, per cent",
+           _mdrift[_i], (_mrate("B8-rocm-b", _t) / _mrate("B8-rocm", _t) - 1) * 100)
+
+    # the batch cells, prefill excluded as the page says it excludes it
+    _mbatch = {}
+    for _r in _mrows:
+        if _r.get("kind") == "batch" and _r["wall_s"] > _r["ttft_max"]:
+            _mbatch.setdefault((_r["target"], _r["batch"]), []).append(
+                _r["gen_tokens"] / (_r["wall_s"] - _r["ttft_max"]))
+    def _mcell(t, b):
+        return sum(_mbatch[(t, b)]) / len(_mbatch[(t, b)])
+    for _t, _label in ((500, "500"), (8000, "8 000"), (32000, "32 000")):
+        _row = _mfind(r"\| " + _label + r" \| ([\d. ]+) \| ([\d. ]+) \| ([\d. ]+) \| ([\d. ]+) \| ([\d.]+)× \|", 5)
+        for _i, _b in enumerate((1, 2, 4, 8)):
+            ck(f"MI300X batch, {_t} at batch {_b}", _row[_i], _mcell(_t, _b))
+        ck(f"MI300X batch, {_t} eight against one", _row[4], _mcell(_t, 8) / _mcell(_t, 1))
+    ck("MI300X batch, cells where a request failed", "0",
+       sum(1 for r in _mrows if r.get("kind") == "batch" and r["requests_ok"] != r["requests"]))
+
+    # greedy repeats, and the two capacity figures the page quotes from the log
+    _mg = [r for r in _mrows if r.get("kind") == "greedy"]
+    ck("MI300X greedy, repeats", "8", len(_mg))
+    ck("MI300X greedy, distinct completions", "1", len({r["sha1"] for r in _mg}))
+    _mserve = open(os.path.join(_MI, "logs", "serve-B8.log"), encoding="utf-8", errors="replace").read()
+    _mkv = _mfind(r"KV pool held\n([\d ]+) tokens \(([\d.]+)× concurrency at 40 960\)", 2)
+    ck("MI300X batch serve, KV pool tokens", _mkv[0],
+       float(re.search(r"GPU KV cache size: ([\d,]+) tokens", _mserve).group(1).replace(",", "")))
+    ck("MI300X batch serve, stated concurrency", _mkv[1],
+       float(re.search(r"Maximum concurrency for [\d,]+ tokens per request: ([\d.]+)x", _mserve).group(1)))
+    ck("MI300X batch serve, preempted requests", "0", _mserve.lower().count("preempt"))
+
+    # evidence identity: the image and the version the page names, and the two
+    # frames of the gemma-4 traceback it attributes the failure to
+    _mprov = json.load(open(os.path.join(_MI, "PROVENANCE.json")))
+    ck("MI300X, the image digest the page quotes is the one recorded", "1",
+       1 if _mfind(r"`sha256:([0-9a-f]+)…`")[0] in _mprov["container_image"] else 0)
+    ck("MI300X, the vLLM version the page quotes is the one recorded", "1",
+       1 if _mprov["vllm"] in _mrm else 0)
+    _mgem = open(os.path.join(_MI, "logs", "gemma4-load-failure-gfx942.log"),
+                 encoding="utf-8", errors="replace").read()
+    ck("MI300X gemma-4 log, the converter frame", "1",
+       1 if 'head_dim = getattr(self.hf_text_config, "head_dim", 0)' in _mgem else 0)
+    ck("MI300X gemma-4 log, the accessor raise", "1",
+       1 if "AmbiguousGlobalPerLayerAttributeError" in _mgem else 0)
+    ck("MI300X, gemma-4 configurations that failed", "3",
+       sum(1 for r in _mrows if r.get("kind") == "config_failed" and r["cfg"] in ("G12", "G26A4B", "G31")))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

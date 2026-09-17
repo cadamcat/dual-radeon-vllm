@@ -1,0 +1,105 @@
+== 10-trace 2026-09-17T18:50:43+00:00
+repo/benchmarks/hostcall-dispatch-2026-09-05/launchtrace.c:9:10: fatal error: 'hip/hip_runtime_api.h' file not found
+    9 | #include <hip/hip_runtime_api.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+failed to execute:/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++  --driver-mode=g++ -Llib --hip-link  -O1 -shared -fPIC -x c repo/benchmarks/hostcall-dispatch-2026-09-05/launchtrace.c -o "launchtrace.so" -ldl
+== 10-trace 2026-09-17T18:51:03+00:00
+== 10-trace 2026-09-17T18:51:43+00:00
+serve answered: {"0": {"prompt_tokens": 3809, "total_tokens": 3873, "completion_tokens": 64, "prompt_tokens_details": null}, "1": {"prompt_tokens": 3809, "total_tokens": 3873, "completion_tokens": 64, "prompt_tokens_details": null}}
+{
+ "probe": {
+  "kernels_launched": 18,
+  "launches": 1237,
+  "paged_attention_kernels": {
+   "_Z38paged_attention_ll4mi_QKV_mfma4_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataTypeE0ES0_Li16ELi128ELi256ELb0ELi4EEvPKT_PKT0_S8_ifPKiSA_SA_iPKfiiiPfSD_PS3_PT2_iSC_SC_": {
+    "launches": 1,
+    "declares_hostcall": null
+   },
+   "_Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKfS4_PKT_PKiS9_iS4_": {
+    "launches": 1,
+    "declares_hostcall": null
+   }
+  },
+  "declaring_launched": 0,
+  "unknown_to_the_scan": [
+   "_Z38paged_attention_ll4mi_QKV_mfma4_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataTypeE0ES0_Li16ELi128ELi256ELb0ELi4EEvPKT_PKT0_S8_ifPKiSA_SA_iPKfiiiPfSD_PS3_PT2_iSC_SC_",
+   "_Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKfS4_PKT_PKiS9_iS4_"
+  ]
+ },
+ "serve": {
+  "kernels_launched": 85,
+  "launches": 46617,
+  "paged_attention_kernels": {
+   "_Z38paged_attention_ll4mi_QKV_mfma4_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataTypeE0ES0_Li16ELi128ELi256ELb0ELi4EEvPKT_PKT0_S8_ifPKiSA_SA_iPKfiiiPfSD_PS3_PT2_iSC_SC_": {
+    "launches": 936,
+    "declares_hostcall": null
+   },
+   "_Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKfS4_PKT_PKiS9_iS4_": {
+    "launches": 936,
+    "declares_hostcall": null
+   }
+  },
+  "declaring_launched": 0,
+  "unknown_to_the_scan": [
+   "_Z38paged_attention_ll4mi_QKV_mfma4_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataTypeE0ES0_Li16ELi128ELi256ELb0ELi4EEvPKT_PKT0_S8_ifPKiSA_SA_iPKfiiiPfSD_PS3_PT2_iSC_SC_",
+   "_Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKfS4_PKT_PKiS9_iS4_"
+  ]
+ }
+}
+
+DECLARING paged-attention kernels actually launched: 0
+A kernel the trace names but the scan does not know is a join failure, not a result.
+== trace done
+== 10-trace 2026-09-17T18:54:51+00:00
+== 10-trace 2026-09-17T19:06:05+00:00
+FATAL: serve did not start
+(APIServer pid=16164)     return await anext(self.gen)
+(APIServer pid=16164)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 156, in build_async_engine_client_from_engine_args
+(APIServer pid=16164)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1929, in create_engine_config
+(APIServer pid=16164)     model_config = self.create_model_config()
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/quark/online_quantization/vllm/plugin.py", line 193, in patched_create_model_config
+(APIServer pid=16164)     return orig_create_model_config(self, *args, **kwargs)
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1686, in create_model_config
+(APIServer pid=16164)     return ModelConfig(
+(APIServer pid=16164)         model=self.model,
+(APIServer pid=16164)     ...<63 lines>...
+(APIServer pid=16164)         renderer_num_workers=self.renderer_num_workers,
+(APIServer pid=16164)     )
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=16164)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=16164)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/config/model.py", line 595, in __post_init__
+(APIServer pid=16164)     self.model_arch_config = self.get_model_arch_config()
+(APIServer pid=16164)                              ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/config/model.py", line 856, in get_model_arch_config
+(APIServer pid=16164)     return convertor.convert(
+(APIServer pid=16164)            ~~~~~~~~~~~~~~~~~^
+(APIServer pid=16164)         supports_multimodal=self._supports_multimodal_for_mm_prefix()
+(APIServer pid=16164)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=16164)     )
+(APIServer pid=16164)     ^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/transformers_utils/model_arch_config_convertor.py", line 378, in convert
+(APIServer pid=16164)     head_size=self.get_head_size(),
+(APIServer pid=16164)               ~~~~~~~~~~~~~~~~~~^^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/vllm/transformers_utils/model_arch_config_convertor.py", line 608, in get_head_size
+(APIServer pid=16164)     head_dim = getattr(self.hf_text_config, "head_dim", 0)
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/transformers/configuration_utils.py", line 484, in __getattribute__
+(APIServer pid=16164)     return super().__getattribute__(key)
+(APIServer pid=16164)            ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+(APIServer pid=16164)   File "/opt/python/lib/python3.14/site-packages/transformers/integrations/heterogeneity/configuration_utils.py", line 298, in __getattribute__
+(APIServer pid=16164)     raise AmbiguousGlobalPerLayerAttributeError(
+(APIServer pid=16164)     ...<5 lines>...
+(APIServer pid=16164)     )
+(APIServer pid=16164) transformers.integrations.heterogeneity.configuration_utils.AmbiguousGlobalPerLayerAttributeError: 'head_dim' is a per-layer attribute and may vary across layers. Access it via the individual layer configs instead (e.g. config.per_layer_config[i].head_dim). To read the global config value from config.head_dim anyway, set `allow_global_per_layer_attribute_access` to `True` on the config. Warning: only do this if the caller can safely handle heterogeneous configs; code that assumes a homogeneous model may use the global value incorrectly.
+serve answered: {"0": {"prompt_tokens": 3857, "total_tokens": 3921, "completion_tokens": 64, "prompt_tokens_details": null}, "1": {"prompt_tokens": 3857, "total_tokens": 3921, "completion_tokens": 64, "prompt_tokens_details": null}}
+trace-probe-Muse-Glimmer-30B-INT4: 18 distinct kernels, 1237 launches; 2 are _rocm_C's (16 from elsewhere — torch, hipBLASLt, RCCL: outside this scan); declaring kernels launched: 0 (0 launches)
+    paged-attn: declares=0 x1 _Z38paged_attention_ll4mi_QKV_mfma4_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataTypeE
+    paged-attn: declares=0 x1 _Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKf
+trace-serve-Muse-Glimmer-30B-INT4: 144 distinct kernels, 146710 launches; 4 are _rocm_C's (140 from elsewhere — torch, hipBLASLt, RCCL: outside this scan); declaring kernels launched: 0 (0 launches)
+    paged-attn: declares=0 x1352 _Z39paged_attention_ll4mi_QKV_mfma16_kernelI14__hip_bfloat16S0_LN4vllm18Fp8KVCacheDataType
+    paged-attn: declares=0 x1352 _Z35paged_attention_ll4mi_reduce_kernelI14__hip_bfloat16S0_Li128ELi128ELi256ELi1EEvPT0_PKf
+-> /work/trace-join-Muse-Glimmer-30B-INT4.json
+== trace done

@@ -1,0 +1,96 @@
+== 00-preflight 2026-09-17T18:44:59+00:00
+{
+ "purpose": "one MI300X, TP=1: declaration versus launch on CDNA, the hostcall declaration count in this image, the sixteen-rung ladder and the batch dimension",
+ "date": "2026-09-17",
+ "host": "AMD Developer Cloud GPU droplet, 1x MI300X 192 GB",
+ "repo_commit": "ec76b21ac59cc80eecde258ca39b885dc68d86ca",
+ "site_packages": "/opt/python/lib/python3.14/site-packages",
+ "rocm_C": "/opt/python/lib/python3.14/site-packages/vllm/_rocm_C.abi3.so",
+ "llvm_bin": "/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/lib/llvm/bin",
+ "vllm": "0.27.1.dev5+gf46a9dfe2.d20260827",
+ "vllm_commit": "unknown",
+ "torch": "2.12.0+rocm10.0.0",
+ "gcnArchName": "gfx942:sramecc+:xnack-",
+ "rocm_version": "7.15.26333-0000000",
+ "driver": "6.19.14.31400000",
+ "kernel": "Linux rocm-10-0-gpu-mi300x1-192gb-devcloud-atl1 6.8.0-138-generic #138-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 31 22:41:49 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+ "rocm_smi": "device,Driver version\nsystem,6.19.14.31400000",
+ "disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/vda1       697G  136G  562G  20% /models\n/dev/vda1       697G  136G  562G  20% /work",
+ "container_image": "rocm/vllm:rocm10.0.0_ubuntu24.04_py3.14_pytorch_2.12.0_vllm_0.27.0@sha256:b8a082f346d069376d35784250e38b23a043efe979408ae3a33d7c6b62ee3276"
+}
+repo/diagnose/hipgate3.cpp:39:15: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   39 |   int nd = 0; hipGetDeviceCount(&nd);
+      |               ^~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:44:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   44 |     hipSetDevice(d);
+      |     ^~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:45:27: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   45 |     hipDeviceProp_t prop; hipGetDeviceProperties(&prop, d);
+      |                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/include/hip/hip_runtime_api.h:87:32: note: expanded from macro 'hipGetDeviceProperties'
+   87 | #define hipGetDeviceProperties hipGetDevicePropertiesR0600
+      |                                ^
+repo/diagnose/hipgate3.cpp:46:27: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   46 |     float* buf = nullptr; hipMalloc(&buf, 256);
+      |                           ^~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:47:20: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   47 |     hipStream_t s; hipStreamCreateWithFlags(&s, hipStreamNonBlocking);
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:48:20: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   48 |     hipEvent_t ev; hipEventCreateWithFlags(&ev, hipEventDisableTiming);
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |     ^~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |                          ^~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:47: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |                                               ^~~~~~~~~~~~
+9 warnings generated when compiling for gfx942.
+repo/diagnose/hipgate3.cpp:39:15: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   39 |   int nd = 0; hipGetDeviceCount(&nd);
+      |               ^~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:44:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   44 |     hipSetDevice(d);
+      |     ^~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:45:27: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   45 |     hipDeviceProp_t prop; hipGetDeviceProperties(&prop, d);
+      |                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/opt/python/lib/python3.14/site-packages/_rocm_sdk_devel/include/hip/hip_runtime_api.h:87:32: note: expanded from macro 'hipGetDeviceProperties'
+   87 | #define hipGetDeviceProperties hipGetDevicePropertiesR0600
+      |                                ^
+repo/diagnose/hipgate3.cpp:46:27: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   46 |     float* buf = nullptr; hipMalloc(&buf, 256);
+      |                           ^~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:47:20: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   47 |     hipStream_t s; hipStreamCreateWithFlags(&s, hipStreamNonBlocking);
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:48:20: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   48 |     hipEvent_t ev; hipEventCreateWithFlags(&ev, hipEventDisableTiming);
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |     ^~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |                          ^~~~~~~~~~~~~~~~~~~
+repo/diagnose/hipgate3.cpp:52:47: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+   52 |     hipEventDestroy(ev); hipStreamDestroy(s); hipFree(buf);
+      |                                               ^~~~~~~~~~~~
+9 warnings generated when compiling for host.
+devices=1
+affected = the hostcall kernel is REFUSED, or its marker never prints,
+           while the plain kernel is ok on the same device
+
+--- device 0 (gfx942:sramecc+:xnack-) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+    [device] HOSTCALL_MARKER reached the host
+  hostcall  ok        launch:no error | sync:no error | lastError:no error
+
+If no '[device] HOSTCALL_MARKER' line appeared for a device, hostcall is
+unavailable there, whatever the return codes said.
+gcnArchName gfx942:sramecc+:xnack- | total GiB 191.7
+fetch_models.py started (pid 355), log /work/fetch.log
+== preflight done; next: 05-scan.sh while the download runs

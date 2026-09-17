@@ -1,0 +1,12 @@
+devices=1
+affected = the hostcall kernel is REFUSED, or its marker never prints,
+           while the plain kernel is ok on the same device
+
+--- device 0 (gfx942:sramecc+:xnack-) ---
+  plain     ok        launch:no error | sync:no error | lastError:no error
+    [device] HOSTCALL_MARKER reached the host
+  hostcall  ok        launch:no error | sync:no error | lastError:no error
+
+If no '[device] HOSTCALL_MARKER' line appeared for a device, hostcall is
+unavailable there, whatever the return codes said.
+gcnArchName gfx942:sramecc+:xnack- | total GiB 191.7
