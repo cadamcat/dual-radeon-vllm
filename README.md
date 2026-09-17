@@ -8,7 +8,7 @@ English | [中文](README.zh.md)
 
 `gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: the topology on which the baseline was measured.
 
-Since then the same ladder has been run on twelve other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
+Since then the same ladder has been run on twelve other machine configurations, rented and granted, against that pair.
 
 <table>
 <tr>
@@ -37,7 +37,7 @@ Since then the same ladder has been run on twelve other machine configurations, 
 | RTX PRO 6000 96G | 1 and 2 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | MI300X 192G (gfx942) | 1 | rented on AMD Developer Cloud | 500 – 32 000, the int4 30B to 64 000 | 2026-09-17 |
 
-Fourteen machine configurations, eight checkpoints, 6 048 request-level measurements in 61 results files, 2 440 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
+Fourteen machine configurations, eight checkpoints, 6 048 request-level measurements in 61 results files, 2 440 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages. [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) recomputes each of those counts, and every figure below, from the committed files.
 
 ## What is in here
 

@@ -6,7 +6,7 @@
 
 **两张消费级 Radeon（RX 7900 XT、gfx1100）运行 tensor-parallel vLLM 的实测记录，包括缺少 PCIe AtomicOps 导致的 RCCL 故障、修复方法和逐请求原始数据。**
 
-在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**；Qwen3-8B BF16 的第二张卡加速为 **1.70×**，即 85 % 的并行效率。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。此后同一阶梯又在其他租用或获赠的机器配置上对照这对卡跑过；本页每个数字都在发布前从已提交的原始行重算。
+在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**；Qwen3-8B BF16 的第二张卡加速为 **1.70×**，即 85 % 的并行效率。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。此后同一阶梯又在其他租用或获赠的机器配置上对照这对卡跑过。
 
 **从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部 campaign](benchmarks/CAMPAIGNS.md)
 
@@ -23,7 +23,7 @@
 | RTX PRO 6000 96G | 1、2 | Modal | 500–128 000 | 2026-09-03 |
 | MI300X 192G（gfx942） | 1 | AMD Developer Cloud 租用 | 500–32 000，int4 30B 到 64 000 | 2026-09-17 |
 
-十四种机器配置、八个 checkpoint、61 个结果文件里 6 048 条请求级测量、两份跨机器投影里 2 440 个通过重复性筛选的 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文——这些计数由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
+十四种机器配置、八个 checkpoint、61 个结果文件里 6 048 条请求级测量、两份跨机器投影里 2 440 个通过重复性筛选的 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文。这些计数和下面每张图，都由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从已提交文件重算。
 
 ## 三部分内容，各自可以独立使用
 
