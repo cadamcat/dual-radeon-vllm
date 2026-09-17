@@ -32,6 +32,26 @@ from build_prefill import host_link as _bpm_host_link
 DECODE = B("decode.jsonl")
 LEDGER = B("ledger.jsonl")
 
+# (source, cfg) pairs whose `decode_tps` is not a token rate, and so are not
+# decode measurements to project. The runners count streamed chunks -- `n += 1`
+# for each server-sent event carrying content -- which is one token per event on
+# every path vLLM serves itself, and the field has been read that way since the
+# first campaign.
+#
+# Muse-Glimmer-30B has no vLLM implementation in 0.27.1 (`no vLLM
+# implementation` in its serve log) and runs through the Transformers fallback,
+# which puts several tokens in one chunk. Its 25 decode rows on the MI300X
+# report 7 to 512 chunks for the same 512 requested tokens, while every other
+# configuration in that file reports 511 or 512; the rates that come out are
+# 0.098 tok/s at the 2 000 rung against 8.33 at 32 000, for a model the engine's
+# own logger reports at 8.3-8.4 tok/s for 165 consecutive samples of the run.
+# The deep rungs happen to be right and the shallow ones are wrong by up to 85x,
+# which is worse than uniformly wrong: it is a curve with a shape the card never
+# produced. The campaign README publishes the 8 000-rung figure and says where
+# it comes from; prefill is unaffected, because ttft is when the first chunk
+# arrives whatever the next one carries.
+NOT_A_TOKEN_RATE = {("mi300x-2026-09-17/results.jsonl", "MG30")}
+
 
 def aggregate(values, tokens, **row):
     v = sorted(values)
@@ -84,6 +104,8 @@ def build():
             r = json.loads(line)
             if r.get("kind") != "decode" or not r.get("decode_tps"):
                 continue
+            if (s["file"], r["cfg"]) in NOT_A_TOKEN_RATE:
+                continue
             by.setdefault((r["cfg"], r["target"]), []).append(
                 (r["ts"], r["decode_tps"], r["prompt_tokens"]))
         # why the backend was chosen, from the serve logs beside this source.
@@ -97,7 +119,7 @@ def build():
             # single-card configuration ids, so the source states the card
             # count and the table cannot.
             tp = s.get("tp", tp)
-            spec, backend = arm_for(cfg)
+            spec, backend = arm_for(cfg, s["machine"])
             over = s.get("per_cfg", {}).get(cfg, {})
             vals, superseded = latest_session([(t, (d, pt)) for t, d, pt in trips])
             extra = {"superseded_values": sorted(x[0] for x in superseded)} \

@@ -28,7 +28,7 @@ Five models were chosen to isolate *architecture*, not size:
 
 *This document is the pair's own record: the campaigns of 2026-07-25 and
 2026-08-24 on 2× RX 7900 XT, read against each other. The cross-machine
-picture — twelve machine configurations, context to 128 000 — lives in
+picture — fourteen machine configurations, context to 128 000 — lives in
 [`benchmarks/prefill.jsonl`](../benchmarks/prefill.jsonl),
 [`benchmarks/decode.jsonl`](../benchmarks/decode.jsonl) and
 [`benchmarks/cuda-modal/README.md`](../benchmarks/cuda-modal/README.md), and is

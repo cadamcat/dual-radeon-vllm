@@ -3574,16 +3574,19 @@ def _run_checks(_opened, _audit_state):
     # does not, which is why `default` moves by the whole 118.
     # +16 on 2026-09-07: campaign-2026-09-06's eight rungs, prefill and decode
     # +70 on 2026-09-07b: campaign-2026-09-07's three arms, prefill and decode
-    ck("route column, rows carrying one", "1920", len(_rt))
+    # +115 on 2026-09-18: the MI300X joined the projections -- 64 prefill rows
+    # and 51 decode, the difference being the fallback model's decode rows,
+    # which build_decode.py leaves out and says why
+    ck("route column, rows carrying one", "2035", len(_rt))
     _dec = {}
     for _r in _rt:
         _d = _r["route"]["decision"]
         _dec[_d] = _dec.get(_d, 0) + 1
-    ck("route column, chosen by override", "294", _dec.get("override", 0))
+    ck("route column, chosen by override", "359", _dec.get("override", 0))
     ck("route column, forced", "590", _dec.get("forced", 0))
     # +32: the Triton arm is FORCED by a serve flag, so its rows are `default`
     # in the log's own terms -- nothing overrode anything, the flag decided
-    ck("route column, left to the default", "1036", _dec.get("default", 0))
+    ck("route column, left to the default", "1086", _dec.get("default", 0))
     ck("route column, and nothing else", "3", len(_dec))
     _why = {}
     for _r in _rt:
@@ -3600,10 +3603,15 @@ def _run_checks(_opened, _audit_state):
     for _r in _rt:
         for _c in _r["route"].get("candidates", []):
             _cand[_c] = _cand.get(_c, 0) + 1
-    ck("route column, ROCm offered both of its backends", "294",
+    ck("route column, ROCm offered both of its backends", "359",
        _cand.get("ROCM_ATTN", 0))
-    ck("route column, and Triton was the other one", "294",
+    ck("route column, and Triton was the other one", "359",
        _cand.get("TRITON_ATTN", 0))
+    # the AITER arm was offered AMD's own attention kernels by name and the
+    # platform still chose ROCM_ATTN, which is the environment variable's
+    # answer on the attention side: it was in the candidate set, not selected
+    ck("route column, and the MI300X was offered AITER's as well", "6",
+       _cand.get("ROCM_AITER_FA", 0))
     # three quantisation kernels for one scheme name, two of them on gfx1100
     _qk = {r["route"]["quant_kernel"] for r in _rt if r["route"].get("quant_kernel")}
     # four since 2026-09-03: Muse-Glimmer lands on MacheteLinearKernel on the
@@ -3614,9 +3622,23 @@ def _run_checks(_opened, _audit_state):
     # of campaign-2026-09-03 calls the dequantisation kernel -- the reason that
     # arm decodes at a quarter of Figure 1's line for the same model.
     ck("route column, distinct quantisation kernels", "5", len(_qk))
-    ck("route column, and the fifth is the 27B's fallback on the pair", "1",
-       1 if {(r["cfg"], r["machine"]) for r in _rt if r["route"].get("quant_kernel") == "TritonW4A16LinearKernel"}
-       == {("D8-27B-tp2-long", "RX 7900 XT")} else 0)
+    # Until 2026-09-17 that fifth kernel was one arm on the pair. The MI300X
+    # puts every quantised configuration on it: vLLM's ROCm candidate list
+    # offers RDNA3W4A16 and RDNAHybridW4A16, both of which refuse anything but
+    # gfx1100, so gfx942 falls through to Triton with no native kernel behind
+    # it. On the pair the fallback is one container's; on CDNA it is the only
+    # thing offered.
+    _tri_w4 = {(r["cfg"], r["machine"]) for r in _rt
+               if r["route"].get("quant_kernel") == "TritonW4A16LinearKernel"}
+    ck("route column, the fallback kernel is on two machines", "2",
+       len({m for _, m in _tri_w4}))
+    ck("route column, and on the pair it is one arm", "1",
+       sum(1 for c, m in _tri_w4 if m == "RX 7900 XT"))
+    ck("route column, on the MI300X every quantised configuration", "4",
+       sum(1 for c, m in _tri_w4 if m == "MI300X"))
+    ck("route column, and no quantised MI300X configuration escaped it", "0",
+       sum(1 for r in _rt if r["machine"] == "MI300X" and r["quant"] != "bf16"
+           and r["route"].get("quant_kernel") not in (None, "TritonW4A16LinearKernel")))
     ck("route column, and two of them are RDNA's", "2",
        sum(1 for k in _qk if k.startswith("RDNA")))
     _rdna = {}
@@ -3641,7 +3663,8 @@ def _run_checks(_opened, _audit_state):
     _machine_en = table_rows("README en machines", _rmf, ("machine", "cards", "whose"))
     _machine_zh = table_rows("README zh machines", _rmz, ("机器", "卡数", "来源"))
     for _fam in ("RX 7900 XT", "A100 SXM4 80G", "A100 SXM4 40G", "L4 24G", "T4 16G",
-                 "H100 80G", "H200 143G", "B300 275G", "RTX PRO 6000 96G"):
+                 "H100 80G", "H200 143G", "B300 275G", "RTX PRO 6000 96G",
+                 "MI300X 192G"):
         _fre = re.compile(r"(?<!\w)" + re.escape(_fam) + r"(?!\w)")   # "H100 80GB" is not "H100 80G"
         ck("README measured-on, names %s" % _fam, "2", (1 if _fre.search(_mo) else 0) + (1 if _fre.search(_moz) else 0))
     ck("README measured-on, the two languages have the same rows", "1",
@@ -3649,7 +3672,8 @@ def _run_checks(_opened, _audit_state):
     _mfam = {"RX 7900 XT": "RX 7900 XT", "A100-SXM4-80GB": "A100 SXM4 80G", "A100-SXM4-40GB": "A100 SXM4 40G",
              "L4": "L4 24G", "T4": "T4 16G", "H100-80GB-HBM3": "H100 80G", "H100-80GB-HBM3-x2": "H100 80G",
              "H100-80GB-HBM3-x4": "H100 80G", "H200-143GB-HBM3e": "H200 143G", "B300-SXM6": "B300 275G",
-             "RTX-PRO-6000-Blackwell": "RTX PRO 6000 96G", "RTX-PRO-6000-Blackwell-x2": "RTX PRO 6000 96G"}
+             "RTX-PRO-6000-Blackwell": "RTX PRO 6000 96G", "RTX-PRO-6000-Blackwell-x2": "RTX PRO 6000 96G",
+             "MI300X": "MI300X 192G"}
     ck("README measured-on, every machine in decode.jsonl has a row", "0",
        sum(1 for m in {r["machine"] for r in _RTD}
            if not re.search(r"(?<!\w)" + re.escape(_mfam.get(m, "?")) + r"(?!\w)", _mo)))
@@ -3669,17 +3693,17 @@ def _run_checks(_opened, _audit_state):
                         continue
                     _mreq += 1 if _r.get("kind") in ("decode", "prefill") else 0
                     _mar += 1 if _r.get("kind") == "allreduce" else 0
-    _msent = re.search(r"Thirteen machine configurations, eight checkpoints, ([\d ]+) request-level "
+    _msent = re.search(r"Fourteen machine configurations, eight checkpoints, ([\d ]+) request-level "
                        r"measurements in (\d+) results files, ([\d ]+) chart-grade cells [^,]+, "
                        r"(\d+) all-reduce cells [^,]+, and (\d+) write-ups", _mo)
     ck("README measured-on, the count sentence is there", "1", 1 if _msent else 0)
     if _msent:
         # a configuration is a card and a card count: the pair and its single card
         # share a machine name and are two rows of the table, as are the H100s
-        ck("README measured-on, machine configurations", "13", len({(r["machine"], r["tp"]) for r in _RTD}))
+        ck("README measured-on, machine configurations", "14", len({(r["machine"], r["tp"]) for r in _RTD}))
         # a row is one or two machines (split on the middle dot) times the card
         # counts its second cell names: "L4 24G · T4 16G | 1" is two, "H100 80G | 1, 2 and 4" is three
-        ck("README measured-on, and the table has a cell for each", "13",
+        ck("README measured-on, and the table has a cell for each", "14",
            sum((r["machine"].count("·") + 1) * len(re.findall(r"\d+", r["cards"]))
                for r in _machine_en))
         ck("README measured-on, checkpoints", "8", len({r["model"] for r in _RTD + _RTP}))
@@ -3692,6 +3716,15 @@ def _run_checks(_opened, _audit_state):
            len(json.load(open(os.path.join(ROOT, "site", "src", "articles.json"), encoding="utf-8"))["articles"]))
         ck("README measured-on, and the Chinese page quotes the same counts", "5",
            sum(1 for g in _msent.groups() if g in _moz))
+    # benchmarks.md orients the reader by the size of the cross-machine picture
+    # and that count was written by hand: it said twelve while decode.jsonl held
+    # thirteen configurations. Recomputed the way the front page's is, from the
+    # projection rather than from the other page.
+    _bm_mc = re.search(r"picture — (\w+) machine configurations", _bmd)
+    _bm_words = {"eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15}
+    ck("benchmarks.md, the size it gives the cross-machine picture", "1",
+       1 if _bm_mc and _bm_words.get(_bm_mc.group(1)) == len({(r["machine"], r["tp"]) for r in _RTD}) else 0)
+
     # --- campaign-2026-09-03 README: every published number, recomputed -----
     # The README's tables and sentences are read back with regexes and each
     # figure is re-derived from results.jsonl, the two projections, the
@@ -7757,11 +7790,12 @@ def _run_checks(_opened, _audit_state):
         if (_r.get("model") in ("Qwen3.6-27B", "Qwen3.8-27B") and _r["chart_grade"]
                 and _r.get("spec") is None):
             _hy.setdefault((_r["cfg"], _r["machine"], _r["date"]), []).append(_r)
-    _lad = []
+    _lad, _lad_keys = [], []
     for _k, _rs in _hy.items():
         _rs.sort(key=lambda r: r["ctx"])
         if len(_rs) > 1:
             _lad.append((_rs[-1]["prefill_tok_s"] / _rs[0]["prefill_tok_s"] - 1) * 100)
+            _lad_keys.append(_k)
     # the half of the sentence that does hold: the dense arms measured beside it
     _dn = []
     for _cfg in ("B-8B-tp2", "C-31B-tp2", "A-12B-tp2"):
@@ -7793,8 +7827,10 @@ def _run_checks(_opened, _audit_state):
     # one checkpoint is 134 points.
     # eighteen since 2026-09-07: the same checkpoint again on 0.27 (campaign-2026-09-06)
     # twenty-one since 2026-09-07b: campaign-2026-09-07's three arms
-    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "21", len(_lad))
-    ck("hybrid section 6, rising by more than 1 pct", "7",
+    # twenty-four since 2026-09-18: the MI300X's three arms of the same
+    # checkpoint, the first CDNA ladders of it, and all three rise
+    ck("hybrid section 6, stock hybrid-SSM prefill ladders", "24", len(_lad))
+    ck("hybrid section 6, rising by more than 1 pct", "10",
        sum(1 for x in _lad if x > 1))
     ck("hybrid section 6, flat inside 1 pct", "1",
        sum(1 for x in _lad if 0 < x <= 1))
@@ -7827,17 +7863,19 @@ def _run_checks(_opened, _audit_state):
     _ab_zh = open(os.path.join(HERE, "..", "..", "site", "src",
                                "article-body-zh.html"), encoding="utf-8").read()
     ck("hybrid section 6, the article spells the tally", "2",
-       (1 if "twenty-one stock hybrid-SSM ladders" in _ab_en else 0)
-       + (1 if "二十一条 stock hybrid-SSM 阶梯" in _ab_zh else 0))
+       (1 if "twenty-four stock hybrid-SSM ladders" in _ab_en else 0)
+       + (1 if "二十四条 stock hybrid-SSM 阶梯" in _ab_zh else 0))
     ck("hybrid section 6, and how many fall", "2",
-       (1 if "seven rise by more than 1 %, one is flat, and thirteen fall" in _ab_en else 0)
-       + (1 if "七条阶梯上升超过 1 %，一条持平，十三条下降" in _ab_zh else 0))
+       (1 if "ten rise by more than 1 %, one is flat, and thirteen fall" in _ab_en else 0)
+       + (1 if "十条阶梯上升超过 1 %，一条持平，十三条下降" in _ab_zh else 0))
     ck("hybrid section 6, and the range it spans", "2",
        (1 if "range of 171 points" in _ab_en else 0)
        + (1 if "横跨 171 个百分点" in _ab_zh else 0))
     ck("hybrid section 6, and the machine configurations behind it", "2",
-       (1 if "across nine machine configurations" in _ab_en else 0)
-       + (1 if "跨九种机器配置" in _ab_zh else 0))
+       (1 if "across ten machine configurations" in _ab_en else 0)
+       + (1 if "跨十种机器配置" in _ab_zh else 0))
+    ck("hybrid section 6, and that many machines are behind it", "10",
+       len({k[1] for k in _lad_keys}))
     ck("hybrid section 6, and the rise is two H100s", "1",
        1 if _hi[1] == "H100-80GB-HBM3-x2" else 0)
     ck("hybrid section 6, both are the same checkpoint", "1",
@@ -7911,13 +7949,14 @@ def _run_checks(_opened, _audit_state):
            else 0)
         ck("hybrid section 6 %s, quotes both ends of the spread" % _lang,
            "2", sum(1 for _v in ("68.3 %", "103.0 %") if fl(_v) in _t))
-        ck("hybrid section 6 %s, and counts twenty-one ladders" % _lang, "1",
-           1 if (fl("twenty-one stock hybrid-SSM ladders") in _t
-                 or fl("二十一条 stock hybrid-SSM 阶梯") in _t) else 0)
+        ck("hybrid section 6 %s, and counts twenty-four ladders" % _lang, "1",
+           1 if (fl("twenty-four stock hybrid-SSM ladders") in _t
+                 or fl("二十四条 stock hybrid-SSM 阶梯") in _t) else 0)
         ck("hybrid section 6 %s, and the old low end is gone" % _lang, "0",
            sum(1 for _v in ("31.1 %", "38.7 %", "sixteen stock hybrid-SSM ladders",
                             "十六条 stock hybrid-SSM 阶梯", "seventeen stock hybrid-SSM ladders",
-                            "十七条 stock hybrid-SSM 阶梯") if fl(_v) in _t))
+                            "十七条 stock hybrid-SSM 阶梯", "twenty-one stock hybrid-SSM ladders",
+                            "二十一条 stock hybrid-SSM 阶梯") if fl(_v) in _t))
         ck("hybrid section 6 %s, and no longer counts nine or eight" % _lang, "0",
            1 if (fl("nine stock hybrid-SSM ladders") in _t
                  or fl("eight stock hybrid-SSM ladders") in _t
@@ -10406,6 +10445,79 @@ def _run_checks(_opened, _audit_state):
        1 if "AmbiguousGlobalPerLayerAttributeError" in _mgem else 0)
     ck("MI300X, gemma-4 configurations that failed", "3",
        sum(1 for r in _mrows if r.get("kind") == "config_failed" and r["cfg"] in ("G12", "G26A4B", "G31")))
+
+    # --- what the cross-machine projections took from this campaign, 09-18 ---
+    # Three things the join has to be right about, and a draft of it was wrong
+    # about two: which rows are decode measurements at all, what backend each
+    # arm ran on -- the configuration ids repeat across machines and the CUDA
+    # table answers FLASH_ATTN for `Q38` and `MG30` -- and that it moved
+    # nothing else, which the byte-identity of every other row covers.
+    _mjp = [r for r in _RTP if r["machine"] == "MI300X"]
+    _mjd = [r for r in _RTD if r["machine"] == "MI300X"]
+    ck("MI300X projection, prefill cells that did not arrive", "0",
+       len({(r["cfg"], r["target"]) for r in _mrows
+            if r.get("kind") == "prefill" and r.get("ttft")}
+           ^ {(r["cfg"], r["ctx"]) for r in _mjp}))
+    ck("MI300X projection, decode cells that did not arrive", "0",
+       len({(r["cfg"], r["target"]) for r in _mrows
+            if r.get("kind") == "decode" and r.get("decode_tps") and r["cfg"] != "MG30"}
+           ^ {(r["cfg"], r["ctx"]) for r in _mjd}))
+    ck("MI300X projection, and the fallback model has no decode row", "0",
+       sum(1 for r in _mjd if r["cfg"] == "MG30"))
+    ck("MI300X projection, build_decode names the source it leaves out", "1",
+       1 if ("mi300x-2026-09-17/results.jsonl", "MG30") in _bpd.NOT_A_TOKEN_RATE else 0)
+
+    # the backend on every projected row, against this campaign's own records:
+    # its `model_meta` where the runner wrote one, its serve log otherwise
+    _MBRE = re.compile(r"Using (?:AttentionBackendEnum\.)?([A-Z0-9_]+)(?: attention)? backend"
+                       r"|Overriding with ([A-Z0-9_]+) out of potential backends")
+
+    def _mbackend(cfg):
+        for _r in _mrows:
+            if _r.get("kind") == "model_meta" and _r.get("cfg") == cfg and _r.get("backend"):
+                return _r["backend"]
+        for _l in open(os.path.join(_MI, "logs", f"serve-{cfg}.log"),
+                       encoding="utf-8", errors="replace"):
+            if "vit attention" in _l or "MMEncoderAttention" in _l:
+                continue                      # the vision tower, not the decoder
+            _m = _MBRE.search(_l)
+            if _m:
+                return _m.group(1) or _m.group(2)
+        return None
+
+    ck("MI300X projection, rows whose backend is not the campaign's own reading", "0",
+       sum(1 for r in _mjd + _mjp if r["attn_backend"] != _mbackend(r["cfg"])))
+    ck("MI300X projection, and the A/B arms are two backends, not one", "2",
+       len({r["attn_backend"] for r in _mjd if r["cfg"] in ("B8-rocm", "B8-triton")}))
+
+    # why the fallback model's decode rows are not measurements, from the rows:
+    # 512 tokens were requested with ignore_eos on every one of them, and the
+    # runner counts stream chunks, which this path fills with several tokens
+    _mgen = {}
+    for _r in _mrows:
+        if _r.get("kind") == "decode":
+            _mgen.setdefault(_r["cfg"], []).append(_r["gen_tokens"])
+    _mshort = _mfind(r"few as (\d+) and report ([\d.]+) tokens a second", 2)
+    ck("MI300X README, the smallest chunk count it quotes", _mshort[0], min(_mgen["MG30"]))
+    ck("MI300X README, and the rate that came out of it", _mshort[1],
+       min(r["decode_tps"] for r in _mrows
+           if r.get("kind") == "decode" and r["cfg"] == "MG30"))
+    ck("MI300X, every other configuration streams one token per chunk", "0",
+       sum(1 for c, v in _mgen.items() if c != "MG30" for g in v if g < 511))
+    _mttft = {(r["cfg"], r["target"], r["round"]): r["ttft"]
+              for r in _mrows if r.get("kind") == "prefill"}
+    _mimp = sorted((512 - 1) / (r["wall_s"] - _mttft[(r["cfg"], r["target"], r["round"])])
+                   for r in _mrows if r.get("kind") == "decode" and r["cfg"] == "MG30")
+    _mband = _mfind(r"gives ([\d.]+) to ([\d.]+) across the whole ladder", 2)
+    ck("MI300X README, the implied rate's low end", _mband[0], _mimp[0], 0.01)
+    ck("MI300X README, and its high end", _mband[1], _mimp[-1], 0.01)
+    _meng = [float(x) for x in re.findall(r"Avg generation throughput: ([\d.]+) tokens/s",
+                                          open(os.path.join(_MI, "logs", "serve-MG30.log"),
+                                               encoding="utf-8", errors="replace").read())
+             if float(x) > 0]
+    ck("MI300X README, and the engine's own logger agrees",
+       _mfind(r"reports a median ([\d.]+) while it ran")[0], statistics.median(_meng), 0.01)
+    ck("MI300X, samples behind that median", "164", len(_meng))
 
     _untracked = _tracked_input_violations(_opened, ROOT)
     _audit_state["done"] = True

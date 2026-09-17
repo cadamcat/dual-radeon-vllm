@@ -8,7 +8,7 @@ English | [中文](README.zh.md)
 
 `gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: the topology on which the baseline was measured.
 
-Since then the same ladder has been run on eleven other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
+Since then the same ladder has been run on twelve other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
 
 <table>
 <tr>
@@ -35,8 +35,9 @@ Since then the same ladder has been run on eleven other machine configurations, 
 | H100 80G | 1, 2 and 4 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | H200 143G · B300 275G | 1 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | RTX PRO 6000 96G | 1 and 2 | rented on Modal | 500 – 128 000 | 2026-09-03 |
+| MI300X 192G (gfx942) | 1 | rented on AMD Developer Cloud | 500 – 32 000, the int4 30B to 64 000 | 2026-09-17 |
 
-Thirteen machine configurations, eight checkpoints, 6 048 request-level measurements in 61 results files, 2 330 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
+Fourteen machine configurations, eight checkpoints, 6 048 request-level measurements in 61 results files, 2 440 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
 
 ## What is in here
 
@@ -45,7 +46,7 @@ Three things, each usable on its own:
 | Part | What it is |
 |---|---|
 | 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 57-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
+| 📊 **The data** | Seven model architectures on **fourteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two), and since 2026-09-17 an MI300X, the other AMD architecture — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
 | 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
 
 ## Who this is for
@@ -581,7 +582,7 @@ git status --short              # prints nothing
 
 ## Beyond the pair
 
-The same ladder and the same harness on eleven other machine configurations:
+The same ladder and the same harness on twelve other machine configurations:
 the Colab cards of August first, then the rented sweep of September, with the
 pair on every chart as the line the others are read against.
 

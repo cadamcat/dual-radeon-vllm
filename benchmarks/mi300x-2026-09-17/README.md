@@ -87,6 +87,16 @@ no vLLM implementation in this version and runs through the Transformers
 fallback, so its rows are not a kernel comparison at all; its ladder was stopped
 at 64 000 once that was read out of the serve log.
 
+That path also puts several tokens in one stream chunk, and the runner counts
+chunks. At the 8 000 rung it counted 511 of the 512 tokens the request asked
+for, which is why the rate above is a token rate; the shallow rungs counted as
+few as 7 and report 0.098 tokens a second. Dividing the 512 by each row's own
+`wall_s` minus its `ttft` gives 8.29 to 8.38 across the whole ladder, and the
+engine's logger reports a median 8.30 while it ran, so this model decodes at one
+speed from 500 to 64 000 and the shallow rows measure the stream rather than the
+card. They are not decode measurements: `decode.jsonl` takes this model's
+prefill and not its decode, and `build_decode.py` holds the reason.
+
 ## The attention ranking is right where the kernel applies
 
 The 2026-09-07 campaign measured, on gfx1100 with a head_size 256 model, that

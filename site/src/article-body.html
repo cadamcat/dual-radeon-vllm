@@ -233,9 +233,9 @@ prefill never rises. On an H100 it rises <strong>19.4 %</strong> across the same
 the <code>Qwen3.6</code> arm this section is about. The claim was written about a model and was only
 ever true of the machines the model had been run on.)</em> Meanwhile <code>gemma-4-26B-A4B</code>, a
 MoE with no linear-attention layer at all, rises further than <code>Qwen3.6</code> does, 23.8 % in
-July and 21.9 % in August. Of the twenty-one stock hybrid-SSM ladders now in
-<code>benchmarks/prefill.jsonl</code> — one checkpoint family across nine machine configurations —
-<strong>seven rise by more than 1 %, one is flat, and thirteen fall</strong>. The same
+July and 21.9 % in August. Of the twenty-four stock hybrid-SSM ladders now in
+<code>benchmarks/prefill.jsonl</code> — one checkpoint family across ten machine configurations —
+<strong>ten rise by more than 1 %, one is flat, and thirteen fall</strong>. The same
 <code>Qwen3.8-27B</code> checkpoint runs from <strong>−68.3 %</strong> on two Radeons — the 2026-09-07
 ladder to 128 000, pinned to <code>TRITON_ATTN</code> — to <strong>+103.0 %</strong> on two H100s. One architecture and one
 checkpoint produce both signs across a range of 171 points. That is the core finding: what a rising prefill curve indicates is that a short

@@ -121,6 +121,21 @@ CFG_CUDA = {
     "Q38-eager":               ("Qwen3.8-27B",     "int4 AWQ",  "hybrid SSM", 1),
 }
 
+# The CDNA half, 2026-09-17: one rented MI300X (gfx942), the first ROCm machine
+# in here that is not the pair. `B8`, `MG30` and `Q38` are deliberately the same
+# ids the rented CUDA cards use -- the same three checkpoints at the same pinned
+# revisions (`modal-2026-09-02/volume.json`, and this campaign's own
+# `models_meta` row records them), so `machine` is again what separates the
+# rows. What is new is five arms no other machine has: the attention A/B, its
+# drift control, and the AITER pair.
+CFG_MI300X = {
+    "B8-rocm":     ("Qwen3-8B",    "bf16",      "dense", 1),
+    "B8-triton":   ("Qwen3-8B",    "bf16",      "dense", 1),
+    "B8-rocm-b":   ("Qwen3-8B",    "bf16",      "dense", 1),
+    "Q38-aiter":   ("Qwen3.8-27B", "int4 AWQ",  "hybrid SSM", 1),
+    "Q38-noaiter": ("Qwen3.8-27B", "int4 AWQ",  "hybrid SSM", 1),
+}
+
 MTP3 = "mtp k=3"
 DRAFT3 = "draft_model k=3"
 DFLASH8 = "dflash k=8"
@@ -153,6 +168,24 @@ ARMS_CUDA = {
     "G31":                    (None,    "TRITON_ATTN"),
     "Q38":                    (None,    "FLASH_ATTN"),
     "MG30":                   (None,    "FLASH_ATTN"),
+}
+
+# `ARMS_CUDA` answers for `Q38` and `MG30` with FLASH_ATTN, which is what the
+# rented NVIDIA cards chose and impossible on this one: the ids repeat across
+# machines and that table has no machine column. This one is consulted first for
+# MI300X rows, and `build_decode.py` needs it -- prefill reads the serve log and
+# would not. Every value is what the log beside the results says: `Overriding
+# with ROCM_ATTN out of potential backends: [...]` where the platform chose, and
+# the backend the three A/B arms were started with where they asked.
+ARMS_MI300X = {
+    "B8":          (None, "ROCM_ATTN"),
+    "MG30":        (None, "ROCM_ATTN"),
+    "Q38":         (None, "ROCM_ATTN"),
+    "B8-rocm":     (None, "ROCM_ATTN"),
+    "B8-triton":   (None, "TRITON_ATTN"),
+    "B8-rocm-b":   (None, "ROCM_ATTN"),
+    "Q38-aiter":   (None, "ROCM_ATTN"),
+    "Q38-noaiter": (None, "ROCM_ATTN"),
 }
 
 # Every prefill source, and the machine it ran on. The Radeon entries mirror
@@ -462,6 +495,23 @@ SOURCES = [
              "A100-G26A4B-mtp-p45450": dict(patches=["vllm#45450 3D admission"]),
              "A100-Q38-mtp-p45450":    dict(patches=["vllm#45450 3D admission"]),
          }),
+    # 2026-09-17. One MI300X (gfx942), rented by the hour, in the container the
+    # pair's 2026-08-28 and 08-29 rows were measured in: the same vLLM build
+    # string, md5-asserted before the run, so what differs from the pair is the
+    # architecture and not the stack. TP=1, prefix caching off, the sixteen-rung
+    # ladder. `rocm` is the image tag as it is everywhere else here; the HIP
+    # runtime inside it is 7.15.26333 and the host's amdgpu driver
+    # 6.19.14.31400000, both recorded in the campaign's PROVENANCE.json.
+    #
+    # `MG30` contributes prefill rows and no decode rows: build_decode.py holds
+    # the reason, which is that its rate was counted in stream chunks and that
+    # model is the one path here that puts several tokens in one. Time to first
+    # token is unaffected -- it is when the first chunk arrives, whatever the
+    # next one carries.
+    dict(file="mi300x-2026-09-17/results.jsonl", machine="MI300X",
+         date="2026-09-17", vllm="0.27.1.dev5+gf46a9dfe2.d20260827", rocm="10.0",
+         cuda=None, driver="6.19.14.31400000", kernel="6.8.0-138", patches=[],
+         prefix_caching=False),
 ]
 
 # (source, cfg, read-from-this-source, ARMS-table). Reported, not resolved.
@@ -697,10 +747,20 @@ def meta_for(cfg):
         return CFG[cfg]
     if cfg in CFG_CUDA:
         return CFG_CUDA[cfg]
-    raise KeyError(f"unknown cfg {cfg!r} — add it to CFG_CUDA")
+    if cfg in CFG_MI300X:
+        return CFG_MI300X[cfg]
+    raise KeyError(f"unknown cfg {cfg!r} — add it to CFG_CUDA or CFG_MI300X")
 
 
-def arm_for(cfg):
+def arm_for(cfg, machine=None):
+    """The arm's spec and backend. `machine` because the ids are not unique.
+
+    Without it `Q38` on the MI300X reads FLASH_ATTN out of the CUDA table. The
+    MI300X table is not a fallback for the others: an id it does not carry is
+    unknown on that machine rather than whatever the rented NVIDIA cards did.
+    """
+    if machine == "MI300X":
+        return ARMS_MI300X.get(cfg, (None, None))
     if cfg in ARMS:
         return ARMS[cfg]
     return ARMS_CUDA.get(cfg, (None, None))
@@ -748,7 +808,7 @@ def build():
             # still called B8. Without this the projection would record four
             # H100s as one, silently and in a column nothing else checks.
             tp = s.get("tp", tp)
-            spec, tabled = arm_for(cfg)
+            spec, tabled = arm_for(cfg, s["machine"])
             # This source's own reading first. `ARMS`/`ARMS_CUDA` are keyed on a
             # cfg id that repeats across machines, so they are the fallback and
             # not the authority; where both exist and disagree, that is recorded
