@@ -1170,9 +1170,7 @@ addEventListener("DOMContentLoaded", function () {
 <header class="top">
   <div class="kicker">dual-radeon-vllm · write-ups</div>
   <h1>Two consumer Radeon RX 7900 XT,<br>measured under ROCm and vLLM</h1>
-  <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
-  (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
-  the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
+  <p class="lede">Measurements of ROCm and vLLM on two RX 7900 XT cards (gfx1100, RDNA3), with comparisons on other GPUs. Each article links to its data and identifies results whose raw records are not in the repository.</p>
   <div class="meta">
     <span class="chip k-hardware" title="hardware" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-platform" title="platform" style="--i:1">VFIO guest · <b>no P2P</b> · PCIe 3.0 cross-die</span>
@@ -1440,9 +1438,7 @@ checks that value against its source file and fails non-zero if the two disagree
 guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
 number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
 
-<p>The absolute rates are a floor rather than a benchmark of the hardware. The test environment is a
-VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as
-the least favourable topology. The shapes transfer; the levels are the worst case.</p>
+<p>The early Radeon baseline used a VFIO guest with no GPU peer-to-peer and a cross-die PCIe 3.0 path. Both the curves and absolute rates describe the tested configuration; neither is guaranteed to transfer to another topology or software stack. Later campaigns record their own platform state.</p>
 
 <div class="foot-note">
   <p>Source, raw data and the runners that produced the data:
@@ -25881,16 +25877,16 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     "zh": "articles/depth-cost-is-the-stacks.zh.html"
    },
    "title": {
-    "en": "The flattest model by retention is the steepest by cost, and one serve flag moves it three places",
-    "zh": "按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次"
+    "en": "Long-context performance: retention, decode cost and the software stack",
+    "zh": "长上下文性能：保留率、解码成本与软件栈"
    },
    "sub": {
-    "en": "What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing",
-    "zh": "「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变"
+    "en": "The same Qwen3.8-27B weights differ by 3.00&times; in decode cost per context token across three software stacks",
+    "zh": "同一份 Qwen3.8-27B 权重在三套软件栈上的每上下文 token 解码成本相差 3.00&times;"
    },
    "blurb": {
-    "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost the reverse by what depth costs them, because a retention percentage divides by a baseline and these baselines span 8.4x. The cost is not the model's either: the same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per context token across a vLLM version and one serve flag.",
-    "zh": "六个 checkpoint 跑同一条阶梯，按深处保留了多少排是一个顺序，按深度花了多少排几乎是反的——因为保留率要除以基线，而这些基线跨 8.4 倍。成本也不是模型的性质：同样的权重、同样的卡，跨一个 vLLM 版本和一个 serve 参数，测得 0.350、0.233 和 0.117 微秒每上下文 token。"
+    "en": "Six checkpoints differ in both baseline speed and added decode cost. For Qwen3.8-27B on the same cards, software-stack changes produce slopes of 0.350, 0.233 and 0.117 microseconds per context token. A repeated baseline checks the backend comparison for session variation.",
+    "zh": "六个 checkpoint 的基线速率和新增解码耗时各不相同。同样显卡上的 Qwen3.8-27B 在三套软件栈中测得每上下文 token 0.350、0.233 和 0.117 微秒的斜率。后端对照通过重复基线检查会话间波动。"
    },
    "establishes": {
     "en": "a long-context retention percentage ranks models by their baseline as much as by their depth cost, and the depth cost itself is a property of the software as much as of the model",
@@ -26037,16 +26033,16 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
+    "en": "Adding a second RX 7900 XT: 1.1× decode speed, 1.9× prefill speed",
+    "zh": "增加第二张 RX 7900 XT：解码约 1.1×，预填充约 1.9×"
    },
    "sub": {
     "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",
     "zh": "两张 Radeon 上的解码速率与预填充扩展；对照单卡、A100 和 L4 实测"
    },
    "blurb": {
-    "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, and the L4 is slower than a consumer card on prefill's linear term.",
-    "zh": "一张 7900 XT、两张、一张 A100、一张 L4 跑同一套阶梯。第二张消费级卡在 batch-1 解码上值 1.11×–1.23×，在 prefill 墙钟时间上值 1.56×–1.87×；而 L4 在 prefill 的线性项上比消费级卡还慢。"
+    "en": "Single-card and dual-card RX 7900 XT tests, with A100 and L4 comparisons. Adding a second Radeon gives 1.11× to 1.23× the batch-1 decode rate and 1.56× to 1.87× faster prefill for the two models compared.",
+    "zh": "RX 7900 XT 单卡、双卡与 A100、L4 的对照测试。对所比较的两个模型，增加第二张 Radeon 后，batch-1 解码加速比为 1.11×–1.23×，预填充为 1.56×–1.87×。"
    },
    "establishes": {
     "en": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
@@ -26764,16 +26760,16 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
     "zh": "articles/hybrid-ssm-collapse.zh.html"
    },
    "title": {
-    "en": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
-    "zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑"
+    "en": "12.1 to 4.2 tok/s: most added decode time is in Triton paged attention",
+    "zh": "12.1 到 4.2 tok/s：解码耗时主要增加在 Triton paged attention"
    },
    "sub": {
     "en": "Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel",
     "zh": "vLLM 下双卡 Radeon 上的混合 SSM 解码速率；以稠密模型、llama.cpp 与上游 split-KV 内核作对照检验"
    },
    "blurb": {
-    "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
-    "zh": "Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 掉到 4.2 tok/s。一个 kernel 就解释了全部，定制 kernel 差三个条件都进不去，而同一台机器上的 llama.cpp 排除了驱动。"
+    "en": "Qwen3.6-27B slows from 12.1 to 4.2 tok/s between 500 and 32000 tokens on two RX 7900 XT cards. Kernel profiles, llama.cpp comparisons and split-KV tests identify the main source of added time.",
+    "zh": "两张 RX 7900 XT 上，Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 降至 4.2 tok/s。内核 profile、llama.cpp 对照和 split-KV 测试用于定位新增耗时。"
    },
    "establishes": {
     "en": "the few full-attention layers fall off the ROCm paged-attention fast path",
@@ -26893,7 +26889,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
  "preHeadCards": "each card against one RX 7900 XT, same model:",
  "preHeadTp": "and what the second card buys, same stack, same day:",
  "preTpGain": "{m}  b {b}×  c {c}×",
- "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
+ "preTrade": "For {m} at {k}, TRITON_ATTN gives {d}× the default backend's decode rate and takes {p}× its prefill time",
  "longDecUnit": "decode tok/s at batch 1 · one line is one session, sixteen rungs from 500 to 128 000, two rounds a cell · a line that stops short stops where its KV pool ran out, and says so",
  "longPreUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · the fit is over the whole ladder, so b and c here are not Figure 2's for the same arm",
  "longHeadRetained": "what the pair keeps between its shallowest and its deepest measured rung:",

@@ -1,37 +1,19 @@
 <header class="top"> <div class="kicker">RDNA3 · CUDA · tensor parallelism · one card, two cards,
-one A100 and one L4</div> <h1>A second RX 7900 XT buys 1.1× at decode<br>and 1.9× at prefill</h1>
+one A100 and one L4</div> <h1>Adding a second RX 7900 XT:<br>1.1× decode speed, 1.9× prefill speed</h1>
 <p class="sub">Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4</p>
-<p class="lede">Adding a second consumer card to a batch-1 decode buys
-<strong>1.11× to 1.23×</strong> and no more. At prefill the same card cuts a 32 K prompt from
-40.1 s to 21.5 s — <strong>1.87×</strong>. Both measurements ran on the same two cards on the same day. What
-changed is the job they were asked to do.</p>
+<p class="lede">For the two models compared here, adding a second RX 7900 XT gives <strong>1.11× to 1.23×</strong> the batch-1 decode rate. For prefill, it reduces the time to process a 32 K prompt from 40.1 s to 21.5 s, a <strong>1.87×</strong> speed-up. These tests used the same cards on the same day; the benefit differs between decode and prefill.</p>
 <div class="meta"> __CHIPS__ </div> </header>
 
-<div class="abstract"> <h3>Abstract</h3> <p>This article used to ask a single question — two consumer
-cards against one A100 — and that question bundles three separate issues. Measuring each card on its own
-pulls them apart: what one consumer card is worth against one datacentre card, what a second
-consumer card adds, and only then what the pair delivers.</p>
-<p><strong>The second card is nearly free of effect at decode.</strong> Across eleven depths and two
-models it buys <strong>1.11× to 1.23×</strong>. The per-step all-reduce has since been
-timed, and it is <em>not</em> the bottleneck: it takes roughly a ninth of a step. On the same machine,
-<code>Qwen3-8B</code> reaches 1.70× from its second card while paying the same collective. What holds these
-two models back is not the interconnect; section 9 says what does.
-<strong>At prefill the same card buys 1.56× to 1.87×</strong> in wall time, because attention parallelises with no communication at all.</p>
-<p><strong>Prefill is two terms and they do not move together.</strong> Fitting T(S) = a + bS + cS²,
-against one 7900 XT the A100 leads by <strong>3.3× on b and 6.7× on c</strong> for the dense 12B. The gap
-in attention scaling is twice the gap in compute. On the mixture-of-experts, where 4B active
-parameters shrink the compute term, the two gaps match at <strong>5.75× and 5.71×</strong>.
-Datacentre silicon is not uniformly faster either: the L4 is <em>slower</em> than a consumer 7900 XT on b (0.90×) and 3.0×
-better on c. Datacentre versus consumer is not a single axis.</p>
-<p>Evaluating the pair against one A100 is the third step, returning to where this article began. Without
-speculation, the A100 leads by <strong>1.30× to 1.46×</strong> across all eleven depths of the
-ladder. That margin is flat throughout, and nothing like the U that four single-run points suggested.</p> </div>
+<div class="abstract"> <h3>Abstract</h3> <p>This comparison separates three questions: how one RX 7900 XT performs against one datacentre GPU, what adding a second Radeon changes, and how the pair compares with one A100. Single-card measurements provide the baseline for the first two questions.</p>
+<p><strong>The decode gain is modest for these two models.</strong> Adding a second card gives <strong>1.11× to 1.23×</strong> the decode rate. All-reduce takes roughly a ninth of a step, so it does not explain most of the limited scaling. On the same machine, <code>Qwen3-8B</code> reaches 1.70× with similar collective overhead. Section 9 examines this difference. <strong>Prefill speeds up by 1.56× to 1.87×</strong> in elapsed time; its attention computation can be divided across heads without collective communication.</p>
+<p><strong>The linear and quadratic prefill terms scale differently.</strong> In the fit T(S) = a + bS + cS², the A100 leads one 7900 XT by <strong>3.3× on b and 6.7× on c</strong> for the dense 12B. For the mixture-of-experts model with 4B active parameters, the ratios are closer: <strong>5.75× and 5.71×</strong>. The L4 reaches 0.90× the Radeon's speed on b and 3.0× on c. A single prefill ratio would hide these differences.</p>
+<p>The third comparison uses two Radeons and one A100. Without speculation, the 2026-08-29 configurations put the A100 ahead by <strong>1.30× to 1.46×</strong> across eleven context lengths. Those configurations are not patch-matched; Figure 3 distinguishes them from the stock comparison. The relatively steady gap did not reproduce the U-shape suggested by the initial four single-run points.</p> </div>
 
 <h2><span class="n">1</span>What is being compared</h2>
 
 <p>Four machines enter the comparison: <strong>one RX 7900 XT</strong>, <strong>two of them at TP=2</strong>, <strong>one
 A100-SXM4-80GB</strong> and <strong>one L4</strong>. Not every model runs on every
-machine across the three architectures; two gaps stem from arithmetic rather than omissions. <code>gemma-4-26B-A4B</code>
+machine across the three architectures; two missing measurements are due to memory capacitys. <code>gemma-4-26B-A4B</code>
 stops at 12 000 tokens on one 7900 XT: holding 16.96 GiB of weights on a 19.98 GiB card leaves
 only 0.93 GiB for KV cache even at 0.95 utilisation, whereas 32 K would need about 0.97. And
 <code>gemma-4-31B-it</code> has no single-card row at all — 22 GB of weights do not fit into a 20 GB
@@ -61,7 +43,7 @@ and appears nowhere before it.</p>
 Triton whenever FA4 is unavailable, which holds true for gfx1100 and for an A100 alike.</p>
 
 <div class="note warn">
-  <span class="lbl">Each side is on its healthy path, and that took a patch</span>
+  <span class="lbl">3D speculative decoding requires a patch on both stacks</span>
   Both columns route speculation through the 3D flash-decoding path. Stock vLLM disables that
   path under speculation on <em>either</em> platform, as documented in
   <a href="speculative-decoding-net-loss.html">a separate article</a>. Comparing stock configurations
@@ -70,12 +52,7 @@ Triton whenever FA4 is unavailable, which holds true for gfx1100 and for an A100
   stacks.
 </div>
 
-<p><strong>Prefill is fitted, not quoted.</strong> A single prefill tok/s number states nothing
-because prompt scaling is non-linear: time to first token over S tokens follows T(S) = a + bS + cS².
-The two primary machines differ by three times on one term and nearly seven on the other. Below,
-fits come from `build_prefill.fits()`—the same ones <code>prefill.jsonl --fits</code> reports—over
-chart-grade rungs only. The constant <code>a</code> is fitted but never quoted: it drifted from 9.8 ms
-to 99.8 ms across two campaigns on the same arm, so this ladder does not measure it.</p>
+<p><strong>Prefill is reported as a fit across context lengths.</strong> A single throughput value does not describe its non-linear scaling. We fit time to first token as T(S) = a + bS + cS² using <code>build_prefill.fits()</code>, the same function used by <code>prefill.jsonl --fits</code>, and include only chart-grade points. The constant <code>a</code> is fitted but not used for comparisons: for one configuration it changed from 9.8 ms to 99.8 ms between campaigns.</p>
 
 <h2><span class="n">2</span>One card against one card</h2>
 
@@ -95,25 +72,16 @@ throughout. The second card is drawn here too, because "buy another one" is one 
 compared and it turns out to be the weakest of them. The mixture-of-experts lines stop at 12 000:
 that is where one card runs out of KV, and there is no ratio to draw past it. </figcaption> </figure>
 
-<p><strong>The L4 is a datacentre card that loses to a consumer card at this job.</strong> Across
-both models and every context depth, it reaches only 0.54× to 0.68× of one 7900 XT. What it exhibits
-instead is flatness: it retains 89 % of its 500-token decode rate at 32 K, whereas the A100 keeps 62 %.
-That stability is a property of a small card with slow memory, not an advantage. The takeaway from
-this comparison is that datacentre is not a tier, and the next figure is where the L4 earns its place.</p>
+<p><strong>The L4 has a lower decode rate in these tests.</strong> Across both models and all measured context lengths, it reaches 0.54× to 0.68× the rate of one 7900 XT. At 32 K it retains 89 % of its 500-token rate, compared with 62 % for the A100. That higher retention does not mean higher absolute throughput. The prefill comparison below measures a different part of the workload.</p>
 
-<h2><span class="n">3</span>What the second card buys</h2>
+<h2><span class="n">3</span>Single-card to dual-card scaling</h2>
 
 <p>The second 7900 XT forms the flattest line in Figure 1. Across eleven depths on the dense model it
-buys <strong>1.13× to 1.23×</strong>, and across seven on the mixture-of-experts
+gives <strong>1.13× to 1.23×</strong> the decode rate, and across seven on the mixture-of-experts
 <strong>1.11× to 1.12×</strong>. Scaling is not even monotone: on the 12B the ratio peaks at 1.23× at 6 000
 tokens before dropping to 1.13× at 32 K.</p>
 
-<p>A batch-1 decode step is bandwidth-bound and brief. Splitting model weights halves the bytes
-read per GPU, which is the whole gain. Every step then concludes with an all-reduce whose latency does
-not shrink with the split. This page used to conclude that what the second card contributes in
-bandwidth it largely spends on the wire. <strong>Timed, the wire is about a ninth of the step</strong>
-— 1.85&nbsp;ms of 16.70 on the 12B — and a model on this same box gets 1.70× from its second card
-while paying the same collective. The collective latency is measurable, but it is not the limit; see section 9.</p>
+<p>Splitting the weights reduces the bytes each GPU must read, but collective communication still adds latency. This page previously assumed decode was bandwidth-bound and attributed most of the limited scaling to communication. Direct timings do not support that explanation: <strong>collectives take about a ninth of a step</strong>, or 1.85&nbsp;ms of 16.70 ms for the 12B. Another model on the same machine reaches 1.70× with similar collective overhead. Section 9 compares the measured memory-controller activity.</p>
 
 <p><strong>Prefill is the opposite case, and it is the same two cards.</strong> Attention over a
 prompt parallelises across heads without communication, and prompts are long enough that
@@ -122,7 +90,7 @@ the deepest rung each pair reached: <strong>40.1 s to 21.5 s at 32 K</strong> on
 <strong>1.87×</strong>; and <strong>6.21 s to 3.99 s at 12 K</strong> on the mixture-of-experts,
 <strong>1.56×</strong>. Same hardware, same day, four to seven times the gain.</p>
 
-<h2><span class="n">4</span>Prefill is two terms, and they do not move together</h2>
+<h2><span class="n">4</span>Linear and quadratic prefill terms</h2>
 
 <p>The linear term <code>b</code> represents GEMM throughput—how fast the machine multiplies. The
 quadratic term <code>c</code> measures how severely attention scales with prompt length. A prefill tok/s
@@ -141,7 +109,7 @@ token of prompt and <code>c</code> is ns per token squared; both come from
 constant term is fitted and not shown, because this ladder does not measure it. </figcaption>
 </figure>
 
-<p>Three readings emerge, and none survives being averaged into one number:</p>
+<p>The fitted terms separate three comparisons:</p>
 
 <p><strong>On the dense model the A100's attention advantage is twice its compute advantage</strong>
 — 6.67× against 3.29×. Whatever limits the 7900 XT at prefill, it is not primarily the
@@ -239,12 +207,11 @@ inside one machine, one day and one model. Qwen3.8-27B on these cards is routed 
 <code>ROCM_ATTN</code> by default and can be pinned to <code>TRITON_ATTN</code> with a flag. Pinned,
 its <code>c</code> is 17.27 ns/token² and the A100 is 11.94× ahead. Left alone, its <code>c</code>
 is 4.46 and the A100 is 3.08× ahead. One flag, no patch, and the answer to "how far ahead is the
-A100 on long prompts" moves by <strong>3.87×</strong>. That flag was termed free by this repository
-until 2026-08-30; it buys 1.15× of decode at 32 K and sells this.</p>
+A100 on long prompts" moves by <strong>3.87×</strong>. Until 2026-08-30 this repository described the flag as a free improvement. It gives 1.15× the decode rate at 32 K, but increases prefill time.</p>
 
 <p>None of which diminishes the A100: it remains ahead on every model and both terms. What it does mean is that a single number for &ldquo;how much faster is the datacentre card&rdquo; is not a property of the two cards: on the quadratic term it is mostly a property of which attention kernel each side ended up on, and on this hardware that is decided by a routing table and one command-line flag.</p>
 
-<h2><span class="n">6</span>The split is what costs, not the silicon</h2>
+<h2><span class="n">6</span>Tensor parallelism reduces the 2D kernel's available parallelism</h2>
 
 <p>The 2D attention path—which speculation falls into under stock vLLM—launches one workgroup per KV
 head. This model has 16. On one card a rank sees all of them; split across two, each rank sees eight.
@@ -265,12 +232,9 @@ The starved path is starved twice as hard by parallelism, visible directly in re
   </figcaption>
 </figure>
 
-<h2><span class="n">7</span>And it erodes speculation too</h2>
+<h2><span class="n">7</span>Collective overhead in speculative decoding</h2>
 
-<p>The MTP drafter is four layers deep, making the extra forward pass cheap. What is not cheap is
-that every draft step remains a step. Under TP=2, each step incurs the baseline all-reduce floor regardless of the
-model evaluated — measured at <strong>2.30&nbsp;ms on the 31B</strong>, invariant to drafter
-depth. Speculative decoding is therefore less advantageous on two cards than on one.</p>
+<p>The MTP drafter has four layers, so its forward pass is relatively small. Each draft step still incurs collective latency under TP=2. For the 31B, the measured baseline is <strong>2.30&nbsp;ms</strong> per step, regardless of drafter depth. This reduces the benefit of speculation on two cards relative to one.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -286,7 +250,7 @@ depth. Speculative decoding is therefore less advantageous on two cards than on 
   </figcaption>
 </figure>
 
-<h2><span class="n">8</span>What the cards actually realize</h2>
+<h2><span class="n">8</span>Estimated memory-bandwidth use</h2>
 
 <p>The nominal ratio assumes both sides reach theoretical peak bandwidth, which neither does. Recomputing realized
 bandwidth from the July campaign — decode rate times the weight bytes each GPU moves per token,
@@ -349,18 +313,17 @@ step</strong>, about a ninth.</p>
 <p>And the same box gives <code>Qwen3-8B</code> <strong>1.70×</strong> from its second card at decode
 while giving the 12B <strong>1.185×</strong>, on collectives that cost within 0.6&nbsp;ms of each other
 per step. Were the wire
-eating bandwidth, the 8B could not reach 1.70×. <strong>What holds the 12B back is not the wire.</strong>
+eating bandwidth, the 8B could not reach 1.70×. <strong>Communication alone does not explain the 12B's limited scaling.</strong>
 Subtracting perfect halving and the measured collectives
 leaves 4.96&nbsp;ms of its step unexplained; the same subtraction on the 8B
 leaves 0.66&nbsp;ms. <em>(Answered 2026-09-02: the premise was flawed.)</em> The model assumed memory
 bottlenecking; yet on one card the 8B keeps the memory controller <strong>90&nbsp;%</strong> busy versus <strong>56&nbsp;%</strong> on
-the 12B. Across five cells, scaling mirrors that counter alone (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
-The 12B's 4.96&nbsp;ms is not missing time; it is the null model being wrong for a controller half idle.
+the 12B. Across five test points, the scaling order matches the memory-controller activity order (<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-02d"><code>campaign-2026-09-02d</code></a>).
+The unexplained 4.96&nbsp;ms for the 12B reflects a limitation of the ideal-halving model when the memory controller is not fully busy.
 That counter has since ordered the worth of faster memory, a second card and a slower card across four rented NVIDIA configurations, which is
 <a href="mem-busy-orders-five-settings.html">its own article</a>.</p>
 
-<p>The half of the old sentence about attention still stands: attention parallelises with no communication at all, and the prefill numbers above are what show it. The three
-claims pricing collectives from fitted intercepts remain withdrawn: they were unmeasurable on this ladder,
+<p>The attention-parallelism observation remains: attention parallelises with no communication at all, and the prefill numbers above are what show it. The three estimates of collective latency from fitted intercepts remain withdrawn: they were unmeasurable on this ladder,
 replaced by direct timings 49 to 63 times smaller.
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/allreduce-2026-09-02">The
 measurement is in the repository</a>, with the runtime library identified from <code>/proc/self/maps</code> rather than a version constant.</p>

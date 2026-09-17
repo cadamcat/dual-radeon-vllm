@@ -1,7 +1,7 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>The Triton paged-attention fallback accounts for the entire<br>12.1 to 4.2 tok/s decode fall</h1>
+  <h1>12.1 to 4.2 tok/s:<br>most added decode time is in Triton paged attention</h1>
   <p class="sub">Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel</p>
   <p class="lede">Linear attention is supposed to make long context cheap. On this machine
   <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
@@ -15,42 +15,24 @@ __CHIPS__
 <div class="abstract"> <h3>Abstract</h3> <p>A hybrid Mamba/gated-delta-net checkpoint loses
 <strong>65 % of its decode rate</strong> between 500 and 32 000 tokens of context under vLLM on
 RDNA3, a curve fourteen to forty times steeper than any dense model measured on the same machine in
-the same campaign.</p> <p>A kernel-level profile puts essentially all of the growth in one place:
-<code>kernel_paged_attention_2d</code>. That Triton fallback serves the model's 16 full-attention
-layers, and its per-call cost grows 28.3× while every other kernel in the step remains flat or slightly
-cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The ROCm custom
-paged-attention kernel declines this model on three separate conditions, forcing execution onto the Triton
-fallback. The fallback is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
-kernel almost nothing to parallelise over. Two independent signals agree: per-card power
-<em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than
-narrower.</p> <p>The same checkpoint under llama.cpp on the same machine and the same day holds a
-slope 28× shallower, which rules out the driver and the hardware. An upstream fix exists and is
-measured here twice, most recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>.
-One cell of that A/B is bimodal and is reported as such.</p> </div>
+the same campaign.</p> <p>A kernel-level profile attributes most of the added time to <code>kernel_paged_attention_2d</code>, the Triton fallback used by the model's 16 full-attention layers. Its per-call time increases to 28.3× the short-context value, while the other kernels remain flat or become slightly faster. The linear-attention layers show no increase in these measurements.</p> <p>The model fails three conditions for ROCm's custom paged-attention kernel and therefore uses the Triton fallback. At batch 1, its 4 KV heads provide little parallelism for that implementation. Two observations support an occupancy limitation: per-card power falls with context length, and the time per KV byte read is much higher than for the dense controls.</p> <p>On the same machine and day, llama.cpp measures a 28× lower slope for the same checkpoint family. This suggests an implementation-specific cause, rather than a hardware-wide limit; the engines use different quantizations. An upstream split-KV fix is tested twice below, most recently in a controlled A/B on vLLM 0.27 with a <strong>9.46×</strong> speed-up at 32 K. One test point has a bimodal distribution, reported below.</p> </div>
 
 <h2><span class="n">1</span>What was measured, and how</h2>
 
-<p>Everything in §2 comes from one campaign: one software stack, one afternoon, every model pinned to it.
-That run produced 292 decode and prefill measurements across five architectures and eleven context lengths. Each cell
-is served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
-512-token outputs, and is the mean of two rounds.</p>
+<p>Section 2 uses one campaign, run on one afternoon with the same software stack. It contains 292 decode and prefill measurements across five architectures and eleven context lengths. Each test uses <code>vllm serve</code>, TP=2, CUDA graphs, <code>--gpu-memory-utilization 0.85</code> and 512-token outputs. Reported values are the means of two rounds.</p>
 
-<p>Rates are reported with the spread of their own rounds rather than a standard deviation. At two to four
-rounds per cell a standard deviation provides more precision than the sample supports. The range
-as a fraction of the mean expresses variance cleanly without implying a distribution. Every point in Figure 1
-carries its round count and that range, visible on hover.</p>
+<p>Each test point has only two to four rounds. We report their range as a percentage of the mean to show the observed run-to-run spread, rather than present it as a precise estimate of variability. Hover over a point in Figure 1 to see the round count and range.</p>
 
 <div class="note">
   <span class="lbl">On reading the absolute values</span>
-  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen
-  deliberately as the least favourable topology. The <em>shapes</em> in this article transfer; the absolute
-  rates are a floor, not a benchmark of the hardware.
+  This is a VFIO guest with no GPU peer-to-peer access and a cross-die PCIe 3.0 path.
+  The rates and curve shapes describe this configuration; neither is established as a general
+  result for other topologies or software stacks.
 </div>
 
 <h2><span class="n">2</span>The observation</h2>
 
-<p>Five architectures, eleven depths, one campaign. Four of the five decline gently with context in the way
-a KV cache makes inevitable. The fifth does something else.</p>
+<p>Four of the five architectures show a modest decode-rate decline over the eleven context lengths. The hybrid model declines much more sharply.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -72,16 +54,13 @@ a KV cache makes inevitable. The fifth does something else.</p>
   </figcaption>
 </figure>
 
-<p>The hybrid model is the slowest in absolute terms at every depth. By parameter count it should not
-be. It is also the only model whose curve bends downward instead of flattening. Retention makes the contrast plain:
-every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
-This one keeps <strong>35.1 %</strong>.</p>
+<p>The hybrid model has the lowest decode rate at every measured context length. Parameter count alone does not explain that result. It also has the strongest downward curvature. At 32 000 tokens, the other configurations retain 67 % to 78 % of their short-context rate; the hybrid retains <strong>35.1 %</strong>.</p>
 
 <p>Expressed as a slope — decode microseconds added per token of context — the campaign gives
-<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. That is a
-factor of 41, and it is the number the rest of this article is about.</p>
+<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. The slopes differ by a
+factor of 41. The following sections examine which kernels account for the gap.</p>
 
-<h2><span class="n">3</span>Attribution: one kernel, not the architecture</h2>
+<h2><span class="n">3</span>Locating the added time in the kernel profile</h2>
 
 <p>A torch profile across two depths kept CUDA graphs on and attributed kernel calls strictly to the engine step
 whose window they fell into, so that chunked-prefill calls are not mixed into the decode figures.</p>
@@ -100,20 +79,13 @@ whose window they fell into, so that chunked-prefill calls are not mixed into th
   </figcaption>
 </figure>
 
-<p>The 48 gated-delta-net layers cost the same at 32 K as at 1 K — 0.95× — which is what linear attention
-promises and what this implementation delivers. The quantised GEMM is likewise flat. One kernel moves, and
-it moves by <strong>28.3×</strong>.</p>
+<p>At 32 K, the 48 gated-delta-net layers take 0.95× their time at 1 K. The quantized GEMM time is also approximately unchanged. The paged-attention kernel is the only one with a large increase, reaching <strong>28.3×</strong> its short-context time.</p>
 
-<p>The arithmetic closes. At 16 calls per step, paged attention goes from 5.71 ms/step to 161.5 ms/step,
-up 155.8 ms. The decode step itself, measured from the CUDA-graph replay, goes from 85.85 ms to 236.9 ms,
-up 151 ms. <strong>The paged-attention growth accounts for the entire decode slowdown</strong>; every other
-kernel is flat or slightly faster at the longer context.</p>
+<p>At 16 calls per step, paged attention increases from 5.71 ms/step to 161.5 ms/step, a rise of 155.8 ms. The decode step measured by CUDA-graph replay increases from 85.85 ms to 236.9 ms, a rise of 151 ms. The increases are close, indicating that <strong>paged attention accounts for most of the added decode time</strong>. The other kernels are flat or slightly faster at the longer context.</p>
 
 <h2><span class="n">4</span>Why the fallback is taken</h2>
 
-<p>The 16 full-attention layers land on Triton because ROCm's custom paged-attention kernel declines them.
-The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code>
-requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
+<p>The 16 full-attention layers use Triton because this model does not meet the custom kernel's selection conditions. The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code> requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -129,10 +101,7 @@ use_rocm_custom_paged_attention(head_size=<span class="k">128</span>)   -> <span
 use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span class="r">False</span>
 </pre></div>
 
-<p><strong>No single condition is the blocker.</strong> Relaxing either failing condition on its own
-leaves the gate closed, and <code>chunked_prefill_paged_decode.py</code> fails <code>use_custom</code> on
-<code>is_pow2</code> independently of both. The custom kernel is unreachable here three times over, which
-is why making the fallback fast is the only path that helps this class of model.</p>
+<p>Relaxing either failed condition alone does not enable the custom kernel. <code>chunked_prefill_paged_decode.py</code> also disables <code>use_custom</code> when its independent <code>is_pow2</code> check fails. For the tested implementation, improving the fallback is a way to speed up this model without extending the custom kernel's supported shapes.</p>
 
 <div class="note warn">
   <span class="lbl">The obvious fix does not work</span>
@@ -167,25 +136,23 @@ is how much parallelism the kernel has to work with at decode, where the batch i
   </tbody>
 </table></div>
 
-<p>With 4 KV heads and a batch of 1 there is very little for the kernel to spread across the card's 84 CUs.
-Two independent signals agree that this is occupancy rather than work:</p>
+<p>With 4 KV heads at batch 1, the kernel has little work to distribute across 84 CUs. The following observations are consistent with low occupancy rather than a larger volume of computation:</p>
 
 <h3>Power falls as context grows</h3>
 <p>Total power draws 265 W + 265 W at 518 tokens, then drops to 232 W + 227 W at 24 K. No other model in the sweep loses power with depth.
 Every other model climbs toward 265 W and stays there; this is the only one that comes back down. Baseline
 levels differ — at 518 tokens the 8B sits at 245 W, the 12B at 206 W, and the 26B MoE at 193 W — so the contrast
-that matters is the direction, not the level. Idle silicon, not saturated silicon.</p>
+that matters is the direction, not the level. The lower power is consistent with underused compute units.</p>
 
 <h3>Normalising by KV traffic widens the gap</h3>
 <p>Only 16 of the 64 layers carry a KV cache, and their GQA ratio is aggressive. As a result, this model reads
 the <em>least</em> KV data of the three: 64 KiB per token against 144 KiB for Qwen3-8B and 160 KiB for
 gemma-4-31B. Per KiB read it reaches <strong>92×</strong> the cost of Qwen3-8B and <strong>36×</strong> that of
-gemma-4-31B. It cannot be that this model is simply heavier.</p>
+gemma-4-31B. Reading more KV data therefore does not explain the higher cost.</p>
 
 <h2><span class="n">6</span>Control: the same model under a different engine</h2>
 
-<p>Same machine, same day, same checkpoint family, only the inference engine changed. If the
-collapse were in the driver, the GPU, or the topology, it would appear here too.</p>
+<p>The control uses the same machine, day and checkpoint family with a different inference engine. The quantizations differ, as noted in Figure 3. A much lower slope in this control would argue against a limitation shared by all implementations on this hardware.</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -201,10 +168,7 @@ collapse were in the driver, the GPU, or the topology, it would appear here too.
   </figcaption>
 </figure>
 
-<p>llama.cpp's ROCm slope lands <em>inside</em> the band the dense models produce under vLLM; its
-Vulkan slope is below the band, flatter than any of them. Two independent sources therefore agree on
-what a normal slope looks like on this hardware, but this one configuration sits an order of
-magnitude outside it.</p>
+<p>The llama.cpp ROCm slope is within the range measured for dense models under vLLM; its Vulkan slope is below that range. The much steeper slope is specific to the tested vLLM hybrid configuration. This comparison does not isolate every difference between the engines.</p>
 
 <div class="note">
   <span class="lbl">One disturbed point, stated rather than dropped</span>

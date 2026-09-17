@@ -1096,11 +1096,8 @@ two distinct pids; a cell whose instrumentation never reached the workers would 
 record and exit zero.</p>
 
 <div class="note">
-  <span class="lbl">What the absolute numbers are worth</span>
-  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen as
-  the least favourable topology rather than a showcase. The <em>shapes</em> here transfer; the levels are
-  a floor. Cells measured on different container images are not comparable to each other in absolute
-  terms, and Figure 3 marks where that applies.
+  <span class="lbl">Scope of the absolute measurements</span>
+  These tests use a VFIO guest with no GPU peer-to-peer and a cross-die PCIe 3.0 path. The curves and absolute rates describe this configuration, not a general lower bound for the hardware. Measurements from different container images are not directly comparable in absolute terms; Figure 3 marks where that applies.
 </div>
 
 <h2><span class="n">2</span>The claim this replaces</h2>

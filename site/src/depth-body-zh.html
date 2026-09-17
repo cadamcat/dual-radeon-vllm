@@ -1,51 +1,48 @@
 <header class="top">
   <div class="kicker">2× RX 7900 XT · 六个 checkpoint 跑到 128 000 token · 三套软件栈 · 其中一个 checkpoint 在两种注意力后端上都测过</div>
-  <h1>按保留率最平的那个模型，按成本是最陡的；<br>而一个 serve 参数就能让它挪三个名次</h1>
-  <p class="sub">「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变</p>
-  <p class="lede">六个 checkpoint 在同样的两张卡上跑了同一条十六档阶梯。按各自相对 500 token 速率保留了多少来排，<code>Qwen3.8-27B</code> 是其中最平的；按每个上下文 token 付出多少成本来排，它是最陡的。两个数都没错，但它们说的不是同一件事——而后一个数，在这个 checkpoint 上，只要软件变一变就能差 <strong>3.00&times;</strong>。</p>
+  <h1>长上下文性能：<br>保留率、解码成本与软件栈</h1>
+  <p class="sub">同一份 Qwen3.8-27B 权重在三套软件栈上的每上下文 token 解码成本相差 3.00&times;</p>
+  <p class="lede">六个 checkpoint 在两张 RX 7900 XT 上测试了同一组十六档上下文长度。<code>Qwen3.8-27B</code> 的短上下文速率保留率最高，但每增加一个上下文 token 所增加的解码耗时也最多。两项指标衡量的不是同一件事。对这个 checkpoint 而言，后一项还会随软件栈变化，相差 <strong>3.00&times;</strong>。</p>
   <div class="meta">
 __CHIPS__
   </div>
 </header>
 
 <div class="abstract"> <h3>摘要</h3>
-<p>长上下文基准通常报告的是<em>保留率</em>：模型在深处还剩下短 prompt 速率的百分之几。在 <code>campaign-2026-09-03</code> 的六条臂上，这个数给出的排序几乎是它们实际付出的成本排序的反面。原因是算术而非玄机：保留率是把深度成本除以基线，而这六条臂的基线跨 <strong>8.4&times;</strong>。集合里最慢的那个模型，看起来最抗深度。</p>
-<p><strong>替代方案也并不安全。</strong>把每 token 毫秒数对上下文做拟合，得到的斜率单位是「每上下文 token 微秒」，它是成本而不是比值，不携带基线。在这一对卡上，这个斜率是更好的描述——但它同样不是模型的性质。同一个 <code>Qwen3.8-27B</code> checkpoint，同样的两张卡、同样的权重、同样的上游补丁，在三套只差一个 vLLM 版本和一个 serve 参数的软件栈上，分别测得 <strong>0.350</strong>、<strong>0.233</strong> 和 <strong>0.117&nbsp;&micro;s/上下文 token</strong>。这是 3.00&times;，足以把它从这个集合的最后一名挪到第三名。</p>
-<p><strong>其中后端那一段是归因，不是并列比较。</strong>两种注意力后端是在同一次运行的两个会话里测的，而第三个会话重复了第一条臂，用来给会话边界定价：最多 <strong>0.50&nbsp;%</strong>，而两臂之间的差距达到 <strong>48&nbsp;%</strong>。两者的截距吻合到 1.5&nbsp;%，斜率却差 2.11&times;——也就是说这个参数动的是深度项，基线原封不动。它的代价在预填充：到 128 000 token 时解码优势张开到 <strong>1.48&times;</strong>，而预填充掉到 <strong>0.44&times;</strong>，并且在这台机器能撑住的最深一档上，两者都还没有掉头。</p>
+<p>长上下文测试常用<em>保留率</em>表示较长上下文的解码速率相当于短上下文速率的多少。在 <code>campaign-2026-09-03</code> 的六组配置中，按保留率排序，结果几乎与按每上下文 token 新增耗时排序相反。这六组配置的基线单步耗时相差 <strong>8.4&times;</strong>，因此相同的新增耗时可能对应很不一样的百分比变化。</p>
+<p><strong>斜率也受软件栈影响。</strong>将每个解码 token 的耗时与上下文长度做线性拟合，可以得到每增加一个上下文 token 所增加的耗时。在同样两张卡、同一份 <code>Qwen3.8-27B</code> 权重上，三组测试的斜率分别为 <strong>0.350</strong>、<strong>0.233</strong> 和 <strong>0.117&nbsp;&micro;s/上下文 token</strong>。跨版本测试改变了 vLLM、ROCm 和权重内核；vLLM 0.27 内部的对照只改注意力后端参数。整体相差 3.00&times;，使该模型在成本排序中从最后一名升到第三名。</p>
+<p><strong>后端 A/B 测试加入了重复基线，以检查会话间波动。</strong>两个会话分别测试两种后端，第三个会话重复第一组配置。重复测量之间最多相差 <strong>0.50&nbsp;%</strong>，而后端之间的解码速率差距达到 <strong>48&nbsp;%</strong>。两条拟合曲线的截距相差 1.5&nbsp;%，斜率相差 2.11&times;，说明后端切换主要影响随上下文增长的开销。到 128 000 token 时，Triton 的解码速率是 ROCM_ATTN 的 <strong>1.48&times;</strong>，预填充速率则为 <strong>0.44&times;</strong>。</p>
 </div>
 
-<h2><span class="n">1</span>两个数，而它们不一致</h2>
+<h2><span class="n">1</span>保留率与成本给出不同排序</h2>
 
-<p>下面每条臂都是同样两张卡上的同一条阶梯，TP=2，batch 1，来自
-<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-03"><code>campaign-2026-09-03</code></a>。
-它们的最深档并不相同——8B 停在 32 000，另有三条到 128 000——所以两列都在每条臂都有的跨度上计算，即 500 到 32 000。在更长跨度上取的斜率是另一个数，拿它和这个比，比的是曲率。</p>
+<p>下面的配置均来自 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-03"><code>campaign-2026-09-03</code></a>，使用同样两张卡、TP=2、batch 1。各配置达到的最大上下文长度不同：8B 到 32 000，另有三组到 128 000。因此，两项指标都在共有的 500–32 000 token 范围内计算。曲线并非直线时，改变拟合范围也会改变斜率。</p>
 
 <figure class="rv">
   <div class="figbox">
-    <div class="figtitle">图 1 · 同样六条臂，排两次
+    <div class="figtitle">图 1 · 六组配置的两种排序
       <span class="prov yes">可从仓库重算</span></div>
     <div class="tab rank" id="rank"></div>
     <div class="barunit" id="ranknote"></div>
   </div>
   <figcaption>
-    <b>图 1.</b> 两张 RX 7900 XT 上的解码，TP=2，取六条臂共有的档位。<em>保留率</em>是该臂从 500 token
+    <b>图 1.</b> 两张 RX 7900 XT 上的解码，TP=2，取六组配置共有的档位。<em>保留率</em>是该配置从 500 token
     速率到 32 000 还剩下多少；<em>成本</em>是每 token 毫秒数对上下文的拟合斜率，同样档位，单位为每上下文
-    token 微秒。<code>r&sup2;</code> 一并列出，因为它才是判断「一个斜率是否描述得了这条曲线」的依据。
-    两个排序处处不一致：保留率那列称为最平的模型，正是成本那列里最陡的那个。
+    token 微秒。<code>r&sup2;</code> 表示直线对测量结果的拟合程度。
+    保留率最高的模型，同时也是每上下文 token 拟合成本最高的模型。
   </figcaption>
 </figure>
 
 <h2><span class="n">2</span>百分比究竟在除以什么</h2>
 
-<p>这个反转既不是悖论也不是测量错误。保留率就是
-<code>1 &minus; 成本&nbsp;&times;&nbsp;深度 / 基线</code>，所以基线大的臂会把大的成本藏起来。这六条拟合的截距——也就是在读到任何上下文之前，一步解码本身要花多少——跨 <span class="v" id="ispread"></span>，从 MoE 最快的一步到 hybrid SSM 最慢的一步。在 32 000 个 token 上，这个 hybrid 每 token 付出的成本是这里最高的，而它仍然只相当于它原本就在花的那一步的八分之一。它看起来抗深度，是因为它慢。</p>
+<p>排序变化来自基线与新增耗时的共同影响。<code>1 &minus; 成本&nbsp;&times;&nbsp;深度 / 基线</code> 表示这种基线依赖关系。六条拟合曲线的截距，即外推到零上下文时的单步解码耗时，相差 <span class="v" id="ispread"></span>，最低的是 MoE，最高的是 hybrid SSM。在 32 000 token 范围内，hybrid SSM 的新增耗时最高，但仍只相当于其原有单步耗时的八分之一。它的高保留率主要反映了较长的基线单步耗时。</p>
 
-<p>它诱导出的读法恰恰相反：<strong>保留率百分比奖励慢的基线。</strong>两个深度行为完全相同的模型可以有不同的保留率；而两个保留率相同的模型，深度实际花掉它们的代价可以差好几倍。</p>
+<p><strong>保留率不能单独衡量上下文带来的新增开销。</strong>两个模型每增加一个上下文 token 所增加的耗时相同，保留率仍可能不同；保留率相同的模型，新增耗时也可能相差数倍。</p>
 
 <h2><span class="n">3</span>同一份权重，三套栈</h2>
 
-<p>如果斜率是更好的那个数，下一个问题就是它究竟属于谁。这个 checkpoint 现在已经在三套软件栈上测过，权重、卡、并行度、阶梯以及
-<a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 的 split-KV 补丁全部保持不变：ROCm 7.14 上的 vLLM 0.23.1，也就是那个 campaign 发布的臂；ROCm 10.0 上的 vLLM 0.27.1，即
+<p>为检查软件栈对斜率的影响，同一个 checkpoint 在三套栈上进行了测试，权重、卡、并行度、阶梯以及
+<a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 的 split-KV 补丁全部保持不变：ROCm 7.14 上的 vLLM 0.23.1，即该批测试发布的配置；ROCm 10.0 上的 vLLM 0.27.1，即
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-06"><code>campaign-2026-09-06</code></a>；以及同样的 0.27.1 再加 <code>--attention-backend TRITON_ATTN</code>，即
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-07"><code>campaign-2026-09-07</code></a>。</p>
 
@@ -58,82 +55,74 @@ __CHIPS__
     <div class="barunit" id="stacknote"></div>
   </div>
   <figcaption>
-    <b>图 2.</b> 每解码一个 token 的毫秒数对上下文——深度成本正是这个量的斜率。一条直线意味着每个上下文
-    token 的成本是常数，而它的梯度就是这个成本。三条臂是同样两张卡上的同一份权重，阶梯是同样的十六档。
-    在图 1 那六条臂共有的跨度上，三者分别是 <span class="v" id="s3"></span> 每上下文 token 微秒。
+    <b>图 2.</b> 每解码一个 token 的毫秒数对上下文——深度成本正是这个量的斜率。直线的斜率表示每增加一个上下文
+    token 所增加的耗时。三组配置是同样两张卡上的同一份权重，阶梯是同样的十六档。
+    在图 1 那六组配置共有的跨度上，三者分别是 <span class="v" id="s3"></span> 每上下文 token 微秒。
   </figcaption>
 </figure>
 
-<p><strong>这三条线之间，模型本身没有任何变化。</strong>跨度是 <span class="v" id="span"></span>，而它足以把这个 checkpoint 从图 1 成本排序的最后一名挪到第三名——越过那个 MoE，并且和只有它四分之一大的 <code>Qwen3-8B</code> 只差一线。</p>
+<p>三组测试使用相同的模型权重，斜率相差 <span class="v" id="span"></span>。在图 1 中，这使该 checkpoint 从成本排序的最后一名升到第三名，超过 MoE，并接近参数量约为其四分之一的 <code>Qwen3-8B</code>。</p>
 
-<h2><span class="n">4</span>为什么最后那一步是后端而不是会话</h2>
+<h2><span class="n">4</span>控制会话之间的波动</h2>
 
-<p>后端在服务启动时就定了，所以两条 0.27 的臂不可能共处一个会话；那么 A 与 B 的差异只有在会话边界的代价小于它时，才是后端的差异。这个仓库正是在这件事上栽过：
-<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/rccl-ndebug-ab-2026-09-04"><code>rccl-ndebug-ab-2026-09-04</code></a>
-曾发布过一个 3.6&nbsp;% 的「臂效应」，后来查明是会话顺序。所以这次运行有第三个会话：在第二条臂结束之后，用三个档位重复第一条臂。</p>
+<p>后端在服务启动时确定，因此两组 vLLM 0.27 配置需要分别启动会话。会话间波动可能影响比较。此前的 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/rccl-ndebug-ab-2026-09-04"><code>rccl-ndebug-ab-2026-09-04</code></a> 测试曾把 3.6&nbsp;% 的差距归因于配置，复测后发现来自会话顺序。因此，这次在第二组配置跑完后，增加了第三个会话，在三个上下文长度上重复第一组配置。</p>
 
 <figure class="rv">
   <div class="figbox">
-    <div class="figtitle">图 3 · 权衡，以及要解释它就得先解释掉的漂移
+    <div class="figtitle">图 3 · 后端速率比与重复基线波动
       <span class="prov yes">可从仓库重算</span></div>
     <div class="tab trade" id="trade"></div>
-    <div class="figsub">漂移对照 —— 同一条臂，三个档位，隔一个会话</div>
+    <div class="figsub">漂移对照 —— 同一组配置，三个档位，隔一个会话</div>
     <div class="tab drift" id="drift"></div>
     <div class="barunit" id="tradenote"></div>
   </div>
   <figcaption>
     <b>图 3.</b> 上：每一档上 <code>TRITON_ATTN</code> 除以 <code>ROCM_ATTN</code>，解码与预填充各一条，
-    会话结构与所有参数相同，只差后端。下：第二条臂跑完之后再测一次第一条臂，用来给整个比较所依赖的
-    会话边界定价。漂移至多 <span class="v" id="drift1"></span>；而它要解释掉的解码差距达到
+    会话结构与所有参数相同，只差后端。下：第二组配置结束后重复第一组，以估计
+    会话间波动。重复测量最多相差 <span class="v" id="drift1"></span>，后端之间的解码速率差距则达到
     <span class="v" id="gap1"></span>。
   </figcaption>
 </figure>
 
-<p>还有两件事让这一对成为归因而不是赛跑。两条拟合的截距吻合到 <strong>1.5&nbsp;%</strong>，斜率却差
-<strong>2.11&times;</strong>：这个参数动的是「一个上下文 token 值多少」，而「一步值多少」原封不动。
-以及方向在预填充上反了过来——那是权衡的形状，而不是某一条臂单纯更好。</p>
+<p>两条拟合曲线的截距相差 <strong>1.5&nbsp;%</strong>，斜率相差 <strong>2.11&times;</strong>。这支持后端切换主要影响上下文相关开销，而非基线单步耗时的解释。预填充的变化方向相反，因此解码较快的后端并非在两项任务上都更快。</p>
 
-<h2><span class="n">5</span>这个权衡还没有掉头</h2>
+<h2><span class="n">5</span>更长上下文下的解码与预填充权衡</h2>
 
-<p><code>campaign-2026-09-02c</code> 把这两个后端测到 32 000 token，发现它们在互相交换，而且在它停下的地方两个差距都还在张开。到四倍深度上，它们仍在张开：128 000 处解码到达
-<span class="v" id="wd"></span>，预填充到达 <span class="v" id="wp"></span>。<strong>没有哪个后端是更好的那个。</strong>它们把同一份成本在预填充和解码之间做了不同的划分，而哪种划分更合适，是关于流量的问题。</p>
+<p><code>campaign-2026-09-02c</code> 在 32 000 token 以内测得：Triton 解码更快、预填充更慢。延长到 128 000 token 后，差距仍在扩大，解码速率比达到 <span class="v" id="wd"></span>，预填充速率比为 <span class="v" id="wp"></span>。选择哪个后端，取决于实际负载中提示处理与生成的比例。</p>
 
-<h2><span class="n">6</span>那条曲线不是直线的臂</h2>
+<h2><span class="n">6</span>线性拟合不适用的情况</h2>
 
-<p>图 1 里有一行携带的是警告而不是测量。<code>Muse-Glimmer-30B</code> 的线性拟合只有
-<span class="v" id="r2m"></span>，而其余每条臂都在 <span class="v" id="r2r"></span> 以上。它的 attention
-走 2 048 token 的窗口，所以它每 token 的成本是<em>停止增长</em>而不是增长得更慢，而一条直线说不出这件事。
-它的斜率之所以列出来，是因为删掉比带着限定印出来更糟，但它和其余那些不是同一类数字，不应该和它们一起排序。</p>
+<p><code>Muse-Glimmer-30B</code> 的线性拟合较差，<code>r&sup2;</code> 只有 <span class="v" id="r2m"></span>，其余配置均高于 <span class="v" id="r2r"></span>。该模型使用 2 048 token 的注意力窗口，限制了每 token 耗时的继续增长。这里保留斜率并标注局限，但不应将它与近似线性曲线的斜率直接排序。</p>
 
-<p>这也是为什么这一类斜率旁边要报 <code>r&sup2;</code>：它告诉读者，眼前这个单一数字究竟描述了它所拟合的那条曲线，还是只是概括了它。</p>
+<p>报告斜率时应同时给出 <code>r&sup2;</code>，让读者判断直线对实际曲线的拟合程度。</p>
 
 <h2><span class="n">7</span>该报什么</h2>
 
-<p>报两个数而不是一个，再加第三个用来说明前两个是否有意义：<strong>截距</strong>，即在有上下文之前一步解码的成本；<strong>斜率</strong>，即每个上下文 token 追加多少；以及 <strong><code>r&sup2;</code></strong>，说明这个拟合是描述还是概括。保留率百分比可以从前两个在任意深度上推出来，而它们都无法从保留率推回去。</p>
+<p>建议报告三个量：<strong>截距</strong>，单位为每解码步骤毫秒数；<strong>斜率</strong>，单位为每上下文 token 微秒数；以及表示拟合程度的 <strong><code>r&sup2;</code></strong>。截距是模型外推到零上下文时的估计值，并非另做的一次零上下文测量。拟合结果可以用于计算指定上下文长度下的保留率，但仅凭保留率无法确定截距或斜率。</p>
 
-<p>这一切都没有把斜率变成模型的性质。在这台机器上，它是模型<em>和</em>为它服务的那个内核共同的性质，而且后一项更大：软件带来 <span class="v" id="span2"></span>，而图 1 成本那列里六个不同 checkpoint 之间只差 2.7&times;。</p>
+<p>这些测量同时反映模型与实现的影响。在这台机器上，软件栈对照的斜率范围相差 <span class="v" id="span2"></span>，超过图 1 中六个 checkpoint 之间的 2.7&times;。</p>
 
 <h2><span class="n">8</span>哪些没有被确立</h2>
 
 <ul>
   <li><strong>只有一个 checkpoint 在两种后端上都测过。</strong>其余五个会不会同样移动并不知道，而且它们无论如何也不能在 0.27 上一起重跑：gemma-4 在那个镜像上无法启动，因为 vLLM 0.27 的 Gemma4 converter 从按层存储的 transformers 配置里读取全局 <code>head_dim</code>，访问器在加载前就抛错（<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">回溯</a>；上游已在 <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a> 修正，0.27.1 不含）。</li>
-  <li><strong>这里没有打开任何一个内核。</strong>预填充朝反方向走，是权衡的形状，不是对权衡的解释。</li>
-  <li><strong>每一格都是 batch 1。</strong><code>max-num-seqs</code> 设为 16 是为了容量，不是为了负载。两个后端在深度上的并发表现是另一次测量。</li>
-  <li><strong>图 1 的六条臂来自一台机器。</strong>「百分比在除以什么」这个论断是算术，可以带走；而那个具体的排序属于这一对卡。</li>
+  <li><strong>这组对照没有采集内核级 profile。</strong>它测出了预填充与解码之间的权衡，但没有确定内核内部的原因。</li>
+  <li><strong>所有测试点均为 batch 1。</strong><code>max-num-seqs</code> 设为 16 是为了容量，不是为了负载。两个后端在深度上的并发表现是另一次测量。</li>
+  <li><strong>图 1 的六组配置来自一台机器。</strong>保留率按定义依赖基线，但这里的具体排序只在这一对卡上测得。</li>
 </ul>
 
 <div class="tip" id="tip"></div>
 <script type="application/json" id="figures">__FIGURES_JSON__</script>
 <script type="application/json" id="strings">{
- "rankH": ["臂", "架构", "保留率 500 → 32 000", "成本 µs/上下文 token", "r²"],
- "rankNote": "两张 RX 7900 XT 上 batch 1 的解码，TP=2 · 两列都取每条臂共有的 {t} 个档位 · 每列数值旁的编号是该列自己的名次",
+ "rankH": ["配置", "架构", "保留率 500 → 32 000", "成本 µs/上下文 token", "r²"],
+ "rankNote": "两张 RX 7900 XT 上 batch 1 的解码，TP=2 · 两列都取每组配置共有的 {t} 个档位 · 每列数值旁的编号是该列自己的名次",
  "stackAxisX": "上下文长度",
  "stackAxisY": "每解码 token 毫秒数",
- "stackUnit": "三条臂的权重、卡、并行度、阶梯与 split-KV 补丁全部相同 · 直线意味着每上下文 token 的成本是常数，其梯度就是这个成本",
+ "stackUnit": "三组配置的权重、卡、并行度、阶梯与 split-KV 补丁全部相同 · 直线的斜率表示每增加一个上下文 token 所增加的耗时",
  "stackRow": "{l} — {s} µs/tok，截距 {i} ms，r² {r}",
  "tradeH": ["上下文", "解码 TRITON / ROCM", "预填充 TRITON / ROCM"],
- "driftH": ["上下文", "第一个会话", "另一条臂之后再测", "漂移"],
- "tradeNote": "一次运行，三个会话：两个后端，然后再测一次第一条臂 · 漂移就是会话边界值多少，而上面的比较正建立在它很小之上"
+ "driftH": ["上下文", "第一个会话", "另一组配置之后再测", "漂移"],
+ "tradeNote": "一次运行，三个会话：两个后端，然后再测一次第一组配置 · 重复基线用于估计会话之间的波动"
 }</script>
 __SCRIPT__
 </body>

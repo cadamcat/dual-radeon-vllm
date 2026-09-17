@@ -3666,9 +3666,9 @@ def _run_checks(_opened, _audit_state):
                         continue
                     _mreq += 1 if _r.get("kind") in ("decode", "prefill") else 0
                     _mar += 1 if _r.get("kind") == "allreduce" else 0
-    _msent = re.search(r"Thirteen machine configurations, eight checkpoints, ([\d ]+) request-level "
+    _msent = re.search(r"The repository covers thirteen machine configurations and eight checkpoints: ([\d ]+) request-level "
                        r"measurements in (\d+) results files, ([\d ]+) chart-grade cells [^,]+, "
-                       r"(\d+) all-reduce cells [^,]+, and (\d+) write-ups", _mo)
+                       r"(\d+) all-reduce cells [^,]+, and (\d+) bilingual articles", _mo)
     ck("README measured-on, the count sentence is there", "1", 1 if _msent else 0)
     if _msent:
         # a configuration is a card and a card count: the pair and its single card
@@ -9672,11 +9672,11 @@ def _run_checks(_opened, _audit_state):
         ck(f"depth prose, both languages carry {_what}", "2",
            (1 if _frag_en in _dp_en else 0) + (1 if _frag_zh in _dp_zh else 0))
     ck("depth prose, declines to call the slope the model's", "2",
-       (1 if "None of this makes the slope a property of a model" in _dp_en else 0)
-       + (1 if "都没有把斜率变成模型的性质" in _dp_zh else 0))
+       (1 if "These measurements describe the model and its implementation together" in _dp_en else 0)
+       + (1 if "这些测量同时反映模型与实现的影响" in _dp_zh else 0))
     ck("depth prose, and says Muse is not rankable with the rest", "2",
-       (1 if "should not be ranked against them" in _dp_en else 0)
-       + (1 if "不应该和它们一起排序" in _dp_zh else 0))
+       (1 if "should not be ranked directly against the slopes of approximately linear curves" in _dp_en else 0)
+       + (1 if "不应将它与近似线性曲线的斜率直接排序" in _dp_zh else 0))
     ck("depth article, is registered in both languages", "2",
        sum(1 for _f in ("depth-cost-is-the-stacks.html",
                         "depth-cost-is-the-stacks.zh.html")
@@ -10179,7 +10179,7 @@ def _run_checks(_opened, _audit_state):
     _front_number("August second-card 12B table", r"TP=1 → TP=2 only \*\*([\d.]+)×",
                   tps(_zh_aug, "A-12B-tp2", 500) / tps(_zh_aug, "A-12B-tp1", 500))
     for model, cfg in (("BF16", "B-8B"), ("w4a16", "A-12B")):
-        zh_numbers("second card " + model, model + r" 上值 ([\d.]+)×",
+        zh_numbers("second card " + model, model + r" (?:解码加速比)?为 ([\d.]+)×",
                    tps(_zh_aug, cfg + "-tp2", 500) / tps(_zh_aug, cfg + "-tp1", 500))
     for cfg, model in (("B-8B", "Qwen3-8B"), ("A-12B", "gemma-4-12B-it")):
         zh_numbers("decode table second card " + cfg,
@@ -10258,7 +10258,7 @@ def _run_checks(_opened, _audit_state):
     zh_numbers("greedy repeats", r"([\d]+) 次贪心生成 ([\d]+) 次一致",
                sum(r["repeats"] for r in _zh_kernel_rows),
                sum(r["repeats"] for r in _zh_kernel_rows if r["distinct"] == 1))
-    zh_numbers("greedy baseline", r"([\d]+) 个格子里有 ([\d]+) 个会变",
+    zh_numbers("greedy baseline", r"([\d]+) 个测试点里有 ([\d]+) 个会变",
                sum(1 for k in _k1cells if k[0] == "baseline"),
                sum(1 for k, distinct in _k1cells.items() if k[0] == "baseline" and distinct > 1))
     _zh_meta = {r["cfg"]: r for r in jmeta}
@@ -10271,7 +10271,7 @@ def _run_checks(_opened, _audit_state):
     _zh_hmm = json.load(open(hmm_f))["states"]
     _zh_before = float(re.search(r"upgrading: ([\d.]+) ms", _zh_hmm[-1]["note"]).group(1))
     zh_numbers("kernel upgrade", r"从 ([\d .]+) ms → ([\d.]+) ms", _zh_before, _zh_hmm[-1]["rw_p_resident"])
-    zh_numbers("loader flag maximum", r"放不进时值 ([\d.]+)×", LART["fig2"]["best_flag"])
+    zh_numbers("loader flag maximum", r"放不进时为 ([\d.]+)×", LART["fig2"]["best_flag"])
     _zh_mtp_rates = {r["cfg"]: r["decode_tok_s"] for r in _XD if r["date"] == "2026-08-29" and r["ctx"] == 32000}
     zh_numbers("MTP cross-machine", r"对 Radeon 为 ([+−\d.]+) %，对 A100 为 ([+−\d.]+) %",
                100 * (_zh_mtp_rates["G31-mtp-p45450-tp2"] / _zh_mtp_rates["G31-tp2"] - 1),

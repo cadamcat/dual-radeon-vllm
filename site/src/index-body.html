@@ -1,9 +1,7 @@
 <header class="top">
   <div class="kicker">dual-radeon-vllm · write-ups</div>
   <h1>Two consumer Radeon RX 7900 XT,<br>measured under ROCm and vLLM</h1>
-  <p class="lede">Long-form write-ups from a repository of measurements taken on 2× RX 7900 XT
-  (gfx1100, RDNA3) under ROCm and vLLM. Each article draws its figures from the same committed data
-  the repository verifies, and says on the page which of them can be recomputed and which cannot.</p>
+  <p class="lede">Measurements of ROCm and vLLM on two RX 7900 XT cards (gfx1100, RDNA3), with comparisons on other GPUs. Each article links to its data and identifies results whose raw records are not in the repository.</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -269,9 +267,7 @@ checks that value against its source file and fails non-zero if the two disagree
 guards the repository's own documents. <span class="prov no">raw output not committed</span> means the
 number is transcribed from a run whose raw output is not in the repository, and cannot be recomputed.</p>
 
-<p>The absolute rates are a floor rather than a benchmark of the hardware. The test environment is a
-VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen deliberately as
-the least favourable topology. The shapes transfer; the levels are the worst case.</p>
+<p>The early Radeon baseline used a VFIO guest with no GPU peer-to-peer and a cross-die PCIe 3.0 path. Both the curves and absolute rates describe the tested configuration; neither is guaranteed to transfer to another topology or software stack. Later campaigns record their own platform state.</p>
 
 <div class="foot-note">
   <p>Source, raw data and the runners that produced the data:
@@ -300,7 +296,7 @@ the least favourable topology. The shapes transfer; the levels are the worst cas
  "preHeadCards": "each card against one RX 7900 XT, same model:",
  "preHeadTp": "and what the second card buys, same stack, same day:",
  "preTpGain": "{m}  b {b}×  c {c}×",
- "preTrade": "and the flag is a trade: pinning {m} to TRITON_ATTN is {d}× on decode at {k} and {p}× the wrong way on prefill",
+ "preTrade": "For {m} at {k}, TRITON_ATTN gives {d}× the default backend's decode rate and takes {p}× its prefill time",
  "longDecUnit": "decode tok/s at batch 1 · one line is one session, sixteen rungs from 500 to 128 000, two rounds a cell · a line that stops short stops where its KV pool ran out, and says so",
  "longPreUnit": "prefill tok/s · only rungs whose two rounds agree are drawn · the fit is over the whole ladder, so b and c here are not Figure 2's for the same arm",
  "longHeadRetained": "what the pair keeps between its shallowest and its deepest measured rung:",

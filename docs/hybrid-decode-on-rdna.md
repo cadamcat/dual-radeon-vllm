@@ -5,11 +5,10 @@ two 7900 XT. For a long time this repository explained that as a problem with th
 linear-attention layers. **That explanation was wrong**, and a kernel-level
 profile taken 2026-07-29 says so directly.
 
-The short version:
+The profile shows:
 
-- The 48 gated-delta-net layers are **fine**. Their decode kernels cost the same
-  at 1K and at 32K context, which is exactly what a recurrent state should do.
-- The whole slowdown is in the model's **16 ordinary full-attention layers**,
+- The 48 gated-delta-net layers have similar per-call decode times at 1K and 32K context.
+- Most of the added decode time is in the model's **16 ordinary full-attention layers**,
   which fall back to a Triton paged-attention kernel.
 - They fall back because vLLM's ROCm custom paged-attention kernel has no
   `head_size=256` instantiation at all, and this model's `head_dim` is 256.
@@ -40,10 +39,10 @@ Call counts are identical across the two contexts — 528 for the linear-attenti
 kernels (48 layers × 11 steps), 176 for paged attention (16 × 11) — so these are
 per-call costs, not extra work being issued.
 
-The arithmetic closes. At 16 calls per step, paged attention goes from
+The two timing increases are close. At 16 calls per step, paged attention goes from
 5.71 ms/step to 161.5 ms/step, up 155.8 ms. The decode step itself, measured from
 the CUDA-graph replay, goes from 85.85 ms to 236.9 ms, up 151 ms. **Paged
-attention accounts for the entire increase**; everything else is flat or slightly
+attention accounts for most of the increase**; everything else is flat or slightly
 faster at the longer context.
 
 That end-to-end step timing also matches the campaign in
@@ -133,7 +132,7 @@ of gemma-4-31B. It cannot be "this model is simply heavier".
 
 ## 4. The control: the same model under llama.cpp
 
-Same machine, same day, same model, only the inference engine changed.
+The same model family was tested on the same machine and day, using a different engine and quantization format.
 `llama-bench -p 0 -n 128 -d <depth> -r 2`, Q4_K_M GGUF, both cards, layer split.
 Raw output in [`benchmarks/llamacpp-depth-sweep-rocm.json`](../benchmarks/llamacpp-depth-sweep-rocm.json)
 and [`-vulkan.json`](../benchmarks/llamacpp-depth-sweep-vulkan.json).
@@ -144,20 +143,14 @@ and [`-vulkan.json`](../benchmarks/llamacpp-depth-sweep-vulkan.json).
 | llama.cpp, Vulkan backend | 28.61 tok/s | 26.04 tok/s | 91.0 % | 0.107 |
 | **vLLM** | **12.1 tok/s** | **4.25 tok/s** | **35.1 %** | **4.840** |
 
-vLLM's slope is 28× llama.cpp's on the same ROCm userspace and 45× the Vulkan
-one. Both llama.cpp backends stay flat, which rules out the driver as well: the
-ROCm run uses the same stack vLLM does.
+vLLM's slope is 28× llama.cpp's on the same ROCm userspace and 45× the Vulkan one. The flatter llama.cpp curves show that this slowdown is not unavoidable on the hardware. Together with the profile, they point to vLLM's implementation; they do not exclude every possible driver interaction.
 
-The sharper point is that llama.cpp's slope lands **inside** the range the dense
-models produce under vLLM, 0.118 to 0.339. Two independent sources now agree on
-what a normal slope looks like on this hardware, and one configuration sits an
-order of magnitude outside it.
+The ROCm llama.cpp slope is within the 0.118 to 0.339 range measured for dense models under vLLM. This provides another comparison for the much steeper Qwen3.6 curve on the tested vLLM stack.
 
-This is a 2×2: change the engine and it is normal, change the model and it is
-normal, only vLLM × Qwen3.6 is not.
+Among these tested configurations, the steep slowdown appears with Qwen3.6 under vLLM, rather than with every model or engine.
 
 Two caveats. Absolute throughput is not comparable — llama.cpp is running Q4_K_M
-against vLLM's AWQ-INT4 — only the slope is. And the ROCm 16384 point came out at
+against vLLM's AWQ-INT4 — the slopes can be compared descriptively, but this is not an engine-only A/B. And the ROCm 16384 point came out at
 21.35 tok/s with a standard deviation of 2.635 against 0.05–0.09 everywhere else,
 while the deeper 24576 point is faster; that one measurement was disturbed and
 should not be quoted alone.

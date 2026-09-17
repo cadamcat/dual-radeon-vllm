@@ -4,18 +4,18 @@ English | [中文](README.zh.md)
 
 **[Project website · interactive charts and articles](https://cadamcat.github.io/dual-radeon-vllm/)**
 
-**Tensor-parallel vLLM on two consumer Radeon cards (RX 7900 XT, gfx1100, ROCm 7.14), verified end to end — including the RCCL failure caused by missing PCIe AtomicOps.**
+**Tensor-parallel vLLM on two RX 7900 XT cards (gfx1100): RCCL diagnosis and fixes, performance measurements, and the scripts and raw data needed to reproduce them.**
 
-`gemma-4-31B` (w4a16) decodes at **43 tok/s** on 2× RX 7900 XT with both cards drawing 265 W *at the same time*, and a 26B MoE reaches **108 tok/s** at short context. The machine is a VFIO virtual machine with **no P2P and cross-die PCIe 3.0**, and those figures were measured with **no PCIe atomics** either: the topology on which the baseline was measured.
+On the early baseline, `gemma-4-31B` (w4a16) decodes at **43 tok/s**, with each card drawing 265 W, and a 26B MoE reaches **108 tok/s** at short context. These measurements used a VFIO virtual machine with **no GPU P2P, cross-die PCIe 3.0, and no PCIe atomics**.
 
-Since then the same ladder has been run on eleven other machine configurations, rented and granted, against that pair — and every number on this page is recomputed from the committed rows before it is published.
+Later tests use the same context lengths on eleven other machine configurations. Each campaign records its hardware, software versions and patches; the early baseline does not describe every run.
 
 <table>
 <tr>
 <td><b>43 tok/s</b><br><sub>gemma-4-31B w4a16, TP=2</sub></td>
 <td><b>108 tok/s</b><br><sub>gemma-4-26B-A4B MoE, TP=2</sub></td>
 <td><b>1.70×</b><br><sub>TP=2 speed-up on BF16, 85% efficiency</sub></td>
-<td><b>265 W × 2</b><br><sub>31B, both cards together = real tensor parallel</sub></td>
+<td><b>265 W × 2</b><br><sub>31B, simultaneous per-card power</sub></td>
 </tr>
 </table>
 
@@ -28,25 +28,33 @@ Since then the same ladder has been run on eleven other machine configurations, 
 
 | machine | cards | whose | context ladder | since |
 |---|---|---|---|---|
-| **RX 7900 XT** (gfx1100, ROCm 7.14) — the subject of everything here | 2, and 1 | ours | 500 – 32 000, and to **128 000** from 2026-09-03 | 2026-07-25 |
+| **RX 7900 XT** (gfx1100; baseline ROCm 7.14) | 2, and 1 | ours | 500 – 32 000, and to **128 000** from 2026-09-03 | 2026-07-25 |
 | A100 SXM4 80G | 1 | Colab | 500 – 32 000 | 2026-08-29 |
 | L4 24G · T4 16G | 1 | Colab | 500 – 32 000, the L4 to 128 000 | 2026-08-30 |
-| A100 SXM4 40G | 1 | Colab | one measurement: what the derived bandwidth figures are worth | 2026-09-02 |
+| A100 SXM4 40G | 1 | Colab | one check of the derived bandwidth estimates | 2026-09-02 |
 | H100 80G | 1, 2 and 4 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | H200 143G · B300 275G | 1 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 | RTX PRO 6000 96G | 1 and 2 | rented on Modal | 500 – 128 000 | 2026-09-03 |
 
-Thirteen machine configurations, eight checkpoints, 5 796 request-level measurements in 60 results files, 2 330 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 write-ups in two languages — every one of those counts is recomputed from the files by [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py), and so is every figure below.
+The repository covers thirteen machine configurations and eight checkpoints: 5 796 request-level measurements in 60 results files, 2 330 chart-grade cells in the two cross-machine projections, 880 all-reduce cells on eight pairs and quads, and 13 bilingual articles. [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) checks these counts and the reported figures against the committed data.
 
 ## What is in here
 
-Three things, each usable on its own:
+### RCCL fix
 
-| Part | What it is |
-|---|---|
-| 🔧 **A fix** | The RCCL bug that makes `--tensor-parallel-size 2` fail on consumer Radeon, root-caused to PCIe AtomicOps, with a 57-line reproducer. **On bare metal the fix is one RCCL rebuild** (recipe and deployment script in here); **in a VM it is usually one line of VM configuration** ([here](docs/vfio-atomics.md)). [Start here](#am-i-hit-by-the-rccl-bug) |
-| 📊 **The data** | Seven model architectures on **thirteen machine configurations** — two consumer Radeons together and apart, an A100 80G and 40G, an L4 24G, a Tesla T4 16G, and since 2026-09-03 a rented H100 (one, two and four of them), H200, B300 and RTX PRO 6000 (one and two) — with the raw per-request records, the runners that produced them, and analysis scripts that need no GPU. The Radeon ladders ran to 32 000 tokens until 2026-09-03; the rented cards run to **128 000**, and [`benchmarks/cuda-modal/`](benchmarks/cuda-modal/README.md) is the document for that sweep. Since 2026-09-02 each cell also carries the card's clocks, power and temperature, and the A100 40G appears for one measurement only: what the derived bandwidth figures are worth. The cross-machine projections (`prefill.jsonl`, `decode.jsonl`) are rebuilt from those records and checked against them on every run. [Charts and findings](#the-pair-measured) · [`benchmarks/`](benchmarks/) |
-| 🔬 **A regression in the kernel Ubuntu shipped for months — now fixed** | Host→device copies collapse to **2 MiB/s** from a writable file mapping whose pages are resident — the path every PyTorch process takes to load a safetensors checkpoint. Traced to a half-applied backport in `7.0.0-28-generic`, **proven by applying the missing commit**, and **fixed in `7.0.0-30.30~24.04.1`**: the same reproducer binary on the same machine goes **16 019.3 ms → 15.3 ms** across the upgrade ([data](benchmarks/hmm-kernel-three-states.json)) — and the fix arrived through the normal stable route, not through this report. Filed as [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), where AMD confirmed the copy-on-write trigger and a third party reproduced it on bare metal, and with Ubuntu as [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985); workaround at [vllm#49991](https://github.com/vllm-project/vllm/pull/49991). The writable-mapping penalty itself survives on current kernels: the loader flag is worth **1.5× to 2.0× while the checkpoint fits in RAM and 7.5× when it does not** ([data](benchmarks/loader-flag-kernel-30.json)); the **3.9× to 5.6× published here and upstream on 2026-07-28 came from a run with no control over page cache and does not reproduce.** The full chain — the half-pair of commits, the rebuild, the resident-set mechanism — is [open-questions.md §8](docs/open-questions.md) |
+A 57-line reproducer isolates the hostcall failure caused by missing PCIe AtomicOps. On bare metal, the fix is an RCCL rebuild; in a VM, check the [passthrough configuration](docs/vfio-atomics.md) first. The recipe and deployment script are included. [Diagnosis and repair](#am-i-hit-by-the-rccl-bug).
+
+### Data and tools
+
+Raw per-request records, the runners that produced them, and analysis scripts that need no GPU. Later campaigns include clocks, power, temperature, VRAM and memory-controller activity for each test point. `prefill.jsonl` and `decode.jsonl` summarize the raw records. [Campaign index](benchmarks/CAMPAIGNS.md) · [Charts and findings](#the-pair-measured).
+
+### Ubuntu weight-loading regression
+
+A partial backport in `7.0.0-28-generic` reduced host→device copies from a resident writable file mapping to **2 MiB/s**. The normal stable update, `7.0.0-30.30~24.04.1`, fixes it: the same reproducer on the same machine takes **16 019.3 ms → 15.3 ms** ([data](benchmarks/hmm-kernel-three-states.json)). The fix did not result from this report.
+
+On the fixed kernel, the writable-mapping overhead remains. The loader flag gives **1.5× to 2.0×** faster loading when the checkpoint fits in RAM, and **7.5×** when it does not ([data](benchmarks/loader-flag-kernel-30.json)). The earlier **3.9× to 5.6×** result lacked page-cache control and could not be reproduced.
+
+The investigation, corrections and links to [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523), [LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985) and the workaround [vllm#49991](https://github.com/vllm-project/vllm/pull/49991) are in [open-questions.md §8](docs/open-questions.md).
 
 ## Who this is for
 
@@ -83,15 +91,15 @@ source change that dropped `NDEBUG` was identified.
 
 Each finding links to the experiment that supports it.
 
-- **Memory-controller activity orders the measured second-card gains** —
-  `mem_busy` orders the answer in five settings, second Radeon to second H100
+- **Memory-controller activity tracks the order of measured scaling gains.**
+  `mem_busy` matches the ranking in five tested settings, from a second Radeon to a second H100
   ([`cuda-modal/`](benchmarks/cuda-modal/README.md)).
-- **The collective spans 62× across seven pairs and quads, and inference uses
-  none of it**: batch-1 decode lands on the latency end, which spans 3.2×
+- **All-reduce bandwidth varies by 62× across seven pairs and quads.**
+  Batch-1 decode uses small messages, whose latency varies by 3.2×
   ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
-- **Four rented cards chose three attention backends** with no flag anywhere,
-  so every cross-machine ratio carries a backend term — read out of each serve
-  log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
+- **vLLM selected three attention backends across four rented GPU configurations.**
+  No backend flag was set. The serve logs identify each backend, so cross-machine
+  ratios include software-path differences ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
 - **A bounded window keeps Muse-Glimmer flatter than the hybrid SSM on the
   measured H100 stack**: Muse-Glimmer loses 4.8 % on an H100, the hybrid-SSM 27B
   21.8 %, as far as the dense 31B's 22.0 % ([`cuda-modal/`](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)).
@@ -127,7 +135,7 @@ Each finding links to the experiment that supports it.
   commit, 32 of 32 greedy generations come back identical where the same build
   without it varies in two of four cells, backend held
   ([the A/B](benchmarks/gfx1100-w4a16-54706/README.md)).
-- **The second Radeon buys 1.70× on BF16 and 1.18× on w4a16**, on the August stack; the RCCL fix
+- **Adding a second Radeon gives 1.70× decode speed on BF16 and 1.18× on w4a16**, on the August stack; the RCCL fix
   and the measured configurations follow below
   ([the pair, measured](#the-pair-measured)).
 

@@ -1170,8 +1170,7 @@ addEventListener("DOMContentLoaded", function () {
 <header class="top">
   <div class="kicker">dual-radeon-vllm · 实测长文</div>
   <h1>两张消费级 Radeon RX 7900 XT，<br>在 ROCm 与 vLLM 下实测</h1>
-  <p class="lede">这里的长篇记录出自一个实测仓库，所有测量均在 ROCm 与 vLLM 下的 2× RX 7900 XT（gfx1100，RDNA3）上完成。
-  每篇文章所用的图表，均取自仓库负责校验的同一份已入库数据，并在页面上直接注明哪些数字可以重算、哪些不能。</p>
+  <p class="lede">这里记录了两张 RX 7900 XT（gfx1100，RDNA3）上的 ROCm 与 vLLM 测试，以及其他 GPU 上的对照实验。文章链接到原始数据，并标明哪些数字可以从仓库重算、哪些原始记录尚未入库。</p>
   <div class="meta">
     <span class="chip k-hardware" title="硬件" style="--i:0">2× <b>RX 7900 XT</b> · gfx1100 · TP=2</span>
     <span class="chip k-platform" title="平台" style="--i:1">VFIO 直通 · <b>无 P2P</b> · 跨 die PCIe 3.0</span>
@@ -1211,20 +1210,20 @@ addEventListener("DOMContentLoaded", function () {
         会在内核加载时要 98&nbsp;304 字节共享内存，而 Turing 只有 65&nbsp;536。那个补丁只改预填充的
         tile 大小，所以本图读它的方式和读别的线完全一样；图 2 不是，图 2 会说明。</dd>
       <dt>提前结束的线</dt>
-      <dd>有四条，每一条的停点都是算术而不是半途而废：卡装不下下一档的 KV 就测不了它，悬浮提示会说它的
+      <dd>有四条，均因显存容量不足而结束：卡装不下下一档的 KV 就测不了它，悬浮提示会说它的
         KV 装得下多少 token。最短的只有两档 —— gemma-4-31B 在 L4 上开着 CUDA graph 根本起不来，
         <code>--enforce-eager</code> 给它换回 2.51&nbsp;GiB 和一个 2&nbsp;020 token 的池子。</dd>
       <dt>那两种开关</dt>
-      <dd>开关上写的都是引擎实际解析出的东西，而不是按钮的名字。投机臂显示的是「<em>这条线</em>开了投机
+      <dd>开关上写的都是引擎实际解析出的东西，而不是按钮的名字。投机配置显示的是「<em>这条线</em>开了投机
         会怎样」—— 同日、同内核 —— 其中一个写 <b>DFlash</b>，因为 Muse-Glimmer 的草稿模型是块扩散而不是
-        MTP。划不划算没有统一答案：在这两张卡上两条臂都从最短档就领先，其中一条一路领先到 32&nbsp;K；
-        而在 A100 上四条臂每一档都是净亏。Qwen3.8 还带第二个开关 <b>ROCM_ATTN</b>，加的是运行时自己选的
-        后端；本仓库用 flag 钉住的那个买到解码、却卖掉更多预填充（见图 2）。</dd>
+        MTP。划不划算没有统一答案：在这两张卡上两组配置都从最短档就领先，其中一条一路领先到 32&nbsp;K；
+        而在 A100 上四组配置每一档都是净亏。Qwen3.8 还带第二个开关 <b>ROCM_ATTN</b>，加的是运行时自己选的
+        后端；显式指定 TRITON_ATTN 后，解码速率提高，但预填充速率降低（见图 2）。</dd>
       <dt>刻意不画的</dt>
       <dd>两条本仓库测过的线。L4 上那条 Qwen3.8-27B 是<em>另一个 checkpoint</em>（对称 compressed-tensors
         而非 AWQ，在 gfx1100 上解码相差 1.27&ndash;3.24&times;），而图例按模型名索引，画上去会把两者塞进
         同一个条目。单张 7900 XT 上 vLLM 0.27 的 Qwen3-8B 与已画那条逐档吻合到 0.21&nbsp;%，而换进来会让
-        图 2 的「第二张卡买到什么」变成一次跨栈比较。</dd>
+        图 2 的「第二张卡的加速比」变成一次跨栈比较。</dd>
     </dl>
   </figcaption>
 </figure>
@@ -1243,7 +1242,7 @@ addEventListener("DOMContentLoaded", function () {
   </div>
   <figcaption>
     <p class="caplede"><b>图 2.</b> 同一个问题的另一半：图 1 是每台机器<em>生成</em>得多快，这张是它读提示词
-    读得多快。六个模型、五十二条线、十一台机器 —— 本仓库在 <strong>500 到 32 000 token 之间</strong>所有 chart-grade 的预填充阶梯。自七月起每场 campaign
+    读得多快。六个模型、五十二条线、十一台机器 —— 本仓库在 <strong>500 到 32 000 token 之间</strong>所有符合绘图筛选条件的预填充阶梯。自七月起每场 campaign
     都在 decode 旁边记了 prefill，却从没画过。颜色和线型沿用图 1。</p>
     <dl class="capnotes">
       <dt>为什么拆两项</dt>
@@ -1254,7 +1253,7 @@ addEventListener("DOMContentLoaded", function () {
       <dd><em>2026-09-02。</em>Radeon 双卡的 <code>gemma-4-31B</code> 和
         <code>Qwen3.8-27B</code> 两条线最初测于 2026-08-29，当时两张卡中的一张训练在
         <b>PCIe 3.0 x8</b> 而非 x16 —— 宿主机的开机日志记录了这个变化；客户机看不到，因为它的
-        sysfs 报的是卡内桥的链路。一次重启把宽度恢复了，两条臂在同一个容器、同样的 serve
+        sysfs 报的是卡内桥的链路。一次重启把宽度恢复了，两组配置在同一个容器、同样的 serve
         参数下重新跑了一遍：31B 的 <b>b</b> 从 868.7 降到 <b>722.6</b>，Qwen3.8 从 846.2 降到
         <b>758.5</b>。画出来的就是这两次。图 1 里这两个模型仍是 2026-08-29 的解码 —— 同一套配置，
         而链路对解码最多只动 1%。其余五条 Radeon 线是 2026-08-24 的，在 x16 上。</dd>
@@ -1263,11 +1262,10 @@ addEventListener("DOMContentLoaded", function () {
         attention 的差距是算力差距的两倍。L4 在 <b>b</b> 上反而<em>更慢</em>（0.90&times;）、在 <b>c</b>
         上好 3.0&times;，所以它的曲线起点在 Radeon 之下、终点在其之上。</dd>
       <dt>第二张卡</dt>
-      <dd>三个同时有两种拓扑的模型上，它买到 <b>b</b> 的 1.2&ndash;1.5&times; 和 <b>c</b> 的
-        1.9&ndash;2.2&times;。attention 比 GEMM 更容易并行，因为它不需要通信。</dd>
-      <dt>那个 flag 是交易</dt>
+      <dd>三个同时测过单卡和双卡的模型上，第二张卡在 <b>b</b> 项上的加速比为 1.2&ndash;1.5&times;，<b>c</b> 项为 1.9&ndash;2.2&times;。attention 比 GEMM 更容易并行，因为它不需要通信。</dd>
+      <dt>指定后端的性能权衡</dt>
       <dd>把 Qwen3.8 钉在 <code>TRITON_ATTN</code> 上 —— 本仓库直到 2026-08-30 都称之为「免费」——
-        在 32&nbsp;K 处 decode 快 1.15&times;，prefill 却<em>亏掉</em> 1.45&times;。</dd>
+        在 32&nbsp;K 处，解码速率为默认后端的 1.15&times;，预填充耗时则为 1.45&times;。</dd>
       <dt>有一条线不一样</dt>
       <dd>T4 要跑 gemma-4-12B 非有
         <a href="https://github.com/vllm-project/vllm/pull/39018">vllm#39018</a> 不可，而它把 head_size
@@ -1286,7 +1284,7 @@ addEventListener("DOMContentLoaded", function () {
 </figure>
 
 <p>直到 2026-09-03，这台机器上的每条阶梯都停在 32&nbsp;000 token。这看似是硬件极限，其实限制来自
-campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，而它的 KV 池容量足有好几倍。下面两张图
+campaign：每组配置都把 <code>max_model_len</code> 设成了 33&nbsp;000，而它的 KV 池容量足有好几倍。下面两张图
 把同样的两个问题延伸到了 128&nbsp;000。主角是这一对卡，跑着当天专门为它裁出的一条阶梯；同一天租用的机器作为背景，
 点一下就能叠上来。</p>
 
@@ -1313,9 +1311,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
         凡是本阶梯与图 1 都有的档位，两边是不同日期、不同提示词裁切的两次会话，每个点的悬浮提示带着自己的日期。</dd>
       <dt>Qwen3.8-27B 就是图 1 那条线，又测了一遍</dt>
       <dd>两张图现在画的都是这个 checkpoint 在 <code>TRITON_ATTN</code> 和 vLLM 0.27.1 上的表现，
-        所以它们是同一个配置相隔一周的两次坐席，一次在收窄的 PCIe 链路上、一次在恢复之后。
-        在共有的十一档上最差只差 <b>1.78&nbsp;%</b> —— 当除了坐席之外什么都不变时，跨坐席对照
-        就该是这个样子。<b>原先画在这里的那条 0.23.1 阶梯不在了。</b>它没有被撤销：它在
+        两次测量相隔一周，一次在收窄的 PCIe 链路上、一次在链路恢复之后。共有的十一档结果最多相差 <b>1.78&nbsp;%</b>。<b>原先画在这里的那条 0.23.1 阶梯不在了。</b>它没有被撤销：它在
         <code>campaign-2026-09-03</code> 里，而它和这几条线之间的差，正是
         <a href="depth-cost-is-the-stacks.zh.html">保留率百分比是由什么构成的</a>那篇的主题。
         它离开这张图，是因为同一份权重在那里 500 档解码 <b>12.33&nbsp;tok/s</b>，在这里是
@@ -1348,8 +1344,8 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     <code>T(S) = a + b&middot;S + c&middot;S&sup2;</code> 在这里是对整条阶梯拟合的；图下的注记写明在这一对卡的每条线上，
     <b>c&middot;S&sup2;</b> 从哪一点起超过 <b>b&middot;S</b>，以及它在最深一档里占多少。</p>
     <dl class="capnotes">
-      <dt>同一条臂，两组拟合</dt>
-      <dd>图 2 只对它画出的档位（到 32&nbsp;000）拟合；本图对十六档拟合。对同一条臂这是两组不同的系数，
+      <dt>同一组配置，两组拟合</dt>
+      <dd>图 2 只对它画出的档位（到 32&nbsp;000）拟合；本图对十六档拟合。对同一组配置这是两组不同的系数，
         每个悬浮提示都说明自己带的是哪一组。</dd>
       <dt>被丢弃的档位</dt>
       <dd>与图 2 一样，只画两轮一致的档位；每条线的悬浮提示会写出它丢掉的那一档，以及两轮相差多少。</dd>
@@ -1396,8 +1392,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
 会将该数值对照源文件核对，两者若不一致便以非零状态退出；守着仓库自身文档的也是这同一套检查。<span class="prov no">原始输出未入库</span>
 则表示该数字抄自一次原始输出未入库的运行，无法重算。</p>
 
-<p>这里的绝对速率是下限，而非这套硬件的跑分。测试环境为一台 VFIO 客户机，两张卡之间没有 P2P，
-走的是跨 die 的 PCIe 3.0 路径，这是刻意挑选的最不利拓扑。曲线形态可以迁移，绝对数值则是最坏情况。</p>
+<p>早期 Radeon 基线运行在 VFIO 客户机中：两张卡之间没有 P2P，使用跨 die 的 PCIe 3.0 链路。曲线和绝对速率都反映所测配置；其他拓扑或软件栈需要单独验证，不能将这些结果视为普遍下限。后续测试的平台状态记录在各自的实验目录中。</p>
 
 <div class="foot-note">
   <p>源码、原始数据，以及产生它们的运行脚本：
@@ -25836,16 +25831,16 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/depth-cost-is-the-stacks.zh.html"
    },
    "title": {
-    "en": "The flattest model by retention is the steepest by cost, and one serve flag moves it three places",
-    "zh": "按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次"
+    "en": "Long-context performance: retention, decode cost and the software stack",
+    "zh": "长上下文性能：保留率、解码成本与软件栈"
    },
    "sub": {
-    "en": "What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing",
-    "zh": "「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变"
+    "en": "The same Qwen3.8-27B weights differ by 3.00&times; in decode cost per context token across three software stacks",
+    "zh": "同一份 Qwen3.8-27B 权重在三套软件栈上的每上下文 token 解码成本相差 3.00&times;"
    },
    "blurb": {
-    "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost the reverse by what depth costs them, because a retention percentage divides by a baseline and these baselines span 8.4x. The cost is not the model's either: the same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per context token across a vLLM version and one serve flag.",
-    "zh": "六个 checkpoint 跑同一条阶梯，按深处保留了多少排是一个顺序，按深度花了多少排几乎是反的——因为保留率要除以基线，而这些基线跨 8.4 倍。成本也不是模型的性质：同样的权重、同样的卡，跨一个 vLLM 版本和一个 serve 参数，测得 0.350、0.233 和 0.117 微秒每上下文 token。"
+    "en": "Six checkpoints differ in both baseline speed and added decode cost. For Qwen3.8-27B on the same cards, software-stack changes produce slopes of 0.350, 0.233 and 0.117 microseconds per context token. A repeated baseline checks the backend comparison for session variation.",
+    "zh": "六个 checkpoint 的基线速率和新增解码耗时各不相同。同样显卡上的 Qwen3.8-27B 在三套软件栈中测得每上下文 token 0.350、0.233 和 0.117 微秒的斜率。后端对照通过重复基线检查会话间波动。"
    },
    "establishes": {
     "en": "a long-context retention percentage ranks models by their baseline as much as by their depth cost, and the depth cost itself is a property of the software as much as of the model",
@@ -25992,16 +25987,16 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
+    "en": "Adding a second RX 7900 XT: 1.1× decode speed, 1.9× prefill speed",
+    "zh": "增加第二张 RX 7900 XT：解码约 1.1×，预填充约 1.9×"
    },
    "sub": {
     "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",
     "zh": "两张 Radeon 上的解码速率与预填充扩展；对照单卡、A100 和 L4 实测"
    },
    "blurb": {
-    "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, and the L4 is slower than a consumer card on prefill's linear term.",
-    "zh": "一张 7900 XT、两张、一张 A100、一张 L4 跑同一套阶梯。第二张消费级卡在 batch-1 解码上值 1.11×–1.23×，在 prefill 墙钟时间上值 1.56×–1.87×；而 L4 在 prefill 的线性项上比消费级卡还慢。"
+    "en": "Single-card and dual-card RX 7900 XT tests, with A100 and L4 comparisons. Adding a second Radeon gives 1.11× to 1.23× the batch-1 decode rate and 1.56× to 1.87× faster prefill for the two models compared.",
+    "zh": "RX 7900 XT 单卡、双卡与 A100、L4 的对照测试。对所比较的两个模型，增加第二张 Radeon 后，batch-1 解码加速比为 1.11×–1.23×，预填充为 1.56×–1.87×。"
    },
    "establishes": {
     "en": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
@@ -26719,16 +26714,16 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/hybrid-ssm-collapse.zh.html"
    },
    "title": {
-    "en": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
-    "zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑"
+    "en": "12.1 to 4.2 tok/s: most added decode time is in Triton paged attention",
+    "zh": "12.1 到 4.2 tok/s：解码耗时主要增加在 Triton paged attention"
    },
    "sub": {
     "en": "Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel",
     "zh": "vLLM 下双卡 Radeon 上的混合 SSM 解码速率；以稠密模型、llama.cpp 与上游 split-KV 内核作对照检验"
    },
    "blurb": {
-    "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel accounts for all of it, the custom kernel is unreachable three conditions over, and llama.cpp on the same machine rules out the driver.",
-    "zh": "Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 掉到 4.2 tok/s。一个 kernel 就解释了全部，定制 kernel 差三个条件都进不去，而同一台机器上的 llama.cpp 排除了驱动。"
+    "en": "Qwen3.6-27B slows from 12.1 to 4.2 tok/s between 500 and 32000 tokens on two RX 7900 XT cards. Kernel profiles, llama.cpp comparisons and split-KV tests identify the main source of added time.",
+    "zh": "两张 RX 7900 XT 上，Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 降至 4.2 tok/s。内核 profile、llama.cpp 对照和 split-KV 测试用于定位新增耗时。"
    },
    "establishes": {
     "en": "the few full-attention layers fall off the ROCm paged-attention fast path",
@@ -26835,22 +26830,22 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
  "bestMach": {"rdna3": "2× RX 7900 XT · TP=2", "a100": "一张 A100 80G · TP=1", "rdna3-1": "一张 RX 7900 XT · TP=1", "l4": "一张 L4 24G · TP=1", "t4": "一张 T4 16G · TP=1", "h100": "一张 H100 80G · TP=1", "h200": "一张 H200 143G · TP=1", "b300": "一张 B300 275G · TP=1", "pro6000": "一张 RTX PRO 6000 96G · TP=1", "h100x2": "2× H100 80G · TP=2", "pro6000x2": "2× RTX PRO 6000 96G · TP=2"},
  "bestAxisX": "上下文长度",
  "bestAxisY": "解码 tok/s",
- "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每格两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
+ "bestUnit": "batch 1 的解码 tok/s · 一条线出自一场会话、十一个档位、每个测试点两轮 —— 不是跨天拼出来的最好成绩。不同的线可以来自不同日期和不同软件栈，每个点的悬浮提示都带着它自己的那一套",
  "bestCapped": "{m} 停在 {k}，因为{w}",
  "preAxisX": "提示词 token 数",
  "preAxisY": "预填充 tok/s",
- "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 六个模型、十一台机器，本仓库在 500 到 32 000 之间所有 chart-grade 的阶梯",
+ "preUnit": "预填充 tok/s · 只画两轮一致的档位 · 六个模型、十一台机器，本仓库在 500 到 32 000 之间所有符合绘图筛选条件的阶梯",
  "preFit": "拟合：b {b} µs/tok · c {c} ns/tok² · r² {r}",
  "preRatio": "{m} 在 {x}  b {b}×  c {c}×",
  "preDropped": "丢弃 {n} 档，两轮相差 {r}%",
  "preCaveat": "{p} 把这个内核的 tile 减半，所以 c 是内核差异而不只是卡的差异 · b 有 ±{b}% 不确定 · 画出来，但不进比值",
  "preNote": "b 是算力，c 是 attention 随长度恶化的速度；两者并不同向",
  "preHeadCards": "各卡对一张 RX 7900 XT，同一模型：",
- "preHeadTp": "第二张卡买到什么，同栈同日：",
+ "preHeadTp": "第二张卡的加速比，同栈同日：",
  "preTpGain": "{m}  b {b}×  c {c}×",
- "preTrade": "而那个 flag 是一笔交易：把 {m} 钉在 TRITON_ATTN 上，{k} 处 decode 快 {d}×，prefill 反方向差 {p}×",
- "longDecUnit": "batch 1 的解码 tok/s · 一条线出自一场会话，500 到 128 000 共十六档，每格两轮 · 提前结束的线停在它的 KV 池装不下的地方，并且会说明",
- "longPreUnit": "预填充 tok/s · 只画两轮一致的档位 · 拟合覆盖整条阶梯，所以这里的 b 和 c 与图 2 里同一条臂的不是同一组",
+ "preTrade": "为 {m} 指定 TRITON_ATTN 后，在 {k} 处解码速率为默认后端的 {d}×，预填充耗时为 {p}×",
+ "longDecUnit": "batch 1 的解码 tok/s · 一条线出自一场会话，500 到 128 000 共十六档，每个测试点两轮 · 提前结束的线停在它的 KV 池装不下的地方，并且会说明",
+ "longPreUnit": "预填充 tok/s · 只画两轮一致的档位 · 拟合覆盖整条阶梯，所以这里的 b 和 c 与图 2 里同一组配置的不是同一组",
  "longHeadRetained": "这一对卡在最浅与最深的实测档位之间保住多少：",
  "longRetained": "{m}  {a} → {b} tok/s，{j} 到 {k}  {p}",
  "longHeadShare": "以及在这一对卡上，attention 的二次项从哪里开始占上风：",
@@ -26864,12 +26859,12 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
  "numbers": "数字",
  "fitScope": "拟合于{s}",
  "bestCampaign": "其中 {n} 条出自 {d} 的同一场 campaign：vLLM {v}，一套 harness，一个下午",
- "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个格子上最差差 {w}%，中位数 {m}%",
+ "bestRepro": "同样的模型隔三十天重跑一遍，在 {c} 个测试点上最差差 {w}%，中位数 {m}%",
  "bestOmitSuperseded": "{m} 没有放进来：ledger 里它只有被 split-KV 那批工作取代掉的那次旧运行",
  "bestOmitControl": "{m} 没有放进来：一台机器上的一场，checkpoint 已被 gemma-4 取代，数据保留，作为 2026-08-24 那场的对照",
  "bestSpec": "开着 {s}",
  "bestSpecOf": "{m}：把这条线换成开着 {s} 的那次，它是与这条线并排测的",
- "bestSpecAway": "{m} 的 {s} 臂只在{x}上测过 —— 把那台机器叠上来才看得到",
+ "bestSpecAway": "{m} 的 {s} 配置只在{x}上测过；选择该机器可显示结果",
  "bestAltOf": "{m}：用 {b} 再画一条同样的线，那是运行时自己选的后端 —— 预填充更快，解码更慢（图 2）",
  "bestRuns": "{n} 次运行 · 极差 {r}%",
  "bestOne": "一次运行",
@@ -26880,7 +26875,7 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
  "cPct": "打开投机后的百分比变化，横轴是上下文",
  "cMs": "打包方式每步多花的毫秒，横轴是上下文",
  "cRun": "连着跑四次相同运行的解码 tok/s",
- "cMsTok": "每解码一个 token 的毫秒数 · 它的梯度就是一个上下文 token 的成本",
+ "cMsTok": "每解码一个 token 的毫秒数 · 它的斜率表示每增加一个上下文 token 所增加的耗时",
  "cRetained": "各自相对自己在最短深度上的速率的百分比",
  "cRatio": "被排除的 kernel 对它让位给的兜底路径",
  "cMsStep": "每步解码的毫秒，同一个模型的两种打包",

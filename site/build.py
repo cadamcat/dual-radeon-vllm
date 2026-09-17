@@ -160,18 +160,13 @@ V_EN, V_ZH = "mem-busy-orders-five-settings.html", "mem-busy-orders-five-setting
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
                   extra_css="article-extra.css",
-                  title='One kernel accounts for the whole 12.1 to 4.2 tok/s fall',
-                  desc="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of "
-                       "context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream "
-                       "fix, measured.",
+                  title='12.1 to 4.2 tok/s: most added decode time is in Triton paged attention',
+                  desc='Qwen3.6-27B slows from 12.1 to 4.2 tok/s between 500 and 32000 tokens on two RX 7900 XT cards. Kernel profiles, llama.cpp comparisons and split-KV tests identify the main source of added time.',
                   out="articles/" + H_EN, nav=lang_nav("en", H_EN, H_ZH), labels=EN_LABELS))
 built.append(page("article-body-zh.html", lang="zh-CN", figures="figures.json",
                   extra_css="article-extra.css", script_from="article-body.html",
-                  title='一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑',
-                  desc="Qwen3.6-27B 在 2× RX 7900 XT 上，上下文从 "
-                       "500 到 32000 token，解码由 12.1 掉到 4.2 tok/s。"
-                       "归因、机理、对照，以及上游"
-                       "修复的实测。",
+                  title='12.1 到 4.2 tok/s：解码耗时主要增加在 Triton paged attention',
+                  desc='两张 RX 7900 XT 上，Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 降至 4.2 tok/s。内核 profile、llama.cpp 对照和 split-KV 测试用于定位新增耗时。',
                   out="articles/" + H_ZH, nav=lang_nav("zh", H_EN, H_ZH), labels=ZH_LABELS))
 built.append(page("rccl-body.html", lang="en", figures="figures-rccl.json",
                   extra_css="rccl-extra.css",
@@ -257,18 +252,14 @@ if (D / "spec-body-zh.html").exists():
 
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
-                  title='The second card buys 1.1× at decode and 1.9× at prefill',
-                  desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
-                       "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
-                       "parallelism rather than about the silicon.",
+                  title='Adding a second RX 7900 XT: 1.1× decode speed, 1.9× prefill speed',
+                  desc='Single-card and dual-card RX 7900 XT tests, with A100 and L4 comparisons. Adding a second Radeon gives 1.11× to 1.23× the batch-1 decode rate and 1.56× to 1.87× faster prefill for the two models compared.',
                   out="articles/" + A_EN, nav=lang_nav("en", A_EN, A_ZH), labels=EN_LABELS))
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title='第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×',
-                      desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
-                           "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
-                           "而两端都关于张量并行，不关于硅片本身。",
+                      title='增加第二张 RX 7900 XT：解码约 1.1×，预填充约 1.9×',
+                      desc='RX 7900 XT 单卡、双卡与 A100、L4 的对照测试。对所比较的两个模型，增加第二张 Radeon 后，batch-1 解码加速比为 1.11×–1.23×，预填充为 1.56×–1.87×。',
                       out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
 
 built.append(page("modal-body.html", lang="en", figures="figures-modal.json",
@@ -307,21 +298,14 @@ if (D / "gqa-body-zh.html").exists():
 D_EN, D_ZH = "depth-cost-is-the-stacks.html", "depth-cost-is-the-stacks.zh.html"
 built.append(page("depth-body.html", lang="en", figures="figures-depth.json",
                   extra_css="depth-extra.css",
-                  title='The flattest model by retention is the steepest by cost',
-                  desc="Six checkpoints on one ladder: the retention percentage and the depth "
-                       "cost rank them in almost opposite orders, because a percentage divides "
-                       "by a baseline and these baselines span 8.4x. And the cost is not the "
-                       "model's either -- the same weights measure 0.350, 0.233 and 0.117 us "
-                       "per context token across a vLLM version and one serve flag.",
+                  title='Long-context performance: retention, decode cost and the software stack',
+                  desc='Six checkpoints differ in both baseline speed and added decode cost. For Qwen3.8-27B on the same cards, software-stack changes produce slopes of 0.350, 0.233 and 0.117 microseconds per context token. A repeated baseline checks the backend comparison for session variation.',
                   out="articles/" + D_EN, nav=lang_nav("en", D_EN, D_ZH), labels=EN_LABELS))
 if (D / "depth-body-zh.html").exists():
     built.append(page("depth-body-zh.html", lang="zh-CN", figures="figures-depth.json",
                       extra_css="depth-extra.css", script_from="depth-body.html",
-                      title='按保留率最平的那个模型，按成本是最陡的',
-                      desc="六个 checkpoint 跑同一条阶梯：保留率和深度成本给出的排序几乎相反，"
-                           "因为百分比要除以基线，而这些基线跨 8.4 倍。而成本也不是模型的性质——"
-                           "同一份权重在一个 vLLM 版本和一个 serve 参数之间，测得 0.350、0.233 "
-                           "和 0.117 微秒每上下文 token。",
+                      title='长上下文性能：保留率、解码成本与软件栈',
+                      desc='六个 checkpoint 的基线速率和新增解码耗时各不相同。同样显卡上的 Qwen3.8-27B 在三套软件栈中测得每上下文 token 0.350、0.233 和 0.117 微秒的斜率。后端对照通过重复基线检查会话间波动。',
                       out="articles/" + D_ZH, nav=lang_nav("zh", D_EN, D_ZH), labels=ZH_LABELS))
 
 built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",
@@ -425,21 +409,8 @@ ART = [
  {"slug": "depth-cost-is-the-stacks", "en": D_EN, "zh": D_ZH, "zhbody": "depth-body-zh.html",
   "tags": ["long context", "retention", "attention backend", "RX 7900 XT"],
   "blurb": {
-   "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost "
-         "the reverse by what depth costs them, because a retention percentage divides by a "
-         "baseline and these baselines span 8.4x. The cost is not the model's either: the "
-         "same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per "
-         "context token across a vLLM version and one serve flag.",
-   "zh": "六个 checkpoint 跑同一条"
-         "阶梯，按深处保留了多少排是"
-         "一个顺序，按深度花了多少排"
-         "几乎是反的——因为保留率要"
-         "除以基线，而这些基线跨 8.4"
-         " 倍。成本也不是模型的性质："
-         "同样的权重、同样的卡，跨一"
-         "个 vLLM 版本和一个 serve 参"
-         "数，测得 0.350、0.233 和 "
-         "0.117 微秒每上下文 token。"}},
+   "en": 'Six checkpoints differ in both baseline speed and added decode cost. For Qwen3.8-27B on the same cards, software-stack changes produce slopes of 0.350, 0.233 and 0.117 microseconds per context token. A repeated baseline checks the backend comparison for session variation.',
+   "zh": '六个 checkpoint 的基线速率和新增解码耗时各不相同。同样显卡上的 Qwen3.8-27B 在三套软件栈中测得每上下文 token 0.350、0.233 和 0.117 微秒的斜率。后端对照通过重复基线检查会话间波动。'}},
  {"slug": "mem-busy-orders-five-settings", "en": V_EN, "zh": V_ZH, "zhbody": "modal-body-zh.html",
   "tags": ["rented", "mem_busy", "H100", "B300"],
   "blurb": {
@@ -507,14 +478,8 @@ ART = [
  {"slug": "a100-vs-two-radeons", "en": A_EN, "zh": A_ZH, "zhbody": "a100-body-zh.html",
   "tags": ["A100", "tensor parallelism", "prefill", "L4"],
   "blurb": {
-   "en": "One 7900 XT, two of them, one A100 and one L4 on the same ladder. The second consumer "
-         "card is worth 1.11x to 1.23x at batch-1 decode and 1.56x to 1.87x of prefill wall time, "
-         "and the L4 is slower than a consumer card on prefill's linear term.",
-   "zh": "一张 7900 XT、两张、一张 A100、一张 L4 "
-         "跑同一套阶梯。第二张消费级卡在 batch-1 "
-         "解码上值 1.11×–1.23×，在 prefill "
-         "墙钟时间上值 1.56×–1.87×；而 L4 在 "
-         "prefill 的线性项上比消费级卡还慢。"}},
+   "en": 'Single-card and dual-card RX 7900 XT tests, with A100 and L4 comparisons. Adding a second Radeon gives 1.11× to 1.23× the batch-1 decode rate and 1.56× to 1.87× faster prefill for the two models compared.',
+   "zh": 'RX 7900 XT 单卡、双卡与 A100、L4 的对照测试。对所比较的两个模型，增加第二张 Radeon 后，batch-1 解码加速比为 1.11×–1.23×，预填充为 1.56×–1.87×。'}},
  {"slug": "speculative-decoding-net-loss", "en": S_EN, "zh": S_ZH, "zhbody": "spec-body-zh.html",
   "tags": ["speculative decoding", "Triton attention", "vllm#45450"],
   "blurb": {
@@ -575,14 +540,8 @@ ART = [
  {"slug": "hybrid-ssm-collapse", "en": H_EN, "zh": H_ZH, "zhbody": "article-body-zh.html",
   "tags": ["hybrid SSM", "paged attention", "vllm#45916"],
   "blurb": {
-   "en": "Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens. One kernel "
-         "accounts for all of it, the custom kernel is unreachable three conditions over, and "
-         "llama.cpp on the same machine rules out the driver.",
-   "zh": "Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 掉到 "
-         "4.2 tok/s。一个 kernel 就解释了全部，"
-         "定制 kernel 差三个条件都进不去，"
-         "而同一台机器上的 llama.cpp 排除了"
-         "驱动。"}},
+   "en": 'Qwen3.6-27B slows from 12.1 to 4.2 tok/s between 500 and 32000 tokens on two RX 7900 XT cards. Kernel profiles, llama.cpp comparisons and split-KV tests identify the main source of added time.',
+   "zh": '两张 RX 7900 XT 上，Qwen3.6-27B 在 500 到 32000 token 之间从 12.1 降至 4.2 tok/s。内核 profile、llama.cpp 对照和 split-KV 测试用于定位新增耗时。'}},
 ]
 
 DKIND = {"measured", "reported", "reviewed"}
