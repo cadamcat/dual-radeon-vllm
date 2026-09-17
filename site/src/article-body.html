@@ -1,7 +1,7 @@
 
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · measured on 2× RX 7900 XT</div>
-  <h1>The Triton paged-attention fallback accounts for the entire<br>12.1 to 4.2 tok/s decode fall</h1>
+  <h1>Hybrid-SSM decode falls from 12.1 to 4.2 tok/s:<br>the cost of the Triton paged-attention fallback</h1>
   <p class="sub">Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel</p>
   <p class="lede">Linear attention is supposed to make long context cheap. On this machine
   <code>Qwen3.6-27B</code> falls from 12.1 to 4.2 tok/s between 500 and 32 000 tokens, while a
@@ -18,13 +18,11 @@ RDNA3, a curve fourteen to forty times steeper than any dense model measured on 
 the same campaign.</p> <p>A kernel-level profile puts essentially all of the growth in one place:
 <code>kernel_paged_attention_2d</code>. That Triton fallback serves the model's 16 full-attention
 layers, and its per-call cost grows 28.3× while every other kernel in the step remains flat or slightly
-cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The ROCm custom
-paged-attention kernel declines this model on three separate conditions, forcing execution onto the Triton
-fallback. The fallback is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
+cheaper. The linear-attention layers take roughly the same time at both context lengths.</p> <p>The model fails three eligibility checks for the ROCm custom paged-attention kernel, so it uses the Triton fallback. The fallback is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
 kernel almost nothing to parallelise over. Two independent signals agree: per-card power
 <em>falls</em> with depth, and normalising by KV bytes read makes the gap wider rather than
 narrower.</p> <p>The same checkpoint under llama.cpp on the same machine and the same day holds a
-slope 28× shallower, which rules out the driver and the hardware. An upstream fix exists and is
+slope 28× shallower, showing that the decline is not unavoidable on this hardware and driver. An upstream fix exists and is
 measured here twice, most recently as a controlled A/B on vLLM 0.27: <strong>9.46× at 32 K</strong>.
 One cell of that A/B is bimodal and is reported as such.</p> </div>
 
@@ -35,22 +33,16 @@ That run produced 292 decode and prefill measurements across five architectures 
 is served by <code>vllm serve</code>, TP=2, CUDA graphs enabled, <code>--gpu-memory-utilization 0.85</code>,
 512-token outputs, and is the mean of two rounds.</p>
 
-<p>Rates are reported with the spread of their own rounds rather than a standard deviation. At two to four
-rounds per cell a standard deviation provides more precision than the sample supports. The range
-as a fraction of the mean expresses variance cleanly without implying a distribution. Every point in Figure 1
-carries its round count and that range, visible on hover.</p>
+<p>Rates are reported with the range of repeated measurements rather than a standard deviation. With only two to four rounds per test point, we report both the round count and the range as a fraction of the mean so readers can assess the variation. Hover over a point in Figure 1 to see its round count and range.</p>
 
 <div class="note">
   <span class="lbl">On reading the absolute values</span>
-  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, chosen
-  deliberately as the least favourable topology. The <em>shapes</em> in this article transfer; the absolute
-  rates are a floor, not a benchmark of the hardware.
+  This is a VFIO guest with no peer-to-peer between the cards and a cross-die PCIe 3.0 path, which limits communication between the cards. Both the curves and the absolute rates describe this configuration; they should not be assumed to transfer to other topologies or software stacks, or to represent the hardware's best performance.
 </div>
 
 <h2><span class="n">2</span>The observation</h2>
 
-<p>Five architectures, eleven depths, one campaign. Four of the five decline gently with context in the way
-a KV cache makes inevitable. The fifth does something else.</p>
+<p>The campaign covers five architectures and eleven context lengths. Four show a gradual decline in decode rate as context grows; the hybrid-SSM model declines much more sharply.</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -72,16 +64,14 @@ a KV cache makes inevitable. The fifth does something else.</p>
   </figcaption>
 </figure>
 
-<p>The hybrid model is the slowest in absolute terms at every depth. By parameter count it should not
-be. It is also the only model whose curve bends downward instead of flattening. Retention makes the contrast plain:
+<p>The hybrid model is the slowest in absolute terms at every depth. Parameter count alone does not explain this ordering. It is also the only model whose curve bends downward instead of flattening. Retention makes the contrast plain:
 every other configuration keeps between 67 % and 78 % of its short-context rate at 32 000 tokens.
 This one keeps <strong>35.1 %</strong>.</p>
 
 <p>Expressed as a slope — decode microseconds added per token of context — the campaign gives
-<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. That is a
-factor of 41, and it is the number the rest of this article is about.</p>
+<strong>4.84 µs</strong> for the hybrid model against <strong>0.118 µs</strong> for the dense 8B. The difference is a factor of 41. The next section checks which kernels contribute to it.</p>
 
-<h2><span class="n">3</span>Attribution: one kernel, not the architecture</h2>
+<h2><span class="n">3</span>Kernel timings: where the extra time is spent</h2>
 
 <p>A torch profile across two depths kept CUDA graphs on and attributed kernel calls strictly to the engine step
 whose window they fell into, so that chunked-prefill calls are not mixed into the decode figures.</p>
@@ -100,18 +90,13 @@ whose window they fell into, so that chunked-prefill calls are not mixed into th
   </figcaption>
 </figure>
 
-<p>The 48 gated-delta-net layers cost the same at 32 K as at 1 K — 0.95× — which is what linear attention
-promises and what this implementation delivers. The quantised GEMM is likewise flat. One kernel moves, and
-it moves by <strong>28.3×</strong>.</p>
+<p>The 48 gated-delta-net layers take 0.95× as long at 32 K as at 1 K, with little change across the two context lengths. Quantised GEMM timings are also stable. The paged-attention kernel takes <strong>28.3×</strong> as long.</p>
 
-<p>The arithmetic closes. At 16 calls per step, paged attention goes from 5.71 ms/step to 161.5 ms/step,
-up 155.8 ms. The decode step itself, measured from the CUDA-graph replay, goes from 85.85 ms to 236.9 ms,
-up 151 ms. <strong>The paged-attention growth accounts for the entire decode slowdown</strong>; every other
-kernel is flat or slightly faster at the longer context.</p>
+<p>At 16 calls per step, paged attention grows from 5.71 ms to 161.5 ms, an increase of 155.8 ms. CUDA-graph replay timing puts the whole decode step at 85.85 ms and 236.9 ms, an increase of about 151 ms. <strong>The two increases are close, indicating that paged attention accounts for most of the extra time.</strong> Other kernel timings are stable or slightly lower at the longer context.</p>
 
 <h2><span class="n">4</span>Why the fallback is taken</h2>
 
-<p>The 16 full-attention layers land on Triton because ROCm's custom paged-attention kernel declines them.
+<p>The 16 full-attention layers use Triton because the model does not meet the ROCm custom paged-attention kernel's eligibility checks.
 The RDNA branch of <code>use_rocm_custom_paged_attention</code> in <code>vllm/platforms/rocm.py</code>
 requires, among other conditions, <code>head_size == 128</code> and <code>block_size == 16</code>.</p>
 
@@ -131,11 +116,10 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
 
 <p><strong>No single condition is the blocker.</strong> Relaxing either failing condition on its own
 leaves the gate closed, and <code>chunked_prefill_paged_decode.py</code> fails <code>use_custom</code> on
-<code>is_pow2</code> independently of both. The custom kernel is unreachable here three times over, which
-is why making the fallback fast is the only path that helps this class of model.</p>
+<code>is_pow2</code> independently of both. Each of these three checks prevents use of the custom kernel, so this investigation focuses on improving the fallback.</p>
 
 <div class="note warn">
-  <span class="lbl">The obvious fix does not work</span>
+  <span class="lbl">Relaxing head_size alone still fails</span>
   Relaxing the <code>head_size</code> check moves the failure rather than removing it.
   <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> in <code>csrc/rocm/attention.cu</code> dispatches only
   <code>case 64</code> and <code>case 128</code> and <code>TORCH_CHECK</code>s on anything else. The

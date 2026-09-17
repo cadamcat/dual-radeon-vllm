@@ -25836,12 +25836,12 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/depth-cost-is-the-stacks.zh.html"
    },
    "title": {
-    "en": "The flattest model by retention is the steepest by cost, and one serve flag moves it three places",
-    "zh": "按保留率最平的那个模型，按成本是最陡的；而一个 serve 参数就能让它挪三个名次"
+    "en": "Long-context performance: why retention and added decode cost rank models differently",
+    "zh": "长上下文性能：保留率与额外解码耗时为什么会给出不同排序"
    },
    "sub": {
-    "en": "What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing",
-    "zh": "「到 96&nbsp;000 掉 28&nbsp;%」这句话是由什么构成的——在一台机器上，同一份权重的深度成本能跨 3.00&times;，而模型本身什么都没变"
+    "en": "Comparing retained throughput with added decode time; the same weights differ by 3.00&times; in slope across software stacks",
+    "zh": "比较速率保留率与上下文增加带来的解码耗时；同一份权重在不同软件栈上的斜率相差 3.00&times;"
    },
    "blurb": {
     "en": "Six checkpoints on one ladder rank one way by what they retain at depth and almost the reverse by what depth costs them, because a retention percentage divides by a baseline and these baselines span 8.4x. The cost is not the model's either: the same weights on the same cards measure 0.350, 0.233 and 0.117 microseconds per context token across a vLLM version and one serve flag.",
@@ -25992,8 +25992,8 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/a100-vs-two-radeons.zh.html"
    },
    "title": {
-    "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
+    "en": "Adding a second RX 7900 XT: about 1.1× faster decode and 1.9× faster prefill",
+    "zh": "增加第二张 RX 7900 XT：解码约加速 1.1×，预填充约加速 1.9×"
    },
    "sub": {
     "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",
@@ -26719,8 +26719,8 @@ campaign：每条臂都把 <code>max_model_len</code> 设成了 33&nbsp;000，�
     "zh": "articles/hybrid-ssm-collapse.zh.html"
    },
    "title": {
-    "en": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
-    "zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑"
+    "en": "Hybrid-SSM decode falls from 12.1 to 4.2 tok/s: the cost of the Triton paged-attention fallback",
+    "zh": "混合 SSM 解码从 12.1 降到 4.2 tok/s： Triton paged-attention 回退路径的开销"
    },
    "sub": {
     "en": "Hybrid-SSM decode rate on dual Radeon cards under vLLM; checked against dense controls, llama.cpp, and an upstream split-KV kernel",
