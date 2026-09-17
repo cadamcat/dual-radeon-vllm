@@ -1033,7 +1033,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">1</span>测的是什么</h2>
 
-<p>两条执行路径均经由 vLLM 原生的 <code>chunked_prefill_paged_decode</code> 分发逻辑驱动，仅强制切换 <code>use_rocm_custom_paged_attention</code> 配置。因此两臂之间的参数编排完全一致。测试针对纯解码负载展开：每个序列仅包含一个 query token，上下文已全量进入缓存，与原报告描述的场景一致。fp32 参考基准基于分页<em>之前</em>的 KV 张量计算，而非读取缓存，确保<strong>分页层面的缺陷不会相互抵消</strong>。评估指标采用以参考基准自身量纲归一化的相对 L-infinity 误差，从而保证了不同上下文长度之间的可比性。</p>
+<p>两条执行路径均经由 vLLM 原生的 <code>chunked_prefill_paged_decode</code> 分发逻辑驱动，仅强制切换 <code>use_rocm_custom_paged_attention</code> 配置。因此两组之间的参数编排完全一致。测试针对纯解码负载展开：每个序列仅包含一个 query token，上下文已全量进入缓存，与原报告描述的场景一致。fp32 参考基准基于分页<em>之前</em>的 KV 张量计算，而非读取缓存，确保<strong>分页层面的缺陷不会相互抵消</strong>。评估指标采用以参考基准自身量纲归一化的相对 L-infinity 误差，从而保证了不同上下文长度之间的可比性。</p>
 
 <p>测试的形状集合覆盖 head size 128 与 block size 16 配置下的 ratio 1、2、3 和 4，外加 32/16。这最后一个形状源自 <code>gemma-3-27b-it</code>，满足 gfx11 这道闸门除比值外的所有准入条件。至于 CUDA 对照组，则是将内核原样提取至独立模块并编译同一份 Triton 文本，其算子调用参数完全镜像了分发处的实参列表。</p>
 
@@ -1051,7 +1051,7 @@ addEventListener("DOMContentLoaded", function () {
   <figcaption>
     <b>图 1.</b> 大于 1.0 表示被挡在外面的那个 kernel 更快。这道门<em>放行</em>的那几行是对照：
     它们展示的正是这道门当初想抓住的收益。而它排除掉的那几行，收益一样大、量级也一样，却被拦在门外。
-    把鼠标停在任意格子上可以看到背后的两个耗时。较新的镜像在三十对格子里有二十八对低一点。两条臂在两个镜像之间都动了，这次对比谁也没分开；0.27 的两轮中位数相差 2.3 %，最差 5.8 %。
+    把鼠标停在任意格子上可以看到背后的两个耗时。较新的镜像在三十对格子里有二十八对低一点。两组在两个镜像之间都动了，这次对比谁也没分开；0.27 的两轮中位数相差 2.3 %，最差 5.8 %。
   </figcaption>
 </figure>
 
@@ -1087,7 +1087,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <h2><span class="n">4</span>放宽它在一个模型上值多少</h2>
 
-<p>单纯的内核微基准测试不足以构成提交 PR 的充分理由。为此，我们在开启 CUDA graphs 的条件下，使用 <code>gemma-3-27b-it-w4a16</code> 在 TP=2 配置下开展了端到端模型实测。解码延迟通过 64 与 8 的差分测试进行剥离，每个单元格均启动一个全新容器，避免源码修改在两臂之间发生交叉污染：</p>
+<p>单纯的内核微基准测试不足以构成提交 PR 的充分理由。为此，我们在开启 CUDA graphs 的条件下，使用 <code>gemma-3-27b-it-w4a16</code> 在 TP=2 配置下开展了端到端模型实测。解码延迟通过 64 与 8 的差分测试进行剥离，每个单元格均启动一个全新容器，避免源码修改在两组之间发生交叉污染：</p>
 
 <figure class="rv" id="fig3">
   <div class="figbox">
@@ -1096,19 +1096,19 @@ addEventListener("DOMContentLoaded", function () {
     <div class="bars" id="e2e"></div>
   </div>
   <figcaption>
-    <b>图 3.</b> 0.27 的两次通过把两臂的顺序对调了 —— 一次在每个深度都先测 stock，另一次先测放宽 ——
-    所以四十分钟里的漂移不可能两次都落在同一臂上。同一臂、同一深度、跨两次通过：最多相差 2.8 %。
+    <b>图 3.</b> 0.27 的两次通过把两组的顺序对调了 —— 一次在每个深度都先测 stock，另一次先测放宽 ——
+    所以四十分钟里的漂移不可能两次都落在同一组上。同一组、同一深度、跨两次通过：最多相差 2.8 %。
     收益随上下文增长，原因在于<em>动的是什么</em>：这个模型 62 层，滑动窗口模式为 6，
     所以只有那十层全注意力层能走到定制 kernel。1K 上滑动层占主导；
     32K 上一层全注意力要扫完整个上下文，而一层滑动层只扫 1024。
   </figcaption>
 </figure>
 
-<p>算子路由状态直接在 TP worker 内部记录，而非通过耗时反推。在 0.23.1 上测试覆盖了每一个格子；而在 0.27 上，由于原地记录器未捕获到任何数据，随后通过专门的一轮测试单独记录了 1K 长度下的两臂表现。全注意力层的输入参数满足 head size 128、block size 16、原生 KV 布局以及 2 的幂 block 大小，因此<strong>比值条件是其未能通过准入闸门的唯一原因</strong>；至于滑动窗口层，在两臂中均直接受阻于 <code>sliding_window == 0</code>，执行路径从未改变。</p>
+<p>算子路由状态直接在 TP worker 内部记录，而非通过耗时反推。在 0.23.1 上测试覆盖了每一个格子；而在 0.27 上，由于原地记录器未捕获到任何数据，随后通过专门的一轮测试单独记录了 1K 长度下的两组表现。全注意力层的输入参数满足 head size 128、block size 16、原生 KV 布局以及 2 的幂 block 大小，因此<strong>比值条件是其未能通过准入闸门的唯一原因</strong>；至于滑动窗口层，在两组中均直接受阻于 <code>sliding_window == 0</code>，执行路径从未改变。</p>
 
 <div class="note warn">
   <span class="lbl">关于本项测量的两点澄清</span>
-  两臂之间输出是否完全一致并不构成正确性判据。由于该模型在这台机器上的 greedy 解码存在跨进程不可复现性，单纯比对 token id 反映的将是运行时的局部非确定性。数值精度的论证见图 2 对比 fp32 参考基准的结果。此外，最初尝试的内核计数器之所以未见任何调用，是因为 TP=2 将注意力算子派发到了衍生的 worker 子进程中，父进程中的计数器自然一无所获。
+  两组之间输出是否完全一致并不构成正确性判据。由于该模型在这台机器上的 greedy 解码存在跨进程不可复现性，单纯比对 token id 反映的将是运行时的局部非确定性。数值精度的论证见图 2 对比 fp32 参考基准的结果。此外，最初尝试的内核计数器之所以未见任何调用，是因为 TP=2 将注意力算子派发到了衍生的 worker 子进程中，父进程中的计数器自然一无所获。
 </div>
 
 <h2><span class="n">5</span>放宽它同时会放进来什么</h2>
@@ -1126,7 +1126,7 @@ addEventListener("DOMContentLoaded", function () {
     <div class="barunit" id="faultnote"></div>
   </div>
   <figcaption>
-    <b>图 4.</b> 64 行，每臂 32：两种 dtype × 两个比值 × 四种投毒方式 × 两个长度，
+    <b>图 4.</b> 64 行，每组 32：两种 dtype × 两个比值 × 四种投毒方式 × 两个长度，
     分别跑在原样镜像上和一个带着该 PR 当前 head 的重编版本上。
     有判别力的是模式，不是通过数。<strong>只投 K 从不产生污染</strong> ——
     logit 掩码已经覆盖了它，所以一个连 K 也一起清洗的修复，治的是一个不存在的症状。
@@ -1135,7 +1135,7 @@ addEventListener("DOMContentLoaded", function () {
   </figcaption>
 </figure>
 
-<p>强制执行那一列与本项提议息息相关。一旦强行绕过闸门，原样对照臂受污染的单元格便从四个增加到八个：ratio 2 在跨越边界的长度上以相同方式出现故障，涵盖两种 dtype 以及仅投毒 V 和同时投毒 K+V 的场景。而在打上补丁的那一臂中，这八个格子全部恢复正常。<strong>因此，放宽这道准入闸门便会将 ratio 2 纳入该内核，连带放进来的正是这一处故障</strong>。这正是两项改动密不可分的原因，也是我们应作者请求向该 PR 提供 gfx11 运行时验证数据的初衷。</p>
+<p>强制执行那一列与本项提议息息相关。一旦强行绕过闸门，原样对照组受污染的单元格便从四个增加到八个：ratio 2 在跨越边界的长度上以相同方式出现故障，涵盖两种 dtype 以及仅投毒 V 和同时投毒 K+V 的场景。而在打上补丁的那一组中，这八个格子全部恢复正常。<strong>因此，放宽这道准入闸门便会将 ratio 2 纳入该内核，连带放进来的正是这一处故障</strong>。这正是两项改动密不可分的原因，也是我们应作者请求向该 PR 提供 gfx11 运行时验证数据的初衷。</p>
 
 <h2><span class="n">6</span>没有被确立的部分</h2>
 
@@ -1160,7 +1160,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="note ok">
   <span class="lbl">2026-08-28 · 应请求补充另一 PR 缺失的 gfx11 验证</span>
-  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 的作者已在 MI350X 上完成该修复的验证，并请求补充其所缺失的 gfx11 数据。图 4 即为该项验证结果，基于其分支最新 head 运行。测试涵盖了两条对比臂，因为若原样基准臂未能复现故障，单凭打了补丁的一臂正常运行毫无证明效力。
+  <a href="https://github.com/vllm-project/vllm/pull/53856">vllm#53856</a> 的作者已在 MI350X 上完成该修复的验证，并请求补充其所缺失的 gfx11 数据。图 4 即为该项验证结果，基于其分支最新 head 运行。测试涵盖了两组对比配置，因为若原样基准组未能复现故障，单凭打了补丁的一组正常运行毫无证明效力。
 </div>
 
 <div class="note warn">
@@ -1175,12 +1175,12 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 图 1 说明所归结的变化原因与数据不符</span>
-  原文曾断言较新镜像“整体较低是因为 Triton 兜底变快，而非定制内核变慢”。这两种论断均不能成立：三十对格子中有两对在新镜像上反而<em>更高</em>；在这三十对比较中，Triton 耗时仅在 21 对上变快，定制内核耗时却在 25 对上<em>变慢</em>。两条对比臂均发生了位移。图注已据实修正，且这两个计数值均已由 <code>verify_doc_figures.py</code> 锁定。
+  原文曾断言较新镜像“整体较低是因为 Triton 兜底变快，而非定制内核变慢”。这两种论断均不能成立：三十对格子中有两对在新镜像上反而<em>更高</em>；在这三十对比较中，Triton 耗时仅在 21 对上变快，定制内核耗时却在 25 对上<em>变慢</em>。两组对比配置均发生了位移。图注已据实修正，且这两个计数值均已由 <code>verify_doc_figures.py</code> 锁定。
 </div>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · 路由断言原先仅覆盖两个软件栈中的一个</span>
-  第 3 节曾声称路由是在“每一个格子”中均从 TP worker 内部记录的。该结论对 0.23.1 的测试成立。在 0.27 上，原地记录器未捕获到任何数据，因 worker 执行的是未修改的字节码，而磁盘上的文件虽已更新，具体见 <code>benchmarks/vllm-50603/README.md</code> 中的记录。那里的路由信息来自 <code>route_027.py</code> 在 1K 长度下对两臂的专项独立运行。正文现已准确体现该区别。此外，摘要中的英文原词为“not supported”，中文初稿曾译为语气更坚决的“不成立”，现已修正以保持一致。
+  第 3 节曾声称路由是在“每一个格子”中均从 TP worker 内部记录的。该结论对 0.23.1 的测试成立。在 0.27 上，原地记录器未捕获到任何数据，因 worker 执行的是未修改的字节码，而磁盘上的文件虽已更新，具体见 <code>benchmarks/vllm-50603/README.md</code> 中的记录。那里的路由信息来自 <code>route_027.py</code> 在 1K 长度下对两组的专项独立运行。正文现已准确体现该区别。此外，摘要中的英文原词为“not supported”，中文初稿曾译为语气更坚决的“不成立”，现已修正以保持一致。
 </div>
 
 <div class="foot-note">
@@ -2505,12 +2505,12 @@ addEventListener("DOMContentLoaded", function () {
  "e2eUnit": "解码 tok/s，gemma-3-27b-it-w4a16，TP=2",
  "e2eNote": "每一格里这道门都翻转了 · 各次通过之间最多相差 {s}%",
  "run023": "0.23.1", "run027A": "0.27 第一遍", "run027B": "0.27 第二遍",
- "cntPoisoned": "原样臂上被污染",
+ "cntPoisoned": "原样组上被污染",
  "cntFixed": "其中被修好的",
  "cntBroken": "被修复新弄坏的",
  "cntCk": "确实跑了 kernel 的比值-4 格子",
  "faultH": ["dtype", "比值", "投毒", "上下文", "原样", "打补丁"],
- "faultNote": "绕过这道门，原样臂被污染的是 {f} 个而不是 {a} 个 —— 比值 2 以同样方式失败，而这 {f} 个在打补丁后全都干净",
+ "faultNote": "绕过这道门，原样组被污染的是 {f} 个而不是 {a} 个 —— 比值 2 以同样方式失败，而这 {f} 个在打补丁后全都干净",
  "ok": "正常", "nan": "NaN ×{n}"
 }</script>
 <script>

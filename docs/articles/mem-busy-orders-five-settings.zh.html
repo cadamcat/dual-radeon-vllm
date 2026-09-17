@@ -1147,10 +1147,10 @@ addEventListener("DOMContentLoaded", function () {
     <div class="barunit" id="benote"></div>
   </div>
   <figcaption>
-    <b>图 5.</b> 每个（模型，卡）的解码器 attention 后端，取自各条臂自己的 serve 日志，以及每个 checkpoint 落到的 W4A16 内核。
+    <b>图 5.</b> 每个（模型，卡）的解码器 attention 后端，取自各组自己的 serve 日志，以及每个 checkpoint 落到的 W4A16 内核。
     两张 Hopper 全部走 FlashAttention；B300 走 FlashInfer；PRO 6000 把 gemma-4 送到 Triton、把 Qwen 和 Muse 的
     checkpoint 送到 FlashAttention。因此本文里每一个跨机器比较都带着一项后端因素。在 PRO 6000 内部这个分裂很干净，同一张卡、
-    同一场会话：三条 Triton 臂在 500 到 128&nbsp;000 token 之间丢掉 39&ndash;52&nbsp;% 的解码速率，两条 FlashAttention 臂丢
+    同一场会话：三组 Triton 配置在 500 到 128&nbsp;000 token 之间丢掉 39&ndash;52&nbsp;% 的解码速率，两组 FlashAttention 配置丢
     13&ndash;28&nbsp;%。后端和模型混在一起，所以这不是归因 —— 但它是一张卡上的一场会话，而跨机器的版本不是。
   </figcaption>
 </figure>
@@ -2214,7 +2214,7 @@ addEventListener("DOMContentLoaded", function () {
  "beKernel": "W4A16 内核：{k}",
  "beNoKernel": "bf16，无",
  "proHead": "RTX PRO 6000，500 到 128 000 的解码，按它拿到的后端",
- "beNote": "四张卡上三种后端，谁也没要过 · PRO 6000 上 Triton 臂丢 {t1}–{t2} %，FlashAttention 臂丢 {f1}–{f2} %",
+ "beNote": "四张卡上三种后端，谁也没要过 · PRO 6000 上 Triton 组丢 {t1}–{t2} %，FlashAttention 组丢 {f1}–{f2} %",
  "priceH": ["模型", "mem_busy，H100", "H100 $3.95/h", "B300 $7.10/h", "B300 / H100", "按美元"],
  "priceNote": "500 档的解码 tok/s，各一张卡 · 价格是 2026-09-03 从 Modal 价目表手打的，不是测的",
  "deepAxisX": "上下文长度",

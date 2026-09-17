@@ -10313,7 +10313,8 @@ def _run_checks(_opened, _audit_state):
     _zh_hmm = json.load(open(hmm_f))["states"]
     _zh_before = float(re.search(r"upgrading: ([\d.]+) ms", _zh_hmm[-1]["note"]).group(1))
     zh_numbers("kernel upgrade", r"从 ([\d .]+) ms → ([\d.]+) ms", _zh_before, _zh_hmm[-1]["rw_p_resident"])
-    zh_numbers("loader flag maximum", r"放不进时值 ([\d.]+)×", LART["fig2"]["best_flag"])
+    zh_numbers("loader flag maximum", r"放不进时[^0-9]{0,6}([\d.]+)×",
+           LART["fig2"]["best_flag"])
     _zh_mtp_rates = {r["cfg"]: r["decode_tok_s"] for r in _XD if r["date"] == "2026-08-29" and r["ctx"] == 32000}
     zh_numbers("MTP cross-machine", r"对 Radeon 为 ([+−\d.]+) %，对 A100 为 ([+−\d.]+) %",
                100 * (_zh_mtp_rates["G31-mtp-p45450-tp2"] / _zh_mtp_rates["G31-tp2"] - 1),

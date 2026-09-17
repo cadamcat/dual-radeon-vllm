@@ -105,7 +105,7 @@ bad_into = [...]        <span class="c"># 每个 rank 都算</span>
 
 <h2><span class="n">4</span>那个没能起来的第二证人</h2>
 
-<p>验证方案原本规划了绕过 PyTorch 的第二证人，采用上报者提供的另一套复现工具。<code>rccl-tests</code> 套件基于容器工具链完成了干净编译，基准测试与验证二进制文件中均确认生成了 gfx1100 代码对象。然而，日志记录下的两次 <code>all_gather</code> 运行均在数据初始化内核处异常中止于 rank 1，报错为 <code>HIP failure: 'invalid device function'</code>。无论是否启用验证 pass，中止均以完全相同的方式发生，从而排除了验证内核的问题。测试脚本后续的几条臂从未执行，且代码树停留在针对 RCCL 2.30.4 的废弃分支上。</p>
+<p>验证方案原本规划了绕过 PyTorch 的第二证人，采用上报者提供的另一套复现工具。<code>rccl-tests</code> 套件基于容器工具链完成了干净编译，基准测试与验证二进制文件中均确认生成了 gfx1100 代码对象。然而，日志记录下的两次 <code>all_gather</code> 运行均在数据初始化内核处异常中止于 rank 1，报错为 <code>HIP failure: 'invalid device function'</code>。无论是否启用验证 pass，中止均以完全相同的方式发生，从而排除了验证内核的问题。测试脚本后续的几组从未执行，且代码树停留在针对 RCCL 2.30.4 的废弃分支上。</p>
 
 <p>未过滤的原始日志被完整提交入库，将这一异常中止作为约束条件记录在案，而非直接丢弃。更早的一次尝试曾使用包装脚本解析控制台输出，但由于正则表达式未匹配到任何内容，导致每个集合通信都被误判为 <code>FAILED</code>，其中甚至包括在 PyTorch 框架下通过了 135 次的测试负载。该错误日志被果断废弃，因为<strong>残留一行错误的判定比完全没有日志更具误导性</strong>；取而代之的是真实的原始执行追踪日志。</p>
 
@@ -139,7 +139,7 @@ bad_into = [...]        <span class="c"># 每个 rank 都算</span>
 
 <div class="note warn">
   <span class="lbl">2026-08-29 · "每一个集合通信"在已入库日志里只有一个</span>
-  第 4 节最初表述为 <code>rccl-tests</code> 编译成功后"每一个集合通信都在 rank 1 上中止"。事实上，<code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> 中仅包含两次调用，且均为 <code>all_gather_perf</code>；该目录下不存在任何 <code>reduce_scatter_perf</code> 或 <code>all_reduce_perf</code> 的输出记录。尽管 <code>scripts/stage2b_rccltests.sh</code> 原计划测试六条臂，但执行在第二条之后便告中断。脚本设计初衷不等同于已入库的实测证据，这正是本文着力厘清的核心界限。此外，该参数扫描原先被称作"本可以暴露故障的扫描"；其实际覆盖的是其机理所指的维度，而故障注入演示的是检查工具本身，而非原发故障。
+  第 4 节最初表述为 <code>rccl-tests</code> 编译成功后"每一个集合通信都在 rank 1 上中止"。事实上，<code>benchmarks/rccl-6565/logs/stage2b-raw.log</code> 中仅包含两次调用，且均为 <code>all_gather_perf</code>；该目录下不存在任何 <code>reduce_scatter_perf</code> 或 <code>all_reduce_perf</code> 的输出记录。尽管 <code>scripts/stage2b_rccltests.sh</code> 原计划测试六组，但执行在第二组之后便告中断。脚本设计初衷不等同于已入库的实测证据，这正是本文着力厘清的核心界限。此外，该参数扫描原先被称作"本可以暴露故障的扫描"；其实际覆盖的是其机理所指的维度，而故障注入演示的是检查工具本身，而非原发故障。
 </div>
 
 <div class="foot-note">

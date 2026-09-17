@@ -19,7 +19,7 @@ the models in almost the reverse of the order they pay in. The reason is arithme
 subtle: a retention percentage divides the depth cost by the baseline, and across these six the
 baselines span <strong>8.4&times;</strong>. The slowest model in the set is the one that looks most
 depth-robust.</p>
-<p><strong>The alternative is not safe either.</strong> Fitting milliseconds per token against
+<p><strong>Using the slope instead of retention is not safe either.</strong> Fitting milliseconds per token against
 context gives a slope in microseconds per context token, which is a cost rather than a ratio and
 does not carry the baseline. On this pair that slope is a better description &mdash; and it is still
 not a property of the model. The same <code>Qwen3.8-27B</code> checkpoint, on the same two cards
@@ -27,16 +27,16 @@ with the same weights and the same upstream patch, measures <strong>0.350</stron
 and <strong>0.117&nbsp;&micro;s per context token</strong> on three software stacks that differ by a
 vLLM version and one serve flag. That is 3.00&times;, and it moves the checkpoint from last place in
 this set to third.</p>
-<p><strong>The backend half of that is an attribution, not a comparison.</strong> The two attention
+<p><strong>The backend part of that 3.00&times; is an attribution, not a paired comparison.</strong> The two attention
 backends were measured in two sessions of one run, and a third session repeated the first arm to
-price the session boundary: <strong>0.50&nbsp;%</strong> at worst, against a gap that reaches
+measure the session boundary: <strong>0.50&nbsp;%</strong> at worst, against a gap that reaches
 <strong>48&nbsp;%</strong>. Their intercepts agree to 1.5&nbsp;% while their slopes differ by 2.11&times;,
 so the flag moves the depth term and leaves the baseline where it was. What it costs is prefill:
 the decode advantage widens to <strong>1.48&times;</strong> at 128 000 tokens while prefill falls to
 <strong>0.44&times;</strong>, and neither has turned over at the deepest rung this machine can hold.</p>
 </div>
 
-<h2><span class="n">1</span>Two numbers, and they disagree</h2>
+<h2><span class="n">1</span>Retention and cost rank them differently</h2>
 
 <p>Every arm below is the same ladder on the same two cards, TP=2, batch 1, from
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-03"><code>campaign-2026-09-03</code></a>.

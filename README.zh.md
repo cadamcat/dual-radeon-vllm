@@ -6,7 +6,7 @@
 
 **两张消费级 Radeon（RX 7900 XT、gfx1100）运行 tensor-parallel vLLM 的实测记录，包括缺少 PCIe AtomicOps 导致的 RCCL 故障、修复方法和逐请求原始数据。**
 
-在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**；Qwen3-8B BF16 的第二张卡加速为 **1.70×**，即 85 % 的并行效率。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。此后同一梯度又在其他租用或获赠的机器配置上对照这对卡跑过；本页每个数字都在发布前从已提交的原始行重算。
+在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**；Qwen3-8B BF16 的第二张卡加速为 **1.70×**，即 85 % 的并行效率。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。此后同一阶梯又在其他租用或获赠的机器配置上对照这对卡跑过；本页每个数字都在发布前从已提交的原始行重算。
 
 **从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部 campaign](benchmarks/CAMPAIGNS.md)
 
@@ -23,13 +23,13 @@
 | RTX PRO 6000 96G | 1、2 | Modal | 500–128 000 | 2026-09-03 |
 | MI300X 192G（gfx942） | 1 | AMD Developer Cloud 租用 | 500–32 000，int4 30B 到 64 000 | 2026-09-17 |
 
-十四种机器配置、八个 checkpoint、61 个结果文件里 6 048 条请求级测量、两份跨机器投影里 2 440 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文——这些计数由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
+十四种机器配置、八个 checkpoint、61 个结果文件里 6 048 条请求级测量、两份跨机器投影里 2 440 个通过重复性筛选的 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文——这些计数由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
 
 ## 三部分内容，各自可以独立使用
 
 - **RCCL 修复。** 57 行的复现程序定位 hostcall 分派拒绝；裸机使用去掉 hostcall 的 RCCL 重建，虚拟机通常先检查一行直通配置。
-- **数据与工具。** 逐请求原始记录、生成这些记录的 runner，以及无需 GPU 的分析脚本。后续 campaign 在每格旁记录时钟、功耗、温度、显存和内存控制器忙碌比例。`prefill.jsonl`、`decode.jsonl` 从原始记录生成，并与之核对。
-- **Ubuntu 内核中的权重加载回归。** 可写文件映射的 host→device 拷贝在 `7.0.0-28-generic` 上降到 **2 MiB/s**；补齐缺失提交可修复，Ubuntu 的正常稳定版更新 `7.0.0-30.30~24.04.1` 也包含修复。同一机器、同一复现程序从 **16 019.3 ms → 15.3 ms**（[数据](benchmarks/hmm-kernel-three-states.json)）。该修复并非由本报告促成。内核升级后，可写映射本身的代价仍在：clone flag 在 checkpoint 放得进 RAM 时值 **1.5–2.0×**，放不进时值 **7.5×**（[数据](benchmarks/loader-flag-kernel-30.json)）。早期发布的 3.9–5.6× 没有控制 page cache，未能复现。完整证据、被推翻的解释及 [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)、[LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)、[vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的关系见 [§8](docs/open-questions.md)。
+- **数据与工具。** 逐请求原始记录、生成这些记录的 runner，以及无需 GPU 的分析脚本。后续 campaign 在每个测量格旁附带时钟、功耗、温度、显存和内存控制器忙碌比例。`prefill.jsonl`、`decode.jsonl` 从原始记录生成，并与之核对。
+- **Ubuntu 内核中的权重加载回归。** 可写文件映射的 host→device 拷贝在 `7.0.0-28-generic` 上降到 **2 MiB/s**；补齐缺失提交可修复，Ubuntu 的正常稳定版更新 `7.0.0-30.30~24.04.1` 也包含修复。同一机器、同一复现程序从 **16 019.3 ms → 15.3 ms**（[数据](benchmarks/hmm-kernel-three-states.json)）。该修复并非由本报告促成。内核升级后，可写映射本身的代价仍在：clone flag 在 checkpoint 放得进 RAM 时带来 **1.5–2.0×**，放不进时 **7.5×**（[数据](benchmarks/loader-flag-kernel-30.json)）。早期发布的 3.9–5.6× 没有控制 page cache，未能复现。完整证据、被推翻的解释及 [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)、[LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)、[vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的关系见 [§8](docs/open-questions.md)。
 
 ## 适用对象与支持状态
 
@@ -45,10 +45,10 @@
 
 - **内存控制器忙碌比例排对了测到的第二张卡收益。** `mem_busy` 在五种设定里都排对了顺序，从第二张 Radeon 到第二张 H100。它支持的是这些实验里的排序关系，不能直接当作任意硬件的吞吐预测器（[跨机器记录](benchmarks/cuda-modal/README.md)）。
 - **集合通信带宽跨 62 倍，batch-1 解码所在的延迟端只跨 3.2 倍。** 七组双卡／四卡的带宽差，并没有转化为对应的推理差距（[all-reduce 实测](benchmarks/allreduce-2026-09-03/)）。
-- **四张租来的卡自动选了三种注意力后端。** 没有人显式传入 backend 参数；每个跨机器比值都包含软件路径的差别，后端身份来自各自的 serve 日志（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
+- **vLLM 在四张租来的卡上自动选了三种注意力后端。** 没有人显式传入 backend 参数；每个跨机器比值都包含软件路径的差别，后端身份来自各自的 serve 日志（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
 - **在测过的 H100 栈上，有界窗口比混合 SSM 更平。** 到 128 000，Muse-Glimmer 吞吐下降 4.8 %，混合 SSM 的 27B 下降 21.8 %，稠密 31B 下降 22.0 %。这些是所测路径的结果；下文的软件栈对照说明，不能直接归因于架构（[长上下文记录](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)）。
 - **这对卡自己也到了 128 000。** 六个模型里四个跑完十六档；12B 到末端下降 52.5 %，有界窗口的 Muse-Glimmer 下降 17.3 %。遥测随每格保存，可以区分计算、内存和时钟状态（[本机长上下文 campaign](benchmarks/campaign-2026-09-03/README.md)）。
-- **gfx11 的 GQA 门排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽门后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
+- **gfx11 的 GQA 准入条件排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽门后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
 - **同一 checkpoint 的深度成本随软件栈相差 3.00×。** 在共同的 **500–32 000** 档位，Qwen3.8-27B 每增加一个上下文 token 的解码成本为 **0.350 → 0.233 → 0.117 µs**：依次是 vLLM 0.23.1、0.27.1，以及 0.27.1 加 `--attention-backend TRITON_ATTN`。跨版本还改变 ROCm 和权重内核；0.27 内部的 A/B 只改 backend，Triton 路径带 #45450。到 **128 000**，Triton 相对 ROCM_ATTN 的 **decode 为 1.48×，prefill 为 0.44×**。版本复测和后端 A/B 分别在 [09-06](benchmarks/campaign-2026-09-06/) 与 [09-07](benchmarks/campaign-2026-09-07/)。
 - **分页解码内核改十一行，滑窗模型在 32 K 获益 2.75× 和 3.15×。** 原循环读完整段序列，再掩掉窗口外的内容；跳过这些块避免了无效读取（[实现与正确性论证](docs/sliding-window-block-skip.md)）。
 - **投机解码在 32 K 慢 3.4×，原因是路径选择。** 每步两个 query token 让 Triton 从分段的 3D 解码落到串行 2D 路径；#45450 重新允许 3D 后，这对卡在 32 K 从 **8.81 → 32.57 tok/s**，并已跨两家厂商验证（[分析](docs/speculative-decoding-on-rdna.md)）。
@@ -146,7 +146,7 @@ ROCm **7.2.1** 起的 RCCL 设备内核带 hostcall 声明。缺少 AtomicOp 到
 
 ## 双卡实测
 
-**2026-07-25 基线**：原生 vLLM，五个模型、十一档上下文，292 次测量、零错误。**2026-08-24 复测**：带补丁容器，相同梯度，372 次测量、九种配置，其中六种重跑七月配置作对照。四种在 0.25 % 内复现，一种噪声太大无法判断，一种不复现。完整方法见 [benchmarks.md](docs/benchmarks.md)。
+**2026-07-25 基线**：原生 vLLM，五个模型、十一档上下文，292 次测量、零错误。**2026-08-24 复测**：带补丁容器，相同阶梯，372 次测量、九种配置，其中六种重跑七月配置作对照。四种在 0.25 % 内复现，一种噪声太大无法判断，一种不复现。完整方法见 [benchmarks.md](docs/benchmarks.md)。
 
 每次请求使用随机前缀避开 prefix cache；decode 计时从首 token 到末 token，排除 TTFT。以下日期是实验身份的一部分。测量方法与计时检查见文章 [如何测解码](https://cadamcat.github.io/dual-radeon-vllm/articles/measuring-decode.zh.html)。
 
@@ -198,7 +198,7 @@ Qwen3.8 的非对称 int4 checkpoint 在 **0.23 镜像**上错过 gfx1100 原生
 
 ![解码时间与上下文：ledger 候选中的配置选择](docs/assets/decode-ms-per-token-best.svg)
 
-**同一 checkpoint 在三个软件栈上。** 上面每条线都是一个模型在 ledger 候选（止于 2026-08-29）中测得最好的栈上；这张图固定模型、换栈：Qwen3.8-27B，同样的权重、同样的两张卡，分别在已发布的 0.23.1 臂、0.27.1 自选后端，以及 0.27.1 加 `--attention-backend TRITON_ATTN` 上。在三条梯度共有的 500–32 000 档上拟合，最陡的斜率是最平的 **3.00×**；数字与[主要发现](#主要发现)一致。右图说明最平的线不等于全面更好：Triton 相对 0.27 自选的后端，decode 占优、prefill 吃亏，两个比值都随深度单调远离 1.0。0.27 内部只换后端参数；跨版本还同时换了 ROCm 和权重内核，所以第一步是栈的差别，不只是后端的差别。原始行：[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) 是 0.23.1 臂，[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) 是两条 0.27 臂和给会话边界定价的漂移对照。
+**同一 checkpoint 在三个软件栈上。** 上面每条线都是一个模型在 ledger 候选（止于 2026-08-29）中测得最好的栈上；这张图固定模型、换栈：Qwen3.8-27B，同样的权重、同样的两张卡，分别在已发布的 0.23.1 组、0.27.1 自选后端，以及 0.27.1 加 `--attention-backend TRITON_ATTN` 上。在三条阶梯共有的 500–32 000 档上拟合，最陡的斜率是最平的 **3.00×**；数字与[主要发现](#主要发现)一致。右图说明最平的线不等于全面更好：Triton 相对 0.27 自选的后端，decode 占优、prefill 吃亏，两个比值都随深度单调远离 1.0。0.27 内部只换后端参数；跨版本还同时换了 ROCm 和权重内核，所以第一步是栈的差别，不只是后端的差别。原始行：[campaign-2026-09-03](benchmarks/campaign-2026-09-03/) 是 0.23.1 组，[campaign-2026-09-07](benchmarks/campaign-2026-09-07/) 是两组 0.27 和量会话间漂移的对照。
 
 ![同一 checkpoint 在三个软件栈上，以及后端的取舍](docs/assets/depth-cost-three-stacks.svg)
 
@@ -206,7 +206,7 @@ Qwen3.8 的非对称 int4 checkpoint 在 **0.23 镜像**上错过 gfx1100 原生
 
 ![hybrid SSM 的崩塌与修复](docs/assets/hybrid-ssm-collapse.svg)
 
-两臂在同一栈各跑两遍，并反转顺序；路由从 TP worker 内部记录。8 K 出现两个模态，图画的是高模态均值，图注注明了这一点，ledger 仍将该格标为非 chart-grade。[方法与原始行](docs/hybrid-decode-on-rdna.md)。
+两组在同一栈各跑两遍，并反转顺序；路由从 TP worker 内部记录。8 K 出现两个模态，图画的是高模态均值，图注注明了这一点，ledger 仍将该格标为非 chart-grade。[方法与原始行](docs/hybrid-decode-on-rdna.md)。
 
 后续版本与后端对照见文章 [吞吐保留率与深度成本](https://cadamcat.github.io/dual-radeon-vllm/articles/depth-cost-is-the-stacks.zh.html)；[跨机器保留率复算](docs/depth-cost-cross-machine.md)进一步检验换重复轮次或成本定义后，排名变化是否仍然成立。
 
@@ -261,11 +261,11 @@ git status --short              # 无输出
 
 ## 双卡之外
 
-同一梯度、同一 harness，在这对卡之外的十二种机器配置上：先是八月的 Colab 卡，再是九月的租用 sweep；每张图里这对卡都保留为其他机器的对照线。
+同一阶梯、同一 harness，在这对卡之外的十二种机器配置上：先是八月的 Colab 卡，再是九月的租用 sweep；每张图里这对卡都保留为其他机器的对照线。
 
 ### 一个模型，五种机器
 
-**一个模型，五种机器配置。** 八月的 gemma-4-12B-it 对照，每条线十一档、每格两轮，均为 chart-grade。租用卡的梯度见[下文](#租用卡的梯度)。
+**一个模型，五种机器配置。** 八月的 gemma-4-12B-it 对照，每条线十一档、每格两轮，均为 chart-grade。租用卡的阶梯见[下文](#租用卡的阶梯)。
 
 ![同一模型在五种机器上的 batch-1 decode](docs/assets/decode-five-machines-gemma4-12b.svg)
 
@@ -303,18 +303,18 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 
 文章 [一张 A100 对两张 Radeon](https://cadamcat.github.io/dual-radeon-vllm/articles/a100-vs-two-radeons.zh.html)逐步展开这组比较，以及两边软件路径不同带来的限制。
 
-### 租用卡的梯度
+### 租用卡的阶梯
 
-[租用卡 campaign](benchmarks/cuda-modal/README.md) 使用相同梯度、六个 checkpoint 和同一 harness；每台机器仍运行自己的软件路径。
+[租用卡 campaign](benchmarks/cuda-modal/README.md) 使用相同阶梯、六个 checkpoint 和同一 harness；每台机器仍运行自己的软件路径。
 
 | 发现 | 证据与边界 |
 |---|---|
-| 先有控制组 | Modal A100 与 L4 在控制臂上分别于 **0.07 %**、**0.9 %** 内复现 Colab 八月数据；其他跨卡比值仍包含内核／后端差别 |
+| 先有控制组 | Modal A100 与 L4 在控制组上分别于 **0.07 %**、**0.9 %** 内复现 Colab 八月数据；其他跨卡比值仍包含内核／后端差别 |
 | `mem_busy` 支持排序预测 | 五种设定中，越依赖内存的模型越受带宽变化影响；H200 测前提交的预测排对了顺序，猜错了幅度 |
 | 新卡不总是更快 | B300 在 26B MoE 上输给 H100，在 8B 上赢 **66 %**，记录中的价格是 **1.8×** |
 | NVLink 的差别在第四张卡更明显 | 增加第三、第四张卡的成本，有 NVLink 为 **×1.22**，无 NVLink 为 **×2.71**；双卡无 NVLink 比有 NVLink 高 **20 %** |
 
-交互站的[长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)把本机 09-03 梯度与租用卡并排画到 128 000。不同 checkpoint、backend 或投机设置分别保留身份，不能只按显示名拼接。文章 [跨机器的内存控制器忙碌比例](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.zh.html)解释这种排序能预测什么、又在哪些地方失效。
+交互站的[长上下文图](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html#figlong)把本机 09-03 阶梯与租用卡并排画到 128 000。不同 checkpoint、backend 或投机设置分别保留身份，不能只按显示名拼接。文章 [跨机器的内存控制器忙碌比例](https://cadamcat.github.io/dual-radeon-vllm/articles/mem-busy-orders-five-settings.zh.html)解释这种排序能预测什么、又在哪些地方失效。
 
 ## 限制与绕行方法
 
@@ -325,7 +325,7 @@ A100 相对双卡的领先从 **1.92×** 缩到 **1.72×**；第二张 Radeon �
 | **FP8 权重／KV** | 🔴 所测 RDNA3 路径不可用 |
 | **AITER 内核** | 🔴 所测 vLLM 用 `is MI3XX` 限制，gfx1100 回退到 Triton |
 | **调优后的 fused-MoE 配置** | 🔴 所测发行版未为 AMD GPU 提供，使用通用默认配置 |
-| **Hybrid SSM** | 🟡 七月 Qwen3.6 与八月 Qwen3.8 同时换 checkpoint 和补丁；[匹配的 0.27 A/B](benchmarks/hybrid-splitkv-027/)隔离 #45916，[后续 backend campaign](benchmarks/campaign-2026-09-07/)覆盖同一 Qwen3.8 的长梯度。按记录选择栈和后端 |
+| **Hybrid SSM** | 🟡 七月 Qwen3.6 与八月 Qwen3.8 同时换 checkpoint 和补丁；[匹配的 0.27 A/B](benchmarks/hybrid-splitkv-027/)隔离 #45916，[后续 backend campaign](benchmarks/campaign-2026-09-07/)覆盖同一 Qwen3.8 的长阶梯。按记录选择栈和后端 |
 | **MTP 投机解码** | 🟡 未修补的 Triton 在长上下文落到串行路径；[#45450](benchmarks/cuda-a100/45450-validation/README.md) 恢复分段路径。最终收益仍取决于模型和深度，见[完整对照](docs/speculative-decoding-on-rdna.md) |
 | **`ROCM_ATTN` 滑窗解码** | 🟡 原 paged-decode 循环扫描全序列，之后才 mask。跳块补丁不近似注意力：32 K 内核收益为 gemma-3 的 2.75×、Muse-Glimmer 的 3.15×，窗口内不变。端到端八月值分别约 22.05、37.4 tok/s。该实现与先前的 [#49588](https://github.com/vllm-project/vllm/pull/49588) 重合，提供的是另一份证据；[正文](docs/sliding-window-block-skip.md)也说明为何旧 token-id 正确性论证不成立 |
 | **MoE `torch.compile`** | 🟡 `env_override.py` 每次 `import vllm` 都写死 `TORCHINDUCTOR_COMPILE_THREADS=1`，外部设环境变量会被覆盖。MoE 的 `init_engine_s` 为 **1569 s**，12B **TP=2 为 1538 s**；12B TP=1 两次启动为 **59.67 s、33.36 s**。engine init 只界定编译所在的时间段，不能当作纯编译计时。改对应源码；eager 会损失性能，见[文章](https://cadamcat.github.io/dual-radeon-vllm/articles/moe-written-off-by-eager.zh.html) |
@@ -374,7 +374,7 @@ benchmarks/
   CAMPAIGNS.md              从 campaign README 生成的完整索引
   analyze/                  投影、拟合、制图与发布数字核对
   harness/                  runner、遥测、schema 与 PCIe preflight
-  prompts/                  构建并核对实际使用的 prompt 梯度
+  prompts/                  构建并核对实际使用的 prompt 阶梯
   repro-mmap-prot.py         可写映射的 host→device 拷贝复现
   repro-mmap-prot.hip.cpp    不依赖 PyTorch 的同一 HIP 复现
   cuda-*/                   各 CUDA 平台；cuda-modal 汇总租用卡

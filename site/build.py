@@ -265,7 +265,7 @@ built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title='第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×',
+                      title='第二张卡解码只快 1.1×，预填充快 1.9×',
                       desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
                            "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
                            "而两端都关于张量并行，不关于硅片本身。",

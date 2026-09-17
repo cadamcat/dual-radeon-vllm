@@ -90,7 +90,7 @@ Each finding links to the experiment that supports it.
 - **The collective spans 62× across seven pairs and quads, and inference uses
   none of it**: batch-1 decode lands on the latency end, which spans 3.2×
   ([`allreduce-2026-09-03/`](benchmarks/allreduce-2026-09-03/)).
-- **Four rented cards chose three attention backends** with no flag anywhere,
+- **vLLM chose three attention backends across four rented cards** with no flag anywhere,
   so every cross-machine ratio carries a backend term — read out of each serve
   log, not assumed ([`cuda-modal/`](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)).
 - **A bounded window keeps Muse-Glimmer flatter than the hybrid SSM on the

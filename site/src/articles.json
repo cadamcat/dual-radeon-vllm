@@ -164,7 +164,7 @@
    },
    "title": {
     "en": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
-    "zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×"
+    "zh": "第二张 RX 7900 XT 解码只快 1.1×，预填充快 1.9×"
    },
    "sub": {
     "en": "Decode rate and prefill scaling on dual Radeons; checked against a single card, an A100 and an L4",

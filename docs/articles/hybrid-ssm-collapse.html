@@ -966,7 +966,7 @@ RDNA3, a curve fourteen to forty times steeper than any dense model measured on 
 the same campaign.</p> <p>A kernel-level profile puts essentially all of the growth in one place:
 <code>kernel_paged_attention_2d</code>. That Triton fallback serves the model's 16 full-attention
 layers, and its per-call cost grows 28.3× while every other kernel in the step remains flat or slightly
-cheaper. The linear-attention layers deliver what the architecture promises.</p> <p>The ROCm custom
+cheaper. The linear-attention layers are not where the time goes.</p> <p>The ROCm custom
 paged-attention kernel declines this model on three separate conditions, forcing execution onto the Triton
 fallback. The fallback is slow <em>on this model in particular</em> because 4 KV heads at batch 1 leave the
 kernel almost nothing to parallelise over. Two independent signals agree: per-card power

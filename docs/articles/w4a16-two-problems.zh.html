@@ -1053,7 +1053,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>同一个模型家族，分别采用非对称与对称打包，在 <strong>1K 上下文相差 3.241×，8K 相差 1.786×，32K 相差 1.266×</strong>。按比值看，这像是一个正在消退的效应。按每步解码耗时看，事实恰好相反：两臂差距始终落在 <strong>58.03 到 62.79 ms</strong> 之间，散布 8.2 %，而比值下降了 60.9 %。一笔固定开销压在一笔增长开销下面。</p>
+  <p>同一个模型家族，分别采用非对称与对称打包，在 <strong>1K 上下文相差 3.241×，8K 相差 1.786×，32K 相差 1.266×</strong>。按比值看，这像是一个正在消退的效应。按每步解码耗时看，事实恰好相反：两组差距始终落在 <strong>58.03 到 62.79 ms</strong> 之间，散布 8.2 %，而比值下降了 60.9 %。一笔固定开销压在一笔增长开销下面。</p>
   <p>这笔固定开销来自 W4A16 线性路径。非对称 checkpoint 的权重类型为 <code>uint4</code>。由于 <code>SUPPORTED_QUANT_TYPES</code> 这一行代码只允许 <code>uint4b8</code>，该层便静默退回 Triton。全程没有任何警告，模型名称也不会提示里面是哪种格式。</p>
   <p>随上下文增长的开销来自 paged attention，<a href="hybrid-ssm-collapse.zh.html">另有专文讨论</a>。两部分开销在上游均有对应修复，<strong>且两个修复都不是我们做的</strong>：<a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 已合并，补充了接受 <code>uint4</code> 的第二个原生 kernel；<a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 放宽了 split-KV 注意力闸门，目前尚未合并。</p>
   <p>本文的贡献在于将二者剥离，并在过程中发现了一个事实：在 gfx1100 上遍历非对称配置空间，十二个配置中有三个可由两个 kernel 服务，一个由 Triton 服务，<strong>其余八个则没有任何 kernel 支持</strong>。所有包含 act-order 的非对称 checkpoint 都属于最后一组。</p>
@@ -1063,7 +1063,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <p>本文的解码速率采用差分测量，而非服务端自报数值：先生成 8 个 token，再生成 64 个，用多出的 56 个除以多消耗的时间。这种做法消除了预填充与首 token 延迟，使指标真正反映稳态解码速率。每个测试格均在基于原版镜像的全新容器中运行，且在正式测试前均执行一次弃用的预热生成。</p>
 
-<p>预热是必要步骤，绝非形式。每个测试格都会 JIT 编译恰好四个 Triton kernel。在两臂中，全部四次编译均发生在预热阶段，因此计时的两次调用均不包含编译耗时。这一点直接从容器日志中确认过，而非凭空假定；并且两臂均做了核对，避免编译开销单方面抬高某一臂的耗时。</p>
+<p>预热是必要步骤，绝非形式。每个测试格都会 JIT 编译恰好四个 Triton kernel。在两组中，全部四次编译均发生在预热阶段，因此计时的两次调用均不包含编译耗时。这一点直接从容器日志中确认过，而非凭空假定；并且两组均做了核对，避免编译开销单方面抬高某一组的耗时。</p>
 
 <p><strong>线性层究竟由哪个 kernel 实际服务，是在 worker 内部记录的。</strong>在 <code>--tensor-parallel-size 2</code> 下，线性层是在派生进程中构建的，在父进程打上的 monkeypatch 在子进程中完全不可见。因此，我们在引擎启动前直接在磁盘上修改了 <code>choose_mp_linear_kernel</code>，由各个 rank 独立写出判定。本文中的每个格子都对应两个不同的 pid；如果插桩未能覆盖到 worker，该格将写下空记录并以零退出。</p>
 
@@ -1082,7 +1082,7 @@ addEventListener("DOMContentLoaded", function () {
 
 <p>测试选用两个 checkpoint 评估同一种模型架构：<code>Qwen3_5ForConditionalGeneration</code>。两边均采用 compressed-tensors 进行 pack-quantized，运行在相同的两张卡和同一套镜像上，每个测试格使用独立的全新容器。其中一个是 <code>symmetric: false</code>，另一个是 <code>symmetric: true</code>。</p>
 
-<p>每 token 的解码时间具有可加性。如果根因是每步执行的 GEMM，它必然表现为<strong>一个与上下文无关的固定毫秒数</strong>。在这种情况下，吞吐比值之所以下降，仅仅是因为两臂底层的注意力开销随上下文不断增长。这是单纯看比值无法预测的现象，也是本图默认以毫秒而非看似更悬殊的倍数进行展示的原因。</p>
+<p>每 token 的解码时间具有可加性。如果根因是每步执行的 GEMM，它必然表现为<strong>一个与上下文无关的固定毫秒数</strong>。在这种情况下，吞吐比值之所以下降，仅仅是因为两组底层的注意力开销随上下文不断增长。这是单纯看比值无法预测的现象，也是本图默认以毫秒而非看似更悬殊的倍数进行展示的原因。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -1092,11 +1092,11 @@ addEventListener("DOMContentLoaded", function () {
     <div class="bars" id="dec"></div>
   </div>
   <figcaption>
-    <b>图 1.</b> 六个格子，每臂每深度一个，来自
-    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>。毫秒视图里橙色块就是两臂之差，
+    <b>图 1.</b> 六个格子，每组每深度一个，来自
+    <code>benchmarks/w4a16-symmetry/w4a16-ab.jsonl</code>。毫秒视图里橙色块就是两组之差，
     三行按同一比例尺绘制，这正是论点所在：它不随上下文增长。比值视图是同样六个数字，
     按标题的读法读一遍。<strong>每格只起了一次容器</strong>，所以这里不报 run 间区间；
-    这次实验唯一的一次重复把对称臂移动了至多 1.31 %，
+    这次实验唯一的一次重复把对称组移动了至多 1.31 %，
     所以 8.2 % 的散布大于噪声底，但与它同量级。
   </figcaption>
 </figure>
@@ -1134,7 +1134,7 @@ SELECTED  TritonW4A16LinearKernel
   <figcaption>
     <b>图 2.</b> 上：把对称性 × group size 的四个角都问了一遍注册表
     （<code>w4a16-selection-2x2.json</code>）。它跟随 symmetric 标志、忽略 group size，
-    这正是用来排掉那个显而易见的混杂的 —— 两臂的 group size 也不同，32 对 128。
+    这正是用来排掉那个显而易见的混杂的 —— 两组的 group size 也不同，32 对 128。
     下：这台机器上每个量化 checkpoint，以及注册表按它真实量化参数挑出的 kernel。
     这里测过的最快模型与最慢模型 group size 相同，而 <code>gemma-4-26B-A4B-AWQ</code>
     名字里带 AWQ 却是对称的，所以名字不是判据。真正决定的字段是
@@ -1142,11 +1142,11 @@ SELECTED  TritonW4A16LinearKernel
   </figcaption>
 </figure>
 
-<p>两臂之间的另外两处差异必须通过实测排除，而不能仅凭理论推演。其一是 <strong>group size</strong>（32 对 128）：目前不存在能将 group size 与对称性解耦的 checkpoint，因此本次 A/B 测试无法在单一变量下隔离它。然而，<code>can_implement</code> 的源码中并未包含针对 group-size-128 的条件限制，前述四个角落测试也忽略了它，且这台机器上跑得最快的模型采用的正是 group 32。其二是<strong>哪些层被量化</strong>：两者的 <code>ignore</code> 列表存在差异，因此我们直接统计了各自 <code>model.safetensors.index.json</code> 中的量化线性层，而非凭空推测。统计结果为 399 对 400，仅相差一层，且该层只在对称 checkpoint 中进行了量化。这反而使对称臂多承担了<em>一次</em> W4A16 GEMM，因而绝非对称臂速度更快的原因。</p>
+<p>两组之间的另外两处差异必须通过实测排除，而不能仅凭理论推演。其一是 <strong>group size</strong>（32 对 128）：目前不存在能将 group size 与对称性解耦的 checkpoint，因此本次 A/B 测试无法在单一变量下隔离它。然而，<code>can_implement</code> 的源码中并未包含针对 group-size-128 的条件限制，前述四个角落测试也忽略了它，且这台机器上跑得最快的模型采用的正是 group 32。其二是<strong>哪些层被量化</strong>：两者的 <code>ignore</code> 列表存在差异，因此我们直接统计了各自 <code>model.safetensors.index.json</code> 中的量化线性层，而非凭空推测。统计结果为 399 对 400，仅相差一层，且该层只在对称 checkpoint 中进行了量化。这反而使对称组多承担了<em>一次</em> W4A16 GEMM，因而绝非对称组速度更快的原因。</p>
 
 <h2><span class="n">5</span>另一项</h2>
 
-<p>这笔固定开销虽然构成了两臂之间的全部差异，但绝非整个解码步骤的全部耗时。在 32K 上下文下，两臂的大部分单步时间都耗费在 <code>kernel_paged_attention_2d</code> 之中。从 1K 到 32K，它的单次调用开销增长了 28 倍，而性能剖面中的其余所有 kernel 耗时均保持平稳。这就是第二个问题：它与量化本身毫无关系，并且<a href="hybrid-ssm-collapse.zh.html">有其专属的分析文章与修复方案</a>。</p>
+<p>这笔固定开销虽然构成了两组之间的全部差异，但绝非整个解码步骤的全部耗时。在 32K 上下文下，两组的大部分单步时间都耗费在 <code>kernel_paged_attention_2d</code> 之中。从 1K 到 32K，它的单次调用开销增长了 28 倍，而性能剖面中的其余所有 kernel 耗时均保持平稳。这就是第二个问题：它与量化本身毫无关系，并且<a href="hybrid-ssm-collapse.zh.html">有其专属的分析文章与修复方案</a>。</p>
 
 <p>这两项开销解释了为何单纯引用头条数字从来不是合格的总结。在 1K 上下文时，打包罚金几乎占据了全部性能差距；但在 32K 时，相比注意力开销它已沦为微不足道的舍入误差。脱离上下文长度单独给出的一个比值，掩盖了它所衡量的主要究竟是哪一部分开销。</p>
 
@@ -1176,7 +1176,7 @@ SELECTED  TritonW4A16LinearKernel
   </figcaption>
 </figure>
 
-<p>一项跨 campaign 的对照实验使 0.27 臂的数据本身具备了可信度。1K 的原版配置格子在 split-KV campaign 中被测试过两次；数周后，又由另一个独立脚本作为本目录下 kernel 对比的 <code>hybrid</code> 臂再次测试。两次 campaign 的测试结果仅相差 <strong>0.21 %</strong>，且彼此从未针对对方做过人为修正。</p>
+<p>一项跨 campaign 的对照实验使 0.27 这一组的数据本身具备了可信度。1K 的原版配置格子在 split-KV campaign 中被测试过两次；数周后，又由另一个独立脚本作为本目录下 kernel 对比的 <code>hybrid</code> 组再次测试。两次 campaign 的测试结果仅相差 <strong>0.21 %</strong>，且彼此从未针对对方做过人为修正。</p>
 
 <h2><span class="n">7</span>剩下的那部分，以及它为什么还不是一个 PR</h2>
 
@@ -1185,8 +1185,8 @@ SELECTED  TritonW4A16LinearKernel
 <p>只需三行 Python 代码即可同时修好这两处：允许 <code>uint4</code>；执行 <code>process_weights_after_loading</code> 已经对另外两个张量做过的转置；以及传入该 kernel 一直支持的零点表示约定，而非硬编码为 GPTQv1 的格式。<strong>在 0.23.1 上实测达到 3.11×，输出结果与 Triton 对照组逐 token 完全一致。</strong></p>
 
 <div class="note warn">
-  <span class="lbl">让人相信第三行的是那条对照臂</span>
-  仅包含前两处修改的测试臂能跑出 <strong>35.45 tok/s（对比 35.50）</strong>，说明它确实执行了原生 kernel。但其平均 logprob 差了 24 倍，输出也变成了 <code>terasterasterasteras…</code>。若一个补丁在修正布局后便止步，除了正确性以外，它在所有评估维度上都会看起来像是成功了。
+  <span class="lbl">让人相信第三行的是那组对照配置</span>
+  仅包含前两处修改的测试组能跑出 <strong>35.45 tok/s（对比 35.50）</strong>，说明它确实执行了原生 kernel。但其平均 logprob 差了 24 倍，输出也变成了 <code>terasterasterasteras…</code>。若一个补丁在修正布局后便止步，除了正确性以外，它在所有评估维度上都会看起来像是成功了。
 </div>
 
 <p>但在 <code>main</code> 分支上，这依然是个错误的补丁。在 Hybrid 适用的场景下，Hybrid 拥有 5.9 % 的性能优势（37.32 对比 35.22），而在 ROCm 优先级列表中 <code>RDNA3W4A16LinearKernel</code> 恰好排在 Hybrid <em>之前</em>。因此，若在那里放行 <code>uint4</code>，就会把该层交由两个可用 kernel 中较慢的那一个去执行。这个补丁无法将这种情况与"它是唯一可选方案"的情况区分开来。</p>
@@ -1215,7 +1215,7 @@ SELECTED  TritonW4A16LinearKernel
 <h2><span class="n">8</span>没有被确立的部分</h2>
 
 <h3>那笔固定开销是否只有 GEMM</h3>
-<p>可加分解符合每步开销与上下文无关的假设，kernel 记录也明确了实际运行的 GEMM。但这本身无法排除伴随存在的其他固定开销。实测确立的事实是：在 32 倍上下文跨度内，两臂差距的波动幅度仅为 8.2 %，且两臂确实运行了不同的线性 kernel。</p>
+<p>可加分解符合每步开销与上下文无关的假设，kernel 记录也明确了实际运行的 GEMM。但这本身无法排除伴随存在的其他固定开销。实测确立的事实是：在 32 倍上下文跨度内，两组差距的波动幅度仅为 8.2 %，且两组确实运行了不同的线性 kernel。</p>
 
 <h3>精度</h3>
 <p>两个 checkpoint 来自不同机构在不同 group size 下的独立量化，本文仅测试了推理速度。"在 RDNA3 上优先选用对称 checkpoint"只是吞吐层面的结论，两者在生成质量上是否相当并未在此验证。</p>
@@ -1224,7 +1224,7 @@ SELECTED  TritonW4A16LinearKernel
 <p>测试限定于单台机器、单一模型家族、仅限 gfx1100、TP=2 且仅限 bf16 激活。<code>partition_scales</code> 与逐通道路径均未涉及，张量重排亦假定为分组量化布局。覆盖扫描只是针对合成参数的注册表检查，那九种配置在实际发布中有多少被采用并未测试。</p>
 
 <h3>A/B 每格只有一次 run</h3>
-<p>A/B 矩阵的六个格子各自仅启动了一次容器。现有的重复测试仅覆盖了对称臂，且变动幅度至多 1.31 %。图 3 中 0.27 的两臂每格包含两次 run，并附带各自的波动区间。</p>
+<p>A/B 矩阵的六个格子各自仅启动了一次容器。现有的重复测试仅覆盖了对称组，且变动幅度至多 1.31 %。图 3 中 0.27 的两组每格包含两次 run，并附带各自的波动区间。</p>
 
 <h2><span class="n">9</span>此后发生的变化</h2>
 
@@ -1254,7 +1254,7 @@ SELECTED  TritonW4A16LinearKernel
 </div>
 
 <div class="foot-note">
-  <p><strong>每张图表背后的数据。</strong>A/B 测试数据、强制指定 kernel 的运行记录、三行修复及其对照臂、覆盖度扫描结果以及提交给上游的测试用例，均可在 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/w4a16-symmetry/README.md"><code>benchmarks/w4a16-symmetry/</code></a> 中查阅，并附有每个格子在 worker 内部记录的 kernel 决策。本页所有图表均由 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a> 基于这些文件重新计算生成，若有任何不一致则直接非零退出。</p>
+  <p><strong>每张图表背后的数据。</strong>A/B 测试数据、强制指定 kernel 的运行记录、三行修复及其对照组、覆盖度扫描结果以及提交给上游的测试用例，均可在 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/w4a16-symmetry/README.md"><code>benchmarks/w4a16-symmetry/</code></a> 中查阅，并附有每个格子在 worker 内部记录的 kernel 决策。本页所有图表均由 <a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/analyze/verify_doc_figures.py"><code>verify_doc_figures.py</code></a> 基于这些文件重新计算生成，若有任何不一致则直接非零退出。</p>
   <p>上游进展：<a href="https://github.com/vllm-project/vllm/pull/40977">vllm#40977</a> 针对固定开销提供修复，<a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> 针对随上下文增长的开销提供修复；后者的问题报告见 <a href="https://github.com/vllm-project/vllm/issues/50264">vllm#50264</a>。关于放宽 RDNA3 kernel 与挤掉 Hybrid 之间的权衡取舍，@JartX 已在 <a href="https://github.com/vllm-project/vllm/pull/46186">vllm#46186</a> 中从 gfx1151 的角度进行了详细阐述。</p>
 </div>
 </div>
