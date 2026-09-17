@@ -3,9 +3,7 @@
 Sections 1 to 5 of [`docs/benchmarks.md`](../docs/benchmarks.md) are derived from
 [`results.jsonl`](results.jsonl) in this directory; §6 is derived from
 [`results-2026-08-24.jsonl`](results-2026-08-24.jsonl) and from the per-finding
-files listed below. Nothing is extrapolated, nothing is hand-edited, and
-[`analyze/verify_doc_figures.py`](analyze/verify_doc_figures.py) recomputes the
-headline figures from those files and exits non-zero if any disagrees.
+files listed below. [`analyze/verify_doc_figures.py`](analyze/verify_doc_figures.py) recomputes the registered figures from those files and exits non-zero when a check fails.
 
 ## What is here
 

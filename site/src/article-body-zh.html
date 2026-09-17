@@ -1,8 +1,8 @@
 <header class="top">
   <div class="kicker">RDNA3 · vLLM · 实测于 2× RX 7900 XT</div>
-  <h1>Triton paged-attention 回退实现解释了<br>12.1 到 4.2 tok/s 的全部解码下滑</h1>
+  <h1>混合 SSM 解码从 12.1 降到 4.2 tok/s：<br>Triton paged-attention 回退路径的开销</h1>
   <p class="sub">vLLM 下双卡 Radeon 上的混合 SSM 解码速率；以稠密模型、llama.cpp 与上游 split-KV 内核作对照检验</p>
-  <p class="lede">线性注意力本应让长上下文的处理开销变低。在这台机器上，<code>Qwen3.6-27B</code> 在 500 到 32 000 token 之间从 12.1 跌落至 4.2 tok/s；而同个下午测得的稠密 8B 模型仍保持了 77 % 的短上下文速率。问题并不出在 48 层线性注意力上，而是剩下的 16 层。</p>
+  <p class="lede">线性注意力本应让长上下文的处理开销变低。在这台机器上，<code>Qwen3.6-27B</code> 在 500 到 32 000 token 之间从 12.1 降至 4.2 tok/s；而同个下午测得的稠密 8B 模型仍保持了 77 % 的短上下文速率。问题并不出在 48 层线性注意力上，而是剩下的 16 层。</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -10,26 +10,26 @@ __CHIPS__
 
 <div class="abstract">
   <h3>摘要</h3>
-  <p>在 vLLM 下，一个混合 Mamba / gated-delta-net 架构的 checkpoint 在 500 到 32 000 token 上下文之间<strong>失去了 65 % 的解码速率</strong>。这条下滑曲线比同一台机器、同一场 campaign 中测得的任何稠密模型都要陡十四到四十倍。</p>
-  <p>GPU 内核级 profile 显示，增加的耗时几乎全部集中在一处：<code>kernel_paged_attention_2d</code>。该 Triton 回退实现用于运行模型的 16 层全注意力，其单次调用耗时增长了 28.3 倍；在此期间，该解码步中的其余内核耗时均保持持平或微幅下降。线性注意力层完全兑现了架构所承诺的表现。</p>
-  <p>ROCm 自定义 paged-attention 内核由于三个独立条件未满足而拒绝对该模型的分发，迫使其执行落入 Triton 回退路径。回退内核<em>专门针对此模型</em>表现迟缓，是因为在 batch 为 1 时仅有 4 个 KV head，内核几乎找不到可供并行的维度。两项独立的观察印证了这一判断：单卡功耗随上下文深度<em>下降</em>，且在按照读取的 KV 字节数归一化后，性能差距不仅没有收窄，反而进一步扩大。</p>
-  <p>同一台机器在同一天内，相同的 checkpoint 在 llama.cpp 下测得的衰减斜率要平缓 28 倍，从而排除了驱动与硬件层面的嫌疑。上游已有可用的修复补丁，并在本文中进行了两次实测验证，最近一次是在 vLLM 0.27 上执行的受控 A/B 测试：<strong>32 K 上下文下达到 9.46 倍</strong>。该 A/B 测试中存在一个表现出双峰分布的数据格，后文对此做了说明。</p>
+  <p>在 vLLM 下，一个混合 Mamba / gated-delta-net 架构的 checkpoint 在 500 到 32 000 token 上下文之间<strong>解码速率下降了 65 %</strong>。这条下滑曲线比同一台机器、同一批测试中测得的任何稠密模型都要陡十四到四十倍。</p>
+  <p>GPU 内核级 profile 显示，增加的耗时几乎全部集中在一处：<code>kernel_paged_attention_2d</code>。该 Triton 回退实现用于运行模型的 16 层全注意力，其单次调用耗时增长了 28.3 倍；在此期间，该解码步中的其余内核耗时均保持持平或微幅下降。线性注意力层的耗时基本不随这两档上下文长度变化。</p>
+  <p>该模型不满足 ROCm 自定义 paged-attention 内核的三个启用条件，因此使用 Triton 回退实现。回退内核<em>专门针对此模型</em>表现迟缓，是因为在 batch 为 1 时仅有 4 个 KV head，内核几乎找不到可供并行的维度。两项独立的观察印证了这一判断：单卡功耗随上下文深度<em>下降</em>，且在按照读取的 KV 字节数归一化后，性能差距不仅没有收窄，反而进一步扩大。</p>
+  <p>同一台机器在同一天内，相同的 checkpoint 在 llama.cpp 下测得的衰减斜率要平缓 28 倍，说明这一下滑并非同一硬件和驱动下所有实现都会出现的限制。上游已有可用的修复补丁，并在本文中进行了两次实测验证，最近一次是在 vLLM 0.27 上执行的受控 A/B 测试：<strong>32 K 上下文下达到 9.46 倍</strong>。该 A/B 测试中存在一个表现出双峰分布的测试点，后文对此做了说明。</p>
 </div>
 
 <h2><span class="n">1</span>测了什么，怎么测的</h2>
 
-<p>第 2 节中的所有数据均出自同一场 campaign：同一套软件栈、同一个下午，所有模型均严格锁定在相同环境上。该测试轮次在五种模型架构和十一个上下文长度上共采集了 292 次解码与预填充测量。每个数据格均由 <code>vllm serve</code> 提供服务，配置为 TP=2、启用 CUDA graph、<code>--gpu-memory-utilization 0.85</code> 以及 512 token 输出，最终数据取两轮测试的平均值。</p>
+<p>第 2 节中的所有数据均出自同一批测试：同一套软件栈、同一个下午，所有模型均严格锁定在相同环境上。该测试轮次在五种模型架构和十一个上下文长度上共采集了 292 次解码与预填充测量。每个测试点均由 <code>vllm serve</code> 提供服务，配置为 TP=2、启用 CUDA graph、<code>--gpu-memory-utilization 0.85</code> 以及 512 token 输出，最终数据取两轮测试的平均值。</p>
 
-<p>本文汇报速率数据时给出的是各测试轮次自身的散布极差，而非标准差。在每格仅进行二到四轮测试的情况下，标准差给出的表面精度远超其实际样本量能支撑的水平。以极差占均值的百分比来衡量方差，不仅清晰直观，而且无需引入某种特定的分布假设。图 1 中的每一个数据点均附带了其测试轮数及对应的极差区间，将光标悬停即可查看。</p>
+<p>本文用重复测量的极差描述速率波动，而非标准差。每组仅测二到四轮，因此同时报告测试轮数，以及极差占均值的百分比，便于读者判断结果的稳定程度。图 1 中每个数据点的测试轮数和极差区间均可通过悬停查看。</p>
 
 <div class="note">
   <span class="lbl">关于绝对数值的解读</span>
-  测试环境运行在 VFIO 直通客户机内，这一对卡之间没有 P2P 互连，且走的是跨 die 的 PCIe 3.0 路径——这是有意选择的最不利硬件拓扑。本文展示的曲线<em>变化形态</em>具有普适性；而给出的绝对速率仅供参考下界，不可视作该硬件的真实性能标定。
+  测试环境运行在 VFIO 直通客户机内，这一对卡之间没有 P2P 互连，且走的是跨 die 的 PCIe 3.0 路径——这套拓扑限制了卡间通信。本文的曲线和绝对速率均来自这一配置，不能直接推广到其他拓扑或软件栈，也不代表该硬件可达到的最佳性能。
 </div>
 
 <h2><span class="n">2</span>观察到的现象</h2>
 
-<p>五种架构、十一个上下文深度、同一场 campaign。其中四个架构随上下文长度增加呈现出平缓下滑，这是 KV cache 的固有开销所注定的；然而第五个架构的表现却截然不同。</p>
+<p>同一批测试覆盖五种架构和十一个上下文长度。其中四种架构的解码速率随上下文增长缓慢下降；混合 SSM 模型的下降幅度明显更大。</p>
 
 <figure class="rv" id="fig1">
   <div class="figbox">
@@ -45,16 +45,16 @@ __CHIPS__
     另外三条点一下就出来。从 500 到 32 000 token 的保留率：8B <b>77.2 %</b>、12B <b>69.9 %</b>、
     26B MoE <b>67.5 %</b>、31B <b>68.4 %</b>、混合 SSM <b>35.1 %</b>。
     最后两条线是后继 checkpoint 在两个内核上的阶梯 —— 引擎可以用它们中的任一个来服务全注意力层，
-    2026-08-29 测的，两条臂都不带投机；它们默认不亮，因为那是和上面这次 campaign 不同的一套栈。
+    2026-08-29 测的，两组配置都不带投机；它们默认不亮，因为那是和上面这次 campaign 不同的一套栈。
     数据来源：<code>benchmarks/ledger.jsonl</code>。
   </figcaption>
 </figure>
 
-<p>在各个深度下，混合模型的绝对速率均为全场最慢。若仅看参数量，它本不该落得如此成绩。不仅如此，它也是唯一一条曲线持续向下弯曲而未能趋平的模型。保留率指标让这一对比更为直观：到 32 000 token 时，其余每套配置均能保住短上下文速率的 67 % 至 78 %；而该模型仅勉强维持了 <strong>35.1 %</strong>。</p>
+<p>在各个深度下，混合模型的绝对速率均为测试中最慢。仅从参数量看，无法解释它为何比其他模型更慢。不仅如此，它也是唯一一条曲线持续向下弯曲而未能趋平的模型。保留率指标让这一对比更为直观：到 32 000 token 时，其余每套配置均能保住短上下文速率的 67 % 至 78 %；而该模型的速率保留率为 <strong>35.1 %</strong>。</p>
 
-<p>若折算为斜率（即每增加一个 token 上下文所带来的解码微秒增量），本场 campaign 中混合模型的值为 <strong>4.84 µs</strong>，而稠密 8B 对照模型仅为 <strong>0.118 µs</strong>。二者相差了 41 倍，本文接下来的内容将全面剖析这一数字的成因。</p>
+<p>若折算为斜率（即每增加一个 token 上下文所带来的解码微秒增量），本批测试中混合模型的值为 <strong>4.84 µs</strong>，而稠密 8B 对照模型仅为 <strong>0.118 µs</strong>。二者相差约 41 倍。下面检查这部分差距来自哪些内核。</p>
 
-<h2><span class="n">3</span>归因：是内核问题，而非架构问题</h2>
+<h2><span class="n">3</span>内核计时：新增耗时来自哪里</h2>
 
 <p>在两个上下文深度下进行的 torch profile 均保持开启 CUDA graph。我们将内核调用严格归属到其所对应的引擎步时间窗口内，从而避免将分块预填充（chunked prefill）的调用混入解码数据中。</p>
 
@@ -71,13 +71,13 @@ __CHIPS__
   </figcaption>
 </figure>
 
-<p>模型中的 48 个 gated-delta-net 层在 32 K 处的耗时与 1 K 处基本一致（仅为 0.95 倍），这正是线性注意力理论上所承诺并在该实现中完整兑现的特性。量化 GEMM 的耗时同样保持平稳。全程只有一个内核的时间发生了大幅漂移，而且其增幅高达 <strong>28.3 倍</strong>。</p>
+<p>模型中的 48 个 gated-delta-net 层在 32 K 处的耗时为 1 K 处的 0.95 倍，基本不变。量化 GEMM 的耗时同样保持平稳。只有 paged-attention 内核的耗时大幅增加，达到原来的 <strong>28.3 倍</strong>。</p>
 
-<p>两笔开销账目完全吻合。按每步调用 16 次计算，paged attention 的总耗时从每步 5.71 ms 飙升至 161.5 ms，净增 155.8 ms。而通过 CUDA graph 回放实测的解码步自身总耗时，则从 85.85 ms 增加到 236.9 ms，净增 151 ms。<strong>paged attention 的耗时增长解释了全部的解码变慢现象</strong>；在更长的上下文深度下，其他所有内核的耗时均保持持平或略微加快。</p>
+<p>每步调用 16 次 paged attention，其总耗时从 5.71 ms 增加到 161.5 ms，增量为 155.8 ms。CUDA graph 回放测得的整个解码步骤从 85.85 ms 增加到 236.9 ms，增量约为 151 ms。<strong>两项增量接近，说明新增耗时主要来自 paged attention。</strong>其他内核的耗时均基本不变或略有下降。</p>
 
 <h2><span class="n">4</span>为什么会走回退路径</h2>
 
-<p>模型中的 16 层全注意力之所以落到 Triton 上，是因为 ROCm 的自定义 paged-attention 内核拒绝了该模型。在 <code>vllm/platforms/rocm.py</code> 中，<code>use_rocm_custom_paged_attention</code> 的 RDNA 分支要求（在其他前置条件之外）必须满足 <code>head_size == 128</code> 且 <code>block_size == 16</code>。</p>
+<p>模型的 16 层全注意力使用 Triton，因为该模型不满足 ROCm 自定义 paged-attention 内核的启用条件。在 <code>vllm/platforms/rocm.py</code> 中，<code>use_rocm_custom_paged_attention</code> 的 RDNA 分支要求（在其他前置条件之外）必须满足 <code>head_size == 128</code> 且 <code>block_size == 16</code>。</p>
 
 <div class="codewin">
   <div class="codebar"><span class="d"></span><span class="d"></span><span class="d"></span>
@@ -93,14 +93,14 @@ use_rocm_custom_paged_attention(head_size=<span class="k">128</span>)   -> <span
 use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span class="r">False</span>
 </pre></div>
 
-<p><strong>没有任何单一条件是唯一的阻塞点。</strong>单独放宽任何一个不满足的条件，闸门依然紧闭；同时 <code>chunked_prefill_paged_decode.py</code> 还会独立地由于 <code>is_pow2</code> 检查不通过而拒绝 <code>use_custom</code>。自定义内核在此处面临三重不可达的困境。因此，对该类模型而言，提升回退实现的执行速度是唯一切实有效的路径。</p>
+<p><strong>没有任何单一条件是唯一的阻塞点。</strong>单独放宽其中任何一个条件，仍无法启用自定义内核；同时 <code>chunked_prefill_paged_decode.py</code> 还会独立地由于 <code>is_pow2</code> 检查不通过而拒绝 <code>use_custom</code>。这三个条件分别阻止了自定义内核的使用。本文因此改为检查并优化回退实现。</p>
 
 <div class="note warn">
-  <span class="lbl">显而易见的修复思路行不通</span>
-  仅放宽 <code>head_size</code> 检查只是将报错位置转移，并未真正解决问题。<code>csrc/rocm/attention.cu</code> 中的 <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> 仅分发 <code>case 64</code> 与 <code>case 128</code>，遇到其他取值均直接触发 <code>TORCH_CHECK</code>。该条件属于内核的物理能力硬限制，而非人为设置的保守门槛。
+  <span class="lbl">仅放宽 head_size 检查仍会报错</span>
+  仅放宽 <code>head_size</code> 检查只是将报错位置转移，并未真正解决问题。<code>csrc/rocm/attention.cu</code> 中的 <code>CALL_CUSTOM_LAUNCHER_BLK_HEAD</code> 仅分发 <code>case 64</code> 与 <code>case 128</code>，遇到其他取值均直接触发 <code>TORCH_CHECK</code>。这反映了当前内核实现支持的维度，不只是选择器中一个可以单独放宽的条件。
 </div>
 
-<p><strong>性能下滑中的一部分源于内核，而非架构。</strong>后继 checkpoint <code>Qwen3.8-27B</code> 在 vLLM 0.27 上于 2026-08-29 针对引擎可用于服务那 16 层的两个内核分别完成了测试。测试中的两条臂均未启用投机解码，运行于相同的 checkpoint 和会话，复现误差均优于 <b>0.12 %</b>。在默认配置下，ROCm 选择器会采用 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容，前者是其首先选用的回退内核。若改为锁定使用 <code>TRITON_ATTN</code>（仅需设置一个参数，无需任何补丁），相同的阶梯在 32 K 处提速 <b>15.0 %</b>，全区间的保留率也从 <b>73.4 %</b> 提升至 <b>84.3 %</b>。本文所讨论的性能下滑中，有十一个百分点取决于由哪个内核来服务那 16 层全注意力。其余的性能损失则与此无关：即使锁定了内核，该模型到 32 K 处仍损失了 15.7 % 的短上下文速率，这正是下一节探讨的主题。</p>
+<p><strong>性能下滑中的一部分源于内核，而非架构。</strong>后继 checkpoint <code>Qwen3.8-27B</code> 在 vLLM 0.27 上于 2026-08-29 针对引擎可用于服务那 16 层的两个内核分别完成了测试。测试中的两组配置均未启用投机解码，运行于相同的 checkpoint 和会话，复现误差均优于 <b>0.12 %</b>。在默认配置下，ROCm 选择器会采用 <code>ROCM_ATTN</code>，因为 <code>TURBOQUANT</code> 与解码器不兼容，前者是其首先选用的回退内核。若改为锁定使用 <code>TRITON_ATTN</code>（仅需设置一个参数，无需任何补丁），相同的阶梯在 32 K 处提速 <b>15.0 %</b>，全区间的保留率也从 <b>73.4 %</b> 提升至 <b>84.3 %</b>。本文所讨论的性能下滑中，有十一个百分点取决于由哪个内核来服务那 16 层全注意力。其余的性能损失则与此无关：即使锁定了内核，该模型到 32 K 处仍损失了 15.7 % 的短上下文速率，这正是下一节探讨的主题。</p>
 
 <h2><span class="n">5</span>为什么回退路径<em>在这个模型上</em>特别慢</h2>
 
@@ -120,11 +120,11 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
 
 <h3>功耗随上下文增长而下降</h3>
 
-<p>在 518 token 时，双卡总功耗为 265 W + 265 W；而到 24 K 时，功耗反而下降至 232 W + 227 W。在整场测试扫描中，没有任何其他模型会出现功耗随深度下降的反常现象。其余所有模型均逐步攀升至 265 W 并维持高位，唯独该模型在中后段出现回落。各模型的基准功耗水平虽有不同（在 518 token 时，8B 为 245 W，12B 为 206 W，26B MoE 为 193 W），但关键的对比在于变化方向，而非绝对功率数值。计算单元处于空转闲置状态，而非高负荷饱和。</p>
+<p>在 518 token 时，双卡总功耗为 265 W + 265 W；而到 24 K 时，功耗反而下降至 232 W + 227 W。在整组测试中，没有任何其他模型会出现功耗随深度下降的反常现象。其余所有模型均逐步攀升至 265 W 并维持高位，唯独该模型在中后段出现回落。各模型的基准功耗水平虽有不同（在 518 token 时，8B 为 245 W，12B 为 206 W，26B MoE 为 193 W），但关键的对比在于变化方向，而非绝对功率数值。计算单元处于空转闲置状态，而非高负荷饱和。</p>
 
 <h3>按 KV 流量归一化后差距更大</h3>
 
-<p>在全网 64 层中，仅有 16 层需要维护 KV cache，且其 GQA 压缩比例颇高。其结果是，该模型在三者中读取的 KV 数据量实际上是<em>最少</em>的：每 token 仅需读取 64 KiB，相比之下 Qwen3-8B 需要 144 KiB，gemma-4-31B 则为 160 KiB。若按每 KiB 读取数据折算耗时，它达到了 Qwen3-8B 的 <strong>92 倍</strong>以及 gemma-4-31B 的 <strong>36 倍</strong>。这一事实直接推翻了「该模型本身计算开销更为繁重」的猜想。</p>
+<p>在全部 64 层中，仅有 16 层需要维护 KV cache，且其 GQA 压缩比例较高。其结果是，该模型在三者中读取的 KV 数据量实际上是<em>最少</em>的：每 token 仅需读取 64 KiB，相比之下 Qwen3-8B 需要 144 KiB，gemma-4-31B 则为 160 KiB。若按每 KiB 读取数据折算耗时，它达到了 Qwen3-8B 的 <strong>92 倍</strong>以及 gemma-4-31B 的 <strong>36 倍</strong>。因此，读取更多 KV 数据不能解释这部分差距。</p>
 
 <h2><span class="n">6</span>对照：同一个模型换一个引擎</h2>
 
@@ -147,12 +147,12 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
 
 <div class="note">
   <span class="lbl">一个受到扰动的数据点</span>
-  ROCm 后端在 16 384 token 处测得的速率为 21.35 tok/s，其标准差达到 2.635，而其余所有测试点仅在 0.06–0.09 之间波动；并且更深处的 24 576 token 速率反而更快。该单次测量显然受到了外界扰动，不应被单独拿来做定量引申。它保留在图表中。
+  ROCm 后端在 16 384 token 处测得的速率为 21.35 tok/s，其标准差达到 2.635，而其余所有测试点仅在 0.06–0.09 之间波动；并且更深处的 24 576 token 速率反而更快。该测试点的波动明显较大，不宜单独用来作定量推断。它保留在图表中。
 </div>
 
-<p>与此同时，该配置下的预填充表现却走向了另一个极端：其吞吐量随上下文长度增加反而<em>上升</em>，从 500 到 32 K 录得 802 &rarr; 881 tok/s，增幅达 9.9 %；而同场测得的每一条稠密对照臂在相同区间内都掉了 36–44 %。发生反转的仅仅是解码阶段。<em>（2026-08-31 更正：此处此前误记为 8–44 %。其中 8 来自 8B 模型，该模型的 500 token 档位未达到图表级精度，其两轮测量误差达 22 %，且原先引用了两者中偏高的一轮，从而掩盖了实际跌幅。在符合验收门槛的档位上，它从 1 K 起的跌幅达到 37 %，此处实测的任何稠密对照臂跌幅均不少于 36 %。）</em></p>
+<p>与此同时，该配置下的预填充表现却走向了另一个极端：其吞吐量随上下文长度增加反而<em>上升</em>，从 500 到 32 K 录得 802 &rarr; 881 tok/s，增幅达 9.9 %；而同场测得的每一条稠密对照配置在相同区间内都掉了 36–44 %。发生反转的仅仅是解码阶段。<em>（2026-08-31 更正：此处此前误记为 8–44 %。其中 8 来自 8B 模型，该模型的 500 token 档位未达到绘图筛选标准，其两轮测量误差达 22 %，且原先引用了两者中偏高的一轮，从而掩盖了实际跌幅。在符合验收门槛的档位上，它从 1 K 起的跌幅达到 37 %，此处实测的任何稠密对照配置跌幅均不少于 36 %。）</em></p>
 
-<p><strong>预填充吞吐量的上升属于当前硬件配置，而非该架构的固有属性。</strong>在 2026-08-31 之前，本文曾基于单一机器上单一模型手工记录的两个数据点，误将其归因为架构特征。<code>Qwen3.8-27B</code> 采用完全相同的 hybrid-SSM 设计，但在本测试机上其预填充速率并未上升：在 vLLM 0.23 下它下跌了 11.8 %，锁定在 Triton 时下跌 32.6 %；而在全宽链路上重新测试的对照臂中，其表现为完全持平的 <strong>+0.3 %</strong>；在 A100 上它则下跌 8.1 %。<em>（在 2026-09-02 之前，本句曾为该测试臂引用了 7.5 % 的跌幅数据。那次运行中有一张显卡协商至 PCIe 3.0 x8 速率；随后的 <code>campaign-2026-09-02c</code> 重新进行了测量，将该臂的走势由「下跌」修正为「持平」，但仍非「上升」。）</em><em>（2026-09-03 更正：这句话原来写的是这个 checkpoint 的预填充「从来没有上升过」。然而在 H100 上，同一模型在相同的测试档位下<strong>上升了 19.4 %</strong>，增幅甚至超过了本节讨论的 <code>Qwen3.6</code> 测试臂。原先的论断将特定机器上的实测结果误推演为模型架构的一般结论。）</em>与此同时，完全不含任何线性注意力层的 MoE 模型 <code>gemma-4-26B-A4B</code>，其预填充吞吐上升幅度同样超过了 <code>Qwen3.6</code>，在 7 月为 23.8 %，8 月为 21.9 %。目前收录于 <code>benchmarks/prefill.jsonl</code> 中的二十一条 stock hybrid-SSM 阶梯（涵盖同一 checkpoint 家族跨九种机器配置的测量）显示：<strong>七条阶梯上升超过 1 %，一条持平，十三条下降</strong>。相同的 <code>Qwen3.8-27B</code> checkpoint，其预填充变化幅度从双卡 Radeon 上 2026-09-07 那条到 128 000、锁定 <code>TRITON_ATTN</code> 的阶梯的 <strong>−68.3 %</strong>，一直延伸到双卡 H100 上的 <strong>+103.0 %</strong>。同一种架构和同一个 checkpoint，产生了横跨 171 个百分点且正负符号截然相反的测试结果。这就是核心发现：预填充吞吐曲线的上升，仅仅说明在该测试臂上短 prompt 的固定开销压过了计算复杂度的二次增长项，并不意味着模型内部维持着某种循环状态。无论预填充走势如何，本文所记录的解码阶段性能崩溃均不受影响：那是直接实测得出的客观事实，并非依赖此类推论得出。</p>
+<p><strong>预填充吞吐量的上升属于当前硬件配置，而非该架构的固有属性。</strong>在 2026-08-31 之前，本文曾基于单一机器上单一模型手工记录的两个数据点，误将其归因为架构特征。<code>Qwen3.8-27B</code> 采用完全相同的 hybrid-SSM 设计，但在本测试机上其预填充速率并未上升：在 vLLM 0.23 下它下跌了 11.8 %，锁定在 Triton 时下跌 32.6 %；而在全宽链路上重新测试的对照配置中，其表现为完全持平的 <strong>+0.3 %</strong>；在 A100 上它则下跌 8.1 %。<em>（在 2026-09-02 之前，本句曾为该测试配置引用了 7.5 % 的跌幅数据。那次运行中有一张显卡协商至 PCIe 3.0 x8 速率；随后的 <code>campaign-2026-09-02c</code> 重新进行了测量，将该配置的走势由「下跌」修正为「持平」，但仍非「上升」。）</em><em>（2026-09-03 更正：这句话原来写的是这个 checkpoint 的预填充「从来没有上升过」。然而在 H100 上，同一模型在相同的测试档位下<strong>上升了 19.4 %</strong>，增幅甚至超过了本节讨论的 <code>Qwen3.6</code> 测试配置。原先的论断将特定机器上的实测结果误推演为模型架构的一般结论。）</em>与此同时，完全不含任何线性注意力层的 MoE 模型 <code>gemma-4-26B-A4B</code>，其预填充吞吐上升幅度同样超过了 <code>Qwen3.6</code>，在 7 月为 23.8 %，8 月为 21.9 %。目前收录于 <code>benchmarks/prefill.jsonl</code> 中的二十一条 stock hybrid-SSM 阶梯（涵盖同一 checkpoint 家族跨九种机器配置的测量）显示：<strong>七条阶梯上升超过 1 %，一条持平，十三条下降</strong>。相同的 <code>Qwen3.8-27B</code> checkpoint，其预填充变化幅度从双卡 Radeon 上 2026-09-07 那条到 128 000、锁定 <code>TRITON_ATTN</code> 的阶梯的 <strong>−68.3 %</strong>，一直延伸到双卡 H100 上的 <strong>+103.0 %</strong>。同一种架构和同一个 checkpoint，产生了横跨 171 个百分点且正负符号截然相反的测试结果。这就是核心发现：预填充吞吐曲线的上升，仅仅说明在该测试配置上短 prompt 的固定开销压过了计算复杂度的二次增长项，并不意味着模型内部维持着某种循环状态。上述更正不改变本次测试中观察到的解码速率下降。解码结果来自单独的计时，不依赖对预填充走势的解释。</p>
 
 <h2><span class="n">7</span>修复，测了两次</h2>
 
@@ -231,7 +231,8 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
  "viewRate": "解码 tok/s",
  "viewRet": "保留率 %",
  "tokens": "token",
- "run": "轮", "runs": "轮",
+ "run": "轮",
+ "runs": "轮",
  "range": "极差",
  "ungraded": "未定级",
  "retSuffix": "% 保留",
@@ -242,8 +243,10 @@ use_rocm_custom_paged_attention(block_size=<span class="k">16</span>)   -> <span
  "f4patch": "打上 #45916",
  "f4bimodal": "轮，极差 {r}% — 双峰，见第 8 节",
  "f4showing": "当前显示：{x} · 点击切换",
- "f4rate": "解码 tok/s", "f4ms": "每 token 毫秒",
- "unitMs": " ms", "unitTok": " tok/s"
+ "f4rate": "解码 tok/s",
+ "f4ms": "每 token 毫秒",
+ "unitMs": " ms",
+ "unitTok": " tok/s"
 }</script>
 __SCRIPT__
 </body>
