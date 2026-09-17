@@ -1,12 +1,8 @@
 <header class="top">
   <div class="kicker">2× RX 7900 XT · six checkpoints to 128 000 tokens · three software stacks · one checkpoint measured on both attention backends</div>
-  <h1>The flattest model by retention is the steepest by cost,<br>and one serve flag moves it three places</h1>
-  <p class="sub">What a &ldquo;loses 28&nbsp;% to 96&nbsp;000&rdquo; figure is made of, on a machine where the same weights span 3.00&times; of depth cost without changing</p>
-  <p class="lede">Six checkpoints ran the same sixteen-rung ladder on the same two cards. Ranked by
-  what each keeps of its own 500-token rate, <code>Qwen3.8-27B</code> is the flattest of them.
-  Ranked by what each pays per token of context, it is the steepest. Both numbers are correct and
-  they are not about the same thing &mdash; and the second one moves by <strong>3.00&times;</strong> on
-  this checkpoint when nothing but the software changes.</p>
+  <h1>Long-context performance:<br>why retention and added decode cost rank models differently</h1>
+  <p class="sub">Comparing retained throughput with added decode time; the same weights differ by 3.00&times; in slope across software stacks</p>
+  <p class="lede">Six checkpoints were tested at sixteen context lengths on the same two cards. <code>Qwen3.8-27B</code> retains the largest fraction of its 500-token rate, but adds the most decode time per extra context token. These metrics measure different things. The latter also depends on the implementation: it differs by <strong>3.00&times;</strong> for this checkpoint across the tested software stacks.</p>
   <div class="meta">
 __CHIPS__
   </div>
@@ -15,28 +11,20 @@ __CHIPS__
 <div class="abstract"> <h3>Abstract</h3>
 <p>A long-context benchmark usually reports <em>retention</em>: what fraction of its short-prompt
 rate a model keeps at depth. On the six arms of <code>campaign-2026-09-03</code> that number ranks
-the models in almost the reverse of the order they pay in. The reason is arithmetic rather than
-subtle: a retention percentage divides the depth cost by the baseline, and across these six the
+the models in almost the reverse of the order they pay in. The difference comes from the denominator: a retention percentage divides the depth cost by the baseline, and across these six the
 baselines span <strong>8.4&times;</strong>. The slowest model in the set is the one that looks most
 depth-robust.</p>
-<p><strong>The alternative is not safe either.</strong> Fitting milliseconds per token against
+<p><strong>The slope also depends on the software stack.</strong> Fitting milliseconds per token against
 context gives a slope in microseconds per context token, which is a cost rather than a ratio and
 does not carry the baseline. On this pair that slope is a better description &mdash; and it is still
 not a property of the model. The same <code>Qwen3.8-27B</code> checkpoint, on the same two cards
 with the same weights and the same upstream patch, measures <strong>0.350</strong>, <strong>0.233</strong>
-and <strong>0.117&nbsp;&micro;s per context token</strong> on three software stacks that differ by a
-vLLM version and one serve flag. That is 3.00&times;, and it moves the checkpoint from last place in
+and <strong>0.117&nbsp;&micro;s per context token</strong> on three software stacks. The version comparison also changes ROCm and the weight kernel; the A/B within vLLM 0.27 changes only the attention-backend flag. That is 3.00&times;, and it moves the checkpoint from last place in
 this set to third.</p>
-<p><strong>The backend half of that is an attribution, not a comparison.</strong> The two attention
-backends were measured in two sessions of one run, and a third session repeated the first arm to
-price the session boundary: <strong>0.50&nbsp;%</strong> at worst, against a gap that reaches
-<strong>48&nbsp;%</strong>. Their intercepts agree to 1.5&nbsp;% while their slopes differ by 2.11&times;,
-so the flag moves the depth term and leaves the baseline where it was. What it costs is prefill:
-the decode advantage widens to <strong>1.48&times;</strong> at 128 000 tokens while prefill falls to
-<strong>0.44&times;</strong>, and neither has turned over at the deepest rung this machine can hold.</p>
+<p><strong>The backend A/B includes a check for between-session variation.</strong> Each backend was tested in a separate session, followed by a third session repeating the first configuration. The repeat varied by at most <strong>0.50&nbsp;%</strong>, compared with a backend gap of up to <strong>48&nbsp;%</strong>. The fitted intercepts agree within 1.5&nbsp;%, while the slopes differ by 2.11&times;, indicating a change mainly in context-dependent cost rather than baseline cost. Triton improves decode but slows prefill: at 128 000 tokens, its rates relative to ROCM_ATTN are <strong>1.48&times;</strong> and <strong>0.44&times;</strong>, respectively. Both gaps are still widening at the longest tested context.</p>
 </div>
 
-<h2><span class="n">1</span>Two numbers, and they disagree</h2>
+<h2><span class="n">1</span>Two metrics give different rankings</h2>
 
 <p>Every arm below is the same ladder on the same two cards, TP=2, batch 1, from
 <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/campaign-2026-09-03"><code>campaign-2026-09-03</code></a>.
@@ -68,16 +56,15 @@ different number, and comparing one to the other would be comparing curvature.</
 large cost. The intercepts of these six fits &mdash; what a decode step costs before any context is
 read &mdash; span <span class="v" id="ispread"></span>, from the MoE's fastest step to the hybrid
 SSM's slowest. Over 32 000 tokens the hybrid pays the most per token of anything here, and it is
-still only an eighth of a step it was already spending. It looks robust because it is slow.</p>
+still only an eighth of a step it was already spending. A high baseline cost makes the same added cost appear as a smaller relative decline.</p>
 
-<p>The reading it invites is the opposite one:
-<strong>a retention percentage rewards a slow baseline.</strong> Two models can have identical
+<p><strong>A slower baseline can produce a higher retention percentage.</strong> Two models can have identical
 depth behaviour and different retention, and two models with identical retention can differ by
 several times in what depth actually costs them.</p>
 
 <h2><span class="n">3</span>The same weights, three stacks</h2>
 
-<p>If the slope is the better number, the next question is whose property it is. This checkpoint has
+<p>The slope measures added decode time, but it can also change with the software stack. This checkpoint has
 now been measured on three software stacks with the weights, the cards, the parallelism, the ladder
 and the <a href="https://github.com/vllm-project/vllm/pull/45916">vllm#45916</a> split-KV patch all
 held: vLLM 0.23.1 on ROCm 7.14, which is the arm the campaign published; vLLM 0.27.1 on ROCm 10.0,
@@ -104,21 +91,16 @@ and the same 0.27.1 with <code>--attention-backend TRITON_ATTN</code>, which is
 
 <p><strong>Nothing about the model changed between those three lines.</strong> The span is
 <span class="v" id="span"></span>, and it is enough to move this checkpoint from the bottom of
-Figure 1's cost ranking to third &mdash; past the MoE, and within a whisker of
+Figure 1's cost ranking to third &mdash; below the MoE and close to
 <code>Qwen3-8B</code>, which is a quarter of its size.</p>
 
-<h2><span class="n">4</span>Why the last step is the backend and not the session</h2>
+<h2><span class="n">4</span>Checking between-session variation</h2>
 
-<p>A backend is chosen when the server starts, so the two 0.27 arms cannot share a session, and an
-A&ndash;B difference is a backend difference only if the session boundary costs less than it does.
-This repository has been caught by exactly that before:
-<a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/rccl-ndebug-ab-2026-09-04"><code>rccl-ndebug-ab-2026-09-04</code></a>
-published a 3.6&nbsp;% arm effect that turned out to be session order. So the run has a third
-session, repeating the first arm at three rungs after the second one finished.</p>
+<p>The backend is selected at server startup, so the two vLLM 0.27 configurations require separate sessions. To assess its effect, we first need an estimate of between-session variation. In <a href="https://github.com/cadamcat/dual-radeon-vllm/tree/main/benchmarks/rccl-ndebug-ab-2026-09-04"><code>rccl-ndebug-ab-2026-09-04</code></a>, a reported 3.6&nbsp;% configuration effect turned out to come from session order. This run therefore adds a third session, repeating the first configuration at three context lengths after the second finishes.</p>
 
 <figure class="rv">
   <div class="figbox">
-    <div class="figtitle">Figure 3 · the trade, and the drift that would have to explain it
+    <div class="figtitle">Figure 3 · backend performance and between-session variation
       <span class="prov yes">recomputable from repo</span></div>
     <div class="tab trade" id="trade"></div>
     <div class="figsub">the drift control &mdash; the same arm, three rungs, one session later</div>
@@ -128,28 +110,20 @@ session, repeating the first arm at three rungs after the second one finished.</
   <figcaption>
     <b>Figure 3.</b> Above: <code>TRITON_ATTN</code> divided by <code>ROCM_ATTN</code> at each rung,
     decode and prefill, same session structure and same flags but for the backend. Below: the first
-    arm measured again after the second, which prices the session boundary the comparison rests on.
-    The drift is at most <span class="v" id="drift1"></span>; the decode gap it would have to account
-    for reaches <span class="v" id="gap1"></span>.
+    arm measured again after the second, to estimate between-session variation.
+    The drift is at most <span class="v" id="drift1"></span>; the measured decode gap between backends reaches <span class="v" id="gap1"></span>.
   </figcaption>
 </figure>
 
-<p>Two further things make the pair an attribution rather than a race. The intercepts of the two fits
-agree to <strong>1.5&nbsp;%</strong> while the slopes differ by <strong>2.11&times;</strong>: the flag
-moves what a token of context costs and leaves what a step costs alone. And the direction reverses in
-prefill, which is the shape of a trade rather than of one arm simply being better.</p>
+<p>The fitted intercepts agree within <strong>1.5&nbsp;%</strong>, while the slopes differ by <strong>2.11&times;</strong>. This supports a change mainly in context-dependent cost rather than baseline cost. Prefill moves in the opposite direction, so the decode improvement should not be read as an improvement in every stage.</p>
 
-<h2><span class="n">5</span>The trade has not turned over</h2>
+<h2><span class="n">5</span>The gaps still widen at the longest context</h2>
 
-<p><code>campaign-2026-09-02c</code> measured these two backends to 32 000 tokens and found them
-trading, with both gaps still widening where it stopped. At four times that depth they are still
-widening: decode reaches <span class="v" id="wd"></span> and prefill <span class="v" id="wp"></span>
-at 128 000. <strong>Neither backend is the better one.</strong> They divide one cost between prefill
-and decode, and which division a deployment wants is a question about its traffic.</p>
+<p><code>campaign-2026-09-02c</code> found faster decode and slower prefill with Triton up to 32 000 tokens, with both gaps widening as context grew. At 128 000 tokens, the relative rates reach <span class="v" id="wd"></span> for decode and <span class="v" id="wp"></span> for prefill, and the gaps continue to widen. Backend choice therefore depends on input and output lengths and workload, not on either stage alone.</p>
 
-<h2><span class="n">6</span>The arm whose curve is not a line</h2>
+<h2><span class="n">6</span>When a linear fit is not appropriate</h2>
 
-<p>One row of Figure 1 carries a warning rather than a measurement. <code>Muse-Glimmer-30B</code>
+<p>One row in Figure 1 needs a qualification. <code>Muse-Glimmer-30B</code>
 fits a line at <span class="v" id="r2m"></span>, where every other arm is above
 <span class="v" id="r2r"></span>. Its attention runs through a 2 048-token window, so its cost per
 token stops growing rather than growing more slowly, and a straight line cannot say that. Its slope
@@ -161,11 +135,7 @@ tells a reader whether the single number in front of them describes the curve it
 
 <h2><span class="n">7</span>What to report instead</h2>
 
-<p>Two numbers rather than one, and a third that says whether they mean anything:
-<strong>the intercept</strong>, which is what a decode step costs before context;
-<strong>the slope</strong>, which is what each token of context adds; and <strong><code>r&sup2;</code></strong>,
-which says whether the fit is a description or a summary. A retention percentage is derivable from
-the first two at any depth, while neither is derivable from it.</p>
+<p>Report <strong>the intercept</strong>, <strong>the slope</strong>, and <strong><code>r&sup2;</code></strong> together. The intercept estimates baseline decode time, the slope describes added time per context token, and <code>r&sup2;</code> reports how well the line fits. The fitted values can be used to calculate retention at a specified context length, but a retention percentage alone cannot recover the intercept and slope.</p>
 
 <p>None of this makes the slope a property of a model. On this machine it is a property of a model
 <em>and</em> the kernel that serves it, and the second term is the larger one:
@@ -181,18 +151,16 @@ different checkpoints in Figure 1's cost column.</p>
   per-layer transformers config and the accessor raises before loading
   (<a href="https://github.com/cadamcat/dual-radeon-vllm/blob/main/benchmarks/campaign-2026-08-29/logs/G31-tp2-on-027.log">the traceback</a>; fixed upstream in
   <a href="https://github.com/vllm-project/vllm/pull/49797">vllm#49797</a>, which 0.27.1 lacks).</li>
-  <li><strong>Nothing here opens either kernel.</strong> That prefill moves the other way is the shape
-  of a trade, not an explanation of one.</li>
+  <li><strong>This test does not analyse either backend's kernel implementation.</strong> It measures the decode/prefill trade-off without explaining its kernel-level cause.</li>
   <li><strong>Every cell is batch 1.</strong> <code>max-num-seqs</code> is 16 for capacity, not for
   load. What either backend does under concurrency at depth is a different measurement.</li>
-  <li><strong>The six arms of Figure 1 are one machine.</strong> The claim about what a percentage
-  divides by is arithmetic and travels; the particular ordering is this pair's.</li>
+  <li><strong>The six arms of Figure 1 are one machine.</strong> Retention depends on the baseline, but the specific ordering describes only the tests on this machine.</li>
 </ul>
 
 <div class="tip" id="tip"></div>
 <script type="application/json" id="figures">__FIGURES_JSON__</script>
 <script type="application/json" id="strings">{
- "rankH": ["arm", "architecture", "retention 500 → 32 000", "cost µs/context token", "r²"],
+ "rankH": ["configuration", "architecture", "retention 500 → 32 000", "cost µs/context token", "r²"],
  "rankNote": "decode at batch 1 on two RX 7900 XT, TP=2 · both columns over the {t} rungs every arm shares · the ranks beside each column are that column's order",
  "stackAxisX": "context length",
  "stackAxisY": "ms per decoded token",
@@ -200,7 +168,7 @@ different checkpoints in Figure 1's cost column.</p>
  "stackRow": "{l} — {s} µs/tok, intercept {i} ms, r² {r}",
  "tradeH": ["context", "decode TRITON / ROCM", "prefill TRITON / ROCM"],
  "driftH": ["context", "first session", "again, after the other arm", "drift"],
- "tradeNote": "one run, three sessions: the two backends and then the first arm again · the drift is what the session boundary is worth, and the comparison above rests on it being small"
+ "tradeNote": "one run, three sessions: the two backends and then the first arm again · the repeat estimates between-session variation for comparison with the backend gap"
 }</script>
 <script>
 (function () {

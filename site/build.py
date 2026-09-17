@@ -160,18 +160,13 @@ V_EN, V_ZH = "mem-busy-orders-five-settings.html", "mem-busy-orders-five-setting
 built = []
 built.append(page("article-body.html", lang="en", figures="figures.json",
                   extra_css="article-extra.css",
-                  title='One kernel accounts for the whole 12.1 to 4.2 tok/s fall',
-                  desc="Qwen3.6-27B falls from 12.1 to 4.2 tok/s between 500 and 32000 tokens of "
-                       "context on 2x RX 7900 XT. Attribution, mechanism, control, and the upstream "
-                       "fix, measured.",
+                  title='Hybrid-SSM decode slowdown and the Triton paged-attention fallback',
+                  desc='Qwen3.6-27B decode on two RX 7900 XT cards: kernel timings, dense-model controls, cross-engine comparisons and split-KV tests.',
                   out="articles/" + H_EN, nav=lang_nav("en", H_EN, H_ZH), labels=EN_LABELS))
 built.append(page("article-body-zh.html", lang="zh-CN", figures="figures.json",
                   extra_css="article-extra.css", script_from="article-body.html",
-                  title='一个 kernel 就解释了 12.1 到 4.2 tok/s 的全部下滑',
-                  desc="Qwen3.6-27B 在 2× RX 7900 XT 上，上下文从 "
-                       "500 到 32000 token，解码由 12.1 掉到 4.2 tok/s。"
-                       "归因、机理、对照，以及上游"
-                       "修复的实测。",
+                  title='混合 SSM 解码下滑与 Triton paged-attention 回退实现',
+                  desc='两张 RX 7900 XT 上 Qwen3.6-27B 的解码测试，包括内核计时、稠密模型对照、跨引擎比较和 split-KV 测试。',
                   out="articles/" + H_ZH, nav=lang_nav("zh", H_EN, H_ZH), labels=ZH_LABELS))
 built.append(page("rccl-body.html", lang="en", figures="figures-rccl.json",
                   extra_css="rccl-extra.css",
@@ -257,18 +252,14 @@ if (D / "spec-body-zh.html").exists():
 
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
-                  title='The second card buys 1.1× at decode and 1.9× at prefill',
-                  desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
-                       "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
-                       "parallelism rather than about the silicon.",
+                  title='Decode and prefill scaling with a second RX 7900 XT',
+                  desc='Single- and dual-Radeon decode and prefill measurements, compared with A100 and L4 results. Includes software-stack differences, communication measurements and earlier corrections.',
                   out="articles/" + A_EN, nav=lang_nav("en", A_EN, A_ZH), labels=EN_LABELS))
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
-                      title='第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×',
-                      desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
-                           "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
-                           "而两端都关于张量并行，不关于硅片本身。",
+                  title='增加第二张 RX 7900 XT 后的解码与预填充性能',
+                  desc='比较 Radeon 单卡、双卡与 A100、L4 的解码和预填充性能，并说明软件栈差异、通信实测和早期结果更正。',
                       out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
 
 built.append(page("modal-body.html", lang="en", figures="figures-modal.json",
@@ -307,21 +298,14 @@ if (D / "gqa-body-zh.html").exists():
 D_EN, D_ZH = "depth-cost-is-the-stacks.html", "depth-cost-is-the-stacks.zh.html"
 built.append(page("depth-body.html", lang="en", figures="figures-depth.json",
                   extra_css="depth-extra.css",
-                  title='The flattest model by retention is the steepest by cost',
-                  desc="Six checkpoints on one ladder: the retention percentage and the depth "
-                       "cost rank them in almost opposite orders, because a percentage divides "
-                       "by a baseline and these baselines span 8.4x. And the cost is not the "
-                       "model's either -- the same weights measure 0.350, 0.233 and 0.117 us "
-                       "per context token across a vLLM version and one serve flag.",
+                  title='Long-context performance: retention and added decode cost',
+                  desc='Six checkpoints on two RX 7900 XT cards: baseline speed, context-dependent decode cost, software-stack differences and a backend A/B with session-drift controls.',
                   out="articles/" + D_EN, nav=lang_nav("en", D_EN, D_ZH), labels=EN_LABELS))
 if (D / "depth-body-zh.html").exists():
     built.append(page("depth-body-zh.html", lang="zh-CN", figures="figures-depth.json",
                       extra_css="depth-extra.css", script_from="depth-body.html",
-                      title='按保留率最平的那个模型，按成本是最陡的',
-                      desc="六个 checkpoint 跑同一条阶梯：保留率和深度成本给出的排序几乎相反，"
-                           "因为百分比要除以基线，而这些基线跨 8.4 倍。而成本也不是模型的性质——"
-                           "同一份权重在一个 vLLM 版本和一个 serve 参数之间，测得 0.350、0.233 "
-                           "和 0.117 微秒每上下文 token。",
+                  title='长上下文性能：保留率与额外解码耗时',
+                  desc='两张 RX 7900 XT 上六个 checkpoint 的基线速率、上下文相关解码耗时和软件栈差异，以及包含会话波动对照的后端 A/B。',
                       out="articles/" + D_ZH, nav=lang_nav("zh", D_EN, D_ZH), labels=ZH_LABELS))
 
 built.append(page("n6565-body.html", lang="en", figures="figures-6565.json",

@@ -4,11 +4,13 @@
 
 **[项目网站 · 交互图表与文章](https://cadamcat.github.io/dual-radeon-vllm/index.zh.html)**
 
-**两张消费级 Radeon（RX 7900 XT、gfx1100）运行 tensor-parallel vLLM 的实测记录，包括缺少 PCIe AtomicOps 导致的 RCCL 故障、修复方法和逐请求原始数据。**
+**这个仓库记录了两张 RX 7900 XT（gfx1100）上的 vLLM 张量并行测试，包括 RCCL 故障的诊断与修复、模型性能测试，以及复现实验所需的脚本和原始数据。**
 
-在原始基线上，`gemma-4-31B`（w4a16）以 **43 tok/s** 解码，两张卡**同时**各消耗 265 W；26B MoE 在短上下文达到 **108 tok/s**；Qwen3-8B BF16 的第二张卡加速为 **1.70×**，即 85 % 的并行效率。这些数据来自 VFIO 虚拟机：跨 CPU die 的 PCIe 3.0、没有 GPU P2P，当时也没有 PCIe atomics。后续 campaign 使用的软件版本、平台状态和补丁各自记录，不能把这套基线配置套到所有测量上。此后同一梯度又在其他租用或获赠的机器配置上对照这对卡跑过；本页每个数字都在发布前从已提交的原始行重算。
+早期测试运行在 VFIO 虚拟机中：GPU 之间没有 P2P，使用跨 CPU die 的 PCIe 3.0 链路，当时也没有 PCIe AtomicOps。在这套配置下，`gemma-4-31B`（w4a16）的解码速率约为 **43 tok/s**，两张卡各消耗 265 W；26B MoE 在短上下文下约为 **108 tok/s**。Qwen3-8B BF16 使用第二张卡后的加速比为 **1.70×**，并行效率为 85 %。
 
-**从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部 campaign](benchmarks/CAMPAIGNS.md)
+后续又在其他租用或获赠的机器配置上测试了同一组上下文长度。各批测试分别记录软件版本、平台状态和补丁，不能将早期基线的配置套用于所有测量。
+
+**从这里开始：** [诊断与修复 RCCL](#诊断与修复-rccl) · [主要发现](#主要发现) · [双卡实测](#双卡实测) · [限制与绕行方法](#限制与绕行方法) · [全部测试记录](benchmarks/CAMPAIGNS.md)
 
 ## 测量平台
 
@@ -22,13 +24,22 @@
 | H200 143G · B300 275G | 1 | Modal | 500–128 000 | 2026-09-03 |
 | RTX PRO 6000 96G | 1、2 | Modal | 500–128 000 | 2026-09-03 |
 
-十三种机器配置、八个 checkpoint、60 个结果文件里 5 796 条请求级测量、两份跨机器投影里 2 330 个 chart-grade 格子、八组双卡/四卡上 880 个 all-reduce 格、13 篇中英对照的长文——这些计数由 [`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从文件重算。
+数据集覆盖十三种机器配置和八个 checkpoint：60 个结果文件中有 5 796 条请求级测量，两份跨机器汇总中有 2 330 个符合绘图筛选条件的测试点，八组双卡或四卡配置中有 880 个 all-reduce 测试点，另有 13 篇中英对照文章。[`verify_doc_figures.py`](benchmarks/analyze/verify_doc_figures.py) 从已提交数据重算这些计数，并核对已登记的文档数字。
 
 ## 三部分内容，各自可以独立使用
 
 - **RCCL 修复。** 57 行的复现程序定位 hostcall 分派拒绝；裸机使用去掉 hostcall 的 RCCL 重建，虚拟机通常先检查一行直通配置。
-- **数据与工具。** 逐请求原始记录、生成这些记录的 runner，以及无需 GPU 的分析脚本。后续 campaign 在每格旁记录时钟、功耗、温度、显存和内存控制器忙碌比例。`prefill.jsonl`、`decode.jsonl` 从原始记录生成，并与之核对。
-- **Ubuntu 内核中的权重加载回归。** 可写文件映射的 host→device 拷贝在 `7.0.0-28-generic` 上降到 **2 MiB/s**；补齐缺失提交可修复，Ubuntu 的正常稳定版更新 `7.0.0-30.30~24.04.1` 也包含修复。同一机器、同一复现程序从 **16 019.3 ms → 15.3 ms**（[数据](benchmarks/hmm-kernel-three-states.json)）。该修复并非由本报告促成。内核升级后，可写映射本身的代价仍在：clone flag 在 checkpoint 放得进 RAM 时值 **1.5–2.0×**，放不进时值 **7.5×**（[数据](benchmarks/loader-flag-kernel-30.json)）。早期发布的 3.9–5.6× 没有控制 page cache，未能复现。完整证据、被推翻的解释及 [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)、[LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)、[vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的关系见 [§8](docs/open-questions.md)。
+- **数据与工具。** 逐请求原始记录、生成这些记录的 runner，以及无需 GPU 的分析脚本。后续测试为每组配置记录时钟、功耗、温度、显存和内存控制器忙碌比例。`prefill.jsonl`、`decode.jsonl` 从原始记录生成，并与之核对。
+- **Ubuntu 内核中的权重加载回归。** 内核回归已经修复；可写映射本身的额外开销仍需单独考虑。版本、测试结果和更正见下方，完整分析见 [open-questions.md §8](docs/open-questions.md)。
+
+<details>
+<summary>内核版本、加载测试与早期结果更正</summary>
+
+可写文件映射的 host→device 拷贝在 `7.0.0-28-generic` 上降到 **2 MiB/s**；补齐缺失提交可修复，Ubuntu 的正常稳定版更新 `7.0.0-30.30~24.04.1` 也包含修复。同一机器、同一复现程序从 **16 019.3 ms → 15.3 ms**（[数据](benchmarks/hmm-kernel-three-states.json)）。该修复并非由本报告促成。
+
+内核升级后，可写映射本身的代价仍在：启用 clone 选项后，checkpoint 放得进 RAM 时加载速度为原来的 **1.5–2.0×**，放不进时为 **7.5×**（[数据](benchmarks/loader-flag-kernel-30.json)）。早期发布的 3.9–5.6× 没有控制 page cache，未能复现。完整证据、被推翻的解释及 [ROCm#6523](https://github.com/ROCm/legacy-rocm-build/issues/6523)、[LP#2161985](https://bugs.launchpad.net/ubuntu/+source/linux-hwe-7.0/+bug/2161985)、[vllm#49991](https://github.com/vllm-project/vllm/pull/49991) 的关系见 [§8](docs/open-questions.md)。
+
+</details>
 
 ## 适用对象与支持状态
 
@@ -42,17 +53,17 @@
 
 ## 主要发现
 
-- **内存控制器忙碌比例排对了测到的第二张卡收益。** `mem_busy` 在五种设定里都排对了顺序，从第二张 Radeon 到第二张 H100。它支持的是这些实验里的排序关系，不能直接当作任意硬件的吞吐预测器（[跨机器记录](benchmarks/cuda-modal/README.md)）。
+- **内存控制器忙碌比例与第二张卡加速比的排序一致。** 从 Radeon 到 H100，五组测试中 `mem_busy` 与实测加速比的排序均一致。它支持的是这些实验里的排序关系，不能直接当作任意硬件的吞吐预测器（[跨机器记录](benchmarks/cuda-modal/README.md)）。
 - **集合通信带宽跨 62 倍，batch-1 解码所在的延迟端只跨 3.2 倍。** 七组双卡／四卡的带宽差，并没有转化为对应的推理差距（[all-reduce 实测](benchmarks/allreduce-2026-09-03/)）。
-- **四张租来的卡自动选了三种注意力后端。** 没有人显式传入 backend 参数；每个跨机器比值都包含软件路径的差别，后端身份来自各自的 serve 日志（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
+- **四种租用 GPU 配置中，vLLM 自动选择了三种注意力后端。** 测试未显式指定 backend 参数，因此跨机器比值也包含软件路径的差异；各后端均以 serve 日志为准（[配置记录](benchmarks/cuda-modal/README.md#four-cards-three-attention-backends-nobody-asked-for-any-of-them)）。
 - **在测过的 H100 栈上，有界窗口比混合 SSM 更平。** 到 128 000，Muse-Glimmer 吞吐下降 4.8 %，混合 SSM 的 27B 下降 21.8 %，稠密 31B 下降 22.0 %。这些是所测路径的结果；下文的软件栈对照说明，不能直接归因于架构（[长上下文记录](benchmarks/cuda-modal/README.md#context-past-32-000-and-what-makes-a-curve-flat)）。
-- **这对卡自己也到了 128 000。** 六个模型里四个跑完十六档；12B 到末端下降 52.5 %，有界窗口的 Muse-Glimmer 下降 17.3 %。遥测随每格保存，可以区分计算、内存和时钟状态（[本机长上下文 campaign](benchmarks/campaign-2026-09-03/README.md)）。
-- **gfx11 的 GQA 门排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽门后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
+- **双卡 Radeon 也完成了 128 000 token 的测试。** 六个模型里四个跑完十六档；12B 到末端下降 52.5 %，有界窗口的 Muse-Glimmer 下降 17.3 %。每组测试都保存遥测数据，可以区分计算、内存和时钟状态（[本机长上下文 campaign](benchmarks/campaign-2026-09-03/README.md)）。
+- **gfx11 的 GQA 筛选条件排除了一条更快的内核路径。** 在测过的 `gqa_ratio` 1–2 范围，自定义内核比回退路径快 **1.84–7.28×**；这是 gfx1100 上的内核计时，不是端到端加速比（[计时与正确性记录](benchmarks/vllm-50603/)）。[vllm#54210](https://github.com/vllm-project/vllm/pull/54210) 的应用检查在这对卡上跑完 **1 319 题** gsm8k：放宽筛选条件后，strict 正确题数改变 **−2 题**，flexible 改变 **+2 题**，两 rank 的实际分派都有记录。它只覆盖 gemma-3、ratio 2，未测延迟（[完整结果](benchmarks/vllm-54210-gsm8k/)）。
 - **同一 checkpoint 的深度成本随软件栈相差 3.00×。** 在共同的 **500–32 000** 档位，Qwen3.8-27B 每增加一个上下文 token 的解码成本为 **0.350 → 0.233 → 0.117 µs**：依次是 vLLM 0.23.1、0.27.1，以及 0.27.1 加 `--attention-backend TRITON_ATTN`。跨版本还改变 ROCm 和权重内核；0.27 内部的 A/B 只改 backend，Triton 路径带 #45450。到 **128 000**，Triton 相对 ROCM_ATTN 的 **decode 为 1.48×，prefill 为 0.44×**。版本复测和后端 A/B 分别在 [09-06](benchmarks/campaign-2026-09-06/) 与 [09-07](benchmarks/campaign-2026-09-07/)。
 - **分页解码内核改十一行，滑窗模型在 32 K 获益 2.75× 和 3.15×。** 原循环读完整段序列，再掩掉窗口外的内容；跳过这些块避免了无效读取（[实现与正确性论证](docs/sliding-window-block-skip.md)）。
 - **投机解码在 32 K 慢 3.4×，原因是路径选择。** 每步两个 query token 让 Triton 从分段的 3D 解码落到串行 2D 路径；#45450 重新允许 3D 后，这对卡在 32 K 从 **8.81 → 32.57 tok/s**，并已跨两家厂商验证（[分析](docs/speculative-decoding-on-rdna.md)）。
-- **贪心解码的不确定性来自 W4A16 的 split-K 收尾。** 同一 vLLM 提交、相同后端，加入 #54706 固定顺序归约后，32 次贪心生成 32 次一致；同构建不打补丁时，4 个格子里有 2 个会变（[内核 A/B](benchmarks/gfx1100-w4a16-54706/README.md)）。
-- **第二张 Radeon 在 BF16 上值 1.70×，w4a16 上值 1.18×。** 这是八月软件栈上的结果；量化模型也会从第二张卡获得容量，不能只用单流解码吞吐判断它的用途（[双卡实测](#双卡实测)）。
+- **贪心解码的不确定性来自 W4A16 的 split-K 收尾。** 同一 vLLM 提交、相同后端，加入 #54706 固定顺序归约后，32 次贪心生成 32 次一致；同构建不打补丁时，4 个测试点中有 2 个结果会变（[内核 A/B](benchmarks/gfx1100-w4a16-54706/README.md)）。
+- **使用第二张 Radeon 后，BF16 的加速比为 1.70×，w4a16 为 1.18×。** 这是八月软件栈上的结果；量化模型也会从第二张卡获得容量，不能只用单流解码吞吐判断它的用途（[双卡实测](#双卡实测)）。
 
 ## RCCL 故障
 

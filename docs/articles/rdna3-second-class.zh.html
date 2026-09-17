@@ -1191,7 +1191,7 @@ addEventListener("DOMContentLoaded", function () {
   "findings": [
    {
     "slug": "hybrid-ssm-collapse",
-    "title": "The Triton paged-attention fallback accounts for the entire 12.1 to 4.2 tok/s decode fall",
+    "title": "Hybrid-SSM decode falls from 12.1 to 4.2 tok/s: the cost of the Triton paged-attention fallback",
     "axis": "rdna3",
     "mechanism": "the few full-attention layers fall off the ROCm paged-attention fast path",
     "magnitude": 2.851764705882353,
@@ -1201,7 +1201,7 @@ addEventListener("DOMContentLoaded", function () {
      "vllm#45916",
      "vllm#50264"
     ],
-    "title_zh": "Triton paged-attention 回退实现解释了 12.1 到 4.2 tok/s 的全部解码下滑",
+    "title_zh": "混合 SSM 解码从 12.1 降到 4.2 tok/s： Triton paged-attention 回退路径的开销",
     "mechanism_zh": "少数几层全注意力掉出了 ROCm paged-attention 的快路径",
     "unit_zh": "×，从 500 到 32K token 损失的倍数",
     "why_zh": "修好它的 split-KV 兜底是专门为 gfx11 加的；这条路径在别处早就有"
@@ -1292,14 +1292,14 @@ addEventListener("DOMContentLoaded", function () {
    },
    {
     "slug": "a100-vs-two-radeons",
-    "title": "A second RX 7900 XT buys 1.1× at decode and 1.9× at prefill",
+    "title": "Adding a second RX 7900 XT: about 1.1× faster decode and 1.9× faster prefill",
     "axis": "tp",
     "mechanism": "the 2D attention path launches one workgroup per KV head, and tensor parallelism halves them",
     "magnitude": 2.1265703912797864,
     "unit": "x worse retention on two cards than on one",
     "why": "a property of splitting the work, not of the silicon; the single A100 runs the same kernel",
     "upstream": [],
-    "title_zh": "第二张 RX 7900 XT 在解码上买到 1.1×，在 prefill 上买到 1.9×",
+    "title_zh": "增加第二张 RX 7900 XT：解码约加速 1.1×，预填充约加速 1.9×",
     "mechanism_zh": "2D 注意力路径每个 KV head 起一个 workgroup，张量并行把它们减半",
     "unit_zh": "×，两卡的保持率比单卡差",
     "why_zh": "这是拆分工作的性质，不是硅片的；单张 A100 跑的是同一个 kernel"
