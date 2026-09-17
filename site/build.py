@@ -258,17 +258,13 @@ if (D / "spec-body-zh.html").exists():
 built.append(page("a100-body.html", lang="en", figures="figures-a100.json",
                   extra_css="a100-extra.css",
                   title='The second card buys 1.1× at decode and 1.9× at prefill',
-                  desc="On batch-1 decode of the same 31B model the A100 is 1.48x ahead at 1K, 1.14x "
-                       "at 16K and 1.87x at 32K. The gap is U-shaped, and both ends are about tensor "
-                       "parallelism rather than about the silicon.",
+                  desc="Single- and dual-card RX 7900 XT measurements, compared with an A100 and L4. A second Radeon improves batch-1 decode by 1.11x to 1.23x on the two tested models, and prefill by 1.56x to 1.87x.",
                   out="articles/" + A_EN, nav=lang_nav("en", A_EN, A_ZH), labels=EN_LABELS))
 if (D / "a100-body-zh.html").exists():
     built.append(page("a100-body-zh.html", lang="zh-CN", figures="figures-a100.json",
                       extra_css="a100-extra.css", script_from="a100-body.html",
                       title='第二张卡在解码上只买到 1.1×，在 prefill 上买到 1.9×',
-                      desc="同一个 31B 模型的 batch-1 解码，A100 在 1K 上领先 "
-                           "1.48×，16K 上 1.14×，32K 上 1.87×。差距是 U 形的，"
-                           "而两端都关于张量并行，不关于硅片本身。",
+                      desc="对照 A100 与 L4，比较 RX 7900 XT 的单卡和双卡性能。在所测两个模型上，第二张 Radeon 的 batch-1 解码加速比为 1.11–1.23×，预填充加速比为 1.56–1.87×。",
                       out="articles/" + A_ZH, nav=lang_nav("zh", A_EN, A_ZH), labels=ZH_LABELS))
 
 built.append(page("modal-body.html", lang="en", figures="figures-modal.json",
