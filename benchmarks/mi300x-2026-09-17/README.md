@@ -75,7 +75,12 @@ Both ROCm natives refuse anything but gfx1100 —
 `if not on_gfx1100(): return False, "RDNA3 W4A16 kernel requires gfx1100"` —
 so on gfx942 the chooser falls through to `TritonW4A16LinearKernel`, which both
 serve logs report. There is no CDNA entry in the ROCm list, and the image's own
-int4 GEMMs are not reachable through it. AMD's AITER kernels do not change this:
+int4 GEMMs are not reachable through it. The gap is known upstream and unfixed:
+vllm#42640 proposes a CDNA-tuned W4A16 kernel gated on `on_mi3xx()` and reports
+1.10-1.24x decode over this Triton path on a 4B and a 7B model with cudagraph,
+and has had no review since it opened on 2026-05-14; the request it answers,
+vllm#34008, was closed as stale on 2026-06-07 (both read 2026-09-18). AMD's
+AITER kernels do not change this:
 
 | rung | `VLLM_ROCM_USE_AITER=1` | `=0` |
 |---:|--:|--:|
