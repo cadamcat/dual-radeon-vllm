@@ -172,8 +172,10 @@ independent confirmations, neither ours: a bisect in
 [ROCm#6074](https://github.com/ROCm/legacy-rocm-build/issues/6074) reports
 7.2.0 passing the dual-GPU smoke test and 7.2.1 failing, naming those same two
 RCCL commits; and an AMD maintainer in the same issue attributes the PCIe
-atomics dependency to **ROCm 7.2.1**, adding that they are deciding whether to
-keep it as an explicit dependency or remove it.
+atomics dependency to **ROCm 7.2.1**. In July they were deciding whether to
+keep it as an explicit dependency or remove it; on 2026-09-29 they answered
+that PCIe atomics will remain a dependency of RCCL, and they closed the issue
+on 2026-10-02.
 
 **What this section got wrong.**
 
@@ -195,11 +197,11 @@ counting each device image would close it; the counting one-liner is in
 [`build/verify-nohostcall.sh`](../build/verify-nohostcall.sh).
 
 **What the upstream ask becomes.** Not "check what your pipeline stopped
-passing" — AMD knows, did it on purpose, and is already weighing the
-consequence. The useful contribution is the one this repository made instead:
-a platform that cannot satisfy the requirement should be told so at load, by
-name, rather than failing at dispatch with "the operation cannot be performed
-in the present state".
+passing" — AMD knows, did it on purpose, and has since decided that the
+dependency stays. The useful contribution is the one this repository made
+instead: a platform that cannot satisfy the requirement should be told so at
+load, by name, rather than failing at dispatch with "the operation cannot be
+performed in the present state".
 
 ---
 

@@ -72,8 +72,11 @@ this box, at TP=2, for these two checkpoints and depths.
 
 Upstream has moved under this record: vllm#54809 (merged 2026-09-08) rewrote
 the RDNA3 W4A16 sources this A/B was built on, and #54706 was rebased onto it
-and approved on 2026-09-07 and 2026-09-09. The 32 of 32 above is a result on
-the pinned commit, not on current main. Read from the API on 2026-09-09.
+and merged on 2026-10-03. Before merging it took three further changes: an
+exact fp16 dequantisation, the fp16 split-K reduction fused into the kernel,
+and WMMA dispatch from M ≥ 12. The merged kernel is therefore not the two
+files built here, and the 32 of 32 above is a result on the pinned commit, not
+on current main. Read from the API on 2026-10-06.
 
 Eight repeats is what the published cells used, and it is not many: the
 baseline's Muse-Glimmer at 8 192 came back 1 of 8 where the wheel had 4 of 8,
